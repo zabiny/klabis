@@ -83,6 +83,8 @@ public class KlabisSpringCodegen extends SpringCodegen {
      */
     private Operation currentOperation;
 
+    private static final String ENTITY_MODEL_FQN = "org.springframework.hateoas.EntityModel";
+
     public KlabisSpringCodegen() {
         // "Page" is the simple name handleMethodResponse() adds to op.imports when an operation is
         // paginated (see the override below). DefaultGenerator resolves a simple import name via
@@ -91,11 +93,96 @@ public class KlabisSpringCodegen extends SpringCodegen {
         // restapi package instead of Spring Data's Page, which failed to compile. Same registration
         // point SpringCodegen itself uses for "Pageable" (see SpringCodegen.processOpts()).
         importMapping.put("Page", "org.springframework.data.domain.Page");
+        // Same registration for EntityModel — fromProperty() resolves an x-hal-entity-items array to
+        // List<EntityModel<Item>> by pointing the array's items at a synthetic mapped schema name
+        // whose schemaMapping()/importMapping() value carries the EntityModel<Item> generic. The
+        // bare "EntityModel" import name must resolve to the Spring HATEOAS class the same way.
+        importMapping.put("EntityModel", ENTITY_MODEL_FQN);
     }
 
     @Override
     public String getName() {
         return "klabis-spring";
+    }
+
+    /**
+     * Registers the synthetic {@code EntityModel<Item>} schema mappings for every
+     * {@code x-hal-entity-items: true} array declared as a DIRECT property of a top-level
+     * {@code components.schemas} entry, BEFORE model construction begins.
+     *
+     * <p>That one-level scan covers every marker in the spec today (all of them sit on the
+     * {@code FamilyGroupResponse}/{@code GroupResponse}/{@code TrainingGroupResponse} payloads). A
+     * marker buried in a nested object, an {@code allOf} member or an array's items would be missed
+     * here and silently fall through to {@link #fromProperty}'s structural path, producing
+     * {@code List<Item>} instead of {@code List<EntityModel<Item>>} — recurse here before putting one
+     * there.
+     *
+     * <p>{@link #fromProperty} could add these on the fly, but the stock generator decides whether
+     * to emit a nested {@code @Valid} on an array's item type from state it builds while walking the
+     * schemas — a mapping registered only once {@code fromProperty} runs comes too late for that
+     * decision, and the item comes out as {@code EntityModel<@Valid Item>} instead of the
+     * {@code EntityModel<Item>} the hand-written {@code schemaMappings} produced. Seeding here
+     * reproduces that config-time timing exactly. Counterpart of {@code derive.mjs}'s
+     * {@code deriveEntityItems}.
+     */
+    @Override
+    public void preprocessOpenAPI(io.swagger.v3.oas.models.OpenAPI openAPI) {
+        Map<String, Schema> schemas = ModelUtils.getSchemas(openAPI);
+        if (schemas != null) {
+            for (Schema<?> schema : Map.copyOf(schemas).values()) {
+                registerEntityItemsMappings(schema, schemas);
+            }
+        }
+        super.preprocessOpenAPI(openAPI);
+    }
+
+    /**
+     * For each {@code x-hal-entity-items: true} array property on {@code schema}, reinstates the
+     * {@code EntityModel<Item>} setup the removed hand-written {@code schemaMappings} provided:
+     * <ul>
+     *     <li>a {@code schemaMapping()}/{@code importMapping()} entry redirecting the synthetic
+     *     {@code EntityModelItem} name onto {@code org.springframework.hateoas.EntityModel<Item>};</li>
+     *     <li>a minimal {@code EntityModelItem} schema ({@code allOf: [Item]}) in the document. Only
+     *     its existence matters, not its shape: the nested {@code @Valid} on an array item is
+     *     suppressed only when the item {@code $ref} both resolves AND is mapped — a mapped-but-absent
+     *     name still yields {@code EntityModel<@Valid Item>}. Confirmed empirically against the
+     *     baseline output in task 7.3a; being mapped, this schema is never emitted as a Java file, so
+     *     it needs none of the {@code _links}/{@code _templates} the wire envelope carries.</li>
+     * </ul>
+     */
+    private void registerEntityItemsMappings(Schema<?> schema, Map<String, Schema> schemas) {
+        if (schema == null || schema.getProperties() == null) {
+            return;
+        }
+        for (Object propertyObj : schema.getProperties().values()) {
+            Schema<?> property = (Schema<?>) propertyObj;
+            String itemName = entityItemsRefName(property);
+            if (itemName == null) {
+                continue;
+            }
+            String syntheticName = syntheticEntityModelName(itemName);
+            schemaMapping().putIfAbsent(syntheticName, ENTITY_MODEL_FQN + "<" + itemName + ">");
+            importMapping().putIfAbsent(syntheticName, ENTITY_MODEL_FQN);
+            schemas.putIfAbsent(syntheticName, new Schema<>().addAllOfItem(
+                new Schema<>().$ref("#/components/schemas/" + itemName)));
+        }
+    }
+
+    /**
+     * The bare payload schema name an {@code x-hal-entity-items: true} array's items {@code $ref}
+     * points at, or {@code null} when {@code p} is not such an array. {@code validate.mjs} rejects a
+     * malformed marker, so a well-formed spec always yields either {@code null} or a name.
+     */
+    private static String entityItemsRefName(Schema<?> p) {
+        if (p == null || p.getExtensions() == null
+            || !Boolean.TRUE.equals(p.getExtensions().get("x-hal-entity-items"))) {
+            return null;
+        }
+        if (!ModelUtils.isArraySchema(p) || p.getItems() == null || p.getItems().get$ref() == null) {
+            return null;
+        }
+        String ref = p.getItems().get$ref();
+        return ref.substring(ref.lastIndexOf('/') + 1);
     }
 
     @Override
@@ -275,19 +362,36 @@ public class KlabisSpringCodegen extends SpringCodegen {
      * {@code RepresentationModelProcessor}/{@code EntityModel.of(...)} call sites, untouched by this
      * rewrite.
      *
+     * <p><b>{@code x-hal-entity-items: true} on the array wins over everything.</b> The bundler's
+     * deriver ({@code tools/openapi-bundle/lib/derive.mjs}) reads this marker to emit an
+     * {@code EntityModel<Item>} envelope for the array's items in {@code klabis-full.json}; this
+     * override is the Java-side counterpart. When present, the property resolves to
+     * {@code List<org.springframework.hateoas.EntityModel<Item>>} — the exact type the per-schema
+     * {@code schemaMappings} in {@code build.gradle.kts}'s {@code groups} block used to force. The
+     * synthetic {@code EntityModelItem} schema and its mapping are set up by
+     * {@link #preprocessOpenAPI}; here the array's {@code items.$ref} is simply pointed at that
+     * name, so the stock generator substitutes it exactly as it did the hand-written entries.
+     *
+     * <p>This check must stay FIRST. Resolution is three-way — marker, then explicit
+     * {@code schemaMappings} entry, then the structural detector — and the first two now overlap:
+     * {@link #preprocessOpenAPI} registers the synthetic {@code EntityModelItem} in
+     * {@code schemaMapping()}, so the rewritten property would also satisfy
+     * {@link #isMappedEnvelopeItem}, which delegates the ORIGINAL unrewritten schema and would lose
+     * the rewrite. Ordering, not mutual exclusivity, is what keeps the marker authoritative.
+     *
      * <p><b>Exception — an explicit {@code schemaMappings} entry wins.</b> When the array item's
      * {@code $ref} names a schema that is itself a key in {@code schemaMapping()}, this override
      * steps aside entirely and delegates the ORIGINAL (unrewritten) property to {@code super}. This
      * is what lets a module redirect a specific {@code EntityModelX} envelope schema onto
      * {@code org.springframework.hateoas.EntityModel<X>} (a real generic Java type, via
-     * {@code schemaMappings}/{@code importMapping} — see {@code build.gradle.kts}'s
-     * {@code groupsFamily}/{@code groupsFree} modules) instead of this override's default
-     * strip-to-bare-payload behavior. Without this guard, this override would rewrite the property
-     * to {@code array of $ref Payload} BEFORE {@code super.fromProperty} ever sees the original
-     * {@code $ref}, so the {@code schemaMapping} entry keyed on the envelope schema name would never
-     * be consulted — confirmed empirically: the two mechanisms are mutually exclusive per schema,
-     * and an explicit {@code schemaMappings} entry is a deliberate, spec-adjacent opt-in that must
-     * take precedence over this override's own structural default.
+     * {@code schemaMappings}/{@code importMapping} — see {@code build.gradle.kts}'s {@code common}
+     * module) instead of this override's default strip-to-bare-payload behavior. Without this guard,
+     * this override would rewrite the property to {@code array of $ref Payload} BEFORE
+     * {@code super.fromProperty} ever sees the original {@code $ref}, so the {@code schemaMapping}
+     * entry keyed on the envelope schema name would never be consulted — confirmed empirically: the
+     * two mechanisms are mutually exclusive per schema, and an explicit {@code schemaMappings} entry
+     * is a deliberate, spec-adjacent opt-in that must take precedence over this override's own
+     * structural default.
      *
      * <p>Mirrors {@link #handleMethodResponse}'s rewrite-then-delegate shape otherwise: this method
      * never duplicates {@code DefaultCodegen}'s own property-resolution logic, it only substitutes
@@ -299,6 +403,11 @@ public class KlabisSpringCodegen extends SpringCodegen {
      */
     @Override
     public CodegenProperty fromProperty(String name, Schema p, boolean required, boolean schemaIsFromAdditionalProperties) {
+        Schema<?> entityItems = entityItemsArray(p);
+        if (entityItems != null) {
+            return super.fromProperty(name, entityItems, required, schemaIsFromAdditionalProperties);
+        }
+
         if (isMappedEnvelopeItem(p)) {
             return super.fromProperty(name, p, required, schemaIsFromAdditionalProperties);
         }
@@ -310,6 +419,41 @@ public class KlabisSpringCodegen extends SpringCodegen {
             .map(u -> (Schema<?>) new Schema<>().type("array").items(u.targetSchema()))
             .orElse(p);
         return super.fromProperty(name, effective, required, schemaIsFromAdditionalProperties);
+    }
+
+    /**
+     * When {@code p} is an {@code x-hal-entity-items: true} array whose {@code items} is a
+     * {@code $ref} to schema {@code Item}, returns a copy of the array whose items {@code $ref}
+     * points at the synthetic {@code EntityModel<Item>} schema name — registered in
+     * {@code schemaMapping()}/{@code importMapping()} by {@link #preprocessOpenAPI} — so
+     * {@code super.fromProperty} resolves the property to
+     * {@code List<org.springframework.hateoas.EntityModel<Item>>}, exactly the type the removed
+     * per-schema {@code schemaMappings} in {@code build.gradle.kts}'s {@code groups} block produced.
+     * Returns {@code null} when the marker is absent or malformed (validated in {@code validate.mjs}).
+     *
+     * <p>Reads {@code x-hal-entity-items} straight off the source YAML (the codegen never sees the
+     * bundle, where the deriver has already consumed and stripped it). Counterpart of
+     * {@code derive.mjs}'s {@code deriveEntityItems}.
+     */
+    private Schema<?> entityItemsArray(Schema<?> p) {
+        String itemName = entityItemsRefName(p);
+        if (itemName == null) {
+            return null;
+        }
+        // Same key shape as the static "EntityModelParentResponse" -> "EntityModel<ParentResponse>"
+        // entries this replaces: a plain schema name, no angle brackets, so ModelUtils' $ref parsing
+        // and schemaMapping() lookup behave exactly as they did for the hand-written entries.
+        return new Schema<>().type("array")
+            .items(new Schema<>().$ref("#/components/schemas/" + syntheticEntityModelName(itemName)));
+    }
+
+    /**
+     * The name of the synthetic envelope schema standing in for {@code EntityModel<Item>}. Must
+     * match {@code derive.mjs}'s {@code EntityModel${itemName}} so the bundle and the generated Java
+     * agree on which payload an enveloped item refers to.
+     */
+    private static String syntheticEntityModelName(String itemName) {
+        return "EntityModel" + itemName;
     }
 
     /**

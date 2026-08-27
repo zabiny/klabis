@@ -2007,11 +2007,12 @@ export interface components {
             _links?: components["schemas"]["Links"];
             _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelPendingInvitationResponseForInvitationsList: {
+        CollectionModelEntityModelPendingInvitationResponse: {
             _embedded?: {
-                pendingInvitationResponseList?: components["schemas"]["EntityModelPendingInvitationResponseForInvitationsList"][];
+                pendingInvitationResponseList?: components["schemas"]["EntityModelPendingInvitationResponse"][];
             };
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         CollectionModelEntityModelRegistrationSummaryDto: {
             _embedded?: {
@@ -2192,6 +2193,7 @@ export interface components {
         };
         EntityModelFamilyGroupMembershipResponse: components["schemas"]["FamilyGroupMembershipResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelFamilyGroupResponse: components["schemas"]["FamilyGroupResponse"] & {
             _links?: components["schemas"]["Links"];
@@ -2207,9 +2209,11 @@ export interface components {
         };
         EntityModelFreeGroupMembershipResponse: components["schemas"]["FreeGroupMembershipResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelGroupMembershipResponse: components["schemas"]["GroupMembershipResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelGroupResponse: components["schemas"]["GroupResponse"] & {
             _links?: components["schemas"]["Links"];
@@ -2268,9 +2272,11 @@ export interface components {
         };
         EntityModelOwnerResponse: components["schemas"]["OwnerResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelParentResponse: components["schemas"]["ParentResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelPaymentRuleResponse: components["schemas"]["PaymentRuleResponse"] & {
             _links?: components["schemas"]["Links"];
@@ -2278,9 +2284,7 @@ export interface components {
         };
         EntityModelPendingInvitationResponse: components["schemas"]["PendingInvitationResponse"] & {
             _links?: components["schemas"]["Links"];
-        };
-        EntityModelPendingInvitationResponseForInvitationsList: components["schemas"]["PendingInvitationResponse"] & {
-            _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelPermissionsResponse: components["schemas"]["PermissionsResponse"] & {
             _links?: components["schemas"]["Links"];
@@ -2299,6 +2303,7 @@ export interface components {
         };
         EntityModelTrainerResponse: components["schemas"]["TrainerResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelTrainingGroupResponse: components["schemas"]["TrainingGroupResponse"] & {
             _links?: components["schemas"]["Links"];
@@ -2857,7 +2862,6 @@ export interface components {
             /** Format: uuid */
             invitedBy?: string;
         };
-        PendingInvitationResponseList: components["schemas"]["PendingInvitationResponse"][];
         /** @description A user's granted authorities. */
         PermissionsResponse: {
             authorities?: string[];
@@ -5328,8 +5332,8 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PendingInvitationResponseList"];
-                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelPendingInvitationResponseForInvitationsList"];
+                    "application/json": components["schemas"]["PendingInvitationResponse"][];
+                    "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelPendingInvitationResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];

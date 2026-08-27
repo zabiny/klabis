@@ -12,22 +12,13 @@
 # application/prs.hal-forms+json envelope into klabis-full.json.
 #
 # FamilyGroupResponse, GroupResponse and TrainingGroupResponse are ALL fully generated. Their
-# collection fields (parents/members/owners/pendingInvitations/trainers) are List<EntityModel<Item>>
-# — every item carries its own _links/_templates. That is expressed via a per-schema schemaMappings
-# entry in build.gradle.kts redirecting each EntityModelX item schema (still defined below) straight
-# onto the real generic Java type org.springframework.hateoas.EntityModel<X> (paired with an
-# importMapping entry so the import resolves). KlabisSpringCodegen#fromProperty steps aside for any
-# array item whose $ref schema name is present in schemaMapping(), deferring to the stock generator's
-# own schemaMapping substitution instead of applying its default strip-to-bare-payload rewrite — see
-# that method's doc comment for why the two mechanisms are mutually exclusive per schema. Confirmed
-# against generated output: FamilyGroupResponse.parents -> List<EntityModel<ParentResponse>>,
-# TrainingGroupResponse.trainers -> List<EntityModel<TrainerResponse>>, matching the hand-written
-# controllers exactly.
-#
-# The 7 nested EntityModel* item schemas (EntityModelParentResponse etc.) are therefore kept
-# hand-written, unlike the response-level envelopes which are now derived. Converting them to
-# x-hal-entity-items requires KlabisSpringCodegen to read that marker and the schemaMappings to be
-# removed in one change — deferred to task 7.3a of derive-hal-envelopes-in-bundler.
+# collection fields (parents/members/owners/pendingInvitations/trainers) resolve to
+# List<EntityModel<Item>> — each item may carry its own _links/_templates, which ones depending on
+# the caller's authorization (e.g. removeGroupOwner appears on an owner row only for an owner). Each such array
+# is marked x-hal-entity-items: true with items pointing at the bare payload schema. The bundler's
+# deriver reads that marker to reconstruct the EntityModel<Item> schema in klabis-full.json;
+# KlabisSpringCodegen#fromProperty reads the same marker off this file and maps the property onto
+# org.springframework.hateoas.EntityModel<Item>. No per-schema schemaMappings entry is involved.
 #
 # Three different authorization patterns coexist in this module — transcribed here exactly as found,
 # never normalized:
@@ -840,10 +831,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PendingInvitationResponseList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/CollectionModelEntityModelPendingInvitationResponseForInvitationsList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingInvitationResponse'
           x-hal-links:
             self:
               description: This collection
@@ -1284,10 +1274,10 @@ components:
           format: int32
 
     # getFamilyGroup's payload. parents/members are arrays of HAL-wrapped items (each carrying its
-    # own _links/_templates at runtime), so the Java record fields stay List<EntityModel<X>> — the
-    # items $ref points at the EntityModelX item schema below, which build.gradle.kts's schemaMappings
-    # redirects onto org.springframework.hateoas.EntityModel<X>. The response-level HAL envelope is
-    # derived by the bundler; these nested item schemas stay hand-written until task 7.3a.
+    # own _links/_templates at runtime), so the Java record fields resolve to List<EntityModel<X>>.
+    # x-hal-entity-items: true on each array declares that: the bundler derives an EntityModel<X>
+    # item schema, KlabisSpringCodegen.fromProperty reads the same marker and maps the property onto
+    # org.springframework.hateoas.EntityModel<X>. The response-level HAL envelope is derived too.
     FamilyGroupResponse:
       type: object
       description: Family group detail with parents and children as independently linked items.
@@ -1299,20 +1289,14 @@ components:
           type: string
         parents:
           type: array
+          x-hal-entity-items: true
           items:
-            $ref: '#/components/schemas/EntityModelParentResponse'
+            $ref: '#/components/schemas/ParentResponse'
         members:
           type: array
+          x-hal-entity-items: true
           items:
-            $ref: '#/components/schemas/EntityModelFamilyGroupMembershipResponse'
-
-    EntityModelParentResponse:
-      allOf:
-        - $ref: '#/components/schemas/ParentResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
+            $ref: '#/components/schemas/FamilyGroupMembershipResponse'
 
     ParentResponse:
       type: object
@@ -1320,14 +1304,6 @@ components:
         memberId:
           type: string
           format: uuid
-
-    EntityModelFamilyGroupMembershipResponse:
-      allOf:
-        - $ref: '#/components/schemas/FamilyGroupMembershipResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
 
     FamilyGroupMembershipResponse:
       type: object
@@ -1393,8 +1369,8 @@ components:
         name:
           type: string
 
-    # getGroup's payload — see FamilyGroupResponse for why owners/members/pendingInvitations stay
-    # List<EntityModel<X>> via the item $refs and build.gradle.kts's schemaMappings.
+    # getGroup's payload — see FamilyGroupResponse for why owners/members/pendingInvitations resolve
+    # to List<EntityModel<X>> via x-hal-entity-items.
     GroupResponse:
       type: object
       description: Free group detail with owners, members and invitations as independently linked items.
@@ -1406,25 +1382,20 @@ components:
           type: string
         owners:
           type: array
+          x-hal-entity-items: true
           items:
-            $ref: '#/components/schemas/EntityModelOwnerResponse'
+            $ref: '#/components/schemas/OwnerResponse'
         members:
           type: array
+          x-hal-entity-items: true
           items:
-            $ref: '#/components/schemas/EntityModelFreeGroupMembershipResponse'
+            $ref: '#/components/schemas/FreeGroupMembershipResponse'
         pendingInvitations:
           type: array
           description: Present only when the caller is an owner of this group.
+          x-hal-entity-items: true
           items:
-            $ref: '#/components/schemas/EntityModelPendingInvitationResponse'
-
-    EntityModelOwnerResponse:
-      allOf:
-        - $ref: '#/components/schemas/OwnerResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
+            $ref: '#/components/schemas/PendingInvitationResponse'
 
     OwnerResponse:
       type: object
@@ -1432,14 +1403,6 @@ components:
         memberId:
           type: string
           format: uuid
-
-    EntityModelFreeGroupMembershipResponse:
-      allOf:
-        - $ref: '#/components/schemas/FreeGroupMembershipResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
 
     FreeGroupMembershipResponse:
       type: object
@@ -1450,18 +1413,6 @@ components:
         joinedAt:
           type: string
           format: date-time
-
-    # Item schema for GroupResponse.pendingInvitations (owner view of one group's invitations —
-    # InvitationModelBuilder.build() attaches a "self" affordance for cancelInvitation on top of the
-    # accept/reject rels). Kept hand-written: it is the item $ref that build.gradle.kts's
-    # schemaMappings redirects to EntityModel<PendingInvitationResponse>.
-    EntityModelPendingInvitationResponse:
-      allOf:
-        - $ref: '#/components/schemas/PendingInvitationResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
 
     PendingInvitationResponse:
       type: object
@@ -1479,45 +1430,6 @@ components:
         invitedBy:
           type: string
           format: uuid
-
-    # === Invitations ==============================================================================
-
-    # getPendingInvitations (PendingInvitationPostprocessor) serves PendingInvitationResponse without
-    # the owner-only cancelInvitation affordance that EntityModelPendingInvitationResponse above
-    # carries; both still carry _templates at runtime, via their accept/reject links.
-    #
-    # Its envelope stays hand-written under a distinct name only because the nested schema above is
-    # still hand-written and un-marked: deriving this one would name it
-    # EntityModelPendingInvitationResponse with _templates (Decision 7) while that one has none, and
-    # the two shapes collide. Marking the nested property with x-hal-entity-items removes the
-    # collision rather than working around it — the deriver then produces the same _templates-bearing
-    # schema for both roles (see the dual-use case in derive.test.mjs). That is task 7.3a, which
-    # deletes these three schemas and lets getPendingInvitations derive normally.
-    PendingInvitationResponseList:
-      type: array
-      items:
-        $ref: '#/components/schemas/PendingInvitationResponse'
-
-    CollectionModelEntityModelPendingInvitationResponseForInvitationsList:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            pendingInvitationResponseList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelPendingInvitationResponseForInvitationsList'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-
-    EntityModelPendingInvitationResponseForInvitationsList:
-      allOf:
-        - $ref: '#/components/schemas/PendingInvitationResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
 
     # === TrainingGroups ===========================================================================
 
@@ -1615,10 +1527,10 @@ components:
           type: integer
           format: int32
 
-    # getTrainingGroup's payload — see FamilyGroupResponse for why trainers/members stay
-    # List<EntityModel<X>> via the item $refs and build.gradle.kts's schemaMappings. ageRange and
-    # members are omitted (JsonInclude.NON_NULL) in the reduced response returned to callers without
-    # GROUPS:TRAINING — see the description on getTrainingGroup.
+    # getTrainingGroup's payload — see FamilyGroupResponse for why trainers/members resolve to
+    # List<EntityModel<X>> via x-hal-entity-items. ageRange and members are omitted
+    # (JsonInclude.NON_NULL) in the reduced response returned to callers without GROUPS:TRAINING —
+    # see the description on getTrainingGroup.
     TrainingGroupResponse:
       type: object
       description: Training group detail with trainers and members as independently linked items.
@@ -1632,12 +1544,14 @@ components:
           $ref: '#/components/schemas/AgeRangeResponse'
         trainers:
           type: array
+          x-hal-entity-items: true
           items:
-            $ref: '#/components/schemas/EntityModelTrainerResponse'
+            $ref: '#/components/schemas/TrainerResponse'
         members:
           type: array
+          x-hal-entity-items: true
           items:
-            $ref: '#/components/schemas/EntityModelGroupMembershipResponse'
+            $ref: '#/components/schemas/GroupMembershipResponse'
 
     AgeRangeResponse:
       type: object
@@ -1649,28 +1563,12 @@ components:
           type: integer
           format: int32
 
-    EntityModelTrainerResponse:
-      allOf:
-        - $ref: '#/components/schemas/TrainerResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-
     TrainerResponse:
       type: object
       properties:
         memberId:
           type: string
           format: uuid
-
-    EntityModelGroupMembershipResponse:
-      allOf:
-        - $ref: '#/components/schemas/GroupMembershipResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
 
     GroupMembershipResponse:
       type: object
