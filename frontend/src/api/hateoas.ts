@@ -84,6 +84,25 @@ export function asLinkArray(links: HalResourceLinks | undefined | null): Link[] 
 }
 
 /**
+ * Parses a HAL link href into a URL object for query-param manipulation.
+ *
+ * Backend HAL links may be relative (`/api/events?year=2026`) or absolute
+ * (`https://host/api/events`). `new URL(relativeHref)` throws `TypeError: Invalid URL`, so a
+ * base is always supplied. Pair with {@link serializeHalHref} to get an href string back.
+ *
+ * @param href HAL link href, relative or absolute
+ * @returns URL resolved against `window.location.origin`
+ */
+export const parseHalHref = (href: string): URL => new URL(href, window.location.origin);
+
+/**
+ * Serializes a {@link parseHalHref} URL back to an origin-relative href (`pathname` + `search` +
+ * `hash`). The Klabis fetch layer (`authorizedFetch`, `useAuthorizedQuery`) is origin-agnostic,
+ * so the absolute origin is never needed and is dropped to keep hrefs readable.
+ */
+export const serializeHalHref = (url: URL): string => `${url.pathname}${url.search}${url.hash}`;
+
+/**
  * Converts relative URL to absolute using current window.location's hostname. Absolute URL is left unchanged
  * @param input
  */
