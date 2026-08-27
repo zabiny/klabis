@@ -309,9 +309,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PermissionsResponse'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelPermissionsResponse'
           x-hal-links:
             self:
               description: This user's permissions
@@ -408,6 +405,11 @@ components:
     # RootModel/DashboardModel are empty marker records — no properties, all content comes from
     # links added by per-module postprocessors. Mapped (schemaMappings) onto the plain
     # RootModel/DashboardModel payload records, see module header comment.
+    #
+    # These two stay hand-written where every other envelope is now derived: the deriver builds an
+    # envelope from an application/json payload, and these responses deliberately have none (adding
+    # one collapses the return type to ResponseEntity<Void>, see above). There is nothing to derive
+    # from.
     EntityModelRootModel:
       type: object
       properties:
@@ -484,16 +486,6 @@ components:
       properties:
         message:
           type: string
-
-    EntityModelPermissionsResponse:
-      allOf:
-        - $ref: '#/components/schemas/PermissionsResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
 
     PermissionsResponse:
       type: object
