@@ -251,19 +251,43 @@
 
 ## 6. Migrate `groups` (18 envelopes + 7 nested + 14 mappings)
 
-- [ ] 6.1 Resolve the open question on `CollectionModelEntityModelPendingInvitationResponseForInvitationsList`
-      and `EntityModelPendingInvitationResponseForInvitationsList`: determine whether the deriver's
-      naming reproduces them, or whether an explicit override is required for byte-identity.
-- [ ] 6.2 Rewrite the 11 response-level envelopes in `groups.yaml` as in section 3.
-- [ ] 6.3 Replace the 7 nested envelope schemas with `x-hal-entity-items: true` on
-      `FamilyGroupResponse.parents`/`.members`, `GroupResponse.owners`/`.members`/`.pendingInvitations`,
-      `TrainingGroupResponse.trainers`/`.members`.
-- [ ] 6.4 Remove the 7 `schemaMappings` + 7 `extraImportMappings` entries from the `groups`
-      `openApiModule(...)` block in `backend/build.gradle.kts`.
-- [ ] 6.5 Confirm the bundle hash still matches the 1.3 baseline and that the generated Java still
-      resolves `TrainingGroupResponse.trainers` to `List<EntityModel<TrainerResponse>>` (not
-      `List<TrainerResponse>`) — the exact property the old detector guaranteed.
-- [ ] 6.6 Run backend tests via `test-runner`; commit.
+- [x] 6.1 Resolved: no override is required, but not for the reason the question assumed.
+      `EntityModelPendingInvitationResponse` and `EntityModelPendingInvitationResponseForInvitationsList`
+      are structurally identical (same `allOf`, same `_links`, neither with `_templates`) — the
+      `ForInvitationsList` suffix encoded a `cancelInvitation` affordance distinction the schema never
+      carried, and only the prose comment did. The deriver emits one
+      `EntityModelPendingInvitationResponse` for both call sites and the pair collapses into it. That
+      collapse is an intended rename in the bundle; both names occur only in generated files
+      (`klabisApi.d.ts`, `halTypes.ts`, the latter resolving via a `components['schemas'][…]` lookup
+      that follows the rename), so no hand-written frontend code is affected.
+- [x] 6.2 Rewrite the response-level envelopes in `groups.yaml` as in section 3 — **partial, 6 of 7
+      endpoints**. Done: `listFamilyGroups`, `getFamilyGroup`, `listGroups`, `getGroup`,
+      `listTrainingGroups`, `getTrainingGroup` (11 envelope schemas + 3 array aliases removed).
+      **`getPendingInvitations` deferred to 7.3a**, and this refines 6.1: the `*ForInvitationsList`
+      suffix does encode something after all — not a difference in the item's field shape, but name
+      disambiguation between a *derived* response-level envelope (`_links` + `_templates`,
+      Decision 7) and the *hand-written nested* `EntityModelPendingInvitationResponse` (`_links`
+      only) that `schemaMappings` still needs for `GroupResponse.pendingInvitations`. Deriving it
+      while the nested schema survives collides on that name. 6.1's conclusion holds, but only once
+      7.3a replaces the nested schema with `x-hal-entity-items`.
+- [~] 6.3 **Deferred to 7.3a** — see 6.4/6.5. Rewriting the 7 nested `items.$ref` from
+      `EntityModelParentResponse` to bare `ParentResponse` is exactly what disarms the `schemaMappings`,
+      so this cannot land before the codegen reads the marker.
+- [~] 6.4 **Deferred to 7.3a** — the 7 `schemaMappings` are not redundant with the deriver: they
+      counteract `fromProperty()`, which unwraps a nested envelope item to a bare `List<Payload>` by
+      default. The two are mutually exclusive per schema (see that override's Javadoc). Removing the
+      mappings flips all 7 properties to `List<Payload>` and fails compilation —
+      `FamilyGroupController:176`, `TrainingGroupController:129`/`:241` and `FreeGroupController` all
+      pass `List<EntityModel<X>>` into the generated record constructors.
+- [~] 6.5 **Deferred to 7.3a**, and its premise was wrong. An earlier revision of this file claimed
+      `List<EntityModel<X>>` stays guaranteed by the `schemaMappings` until 7.3a. It does not:
+      `KlabisSpringCodegen.isMappedEnvelopeItem()` keys on the **name in `items.$ref`**
+      (`schemaMapping().containsKey(<items.$ref name>)`), so the mapping fires only while that ref
+      still reads `EntityModelParentResponse`. Task 6.3 rewrites precisely that ref, disarming the
+      mechanism 6.5 relied on — verified empirically: with 6.3 applied, all 7 properties generate as
+      `List<Payload>` and `:compileJava` fails with 4 errors. **6.3 and 6.5 are mutually exclusive
+      without 7.3a**, which is why both moved there.
+- [ ] 6.6 Run backend tests via `test-runner`; commit (6.2 only).
 
 ## 7. Remove the detector
 
@@ -274,6 +298,30 @@
 - [ ] 7.3 Simplify `KlabisSpringCodegen`: remove the envelope-detection paths in
       `handleMethodResponse()`, `fromProperty()` and `getContent()`, leaving the
       `x-hal-entity-items` reader.
+- [ ] 7.3a Absorbs deferred tasks 6.3, 6.4 and 6.5 — all three are one indivisible change and each
+      alone breaks compilation, so they land in a single commit:
+      1. Make `fromProperty()` resolve an `x-hal-entity-items: true` array to
+         `List<EntityModel<Item>>` (the type the 7 `schemaMappings` currently force).
+      2. Replace the 7 nested envelope schemas in `groups.yaml` with `x-hal-entity-items: true` on
+         `FamilyGroupResponse.parents`/`.members`, `GroupResponse.owners`/`.members`/`.pendingInvitations`,
+         `TrainingGroupResponse.trainers`/`.members` (was 6.3).
+      2b. Migrate `getPendingInvitations` (deferred half of 6.2): once step 2 has deleted the nested
+         hand-written `EntityModelPendingInvitationResponse`, point its `application/json` at a bare
+         array of `PendingInvitationResponse` and delete `PendingInvitationResponseList`,
+         `CollectionModelEntityModelPendingInvitationResponseForInvitationsList` and
+         `EntityModelPendingInvitationResponseForInvitationsList`. The pair then collapses into the
+         derived `CollectionModelEntityModelPendingInvitationResponse` /
+         `EntityModelPendingInvitationResponse`; verify `_embedded` stays `pendingInvitationResponseList`.
+      3. Remove the 7 `schemaMappings` + 7 `extraImportMappings` from the `groups`
+         `openApiModule(...)` block in `backend/build.gradle.kts` (was 6.4).
+
+      Verification (was 6.5): all 7 properties must generate as
+      `List<org.springframework.hateoas.EntityModel<X>>`, not `List<X>`, and `./gradlew :compileJava`
+      must pass — `FamilyGroupController:176`, `TrainingGroupController:129`/`:241` and
+      `FreeGroupController` pass `List<EntityModel<X>>` into those generated record constructors.
+      Expected bundle diff: additive `_templates` on the 7 nested item schemas (Decision 7 has no
+      exception — see design.md), and `x-hal-entity-items` absent from the bundle (the deriver strips
+      it after acting).
 - [ ] 7.4 Update `KlabisSpringCodegenFromPropertyTest`, `KlabisSpringCodegenGetContentTest` and
       `KlabisSpringCodegenHandleMethodResponseTest` — remove envelope-detection cases, keep and adapt
       the assertions covering the marker-driven path.
