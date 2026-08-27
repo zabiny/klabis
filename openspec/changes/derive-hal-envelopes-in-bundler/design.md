@@ -212,10 +212,33 @@ an intended additive diff, so those steps are verified as "only the expected `_t
 rather than by an unchanged hash. This does not affect the generated Java (the backend never sees
 envelope types) nor `halTypes.ts` (built from `x-hal-templates`).
 
-**One exception: the nested `EntityModel`s produced by `x-hal-entity-items` (Decision 3) carry
-`_links` but no `_templates`.** Affordances attach to the response, not to an embedded row, and all 7
-nested EntityModels in today's bundle omit `_templates` — emitting it would break byte-identity when
-`groups` is migrated.
+**No exceptions — nested `EntityModel`s produced by `x-hal-entity-items` (Decision 3) get
+`_templates` too.**
+
+An earlier revision carved out the nested case on the grounds that "affordances attach to the
+response, not to an embedded row". **That was false**, and the `groups` migration disproved it:
+`FreeGroupController.buildOwnerModel` builds a `GroupResponse.owners` row — an `x-hal-entity-items`
+item — and attaches a `removeGroupOwner` affordance to it; `InvitationModelBuilder.build` does the
+same with `cancelInvitation` on `GroupResponse.pendingInvitations`, as do the family- and
+training-group controllers. Affordances render as `_templates` in HAL-FORMS, so those rows do carry
+`_templates` at runtime. The distinction the comment in `PendingInvitationsController` draws is a
+narrower one, and it runs the opposite way to the discarded rationale: rows in the *nested*
+`GroupResponse.pendingInvitations` carry the owner-only `cancelInvitation` self-affordance, while
+rows in the *response-level* `getPendingInvitations` collection do not. Both still carry
+`_templates` — that collection's rows attach affordances to their `accept` and `reject` links. So
+`_templates` presence never distinguished the two roles; only which affordances appear does, and
+that is runtime- and authorization-dependent, exactly as `HalFormsTemplates`' own description says.
+
+The exception's only genuine motivation was byte-identity of the `groups` bundle — a verification
+convenience, not a property of the API. Keeping it made the rule non-uniform in a way that broke
+outright: `PendingInvitationResponse` is both a response-level collection payload
+(`getPendingInvitations`) and a nested `x-hal-entity-items` row (`GroupResponse.pendingInvitations`),
+so the two branches derived the same schema name with contradictory shapes and hit `define()`'s
+collision guard. Dropping the exception resolves the collision structurally, keeps the derivation
+rule genuinely uniform, and needs no new spec syntax or schema renames.
+
+Consequence: `groups` migrates with an additive `_templates` diff on the 7 nested item schemas,
+verified the same way as sections 4 and 5 rather than by an unchanged hash.
 
 ## Risks / Trade-offs
 

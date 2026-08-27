@@ -1970,6 +1970,7 @@ export interface components {
                 familyGroupSummaryResponseList?: components["schemas"]["EntityModelFamilyGroupSummaryResponse"][];
             };
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         CollectionModelEntityModelFeeSelectionCampaignResponse: {
             _embedded?: {
@@ -1983,6 +1984,7 @@ export interface components {
                 groupSummaryResponseList?: components["schemas"]["EntityModelGroupSummaryResponse"][];
             };
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         CollectionModelEntityModelMembershipFeeGroupResponse: {
             _embedded?: {
@@ -2023,6 +2025,7 @@ export interface components {
                 trainingGroupSummaryResponseList?: components["schemas"]["EntityModelTrainingGroupSummaryResponse"][];
             };
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         /** @description Manual calendar item creation data */
         CreateCalendarItemRequest: {
@@ -2196,6 +2199,7 @@ export interface components {
         };
         EntityModelFamilyGroupSummaryResponse: components["schemas"]["FamilyGroupSummaryResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelFeeSelectionCampaignResponse: components["schemas"]["FeeSelectionCampaignResponse"] & {
             _links?: components["schemas"]["Links"];
@@ -2209,9 +2213,11 @@ export interface components {
         };
         EntityModelGroupResponse: components["schemas"]["GroupResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelGroupSummaryResponse: components["schemas"]["GroupSummaryResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelIcalTokenResponse: components["schemas"]["IcalTokenResponse"] & {
             _links?: components["schemas"]["Links"];
@@ -2300,6 +2306,7 @@ export interface components {
         };
         EntityModelTrainingGroupSummaryResponse: components["schemas"]["TrainingGroupSummaryResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelTransactionResource: components["schemas"]["TransactionResource"] & {
             _links?: components["schemas"]["Links"];
@@ -2412,7 +2419,6 @@ export interface components {
             memberCount?: number;
             name?: string;
         };
-        FamilyGroupSummaryResponseList: components["schemas"]["FamilyGroupSummaryResponse"][];
         FeeAssignmentResponse: {
             /** Format: uuid */
             groupId?: string;
@@ -2464,7 +2470,6 @@ export interface components {
             id?: string;
             name?: string;
         };
-        GroupSummaryResponseList: components["schemas"]["GroupSummaryResponse"][];
         /** @description Guardian information for minors */
         GuardianDTO: {
             /**
@@ -3039,7 +3044,6 @@ export interface components {
             minAge?: number;
             name?: string;
         };
-        TrainingGroupSummaryResponseList: components["schemas"]["TrainingGroupSummaryResponse"][];
         /** @description A single transaction on a member's finance account. */
         TransactionResource: {
             amount?: number;
@@ -4517,7 +4521,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FamilyGroupSummaryResponseList"];
+                    "application/json": components["schemas"]["FamilyGroupSummaryResponse"][];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelFamilyGroupSummaryResponse"];
                 };
             };
@@ -4948,7 +4952,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GroupSummaryResponseList"];
+                    "application/json": components["schemas"]["GroupSummaryResponse"][];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelGroupSummaryResponse"];
                 };
             };
@@ -6562,7 +6566,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TrainingGroupSummaryResponseList"];
+                    "application/json": components["schemas"]["TrainingGroupSummaryResponse"][];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelTrainingGroupSummaryResponse"];
                 };
             };
