@@ -226,11 +226,76 @@ describe('deriveHalEnvelopes', () => {
 
             deriveHalEnvelopes(document);
 
-            expect(document.components.schemas.TrainingGroupResponse.properties.trainers.items)
-                .toEqual(ref('EntityModelTrainerResponse'));
+            const trainers = document.components.schemas.TrainingGroupResponse.properties.trainers;
+            expect(trainers.items).toEqual(ref('EntityModelTrainerResponse'));
+            // The marker is consumed by derivation, not carried into the bundle — leaving it would
+            // contradict the items $ref it just rewrote. validate.mjs's already-enveloped check
+            // relies on this.
+            expect(trainers['x-hal-entity-items']).toBeUndefined();
+            // Decision 7: nested x-hal-entity-items rows carry _templates like every other envelope
+            // — they demonstrably attach affordances at runtime.
             expect(document.components.schemas.EntityModelTrainerResponse).toEqual({
-                allOf: [ref('TrainerResponse'), {type: 'object', properties: {_links: LINKS}}],
+                allOf: [
+                    ref('TrainerResponse'),
+                    {type: 'object', properties: {_links: LINKS, _templates: TEMPLATES}},
+                ],
             });
+        });
+
+        // The case that first broke the deriver: a payload used BOTH as a response-level collection
+        // item and as an x-hal-entity-items target. With the old {templates: false} nested exception
+        // the two branches derived EntityModel<PendingInvitationResponse> with contradictory shapes
+        // and hit define()'s collision guard. Uniform _templates makes them one schema.
+        it('derives one consistent schema for a payload used as both a response item and a nested row', () => {
+            const document = docWith(ref('GroupResponse'), {
+                GroupResponse: {
+                    type: 'object',
+                    properties: {
+                        pendingInvitations: {
+                            type: 'array',
+                            'x-hal-entity-items': true,
+                            items: ref('PendingInvitationResponse'),
+                        },
+                    },
+                },
+                PendingInvitationResponse: {type: 'object', properties: {id: {type: 'string'}}},
+            });
+            // A second operation returns an array of the same payload at the response level.
+            document.paths['/api/invitations'] = {
+                get: {
+                    responses: {
+                        '200': {
+                            description: 'ok',
+                            content: {
+                                'application/json': {
+                                    schema: {type: 'array', items: ref('PendingInvitationResponse')},
+                                },
+                            },
+                        },
+                    },
+                },
+            };
+
+            const {collisions} = deriveHalEnvelopes(document);
+
+            expect(collisions).toEqual([]);
+            const expected = {
+                allOf: [
+                    ref('PendingInvitationResponse'),
+                    {type: 'object', properties: {_links: LINKS, _templates: TEMPLATES}},
+                ],
+            };
+            expect(document.components.schemas.EntityModelPendingInvitationResponse).toEqual(expected);
+            expect(document.components.schemas.GroupResponse.properties.pendingInvitations.items)
+                .toEqual(ref('EntityModelPendingInvitationResponse'));
+            expect(document.paths['/api/invitations'].get.responses['200']
+                .content['application/prs.hal-forms+json'].schema)
+                .toEqual(ref('CollectionModelEntityModelPendingInvitationResponse'));
+            // The wire-visible half of the collapse: task 7.3a replaces the hand-written
+            // *ForInvitationsList pair with this derived one, and the _embedded key must survive it.
+            expect(Object.keys(document.components.schemas
+                .CollectionModelEntityModelPendingInvitationResponse.properties._embedded.properties))
+                .toEqual(['pendingInvitationResponseList']);
         });
 
         it('leaves an unmarked array property alone', () => {

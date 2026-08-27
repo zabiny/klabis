@@ -69,11 +69,19 @@ export function embeddedKey(payloadName, payloadSchema) {
     return `${uncapitalize(payloadName)}List`;
 }
 
-/** `templates` is false only for a nested `x-hal-entity-items` row — see Decision 7's exception. */
-function entityModel(payloadName, {templates}) {
-    const wrapper = {type: 'object', properties: {_links: {$ref: LINKS_REF}}};
-    if (templates) wrapper.properties._templates = {$ref: TEMPLATES_REF};
-    return {allOf: [schemaRef(payloadName), wrapper]};
+/**
+ * `EntityModel<Payload>` — `allOf: [payload, {_links, _templates}]`. Every envelope the deriver
+ * emits carries `_templates`, response-level and nested `x-hal-entity-items` rows alike: it only
+ * declares "a template map may appear here", which is true of every HAL-FORMS resource, and the
+ * `x-hal-entity-items` rows demonstrably carry affordances at runtime (see design.md Decision 7).
+ */
+function entityModel(payloadName) {
+    return {
+        allOf: [
+            schemaRef(payloadName),
+            {type: 'object', properties: {_links: {$ref: LINKS_REF}, _templates: {$ref: TEMPLATES_REF}}},
+        ],
+    };
 }
 
 function collectionModel(itemSchemaName, embedded, {paged}) {
@@ -128,7 +136,7 @@ function deriveResponseEnvelope(jsonSchema, schemas, {paged}, collisions) {
         if (isEnvelopeShaped(payload)) return undefined;
 
         const item = define(schemas, `EntityModel${itemName}`,
-            entityModel(itemName, {templates: true}), collisions);
+            entityModel(itemName), collisions);
         const prefix = paged ? 'PagedModel' : 'CollectionModel';
         return define(schemas, `${prefix}${item}`,
             collectionModel(item, embeddedKey(itemName, payload), {paged}), collisions);
@@ -139,7 +147,7 @@ function deriveResponseEnvelope(jsonSchema, schemas, {paged}, collisions) {
     if (isEnvelopeShaped(schemas[payloadName])) return undefined;
 
     return define(schemas, `EntityModel${payloadName}`,
-        entityModel(payloadName, {templates: true}), collisions);
+        entityModel(payloadName), collisions);
 }
 
 /**
@@ -157,13 +165,24 @@ function deriveEntityItems(node, schemas, collisions) {
     if (node['x-hal-entity-items'] === true && node.type === 'array') {
         const itemName = schemaName(node.items);
         if (itemName !== undefined && !isEnvelopeShaped(schemas[itemName])) {
-            // The one exception to Decision 7: nested collection items carry links but no
-            // `_templates` — affordances attach to the response, not to an embedded row. This is
-            // what keeps the `groups` migration byte-identical.
+            // Same `EntityModel<Item>` shape as a response-level collection item, `_templates`
+            // included (design.md Decision 7): these rows carry affordances at runtime —
+            // `FreeGroupController.buildOwnerModel` adds `removeGroupOwner` to a `GroupResponse.owners`
+            // row, `InvitationModelBuilder.build` adds `cancelInvitation` to a pendingInvitations
+            // row. A payload used both here and as a response-level item derives one schema, not two.
             const wrapped = define(schemas, `EntityModel${itemName}`,
-                entityModel(itemName, {templates: false}), collisions);
+                entityModel(itemName), collisions);
             node.items = schemaRef(wrapped);
         }
+        // Drop the marker once it has been acted on. Unlike descriptive extensions
+        // (`x-klabis-authority` etc.) that survive into the bundle for a downstream consumer,
+        // `x-hal-entity-items` is a directive the deriver *consumes* — like the hal-forms content
+        // entry the deriver *adds* — and has no bundle consumer: `haltypes.mjs` never reads it, and
+        // the backend codegen reads `docs/openapi/spec/<module>.yaml` directly, not the bundle.
+        // Leaving it would contradict the `items.$ref` it just rewrote (marker says "wrap these",
+        // ref already names the wrapper) — the self-contradiction `validate.mjs`'s already-enveloped
+        // check would then flag. It appears zero times in today's committed bundle.
+        delete node['x-hal-entity-items'];
     }
 
     for (const value of Object.values(node)) deriveEntityItems(value, schemas, collisions);
