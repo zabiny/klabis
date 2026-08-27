@@ -4,7 +4,6 @@ import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
-import com.klabis.events.domain.EventStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

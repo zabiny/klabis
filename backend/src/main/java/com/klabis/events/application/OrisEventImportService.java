@@ -1,107 +1,84 @@
 package com.klabis.events.application;
 
-import com.dpolach.api.orisclient.OrisApiClient;
-import com.dpolach.api.orisclient.OrisWebUrls;
-import com.dpolach.api.orisclient.dto.EventDetails;
-import com.klabis.events.EventCategory;
+import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.sync.DataSync;
+import com.klabis.common.sync.SyncId;
+import com.klabis.common.sync.SyncRecord;
+import com.klabis.common.sync.SyncType;
 import com.klabis.events.EventId;
-import com.klabis.events.WebsiteUrl;
-import com.klabis.events.domain.*;
-import com.klabis.events.infrastructure.sync.OrisEventMappingSupport;
+import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRepository;
 import com.klabis.oris.OrisIntegrationComponent;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 
 @Service
 @OrisIntegrationComponent
 class OrisEventImportService implements OrisEventImportPort {
 
+    private final DataSync dataSync;
     private final EventRepository eventRepository;
-    private final OrisApiClient orisApiClient;
-    private final OrisWebUrls orisWebUrls;
-    private final OrisEventMappingSupport mappingSupport;
 
-    OrisEventImportService(EventRepository eventRepository,
-                           OrisApiClient orisApiClient,
-                           OrisWebUrls orisWebUrls,
-                           OrisEventMappingSupport mappingSupport) {
+    OrisEventImportService(DataSync dataSync, EventRepository eventRepository) {
+        this.dataSync = dataSync;
         this.eventRepository = eventRepository;
-        this.orisApiClient = orisApiClient;
-        this.orisWebUrls = orisWebUrls;
-        this.mappingSupport = mappingSupport;
     }
 
-    @Transactional
     @Override
     public Event importEventFromOris(int orisId) {
-        EventDetails details = orisApiClient.getEventDetails(orisId).payload()
-                .orElseThrow(() -> new EventNotFoundException(orisId));
-
-        String organizer = mappingSupport.resolveOrganizer(details);
-        WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.eventUrl(orisId));
-        RegistrationDeadlines registrationDeadlines = mappingSupport.buildRegistrationDeadlines(details, orisId);
-        List<EventCategory> categories = mappingSupport.extractCategories(details);
-        EventRanking ranking = mappingSupport.resolveRanking(details.level());
-        Money baseEntryFee = mappingSupport.deriveBaseEntryFee(details);
-
-        Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                .orisId(orisId)
-                .name(details.name())
-                .eventDate(details.date())
-                .location(details.place())
-                .organizer(organizer)
-                .websiteUrl(websiteUrl)
-                .registrationDeadlines(registrationDeadlines)
-                .categories(categories)
-                .ranking(ranking)
-                .baseEntryFee(baseEntryFee)
-                .build());
-
-        event.applyAutoMappedEventType(mappingSupport.resolveEventType(details.discipline()));
-
-        try {
-            return eventRepository.save(event);
-        } catch (DataIntegrityViolationException e) {
-            throw new DuplicateOrisImportException(orisId);
+        SyncRecord record = dataSync.sync(
+                SyncId.externalId(SyncType.EVENT, Integer.toString(orisId)), DataSync.Direction.PULL);
+        if (record.result() == DataSync.SyncResult.ERROR) {
+            throw translate(orisId, record.failureCause());
         }
+        EventId eventId = eventIdOf(record.localId());
+        return eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException(orisId));
     }
 
-    @Transactional
     @Override
     public void syncEventFromOris(EventId eventId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
+        if (event.getOrisId() == null) {
+            throw new BusinessRuleViolationException(
+                    "Event %s has no orisId, cannot sync from ORIS".formatted(eventId)) {
+            };
+        }
+        SyncRecord record = dataSync.sync(
+                SyncId.localId(SyncType.EVENT, eventId.value().toString()), DataSync.Direction.PULL);
+        if (record.result() == DataSync.SyncResult.ERROR) {
+            throw translate(event.getOrisId(), record.failureCause());
+        }
+    }
 
-        int orisId = event.getOrisId();
-        EventDetails details = orisApiClient.getEventDetails(orisId).payload()
-                .orElseThrow(() -> new EventNotFoundException(orisId));
+    private static EventId eventIdOf(SyncId localId) {
+        return new EventId(UUID.fromString(localId.idValue()));
+    }
 
-        String organizer = mappingSupport.resolveOrganizer(details);
-        WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.eventUrl(orisId));
-        RegistrationDeadlines registrationDeadlines = mappingSupport.buildRegistrationDeadlines(details, orisId);
-        List<EventCategory> categories = mappingSupport.extractCategories(details);
-        EventRanking ranking = mappingSupport.resolveRanking(details.level());
-        Money baseEntryFee = mappingSupport.deriveBaseEntryFee(details);
-
-        mappingSupport.warnIfSyncRemovesCategoriesWithRegistrations(event, categories);
-
-        event.syncFromOris(EventSyncFromOrisBuilder.builder()
-                .name(details.name())
-                .eventDate(details.date())
-                .location(details.place())
-                .organizer(organizer)
-                .websiteUrl(websiteUrl)
-                .registrationDeadlines(registrationDeadlines)
-                .categories(categories)
-                .ranking(ranking)
-                .baseEntryFee(baseEntryFee)
-                .build());
-
-        event.applyAutoMappedEventType(mappingSupport.resolveEventType(details.discipline()));
-
-        eventRepository.save(event);
+    /**
+     * Fragile shim: maps substrings of {@link SyncRecord#failureCause()} back onto the typed
+     * exceptions the REST layer's exception handlers expect, so the HTTP status codes of the
+     * single-event ORIS endpoints stay unchanged after the switch to {@link DataSync}. The
+     * substrings are the exception messages produced by {@code DataSyncImpl}, {@code SyncLine},
+     * {@code OrisEventMappingSupport.buildRegistrationDeadlines} and the JDBC layer. A cleaner
+     * follow-up (result body with status, like the bulk endpoints) is tracked in the plan.
+     */
+    private static RuntimeException translate(int orisId, String failureCause) {
+        String cause = failureCause == null ? "" : failureCause.toLowerCase(Locale.ROOT);
+        if (cause.contains("constraint") || cause.contains("duplicate") || cause.contains("unique")) {
+            return new DuplicateOrisImportException(orisId);
+        }
+        if (cause.contains("not found") || cause.contains("no sync record") || cause.contains("no sync line")) {
+            return new EventNotFoundException(orisId);
+        }
+        if (cause.contains("registration deadline") || cause.contains("invalid")) {
+            return new BusinessRuleViolationException(failureCause) {
+            };
+        }
+        return new BusinessRuleViolationException("ORIS sync failed: " + failureCause) {
+        };
     }
 }

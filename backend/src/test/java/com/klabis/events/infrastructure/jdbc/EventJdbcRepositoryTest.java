@@ -1428,13 +1428,15 @@ class EventJdbcRepositoryTest {
         @Test
         @DisplayName("should return DRAFT and ACTIVE events with orisId and date >= today")
         void shouldReturnEligibleDraftAndActiveEvents() {
-            Event draftOris = saveOrisEvent("Future DRAFT", EventStatus.DRAFT, TODAY, 101);
-            Event activeOris = saveOrisEvent("Future ACTIVE", EventStatus.ACTIVE, TODAY.plusDays(5), 102);
+            saveOrisEvent("Future DRAFT", EventStatus.DRAFT, TODAY, 101);
+            saveOrisEvent("Future ACTIVE", EventStatus.ACTIVE, TODAY.plusDays(5), 102);
 
             java.util.List<Event> result = eventRepository.findAllUpcomingOrisEvents(TODAY);
 
             assertThat(result).extracting(Event::getName)
                     .containsExactlyInAnyOrder("Future DRAFT", "Future ACTIVE");
+            assertThat(result).extracting(Event::getOrisId)
+                    .containsExactlyInAnyOrder(101, 102);
         }
 
         @Test

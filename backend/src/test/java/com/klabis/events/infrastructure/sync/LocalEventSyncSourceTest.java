@@ -154,6 +154,33 @@ class LocalEventSyncSourceTest {
     }
 
     @Test
+    @DisplayName("save() does not overwrite an existing event type on the update branch")
+    void save_doesNotOverwriteExistingEventTypeOnUpdate() {
+        int orisId = 777;
+        EventTypeId existingTypeId = EventTypeId.of(UUID.randomUUID());
+        EventTypeId disciplineMatchTypeId = EventTypeId.of(UUID.randomUUID());
+        EventType disciplineMatch = Mockito.mock(EventType.class);
+        Mockito.lenient().when(disciplineMatch.getId()).thenReturn(disciplineMatchTypeId);
+        Mockito.lenient().when(eventTypeRepository.findByOrisDisciplineId(5))
+                .thenReturn(Optional.of(disciplineMatch));
+
+        Event existing = com.klabis.events.EventTestDataBuilder.anEvent()
+                .withOrisId(orisId)
+                .withName("Old")
+                .withEventTypeId(existingTypeId)
+                .build();
+        when(eventRepository.findByOrisId(orisId)).thenReturn(Optional.of(existing));
+        when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        EventDetails details = details(orisId, "Updated");
+        when(details.discipline()).thenReturn(new Discipline(5, "OB", "OB", "OB"));
+
+        testedInstance.save(new EventSyncData(null, orisId, details, "https://oris.ceskyorientak.cz/Zavod?id=" + orisId));
+
+        assertThat(existing.getEventTypeId()).contains(existingTypeId);
+    }
+
+    @Test
     @DisplayName("fetch() wraps a found event into EventSyncData carrying its local id and orisId")
     void fetch_wrapsEvent() {
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
