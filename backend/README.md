@@ -102,17 +102,29 @@ KLABIS_EMAIL_FROM=noreply@klabis.cz
 
 ### Running the Application
 
-**Development Mode (H2 in-memory database):**
+**Development Mode (H2 in-memory database with demo data — default):**
 
 ```bash
 ./gradlew bootRun
 ```
 
+Boots with demo data (members, events, training groups, fee tiers) via the `example-data` profile. Admin user, OAuth2 clients, and event types are always bootstrapped.
+
+**Clean database (e.g. ORIS sync scenario):**
+
+```bash
+SPRING_PROFILES_ACTIVE=h2,ssl,debug,metrics,oris ./gradlew bootRun
+```
+
+Starts with an empty database apart from admin user, OAuth2 clients, and event types — no demo members/events/groups.
+
 **Production Mode (PostgreSQL):**
 
 ```bash
-./gradlew bootRun --args='--spring.profiles.active=prod'
+SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics,pwa ./gradlew bootRun
 ```
+
+Do NOT include the `example-data` profile in deployed environments — production should contain only real data.
 
 **Verify startup:**
 

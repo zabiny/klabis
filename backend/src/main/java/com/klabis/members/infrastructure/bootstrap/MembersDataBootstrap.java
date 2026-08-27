@@ -8,6 +8,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.time.LocalDate;
 import java.util.Set;
 
 @Component
+@Profile("example-data")
 @Order(1)
 class MembersDataBootstrap implements BootstrapDataInitializer {
 

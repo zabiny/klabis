@@ -9,10 +9,12 @@ import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@Profile("example-data")
 @Order(3)
 class TrainingGroupDataBootstrap implements BootstrapDataInitializer {
 
