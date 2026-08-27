@@ -56,10 +56,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MembershipFeeTierSummaryResponseList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/CollectionModelEntityModelMembershipFeeTierSummaryResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/MembershipFeeTierSummaryResponse'
           x-hal-links:
             self:
               description: This collection
@@ -147,9 +146,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MembershipFeeTierResponse'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelMembershipFeeTierResponse'
           x-hal-links:
             self:
               description: This tier
@@ -262,10 +258,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaymentRuleResponseList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/CollectionModelEntityModelPaymentRuleResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentRuleResponse'
           x-hal-links:
             self:
               description: This collection
@@ -350,9 +345,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaymentRuleResponse'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelPaymentRuleResponse'
           x-hal-links:
             self:
               description: This payment rule
@@ -478,10 +470,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FeeSelectionCampaignResponseList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/CollectionModelEntityModelFeeSelectionCampaignResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/FeeSelectionCampaignResponse'
           x-hal-links:
             self:
               description: This collection, with the current status filter
@@ -563,9 +554,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FeeSelectionCampaignResponse'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelFeeSelectionCampaignResponse'
           x-hal-links:
             self:
               description: This publication
@@ -622,9 +610,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FeeSelectionCampaignResponse'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelFeeSelectionCampaignResponse'
           x-hal-links:
             self:
               description: This publication
@@ -689,10 +674,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MembershipFeeGroupResponseList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/CollectionModelEntityModelMembershipFeeGroupResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/MembershipFeeGroupResponse'
           x-hal-links:
             self:
               description: This collection, for the given year
@@ -819,10 +803,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaymentRuleResponseList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/CollectionModelEntityModelPaymentRuleResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentRuleResponse'
           x-hal-links:
             self:
               description: This collection
@@ -904,9 +887,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MemberFeeChoiceResponse'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelMemberFeeChoiceResponse'
           x-hal-links:
             self:
               description: This fee choice
@@ -1043,9 +1023,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MemberFeeSummaryResponse'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelMemberFeeSummaryResponse'
           x-hal-links:
             self:
               description: This fee summary
@@ -1094,9 +1071,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MemberFeeHistoryResponse'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelMemberFeeHistoryResponse'
           x-hal-links:
             self:
               description: This fee history
@@ -1243,36 +1217,6 @@ components:
 
   schemas:
 
-    MembershipFeeTierSummaryResponseList:
-      type: array
-      items:
-        $ref: '#/components/schemas/MembershipFeeTierSummaryResponse'
-
-    # Envelope schemas — never generated into Java; see klabis-api-spec skill:
-    # "Payload and envelope are separate schemas".
-    CollectionModelEntityModelMembershipFeeTierSummaryResponse:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            membershipFeeTierSummaryResponseList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelMembershipFeeTierSummaryResponse'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-        _templates:
-          $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
-    EntityModelMembershipFeeTierSummaryResponse:
-      allOf:
-        - $ref: '#/components/schemas/MembershipFeeTierSummaryResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-
     MembershipFeeTierSummaryResponse:
       type: object
       description: Membership fee tier summary for list views.
@@ -1289,16 +1233,6 @@ components:
         ruleCount:
           type: integer
           format: int32
-
-    EntityModelMembershipFeeTierResponse:
-      allOf:
-        - $ref: '#/components/schemas/MembershipFeeTierResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
 
     MembershipFeeTierResponse:
       type: object
@@ -1373,36 +1307,6 @@ components:
           type: string
           description: Defaults to CZK when omitted.
 
-    PaymentRuleResponseList:
-      type: array
-      items:
-        $ref: '#/components/schemas/PaymentRuleResponse'
-
-    CollectionModelEntityModelPaymentRuleResponse:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            paymentRuleResponseList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelPaymentRuleResponse'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-        _templates:
-          $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
-    EntityModelPaymentRuleResponse:
-      allOf:
-        - $ref: '#/components/schemas/PaymentRuleResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
     PaymentRuleResponse:
       type: object
       description: |
@@ -1467,36 +1371,6 @@ components:
           type: string
           description: Defaults to CZK when omitted.
 
-    FeeSelectionCampaignResponseList:
-      type: array
-      items:
-        $ref: '#/components/schemas/FeeSelectionCampaignResponse'
-
-    CollectionModelEntityModelFeeSelectionCampaignResponse:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            feeSelectionCampaignResponseList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelFeeSelectionCampaignResponse'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-        _templates:
-          $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
-    EntityModelFeeSelectionCampaignResponse:
-      allOf:
-        - $ref: '#/components/schemas/FeeSelectionCampaignResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
     FeeSelectionCampaignResponse:
       type: object
       description: A fee selection campaign for one calendar year.
@@ -1540,37 +1414,15 @@ components:
           type: string
           format: date
 
-    MembershipFeeGroupResponseList:
-      type: array
-      items:
-        $ref: '#/components/schemas/MembershipFeeGroupResponse'
-
-    CollectionModelEntityModelMembershipFeeGroupResponse:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            membershipFeeGroupResponseList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelMembershipFeeGroupResponse'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-
-    EntityModelMembershipFeeGroupResponse:
-      allOf:
-        - $ref: '#/components/schemas/MembershipFeeGroupResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-
     # The full wire shape of getFeeGroup: MembershipFeeGroupResponse's properties plus an
     # _embedded.members (per @Relation(collectionRelation = "members") on MemberInGroupResponse).
-    # schemaMappings points at MembershipFeeGroupResponse, so the generated method returns the
-    # payload alone — the _embedded block is declared by the controller
-    # (HalResponseContext.embed) and assembled by HalResponseBodyAdvice, like _links and _templates.
+    # HalEnvelopeDetector unwraps the allOf, so the generated method returns the payload alone —
+    # the _embedded block is declared by the controller (HalResponseContext.embed) and assembled by
+    # HalResponseBodyAdvice, like _links and _templates.
+    #
+    # Stays hand-written where the module's other envelopes are now derived: the deriver builds an
+    # envelope from the application/json payload alone and would emit no _embedded block. The
+    # response deliberately has no application/json sibling, so the deriver skips it entirely.
     EntityModelMembershipFeeGroupResponseWithMembers:
       allOf:
         - $ref: '#/components/schemas/MembershipFeeGroupResponse'
@@ -1666,16 +1518,6 @@ components:
           type: integer
           format: int32
 
-    EntityModelMemberFeeChoiceResponse:
-      allOf:
-        - $ref: '#/components/schemas/MemberFeeChoiceResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
     MemberFeeChoiceResponse:
       type: object
       description: A member's fee level choice for a given year.
@@ -1701,16 +1543,6 @@ components:
           type: string
           format: uuid
 
-    EntityModelMemberFeeSummaryResponse:
-      allOf:
-        - $ref: '#/components/schemas/MemberFeeSummaryResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
     MemberFeeSummaryResponse:
       type: object
       description: A member's current fee level summary for a year.
@@ -1733,14 +1565,6 @@ components:
           type: string
         yearlyFee:
           type: number
-
-    EntityModelMemberFeeHistoryResponse:
-      allOf:
-        - $ref: '#/components/schemas/MemberFeeHistoryResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
 
     MemberFeeHistoryResponse:
       type: object
