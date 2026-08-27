@@ -469,3 +469,168 @@ describe('moduleFileNames', () => {
         expect(moduleFileNames({})).toEqual([]);
     });
 });
+
+describe('validateSpec — x-klabis-hal', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const validate = (doc) => validateSpec(doc, {authorities});
+
+    const docWithOperation = (operationExtra) => ({
+        paths: {
+            '/api/oris/events': {
+                get: {operationId: 'listOrisEvents', responses: {}, ...operationExtra},
+            },
+        },
+    });
+
+    it('accepts x-klabis-hal: false on an operation', () => {
+        expect(validate(docWithOperation({'x-klabis-hal': false}))).toEqual([]);
+    });
+
+    it('rejects x-klabis-hal: true — it is an opt-out, not an opt-in', () => {
+        const errors = validate(docWithOperation({'x-klabis-hal': true}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('must be false when present');
+    });
+
+    it('rejects x-klabis-hal on a schema property, where the deriver never reads it', () => {
+        const errors = validate({
+            paths: {},
+            components: {schemas: {Thing: {type: 'object', 'x-klabis-hal': false}}},
+        });
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('only valid on an operation');
+    });
+});
+
+describe('validateSpec — x-hal-entity-items', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const docWithProperty = (property, extraSchemas = {}) => ({
+        paths: {},
+        components: {
+            schemas: {
+                TrainingGroupResponse: {type: 'object', properties: {trainers: property}},
+                TrainerResponse: {type: 'object', properties: {}},
+                ...extraSchemas,
+            },
+        },
+    });
+    const validate = (doc) => validateSpec(doc, {authorities});
+
+    it('accepts the marker on an array whose items are a $ref', () => {
+        expect(validate(docWithProperty({
+            type: 'array',
+            'x-hal-entity-items': true,
+            items: {$ref: '#/components/schemas/TrainerResponse'},
+        }))).toEqual([]);
+    });
+
+    it('rejects a value other than true', () => {
+        const errors = validate(docWithProperty({
+            type: 'array',
+            'x-hal-entity-items': false,
+            items: {$ref: '#/components/schemas/TrainerResponse'},
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('must be true when present');
+    });
+
+    it('rejects the marker on a non-array schema', () => {
+        const errors = validate(docWithProperty({
+            type: 'object',
+            'x-hal-entity-items': true,
+            properties: {id: {type: 'string'}},
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('type: array');
+    });
+
+    it('rejects an array whose items are inline rather than a $ref', () => {
+        const errors = validate(docWithProperty({
+            type: 'array',
+            'x-hal-entity-items': true,
+            items: {type: 'string'},
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('$ref to a payload schema');
+    });
+
+    it('rejects items already shaped as a HAL envelope', () => {
+        const errors = validate(docWithProperty({
+            type: 'array',
+            'x-hal-entity-items': true,
+            items: {$ref: '#/components/schemas/EntityModelTrainerResponse'},
+        }, {
+            EntityModelTrainerResponse: {
+                allOf: [
+                    {$ref: '#/components/schemas/TrainerResponse'},
+                    {type: 'object', properties: {_links: {$ref: '#/components/schemas/Links'}}},
+                ],
+            },
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('already shaped as a HAL envelope');
+    });
+});
+
+describe('validateSpec — payload schema mistaken for an envelope', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const LINKS = {$ref: '#/components/schemas/Links'};
+    const validate = (doc) => validateSpec(doc, {authorities});
+
+    const docWith = (responseContent, schemas, operation = {}) => ({
+        paths: {
+            '/api/things': {
+                get: {
+                    operationId: 'listThings',
+                    ...operation,
+                    responses: {'200': {content: responseContent}},
+                },
+            },
+        },
+        components: {schemas},
+    });
+
+    const jsonOnly = (name) => ({'application/json': {schema: {$ref: `#/components/schemas/${name}`}}});
+
+    it('flags a payload declaring _links, which the deriver silently skips', () => {
+        const errors = validate(docWith(jsonOnly('ThingResponse'), {
+            ThingResponse: {type: 'object', properties: {_links: LINKS, id: {type: 'string'}}},
+        }));
+
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('no hal-forms media type');
+        expect(errors[0].path).toBe('/components/schemas/ThingResponse');
+    });
+
+    it('flags an array item payload declaring _embedded', () => {
+        const errors = validate(docWith(
+            {'application/json': {schema: {type: 'array', items: {$ref: '#/components/schemas/ThingItem'}}}},
+            {ThingItem: {type: 'object', properties: {_embedded: {type: 'object'}}}},
+        ));
+
+        expect(errors).toHaveLength(1);
+        expect(errors[0].path).toBe('/components/schemas/ThingItem');
+    });
+
+    it('accepts a plain payload', () => {
+        expect(validate(docWith(jsonOnly('ThingResponse'), {
+            ThingResponse: {type: 'object', properties: {id: {type: 'string'}}},
+        }))).toEqual([]);
+    });
+
+    it('accepts a hand-written envelope served through its own hal-forms entry', () => {
+        expect(validate(docWith({
+            'application/json': {schema: {$ref: '#/components/schemas/RootModel'}},
+            'application/prs.hal-forms+json': {schema: {$ref: '#/components/schemas/EntityModelRootModel'}},
+        }, {
+            RootModel: {type: 'object', properties: {_links: LINKS}},
+            EntityModelRootModel: {type: 'object', properties: {_links: LINKS}},
+        }))).toEqual([]);
+    });
+
+    it('accepts an envelope-shaped payload on an operation opted out of HAL', () => {
+        expect(validate(docWith(jsonOnly('ThingResponse'), {
+            ThingResponse: {type: 'object', properties: {_links: LINKS}},
+        }, {'x-klabis-hal': false}))).toEqual([]);
+    });
+});

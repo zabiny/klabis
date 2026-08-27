@@ -143,6 +143,7 @@ paths:
   /api/me/password-change:
     post:
       operationId: changePassword
+      x-klabis-hal: false
       tags: [MyProfile]
       summary: Change password
       description: |
@@ -182,6 +183,8 @@ paths:
   /api/auth/password-setup/validate:
     get:
       operationId: validatePasswordSetupToken
+      # Pre-authentication: called without a token, outside hypermedia navigation.
+      x-klabis-hal: false
       tags: [PasswordSetup]
       summary: Validate password setup token
       description: |
@@ -223,6 +226,7 @@ paths:
   /api/auth/password-setup/complete:
     post:
       operationId: completePasswordSetup
+      x-klabis-hal: false
       tags: [PasswordSetup]
       summary: Complete password setup
       description: |
@@ -259,6 +263,7 @@ paths:
   /api/auth/password-setup/request:
     post:
       operationId: requestNewPasswordSetupToken
+      x-klabis-hal: false
       tags: [PasswordSetup]
       summary: Request new password setup token
       description: |

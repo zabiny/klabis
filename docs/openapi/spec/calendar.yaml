@@ -381,6 +381,8 @@ paths:
   /ical/my-schedule.ics:
     get:
       operationId: getMySchedule
+      # Serves text/calendar to calendar clients, not hypermedia.
+      x-klabis-hal: false
       tags: [IcalFeed]
       summary: Personal schedule iCalendar feed
       description: |

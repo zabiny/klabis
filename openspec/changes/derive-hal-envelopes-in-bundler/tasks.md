@@ -80,34 +80,77 @@
 
 ## 2. Deriver and validation (no spec changes yet)
 
-- [ ] 2.1 Add `tools/openapi-bundle/lib/derive.mjs` implementing the Decision 2 rule: item →
+- [x] 2.1 Add `tools/openapi-bundle/lib/derive.mjs` implementing the Decision 2 rule: item →
       `EntityModel<Payload>`; array → `CollectionModel<EntityModel<Item>>`, or
       `PagedModel<EntityModel<Item>>` + `page` when the operation carries `x-spring-paginated`.
-- [ ] 2.2 Implement `_embedded` key resolution per Decision 5: `x-klabis-relation.collectionRelation`
+
+      Runs inside `bundleSpec`, after `inlineRefs` (it needs cross-file refs collapsed to local ones
+      to look a payload up) and before `sortKeysDeep` (so insertion order cannot affect byte-identity).
+      Restricted to `2xx` responses — see 2.5.
+- [x] 2.2 Implement `_embedded` key resolution per Decision 5: `x-klabis-relation.collectionRelation`
       when present, else `uncapitalize(schemaName) + "List"`.
-- [ ] 2.3 Implement the `application/prs.hal-forms+json` content-entry insertion, skipped when the
+- [x] 2.3 Implement the `application/prs.hal-forms+json` content-entry insertion, skipped when the
       operation carries `x-klabis-hal: false`.
-- [ ] 2.4 Implement `x-hal-entity-items` handling: emit `EntityModel<Payload>` for the array's items
+- [x] 2.4 Implement `x-hal-entity-items` handling: emit `EntityModel<Payload>` for the array's items
       and rewrite the items `$ref` to it.
-- [ ] 2.5 Make the deriver a **no-op on already-enveloped input** — a schema already shaped as an
+- [x] 2.5 Make the deriver a **no-op on already-enveloped input** — a schema already shaped as an
       envelope, or an operation already carrying a hal-forms content entry, is left untouched. This
       is what lets migrated and unmigrated modules coexist.
-- [ ] 2.6 Add `validate.mjs` rules: `x-hal-entity-items` must be `true`, only on `type: array` whose
+
+      Verified empirically, not just by unit test: with the deriver wired in, the bundle differs from
+      the pre-deriver baseline by exactly the 6 `x-klabis-hal: false` markers added in 2.8 and
+      nothing else — zero derived schemas or content entries across all 105 HAL operations.
+
+      This check caught a real bug: the first version also enveloped `suspendMember`'s **409**, which
+      carries a plain `application/json` `SuspensionBlockedWarning` (every other error body is
+      `problem+json`). Derivation is now restricted to `2xx` — error payloads are not hypermedia
+      resources. Left unfixed, the migration would have invented an `EntityModelSuspensionBlockedWarning`
+      that nothing serves.
+- [x] 2.6 Add `validate.mjs` rules: `x-hal-entity-items` must be `true`, only on `type: array` whose
       `items` is a `$ref`, and must not point at a schema already shaped as an envelope;
       `x-klabis-hal` must be `false` when present and only on an operation.
-- [ ] 2.7 Unit-test the deriver in `tools/openapi-bundle/test/` — both shapes, paged vs unpaged,
+- [x] 2.7 Unit-test the deriver in `tools/openapi-bundle/test/` — both shapes, paged vs unpaged,
       declared vs derived `_embedded` key, `x-hal-entity-items`, opt-out, and the no-op property.
-- [ ] 2.8 Run `./gradlew openapiBundle` and confirm `klabis-full.json` still matches the 1.3
+
+      `tools/openapi-bundle/test/derive.test.mjs` plus additions to `validate.test.mjs`. Suite total
+      120, all passing; no existing test needed changing.
+
+      Code review added a guard for `isEnvelopeShaped`'s one silent failure mode: it classifies any
+      schema owning a `_links`/`_embedded` property as an already-written envelope, which is what
+      protects the hand-written `EntityModelRootModel`/`EntityModelDashboardModel` marker types — but
+      a genuine payload declaring its own `_links` would be skipped just as quietly. `validate.mjs`
+      now reports that case. The rule is exact rather than heuristic because validation runs *after*
+      derivation, so a HAL response still lacking a hal-forms entry is precisely one the deriver
+      walked over. That ordering is load-bearing and now says so in `bundle.mjs`.
+- [x] 2.8 Run `./gradlew openapiBundle` and confirm `klabis-full.json` still matches the 1.3
       checksum — the deriver is wired in but changes nothing yet.
+
+      **Required a spec edit after all.** HAL is the default (Decision 4), so the 6 non-HAL operations
+      get enveloped unless they say otherwise — and no `x-klabis-hal: false` marker existed anywhere
+      yet. Byte-identity at this step therefore needed information the specs did not carry. Added the
+      marker to `getMySchedule` (`calendar.yaml`), the four pre-auth password endpoints
+      (`common.yaml`) and `listOrisEvents` (`oris.yaml`). That is a declaration of an already-true
+      fact, not an envelope migration, so it belongs here rather than in sections 4.3/4.4.
+
+      New baseline: `308677b5d09a7509009153c97e1c17fa9c458f8b5b1cdf787729cbe99b09d0d6`. The diff
+      against the previous baseline is exactly the 6 marker lines — extensions are carried into the
+      bundle as a matter of course (`x-klabis-authority` appears 95 times), so this is expected.
+      Generated Java unchanged for all modules; `klabisApi.d.ts` and `halTypes.ts` unchanged.
 
 ## 3. Migrate `finance` (3 envelopes — proves the approach)
 
 - [ ] 3.1 Rewrite `docs/openapi/spec/finance.yaml`: delete the envelope schemas and bare-array `*List`
       siblings, drop the `application/prs.hal-forms+json` content entries, point the
       `application/json` responses at the payload schemas directly.
-- [ ] 3.2 Run `./gradlew openapiBundle`; confirm `sha256sum docs/openapi/klabis-full.json` still
-      matches the 1.3 baseline. (`git diff` cannot be used — the file is gitignored, see Decision 6.)
-      If the hash differs, fix the deriver — do not adjust the spec to match the deriver.
+- [ ] 3.2 Run `./gradlew openapiBundle` and diff the bundle against the current baseline
+      (`308677b5…`, see 2.8). (`git diff` cannot be used — the file is gitignored, see Decision 6.)
+
+      **Expect a non-empty but bounded diff, not an unchanged hash.** Per Decision 7 the deriver
+      emits `_templates` on every envelope, while the hand-written ones are inconsistent about it —
+      so migrating a module whose envelopes omit `_templates` legitimately adds them. The check is
+      that the diff contains *only* such `_templates` additions. Anything else — a changed
+      `_embedded` key, a renamed schema, a lost property — means the deriver is wrong; fix the
+      deriver, never the spec.
 - [ ] 3.3 Run `./gradlew openApiGenerateFinance`; confirm the generated Java under
       `build/generated/openapi/finance/` is unchanged against the 1.3 baseline, via
       `~/.cache/klabis-openapi-baseline/cmp-generated.sh finance` (a plain `diff -r` cannot be used —

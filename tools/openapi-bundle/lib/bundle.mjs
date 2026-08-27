@@ -2,6 +2,8 @@ import {readFileSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {parse} from 'yaml';
 
+import {deriveHalEnvelopes} from './derive.mjs';
+
 /**
  * Bundles a multi-file OpenAPI spec into a single document.
  *
@@ -126,7 +128,7 @@ export function sortKeysDeep(value) {
 /**
  * @param rootFile absolute path to spec/klabis.yaml
  * @param options.readYaml injectable reader, for tests
- * @returns {{document: object, conflicts: Array}}
+ * @returns {{document: object, conflicts: Array, collisions: Array}}
  */
 export function bundleSpec(rootFile, options = {}) {
     const read = options.readYaml ?? readYaml;
@@ -162,5 +164,9 @@ export function bundleSpec(rootFile, options = {}) {
         document.components = components;
     }
 
-    return {document: sortKeysDeep(document), conflicts};
+    // After ref inlining (the deriver needs every payload schema present and locally addressable)
+    // and before sortKeysDeep, so derived schemas are ordered like every other one.
+    const {collisions} = deriveHalEnvelopes(document);
+
+    return {document: sortKeysDeep(document), conflicts, collisions};
 }
