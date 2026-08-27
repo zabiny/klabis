@@ -59,12 +59,11 @@ paths:
         '200':
           description: Paginated list of members retrieved successfully
           content:
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/PagedModelEntityModelMemberSummaryResponse'
             application/json:
               schema:
-                $ref: '#/components/schemas/MemberSummaryResponseList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemberSummaryResponse'
           x-hal-links:
             self:
               description: This collection, with the current paging and filter parameters
@@ -206,9 +205,6 @@ paths:
         '200':
           description: Member found
           content:
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelMemberDetailsResponse'
             application/json:
               schema:
                 $ref: '#/components/schemas/MemberDetailsResponse'
@@ -424,20 +420,6 @@ components:
 
     # --- Responses ---------------------------------------------------------
 
-    # `_links` is NOT part of the payload record — Spring HATEOAS adds it when the controller wraps
-    # the DTO in an EntityModel. The payload schema is what gets generated into a Java record; the
-    # EntityModel* schema exists only so the response contract (and openapi-typescript) sees the
-    # envelope. Keep them split, or the generated record grows a bogus `links` component.
-
-    EntityModelMemberDetailsResponse:
-      description: MemberDetailsResponse as served, wrapped in a HAL EntityModel.
-      allOf:
-        - $ref: '#/components/schemas/MemberDetailsResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-
     MemberDetailsResponse:
       type: object
       description: |
@@ -530,15 +512,6 @@ components:
           type: string
           x-klabis-authority: MEMBERS_MANAGE
 
-    EntityModelMemberSummaryResponse:
-      description: MemberSummaryResponse as served, wrapped in a HAL EntityModel.
-      allOf:
-        - $ref: '#/components/schemas/MemberSummaryResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-
     MemberSummaryResponse:
       type: object
       properties:
@@ -567,29 +540,6 @@ components:
           type: boolean
           x-klabis-authority: MEMBERS_MANAGE
           description: Whether the member is active (visible to admins only)
-
-    PagedModelEntityModelMemberSummaryResponse:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            memberSummaryResponseList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelMemberSummaryResponse'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-        page:
-          $ref: './_shared/hal.yaml#/components/schemas/PageMetadata'
-
-    # application/json counterpart of PagedModelEntityModelMemberSummaryResponse, for backend codegen
-    # (see stripHal.mjs): a plain array of the payload, mapped in build.gradle.kts onto Page<...>
-    # since pagination metadata has no bare-array equivalent.
-    MemberSummaryResponseList:
-      type: array
-      items:
-        $ref: '#/components/schemas/MemberSummaryResponse'
 
     MemberOptionResponse:
       type: object
