@@ -3,18 +3,14 @@ package com.klabis.common.ui;
 import com.klabis.common.mvc.MvcComponent;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.MethodParameter;
+import org.springframework.core.ResolvableType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.web.PagedResourcesAssembler;
-import org.springframework.hateoas.CollectionModel;
-import org.springframework.hateoas.EntityModel;
-import org.springframework.hateoas.IanaLinkRelations;
-import org.springframework.hateoas.Link;
-import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.PagedModel;
-import org.springframework.hateoas.RepresentationModel;
+import org.springframework.hateoas.*;
 import org.springframework.hateoas.mediatype.hal.HalModelBuilder;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.hateoas.server.mvc.RepresentationModelProcessorInvoker;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -28,11 +24,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.util.UriUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Bridges plain payload DTOs (as required by the generated OpenAPI-spec API interfaces) back into
@@ -85,12 +77,29 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
             return body;
         }
         if (body instanceof Page<?> page) {
-            return wrapPage(page);
+            return wrapPage(page, dtoElementType(returnType));
         }
         if (body instanceof Collection<?> collection) {
-            return wrapCollection(collection);
+            return wrapCollection(collection, dtoElementType(returnType));
         }
         return wrapSingle(body);
+    }
+
+    /**
+     * The concrete DTO type inside the controller method's declared return type — the {@code X} in
+     * {@code ResponseEntity<Page<X>>} or {@code ResponseEntity<List<X>>}. Taken from the method
+     * signature rather than a runtime element because an empty collection carries no element to
+     * inspect, yet its collection-level postprocessor must still be selected by DTO type. Falls back
+     * to {@code Object} for a signature that does not expose a generic element (leaving the previous,
+     * over-broad matching behaviour for that endpoint only).
+     */
+    private static ResolvableType dtoElementType(MethodParameter returnType) {
+        ResolvableType type = ResolvableType.forMethodParameter(returnType);
+        if (type.getRawClass() != null && HttpEntity.class.isAssignableFrom(type.getRawClass())) {
+            type = type.getGeneric(0);
+        }
+        ResolvableType element = type.getGeneric(0);
+        return element == ResolvableType.NONE ? ResolvableType.forClass(Object.class) : element;
     }
 
     private static boolean isHalMediaType(MediaType selectedContentType) {
@@ -131,7 +140,7 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
     }
 
     @SuppressWarnings("unchecked")
-    private Object wrapPage(Page<?> dtoPage) {
+    private Object wrapPage(Page<?> dtoPage, ResolvableType dtoElementType) {
         List<?> domainList = HalResponseContext.takeDomainList();
         if (domainList == null) {
             return dtoPage;
@@ -150,8 +159,12 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
         // Plain entityModelWithDomain here, without invoking processors yet — invokeProcessorsFor(pagedModel)
         // below already recurses into each item exactly once (Spring HATEOAS's own CollectionModel handling).
         // Invoking processors here too would run them twice per item (duplicate self links, affordances, ...).
+        // withFallbackType pins the element type for the empty-page case (PagedModel preserves its
+        // PageMetadata across this call), so the invoker's empty-collection branch still selects
+        // postprocessors by DTO type rather than matching every collection-level one.
         PagedModel<EntityModel<Object>> pagedModel = pagedResourcesAssembler.toModel(objectPage,
-                dto -> HalFormsSupport.entityModelWithDomain(dto, domainIterator.next()));
+                        dto -> HalFormsSupport.entityModelWithDomain(dto, domainIterator.next()))
+                .withFallbackType(ResolvableType.forClassWithGenerics(EntityModel.class, dtoElementType));
 
         // The controller method already ran (and passed authorization) for the exact request
         // parameters below, so re-deriving the self link from them needs no separate authorization
@@ -163,10 +176,11 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
             pagedModel.mapLink(IanaLinkRelations.SELF, oldLink -> selfLink);
         });
 
-        return new RepresentationModelProcessorInvoker(processors).invokeProcessorsFor(pagedModel);
+        return new RepresentationModelProcessorInvoker(processors)
+                .invokeProcessorsFor(pagedModel, collectionModelType(PagedModel.class, dtoElementType));
     }
 
-    private Object wrapCollection(Collection<?> dtoCollection) {
+    private Object wrapCollection(Collection<?> dtoCollection, ResolvableType dtoElementType) {
         List<?> domainList = HalResponseContext.takeDomainList();
         if (domainList == null) {
             return dtoCollection;
@@ -185,7 +199,11 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
                 .map(dto -> HalFormsSupport.entityModelWithDomain(dto, domainIterator.next()))
                 .toList();
 
-        CollectionModel<EntityModel<Object>> collectionModel = CollectionModel.of(items);
+        // withFallbackType pins the element type for the empty-collection case, where
+        // CollectionModel cannot derive it from content — RepresentationModelProcessorInvoker's
+        // empty-collection branch matches on getResolvableType().
+        CollectionModel<EntityModel<Object>> collectionModel = CollectionModel.<EntityModel<Object>>of(items)
+                .withFallbackType(ResolvableType.forClassWithGenerics(EntityModel.class, dtoElementType));
 
         // Unlike wrapPage, PagedResourcesAssembler is not involved and adds no self link, so it is
         // built here from the current request — see buildSelfLinkUri for why no authorization check
@@ -193,7 +211,19 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
         currentServletRequest().ifPresent(servletRequest ->
                 collectionModel.add(Link.of(buildSelfLinkUri(servletRequest), IanaLinkRelations.SELF)));
 
-        return new RepresentationModelProcessorInvoker(processors).invokeProcessorsFor(collectionModel);
+        return new RepresentationModelProcessorInvoker(processors)
+                .invokeProcessorsFor(collectionModel, collectionModelType(CollectionModel.class, dtoElementType));
+    }
+
+    /**
+     * {@code CollectionModel<EntityModel<X>>} (or {@code PagedModel<EntityModel<X>>}) as a
+     * {@link ResolvableType}, so {@code RepresentationModelProcessorInvoker} resolves the element DTO
+     * type to {@code X} rather than to {@code Object} — the latter matches every collection-level
+     * {@code RepresentationModelProcessor} regardless of its declared DTO type.
+     */
+    private static ResolvableType collectionModelType(Class<?> collectionModelClass, ResolvableType dtoElementType) {
+        return ResolvableType.forClassWithGenerics(collectionModelClass,
+                ResolvableType.forClassWithGenerics(EntityModel.class, dtoElementType));
     }
 
     /**
