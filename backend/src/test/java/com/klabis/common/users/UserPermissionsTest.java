@@ -271,6 +271,20 @@ class UserPermissionsTest {
     }
 
     @Test
+    void shouldExcludeDeveloperFromManageableAuthorities() {
+        // DEVELOPER is an internal-only authority — it must never surface in the permissions
+        // response or dialog, even when directly assigned (e.g. to the bootstrap admin).
+        UserPermissions permissions = UserPermissions.create(
+                TEST_USER_ID,
+                Set.of(Authority.DEVELOPER, Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)
+        );
+
+        assertThat(permissions.getManageableAuthorities())
+                .containsExactly(Authority.MEMBERS_MANAGE)
+                .doesNotContain(Authority.DEVELOPER);
+    }
+
+    @Test
     void shouldReturnEmptyManageableAuthoritiesWhenOnlyStandardPresent() {
         // Given
         UserPermissions permissions = UserPermissions.create(

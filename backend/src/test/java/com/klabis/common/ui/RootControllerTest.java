@@ -2,6 +2,7 @@ package com.klabis.common.ui;
 
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
+import com.klabis.common.users.Authority;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -44,18 +45,18 @@ class RootControllerTest {
         }
 
         @Test
-        @WithKlabisMockUser(username = "admin")
-        @DisplayName("adds the admin link for the admin user")
-        void shouldAddAdminLinkForAdminUser() throws Exception {
+        @WithKlabisMockUser(username = "admin", authorities = Authority.DEVELOPER)
+        @DisplayName("adds the admin link for a user with DEVELOPER authority")
+        void shouldAddAdminLinkForDeveloper() throws Exception {
             mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.admin.href").value("/sandplace"));
         }
 
         @Test
-        @WithKlabisMockUser(username = "anyAuthenticatedUser")
-        @DisplayName("omits the admin link for a non-admin user")
-        void shouldNotAddAdminLinkForNonAdminUser() throws Exception {
+        @WithKlabisMockUser(username = "admin", authorities = Authority.MEMBERS_MANAGE)
+        @DisplayName("omits the admin link for a user without DEVELOPER authority")
+        void shouldNotAddAdminLinkWithoutDeveloperAuthority() throws Exception {
             mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.admin").doesNotExist());

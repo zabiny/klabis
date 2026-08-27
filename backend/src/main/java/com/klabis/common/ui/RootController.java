@@ -1,6 +1,8 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.security.KlabisJwtAuthenticationToken;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.infrastructure.restapi.RootApi;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
@@ -34,8 +36,9 @@ class RootController implements RootApi {
 }
 
 /**
- * Carries over the admin link the controller used to add inline, now that it returns a plain
- * payload and no longer owns an EntityModel to attach links to.
+ * Adds the {@code admin} link that unlocks developer-only UI affordances (raw API response
+ * inspection, admin route-limiting mode). Gated on the {@link Authority#DEVELOPER} authority,
+ * which the bootstrap admin holds implicitly.
  */
 @MvcComponent
 class RootAdminLinkProcessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
@@ -43,8 +46,9 @@ class RootAdminLinkProcessor implements RepresentationModelProcessor<EntityModel
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()
-            && "admin".equalsIgnoreCase(authentication.getName())) {
+        if (authentication instanceof KlabisJwtAuthenticationToken klabisAuth
+            && klabisAuth.isAuthenticated()
+            && klabisAuth.hasAuthority(Authority.DEVELOPER)) {
             model.add(Link.of("/sandplace").withRel("admin"));
         }
         return model;
