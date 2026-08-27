@@ -4,6 +4,7 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import org.jmolecules.ddd.types.Identifier;
 
 @ValueObject
+// Use factory methods to create instances of this class (#localId and #externalId)
 public record SyncId(SyncType type, SyncParty party, String idValue) implements Identifier {
 
     public SyncId {

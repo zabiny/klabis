@@ -26,6 +26,7 @@ public class DataSyncImpl implements DataSync {
     public SyncRecord sync(SyncId syncId, Direction direction) {
         SyncLine<?, ?> syncLine = findSyncLine(syncId)
                 .orElseThrow(() -> new IllegalArgumentException("No sync line found for " + syncId));
+
         return direction == Direction.PUSH
                 ? syncPush(syncId, syncLine)
                 : syncPull(syncId, syncLine);
