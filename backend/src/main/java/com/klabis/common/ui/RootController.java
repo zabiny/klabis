@@ -49,7 +49,7 @@ class RootAdminLinkProcessor implements RepresentationModelProcessor<EntityModel
         if (authentication instanceof KlabisJwtAuthenticationToken klabisAuth
             && klabisAuth.isAuthenticated()
             && klabisAuth.hasAuthority(Authority.DEVELOPER)) {
-            model.add(Link.of("/sandplace").withRel("admin"));
+            model.add(Link.of("/admin").withRel("admin"));
         }
         return model;
     }

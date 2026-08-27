@@ -12,6 +12,7 @@ import {useAdminMode} from "./contexts/adminModeContext.ts";
 import ErrorFallback from './components/ErrorFallback';
 import {GenericHalPage} from "./pages/GenericHalPage.tsx";
 import HomePage from "./pages/HomePage.tsx";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage.tsx";
 import CalendarPage from "./pages/calendar/CalendarPage.tsx";
 import {SandplacePage} from "./pages/HalNavigatorPage.tsx";
 import {EventsPage} from "./pages/events/EventsPage.tsx";
@@ -92,12 +93,13 @@ function App() {
                                 </ProtectedRoute>
                             }>
                                 {/* Vždy povolené trasy */}
-                                <Route index path="/" element={<HomePage/>}/>
-                                <Route path="/index.html" element={<HomePage/>}/>
                                 <Route path="/sandplace" element={<SandplacePage/>}/>
+                                <Route path="/admin" element={<AdminDashboardPage/>}/>
 
                                 {/* Trasy zakázané v admin módu */}
                                 <Route element={<AdminModeAwareRoute allowedInAdminMode={false} />}>
+                                    <Route index path="/" element={<HomePage/>}/>
+                                    <Route path="/index.html" element={<HomePage/>}/>
                                     <Route path="/calendar-items" element={<CalendarPage/>}/>
                                     <Route path="/members/:memberId/account" element={<MemberAccountManagePage/>}/>
                                     <Route path="/members" element={<MembersPage/>}/>

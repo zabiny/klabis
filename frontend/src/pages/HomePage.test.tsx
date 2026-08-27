@@ -3,8 +3,8 @@ import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
-import * as RootNavigationModule from '../hooks/useRootNavigation';
 import type {NavigationItem} from '../hooks/useRootNavigation';
+import * as RootNavigationModule from '../hooks/useRootNavigation';
 import * as AuthContextModule from '../contexts/authContext';
 import * as UseDashboardModule from '../hooks/useDashboard';
 import * as UseMyUpcomingRegistrationsModule from '../hooks/useMyUpcomingRegistrations';
@@ -72,13 +72,6 @@ function createMockQueryResult<T>(data: T | null = null, overrides: Record<strin
     } as unknown as import('@tanstack/react-query').UseQueryResult<T | undefined>;
 }
 
-const adminNavItems: NavigationItem[] = [
-    {rel: 'members', href: '/members', label: 'Členové', section: 'main'},
-    {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
-    {rel: 'groups', href: '/groups', label: 'Skupiny', section: 'main'},
-    {rel: 'admin', href: '/admin', label: 'Admin', section: 'main'},
-];
-
 const regularNavItems: NavigationItem[] = [
     {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
 ];
@@ -96,7 +89,14 @@ const renderHomePage = () => {
     );
 };
 
-describe('HomePage - Admin Dashboard', () => {
+describe('HomePage - Admin/DEVELOPER user gets standard dashboard', () => {
+    const adminNavItems: NavigationItem[] = [
+        {rel: 'members', href: '/members', label: 'Členové', section: 'main'},
+        {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
+        {rel: 'groups', href: '/groups', label: 'Skupiny', section: 'main'},
+        {rel: 'admin', href: '/admin', label: 'Přehled administrace', section: 'admin'},
+    ];
+
     beforeEach(() => {
         vi.clearAllMocks()
         useRootNavigation.mockReturnValue(createMockQueryResult(adminNavItems))
@@ -109,59 +109,27 @@ describe('HomePage - Admin Dashboard', () => {
                 lastName: 'Novák',
                 id: 1,
                 userName: 'knovak',
-                memberId: null,
+                memberId: 'member-uuid-admin',
             }),
             logout: vi.fn(),
         })
+        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: undefined, upcomingDeadlinesHref: undefined}))
+        useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult(undefined))
     })
 
-    it('should display welcome message with user first name', () => {
+    it('does not render the admin dashboard welcome heading on home page', () => {
         renderHomePage()
-        expect(screen.getByText(/Karel/)).toBeInTheDocument()
+        expect(screen.queryByText(/Vítejte v Klabis/)).not.toBeInTheDocument()
     })
 
-    it('should display statistics cards with mock numbers', () => {
+    it('does not render admin statistics on home page', () => {
         renderHomePage()
-        expect(screen.getByText('42')).toBeInTheDocument()
-        expect(screen.getByText('3')).toBeInTheDocument()
-        expect(screen.getByText('5')).toBeInTheDocument()
+        expect(screen.queryByText('42')).not.toBeInTheDocument()
     })
 
-    it('should display stats card labels', () => {
+    it('renders the standard user dashboard (my profile quick link)', () => {
         renderHomePage()
-        expect(screen.getByText('Aktivních členů')).toBeInTheDocument()
-        expect(screen.getAllByText('Nadcházející akce').length).toBeGreaterThanOrEqual(1)
-        expect(screen.getByText('Skupiny a týmy')).toBeInTheDocument()
-        expect(screen.getByText('Systémový status')).toBeInTheDocument()
-    })
-
-    it('should display Online status', () => {
-        renderHomePage()
-        expect(screen.getByText('Online')).toBeInTheDocument()
-    })
-
-    it('should not display "Dostupné" or "Nedostupné"', () => {
-        renderHomePage()
-        expect(screen.queryByText('Dostupné')).not.toBeInTheDocument()
-        expect(screen.queryByText('Nedostupné')).not.toBeInTheDocument()
-    })
-
-    it('should display upcoming events section', () => {
-        renderHomePage()
-        expect(screen.getAllByText('Nadcházející akce').length).toBeGreaterThanOrEqual(1)
-        expect(screen.getByText('Jarní závod')).toBeInTheDocument()
-        expect(screen.getByText('Letní kemp')).toBeInTheDocument()
-    })
-
-    it('should display navigation cards for available sections', () => {
-        renderHomePage()
-        expect(screen.getByText('Členové')).toBeInTheDocument()
-        expect(screen.getByText('Akce')).toBeInTheDocument()
-    })
-
-    it('should not show "Žádná data dostupná"', () => {
-        renderHomePage()
-        expect(screen.queryByText('Žádná data dostupná')).not.toBeInTheDocument()
+        expect(screen.getByText('Můj profil')).toBeInTheDocument()
     })
 })
 
