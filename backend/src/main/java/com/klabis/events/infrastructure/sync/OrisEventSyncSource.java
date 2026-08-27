@@ -1,7 +1,6 @@
 package com.klabis.events.infrastructure.sync;
 
 import com.dpolach.api.orisclient.OrisApiClient;
-import com.dpolach.api.orisclient.OrisWebUrls;
 import com.klabis.common.sync.SyncItemId;
 import com.klabis.common.sync.SyncParty;
 import com.klabis.common.sync.SyncSource;
@@ -13,28 +12,28 @@ import java.util.Optional;
 
 /**
  * External ({@code party=EXTERNAL}) side of the ORIS event {@code SyncLine}. Read-only: {@code fetch}
- * pulls an ORIS event payload, {@code save} always throws — ORIS accepts no writes from Klabis.
+ * pulls a raw ORIS event payload ({@link OrisEventSyncData}), {@code save} always throws — ORIS
+ * accepts no writes from Klabis. All translation of the raw ORIS DTO happens in
+ * {@link EventSyncDataConverter}, not here.
  */
 @OrisIntegrationComponent
-class OrisEventSyncSource implements SyncSource<EventSyncData> {
+class OrisEventSyncSource implements SyncSource<OrisEventSyncData> {
 
     private final OrisApiClient orisApiClient;
-    private final OrisWebUrls orisWebUrls;
 
-    OrisEventSyncSource(OrisApiClient orisApiClient, OrisWebUrls orisWebUrls) {
+    OrisEventSyncSource(OrisApiClient orisApiClient) {
         this.orisApiClient = orisApiClient;
-        this.orisWebUrls = orisWebUrls;
     }
 
     @Override
-    public Optional<EventSyncData> fetch(SyncItemId syncItemId) {
+    public Optional<OrisEventSyncData> fetch(SyncItemId syncItemId) {
         int orisId = EventSyncIds.toOrisId(syncItemId);
         return orisApiClient.getEventDetails(orisId).payload()
-                .map(details -> new EventSyncData(null, orisId, details, orisWebUrls.eventUrl(orisId)));
+                .map(details -> new OrisEventSyncData(orisId, details));
     }
 
     @Override
-    public SyncItemId save(EventSyncData data) {
+    public SyncItemId save(OrisEventSyncData data) {
         throw new OrisEventSaveNotSupportedException(data.orisId());
     }
 

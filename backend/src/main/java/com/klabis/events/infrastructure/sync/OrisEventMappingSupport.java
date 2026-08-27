@@ -7,7 +7,6 @@ import com.dpolach.api.orisclient.dto.Level;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventCategory;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRanking;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
@@ -21,10 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Currency;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Business mapping helpers for turning an ORIS {@link EventDetails} payload into Klabis event data.
@@ -116,24 +112,5 @@ class OrisEventMappingSupport {
                 .max(BigDecimal::compareTo)
                 .map(maxFee -> Money.of(maxFee, currency))
                 .orElse(null);
-    }
-
-    void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<EventCategory> incomingCategories) {
-        if (event.getRegistrations().isEmpty()) {
-            return;
-        }
-        Set<String> incomingOrisIds = incomingCategories.stream()
-                .map(EventCategory::orisId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        Map<String, Long> affectedCounts = event.getRegistrations().stream()
-                .filter(r -> r.categoryId() != null)
-                .map(r -> event.findCategory(r.categoryId()).orElse(null))
-                .filter(category -> category != null && category.orisId() != null && !incomingOrisIds.contains(category.orisId()))
-                .collect(Collectors.groupingBy(EventCategory::name, Collectors.counting()));
-        if (!affectedCounts.isEmpty()) {
-            log.warn("ORIS sync for event {} will remove categories that have existing registrations: {}",
-                    event.getId(), affectedCounts);
-        }
     }
 }

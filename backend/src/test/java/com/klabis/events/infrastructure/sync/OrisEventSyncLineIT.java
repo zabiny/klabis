@@ -33,8 +33,9 @@ import static org.mockito.Mockito.when;
 /**
  * Integration test for the ORIS event {@link SyncLine} driven through a hand-assembled
  * {@link DataSyncImpl}: a real {@link LocalEventSyncSource} + real {@link OrisEventSyncSource}
- * (with a mocked {@link OrisApiClient}) + an in-memory {@link EventRepository} + a fake
- * {@link SyncRecordRepository}.
+ * (mocked {@link OrisApiClient}) + a real {@link EventSyncDataConverter} as the reverse converter,
+ * an in-memory {@link EventRepository} and a fake {@link SyncRecordRepository}. The forward converter
+ * throws — ORIS is read-only.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ORIS event SyncLine (integration)")
@@ -57,10 +58,19 @@ class OrisEventSyncLineIT {
         eventRepository = inMemoryEventRepository();
 
         OrisEventMappingSupport support = new OrisEventMappingSupport(eventTypeRepository);
-        LocalEventSyncSource local = new LocalEventSyncSource(
-                eventRepository, Mappers.getMapper(OrisEventDetailsMapper.class), support);
-        OrisEventSyncSource oris = new OrisEventSyncSource(orisApiClient, orisWebUrls);
-        SyncLine<EventSyncData, EventSyncData> syncLine = SyncLine.withoutMapping(local, oris);
+        EventSyncDataConverter reverseConverter = new EventSyncDataConverter(
+                Mappers.getMapper(OrisEventDetailsMapper.class), support, orisWebUrls);
+
+        LocalEventSyncSource local = new LocalEventSyncSource(eventRepository, new CategoryRegistrationGuard());
+        OrisEventSyncSource oris = new OrisEventSyncSource(orisApiClient);
+
+        SyncLine<EventSyncData, OrisEventSyncData> syncLine = new SyncLine<>(
+                local,
+                oris,
+                localData -> {
+                    throw new UnsupportedOperationException("PUSH for EVENT is not supported");
+                },
+                reverseConverter);
 
         dataSync = new DataSyncImpl(List.of(syncLine), new InMemoryFakeSyncRecordRepository());
 

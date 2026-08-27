@@ -1,24 +1,39 @@
 package com.klabis.events.infrastructure.sync;
 
-import com.dpolach.api.orisclient.dto.EventDetails;
 import com.klabis.common.sync.SyncData;
+import com.klabis.events.EventCategory;
 import com.klabis.events.EventId;
+import com.klabis.events.EventTypeId;
+import com.klabis.events.WebsiteUrl;
+import com.klabis.events.domain.EventRanking;
+import com.klabis.events.domain.Money;
+import com.klabis.events.domain.RegistrationDeadlines;
+
+import java.time.LocalDate;
+import java.util.List;
 
 /**
- * The single payload type that flows both ways across the ORIS event {@code SyncLine}.
+ * Local-side payload of the ORIS event {@code SyncLine}: a flat, already-translated view of an event
+ * ready to be turned into (or merged onto) a Klabis {@link com.klabis.events.domain.Event}. All ORIS
+ * DTO translation has happened before this record is built (see {@link EventSyncDataConverter}), so
+ * {@link LocalEventSyncSource} only does create-vs-update resolution and command assembly.
  * <p>
- * {@code eventId} is {@code null} until a local Klabis event exists (import path, and the resync
- * path where only the ORIS payload has been fetched). {@code orisDetails} is the raw ORIS payload
- * and is {@code null} on the local {@code fetch} path (PUSH), which ORIS does not support anyway.
+ * {@code eventId} is {@code null} on the PULL (import/resync) path — the local event is resolved by
+ * {@code orisId} — and populated on the (dead) PUSH path where the local source produces it.
+ * {@code autoMappedEventType} is {@code null} on the PUSH path.
  */
-public record EventSyncData(EventId eventId, Integer orisId, EventDetails orisDetails, String eventWebUrl)
-        implements SyncData {
-
-    public EventSyncData {
-        if (eventId == null && orisId == null) {
-            throw new IllegalArgumentException(
-                    "EventSyncData requires at least one of eventId / orisId");
-        }
-    }
-
+public record EventSyncData(
+        EventId eventId,
+        int orisId,
+        String name,
+        LocalDate eventDate,
+        String location,
+        String organizer,
+        WebsiteUrl websiteUrl,
+        RegistrationDeadlines registrationDeadlines,
+        List<EventCategory> categories,
+        EventRanking ranking,
+        Money baseEntryFee,
+        EventTypeId autoMappedEventType
+) implements SyncData {
 }

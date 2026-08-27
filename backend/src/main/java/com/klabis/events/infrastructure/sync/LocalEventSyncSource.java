@@ -1,13 +1,10 @@
 package com.klabis.events.infrastructure.sync;
 
-import com.dpolach.api.orisclient.dto.EventDetails;
 import com.klabis.common.sync.SyncItemId;
 import com.klabis.common.sync.SyncParty;
 import com.klabis.common.sync.SyncSource;
 import com.klabis.common.sync.SyncType;
-import com.klabis.events.EventCategory;
 import com.klabis.events.EventId;
-import com.klabis.events.WebsiteUrl;
 import com.klabis.events.application.DuplicateOrisImportException;
 import com.klabis.events.application.EventSyncIds;
 import com.klabis.events.domain.Event;
@@ -18,42 +15,34 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Local ({@code party=LOCAL}) side of the ORIS event {@code SyncLine}. Owns the domain logic of
- * turning an ORIS payload into a Klabis {@link Event}: create-vs-update resolution, category merge
- * (inside {@link Event#syncFromOris}), the registration-removal warning, and auto event-type mapping.
+ * Local ({@code party=LOCAL}) side of the ORIS event {@code SyncLine}. Consumes the already-translated
+ * {@link EventSyncData} and turns it into a Klabis {@link Event}: create-vs-update resolution, the
+ * registration-removal warning (delegated to {@link CategoryRegistrationGuard}), the category merge
+ * (inside {@link Event#syncFromOris}), and auto event-type mapping. No ORIS DTO knowledge here.
  */
 @Component
 class LocalEventSyncSource implements SyncSource<EventSyncData> {
 
     private final EventRepository eventRepository;
-    private final OrisEventDetailsMapper detailsMapper;
-    private final OrisEventMappingSupport support;
+    private final CategoryRegistrationGuard categoryGuard;
 
-    LocalEventSyncSource(EventRepository eventRepository,
-                         OrisEventDetailsMapper detailsMapper,
-                         OrisEventMappingSupport support) {
+    LocalEventSyncSource(EventRepository eventRepository, CategoryRegistrationGuard categoryGuard) {
         this.eventRepository = eventRepository;
-        this.detailsMapper = detailsMapper;
-        this.support = support;
+        this.categoryGuard = categoryGuard;
     }
 
     @Override
     public Optional<EventSyncData> fetch(SyncItemId syncItemId) {
         EventId id = EventSyncIds.toEventId(syncItemId);
-        return eventRepository.findById(id)
-                .map(e -> new EventSyncData(e.getId(), e.getOrisId(), null, null));
+        return eventRepository.findById(id).map(this::toSyncData);
     }
 
     @Override
     @Transactional
     public SyncItemId save(EventSyncData data) {
-        Objects.requireNonNull(data.orisDetails(), "ORIS payload required to save an event from sync");
-
         Optional<Event> existing = data.eventId() != null
                 ? eventRepository.findById(data.eventId())
                 : eventRepository.findByOrisId(data.orisId());
@@ -61,22 +50,19 @@ class LocalEventSyncSource implements SyncSource<EventSyncData> {
         Event event;
         if (existing.isPresent()) {
             event = existing.get();
-            List<EventCategory> incoming = support.extractCategories(data.orisDetails());
-            support.warnIfSyncRemovesCategoriesWithRegistrations(event, incoming);
+            categoryGuard.warnIfSyncRemovesCategoriesWithRegistrations(event, data.categories());
             event.syncFromOris(buildSyncCommand(data));
         } else {
             event = Event.createFromOris(buildCreateCommand(data));
         }
 
-        event.applyAutoMappedEventType(support.resolveEventType(data.orisDetails().discipline()));
+        event.applyAutoMappedEventType(data.autoMappedEventType());
 
-        Event saved;
         try {
-            saved = eventRepository.save(event);
+            return EventSyncIds.localSyncId(eventRepository.save(event).getId());
         } catch (DataIntegrityViolationException e) {
             throw new DuplicateOrisImportException(data.orisId(), e);
         }
-        return EventSyncIds.localSyncId(saved.getId());
     }
 
     @Override
@@ -89,36 +75,48 @@ class LocalEventSyncSource implements SyncSource<EventSyncData> {
         return SyncParty.LOCAL;
     }
 
-    private Event.CreateEventFromOris buildCreateCommand(EventSyncData data) {
-        EventDetails details = data.orisDetails();
-        OrisEventDetailsMapper.TrivialEventFields trivial = detailsMapper.toTrivialFields(details);
+    private EventSyncData toSyncData(Event e) {
+        return new EventSyncData(
+                e.getId(),
+                e.getOrisId() != null ? e.getOrisId() : 0,
+                e.getName(),
+                e.getEventDate(),
+                e.getLocation(),
+                e.getOrganizer(),
+                e.getWebsiteUrl(),
+                e.getRegistrationDeadlines(),
+                e.getCategories(),
+                e.getRanking(),
+                e.getBaseEntryFee(),
+                null); // push path is dead — forward converter throws first
+    }
+
+    private Event.CreateEventFromOris buildCreateCommand(EventSyncData d) {
         return EventCreateEventFromOrisBuilder.builder()
-                .orisId(data.orisId())
-                .name(trivial.name())
-                .eventDate(trivial.eventDate())
-                .location(trivial.location())
-                .organizer(support.resolveOrganizer(details))
-                .websiteUrl(WebsiteUrl.of(data.eventWebUrl()))
-                .registrationDeadlines(support.buildRegistrationDeadlines(details, data.orisId()))
-                .categories(support.extractCategories(details))
-                .ranking(support.resolveRanking(details.level()))
-                .baseEntryFee(support.deriveBaseEntryFee(details))
+                .orisId(d.orisId())
+                .name(d.name())
+                .eventDate(d.eventDate())
+                .location(d.location())
+                .organizer(d.organizer())
+                .websiteUrl(d.websiteUrl())
+                .registrationDeadlines(d.registrationDeadlines())
+                .categories(d.categories())
+                .ranking(d.ranking())
+                .baseEntryFee(d.baseEntryFee())
                 .build();
     }
 
-    private Event.SyncFromOris buildSyncCommand(EventSyncData data) {
-        EventDetails details = data.orisDetails();
-        OrisEventDetailsMapper.TrivialEventFields trivial = detailsMapper.toTrivialFields(details);
+    private Event.SyncFromOris buildSyncCommand(EventSyncData d) {
         return EventSyncFromOrisBuilder.builder()
-                .name(trivial.name())
-                .eventDate(trivial.eventDate())
-                .location(trivial.location())
-                .organizer(support.resolveOrganizer(details))
-                .websiteUrl(WebsiteUrl.of(data.eventWebUrl()))
-                .registrationDeadlines(support.buildRegistrationDeadlines(details, data.orisId()))
-                .categories(support.extractCategories(details))
-                .ranking(support.resolveRanking(details.level()))
-                .baseEntryFee(support.deriveBaseEntryFee(details))
+                .name(d.name())
+                .eventDate(d.eventDate())
+                .location(d.location())
+                .organizer(d.organizer())
+                .websiteUrl(d.websiteUrl())
+                .registrationDeadlines(d.registrationDeadlines())
+                .categories(d.categories())
+                .ranking(d.ranking())
+                .baseEntryFee(d.baseEntryFee())
                 .build();
     }
 }
