@@ -425,7 +425,7 @@ export interface GetPendingInvitationsHal {
 }
 
 export type GetPendingInvitationsResource =
-  components['schemas']['CollectionModelEntityModelPendingInvitationResponseForInvitationsList'] & GetPendingInvitationsHal;
+  components['schemas']['CollectionModelEntityModelPendingInvitationResponse'] & GetPendingInvitationsHal;
 
 export const GetPendingInvitationsRels = {
   links: ['self'] as const,

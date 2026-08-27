@@ -309,25 +309,11 @@ openApiModule(
     module = "groups",
     pkg = "com.klabis.groups.infrastructure.restapi",
     specFile = "groups.yaml",
-    // mappings and imports needed because of using EntityModel<T> as 2nd level attribute in responses (group.members, etc.. )
-    mappings = mapOf(
-        "EntityModelParentResponse" to "org.springframework.hateoas.EntityModel<ParentResponse>",
-        "EntityModelFamilyGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<FamilyGroupMembershipResponse>",
-        "EntityModelOwnerResponse" to "org.springframework.hateoas.EntityModel<OwnerResponse>",
-        "EntityModelFreeGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<FreeGroupMembershipResponse>",
-        "EntityModelPendingInvitationResponse" to "org.springframework.hateoas.EntityModel<PendingInvitationResponse>",
-        "EntityModelTrainerResponse" to "org.springframework.hateoas.EntityModel<TrainerResponse>",
-        "EntityModelGroupMembershipResponse" to "org.springframework.hateoas.EntityModel<GroupMembershipResponse>"
-    ),
-    extraImportMappings = mapOf(
-        "org.springframework.hateoas.EntityModel<ParentResponse>" to "org.springframework.hateoas.EntityModel",
-        "org.springframework.hateoas.EntityModel<FamilyGroupMembershipResponse>" to "org.springframework.hateoas.EntityModel",
-        "org.springframework.hateoas.EntityModel<OwnerResponse>" to "org.springframework.hateoas.EntityModel",
-        "org.springframework.hateoas.EntityModel<FreeGroupMembershipResponse>" to "org.springframework.hateoas.EntityModel",
-        "org.springframework.hateoas.EntityModel<PendingInvitationResponse>" to "org.springframework.hateoas.EntityModel",
-        "org.springframework.hateoas.EntityModel<TrainerResponse>" to "org.springframework.hateoas.EntityModel",
-        "org.springframework.hateoas.EntityModel<GroupMembershipResponse>" to "org.springframework.hateoas.EntityModel"
-    )
+    // The FamilyGroup/Group/TrainingGroup response payloads have array properties whose items each
+    // carry their own _links (parents/members/owners/pendingInvitations/trainers). Those arrays are
+    // marked x-hal-entity-items: true in groups.yaml; KlabisSpringCodegen.fromProperty reads the
+    // marker and resolves them to List<EntityModel<X>>, so no per-schema schemaMappings are needed.
+    mappings = emptyMap()
 )
 
 openApiModule(
