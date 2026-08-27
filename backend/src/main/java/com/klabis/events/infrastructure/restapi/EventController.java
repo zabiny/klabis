@@ -8,7 +8,6 @@ import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.application.EventManagementPort;
@@ -21,7 +20,6 @@ import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.*;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import jakarta.annotation.Nullable;
-import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
@@ -29,7 +27,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
@@ -37,7 +34,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.servlet.HandlerMapping;
@@ -65,7 +65,6 @@ public class EventController implements EventsApi {
     private final EventManagementPort eventManagementService;
     private final EventRegistrationPort eventRegistrationService;
     private final Members members;
-    private final boolean orisIntegrationActive;
     private final AccommodationListCsvRenderer csvRenderer;
 
     public EventController(
@@ -77,7 +76,6 @@ public class EventController implements EventsApi {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
-        this.orisIntegrationActive = orisEventImportPort.isPresent();
         this.csvRenderer = csvRenderer;
     }
 
