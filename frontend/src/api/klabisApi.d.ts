@@ -1904,7 +1904,6 @@ export interface components {
             /** Format: date */
             startDate?: string;
         };
-        CalendarItemDtoList: components["schemas"]["CalendarItemDto"][];
         CancelEventRequest: {
             cancellationReason?: string;
         };
@@ -3446,7 +3445,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CalendarItemDtoList"];
+                    "application/json": components["schemas"]["CalendarItemDto"][];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelCalendarItemDto"];
                 };
             };

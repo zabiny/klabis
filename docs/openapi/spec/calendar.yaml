@@ -84,10 +84,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CalendarItemDtoList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/CollectionModelEntityModelCalendarItemDto'
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarItemDto'
           x-hal-links:
             self:
               description: This collection, with the current date-range, sort and mySchedule parameters
@@ -173,9 +172,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CalendarItemDto'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelCalendarItemDto'
           x-hal-links:
             self:
               description: |
@@ -304,9 +300,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IcalTokenResponse'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelIcalTokenResponse'
           x-hal-links:
             self:
               description: This token state
@@ -347,9 +340,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IcalTokenResponse'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelIcalTokenResponse'
           x-hal-links:
             self:
               description: This token state
@@ -437,40 +427,6 @@ components:
 
   schemas:
 
-    # application/json sibling for listCalendarItems — a plain array schema, no schemaMappings needed;
-    # generates List<CalendarItemDto> directly.
-    CalendarItemDtoList:
-      type: array
-      items:
-        $ref: '#/components/schemas/CalendarItemDto'
-
-    # Envelope schemas — never generated into Java; see klabis-api-spec skill:
-    # "Payload and envelope are separate schemas".
-    CollectionModelEntityModelCalendarItemDto:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            calendarItemDtoList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelCalendarItemDto'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-        _templates:
-          $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
-    EntityModelCalendarItemDto:
-      allOf:
-        - $ref: '#/components/schemas/CalendarItemDto'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
     CalendarItemDto:
       type: object
       description: A calendar item — either manually created or derived from an event's date.
@@ -535,16 +491,6 @@ components:
         endDate:
           type: string
           format: date
-
-    EntityModelIcalTokenResponse:
-      allOf:
-        - $ref: '#/components/schemas/IcalTokenResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
 
     IcalTokenResponse:
       type: object
