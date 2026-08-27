@@ -304,8 +304,87 @@ class TrainingGroupControllerTest {
                     com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
             org.mockito.Mockito.verify(trainingGroupManagementService)
                     .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
-            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().throwIfNotProvided())
+            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().orElseThrow())
                     .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
+        }
+
+        @Test
+        @DisplayName("should map ageRange to the domain type when provided")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldMapAgeRangeWhenProvided() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(group);
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"ageRange": {"minAge": 12, "maxAge": 20}}
+                                            """)
+                    )
+                    .andExpect(status().isNoContent());
+
+            var commandCaptor = org.mockito.ArgumentCaptor.forClass(
+                    com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
+            org.mockito.Mockito.verify(trainingGroupManagementService)
+                    .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
+            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().ageRange().orElseThrow())
+                    .isEqualTo(new AgeRange(12, 20));
+        }
+
+        @Test
+        @DisplayName("should forward an explicit null ageRange rather than failing to map it")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldForwardExplicitNullAgeRange() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(group);
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"ageRange": null}
+                                            """)
+                    )
+                    .andExpect(status().isNoContent());
+
+            var commandCaptor = org.mockito.ArgumentCaptor.forClass(
+                    com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
+            org.mockito.Mockito.verify(trainingGroupManagementService)
+                    .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
+            var ageRange = commandCaptor.getValue().ageRange();
+            org.assertj.core.api.Assertions.assertThat(ageRange.isPresent()).isTrue();
+            org.assertj.core.api.Assertions.assertThat(ageRange.orElseThrow()).isNull();
+        }
+
+        @Test
+        @DisplayName("should leave every field undefined when the body is empty")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldLeaveFieldsUndefinedForEmptyBody() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(group);
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            var commandCaptor = org.mockito.ArgumentCaptor.forClass(
+                    com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
+            org.mockito.Mockito.verify(trainingGroupManagementService)
+                    .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
+            var command = commandCaptor.getValue();
+            org.assertj.core.api.Assertions.assertThat(command.name().isPresent()).isFalse();
+            org.assertj.core.api.Assertions.assertThat(command.ageRange().isPresent()).isFalse();
+            org.assertj.core.api.Assertions.assertThat(command.trainers().isPresent()).isFalse();
         }
 
         @Test
@@ -330,7 +409,7 @@ class TrainingGroupControllerTest {
                     com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
             org.mockito.Mockito.verify(trainingGroupManagementService)
                     .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
-            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().throwIfNotProvided())
+            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().orElseThrow())
                     .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
         }
 

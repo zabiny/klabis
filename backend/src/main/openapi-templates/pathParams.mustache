@@ -1,0 +1,17 @@
+{{!
+  Klabis customization: a verbatim fork of the stock JavaSpring pathParams.mustache with ONE
+  addition — the x-klabis-owner-id section below, which emits @OwnerId on the generated interface
+  method's parameter.
+
+  Rationale: @OwnerId names the parameter holding the owner's ID, so that @OwnerVisible on the
+  operation has something to resolve ownership against. It used to reach the generator as
+  x-field-extra-annotation, stamped on during bundling, which also forced the bundler to inline
+  any shared $ref parameter so the annotation landed on one operation only. Reading the key here
+  instead means the annotation can sit on the shared parameter: @OwnerId is inert on its own —
+  both HasAuthorityMethodInterceptor.checkOwnership() and RequestBodyFieldAuthorizationAdvice
+  only consult it for a method or field already marked @OwnerVisible.
+
+  Maintenance: this is a vendor fork and nothing detects drift. On an openapi-generator upgrade,
+  diff it against the new stock JavaSpring/pathParams.mustache and port the addition across.
+}}
+{{#isPathParam}}{{#vendorExtensions.x-klabis-owner-id}}@com.klabis.common.security.fieldsecurity.OwnerId {{/vendorExtensions.x-klabis-owner-id}}{{#vendorExtensions.x-field-extra-annotation}}{{{.}}} {{/vendorExtensions.x-field-extra-annotation}}{{#useBeanValidation}}{{>beanValidationPathParams}}{{/useBeanValidation}}{{>paramDoc}} @PathVariable("{{baseName}}"){{>dateTimeParam}}{{#isDeprecated}} @Deprecated{{/isDeprecated}} {{>optionalDataType}} {{paramName}}{{/isPathParam}}

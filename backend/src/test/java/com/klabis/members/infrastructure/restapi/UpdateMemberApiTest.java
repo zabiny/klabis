@@ -10,7 +10,8 @@ import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.domain.*;
-import org.junit.jupiter.api.Disabled;
+import com.klabis.members.domain.Gender;
+import com.klabis.members.domain.DrivingLicenseGroup;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
+import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -75,9 +77,6 @@ class UpdateMemberApiTest {
     private MemberRepository memberRepository;
 
     @MockitoBean
-    private MemberMapper memberMapper;
-
-    @MockitoBean
     private PagedResourcesAssembler<?> pagedResourcesAssembler;
 
     private final UUID testMemberId = UUID.randomUUID();
@@ -126,9 +125,9 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email()).isEqualTo(EmailAddress.of("new.email@example.com"));
-                assertThat(command.phone()).isNull();
-                assertThat(command.address()).isNull();
+                assertThat(command.email().orElseThrow()).isEqualTo(EmailAddress.of("new.email@example.com"));
+                assertThat(command.phone().isPresent()).isFalse();
+                assertThat(command.address().isPresent()).isFalse();
             }
 
             @Test
@@ -154,9 +153,9 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email()).isNull();
-                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420777123456"));
-                assertThat(command.address()).isNull();
+                assertThat(command.email().isPresent()).isFalse();
+                assertThat(command.phone().orElseThrow()).isEqualTo(PhoneNumber.of("+420777123456"));
+                assertThat(command.address().isPresent()).isFalse();
             }
 
             @Test
@@ -187,13 +186,13 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email()).isNull();
-                assertThat(command.phone()).isNull();
-                assertThat(command.address()).isNotNull();
-                assertThat(command.address().street()).isEqualTo("New Street 123");
-                assertThat(command.address().city()).isEqualTo("Prague");
-                assertThat(command.address().postalCode()).isEqualTo("11000");
-                assertThat(command.address().country()).isEqualTo("CZ");
+                assertThat(command.email().isPresent()).isFalse();
+                assertThat(command.phone().isPresent()).isFalse();
+                assertThat(command.address().isPresent()).isTrue();
+                assertThat(command.address().orElseThrow().street()).isEqualTo("New Street 123");
+                assertThat(command.address().orElseThrow().city()).isEqualTo("Prague");
+                assertThat(command.address().orElseThrow().postalCode()).isEqualTo("11000");
+                assertThat(command.address().orElseThrow().country()).isEqualTo("CZ");
             }
 
             @Test
@@ -223,14 +222,18 @@ class UpdateMemberApiTest {
 
                 var command = captor.getValue();
                 assertThat(command.gender()).isEqualTo(Gender.FEMALE);
-                assertThat(command.chipNumber()).isEqualTo("12345");
-                assertThat(command.drivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.B);
-                assertThat(command.dietaryRestrictions()).isEqualTo("Vegetarian");
+                assertThat(command.chipNumber().orElseThrow()).isEqualTo("12345");
+                assertThat(command.drivingLicenseGroup().orElseThrow()).isEqualTo(DrivingLicenseGroup.B);
+                assertThat(command.dietaryRestrictions().orElseThrow()).isEqualTo("Vegetarian");
             }
 
+            /**
+             * A stranger — neither the owner nor an admin — is refused by the endpoint's own
+             * {@code @HasAuthority(MEMBERS_MANAGE)}, before any field is looked at. This was
+             * disabled as "to be changed in prod code"; that enforcement in fact existed all along.
+             */
             @Test
             @DisplayName("updating admin-only fields without MEMBERS:MANAGE authority should return 403")
-            @Disabled("Added as new test, probably would rather like 403 if someone attempts to edit (To be changed in prod code)")
             @WithKlabisMockUser(authorities = {})
             void shouldRejectUpdateAdminOnlyFieldsWithoutAdmin() throws Exception {
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
@@ -278,8 +281,8 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber()).isEqualTo(BirthNumber.of("900101/1234"));
-                assertThat(command.bankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
+                assertThat(command.birthNumber().orElseThrow()).isEqualTo(BirthNumber.of("900101/1234"));
+                assertThat(command.bankAccountNumber().orElseThrow()).isEqualTo(BankAccountNumber.of("12345/5678"));
             }
 
             @Test
@@ -305,8 +308,8 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber()).isEqualTo(BirthNumber.of("850520/9876"));
-                assertThat(command.bankAccountNumber()).isNull();
+                assertThat(command.birthNumber().orElseThrow()).isEqualTo(BirthNumber.of("850520/9876"));
+                assertThat(command.bankAccountNumber().isPresent()).isFalse();
             }
 
             @Test
@@ -335,10 +338,14 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber()).isNull();
-                assertThat(command.bankAccountNumber()).isNull();
-                assertThat(command.chipNumber()).isNull();
-                assertThat(command.dietaryRestrictions()).isNull();
+                assertThat(command.birthNumber().isPresent()).isTrue();
+                assertThat(command.birthNumber().orElseThrow()).isNull();
+                assertThat(command.bankAccountNumber().isPresent()).isTrue();
+                assertThat(command.bankAccountNumber().orElseThrow()).isNull();
+                assertThat(command.chipNumber().isPresent()).isTrue();
+                assertThat(command.chipNumber().orElseThrow()).isNull();
+                assertThat(command.dietaryRestrictions().isPresent()).isTrue();
+                assertThat(command.dietaryRestrictions().orElseThrow()).isNull();
             }
 
             @Test
@@ -364,8 +371,8 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber()).isNull();
-                assertThat(command.bankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
+                assertThat(command.birthNumber().isPresent()).isFalse();
+                assertThat(command.bankAccountNumber().orElseThrow()).isEqualTo(BankAccountNumber.of("12345/5678"));
             }
 
             @Test
@@ -406,9 +413,9 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.identityCard()).isNotNull();
-                assertThat(command.medicalCourse()).isNotNull();
-                assertThat(command.trainerLicense()).isNotNull();
+                assertThat(command.identityCard().isPresent()).isTrue();
+                assertThat(command.medicalCourse().isPresent()).isTrue();
+                assertThat(command.trainerLicense().isPresent()).isTrue();
             }
 
             @Test
@@ -435,8 +442,8 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email()).isEqualTo(EmailAddress.of("partial.update@example.com"));
-                assertThat(command.dietaryRestrictions()).isEqualTo("No dairy");
+                assertThat(command.email().orElseThrow()).isEqualTo(EmailAddress.of("partial.update@example.com"));
+                assertThat(command.dietaryRestrictions().orElseThrow()).isEqualTo("No dairy");
             }
         }
 
@@ -468,7 +475,7 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email()).isEqualTo(EmailAddress.of("my.new.email@example.com"));
+                assertThat(command.email().orElseThrow()).isEqualTo(EmailAddress.of("my.new.email@example.com"));
             }
 
             @Test
@@ -495,7 +502,7 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420987654321"));
+                assertThat(command.phone().orElseThrow()).isEqualTo(PhoneNumber.of("+420987654321"));
             }
 
             @Test
@@ -527,9 +534,9 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.address()).isNotNull();
-                assertThat(command.address().street()).isEqualTo("My New Address 456");
-                assertThat(command.address().city()).isEqualTo("Brno");
+                assertThat(command.address().isPresent()).isTrue();
+                assertThat(command.address().orElseThrow().street()).isEqualTo("My New Address 456");
+                assertThat(command.address().orElseThrow().city()).isEqualTo("Brno");
             }
 
             @Test
@@ -556,7 +563,7 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.dietaryRestrictions()).isEqualTo("Gluten-free, no nuts");
+                assertThat(command.dietaryRestrictions().orElseThrow()).isEqualTo("Gluten-free, no nuts");
             }
 
             @Test
@@ -585,9 +592,12 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.chipNumber()).isNull();
-                assertThat(command.bankAccountNumber()).isNull();
-                assertThat(command.dietaryRestrictions()).isNull();
+                assertThat(command.chipNumber().isPresent()).isTrue();
+                assertThat(command.chipNumber().orElseThrow()).isNull();
+                assertThat(command.bankAccountNumber().isPresent()).isTrue();
+                assertThat(command.bankAccountNumber().orElseThrow()).isNull();
+                assertThat(command.dietaryRestrictions().isPresent()).isTrue();
+                assertThat(command.dietaryRestrictions().orElseThrow()).isNull();
             }
 
             @Test
@@ -611,6 +621,61 @@ class UpdateMemberApiTest {
                         .andExpect(status().isForbidden());
 
                 verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
+            }
+
+            /**
+             * The owner is the only caller for whom field-level authorization decides anything: a
+             * stranger is already refused by the endpoint's @HasAuthority, and an admin satisfies
+             * every field. So this pair is what actually exercises @HasAuthority on a component —
+             * gender is refused while chipNumber, which carries no authority, goes through.
+             *
+             * <p>gender is the field this guards because it reached production unenforced: an
+             * allOf in the spec generated a bare Gender rather than a JsonNullable, and
+             * RequestBodyFieldAuthorizationAdvice skips every component that is not
+             * JsonNullable-typed.
+             */
+            @Test
+            @DisplayName("updating own gender should return 403 — it needs MEMBERS:MANAGE")
+            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
+            void shouldRejectMemberUpdatingOwnGender() throws Exception {
+                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", currentMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "gender": "FEMALE"
+                                                }
+                                                """)
+                        )
+                        .andExpect(status().isForbidden());
+
+                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
+            }
+
+            @Test
+            @DisplayName("updating own chipNumber should return 204 — it carries no authority")
+            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
+            void shouldAllowMemberToUpdateOwnChipNumber() throws Exception {
+                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
+                        .thenReturn(stubMember());
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", currentMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "chipNumber": "12345"
+                                                }
+                                                """)
+                        )
+                        .andExpect(status().isNoContent());
+
+                var captor = forClass(Member.UpdateMember.class);
+                verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
+                assertThat(captor.getValue().chipNumber().orElseThrow()).isEqualTo("12345");
             }
         }
 

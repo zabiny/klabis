@@ -2,7 +2,6 @@ package com.klabis.finance.infrastructure.restapi;
 
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.security.fieldsecurity.OwnershipResolver;
-import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponseBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,7 +98,7 @@ class AccountMemberDetailLinkProcessorTest {
 
     private EntityModel<MemberDetailsResponse> modelFor(UUID memberUuid, boolean active) {
         MemberDetailsResponse response = MemberDetailsResponseBuilder.builder()
-                .id(new MemberId(memberUuid))
+                .id(memberUuid)
                 .registrationNumber("ZBM0101")
                 .firstName("Jan")
                 .lastName("Novák")

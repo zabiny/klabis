@@ -1,5 +1,11 @@
 # Backend Developer Memory
 
+## Architecture
+
+- [Sync engine SyncLine contract + ORIS event mapping-at-boundary](project_sync_engine_syncline.md) — common.sync engine is frozen; raw ORIS DTO confined to OrisEventSyncData; converter owns translation; OrisWebUrls gated by property not profile
+- [ORIS event sync migration](project_oris_sync_migration.md) — multi-phase move of ORIS event import/resync onto com.klabis.common.sync; Phases 1 and 2+3 done, 4-5 remain
+- [Write tool trailing tag](feedback_write_tool_trailing_tag.md) — full-file Write can append a stray closing tag; verify tails and md5sum before delegating a test run
+
 ## Project patterns confirmed
 
 ### ResponseEntity.noContent() is a HeadersBuilder, not BodyBuilder

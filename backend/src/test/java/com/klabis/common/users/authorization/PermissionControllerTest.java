@@ -10,12 +10,14 @@ import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
 import com.klabis.common.users.infrastructure.restapi.PermissionController;
+import com.klabis.common.users.infrastructure.restapi.UpdatePermissionsRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -37,7 +39,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PermissionController.class)
-@Import(EncryptionConfiguration.class)
+@Import({EncryptionConfiguration.class})
 @DisplayName("PermissionController permissions endpoints tests")
 @WithPostprocessors
 class PermissionControllerTest {
@@ -82,10 +84,33 @@ class PermissionControllerTest {
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_READ)));
 
             // When & Then
-            mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()))
+            // Explicit Accept: getUserPermissions now also produces application/json (bare
+            // payload, no _links) alongside HAL-FORMS — without this header, content negotiation
+            // may pick the first producible type instead of HAL-FORMS.
+            mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()).accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.self.href").value(containsString("/api/users/" + USER_ID.uuid().toString() + "/permissions")));
+        }
+
+        @Test
+        @DisplayName("should offer authorities as writable in the updatePermissions template")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
+        void shouldExposeWritableAuthoritiesInTemplate() throws Exception {
+            // Given
+            when(permissionService.getUserPermissions(any(UserId.class)))
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_READ)));
+
+            // When & Then
+            // type/multi are asserted alongside readOnly so the test cannot pass through readOnly
+            // merely being absent for an unrelated reason. Explicit Accept — see
+            // shouldIncludeHateoasLinks above.
+            mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[0].name").value("authorities"))
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[0].readOnly").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[0].type").value("Authority"))
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[0].multi").value(true));
         }
 
         @Test
@@ -115,9 +140,9 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn204WhenAuthorized() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE,
-                            Authority.MEMBERS_READ));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_MANAGE,
+                            com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)));
@@ -135,9 +160,9 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturnLocationHeaderPointingToPermissionsResource() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE,
-                            Authority.MEMBERS_READ));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_MANAGE,
+                            com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)));
@@ -157,8 +182,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn204WithNoBody() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_READ));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_READ)));
@@ -177,8 +202,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn409WhenRemovingLastAdmin() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_READ));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenThrow(new AuthorizationPolicy.AdminLockoutException(
@@ -201,8 +226,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn400ForInvalidAuthority() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_PERMISSIONS));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_PERMISSIONS));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenThrow(new IllegalArgumentException(
@@ -225,8 +250,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn204ForEmptyAuthorities() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of());
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of());
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of()));
@@ -279,8 +304,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldAcceptGroupsTrainingWhenEnabled() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.GROUPS_TRAINING, Authority.MEMBERS_READ));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.GROUPS_TRAINING, com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.GROUPS_TRAINING, Authority.MEMBERS_READ)));
@@ -298,8 +323,8 @@ class PermissionControllerTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldRemoveGroupsTrainingWhenDisabled() throws Exception {
             // Given
-            PermissionController.UpdatePermissionsRequest request =
-                    new PermissionController.UpdatePermissionsRequest(Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ));
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_MANAGE, com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
                     .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ)));

@@ -1,0 +1,969 @@
+# Members module — the API surface of MemberController plus registerMember (RegistrationController),
+# which is exposed as an affordance on the member collection.
+#
+# Endpoints living under /api/members/{memberId}/... that belong to other modules
+# (finance accounts, fee choices, fee summaries) are NOT part of this file.
+
+# Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
+# from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
+# klabis.yaml rather than shared, because $ref cannot target a document's own info; the
+# bundler ignores both keys (modules are pulled in by #/paths/... pointer, never whole-file)
+# and validate.mjs pins version to the root's so the two cannot drift.
+openapi: 3.1.0
+
+info:
+  title: Klabis API — Members module
+  description: The Members slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
+paths:
+
+  /api/members:
+    get:
+      operationId: listMembers
+      tags: [Members]
+      summary: List members with pagination and sorting
+      description: |
+        Paginated list of members with summary information. Supports fulltext search and status
+        filtering. Callers without MEMBERS:MANAGE are silently restricted to active members, and
+        the admin-only fields (email, active) are omitted from the response.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_READ
+      x-spring-paginated: true
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
+        - $ref: './_shared/pagination.yaml#/components/parameters/SizeParam'
+        - $ref: '#/components/parameters/SortParam'
+        - name: q
+          in: query
+          description: Fulltext search over firstName, lastName, registrationNumber (min 2 chars)
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 'Status filter: ACTIVE, INACTIVE, ALL. Non-MANAGE callers are silently forced to ACTIVE.'
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated list of members retrieved successfully
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/PagedModelEntityModelMemberSummaryResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberSummaryResponseList'
+          x-hal-links:
+            self:
+              description: This collection, with the current paging and filter parameters
+            first:
+              description: First page (present when the result is paged)
+            last:
+              description: Last page (present when the result is paged)
+            next:
+              description: Next page (present when one exists)
+            prev:
+              description: Previous page (present when one exists)
+          x-hal-templates:
+            default:
+              operation: updateMember
+              description: Edit template used by the table's inline row editor
+            registerMember:
+              operation: registerMember
+              description: Present only for callers with MEMBERS:MANAGE
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: registerMember
+      tags: [Registration]
+      summary: Register a new member
+      description: |
+        Creates a new member with personal information, contact details, and optional guardian
+        information for minors. Generates a unique registration number in format XXXYYSS
+        (club code, birth year, sequence).
+
+        Responds with a Location header pointing at the created member. When the birth number is
+        inconsistent with the other personal data, warnings are returned in the X-Warnings header
+        — the member is still created.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterMemberRequest'
+      responses:
+        '201':
+          description: Member successfully registered
+          headers:
+            Location:
+              description: URI of the created member
+              schema:
+                type: string
+                format: uri
+            X-Warnings:
+              description: Birth number consistency warnings, if any
+              schema:
+                type: array
+                items:
+                  type: string
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/members/options:
+    get:
+      operationId: listMemberOptions
+      tags: [Members]
+      summary: List members as select options
+      description: Lightweight value/prompt pairs for member picker components.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_READ
+      responses:
+        '200':
+          description: Member options retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemberOptionResponse'
+            application/prs.hal-forms+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemberOptionResponse'
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/members/{id}:
+    get:
+      operationId: getMember
+      tags: [Members]
+      summary: Get member by ID
+      description: |
+        Detailed member information. Which fields are present depends on the caller: fields marked
+        with x-klabis-authority / x-klabis-owner-visible are omitted unless the caller holds
+        MEMBERS:MANAGE or is the member themselves.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_READ
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+      responses:
+        '200':
+          description: Member found
+          content:
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelMemberDetailsResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberDetailsResponse'
+          x-hal-links:
+            self:
+              description: This member
+            collection:
+              operation: listMembers
+              description: Back to the member list
+            permissions:
+              description: Member's permissions (requires MEMBERS:PERMISSIONS)
+            account:
+              description: Member's finance account (requires FINANCE:MANAGE or ownership)
+            feeSummary:
+              description: Membership fee summary for the current year
+            familyGroup:
+              description: Family group the member belongs to, when there is one
+            trainingGroup:
+              description: Training group the member belongs to, when there is one
+            ical-token:
+              description: Calendar subscription token — only on the caller's own detail
+          x-hal-templates:
+            default:
+              operation: updateMember
+            suspend:
+              operation: suspendMember
+              description: Present only while the member is active
+            resume:
+              operation: resumeMember
+              description: Present only while the member is suspended
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    patch:
+      operationId: updateMember
+      tags: [Members]
+      summary: Update member details
+      description: |
+        Partial update — only the fields present in the request body are changed. Each field is a
+        JsonNullable wrapper, so omitting a field and setting it to null are different operations.
+        Fields the caller is not authorized to change are rejected.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      x-klabis-owner-visible: true
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMemberRequest'
+      responses:
+        '204':
+          description: Member updated successfully
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/members/{id}/suspend:
+    post:
+      operationId: suspendMember
+      tags: [Members]
+      summary: Suspend a membership
+      description: |
+        Suspends an active membership. Refused when the member still has outstanding debt on their
+        finance account, or when they are the sole owner of at least one group — a successor must
+        be designated first.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuspendMembershipRequest'
+      responses:
+        '204':
+          description: Membership suspended
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          # MembersExceptionHandler answers both suspension blockers with a bespoke JSON body
+          # carrying the data the caller needs to resolve them, not with a ProblemDetail — hence
+          # the local response instead of the shared #/components/responses/Conflict.
+          description: |
+            Suspension is blocked — either the member owes money on their finance account, or they
+            are the sole owner of at least one group.
+          content:
+            # application/json, not the hal-forms/problem+json this operation otherwise produces:
+            # the body comes from a @RestControllerAdvice handler returning a plain record, which
+            # is not bound by the handler method's own produces list.
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuspensionBlockedWarning'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/members/{id}/resume:
+    post:
+      operationId: resumeMember
+      tags: [Members]
+      summary: Resume a suspended membership
+      description: |
+        Reactivates a suspended membership. Refused when the membership is already active.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+      responses:
+        '204':
+          description: Membership resumed
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
+
+  parameters:
+    MemberIdParam:
+      name: id
+      in: path
+      description: Member UUID
+      required: true
+      # Marks the owner for operations that declare x-klabis-owner-visible. Inert on its own:
+      # @OwnerId is only consulted for a method or field already marked @OwnerVisible, so the
+      # operations here that do not opt into ownership are unaffected.
+      x-klabis-owner-id: true
+      schema:
+        type: string
+        format: uuid
+
+    SortParam:
+      name: sort
+      in: query
+      description: |
+        Sorting criteria in the format: property,(asc|desc). Allowed fields: firstName, lastName,
+        registrationNumber.
+      required: false
+      schema:
+        type: array
+        default: [lastName,ASC, firstName,ASC]
+        items:
+          type: string
+
+  schemas:
+
+    # --- Responses ---------------------------------------------------------
+
+    # `_links` is NOT part of the payload record — Spring HATEOAS adds it when the controller wraps
+    # the DTO in an EntityModel. The payload schema is what gets generated into a Java record; the
+    # EntityModel* schema exists only so the response contract (and openapi-typescript) sees the
+    # envelope. Keep them split, or the generated record grows a bogus `links` component.
+
+    EntityModelMemberDetailsResponse:
+      description: MemberDetailsResponse as served, wrapped in a HAL EntityModel.
+      allOf:
+        - $ref: '#/components/schemas/MemberDetailsResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    MemberDetailsResponse:
+      type: object
+      description: |
+        Detailed member representation. Fields carrying x-klabis-authority are omitted for callers
+        without that authority; x-klabis-owner-visible additionally grants access to the member
+        themselves.
+      properties:
+        id:
+          type: string
+          format: uuid
+          x-klabis-owner-id: true
+        registrationNumber:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        nationality:
+          type: string
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        gender:
+          $ref: '#/components/schemas/Gender'
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/AddressResponse'
+        guardian:
+          $ref: '#/components/schemas/GuardianDTO'
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        active:
+          type: boolean
+        chipNumber:
+          type: string
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        identityCard:
+          $ref: '#/components/schemas/IdentityCardDto'
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        medicalCourse:
+          $ref: '#/components/schemas/MedicalCourseDto'
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        trainerLicense:
+          $ref: '#/components/schemas/TrainerLicenseDto'
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        refereeLicense:
+          $ref: '#/components/schemas/RefereeLicenseDto'
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        drivingLicenseGroup:
+          $ref: '#/components/schemas/DrivingLicenseGroup'
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        dietaryRestrictions:
+          type: string
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        birthNumber:
+          type: string
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        bankAccountNumber:
+          type: string
+          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-owner-visible: true
+        suspensionReason:
+          $ref: '#/components/schemas/DeactivationReason'
+          x-klabis-authority: MEMBERS_MANAGE
+        suspendedAt:
+          type: string
+          format: date-time
+          x-klabis-authority: MEMBERS_MANAGE
+        suspendedBy:
+          type: string
+          x-klabis-authority: MEMBERS_MANAGE
+        suspensionNote:
+          type: string
+          x-klabis-authority: MEMBERS_MANAGE
+
+    EntityModelMemberSummaryResponse:
+      description: MemberSummaryResponse as served, wrapped in a HAL EntityModel.
+      allOf:
+        - $ref: '#/components/schemas/MemberSummaryResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    MemberSummaryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique member identifier (UUID)
+          example: 123e4567-e89b-12d3-a456-426614174000
+        firstName:
+          type: string
+          description: Member's first name
+          example: Jan
+        lastName:
+          type: string
+          description: Member's last name
+          example: Novák
+        registrationNumber:
+          type: string
+          description: Member's unique registration number
+          example: ZBM0501
+        email:
+          type: string
+          x-klabis-authority: MEMBERS_MANAGE
+          description: Member's email address (visible to admins only)
+        active:
+          type: boolean
+          x-klabis-authority: MEMBERS_MANAGE
+          description: Whether the member is active (visible to admins only)
+
+    PagedModelEntityModelMemberSummaryResponse:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            memberSummaryResponseList:
+              type: array
+              items:
+                $ref: '#/components/schemas/EntityModelMemberSummaryResponse'
+        _links:
+          $ref: './_shared/hal.yaml#/components/schemas/Links'
+        page:
+          $ref: './_shared/hal.yaml#/components/schemas/PageMetadata'
+
+    # application/json counterpart of PagedModelEntityModelMemberSummaryResponse, for backend codegen
+    # (see stripHal.mjs): a plain array of the payload, mapped in build.gradle.kts onto Page<...>
+    # since pagination metadata has no bare-array equivalent.
+    MemberSummaryResponseList:
+      type: array
+      items:
+        $ref: '#/components/schemas/MemberSummaryResponse'
+
+    MemberOptionResponse:
+      type: object
+      description: Member option for select components
+      properties:
+        value:
+          type: string
+          description: Member UUID
+          example: 123e4567-e89b-12d3-a456-426614174000
+        prompt:
+          type: string
+          description: Display name with registration number
+          example: Jan Novák (ZBM0001)
+
+    # --- Requests ----------------------------------------------------------
+
+    RegisterMemberRequest:
+      type: object
+      description: Member registration request
+      required: [firstName, lastName, dateOfBirth, nationality, gender, email, phone, address]
+      properties:
+        firstName:
+          type: string
+          x-klabis-not-blank: true
+          description: Member's first name
+          example: Jan
+          maxLength: 100
+        lastName:
+          type: string
+          x-klabis-not-blank: true
+          description: Member's last name
+          example: Novák
+          maxLength: 100
+        dateOfBirth:
+          type: string
+          format: date
+          description: Member's date of birth
+          example: '2005-05-15'
+          # No domain guard for this one — Member does not re-check it, so the constraint has to
+          # survive on the DTO.
+          x-klabis-past: true
+        nationality:
+          type: string
+          x-klabis-not-blank: true
+          description: Nationality (ISO 3166-1 alpha-2 code)
+          example: CZ
+          minLength: 2
+          maxLength: 2
+        gender:
+          $ref: '#/components/schemas/Gender'
+        email:
+          type: string
+          format: email
+          x-klabis-not-blank: true
+          description: Email address
+          example: jan.novak@example.com
+          maxLength: 255
+        phone:
+          type: string
+          x-klabis-not-blank: true
+          description: Phone number in E.164 format
+          example: '+420777123456'
+          pattern: '^\+[0-9\s]{7,20}$'
+        address:
+          $ref: '#/components/schemas/AddressRequest'
+        guardian:
+          $ref: '#/components/schemas/GuardianDTO'
+          description: Guardian information (required for minors under 18)
+        birthNumber:
+          type: string
+          description: Birth number (rodné číslo) — Czech nationals only, format RRMMDD/XXXX or RRMMDDXXXX
+          example: 900101/1234
+        bankAccountNumber:
+          type: string
+          description: Bank account number (IBAN or domestic Czech format)
+          example: CZ6508000000192000145399
+          maxLength: 50
+
+    UpdateMemberRequest:
+      type: object
+      description: |
+        Partial update request. An absent property is left untouched, whereas an explicitly null
+        value clears the field — where the underlying field is optional.
+
+        Clearing a field the domain requires is rejected. firstName, lastName, dateOfBirth and
+        gender have no cleared state, so a null there is treated as "leave alone". An explicit null
+        is refused for email or phone unless a guardian still covers that contact, for guardian
+        when the member is a minor, and for birthNumber when the member is a Czech national.
+      # Properties are inlined rather than sharing named wrapper schemas: seven of them are plain
+      # strings with different constraints (email 255, chipNumber 50 + digits, firstName 100), and a
+      # shared schema can only carry one set.
+      properties:
+        email:
+          type: ['string', 'null']
+          maxLength: 255
+        phone:
+          type: ['string', 'null']
+          maxLength: 50
+        address:
+          oneOf:
+            - $ref: '#/components/schemas/AddressRequest'
+            - type: 'null'
+        firstName:
+          type: ['string', 'null']
+          maxLength: 100
+          x-klabis-not-blank: true
+          x-klabis-authority: MEMBERS_MANAGE
+        lastName:
+          type: ['string', 'null']
+          maxLength: 100
+          x-klabis-not-blank: true
+          x-klabis-authority: MEMBERS_MANAGE
+        dateOfBirth:
+          type: ['string', 'null']
+          format: date
+          x-klabis-authority: MEMBERS_MANAGE
+        # gender re-declares the Gender enum inline instead of $ref-ing it. Both composition
+        # keywords are unusable here: oneOf/allOf strip property-level vendor extensions, and an
+        # allOf that keeps x-klabis-authority still generates a bare `Gender`, not
+        # `JsonNullable<Gender>` — and RequestBodyFieldAuthorizationAdvice skips every component
+        # that is not JsonNullable, so the @HasAuthority it emits is never evaluated. Inlining is
+        # what keeps the wrapper and the extension at the same time.
+        # A null is accepted on the wire and treated as "leave alone" (PersonalInformation rejects
+        # a null gender); the wrapper is here for the authorization check, not to clear the field.
+        gender:
+          type: ['string', 'null']
+          enum: ['MALE', 'FEMALE', null]
+          x-klabis-authority: MEMBERS_MANAGE
+        chipNumber:
+          type: ['string', 'null']
+          maxLength: 50
+          pattern: '^[0-9]+$'
+        nationality:
+          type: ['string', 'null']
+          minLength: 2
+          maxLength: 2
+        identityCard:
+          oneOf:
+            - $ref: '#/components/schemas/IdentityCardDto'
+            - type: 'null'
+        medicalCourse:
+          oneOf:
+            - $ref: '#/components/schemas/MedicalCourseDto'
+            - type: 'null'
+        trainerLicense:
+          oneOf:
+            - $ref: '#/components/schemas/TrainerLicenseDto'
+            - type: 'null'
+        refereeLicense:
+          oneOf:
+            - $ref: '#/components/schemas/RefereeLicenseDto'
+            - type: 'null'
+        drivingLicenseGroup:
+          oneOf:
+            - $ref: '#/components/schemas/DrivingLicenseGroup'
+            - type: 'null'
+        dietaryRestrictions:
+          type: ['string', 'null']
+          maxLength: 500
+        birthNumber:
+          type: ['string', 'null']
+          x-klabis-authority: MEMBERS_MANAGE
+        bankAccountNumber:
+          type: ['string', 'null']
+          maxLength: 50
+        guardian:
+          oneOf:
+            - $ref: '#/components/schemas/GuardianDTO'
+            - type: 'null'
+
+    SuspendMembershipRequest:
+      type: object
+      description: Suspension request
+      required: [reason]
+      properties:
+        reason:
+          $ref: '#/components/schemas/DeactivationReason'
+        note:
+          type: string
+          maxLength: 500
+
+    # The 409 body of suspendMember. Both blockers are independent (a member can simultaneously
+    # owe money AND be a group's last owner), so this is a plain object carrying each as an
+    # optional attribute rather than a oneOf — a oneOf can only ever report one blocker at a time,
+    # forcing the caller to fix issues one round-trip at a time.
+    SuspensionBlockedWarning:
+      type: object
+      description: |
+        Suspension is blocked by one or both independent reasons. Both `debt` and `groups` are
+        checked and reported together, not exclusively.
+      properties:
+        debt:
+          $ref: '#/components/schemas/OutstandingDebtWarning'
+        groups:
+          $ref: '#/components/schemas/LastOwnerWarning'
+
+    OutstandingDebtWarning:
+      type: object
+      description: The member owes money — settle the account before suspending them.
+      required: [balance, accountLink]
+      properties:
+        balance:
+          $ref: '#/components/schemas/MonetaryAmount'
+        accountLink:
+          type: string
+          format: uri
+          description: Absolute URL of the member's finance account
+
+    LastOwnerWarning:
+      type: object
+      description: |
+        The member is the sole owner of the listed groups. Each one needs another owner (or must be
+        dissolved) before the suspension can go through.
+      required: [message, affectedGroups]
+      properties:
+        message:
+          type: string
+        affectedGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/AffectedGroup'
+
+    AffectedGroup:
+      type: object
+      required: [groupId, groupName, groupType]
+      properties:
+        groupId:
+          type: string
+          format: uuid
+        groupName:
+          type: string
+        groupType:
+          type: string
+          enum: [FREE, FAMILY, TRAINING]
+          description: Which of the three group aggregates the member owns
+
+    MonetaryAmount:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          description: Negative when the member is in debt
+        currency:
+          type: string
+          description: ISO 4217 code
+
+    # --- Shared value objects ----------------------------------------------
+
+    AddressResponse:
+      type: object
+      properties:
+        street:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+
+    AddressRequest:
+      type: object
+      required: [street, city, postalCode, country]
+      properties:
+        street:
+          type: string
+          x-klabis-not-blank: true
+          maxLength: 200
+        city:
+          type: string
+          x-klabis-not-blank: true
+          maxLength: 100
+        postalCode:
+          type: string
+          x-klabis-not-blank: true
+          description: Alphanumeric, hyphens and spaces allowed
+          maxLength: 20
+          # Kept in sync with Address.POSTAL_CODE_PATTERN, which the aggregate enforces too.
+          pattern: '^[A-Za-z0-9][A-Za-z0-9 -]*[A-Za-z0-9]$|^[A-Za-z0-9]$'
+        country:
+          type: string
+          x-klabis-not-blank: true
+          description: ISO 3166-1 alpha-2 code
+          # Kept in sync with Address.ISO_3166_ALPHA_2_PATTERN.
+          pattern: '^[A-Za-z]{2}$'
+
+    GuardianDTO:
+      type: object
+      description: Guardian information for minors
+      required: [firstName, lastName, relationship, email, phone]
+      properties:
+        # minLength: 1 is what makes these reject an empty string. `required` only means the key
+        # must be present, so it generates @NotNull — which happily accepts "".
+        firstName:
+          type: string
+          description: Guardian's first name
+          example: Pavel
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          description: Guardian's last name
+          example: Novák
+          minLength: 1
+          maxLength: 100
+        relationship:
+          type: string
+          description: Relationship to member (e.g., PARENT, LEGAL_GUARDIAN)
+          example: PARENT
+          minLength: 1
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          description: Guardian's email address
+          example: pavel.novak@example.com
+          minLength: 1
+        phone:
+          type: string
+          description: Guardian's phone number
+          example: '+420987654321'
+          minLength: 1
+          pattern: '^\+?[0-9\s\-()]{7,20}$'
+
+    IdentityCardDto:
+      type: object
+      properties:
+        cardNumber:
+          type: string
+          maxLength: 50
+        validityDate:
+          type: string
+          format: date
+
+    MedicalCourseDto:
+      type: object
+      properties:
+        completionDate:
+          type: string
+          format: date
+        validityDate:
+          type: string
+          format: date
+
+    TrainerLicenseDto:
+      type: object
+      properties:
+        level:
+          type: string
+          enum: [T1, T2, T3]
+        validityDate:
+          type: string
+          format: date
+
+    RefereeLicenseDto:
+      type: object
+      properties:
+        level:
+          type: string
+          enum: [R1, R2, R3]
+        validityDate:
+          type: string
+          format: date
+
+    Gender:
+      type: string
+      enum: [MALE, FEMALE]
+
+    DeactivationReason:
+      type: string
+      enum: [ODHLASKA, PRESTUP, OTHER]
+
+    DrivingLicenseGroup:
+      type: string
+      enum: [B, BE, C, C1, D, D1, T, AM, A1, A2, A]
+

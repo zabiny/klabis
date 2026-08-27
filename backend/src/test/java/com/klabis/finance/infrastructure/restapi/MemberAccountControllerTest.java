@@ -218,6 +218,25 @@ class MemberAccountControllerTest {
         }
 
         @Test
+        @DisplayName("offers the deposit template's fields as writable, not read-only")
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.FINANCE_MANAGE})
+        void shouldExposeWritableDepositFields() throws Exception {
+            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+
+            // required/type are asserted alongside readOnly so the test cannot pass through the
+            // properties array being empty or the field missing altogether.
+            mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.deposit.properties[?(@.name=='amount')].readOnly")
+                            .doesNotExist())
+                    .andExpect(jsonPath("$._templates.deposit.properties[?(@.name=='amount')].required")
+                            .value(true))
+                    .andExpect(jsonPath("$._templates.deposit.properties[?(@.name=='amount')].type")
+                            .value("number"));
+        }
+
+        @Test
         @DisplayName("returns 200 without deposit affordance for plain member viewing own account")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
         void shouldReturnAccountWithoutDepositAffordanceForRegularMember() throws Exception {
@@ -239,6 +258,23 @@ class MemberAccountControllerTest {
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.charge").exists());
+        }
+
+        @Test
+        @DisplayName("offers the charge template's fields as writable, not read-only")
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.FINANCE_MANAGE})
+        void shouldExposeWritableChargeFields() throws Exception {
+            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+
+            mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.charge.properties[?(@.name=='amount')].readOnly")
+                            .doesNotExist())
+                    .andExpect(jsonPath("$._templates.charge.properties[?(@.name=='amount')].required")
+                            .value(true))
+                    .andExpect(jsonPath("$._templates.charge.properties[?(@.name=='amount')].type")
+                            .value("number"));
         }
 
         @Test
@@ -504,7 +540,9 @@ class MemberAccountControllerTest {
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.reverse").exists());
+                    .andExpect(jsonPath("$._templates.reverse").exists())
+                    .andExpect(jsonPath("$._templates.reverse.properties[?(@.name=='note')].readOnly")
+                            .doesNotExist());
         }
 
         @Test

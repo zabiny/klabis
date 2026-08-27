@@ -11,10 +11,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.core.task.SyncTaskExecutor;
-import org.springframework.core.task.TaskExecutor;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.ActiveProfiles;
@@ -99,20 +95,6 @@ class MemberLifecycleE2ETest {
     @MockitoBean
     @SuppressWarnings("unused")
     private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
-
-    /**
-     * Test configuration to use synchronous task executor.
-     * This ensures async event handlers execute synchronously during testing,
-     * making it easier to verify event processing without timing issues.
-     */
-    @TestConfiguration
-    static class SyncTaskExecutorConfiguration {
-
-        @Bean
-        TaskExecutor taskExecutor() {
-            return new SyncTaskExecutor();
-        }
-    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -268,7 +250,7 @@ class MemberLifecycleE2ETest {
                                                 "street": "Nová 456",
                                                 "city": "Brno",
                                                 "postalCode": "60000",
-                                                "country": "CZ"
+                                            "country": "CZ"
                                             }
                                         }
                                         """)

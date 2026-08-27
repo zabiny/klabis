@@ -1,0 +1,527 @@
+# Common module — RootController, DashboardController, PasswordChangeController,
+# PasswordSetupController, PermissionController.
+#
+# rootNavigation and dashboard generate RootApi/DashboardApi interfaces following the standard
+# "returning plain payloads" pattern (see klabis-api-spec skill): the envelope schemas
+# (EntityModelRootModel/EntityModelDashboardModel) are mapped (schemaMappings, build.gradle.kts)
+# onto the plain RootModel/DashboardModel payload records, not onto EntityModel<...>. Both types
+# are empty markers with NO domain aggregate — the controller populates HalResponseContext with a
+# non-null placeholder String anyway, since HalResponseBodyAdvice.wrapSingle() only wraps a payload
+# into EntityModelWithDomain when the stored domain is non-null. Every link (including what used to
+# be added inline in the controller) is added externally by per-module
+# RepresentationModelProcessor<EntityModel<RootModel>>/<EntityModel<DashboardModel>> beans — see
+# RootController/DashboardController for the in-module ones.
+#
+# PasswordSetupController's three operations, and OrisController's one operation in oris.yaml, are
+# plain JSON — not HAL+FORMS. PasswordChangeController returns no body at all. Content types below
+# follow the controllers' actual `produces`, not a blanket application/prs.hal-forms+json.
+#
+# rootNavigation/dashboard do NOT get an application/json sibling (unlike every other migrated
+# module's HAL responses): RootModel/DashboardModel are empty marker records with no payload to
+# type off, and both operations already declare application/hal+json alongside
+# application/prs.hal-forms+json. Adding a third content-type entry pointing at the same
+# EntityModelRootModel/EntityModelDashboardModel schema makes the generator's return-type
+# resolution collapse to ResponseEntity<Void> instead of ResponseEntity<RootModel>/<DashboardModel>
+# — confirmed empirically by generating with two vs. three content types on the same schema.
+# getUserPermissions, whose response carries a real payload, gets the sibling normally.
+#
+# Tag renames (multi-word tags are silently dropped by the generator — see klabis-api-spec skill):
+#   "My Profile"     -> "MyProfile"      (PasswordChangeController)
+#   "Password Setup" -> "PasswordSetup"  (PasswordSetupController)
+# PermissionController had NO @Tag at all; added "Permissions" here and on the controller.
+
+# Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
+# from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
+# klabis.yaml rather than shared, because $ref cannot target a document's own info; the
+# bundler ignores both keys (modules are pulled in by #/paths/... pointer, never whole-file)
+# and validate.mjs pins version to the root's so the two cannot drift.
+openapi: 3.1.0
+
+info:
+  title: Klabis API — Common module
+  description: The Common slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
+paths:
+
+  /api:
+    get:
+      operationId: rootNavigation
+      tags: [Root]
+      summary: API root navigation
+      description: |
+        HAL+JSON root resource. Its only purpose is to be the starting node for a HAL browser —
+        every link in the response is added by per-module postprocessors, not by this operation.
+      security:
+        - KlabisAuth: [openid]
+      # No x-klabis-authority: any authenticated (or anonymous, per WebSecurityCommonConfiguration
+      # /api/** .authenticated()) caller reaches this. The "admin" link for a hardcoded username is
+      # link-level filtering, not endpoint authorization — it is not expressible as
+      # x-klabis-authority; it now lives in RootAdminLinkProcessor (moved out of the controller
+      # since rootNavigation() returns a plain RootModel with no EntityModel to attach a link to).
+      # EntityModelRootModel is mapped onto the plain RootModel payload, see module header comment.
+      responses:
+        '200':
+          description: API root resource
+          # No application/json sibling here: RootModel is an empty marker record (there is no
+          # payload to type off), and this operation already produces THREE content types
+          # (application/hal+json, application/prs.hal-forms+json, and — if a sibling were added —
+          # application/json). Adding a third $ref to the same EntityModelRootModel schema makes the
+          # generator's return-type resolution give up and fall back to ResponseEntity<Void>,
+          # breaking RootController's @Override; confirmed empirically, see common module header
+          # comment. Two content types on this schema resolve fine; three do not.
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelRootModel'
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelRootModel'
+          x-hal-links:
+            admin:
+              description: Present only when authenticated as the hardcoded "admin" username
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/dashboard:
+    get:
+      operationId: dashboard
+      tags: [Dashboard]
+      summary: Dashboard widget link index
+      description: |
+        HAL+JSON link index for dashboard widgets. Carries no payload data of its own — every
+        widget link is added by per-module postprocessors.
+      security:
+        - KlabisAuth: [openid]
+      # No x-klabis-authority: authenticated callers only (per /api/** .authenticated()); no
+      # per-caller authority check in the controller. EntityModelDashboardModel is mapped onto the
+      # plain DashboardModel payload — same reason as rootNavigation above. The self link moved to
+      # DashboardSelfLinkProcessor for the same reason as RootAdminLinkProcessor.
+      responses:
+        '200':
+          description: Dashboard link index
+          # No application/json sibling — same reasoning as rootNavigation above.
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelDashboardModel'
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelDashboardModel'
+          x-hal-links:
+            self:
+              description: This dashboard
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/me/password-change:
+    post:
+      operationId: changePassword
+      tags: [MyProfile]
+      summary: Change password
+      description: |
+        Changes the current user's password. Requires the correct current password. The target
+        user is always the caller — resolved from the Authentication token
+        (KlabisJwtAuthenticationToken.getUserId()) — so this operation carries no authority and no
+        ownership extension; it can only ever act on the caller's own account.
+      security:
+        - KlabisAuth: [openid]
+      x-spring-provide-args:
+        - 'org.springframework.security.core.Authentication authentication'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password changed successfully
+          content:
+            application/json: {}
+        '400':
+          description: Incorrect current password or new password fails complexity rules
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+
+  /api/auth/password-setup/validate:
+    get:
+      operationId: validatePasswordSetupToken
+      tags: [PasswordSetup]
+      summary: Validate password setup token
+      description: |
+        Validates a token before showing the password setup form.
+
+        Deliberately public — WebSecurityCommonConfiguration permits
+        `/api/auth/password-setup/**` unconditionally (`.permitAll()`). This is an
+        account-activation endpoint used before the user has a password at all; the token in the
+        request is the security, not an authority. Do NOT add x-klabis-authority here.
+      parameters:
+        - name: token
+          in: query
+          description: The plain text token from the email link
+          required: true
+          schema:
+            type: string
+            # pattern, not just required: `required` alone only generates @NotNull, which accepts
+            # "" — the controller then calls the service with a blank token. Unlike schema
+            # properties, a parameter cannot use x-klabis-not-blank: only pojo.mustache is
+            # overridden, so the extension would be silently dropped on the stock api template.
+            pattern: '^(?!\s*$).+'
+          example: abc123def456
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateTokenResponse'
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '410':
+          description: Token expired or already used
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+
+  /api/auth/password-setup/complete:
+    post:
+      operationId: completePasswordSetup
+      tags: [PasswordSetup]
+      summary: Complete password setup
+      description: |
+        Sets the user's password and activates the account.
+
+        Deliberately public — see validatePasswordSetupToken above; permitAll() in
+        WebSecurityCommonConfiguration, secured by the setup token in the request body, not by an
+        authority.
+      x-spring-provide-args:
+        - 'jakarta.servlet.http.HttpServletRequest httpRequest'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRequest'
+      responses:
+        '200':
+          description: Password set successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordSetupResponse'
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '410':
+          description: Token expired or already used
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+
+  /api/auth/password-setup/request:
+    post:
+      operationId: requestNewPasswordSetupToken
+      tags: [PasswordSetup]
+      summary: Request new password setup token
+      description: |
+        Requests a new token if the previous one expired. Rate limited to 3 requests per hour per
+        registration number. Always returns a generic success message regardless of whether the
+        account exists or is eligible, to avoid leaking account state.
+
+        Deliberately public — see validatePasswordSetupToken above; permitAll() in
+        WebSecurityCommonConfiguration. There is no token to check yet at this step (that's the
+        point of the endpoint), so the only guard is rate limiting, not an authority.
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequestRequest'
+      responses:
+        '200':
+          description: Request processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRequestResponse'
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+
+  /api/users/{id}/permissions:
+    get:
+      operationId: getUserPermissions
+      tags: [Permissions]
+      summary: Retrieve user permissions
+      description: Returns the authorities granted to a user.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_PERMISSIONS
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: User permissions found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionsResponse'
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelPermissionsResponse'
+          x-hal-links:
+            self:
+              description: This user's permissions
+          x-hal-templates:
+            default:
+              operation: updatePermissions
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    put:
+      operationId: updatePermissions
+      tags: [Permissions]
+      summary: Update user permissions
+      description: Replaces the full set of authorities granted to a user.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_PERMISSIONS
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePermissionsRequest'
+      responses:
+        '204':
+          description: Permissions updated
+          headers:
+            Location:
+              description: URI of the user's permissions resource
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          description: |
+            Conflict - would remove the last user able to manage permissions, or an admin lockout
+            would result
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
+
+  parameters:
+    UserIdParam:
+      name: id
+      in: path
+      description: User UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+
+    # RootModel/DashboardModel are empty marker records — no properties, all content comes from
+    # links added by per-module postprocessors. Mapped (schemaMappings) onto the plain
+    # RootModel/DashboardModel payload records, see module header comment.
+    EntityModelRootModel:
+      type: object
+      properties:
+        _links:
+          $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    EntityModelDashboardModel:
+      type: object
+      properties:
+        _links:
+          $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          x-klabis-not-blank: true
+        newPassword:
+          type: string
+          x-klabis-not-blank: true
+
+    ValidateTokenResponse:
+      type: object
+      description: Response for token validation.
+      properties:
+        valid:
+          type: boolean
+        expiresAt:
+          type: string
+          format: date-time
+
+    SetPasswordRequest:
+      type: object
+      required: [token, password, passwordConfirmation]
+      properties:
+        token:
+          type: string
+          x-klabis-not-blank: true
+        password:
+          type: string
+          x-klabis-not-blank: true
+          description: Minimum 12 characters with uppercase, lowercase, number, and special character.
+        passwordConfirmation:
+          type: string
+          x-klabis-not-blank: true
+
+    PasswordSetupResponse:
+      type: object
+      description: Response for completed password setup.
+      properties:
+        message:
+          type: string
+        registrationNumber:
+          type: string
+
+    TokenRequestRequest:
+      type: object
+      required: [registrationNumber, email]
+      properties:
+        registrationNumber:
+          type: string
+          x-klabis-not-blank: true
+          description: 'Format: XXXYYDD'
+        email:
+          type: string
+          format: email
+          x-klabis-not-blank: true
+
+    TokenRequestResponse:
+      type: object
+      description: Response for password setup token request.
+      properties:
+        message:
+          type: string
+
+    EntityModelPermissionsResponse:
+      allOf:
+        - $ref: '#/components/schemas/PermissionsResponse'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+            _templates:
+              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+
+    PermissionsResponse:
+      type: object
+      description: A user's granted authorities.
+      properties:
+        userId:
+          type: string
+          format: uuid
+        authorities:
+          type: array
+          items:
+            type: string
+
+    UpdatePermissionsRequest:
+      type: object
+      properties:
+        authorities:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Authority'
+
+    # Mapped onto com.klabis.common.users.Authority via schemaMappings. The enum values are the
+    # colon-separated wire format produced by Authority's @JsonValue, not the Java constant names.
+    Authority:
+      type: string
+      enum:
+        - CALENDAR:MANAGE
+        - MEMBERS:MANAGE
+        - MEMBERS:READ
+        - MEMBERS:PERMISSIONS
+        - EVENTS:READ
+        - EVENTS:MANAGE
+        - EVENTS:REGISTRATIONS
+        - GROUPS:TRAINING
+        - FINANCE:MANAGE

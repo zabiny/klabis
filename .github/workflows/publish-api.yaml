@@ -3,15 +3,26 @@ run-name: ${{ github.actor }} changed API
 on:
   push:
     branches:
-      - main 
+      - main
     paths:
-      - 'docs/openapi/klabis-full.json'
+      - 'docs/openapi/spec/**'
 jobs:
   publish-changes:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install openapi-bundle dependencies
+        run: npm ci --prefix tools/openapi-bundle
+
+      - name: Bundle OpenAPI spec
+        run: node tools/openapi-bundle/bundle.mjs
 
       - name: Generate Swagger UI
         uses: Legion2/swagger-ui-action@v1

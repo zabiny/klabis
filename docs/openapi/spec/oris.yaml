@@ -1,0 +1,99 @@
+# ORIS module — the API surface of OrisController. Plain JSON (application/json), not HAL+FORMS:
+# the controller's class-level @RequestMapping declares produces = MediaType.APPLICATION_JSON_VALUE
+# and returns a bare list, not an EntityModel/CollectionModel.
+#
+# Tag is "OrisImport", not "ORIS": the generator's `apis` global property matches tags by
+# substring, not exact name, and events.yaml already owns a tag "OrisEvents" — "ORIS" alone would
+# have matched both and pulled OrisEventsApi's operations into this module's generated interface
+# instead of (or alongside) this module's own. See klabis-api-spec skill and the events.yaml
+# OrisEvents section.
+
+# Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
+# from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
+# klabis.yaml rather than shared, because $ref cannot target a document's own info; the
+# bundler ignores both keys (modules are pulled in by #/paths/... pointer, never whole-file)
+# and validate.mjs pins version to the root's so the two cannot drift.
+openapi: 3.1.0
+
+info:
+  title: Klabis API — ORIS integration module
+  description: The ORIS integration slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
+paths:
+
+  /api/oris/events:
+    get:
+      operationId: listOrisEvents
+      tags: [OrisImport]
+      summary: List upcoming ORIS events
+      description: |
+        Returns events from ORIS available for import. Accepts multiple region parameters (ORIS
+        region enum names) to combine results. Already-imported events are filtered out.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      parameters:
+        - name: region
+          in: query
+          description: ORIS region codes to query. Defaults to JIHOMORAVSKA when omitted.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: List of ORIS events available for import
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrisEventSummary'
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
+
+  schemas:
+
+    OrisEventSummary:
+      type: object
+      description: A single ORIS event available for import.
+      properties:
+        id:
+          type: integer
+          format: int32
+        name:
+          type: string
+        date:
+          type: string
+          format: date
+        location:
+          type: string
+        organizer:
+          type: string

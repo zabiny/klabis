@@ -2107,10 +2107,13 @@ class EventTest {
         @DisplayName("renames a category matched by orisId and keeps its id and registrations")
         void renamesCategoryMatchedByOrisIdAndKeepsRegistrations() {
             EventCategory m21 = new EventCategory(EventCategoryId.generate(), "42", "M21", null);
+            // registerMember() below refuses to register on or after the event date, so this date
+            // has to stay in the future as the suite ages — DEFAULT_DATE is relative for the same
+            // reason.
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .orisId(100)
                     .name("Race")
-                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .eventDate(DEFAULT_DATE)
                     .location("Forest")
                     .organizer("OOB")
                     .categories(List.of(m21))
@@ -2122,7 +2125,7 @@ class EventTest {
             EventCategory renamed = new EventCategory(EventCategoryId.generate(), "42", "M21 Elite", null);
             event.syncFromOris(EventSyncFromOrisBuilder.builder()
                     .name("Race")
-                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .eventDate(DEFAULT_DATE)
                     .location("Forest")
                     .organizer("OOB")
                     .registrationDeadlines(RegistrationDeadlines.none())
@@ -2172,7 +2175,7 @@ class EventTest {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .orisId(100)
                     .name("Race")
-                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .eventDate(DEFAULT_DATE)
                     .location("Forest")
                     .organizer("OOB")
                     .categories(List.of(m21))
@@ -2183,7 +2186,7 @@ class EventTest {
 
             event.syncFromOris(EventSyncFromOrisBuilder.builder()
                     .name("Race")
-                    .eventDate(LocalDate.of(2026, 9, 10))
+                    .eventDate(DEFAULT_DATE)
                     .location("Forest")
                     .organizer("OOB")
                     .registrationDeadlines(RegistrationDeadlines.none())

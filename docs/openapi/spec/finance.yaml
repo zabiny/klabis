@@ -1,0 +1,546 @@
+# Finance module — the API surface of MemberAccountController (finance module).
+#
+# These paths live under /api/members/{memberId}/account, which looks like a members path but is
+# served by the finance module's controller — see klabis-api-spec skill: "decide by which controller
+# serves it, not by the URL prefix."
+#
+# The three GET operations were guarded by an imperative checkAccountAccess() check: caller must be
+# the account owner OR hold FINANCE:MANAGE. That maps to x-klabis-authority + x-klabis-owner-visible
+# (OR semantics) on each GET operation. The three POST operations are FINANCE:MANAGE only — never
+# owner-accessible — so they carry x-klabis-authority alone. They still share
+# AccountMemberIdParam and so inherit its @OwnerId, which is inert without @OwnerVisible.
+
+# Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
+# from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
+# klabis.yaml rather than shared, because $ref cannot target a document's own info; the
+# bundler ignores both keys (modules are pulled in by #/paths/... pointer, never whole-file)
+# and validate.mjs pins version to the root's so the two cannot drift.
+openapi: 3.1.0
+
+info:
+  title: Klabis API — Finance module
+  description: The Finance slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
+paths:
+
+  /api/members/{memberId}/account:
+    get:
+      operationId: getAccount
+      tags: [Finance]
+      summary: Get a member's finance account balance
+      description: Returns the current balance of a member's finance account.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: FINANCE_MANAGE
+      x-klabis-owner-visible: true
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/AccountMemberIdParam'
+      responses:
+        '200':
+          description: Account found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberAccountResource'
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelMemberAccountResource'
+          x-hal-links:
+            self:
+              description: This account
+            transactions:
+              operation: listTransactions
+              description: Transaction history
+            accountOwner:
+              operation: getMember
+              description: The member this account belongs to
+          x-hal-templates:
+            deposit:
+              operation: deposit
+              description: Present only for callers with FINANCE:MANAGE
+            charge:
+              operation: charge
+              description: Present only for callers with FINANCE:MANAGE
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/members/{memberId}/account/transactions:
+    get:
+      operationId: listTransactions
+      tags: [Finance]
+      summary: List a member's account transactions
+      description: |
+        Paginated, filterable transaction history for a member's finance account. Supports
+        filtering by occurred-date range and transaction type.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: FINANCE_MANAGE
+      x-klabis-owner-visible: true
+      x-spring-paginated: true
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/AccountMemberIdParam'
+        - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
+        - $ref: './_shared/pagination.yaml#/components/parameters/SizeParam'
+        - $ref: '#/components/parameters/TransactionSortParam'
+        - name: occurredAtFrom
+          in: query
+          description: Only include transactions occurred on or after this date
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: occurredAtTo
+          in: query
+          description: Only include transactions occurred on or before this date
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: type
+          in: query
+          description: 'Transaction type filter: DEPOSIT, CHARGE, OTHER'
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated transaction history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResourcePage'
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/PagedModelEntityModelTransactionResource'
+          x-hal-links:
+            self:
+              description: This collection, with the current paging and filter parameters
+            first:
+              description: First page (present when the result is paged)
+            last:
+              description: Last page (present when the result is paged)
+            next:
+              description: Next page (present when one exists)
+            prev:
+              description: Previous page (present when one exists)
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: deposit
+      tags: [Finance]
+      summary: Record a deposit on a member's account
+      description: Records a deposit transaction, crediting the member's account balance.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: FINANCE_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+      parameters:
+        - $ref: '#/components/parameters/AccountMemberIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepositRequest'
+      responses:
+        '201':
+          description: Deposit recorded
+          headers:
+            Location:
+              description: URI of the created transaction
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/members/{memberId}/account/transactions/charge:
+    post:
+      operationId: charge
+      tags: [Finance]
+      summary: Record a charge on a member's account
+      description: Records a charge transaction, debiting the member's account balance.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: FINANCE_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+      parameters:
+        - $ref: '#/components/parameters/AccountMemberIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChargeRequest'
+      responses:
+        '201':
+          description: Charge recorded
+          headers:
+            Location:
+              description: URI of the created transaction
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/members/{memberId}/account/transactions/{txId}:
+    get:
+      operationId: getTransaction
+      tags: [Finance]
+      summary: Get a single account transaction
+      description: Returns a single transaction on a member's finance account.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: FINANCE_MANAGE
+      x-klabis-owner-visible: true
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/AccountMemberIdParam'
+        - $ref: '#/components/parameters/TxIdParam'
+      responses:
+        '200':
+          description: Transaction found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResource'
+            application/prs.hal-forms+json:
+              schema:
+                $ref: '#/components/schemas/EntityModelTransactionResource'
+          x-hal-links:
+            self:
+              description: This transaction
+            account:
+              description: The account this transaction belongs to
+            reversedBy:
+              description: The reversal transaction, when this transaction has been reversed
+            reverses:
+              description: The original transaction, when this transaction is itself a reversal
+            recordedBy:
+              operation: getMember
+              description: Member resource of the user who recorded this transaction
+          x-hal-templates:
+            reverse:
+              operation: reverse
+              description: |
+                Present only for callers with FINANCE:MANAGE, on a non-reversal transaction that
+                has not already been reversed.
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/members/{memberId}/account/transactions/{txId}/reverse:
+    post:
+      operationId: reverse
+      tags: [Finance]
+      summary: Reverse an account transaction
+      description: |
+        Creates a reversal transaction offsetting the original. Fails with 409 when the transaction
+        has already been reversed.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: FINANCE_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+      parameters:
+        - $ref: '#/components/parameters/AccountMemberIdParam'
+        - $ref: '#/components/parameters/TxIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReverseRequest'
+      responses:
+        '201':
+          description: Reversal recorded
+          headers:
+            Location:
+              description: URI of the created reversal transaction
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
+
+  parameters:
+    AccountMemberIdParam:
+      name: memberId
+      in: path
+      description: Member UUID
+      required: true
+      # Marks the owner for operations that declare x-klabis-owner-visible. Inert on its own:
+      # @OwnerId is only consulted for a method or field already marked @OwnerVisible, so the
+      # operations here that do not opt into ownership are unaffected.
+      x-klabis-owner-id: true
+      schema:
+        type: string
+        format: uuid
+
+    TxIdParam:
+      name: txId
+      in: path
+      description: Transaction UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    TransactionSortParam:
+      name: sort
+      in: query
+      description: |
+        Sorting criteria in the format: property,(asc|desc). Allowed fields: occurredAt,
+        recordedAt, amount, type.
+      required: false
+      schema:
+        type: array
+        default: [occurredAt,DESC]
+        items:
+          type: string
+
+  schemas:
+
+    # Named (not inline) so schemaMappings can retarget it onto Page<TransactionResource> — an inline
+    # array has no schema name to map from, and the generator would otherwise infer
+    # List<TransactionResource> straight from this application/json sibling (it wins type resolution
+    # over the emptied HAL schema), silently changing listTransactions' return type away from Page<T>.
+    # Named "...Page", not "...List": the schema is a plain array on the wire (pagination metadata
+    # only exists in the HAL sibling), but the Java type it resolves to is Page<T> — the name reflects
+    # the mapping target, not the JSON shape, to avoid the same "List implies List<T>" confusion that
+    # motivated dropping the equivalent mapping in event-types.
+    TransactionResourcePage:
+      type: array
+      items:
+        $ref: '#/components/schemas/TransactionResource'
+
+    # Envelope schemas — never generated into Java; see klabis-api-spec skill:
+    # "Payload and envelope are separate schemas".
+    EntityModelMemberAccountResource:
+      allOf:
+        - $ref: '#/components/schemas/MemberAccountResource'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+            _templates:
+              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+
+    MemberAccountResource:
+      type: object
+      description: A member's finance account balance.
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        balance:
+          type: number
+        currency:
+          type: string
+
+    # _embedded key follows TransactionResource's explicit @Relation(collectionRelation = "transactions"),
+    # not the class-name-derived default — see klabis-api-spec skill: "A payload schema's name is wire
+    # contract".
+    PagedModelEntityModelTransactionResource:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            transactions:
+              type: array
+              items:
+                $ref: '#/components/schemas/EntityModelTransactionResource'
+        _links:
+          $ref: './_shared/hal.yaml#/components/schemas/Links'
+        _templates:
+          $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+        page:
+          $ref: './_shared/hal.yaml#/components/schemas/PageMetadata'
+
+    EntityModelTransactionResource:
+      allOf:
+        - $ref: '#/components/schemas/TransactionResource'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
+            _templates:
+              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
+
+    TransactionResource:
+      type: object
+      description: A single transaction on a member's finance account.
+      x-klabis-relation:
+        collectionRelation: transactions
+        itemRelation: transaction
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          description: 'DEPOSIT, CHARGE or OTHER'
+        amount:
+          type: number
+        currency:
+          type: string
+        note:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+        occurredAt:
+          type: string
+          format: date
+        recordedBy:
+          type: string
+          format: uuid
+        reversesTransactionId:
+          type: string
+          format: uuid
+
+    DepositRequest:
+      type: object
+      description: Deposit creation data
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          # exclusiveMinimum generates no Jakarta annotation with this generator config, so the
+          # spec cannot express "strictly positive" — MemberAccount.deposit() already asserts
+          # amount.isPositive() and rejects zero/negative with 400, just without a fieldErrors
+          # entry naming the field. See klabis-api-spec skill: validation gaps already covered by
+          # the domain guard degrade the error body only, not the enforcement.
+          minimum: 0
+        occurredAt:
+          type: string
+          format: date
+          description: Defaults to today when omitted.
+        note:
+          type: string
+
+    ChargeRequest:
+      type: object
+      description: Charge creation data
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          minimum: 0
+        occurredAt:
+          type: string
+          format: date
+          description: Defaults to today when omitted.
+        note:
+          type: string
+
+    ReverseRequest:
+      type: object
+      description: Reversal data
+      properties:
+        note:
+          type: string
+        occurredAt:
+          type: string
+          format: date
+          description: Defaults to today when omitted.

@@ -9,4 +9,8 @@ public class DuplicateOrisImportException extends RuntimeException {
     public DuplicateOrisImportException(int orisId) {
         super("Event with ORIS ID " + orisId + " has already been imported");
     }
+
+    public DuplicateOrisImportException(int orisId, Throwable cause) {
+        super("Event with ORIS ID " + orisId + " has already been imported", cause);
+    }
 }

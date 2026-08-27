@@ -6,6 +6,7 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -29,6 +30,8 @@ interface EventJdbcRepository extends CrudRepository<EventMemento, UUID>, Paging
 
     @Query("SELECT EXISTS(SELECT 1 FROM events.events WHERE oris_id = :orisId)")
     boolean existsByOrisId(@Param("orisId") int orisId);
+
+    Optional<EventMemento> findByOrisId(int orisId);
 
     // findAll(Pageable) is inherited from PagingAndSortingRepository
     // findById(UUID) is inherited from CrudRepository

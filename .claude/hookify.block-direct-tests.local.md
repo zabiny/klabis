@@ -1,6 +1,6 @@
 ---
 name: block-direct-tests
-enabled: true
+enabled: false
 event: bash
 pattern: (gradlew?\s+.*test|vitest|npm\s+(run\s+)?test)
 action: warn

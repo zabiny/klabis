@@ -2,7 +2,6 @@ package com.klabis.calendar.infrastructure.restapi;
 
 import com.klabis.common.security.KlabisAuthenticationFactory;
 import com.klabis.common.security.JwtParams;
-import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponseBuilder;
 import org.junit.jupiter.api.AfterEach;
@@ -46,7 +45,7 @@ class IcalTokenMemberDetailLinkProcessorTest {
 
     private EntityModel<MemberDetailsResponse> modelForMember(UUID memberId) {
         MemberDetailsResponse resource = MemberDetailsResponseBuilder.builder()
-                .id(new MemberId(memberId))
+                .id(memberId)
                 .build();
         return EntityModel.of(resource);
     }

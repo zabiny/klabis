@@ -1,3 +1,7 @@
+// Hand-written types for the HAL / HAL-FORMS media types (Link, HalResponse, HalFormsTemplate,
+// HalFormsProperty, PageMetadata, ...). These are defined by the HAL-FORMS standard
+// (http://rwcbook.com/hal-forms/), not by the Klabis API, so they are not generated.
+// Klabis-specific rel names (link relations, template names) live in the generated ./halTypes.ts.
 import type {components} from "./klabisApi";
 
 export type Link = components["schemas"]["Link"];

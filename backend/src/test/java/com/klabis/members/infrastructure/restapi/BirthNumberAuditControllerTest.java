@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.MediaType;
@@ -42,7 +41,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("Birth Number Audit – Controller Tests")
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
-@Import({MemberMapperImpl.class})
 @WithPostprocessors
 class BirthNumberAuditControllerTest {
 
@@ -117,7 +115,7 @@ class BirthNumberAuditControllerTest {
             verify(managementService).updateMember(eq(new MemberId(memberId)), commandCaptor.capture());
 
             Member.UpdateMember command = commandCaptor.getValue();
-            assertThat(command.birthNumber()).isNotNull();
+            assertThat(command.birthNumber().orElseThrow()).isEqualTo(BirthNumber.of("900101/1234"));
             assertThat(command.updatedBy()).isNotNull();
         }
 
@@ -144,7 +142,7 @@ class BirthNumberAuditControllerTest {
             verify(managementService).updateMember(eq(new MemberId(memberId)), commandCaptor.capture());
 
             Member.UpdateMember command = commandCaptor.getValue();
-            assertThat(command.birthNumber()).isNull();
+            assertThat(command.birthNumber().isPresent()).isFalse();
             assertThat(command.updatedBy()).isNotNull();
         }
     }

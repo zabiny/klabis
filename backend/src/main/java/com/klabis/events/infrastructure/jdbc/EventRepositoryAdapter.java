@@ -203,6 +203,12 @@ class EventRepositoryAdapter implements EventRepository {
     }
 
     @Override
+    public Optional<Event> findByOrisId(int orisId) {
+        return jdbcRepository.findByOrisId(orisId)
+                .map(EventMemento::toEvent);
+    }
+
+    @Override
     public List<Event> findAllUpcomingOrisEvents(LocalDate today) {
         Criteria criteria = Criteria
                 .where("status").in(List.of(EventStatus.DRAFT.name(), EventStatus.ACTIVE.name()))

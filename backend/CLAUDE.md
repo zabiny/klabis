@@ -73,6 +73,7 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 
 - **Backend conventions** (aggregates, controllers, HATEOAS affordances, JDBC mementos, field-level authorization, testing) → load **`backend-patterns`** skill — single source of truth
 - **Event flows & module dependencies** → [docs/EVENT-DRIVEN-ARCHITECTURE.md](docs/EVENT-DRIVEN-ARCHITECTURE.md)
+- **External-system sync** → `com.klabis.common.sync` (`@NamedInterface("sync")`) is a generic bidirectional sync engine (`DataSync` + `SyncLine` + `SyncSource`). Its first real consumer is ORIS events sync (`com.klabis.events.infrastructure.sync`): single/bulk event import and resync-from-ORIS all run through `DataSync.sync(SyncId, PULL)`. ORIS is a read-only source, so PUSH for `SyncType.EVENT` yields an ERROR `SyncRecord`. `SyncRecord`s are in-memory (`InMemorySyncRecordRepository`), consistent with the H2 dev DB.
 - **External resources** (Spring Boot/Modulith/HATEOAS/Security reference, RFCs, DDD/outbox patterns) → [docs/README.md](docs/README.md)
 - **Getting started** → [README.md](README.md)
 
@@ -112,7 +113,7 @@ These are the Klabis-specific hooks on top of Spring Security / Spring Authoriza
 - **JWT custom claims** — access tokens carry `registrationNumber`, `memberIdUuid`, and the user's `authorities`. `Authority.isKnownAuthority()` filters out the `FACTOR_PASSWORD` authority that `DaoAuthenticationProvider` auto-adds for the MFA framework.
 - **`MemberIdToUuidConverter` + `CurrentUserArgumentResolver`** (`members.infrastructure.mvc`) — resolve `@CurrentUser Member` parameters in controllers from the JWT subject (`memberIdUuid` claim). See `backend-patterns` skill.
 - **`@HasAuthority(Authority.X)`** — type-safe alternative to `@PreAuthorize("hasAuthority('X:Y')")` for single-authority global checks. Method/class level. See `backend-patterns` skill.
-- **Field-level authorization** — `@OwnerVisible`, `@HasAuthority`, `PatchField<T>` on record components. See `backend-patterns` skill.
+- **Field-level authorization** — `@OwnerVisible`, `@HasAuthority`, `JsonNullable<T>` on record components. See `backend-patterns` skill.
 - **`KlabisUserDetailsService`** (`com.klabis.authorizationserver`) — bridges `users` aggregate + `Authority` enum into Spring Security `UserDetails`.
 - **Custom `AuthenticationEntryPoint`** — validates the OAuth2 `redirect_uri` against `RegisteredClientRepository` before redirecting (prevents open-redirector).
 

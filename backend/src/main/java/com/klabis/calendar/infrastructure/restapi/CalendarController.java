@@ -5,48 +5,40 @@ import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
-import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
 import com.klabis.events.EventId;
-import com.klabis.events.infrastructure.restapi.EventController;
+import com.klabis.events.infrastructure.restapi.EventsApi;
 import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
-import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Sort;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
-@RequestMapping(value = "/api/calendar-items", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
-@Tag(name = "Calendar", description = "Calendar item management API")
+@RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 @PrimaryAdapter
 @ExposesResourceFor(CalendarItem.class)
-@SecurityRequirement(name = "KlabisAuth", scopes = {Authority.CALENDAR_SCOPE})
-class CalendarController {
+class CalendarController implements CalendarApi {
 
     private final CalendarManagementPort calendarManagementService;
 
@@ -54,31 +46,12 @@ class CalendarController {
         this.calendarManagementService = calendarManagementService;
     }
 
-    @GetMapping
-    @Operation(
-            summary = "List calendar items with date range filtering",
-            description = """
-                    Retrieves a list of calendar items filtered by date range.
-                    If dates not provided, defaults to current month.
-                    Maximum date range is 1 year (366 days).
-                    Default sort: startDate,asc. Allowed fields: id, name, startDate, endDate.
-                    When mySchedule=true, returns only EVENT_DATE items linked to events where the current
-                    user is an active participant or event coordinator.
-                    """
-    )
-    @ApiResponse(responseCode = "200", description = "List of calendar items retrieved successfully")
-    @ApiResponse(responseCode = "400", description = "Date range exceeds 366 days or invalid sort field")
-    public ResponseEntity<CollectionModel<EntityModel<CalendarItemDto>>> listCalendarItems(
-            @Parameter(description = "Start date for filtering (ISO DATE format, defaults to first day of current month)")
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "End date for filtering (ISO DATE format, defaults to last day of current month)")
-            @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @Parameter(description = "Sorting parameters (default: startDate,asc)")
-            @RequestParam(defaultValue = "startDate,asc") String sort,
-            @Parameter(description = "When true, restricts results to EVENT_DATE items for events where the current user is a participant or coordinator")
-            @RequestParam(required = false) Boolean mySchedule,
+    @Override
+    public ResponseEntity<List<CalendarItemDto>> listCalendarItems(
+            LocalDate startDate,
+            LocalDate endDate,
+            String sort,
+            Boolean mySchedule,
             @ActingUser CurrentUserData currentUser) {
 
         LocalDate effectiveStartDate = startDate != null ? startDate : getCurrentMonthFirstDay();
@@ -89,35 +62,13 @@ class CalendarController {
         boolean myScheduleRequested = Boolean.TRUE.equals(mySchedule);
         MemberId myScheduleMemberId = myScheduleRequested && currentUser != null ? currentUser.memberId() : null;
 
-        List<EntityModel<CalendarItemDto>> items = calendarManagementService
-                .listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj, myScheduleRequested, myScheduleMemberId)
-                .stream().map(calendarItem -> entityModelWithDomain(toDto(calendarItem), calendarItem)).toList();
+        List<CalendarItem> calendarItems = calendarManagementService
+                .listCalendarItems(effectiveStartDate, effectiveEndDate, sortObj, myScheduleRequested, myScheduleMemberId);
 
-        CollectionModel<EntityModel<CalendarItemDto>> collectionModel = CollectionModel.of(items);
+        List<CalendarItemDto> payload = calendarItems.stream().map(this::toDto).toList();
 
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(effectiveStartDate, effectiveEndDate, sort, mySchedule, null))
-                .ifPresent(selfLinkBuilder -> collectionModel.add(selfLinkBuilder.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(CalendarController.class).createCalendarItem(null)))));
-
-        addMonthNavigationLinks(collectionModel, effectiveStartDate, effectiveEndDate, sort, mySchedule);
-
-        return ResponseEntity.ok(collectionModel);
-    }
-
-    private void addMonthNavigationLinks(CollectionModel<EntityModel<CalendarItemDto>> collectionModel,
-                                          LocalDate currentStartDate,
-                                          LocalDate currentEndDate,
-                                          String sort,
-                                          @Nullable Boolean mySchedule) {
-        LocalDate nextMonthStart = currentStartDate.plusMonths(1).withDayOfMonth(1);
-        LocalDate nextMonthEnd = nextMonthStart.withDayOfMonth(nextMonthStart.lengthOfMonth());
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(nextMonthStart, nextMonthEnd, sort, mySchedule, null))
-                .ifPresent(link -> collectionModel.add(link.withRel("next")));
-
-        LocalDate prevMonthStart = currentStartDate.minusMonths(1).withDayOfMonth(1);
-        LocalDate prevMonthEnd = prevMonthStart.withDayOfMonth(prevMonthStart.lengthOfMonth());
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(prevMonthStart, prevMonthEnd, sort, mySchedule, null))
-                .ifPresent(link -> collectionModel.add(link.withRel("prev")));
+        HalResponseContext.setDomainList(calendarItems);
+        return ResponseEntity.ok(payload);
     }
 
     private Sort parseAndValidateSort(String sort) {
@@ -147,86 +98,55 @@ class CalendarController {
         return Sort.by(direction, field);
     }
 
-    @GetMapping("/{id}")
-    @Operation(
-            summary = "Get calendar item by ID",
-            description = "Retrieves detailed calendar item information by ID. " +
-                          "Returns HATEOAS links based on whether the item is manually created or event-linked."
-    )
-    @ApiResponse(responseCode = "200", description = "Calendar item found")
-    public ResponseEntity<EntityModel<CalendarItemDto>> getCalendarItem(
-            @Parameter(description = "Calendar item UUID") @PathVariable UUID id) {
+    @Override
+    public ResponseEntity<CalendarItemDto> getCalendarItem(
+            UUID id) {
 
         CalendarItem calendarItem = calendarManagementService.getCalendarItem(new CalendarItemId(id));
 
-        return ResponseEntity.ok(entityModelWithDomain(toDto(calendarItem), calendarItem));
+        HalResponseContext.setDomain(calendarItem);
+        return ResponseEntity.ok(toDto(calendarItem));
     }
 
-    @PostMapping(consumes = "application/json")
-    @HasAuthority(Authority.CALENDAR_MANAGE)
-    @Operation(
-            summary = "Create a new manual calendar item",
-            description = "Creates a new manual calendar item (not linked to an event). " +
-                          "Manual items can be updated and deleted. " +
-                          "Returns Location header pointing to the created resource."
-    )
-    @ApiResponse(responseCode = "201", description = "Calendar item successfully created")
+    @Override
     public ResponseEntity<Void> createCalendarItem(
-            @Parameter(description = "Calendar item creation data")
-            @Valid @RequestBody CalendarItem.CreateCalendarItem command) {
+            CreateCalendarItemRequest request) {
 
-        CalendarItem created = calendarManagementService.createCalendarItem(normalizeDescription(command));
+        CalendarItem created = calendarManagementService.createCalendarItem(toCommand(request));
 
         return ResponseEntity
-                .created(linkTo(methodOn(CalendarController.class).getCalendarItem(created.getId().value())).toUri())
+                .created(klabisLinkTo(methodOn(CalendarApi.class).getCalendarItem(created.getId().value()))
+                        .map(link -> link.toUri())
+                        .orElseGet(() -> URI.create("/api/calendar-items/" + created.getId().value())))
                 .build();
     }
 
-    @PutMapping(value = "/{id}", consumes = "application/json")
-    @HasAuthority(Authority.CALENDAR_MANAGE)
-    @Operation(
-            summary = "Update a manual calendar item",
-            description = """
-                    Updates calendar item information. Only allowed for manual items (not event-linked).
-                    Event-linked items are read-only and managed automatically.
-                    """
-    )
-    @ApiResponse(responseCode = "204", description = "Calendar item successfully updated")
-    @ApiResponse(responseCode = "400", description = "Cannot update event-linked calendar item")
+    @Override
     public ResponseEntity<Void> updateCalendarItem(
-            @Parameter(description = "Calendar item UUID") @PathVariable UUID id,
-            @Parameter(description = "Calendar item update data") @Valid @RequestBody CalendarItem.UpdateCalendarItem command) {
+            UUID id,
+            UpdateCalendarItemRequest request) {
 
-        calendarManagementService.updateCalendarItem(new CalendarItemId(id), normalizeDescription(command));
+        calendarManagementService.updateCalendarItem(new CalendarItemId(id), toCommand(request));
         return ResponseEntity.noContent().build();
     }
 
-    private static CalendarItem.CreateCalendarItem normalizeDescription(CalendarItem.CreateCalendarItem command) {
-        if (command.description() != null && command.description().isBlank()) {
-            return new CalendarItem.CreateCalendarItem(command.name(), null, command.startDate(), command.endDate());
-        }
-        return command;
+    private static CalendarItem.CreateCalendarItem toCommand(CreateCalendarItemRequest request) {
+        String description = normalizeDescription(request.description());
+        return new CalendarItem.CreateCalendarItem(request.name(), description, request.startDate(), request.endDate());
     }
 
-    private static CalendarItem.UpdateCalendarItem normalizeDescription(CalendarItem.UpdateCalendarItem command) {
-        if (command.description() != null && command.description().isBlank()) {
-            return new CalendarItem.UpdateCalendarItem(command.name(), null, command.startDate(), command.endDate());
-        }
-        return command;
+    private static CalendarItem.UpdateCalendarItem toCommand(UpdateCalendarItemRequest request) {
+        String description = normalizeDescription(request.description());
+        return new CalendarItem.UpdateCalendarItem(request.name(), description, request.startDate(), request.endDate());
     }
 
-    @DeleteMapping("/{id}")
-    @HasAuthority(Authority.CALENDAR_MANAGE)
-    @Operation(
-            summary = "Delete a manual calendar item",
-            description = "Deletes a manual calendar item. " +
-                          "Only allowed for manual items (not event-linked). " +
-                          "Event-linked items are read-only and managed automatically."
-    )
-    @ApiResponse(responseCode = "204", description = "Calendar item successfully deleted")
-    @ApiResponse(responseCode = "400", description = "Cannot delete event-linked calendar item")
+    private static String normalizeDescription(String description) {
+        return description != null && description.isBlank() ? null : description;
+    }
+
+    @Override
     public ResponseEntity<Void> deleteCalendarItem(
-            @Parameter(description = "Calendar item UUID") @PathVariable UUID id) {
+            UUID id) {
 
         calendarManagementService.deleteCalendarItem(new CalendarItemId(id));
         return ResponseEntity.noContent().build();
@@ -242,14 +162,14 @@ class CalendarController {
 
     private CalendarItemDto toDto(CalendarItem calendarItem) {
         var eventId = calendarItem instanceof EventCalendarItem linked ? linked.getEventId() : null;
-        return new CalendarItemDto(
-                calendarItem.getId(),
-                calendarItem.getName(),
-                calendarItem.getDescription(),
-                calendarItem.getStartDate(),
-                calendarItem.getEndDate(),
-                eventId
-        );
+        return CalendarItemDtoBuilder.builder()
+                .id(calendarItem.getId().value())
+                .name(calendarItem.getName())
+                .description(calendarItem.getDescription())
+                .startDate(calendarItem.getStartDate())
+                .endDate(calendarItem.getEndDate())
+                .eventId(eventId != null ? eventId.value() : null)
+                .build();
     }
 
 }
@@ -261,23 +181,74 @@ class CalendarItemPostprocessor extends ModelWithDomainPostprocessor<CalendarIte
     public void process(EntityModel<CalendarItemDto> dtoModel, CalendarItem calendarItem) {
         UUID calendarItemId = calendarItem.getId().value();
 
-        klabisLinkTo(methodOn(CalendarController.class).getCalendarItem(calendarItemId)).ifPresent(selfLinkBuilder -> {
+        klabisLinkTo(methodOn(CalendarApi.class).getCalendarItem(calendarItemId)).ifPresent(selfLinkBuilder -> {
             if (calendarItem instanceof EventCalendarItem eventItem) {
                 dtoModel.add(selfLinkBuilder.withSelfRel());
                 EventId eventId = eventItem.getEventId();
-                klabisLinkTo(methodOn(EventController.class).getEvent(eventId.value(), null))
+                klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId.value(), null))
                         .ifPresent(link -> dtoModel.add(link.withRel("event")));
             } else {
                 var selfLink = selfLinkBuilder.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(CalendarController.class).updateCalendarItem(calendarItemId, null)))
-                        .andAffordances(klabisAfford(methodOn(CalendarController.class).deleteCalendarItem(calendarItemId)));
+                        .andAffordances(klabisAfford(methodOn(CalendarApi.class).updateCalendarItem(calendarItemId, null)))
+                        .andAffordances(klabisAfford(methodOn(CalendarApi.class).deleteCalendarItem(calendarItemId)));
                 dtoModel.add(selfLink);
             }
         });
 
         LocalDate today = LocalDate.now();
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()), "startDate,asc", null, null))
+        klabisLinkTo(methodOn(CalendarApi.class).listCalendarItems(today.withDayOfMonth(1), today.withDayOfMonth(today.lengthOfMonth()), "startDate,asc", null, null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
+    }
+}
+
+/**
+ * Adds the collection-level create affordance plus month navigation links. The self link itself is
+ * built by {@code HalResponseBodyAdvice} from the current request (preserving startDate, endDate,
+ * sort and mySchedule), so this processor only contributes to it and adds next/prev.
+ */
+@MvcComponent
+class CalendarItemListPostprocessor
+        implements RepresentationModelProcessor<CollectionModel<EntityModel<CalendarItemDto>>> {
+
+    @Override
+    public CollectionModel<EntityModel<CalendarItemDto>> process(
+            CollectionModel<EntityModel<CalendarItemDto>> model) {
+        model.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
+                .andAffordances(klabisAfford(methodOn(CalendarApi.class).createCalendarItem(null))));
+
+        model.getLink(IanaLinkRelations.SELF)
+                .map(Link::getHref)
+                .ifPresent(selfHref -> addMonthNavigationLinks(model, selfHref));
+
+        return model;
+    }
+
+    private void addMonthNavigationLinks(CollectionModel<EntityModel<CalendarItemDto>> model, String selfHref) {
+        var uriComponents = org.springframework.web.util.UriComponentsBuilder.fromUriString(selfHref).build();
+        var params = uriComponents.getQueryParams();
+
+        LocalDate currentStartDate = params.getFirst("startDate") != null
+                ? LocalDate.parse(params.getFirst("startDate")) : getCurrentMonthFirstDay();
+        String sort = params.getFirst("sort") != null ? params.getFirst("sort") : "startDate,asc";
+        Boolean mySchedule = params.getFirst("mySchedule") != null ? Boolean.valueOf(params.getFirst("mySchedule")) : null;
+
+        LocalDate nextMonthStart = currentStartDate.plusMonths(1).withDayOfMonth(1);
+        LocalDate nextMonthEnd = nextMonthStart.withDayOfMonth(nextMonthStart.lengthOfMonth());
+        klabisLinkTo(methodOn(CalendarApi.class).listCalendarItems(nextMonthStart, nextMonthEnd, sort, mySchedule, null))
+                .ifPresent(link -> model.add(link.withRel("next")));
+
+        LocalDate prevMonthStart = currentStartDate.minusMonths(1).withDayOfMonth(1);
+        LocalDate prevMonthEnd = prevMonthStart.withDayOfMonth(prevMonthStart.lengthOfMonth());
+        klabisLinkTo(methodOn(CalendarApi.class).listCalendarItems(prevMonthStart, prevMonthEnd, sort, mySchedule, null))
+                .ifPresent(link -> model.add(link.withRel("prev")));
+    }
+
+    private LocalDate getCurrentMonthFirstDay() {
+        return LocalDate.now().withDayOfMonth(1);
+    }
+
+    private LocalDate getCurrentMonthLastDay() {
+        return LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
     }
 }
 
@@ -286,7 +257,7 @@ class CalendarRootPostprocessor implements RepresentationModelProcessor<EntityMo
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(CalendarController.class).listCalendarItems(
+        klabisLinkTo(methodOn(CalendarApi.class).listCalendarItems(
                 LocalDate.now().withDayOfMonth(1),
                 LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()),
                 "startDate,asc", null, null

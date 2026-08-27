@@ -29,10 +29,10 @@ public class IcalTokenMemberDetailLinkProcessor implements RepresentationModelPr
         if (!isSelfDetail(model)) {
             return model;
         }
-        klabisLinkTo(methodOn(IcalTokenController.class).getTokenState(null))
+        klabisLinkTo(methodOn(IcalTokenApi.class).getTokenState(null))
                 .ifPresent(link -> model.add(
                         link.withRel("ical-token")
-                                .andAffordances(klabisAfford(methodOn(IcalTokenController.class).generateToken(null)))
+                                .andAffordances(klabisAfford(methodOn(IcalTokenApi.class).generateToken(null)))
                 ));
         return model;
     }
@@ -42,10 +42,7 @@ public class IcalTokenMemberDetailLinkProcessor implements RepresentationModelPr
         if (content == null || content.id() == null) {
             return false;
         }
-        UUID resourceMemberId = content.id().uuid();
-        if (resourceMemberId == null) {
-            return false;
-        }
+        UUID resourceMemberId = content.id();
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!(authentication instanceof KlabisJwtAuthenticationToken token)) {

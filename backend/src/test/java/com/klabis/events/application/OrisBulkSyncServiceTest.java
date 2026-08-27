@@ -1,15 +1,18 @@
 package com.klabis.events.application;
 
-import com.klabis.events.EventId;
+import com.klabis.common.sync.DataSync;
+import com.klabis.common.sync.SyncItemId;
+import com.klabis.common.sync.SyncRecord;
+import com.klabis.common.sync.SyncType;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
-import com.klabis.events.domain.EventStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -18,6 +21,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,13 +32,17 @@ class OrisBulkSyncServiceTest {
     private EventRepository eventRepository;
 
     @Mock
-    private OrisEventImportPort orisEventImportPort;
+    private DataSync dataSync;
 
     private OrisBulkSyncService service;
 
     @BeforeEach
     void setUp() {
-        service = new OrisBulkSyncService(eventRepository, orisEventImportPort);
+        service = new OrisBulkSyncService(eventRepository, dataSync);
+    }
+
+    private static SyncItemId localIdOf(Event event) {
+        return SyncItemId.localId(SyncType.EVENT, event.getId().value().toString());
     }
 
     @Nested
@@ -50,7 +58,9 @@ class OrisBulkSyncServiceTest {
 
             when(eventRepository.findAllUpcomingOrisEvents(any(LocalDate.class)))
                     .thenReturn(List.of(event1, event2, event3));
-            doNothing().when(orisEventImportPort).syncEventFromOris(any(EventId.class));
+            when(dataSync.sync(any(SyncItemId.class), eq(DataSync.Direction.PULL)))
+                    .thenAnswer(inv -> SyncRecord.success(inv.getArgument(0),
+                            SyncItemId.externalId(SyncType.EVENT, "0")));
 
             BulkSyncResult result = service.syncAllUpcoming();
 
@@ -62,7 +72,7 @@ class OrisBulkSyncServiceTest {
         }
 
         @Test
-        @DisplayName("should return successCount=2, failureCount=1 with error when one event throws")
+        @DisplayName("should return successCount=2, failureCount=1 with error when one event returns an ERROR record")
         void shouldAccumulateFailuresAndContinue() {
             Event event1 = EventTestDataBuilder.anEvent().withName("Race A").withOrisId(101).build();
             Event event2 = EventTestDataBuilder.anEvent().withName("Race B").withOrisId(102).build();
@@ -70,10 +80,12 @@ class OrisBulkSyncServiceTest {
 
             when(eventRepository.findAllUpcomingOrisEvents(any(LocalDate.class)))
                     .thenReturn(List.of(event1, event2, event3));
-            doNothing().when(orisEventImportPort).syncEventFromOris(event1.getId());
-            doThrow(new RuntimeException("ORIS endpoint returned 404"))
-                    .when(orisEventImportPort).syncEventFromOris(event2.getId());
-            doNothing().when(orisEventImportPort).syncEventFromOris(event3.getId());
+            when(dataSync.sync(eq(localIdOf(event1)), eq(DataSync.Direction.PULL)))
+                    .thenReturn(SyncRecord.success(localIdOf(event1), SyncItemId.externalId(SyncType.EVENT, "101")));
+            when(dataSync.sync(eq(localIdOf(event2)), eq(DataSync.Direction.PULL)))
+                    .thenReturn(SyncRecord.failure(localIdOf(event2), null, new RuntimeException("boom")));
+            when(dataSync.sync(eq(localIdOf(event3)), eq(DataSync.Direction.PULL)))
+                    .thenReturn(SyncRecord.success(localIdOf(event3), SyncItemId.externalId(SyncType.EVENT, "103")));
 
             BulkSyncResult result = service.syncAllUpcoming();
 
@@ -87,7 +99,31 @@ class OrisBulkSyncServiceTest {
                     .orElseThrow();
             assertThat(failedEntry.eventId()).isEqualTo(event2.getId());
             assertThat(failedEntry.name()).isEqualTo("Race B");
-            assertThat(failedEntry.error()).isEqualTo("ORIS endpoint returned 404");
+            assertThat(failedEntry.error()).isEqualTo("boom");
+
+            assertThat(result.results()).filteredOn(e -> e.status() == BulkSyncResult.SyncStatus.SYNCED)
+                    .hasSize(2);
+        }
+
+        @Test
+        @DisplayName("should call DataSync once per event returned by findAllUpcomingOrisEvents, each with its local SyncId")
+        void shouldIterateUpcomingEventsWithLocalSyncId() {
+            Event event1 = EventTestDataBuilder.anEvent().withOrisId(101).build();
+            Event event2 = EventTestDataBuilder.anEvent().withOrisId(102).build();
+
+            when(eventRepository.findAllUpcomingOrisEvents(any(LocalDate.class)))
+                    .thenReturn(List.of(event1, event2));
+            when(dataSync.sync(any(SyncItemId.class), eq(DataSync.Direction.PULL)))
+                    .thenAnswer(inv -> SyncRecord.success(inv.getArgument(0),
+                            SyncItemId.externalId(SyncType.EVENT, "0")));
+
+            service.syncAllUpcoming();
+
+            ArgumentCaptor<SyncItemId> captor = ArgumentCaptor.forClass(SyncItemId.class);
+            verify(dataSync, times(2)).sync(captor.capture(), eq(DataSync.Direction.PULL));
+            assertThat(captor.getAllValues())
+                    .containsExactly(localIdOf(event1), localIdOf(event2));
+            assertThat(captor.getAllValues()).allMatch(SyncItemId::isLocalId);
         }
 
         @Test
@@ -102,7 +138,7 @@ class OrisBulkSyncServiceTest {
             assertThat(result.successCount()).isEqualTo(0);
             assertThat(result.failureCount()).isEqualTo(0);
             assertThat(result.results()).isEmpty();
-            verifyNoInteractions(orisEventImportPort);
+            verifyNoInteractions(dataSync);
         }
 
         @Test

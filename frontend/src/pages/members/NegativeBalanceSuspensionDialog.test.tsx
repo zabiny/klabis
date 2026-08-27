@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
 import {NegativeBalanceSuspensionDialog} from './NegativeBalanceSuspensionDialog';
@@ -109,9 +109,9 @@ describe('NegativeBalanceSuspensionDialog (task 9.1)', () => {
     });
 });
 
-describe('parseNegativeBalanceWarning409', () => {
-    it('parses negative-balance 409 body into NegativeBalanceWarning', async () => {
-        const {parseNegativeBalanceWarning409} = await import('./suspensionUtils');
+describe('parseSuspensionBlockedWarning409', () => {
+    it('parses debt-only 409 body into {debt, groups: null}', async () => {
+        const {parseSuspensionBlockedWarning409} = await import('./suspensionUtils');
         const {FetchError} = await import('../../api/authorizedFetch');
 
         const error = new FetchError(
@@ -119,41 +119,80 @@ describe('parseNegativeBalanceWarning409', () => {
             409,
             'Conflict',
             new Headers(),
-            JSON.stringify({balance: {amount: -250, currency: 'CZK'}, accountLink: '/api/members/abc/account'}),
+            JSON.stringify({
+                debt: {balance: {amount: -250, currency: 'CZK'}, accountLink: '/api/members/abc/account'},
+                groups: null,
+            }),
         );
 
-        const result = parseNegativeBalanceWarning409(error);
+        const result = parseSuspensionBlockedWarning409(error);
         expect(result).not.toBeNull();
-        expect(result?.balance.amount).toBe(-250);
-        expect(result?.balance.currency).toBe('CZK');
-        expect(result?.accountLink).toBe('/api/members/abc/account');
+        expect(result?.debt?.balance.amount).toBe(-250);
+        expect(result?.debt?.balance.currency).toBe('CZK');
+        expect(result?.debt?.accountLink).toBe('/api/members/abc/account');
+        expect(result?.groups).toBeNull();
+    });
+
+    it('parses groups-only 409 body into {groups, debt: null}', async () => {
+        const {parseSuspensionBlockedWarning409} = await import('./suspensionUtils');
+        const {FetchError} = await import('../../api/authorizedFetch');
+
+        const error = new FetchError(
+            '409',
+            409,
+            'Conflict',
+            new Headers(),
+            JSON.stringify({
+                groups: {message: 'last owner', affectedGroups: [{groupId: 'g1', groupName: 'Group', groupType: 'FREE'}]},
+                debt: null,
+            }),
+        );
+
+        const result = parseSuspensionBlockedWarning409(error);
+        expect(result).not.toBeNull();
+        expect(result?.debt).toBeNull();
+        expect(result?.groups).toEqual([{groupId: 'g1', groupName: 'Group', groupType: 'FREE'}]);
+    });
+
+    it('parses body with both debt and groups present', async () => {
+        const {parseSuspensionBlockedWarning409} = await import('./suspensionUtils');
+        const {FetchError} = await import('../../api/authorizedFetch');
+
+        const error = new FetchError(
+            '409',
+            409,
+            'Conflict',
+            new Headers(),
+            JSON.stringify({
+                debt: {balance: {amount: -250, currency: 'CZK'}, accountLink: '/api/members/abc/account'},
+                groups: {message: 'last owner', affectedGroups: [{groupId: 'g1', groupName: 'Group', groupType: 'FREE'}]},
+            }),
+        );
+
+        const result = parseSuspensionBlockedWarning409(error);
+        expect(result?.debt?.balance.amount).toBe(-250);
+        expect(result?.groups).toEqual([{groupId: 'g1', groupName: 'Group', groupType: 'FREE'}]);
     });
 
     it('returns null for non-409 error', async () => {
-        const {parseNegativeBalanceWarning409} = await import('./suspensionUtils');
+        const {parseSuspensionBlockedWarning409} = await import('./suspensionUtils');
         const {FetchError} = await import('../../api/authorizedFetch');
 
         const error = new FetchError('500', 500, 'Internal Server Error', new Headers(), '{}');
-        expect(parseNegativeBalanceWarning409(error)).toBeNull();
+        expect(parseSuspensionBlockedWarning409(error)).toBeNull();
     });
 
-    it('returns null for 409 with LastOwner body shape (affectedGroups)', async () => {
-        const {parseNegativeBalanceWarning409} = await import('./suspensionUtils');
+    it('returns null for 409 with neither debt nor groups present', async () => {
+        const {parseSuspensionBlockedWarning409} = await import('./suspensionUtils');
         const {FetchError} = await import('../../api/authorizedFetch');
 
-        const error = new FetchError(
-            '409',
-            409,
-            'Conflict',
-            new Headers(),
-            JSON.stringify({message: 'last owner', affectedGroups: [{groupId: 'g1', groupName: 'Group', groupType: 'FREE'}]}),
-        );
+        const error = new FetchError('409', 409, 'Conflict', new Headers(), JSON.stringify({message: 'unrelated conflict'}));
 
-        expect(parseNegativeBalanceWarning409(error)).toBeNull();
+        expect(parseSuspensionBlockedWarning409(error)).toBeNull();
     });
 
     it('returns null for non-FetchError', async () => {
-        const {parseNegativeBalanceWarning409} = await import('./suspensionUtils');
-        expect(parseNegativeBalanceWarning409(new Error('generic'))).toBeNull();
+        const {parseSuspensionBlockedWarning409} = await import('./suspensionUtils');
+        expect(parseSuspensionBlockedWarning409(new Error('generic'))).toBeNull();
     });
 });

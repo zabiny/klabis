@@ -4,6 +4,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.common.users.Authority;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.MemberChoicePort;
@@ -96,6 +97,20 @@ class MemberFeeChoiceControllerTest {
                     .andExpect(status().isForbidden());
         }
 
+        // A fee choice is the member's own decision: unlike most owner-visible resources, MANAGE
+        // authority is deliberately NOT an alternative. The operation therefore carries
+        // x-klabis-owner-visible with no x-klabis-authority; pairing one in would silently widen
+        // access, and nothing else in the suite would notice.
+        @Test
+        @DisplayName("should return 403 for another member's choice even with MEMBERS:MANAGE")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = Authority.MEMBERS_MANAGE)
+        void shouldReturn403WhenManagerAccessesOtherMember() throws Exception {
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
+
         @Test
         @DisplayName("should include choose and remove affordances")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
@@ -173,6 +188,21 @@ class MemberFeeChoiceControllerTest {
                                             """.formatted(GROUP_UUID)))
                     .andExpect(status().isForbidden());
         }
+
+        @Test
+        @DisplayName("should return 403 choosing for another member even with MEMBERS:MANAGE")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = Authority.MEMBERS_MANAGE)
+        void shouldReturn403WhenManagerActsAsOtherMember() throws Exception {
+            mockMvc.perform(
+                            post("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"membershipFeeGroupId": "%s"}
+                                            """.formatted(GROUP_UUID)))
+                    .andExpect(status().isForbidden());
+            verifyNoInteractions(memberChoicePort);
+        }
     }
 
     @Nested
@@ -211,6 +241,17 @@ class MemberFeeChoiceControllerTest {
                             delete("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 403 removing another member's choice even with MEMBERS:MANAGE")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = Authority.MEMBERS_MANAGE)
+        void shouldReturn403WhenManagerActsAsOtherMember() throws Exception {
+            mockMvc.perform(
+                            delete("/api/members/{memberId}/fee-choice/{year}", MEMBER_UUID, YEAR)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+            verifyNoInteractions(memberChoicePort);
         }
     }
 }

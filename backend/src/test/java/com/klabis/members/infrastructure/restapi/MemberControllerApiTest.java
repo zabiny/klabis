@@ -6,11 +6,16 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.members.*;
-import com.klabis.members.application.*;
-import com.klabis.members.domain.*;
 import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
+import com.klabis.members.MemberId;
+import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.MonetaryAmount;
+import com.klabis.members.OwnedGroup;
+import com.klabis.members.application.*;
+import com.klabis.members.domain.*;
+import com.klabis.members.domain.DeactivationReason;
+import com.klabis.members.domain.Gender;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -867,7 +872,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.firstName").value("First name is required"));
+                    .andExpect(jsonPath("$.fieldErrors.firstName").value("must not be blank"));
         }
 
         @Test
@@ -895,7 +900,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.email").value("Email must be valid"));
+                    .andExpect(jsonPath("$.fieldErrors.email").value("must be a well-formed email address"));
         }
 
         @Test
@@ -924,7 +929,7 @@ class MemberControllerApiTest {
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.phone").value(
-                            "Phone number must be in E.164 format (starts with +)"));
+                            "must match \"^\\+[0-9\\s]{7,20}$\""));
         }
 
         @Test
@@ -951,7 +956,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.dateOfBirth").value("Date of birth must be in the past"));
+                    .andExpect(jsonPath("$.fieldErrors.dateOfBirth").value("must be a past date"));
         }
 
         @Test
@@ -979,7 +984,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.email").value("Email is required"));
+                    .andExpect(jsonPath("$.fieldErrors.email").value("must not be blank"));
         }
 
         @Test
@@ -1014,7 +1019,11 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors['guardian.firstName']").value("Guardian first name is required"));
+                    // GuardianDTO is generated from docs/openapi/spec/members.yaml, so its constraints
+                    // come from `required` + `minLength`/`maxLength` and carry Bean Validation's default
+                    // messages. The hand-written record used @NotBlank with a custom message; OpenAPI has
+                    // no way to express that, so the expectation follows the default text.
+                    .andExpect(jsonPath("$.fieldErrors['guardian.firstName']").value("size must be between 1 and 100"));
         }
 
         @Test
@@ -1088,7 +1097,7 @@ class MemberControllerApiTest {
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.nationality").value(
-                            "Nationality must be a 2-letter ISO 3166-1 alpha-2 code"));
+                            "size must be between 2 and 2"));
         }
 
         @Test
@@ -1116,7 +1125,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors['address.street']").value("Street is required"));
+                    .andExpect(jsonPath("$.fieldErrors['address.street']").value("must not be blank"));
         }
 
         @Test
@@ -1144,7 +1153,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors['address.country']").value("Country must be a valid ISO 3166-1 alpha-2 code (2 letters)"));
+                    .andExpect(jsonPath("$.fieldErrors['address.country']").value("must match \"^[A-Za-z]{2}$\""));
         }
     }
 
@@ -1769,7 +1778,7 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("missing reason should return 400 with fieldErrors.reason in Czech")
+        @DisplayName("missing reason should return 400 with fieldErrors.reason")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WithFieldErrorWhenReasonIsMissing() throws Exception {
             // Arrange
@@ -1784,11 +1793,11 @@ class MemberControllerApiTest {
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.fieldErrors.reason").value("Důvod je povinný"));
+                    .andExpect(jsonPath("$.fieldErrors.reason").value("must not be null"));
         }
 
         @Test
-        @DisplayName("note exceeding 500 characters should return 400 with fieldErrors.note in Czech")
+        @DisplayName("note exceeding 500 characters should return 400 with fieldErrors.note")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WithFieldErrorWhenNoteExceeds500Chars() throws Exception {
             // Arrange
@@ -1805,7 +1814,7 @@ class MemberControllerApiTest {
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.fieldErrors.note").value("Poznámka nesmí přesáhnout 500 znaků"));
+                    .andExpect(jsonPath("$.fieldErrors.note").value("size must be between 0 and 500"));
         }
 
         @Test
@@ -1818,7 +1827,7 @@ class MemberControllerApiTest {
             );
 
             when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
-                    .thenThrow(new MemberIsLastGroupOwnerException(groups));
+                    .thenThrow(new SuspensionBlockedException(groups, null));
 
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
@@ -1826,9 +1835,10 @@ class MemberControllerApiTest {
                             }
                             """))
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.affectedGroups").isArray())
-                    .andExpect(jsonPath("$.affectedGroups[0].groupName").value("Trail Runners"))
-                    .andExpect(jsonPath("$.affectedGroups[0].groupType").value("FREE"));
+                    .andExpect(jsonPath("$.groups.affectedGroups").isArray())
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupName").value("Trail Runners"))
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupType").value("FREE"))
+                    .andExpect(jsonPath("$.debt").doesNotExist());
         }
 
         @Test
@@ -1842,7 +1852,7 @@ class MemberControllerApiTest {
                     true);
 
             when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
-                    .thenThrow(new MemberHasOutstandingDebtException(snapshot));
+                    .thenThrow(new SuspensionBlockedException(List.of(), snapshot));
 
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
                             {
@@ -1850,9 +1860,38 @@ class MemberControllerApiTest {
                             }
                             """))
                     .andExpect(status().is(409))
-                    .andExpect(jsonPath("$.balance.amount").value(-250))
-                    .andExpect(jsonPath("$.balance.currency").value("CZK"))
-                    .andExpect(jsonPath("$.accountLink").value(
+                    .andExpect(jsonPath("$.debt.balance.amount").value(-250))
+                    .andExpect(jsonPath("$.debt.balance.currency").value("CZK"))
+                    .andExpect(jsonPath("$.debt.accountLink").value(
+                            "http://localhost/api/members/%s/account".formatted(memberId)))
+                    .andExpect(jsonPath("$.groups").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should return 409 with both debt and groups when member has both blockers")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn409WithBothBlockersWhenBothApply() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            List<OwnedGroup> groups = List.of(
+                    new OwnedGroup("cccccccc-cccc-cccc-cccc-cccccccccccc", "Trail Runners", "FREE")
+            );
+            var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
+                    new MemberId(memberId),
+                    new MonetaryAmount(new java.math.BigDecimal("-250"), "CZK"),
+                    true);
+
+            when(managementService.suspendMember(eq(new MemberId(memberId)), any(Member.SuspendMembership.class)))
+                    .thenThrow(new SuspensionBlockedException(groups, snapshot));
+
+            mockMvc.perform(postMemberIdSuspend(memberId).content("""
+                            {
+                                "reason": "ODHLASKA"
+                            }
+                            """))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.groups.affectedGroups[0].groupName").value("Trail Runners"))
+                    .andExpect(jsonPath("$.debt.balance.amount").value(-250))
+                    .andExpect(jsonPath("$.debt.accountLink").value(
                             "http://localhost/api/members/%s/account".formatted(memberId)));
         }
     }
@@ -2051,7 +2090,7 @@ class MemberControllerApiTest {
 
             Mockito.verify(managementService).updateMember(
                     eq(new MemberId(memberId)),
-                    argThat((Member.UpdateMember cmd) -> cmd.email() != null && cmd.phone() == null)
+                    argThat((Member.UpdateMember cmd) -> cmd.email().isPresent() && !cmd.phone().isPresent())
             );
         }
     }

@@ -543,6 +543,36 @@ class EventJdbcRepositoryTest {
         }
 
         @Test
+        @DisplayName("findByOrisId should return the saved event for a known orisId")
+        void findByOrisIdShouldReturnSavedEvent() {
+            // Given
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(54321)
+                    .name("Findable ORIS Event")
+                    .eventDate(LocalDate.of(2026, 8, 15))
+                    .location("Test Location")
+                    .organizer("OOB")
+                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=54321"))
+                    .build());
+            Event saved = eventRepository.save(event);
+
+            // When
+            Optional<Event> found = eventRepository.findByOrisId(54321);
+
+            // Then
+            assertThat(found).isPresent();
+            assertThat(found.get().getId()).isEqualTo(saved.getId());
+            assertThat(found.get().getOrisId()).isEqualTo(54321);
+        }
+
+        @Test
+        @DisplayName("findByOrisId should return empty for an unknown orisId")
+        void findByOrisIdShouldReturnEmptyForUnknownOrisId() {
+            // When & Then
+            assertThat(eventRepository.findByOrisId(88888)).isEmpty();
+        }
+
+        @Test
         @DisplayName("should reject duplicate orisId via unique constraint")
         void shouldRejectDuplicateOrisIdViaUniqueConstraint() {
             // Given — save the first event with orisId 1111
@@ -1398,13 +1428,15 @@ class EventJdbcRepositoryTest {
         @Test
         @DisplayName("should return DRAFT and ACTIVE events with orisId and date >= today")
         void shouldReturnEligibleDraftAndActiveEvents() {
-            Event draftOris = saveOrisEvent("Future DRAFT", EventStatus.DRAFT, TODAY, 101);
-            Event activeOris = saveOrisEvent("Future ACTIVE", EventStatus.ACTIVE, TODAY.plusDays(5), 102);
+            saveOrisEvent("Future DRAFT", EventStatus.DRAFT, TODAY, 101);
+            saveOrisEvent("Future ACTIVE", EventStatus.ACTIVE, TODAY.plusDays(5), 102);
 
             java.util.List<Event> result = eventRepository.findAllUpcomingOrisEvents(TODAY);
 
             assertThat(result).extracting(Event::getName)
                     .containsExactlyInAnyOrder("Future DRAFT", "Future ACTIVE");
+            assertThat(result).extracting(Event::getOrisId)
+                    .containsExactlyInAnyOrder(101, 102);
         }
 
         @Test

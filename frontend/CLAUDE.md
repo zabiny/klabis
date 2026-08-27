@@ -103,14 +103,16 @@ npm run refresh-backend-server-resources
 ### OpenAPI Client Generation
 
 ```bash
-# Generate TypeScript types from OpenAPI spec
+# Bundles docs/openapi/spec/ into ../docs/openapi/klabis-full.json, then generates types from it
 npm run openapi
 
-# Reads: ../docs/openapi/klabis-full.json
-# Outputs: ./src/api/klabisApi.d.ts
+# Outputs: ./src/api/klabisApi.d.ts, ./src/api/halTypes.ts
 ```
 
-**Important:** Regenerate types after backend API changes.
+**Important:** `docs/openapi/spec/` is the source of truth; `klabis-full.json` is a gitignored
+build artifact bundled from it. `npm run openapi` regenerates the bundle automatically before
+generating types, so a single command is always enough — no separate `./gradlew openapiBundle`
+step needed.
 
 ### API Setup
 
@@ -273,5 +275,5 @@ After `npm run build`, **always** run `npm run refresh-backend-server-resources`
 ## Related Documentation
 
 - **Backend API:** `../backend/CLAUDE.md`
-- **API Specification:** `../docs/openapi/klabis-full.json`
+- **API Specification:** `../docs/openapi/spec/` (source of truth; `klabis-full.json` is the generated bundle)
 - **Main Project:** `../CLAUDE.md`

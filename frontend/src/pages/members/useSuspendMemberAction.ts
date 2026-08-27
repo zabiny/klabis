@@ -1,6 +1,6 @@
 import {useState} from "react";
 import {type AffectedGroup} from "./SuspensionWarningDialog.tsx";
-import {parseNegativeBalanceWarning409, parseSuspensionWarning409, type NegativeBalanceWarning} from "./suspensionUtils.ts";
+import {type NegativeBalanceWarning, parseSuspensionBlockedWarning409} from "./suspensionUtils.ts";
 
 export interface UseSuspendMemberActionOptions {
     /** Called when the action modal should be closed (before opening the negative-balance dialog). */
@@ -19,9 +19,11 @@ export interface UseSuspendMemberActionResult {
 /**
  * Encapsulates 409-error handling for the suspend-member action.
  *
- * Two variants of 409 are parsed:
- * - negative-balance: closes the action modal first, then opens NegativeBalanceSuspensionDialog.
- * - affected-groups: keeps the action modal open and shows SuspensionWarningDialog alongside it.
+ * The 409 body can carry a debt blocker, a group-ownership blocker, or both at once
+ * (independent conditions on the backend). Both dialogs are rendered unconditionally
+ * by the caller (gated on their own null state), so setting both warning states here
+ * opens both dialogs simultaneously. The action modal is closed whenever a debt
+ * blocker is present, matching the pre-existing negative-balance-only behavior.
  *
  * Unknown errors (non-409, or 409 with unexpected body) return undefined so that
  * HalFormDisplay falls back to its default error-toast handling.
@@ -31,18 +33,17 @@ export const useSuspendMemberAction = ({closeActionModal}: UseSuspendMemberActio
     const [negativeBalanceWarning, setNegativeBalanceWarning] = useState<NegativeBalanceWarning | null>(null);
 
     const onSubmitError = (error: unknown): true | undefined => {
-        const negBalance = parseNegativeBalanceWarning409(error);
-        if (negBalance) {
-            closeActionModal();
-            setNegativeBalanceWarning(negBalance);
-            return true;
-        }
+        const blocked = parseSuspensionBlockedWarning409(error);
+        if (!blocked) return undefined;
 
-        const groups = parseSuspensionWarning409(error);
-        if (groups) {
-            setSuspensionWarning(groups);
-            return true;
+        if (blocked.debt) {
+            closeActionModal();
+            setNegativeBalanceWarning(blocked.debt);
         }
+        if (blocked.groups) {
+            setSuspensionWarning(blocked.groups);
+        }
+        return true;
     };
 
     return {

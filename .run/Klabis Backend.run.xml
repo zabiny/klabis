@@ -21,7 +21,7 @@
     <option name="envFilePaths">
       <option value="$PROJECT_DIR$/backend/local.env" />
     </option>
-    <module name="com.klabis.klabis.main" />
+    <module name="backend.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="com.klabis.KlabisApplication" />
     <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/backend" />
     <extension name="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExtension">
