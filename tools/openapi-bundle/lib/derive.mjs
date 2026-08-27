@@ -69,13 +69,14 @@ export function embeddedKey(payloadName, payloadSchema) {
     return `${uncapitalize(payloadName)}List`;
 }
 
+/** `templates` is false only for a nested `x-hal-entity-items` row — see Decision 7's exception. */
 function entityModel(payloadName, {templates}) {
     const wrapper = {type: 'object', properties: {_links: {$ref: LINKS_REF}}};
     if (templates) wrapper.properties._templates = {$ref: TEMPLATES_REF};
     return {allOf: [schemaRef(payloadName), wrapper]};
 }
 
-function collectionModel(itemSchemaName, embedded, {paged, templates}) {
+function collectionModel(itemSchemaName, embedded, {paged}) {
     const properties = {
         _embedded: {
             type: 'object',
@@ -84,8 +85,8 @@ function collectionModel(itemSchemaName, embedded, {paged, templates}) {
             },
         },
         _links: {$ref: LINKS_REF},
+        _templates: {$ref: TEMPLATES_REF},
     };
-    if (templates) properties._templates = {$ref: TEMPLATES_REF};
     if (paged) properties.page = {$ref: PAGE_METADATA_REF};
     return {type: 'object', properties};
 }
@@ -118,7 +119,7 @@ function define(schemas, name, definition, collisions) {
  * @returns the name of the schema the hal-forms entry should reference, or undefined when the
  *          schema is not something the deriver can wrap (an inline array of inline items, say).
  */
-function deriveResponseEnvelope(jsonSchema, schemas, {paged, templates}, collisions) {
+function deriveResponseEnvelope(jsonSchema, schemas, {paged}, collisions) {
     if (jsonSchema.type === 'array') {
         const itemName = schemaName(jsonSchema.items);
         if (itemName === undefined) return undefined;
@@ -127,10 +128,10 @@ function deriveResponseEnvelope(jsonSchema, schemas, {paged, templates}, collisi
         if (isEnvelopeShaped(payload)) return undefined;
 
         const item = define(schemas, `EntityModel${itemName}`,
-            entityModel(itemName, {templates}), collisions);
+            entityModel(itemName, {templates: true}), collisions);
         const prefix = paged ? 'PagedModel' : 'CollectionModel';
         return define(schemas, `${prefix}${item}`,
-            collectionModel(item, embeddedKey(itemName, payload), {paged, templates}), collisions);
+            collectionModel(item, embeddedKey(itemName, payload), {paged}), collisions);
     }
 
     const payloadName = schemaName(jsonSchema);
@@ -138,7 +139,7 @@ function deriveResponseEnvelope(jsonSchema, schemas, {paged, templates}, collisi
     if (isEnvelopeShaped(schemas[payloadName])) return undefined;
 
     return define(schemas, `EntityModel${payloadName}`,
-        entityModel(payloadName, {templates}), collisions);
+        entityModel(payloadName, {templates: true}), collisions);
 }
 
 /**
@@ -195,8 +196,12 @@ export function forEachHalResponse(document, visit) {
 
                 const content = response?.content;
                 if (!isPlainObject(content)) continue;
-                // Already hand-enveloped — the migration's coexistence guarantee.
-                if (Object.hasOwn(content, HAL_FORMS)) continue;
+                // An entry *with a schema* is hand-enveloped — the migration's coexistence
+                // guarantee. An empty one only declares the media type, which the source spec must
+                // keep stating: `produces` on the generated interface is built from these content
+                // keys, and dropping hal-forms there would make the endpoint answer 406 to the
+                // Accept header the frontend actually sends.
+                if (isPlainObject(content[HAL_FORMS]?.schema)) continue;
 
                 const jsonSchema = content[JSON_MEDIA]?.schema;
                 if (!isPlainObject(jsonSchema)) continue;
@@ -205,7 +210,6 @@ export function forEachHalResponse(document, visit) {
                     content,
                     jsonSchema,
                     paged,
-                    templates: isPlainObject(response['x-hal-templates']),
                     where: `${method.toUpperCase()} ${pathName} ${status}`,
                 });
             }
@@ -229,8 +233,8 @@ export function deriveHalEnvelopes(document) {
     const schemas = document?.components?.schemas;
     if (!isPlainObject(schemas)) return {document, collisions};
 
-    forEachHalResponse(document, ({content, jsonSchema, paged, templates}) => {
-        const derived = deriveResponseEnvelope(jsonSchema, schemas, {paged, templates}, collisions);
+    forEachHalResponse(document, ({content, jsonSchema, paged}) => {
+        const derived = deriveResponseEnvelope(jsonSchema, schemas, {paged}, collisions);
         if (derived === undefined) return;
         content[HAL_FORMS] = {schema: schemaRef(derived)};
     });

@@ -74,7 +74,7 @@ describe('deriveHalEnvelopes', () => {
         expect(document.components.schemas.EntityModelMemberDetailsResponse).toEqual({
             allOf: [
                 ref('MemberDetailsResponse'),
-                {type: 'object', properties: {_links: LINKS}},
+                {type: 'object', properties: {_links: LINKS, _templates: TEMPLATES}},
             ],
         });
     });
@@ -99,6 +99,7 @@ describe('deriveHalEnvelopes', () => {
                     },
                 },
                 _links: LINKS,
+                _templates: TEMPLATES,
             },
         });
         expect(document.components.schemas.EntityModelCalendarItemDto).toBeDefined();
@@ -137,15 +138,26 @@ describe('deriveHalEnvelopes', () => {
         expect(Object.keys(embedded.properties)).toEqual(['accommodationList']);
     });
 
-    it('adds _templates when the response declares x-hal-templates', () => {
-        const {document} = deriveHalEnvelopes(docWith(
+    // Decision 7: `_templates` is uniform, not conditional on x-hal-templates. The real contract is
+    // the extension itself (which haltypes.mjs turns into the named union); the envelope property
+    // only says a template map may appear, which is true of every HAL-FORMS response. Making it
+    // conditional also split one payload into two incompatible EntityModels when the same schema was
+    // returned both as an item and inside a collection.
+    it('emits _templates on every derived envelope, with or without x-hal-templates', () => {
+        const withExt = deriveHalEnvelopes(docWith(
             ref('CalendarItemDto'),
             {CalendarItemDto: {type: 'object', properties: {id: {type: 'string'}}}},
             {response: {'x-hal-templates': {update: {operation: 'updateCalendarItem'}}}},
-        ));
+        )).document;
+        const withoutExt = deriveHalEnvelopes(docWith(
+            ref('CalendarItemDto'),
+            {CalendarItemDto: {type: 'object', properties: {id: {type: 'string'}}}},
+        )).document;
 
-        expect(document.components.schemas.EntityModelCalendarItemDto.allOf[1].properties)
-            .toEqual({_links: LINKS, _templates: TEMPLATES});
+        for (const document of [withExt, withoutExt]) {
+            expect(document.components.schemas.EntityModelCalendarItemDto.allOf[1].properties)
+                .toEqual({_links: LINKS, _templates: TEMPLATES});
+        }
     });
 
     it('leaves an operation carrying x-klabis-hal: false untouched', () => {
@@ -253,6 +265,22 @@ describe('deriveHalEnvelopes', () => {
             deriveHalEnvelopes(document);
 
             expect(JSON.stringify(document)).toBe(before);
+        });
+
+        // An empty entry declares the media type without claiming a schema. The source spec keeps
+        // it because `produces` on the generated Java interface is built from these content keys —
+        // dropping it there would make the endpoint answer 406 to the Accept header the frontend
+        // sends. So it is a slot to fill, not hand-written work to preserve.
+        it('fills in a hal-forms entry that declares the media type but no schema', () => {
+            const document = docWith(ref('MemberAccountResource'), {
+                MemberAccountResource: {type: 'object', properties: {balance: {type: 'number'}}},
+            });
+            document.paths['/api/things'].get.responses['200']
+                .content['application/prs.hal-forms+json'] = {};
+
+            deriveHalEnvelopes(document);
+
+            expect(halForms(document).schema).toEqual(ref('EntityModelMemberAccountResource'));
         });
 
         it('does not wrap a payload that is itself already envelope-shaped', () => {
