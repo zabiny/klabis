@@ -200,6 +200,23 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
 }
 
 @MvcComponent
+class MembershipFeeTierSummaryPostprocessor
+        extends ModelWithDomainPostprocessor<MembershipFeeTierSummaryResponse, MembershipFeeTier> {
+
+    @Override
+    public void process(EntityModel<MembershipFeeTierSummaryResponse> dtoModel, MembershipFeeTier tier) {
+        UUID id = tier.getId().value();
+        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getTier(id))
+                .map(link -> link.withSelfRel()
+                        .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).editTier(id, null)))
+                        .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).deleteTier(id))))
+                .ifPresent(dtoModel::add);
+        klabisLinkTo(methodOn(MembershipFeeTiersApi.class).listRules(id))
+                .ifPresent(link -> dtoModel.add(link.withRel("rules")));
+    }
+}
+
+@MvcComponent
 class MembershipFeeTierDetailsPostprocessor
         extends ModelWithDomainPostprocessor<MembershipFeeTierResponse, MembershipFeeTier> {
 
