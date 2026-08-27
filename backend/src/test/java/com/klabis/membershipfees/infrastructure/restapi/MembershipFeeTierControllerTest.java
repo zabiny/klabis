@@ -10,11 +10,7 @@ import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.application.EventTypeOptionsPort;
-import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
-import com.klabis.membershipfees.application.MembershipFeeTierNotFoundException;
-import com.klabis.membershipfees.application.RankingOptionsPort;
+import com.klabis.membershipfees.application.*;
 import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeTier;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
@@ -186,6 +182,68 @@ class MembershipFeeTierControllerTest {
                     .andExpect(content().contentTypeCompatibleWith(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList").isArray())
                     .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList.length()").value(2));
+        }
+
+        @Test
+        @DisplayName("each tier item in the collection should have a self link")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void eachTierItemShouldHaveSelfLink() throws Exception {
+            when(managementPort.listTiers()).thenReturn(List.of(
+                    buildLevel(LEVEL_UUID, "Dospělý"),
+                    buildLevel(UUID.randomUUID(), "Mládež")
+            ));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._links.self.href")
+                            .value(org.hamcrest.Matchers.endsWith("/api/membership-fee-tiers/" + LEVEL_UUID)))
+                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[1]._links.self.href").exists());
+        }
+
+        @Test
+        @DisplayName("each tier item should have a rules link pointing to its rules collection")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void eachTierItemShouldHaveRulesLink() throws Exception {
+            when(managementPort.listTiers()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Dospělý")));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._links.rules.href")
+                            .value(org.hamcrest.Matchers.endsWith(
+                                    "/api/membership-fee-tiers/" + LEVEL_UUID + "/rules")));
+        }
+
+        @Test
+        @DisplayName("tier item should include edit/delete affordances for MEMBERS:MANAGE user")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void tierItemShouldIncludeEditDeleteAffordancesForAdmin() throws Exception {
+            when(managementPort.listTiers()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Dospělý")));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._templates.editTier").exists())
+                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._templates.deleteTier").exists());
+        }
+
+        @Test
+        @DisplayName("tier item should not include edit/delete affordances for non-admin user")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void tierItemShouldNotIncludeEditDeleteAffordancesForNonAdmin() throws Exception {
+            when(managementPort.listTiers()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Dospělý")));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._links.self.href").exists())
+                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._templates.editTier").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.membershipFeeTierSummaryResponseList[0]._templates.deleteTier").doesNotExist());
         }
 
         @Test
