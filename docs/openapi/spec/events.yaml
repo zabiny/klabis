@@ -48,10 +48,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventTypeDtoList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/CollectionModelEntityModelEventTypeDto'
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventTypeDto'
           x-hal-links:
             self:
               description: This collection
@@ -131,9 +130,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventTypeDto'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelEventTypeDto'
           x-hal-links:
             self:
               description: This event type
@@ -322,10 +318,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventSummaryDtoList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/PagedModelEntityModelEventSummaryDto'
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventSummaryDto'
           x-hal-links:
             self:
               description: This collection, with the current paging and filter parameters
@@ -433,8 +428,8 @@ paths:
             # GetEventResource off the FIRST content entry's schema — adding a bare EventDto sibling
             # would make it win over EntityModelEventDtoWithRegistrations and silently drop
             # _embedded.registrationDtoList from the frontend's GetEventResource type. The backend
-            # Java return type is unaffected either way (schemaMappings resolves it directly from the
-            # envelope schema name), so this endpoint keeps only the HAL/HAL+FORMS content entry.
+            # Java return type is unaffected either way (HalEnvelopeDetector unwraps the allOf to
+            # EventDto), so this endpoint keeps only the HAL/HAL+FORMS content entry.
             application/prs.hal-forms+json:
               schema:
                 $ref: '#/components/schemas/EntityModelEventDtoWithRegistrations'
@@ -637,10 +632,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AccommodationListItemDtoList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/CollectionModelEntityModelAccommodationListItemDto'
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccommodationListItemDto'
             text/csv:
               schema:
                 type: string
@@ -761,9 +755,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BulkSyncResult'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelBulkSyncResult'
           x-hal-links:
             self:
               description: This sync result
@@ -806,9 +797,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BulkImportResult'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelBulkImportResult'
           x-hal-links:
             self:
               description: This import result
@@ -938,10 +926,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RegistrationSummaryDtoList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/CollectionModelEntityModelRegistrationSummaryDto'
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistrationSummaryDto'
           x-hal-links:
             self:
               description: This collection, with the current sort parameter
@@ -1038,9 +1025,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegistrationDto'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelRegistrationDto'
           x-hal-links:
             self:
               description: This registration
@@ -1092,10 +1076,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CategoryPresetDtoList'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/CollectionModelEntityModelCategoryPresetDto'
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryPresetDto'
           x-hal-links:
             self:
               description: This collection
@@ -1173,9 +1156,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CategoryPresetDto'
-            application/prs.hal-forms+json:
-              schema:
-                $ref: '#/components/schemas/EntityModelCategoryPresetDto'
           x-hal-links:
             self:
               description: This category preset
@@ -1348,41 +1328,6 @@ components:
     EventStatus:
       type: string
       enum: [DRAFT, ACTIVE, FINISHED, CANCELLED]
-
-    # Named so schemaMappings can retarget it onto Page<EventSummaryDto> — an inline array has no
-    # schema name to map from, and the generator would otherwise infer List<EventSummaryDto> straight
-    # from this application/json sibling (it wins type resolution over the emptied HAL schema).
-    EventSummaryDtoList:
-      type: array
-      items:
-        $ref: '#/components/schemas/EventSummaryDto'
-
-    # Envelope schemas — never generated into Java; see klabis-api-spec skill:
-    # "Payload and envelope are separate schemas".
-    PagedModelEntityModelEventSummaryDto:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            eventSummaryDtoList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelEventSummaryDto'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-        page:
-          $ref: './_shared/hal.yaml#/components/schemas/PageMetadata'
-
-    EntityModelEventSummaryDto:
-      allOf:
-        - $ref: '#/components/schemas/EventSummaryDto'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
 
     EventSummaryDto:
       type: object
@@ -1725,14 +1670,6 @@ components:
             type: integer
             format: int32
 
-    EntityModelBulkSyncResult:
-      allOf:
-        - $ref: '#/components/schemas/BulkSyncResult'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-
     BulkSyncResult:
       type: object
       properties:
@@ -1763,14 +1700,6 @@ components:
           enum: [SUCCESS, FAILED]
         error:
           type: string
-
-    EntityModelBulkImportResult:
-      allOf:
-        - $ref: '#/components/schemas/BulkImportResult'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
 
     BulkImportResult:
       type: object
@@ -1832,34 +1761,6 @@ components:
     # Named so schemaMappings can retarget it onto Collection<RegistrationSummaryDto> — an inline
     # array has no schema name to map from, and the generator would otherwise infer
     # List<RegistrationSummaryDto> straight from this application/json sibling.
-    RegistrationSummaryDtoList:
-      type: array
-      items:
-        $ref: '#/components/schemas/RegistrationSummaryDto'
-
-    CollectionModelEntityModelRegistrationSummaryDto:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            registrationDtoList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelRegistrationSummaryDto'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-
-    EntityModelRegistrationSummaryDto:
-      allOf:
-        - $ref: '#/components/schemas/RegistrationSummaryDto'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
     RegistrationSummaryDto:
       type: object
       description: |
@@ -1898,16 +1799,6 @@ components:
           format: uuid
           x-field-extra-annotation: com.fasterxml.jackson.annotation.JsonIgnore
 
-    EntityModelRegistrationDto:
-      allOf:
-        - $ref: '#/components/schemas/RegistrationDto'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
     RegistrationDto:
       type: object
       properties:
@@ -1935,32 +1826,6 @@ components:
     # Named so schemaMappings can retarget it onto Collection<AccommodationListItemDto> — an inline
     # array has no schema name to map from, and the generator would otherwise infer
     # List<AccommodationListItemDto> straight from this application/json sibling.
-    AccommodationListItemDtoList:
-      type: array
-      items:
-        $ref: '#/components/schemas/AccommodationListItemDto'
-
-    CollectionModelEntityModelAccommodationListItemDto:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            accommodationList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelAccommodationListItemDto'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-
-    EntityModelAccommodationListItemDto:
-      allOf:
-        - $ref: '#/components/schemas/AccommodationListItemDto'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-
     AccommodationListItemDto:
       type: object
       description: Fields not recorded for a member are returned as null.
@@ -1987,39 +1852,6 @@ components:
           type: string
         addressCountry:
           type: string
-
-    # Named so schemaMappings can retarget it onto Collection<CategoryPresetDto> — an inline array
-    # has no schema name to map from, and the generator would otherwise infer List<CategoryPresetDto>
-    # straight from this application/json sibling.
-    CategoryPresetDtoList:
-      type: array
-      items:
-        $ref: '#/components/schemas/CategoryPresetDto'
-
-    CollectionModelEntityModelCategoryPresetDto:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            categoryPresetDtoList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelCategoryPresetDto'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-        _templates:
-          $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
-    EntityModelCategoryPresetDto:
-      allOf:
-        - $ref: '#/components/schemas/CategoryPresetDto'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
 
     CategoryPresetDto:
       type: object
@@ -2062,42 +1894,6 @@ components:
     # Named so schemaMappings can retarget it onto Collection<EventTypeDto> — an inline array has no
     # schema name to map from, and the generator would otherwise infer List<EventTypeDto> straight
     # from this application/json sibling (it wins type resolution over the emptied HAL schema).
-    EventTypeDtoList:
-      type: array
-      items:
-        $ref: '#/components/schemas/EventTypeDto'
-
-    # Envelope schemas — never generated into Java; the backend generator emits only the payload.
-    #
-    # The response references the true wire shape (the HAL object with _embedded), and
-    # schemaMappings redirects it to a plain java.util.Collection<EventTypeDto> in the generated
-    # signature — that Collection is what the controller hands to HalResponseBodyAdvice, which builds
-    # the CollectionModel described here. Same split as PagedModel*/Page<T> for paged endpoints.
-    CollectionModelEntityModelEventTypeDto:
-      type: object
-      properties:
-        _embedded:
-          type: object
-          properties:
-            eventTypeDtoList:
-              type: array
-              items:
-                $ref: '#/components/schemas/EntityModelEventTypeDto'
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-        _templates:
-          $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
-    EntityModelEventTypeDto:
-      allOf:
-        - $ref: '#/components/schemas/EventTypeDto'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-
     EventTypeDto:
       type: object
       description: Event type catalog entry.
