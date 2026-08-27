@@ -1,4 +1,4 @@
-package com.klabis.sync;
+package com.klabis.common.sync;
 
 public enum SyncType {
     EVENT, MEMBER

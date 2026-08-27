@@ -1,4 +1,4 @@
-package com.klabis.sync;
+package com.klabis.common.sync;
 
 import org.springframework.core.convert.converter.Converter;
 
@@ -38,6 +38,4 @@ public record SyncLine<L extends SyncData, E extends SyncData>(SyncSource<L> loc
             return externalSource.save(externalData);
         }).orElseThrow(() -> new IllegalStateException("Local item with ID %s not found".formatted(localId)));
     }
-
-
 }

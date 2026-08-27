@@ -1,8 +1,6 @@
-package com.klabis.sync;
+package com.klabis.common.sync;
 
 public interface SyncData {
-
-    long checksum();
 
     SyncId getSyncId();
 }

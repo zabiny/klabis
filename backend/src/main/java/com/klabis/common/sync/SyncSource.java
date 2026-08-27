@@ -1,10 +1,10 @@
-package com.klabis.sync;
+package com.klabis.common.sync;
 
-import org.jmolecules.architecture.hexagonal.Port;
+import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 import java.util.Optional;
 
-@Port
+@SecondaryPort
 public interface SyncSource<T extends SyncData> {
 
     Optional<T> fetch(SyncId syncId);
@@ -21,5 +21,5 @@ public interface SyncSource<T extends SyncData> {
 
     default boolean isOppositeOf(SyncSource<?> other) {
         return other.type().equals(type()) && party().isOppositeOf(other.party());
-    };
+    }
 }
