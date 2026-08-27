@@ -54,7 +54,7 @@ class OrisEventBulkImportServiceTest {
 
     private void stubSyncError(int orisId, String failureCause) {
         when(dataSync.sync(eq(externalId(orisId)), eq(DataSync.Direction.PULL)))
-                .thenReturn(SyncRecord.failure(null, externalId(orisId), failureCause));
+                .thenReturn(SyncRecord.failure(null, externalId(orisId), new RuntimeException(failureCause)));
     }
 
     @Nested

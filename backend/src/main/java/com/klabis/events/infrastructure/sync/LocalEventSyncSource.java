@@ -5,18 +5,22 @@ import com.klabis.common.sync.SyncId;
 import com.klabis.common.sync.SyncParty;
 import com.klabis.common.sync.SyncSource;
 import com.klabis.common.sync.SyncType;
+import com.klabis.events.EventCategory;
 import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;
+import com.klabis.events.application.DuplicateOrisImportException;
+import com.klabis.events.application.EventSyncIds;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventSyncFromOrisBuilder;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Local ({@code party=LOCAL}) side of the ORIS event {@code SyncLine}. Owns the domain logic of
@@ -40,7 +44,7 @@ class LocalEventSyncSource implements SyncSource<EventSyncData> {
 
     @Override
     public Optional<EventSyncData> fetch(SyncId syncId) {
-        EventId id = new EventId(UUID.fromString(syncId.idValue()));
+        EventId id = EventSyncIds.toEventId(syncId);
         return eventRepository.findById(id)
                 .map(e -> new EventSyncData(e.getId(), e.getOrisId(), null, null));
     }
@@ -48,6 +52,8 @@ class LocalEventSyncSource implements SyncSource<EventSyncData> {
     @Override
     @Transactional
     public SyncId save(EventSyncData data) {
+        Objects.requireNonNull(data.orisDetails(), "ORIS payload required to save an event from sync");
+
         Optional<Event> existing = data.eventId() != null
                 ? eventRepository.findById(data.eventId())
                 : eventRepository.findByOrisId(data.orisId());
@@ -55,7 +61,7 @@ class LocalEventSyncSource implements SyncSource<EventSyncData> {
         Event event;
         if (existing.isPresent()) {
             event = existing.get();
-            List<com.klabis.events.EventCategory> incoming = support.extractCategories(data.orisDetails());
+            List<EventCategory> incoming = support.extractCategories(data.orisDetails());
             support.warnIfSyncRemovesCategoriesWithRegistrations(event, incoming);
             event.syncFromOris(buildSyncCommand(data));
         } else {
@@ -64,8 +70,13 @@ class LocalEventSyncSource implements SyncSource<EventSyncData> {
 
         event.applyAutoMappedEventType(support.resolveEventType(data.orisDetails().discipline()));
 
-        Event saved = eventRepository.save(event);
-        return SyncId.localId(SyncType.EVENT, saved.getId().value().toString());
+        Event saved;
+        try {
+            saved = eventRepository.save(event);
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateOrisImportException(data.orisId(), e);
+        }
+        return EventSyncIds.localSyncId(saved.getId());
     }
 
     @Override

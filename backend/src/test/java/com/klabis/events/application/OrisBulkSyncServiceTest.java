@@ -86,7 +86,7 @@ class OrisBulkSyncServiceTest {
             when(dataSync.sync(eq(localIdOf(event1)), eq(DataSync.Direction.PULL)))
                     .thenReturn(SyncRecord.success(localIdOf(event1), SyncId.externalId(SyncType.EVENT, "101")));
             when(dataSync.sync(eq(localIdOf(event2)), eq(DataSync.Direction.PULL)))
-                    .thenReturn(SyncRecord.failure(localIdOf(event2), null, "boom"));
+                    .thenReturn(SyncRecord.failure(localIdOf(event2), null, new RuntimeException("boom")));
             when(dataSync.sync(eq(localIdOf(event3)), eq(DataSync.Direction.PULL)))
                     .thenReturn(SyncRecord.success(localIdOf(event3), SyncId.externalId(SyncType.EVENT, "103")));
 

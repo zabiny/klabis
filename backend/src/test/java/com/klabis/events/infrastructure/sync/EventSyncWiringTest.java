@@ -54,6 +54,8 @@ class EventSyncWiringTest {
                 .doesNotThrowAnyException();
 
         assertThat(record[0].result()).isEqualTo(DataSync.SyncResult.ERROR);
-        assertThat(record[0].failureCause()).isNotNull();
+        assertThat(record[0].failureException())
+                .isNotNull()
+                .isInstanceOf(IllegalStateException.class);
     }
 }

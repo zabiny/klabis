@@ -95,8 +95,7 @@ public class DataSyncImpl implements DataSync {
         log.warn("Sync failed for {}", syncId, cause);
         SyncId localId = resolvedLocalId != null ? resolvedLocalId : (syncId.isLocalId() ? syncId : null);
         SyncId externalId = resolvedExternalId != null ? resolvedExternalId : (syncId.isExternalId() ? syncId : null);
-        String message = cause.getMessage() != null ? cause.getMessage() : cause.toString();
-        return persist(SyncRecord.failure(localId, externalId, message));
+        return persist(SyncRecord.failure(localId, externalId, cause));
     }
 
     /**
@@ -106,7 +105,7 @@ public class DataSyncImpl implements DataSync {
     private SyncRecord persist(SyncRecord record) {
         SyncRecord toSave = existingIdFor(record)
                 .map(id -> new SyncRecord(id, record.localId(), record.externalId(),
-                        record.result(), record.failureCause()))
+                        record.result(), record.failureException()))
                 .orElse(record);
         return syncRecords.save(toSave);
     }

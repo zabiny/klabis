@@ -69,42 +69,71 @@ class OrisEventImportServiceTest {
         }
 
         @Test
-        @DisplayName("translates a unique-constraint failure to DuplicateOrisImportException")
-        void shouldTranslateDuplicate() {
+        @DisplayName("rethrows the exact DuplicateOrisImportException carried by the ERROR record")
+        void shouldRethrowDuplicate() {
             int orisId = 1111;
             SyncId externalId = SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
+            DuplicateOrisImportException failure = new DuplicateOrisImportException(orisId);
             when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
-                    .thenReturn(SyncRecord.failure(null, externalId,
-                            "could not execute statement; SQL [n/a]; constraint [uq_event_oris_id]; unique constraint violation"));
+                    .thenReturn(SyncRecord.failure(null, externalId, failure));
 
             assertThatThrownBy(() -> service.importEventFromOris(orisId))
-                    .isInstanceOf(DuplicateOrisImportException.class);
+                    .isSameAs(failure);
         }
 
         @Test
-        @DisplayName("translates a not-found failure to EventNotFoundException")
-        void shouldTranslateNotFound() {
+        @DisplayName("rethrows the exact EventNotFoundException carried by the ERROR record")
+        void shouldRethrowNotFound() {
             int orisId = 9999;
             SyncId externalId = SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
+            EventNotFoundException failure = new EventNotFoundException(orisId);
             when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
-                    .thenReturn(SyncRecord.failure(null, externalId,
-                            "External item with ID SyncId[type=EVENT, party=EXTERNAL, idValue=9999] not found"));
+                    .thenReturn(SyncRecord.failure(null, externalId, failure));
 
             assertThatThrownBy(() -> service.importEventFromOris(orisId))
-                    .isInstanceOf(EventNotFoundException.class);
+                    .isSameAs(failure);
         }
 
         @Test
-        @DisplayName("translates an invalid-deadlines failure to BusinessRuleViolationException")
-        void shouldTranslateInvalidDeadlines() {
+        @DisplayName("rethrows the BusinessRuleViolationException carried by the ERROR record")
+        void shouldRethrowBusinessRuleViolation() {
             int orisId = 1003;
             SyncId externalId = SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
+            BusinessRuleViolationException failure = new BusinessRuleViolationException(
+                    "ORIS event 1003 has invalid registration deadlines") {
+            };
             when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
-                    .thenReturn(SyncRecord.failure(null, externalId,
-                            "ORIS event 1003 has invalid registration deadlines: deadline1 and deadline3 set but deadline2 missing"));
+                    .thenReturn(SyncRecord.failure(null, externalId, failure));
 
             assertThatThrownBy(() -> service.importEventFromOris(orisId))
-                    .isInstanceOf(BusinessRuleViolationException.class);
+                    .isSameAs(failure);
+        }
+
+        @Test
+        @DisplayName("rethrows an engine-internal IllegalStateException unchanged")
+        void shouldRethrowEngineInternalError() {
+            int orisId = 4242;
+            SyncId externalId = SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
+            IllegalStateException failure = new IllegalStateException("No sync record found for " + externalId);
+            when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
+                    .thenReturn(SyncRecord.failure(null, externalId, failure));
+
+            assertThatThrownBy(() -> service.importEventFromOris(orisId))
+                    .isSameAs(failure);
+        }
+
+        @Test
+        @DisplayName("wraps a checked exception carried by the ERROR record in IllegalStateException")
+        void shouldWrapCheckedException() {
+            int orisId = 5000;
+            SyncId externalId = SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
+            Exception checked = new Exception("checked failure");
+            when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
+                    .thenReturn(SyncRecord.failure(null, externalId, checked));
+
+            assertThatThrownBy(() -> service.importEventFromOris(orisId))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasCause(checked);
         }
     }
 
@@ -155,18 +184,20 @@ class OrisEventImportServiceTest {
         }
 
         @Test
-        @DisplayName("translates an ERROR record with a deadline failure cause to BusinessRuleViolationException")
-        void shouldTranslateErrorRecord() {
+        @DisplayName("rethrows the exact exception carried by an ERROR record")
+        void shouldRethrowErrorRecord() {
             EventId eventId = EventId.generate();
             Event event = EventTestDataBuilder.anEventWithId(eventId).withOrisId(77).build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+            BusinessRuleViolationException failure = new BusinessRuleViolationException(
+                    "ORIS event 77 has invalid registration deadlines") {
+            };
             when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
                     .thenReturn(SyncRecord.failure(
-                            SyncId.localId(SyncType.EVENT, eventId.value().toString()), null,
-                            "ORIS event 77 has invalid registration deadlines"));
+                            SyncId.localId(SyncType.EVENT, eventId.value().toString()), null, failure));
 
             assertThatThrownBy(() -> service.syncEventFromOris(eventId))
-                    .isInstanceOf(BusinessRuleViolationException.class);
+                    .isSameAs(failure);
         }
     }
 }

@@ -1,18 +1,23 @@
 package com.klabis.events.infrastructure.sync;
 
 import com.dpolach.api.orisclient.dto.Discipline;
+import com.dpolach.api.orisclient.dto.EventClass;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Organizer;
 import com.klabis.common.sync.SyncId;
 import com.klabis.common.sync.SyncParty;
 import com.klabis.common.sync.SyncType;
+import com.klabis.events.EventCategory;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
+import com.klabis.events.application.DuplicateOrisImportException;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
+import com.klabis.events.domain.SiCardNumber;
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,14 +27,21 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -43,11 +55,12 @@ class LocalEventSyncSourceTest {
     @Mock
     private EventTypeRepository eventTypeRepository;
 
+    private OrisEventMappingSupport support;
     private LocalEventSyncSource testedInstance;
 
     @BeforeEach
     void setUp() {
-        OrisEventMappingSupport support = new OrisEventMappingSupport(eventTypeRepository);
+        support = spy(new OrisEventMappingSupport(eventTypeRepository));
         OrisEventDetailsMapper mapper = Mappers.getMapper(OrisEventDetailsMapper.class);
         testedInstance = new LocalEventSyncSource(eventRepository, mapper, support);
     }
@@ -181,6 +194,56 @@ class LocalEventSyncSourceTest {
     }
 
     @Test
+    @DisplayName("save() maps a DataIntegrityViolationException from the repository to DuplicateOrisImportException")
+    void save_mapsUniqueConstraintViolation() {
+        int orisId = 8080;
+        EventSyncData data = new EventSyncData(null, orisId, details(orisId, "Clashing Race"),
+                "https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+
+        DataIntegrityViolationException dbFailure =
+                new DataIntegrityViolationException("unique constraint \"uq_events_oris_id\"");
+        when(eventRepository.findByOrisId(orisId)).thenReturn(Optional.empty());
+        when(eventRepository.save(any(Event.class))).thenThrow(dbFailure);
+
+        assertThatThrownBy(() -> testedInstance.save(data))
+                .isInstanceOf(DuplicateOrisImportException.class)
+                .hasCause(dbFailure)
+                .hasMessageContaining(Integer.toString(orisId));
+    }
+
+    @Test
+    @DisplayName("save() warns when the incoming ORIS classes drop a category that has registrations")
+    void save_warnsWhenSyncRemovesCategoryWithRegistrations() {
+        int orisId = 9090;
+        LocalDate eventDate = LocalDate.now().plusDays(30);
+        EventCategory m21 = EventCategory.createFromOris("100", "M21");
+        EventCategory w21 = EventCategory.createFromOris("200", "W21");
+        Event existing = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                .orisId(orisId)
+                .name("Race")
+                .eventDate(eventDate)
+                .location("Forest")
+                .organizer("OOB")
+                .categories(List.of(m21, w21))
+                .build());
+        existing.publish();
+        existing.registerMember(new MemberId(UUID.randomUUID()), new SiCardNumber("12345"), m21.id());
+
+        EventClass w21Class = mockClass("200", "W21");
+        EventDetails details = details(orisId, "Race Updated");
+        when(details.classes()).thenReturn(Map.of("W21", w21Class));
+
+        when(eventRepository.findByOrisId(orisId)).thenReturn(Optional.of(existing));
+        when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        testedInstance.save(new EventSyncData(null, orisId, details,
+                "https://oris.ceskyorientak.cz/Zavod?id=" + orisId));
+
+        verify(support).warnIfSyncRemovesCategoriesWithRegistrations(eq(existing), anyList());
+        assertThat(existing.getCategories()).extracting(EventCategory::name).containsExactly("W21");
+    }
+
+    @Test
     @DisplayName("fetch() wraps a found event into EventSyncData carrying its local id and orisId")
     void fetch_wrapsEvent() {
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
@@ -199,6 +262,13 @@ class LocalEventSyncSourceTest {
         assertThat(result.get().eventId()).isEqualTo(event.getId());
         assertThat(result.get().orisId()).isEqualTo(1234);
         assertThat(result.get().orisDetails()).isNull();
+    }
+
+    private EventClass mockClass(String orisClassId, String name) {
+        EventClass cls = Mockito.mock(EventClass.class);
+        Mockito.lenient().when(cls.id()).thenReturn(orisClassId);
+        Mockito.lenient().when(cls.name()).thenReturn(name);
+        return cls;
     }
 
     private EventDetails details(int orisId, String name) {

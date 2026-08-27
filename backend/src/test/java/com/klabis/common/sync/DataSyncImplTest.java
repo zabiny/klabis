@@ -39,7 +39,7 @@ class DataSyncImplTest {
         assertThat(result.result()).isEqualTo(DataSync.SyncResult.SYNCED);
         assertThat(result.localId()).isEqualTo(LOCAL_ID);
         assertThat(result.externalId()).isEqualTo(EXTERNAL_ID);
-        assertThat(result.failureCause()).isNull();
+        assertThat(result.failureException()).isNull();
         assertThat(syncRecords.findById(LOCAL_ID)).contains(result);
         assertThat(syncRecords.size()).isEqualTo(1);
     }
@@ -104,7 +104,9 @@ class DataSyncImplTest {
 
         verify(syncLine, never()).pull(any());
         assertThat(result.result()).isEqualTo(DataSync.SyncResult.ERROR);
-        assertThat(result.failureCause()).isEqualTo("No sync record found for " + LOCAL_ID);
+        assertThat(result.failureException())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("No sync record found for " + LOCAL_ID);
         assertThat(result.localId()).isEqualTo(LOCAL_ID);
         assertThat(result.externalId()).isNull();
     }
@@ -116,7 +118,9 @@ class DataSyncImplTest {
 
         verify(syncLine, never()).push(any());
         assertThat(result.result()).isEqualTo(DataSync.SyncResult.ERROR);
-        assertThat(result.failureCause()).isEqualTo("No sync record found for " + EXTERNAL_ID);
+        assertThat(result.failureException())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("No sync record found for " + EXTERNAL_ID);
         assertThat(result.localId()).isNull();
         assertThat(result.externalId()).isEqualTo(EXTERNAL_ID);
     }
@@ -124,25 +128,29 @@ class DataSyncImplTest {
     @Test
     @DisplayName("PUSH on an external id whose SyncRecord has no local id reports the missing side distinctly")
     void push_externalId_syncRecordWithoutLocalId_returnsErrorRecord() {
-        syncRecords.save(SyncRecord.failure(null, EXTERNAL_ID, "previous pull failed"));
+        syncRecords.save(SyncRecord.failure(null, EXTERNAL_ID, new IllegalStateException("previous pull failed")));
 
         SyncRecord result = testedInstance.sync(EXTERNAL_ID, DataSync.Direction.PUSH);
 
         verify(syncLine, never()).push(any());
         assertThat(result.result()).isEqualTo(DataSync.SyncResult.ERROR);
-        assertThat(result.failureCause()).isEqualTo("Sync record for " + EXTERNAL_ID + " has no local ID");
+        assertThat(result.failureException())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Sync record for " + EXTERNAL_ID + " has no local ID");
     }
 
     @Test
     @DisplayName("PULL on a local id whose SyncRecord has no external id reports the missing side distinctly")
     void pull_localId_syncRecordWithoutExternalId_returnsErrorRecord() {
-        syncRecords.save(SyncRecord.failure(LOCAL_ID, null, "previous push failed"));
+        syncRecords.save(SyncRecord.failure(LOCAL_ID, null, new IllegalStateException("previous push failed")));
 
         SyncRecord result = testedInstance.sync(LOCAL_ID, DataSync.Direction.PULL);
 
         verify(syncLine, never()).pull(any());
         assertThat(result.result()).isEqualTo(DataSync.SyncResult.ERROR);
-        assertThat(result.failureCause()).isEqualTo("Sync record for " + LOCAL_ID + " has no external ID");
+        assertThat(result.failureException())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Sync record for " + LOCAL_ID + " has no external ID");
     }
 
     @Test
@@ -154,7 +162,9 @@ class DataSyncImplTest {
         SyncRecord result = testedInstance.sync(EXTERNAL_ID, DataSync.Direction.PUSH);
 
         assertThat(result.result()).isEqualTo(DataSync.SyncResult.ERROR);
-        assertThat(result.failureCause()).isEqualTo("boom");
+        assertThat(result.failureException())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("boom");
         assertThat(result.localId()).isEqualTo(LOCAL_ID);
         assertThat(result.externalId()).isEqualTo(EXTERNAL_ID);
         assertThat(syncRecords.size()).isEqualTo(1);
@@ -169,21 +179,25 @@ class DataSyncImplTest {
         SyncRecord result = testedInstance.sync(LOCAL_ID, DataSync.Direction.PULL);
 
         assertThat(result.result()).isEqualTo(DataSync.SyncResult.ERROR);
-        assertThat(result.failureCause()).isEqualTo("kaboom");
+        assertThat(result.failureException())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("kaboom");
         assertThat(result.localId()).isEqualTo(LOCAL_ID);
         assertThat(result.externalId()).isEqualTo(EXTERNAL_ID);
         assertThat(syncRecords.size()).isEqualTo(1);
     }
 
     @Test
-    @DisplayName("returns an ERROR record with failureCause populated when the line throws")
+    @DisplayName("returns an ERROR record with failureException populated when the line throws")
     void push_lineThrows_returnsErrorRecordWithCause() {
         when(syncLine.push(LOCAL_ID)).thenThrow(new IllegalStateException("boom"));
 
         SyncRecord result = testedInstance.sync(LOCAL_ID, DataSync.Direction.PUSH);
 
         assertThat(result.result()).isEqualTo(DataSync.SyncResult.ERROR);
-        assertThat(result.failureCause()).isEqualTo("boom");
+        assertThat(result.failureException())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("boom");
         assertThat(result.localId()).isEqualTo(LOCAL_ID);
         assertThat(result.externalId()).isNull();
         assertThat(syncRecords.findById(LOCAL_ID)).contains(result);

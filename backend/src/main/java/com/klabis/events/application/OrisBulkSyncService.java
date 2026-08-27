@@ -45,14 +45,19 @@ class OrisBulkSyncService implements OrisBulkSyncPort {
                 results.add(BulkSyncResult.EventSyncEntry.synced(event.getId(), event.getName()));
                 successCount++;
             } else {
+                String error = failureMessage(record.failureException());
                 log.warn("Bulk ORIS sync failed for event {} ({}): {}",
-                        event.getId(), event.getName(), record.failureCause());
+                        event.getId(), event.getName(), error);
                 results.add(BulkSyncResult.EventSyncEntry.failed(
-                        event.getId(), event.getName(), record.failureCause()));
+                        event.getId(), event.getName(), error));
                 failureCount++;
             }
         }
 
         return new BulkSyncResult(events.size(), successCount, failureCount, results);
+    }
+
+    private static String failureMessage(Throwable t) {
+        return t.getMessage() != null ? t.getMessage() : t.toString();
     }
 }

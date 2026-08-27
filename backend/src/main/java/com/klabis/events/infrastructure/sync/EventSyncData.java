@@ -16,6 +16,13 @@ import com.klabis.events.EventId;
 public record EventSyncData(EventId eventId, Integer orisId, EventDetails orisDetails, String eventWebUrl)
         implements SyncData {
 
+    public EventSyncData {
+        if (eventId == null && orisId == null) {
+            throw new IllegalArgumentException(
+                    "EventSyncData requires at least one of eventId / orisId");
+        }
+    }
+
     @Override
     public SyncId getSyncId() {
         if (eventId != null) {

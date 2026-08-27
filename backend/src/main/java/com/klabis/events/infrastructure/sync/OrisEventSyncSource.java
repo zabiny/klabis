@@ -6,6 +6,7 @@ import com.klabis.common.sync.SyncId;
 import com.klabis.common.sync.SyncParty;
 import com.klabis.common.sync.SyncSource;
 import com.klabis.common.sync.SyncType;
+import com.klabis.events.application.EventSyncIds;
 import com.klabis.oris.OrisIntegrationComponent;
 
 import java.util.Optional;
@@ -27,7 +28,7 @@ class OrisEventSyncSource implements SyncSource<EventSyncData> {
 
     @Override
     public Optional<EventSyncData> fetch(SyncId syncId) {
-        int orisId = Integer.parseInt(syncId.idValue());
+        int orisId = EventSyncIds.toOrisId(syncId);
         return orisApiClient.getEventDetails(orisId).payload()
                 .map(details -> new EventSyncData(null, orisId, details, orisWebUrls.eventUrl(orisId)));
     }
