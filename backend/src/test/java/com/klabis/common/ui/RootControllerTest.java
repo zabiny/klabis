@@ -50,7 +50,7 @@ class RootControllerTest {
         void shouldAddAdminLinkForDeveloper() throws Exception {
             mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.admin.href").value("/sandplace"));
+                    .andExpect(jsonPath("$._links.admin.href").value("/admin"));
         }
 
         @Test
