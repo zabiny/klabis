@@ -2218,9 +2218,9 @@ export interface components {
             _links?: components["schemas"]["Links"];
             _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        /** @description MemberDetailsResponse as served, wrapped in a HAL EntityModel. */
         EntityModelMemberDetailsResponse: components["schemas"]["MemberDetailsResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelMemberFeeChoiceResponse: components["schemas"]["MemberFeeChoiceResponse"] & {
             _links?: components["schemas"]["Links"];
@@ -2233,9 +2233,9 @@ export interface components {
             _links?: components["schemas"]["Links"];
             _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        /** @description MemberSummaryResponse as served, wrapped in a HAL EntityModel. */
         EntityModelMemberSummaryResponse: components["schemas"]["MemberSummaryResponse"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelMembershipFeeGroupResponse: components["schemas"]["MembershipFeeGroupResponse"] & {
             _links?: components["schemas"]["Links"];
@@ -2704,7 +2704,6 @@ export interface components {
              */
             registrationNumber?: string;
         };
-        MemberSummaryResponseList: components["schemas"]["MemberSummaryResponse"][];
         /** @description A published fee group — a snapshot taken from a tier for one campaign year. */
         MembershipFeeGroupResponse: {
             /** Format: uuid */
@@ -2793,6 +2792,7 @@ export interface components {
                 memberSummaryResponseList?: components["schemas"]["EntityModelMemberSummaryResponse"][];
             };
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
             page?: components["schemas"]["PageMetadata"];
         };
         PagedModelEntityModelTransactionResource: {
@@ -5454,7 +5454,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MemberSummaryResponseList"];
+                    "application/json": components["schemas"]["MemberSummaryResponse"][];
                     "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelMemberSummaryResponse"];
                 };
             };
