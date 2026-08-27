@@ -34,19 +34,19 @@ import java.util.stream.Collectors;
  * and the ORIS-discipline to event-type lookup (which needs {@link EventTypeRepository}).
  */
 @Component
-public class OrisEventMappingSupport {
+class OrisEventMappingSupport {
 
     private static final Logger log = LoggerFactory.getLogger(OrisEventMappingSupport.class);
 
-    public static final String UNKNOWN_ORGANIZER = "---";
+    private static final String UNKNOWN_ORGANIZER = "---";
 
     private final EventTypeRepository eventTypeRepository;
 
-    public OrisEventMappingSupport(EventTypeRepository eventTypeRepository) {
+    OrisEventMappingSupport(EventTypeRepository eventTypeRepository) {
         this.eventTypeRepository = eventTypeRepository;
     }
 
-    public RegistrationDeadlines buildRegistrationDeadlines(EventDetails details, int orisId) {
+    RegistrationDeadlines buildRegistrationDeadlines(EventDetails details, int orisId) {
         LocalDate d1 = details.entryDate1() != null ? details.entryDate1().toLocalDate() : null;
         LocalDate d2 = details.entryDate2() != null ? details.entryDate2().toLocalDate() : null;
         LocalDate d3 = details.entryDate3() != null ? details.entryDate3().toLocalDate() : null;
@@ -60,7 +60,7 @@ public class OrisEventMappingSupport {
         }
     }
 
-    public String resolveOrganizer(EventDetails details) {
+    String resolveOrganizer(EventDetails details) {
         if (details.org1() != null && details.org1().abbreviation() != null && !details.org1().abbreviation().isBlank()) {
             return details.org1().abbreviation();
         }
@@ -70,7 +70,7 @@ public class OrisEventMappingSupport {
         return UNKNOWN_ORGANIZER;
     }
 
-    public List<EventCategory> extractCategories(EventDetails details) {
+    List<EventCategory> extractCategories(EventDetails details) {
         if (details.classes() == null || details.classes().isEmpty()) {
             return List.of();
         }
@@ -80,7 +80,7 @@ public class OrisEventMappingSupport {
                 .toList();
     }
 
-    public EventTypeId resolveEventType(Discipline discipline) {
+    EventTypeId resolveEventType(Discipline discipline) {
         if (discipline == null || discipline.id() <= 0) {
             // ORIS uses id 0 as sentinel for a missing discipline
             return null;
@@ -90,14 +90,14 @@ public class OrisEventMappingSupport {
                 .orElse(null);
     }
 
-    public EventRanking resolveRanking(Level level) {
+    EventRanking resolveRanking(Level level) {
         if (level == null) {
             return null;
         }
         return EventRanking.of(level.id(), level.shortName(), level.nameCZ());
     }
 
-    public Money deriveBaseEntryFee(EventDetails details) {
+    Money deriveBaseEntryFee(EventDetails details) {
         if (details.classes() == null || details.classes().isEmpty()) {
             return null;
         }
@@ -118,7 +118,7 @@ public class OrisEventMappingSupport {
                 .orElse(null);
     }
 
-    public void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<EventCategory> incomingCategories) {
+    void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<EventCategory> incomingCategories) {
         if (event.getRegistrations().isEmpty()) {
             return;
         }

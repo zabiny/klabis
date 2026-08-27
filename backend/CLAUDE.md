@@ -73,6 +73,7 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 
 - **Backend conventions** (aggregates, controllers, HATEOAS affordances, JDBC mementos, field-level authorization, testing) → load **`backend-patterns`** skill — single source of truth
 - **Event flows & module dependencies** → [docs/EVENT-DRIVEN-ARCHITECTURE.md](docs/EVENT-DRIVEN-ARCHITECTURE.md)
+- **External-system sync** → `com.klabis.common.sync` (`@NamedInterface("sync")`) is a generic bidirectional sync engine (`DataSync` + `SyncLine` + `SyncSource`). Its first real consumer is ORIS events sync (`com.klabis.events.infrastructure.sync`): single/bulk event import and resync-from-ORIS all run through `DataSync.sync(SyncId, PULL)`. ORIS is a read-only source, so PUSH for `SyncType.EVENT` yields an ERROR `SyncRecord`. `SyncRecord`s are in-memory (`InMemorySyncRecordRepository`), consistent with the H2 dev DB.
 - **External resources** (Spring Boot/Modulith/HATEOAS/Security reference, RFCs, DDD/outbox patterns) → [docs/README.md](docs/README.md)
 - **Getting started** → [README.md](README.md)
 

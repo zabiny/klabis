@@ -7,9 +7,9 @@ package com.klabis.events.infrastructure.sync;
  * A named type (rather than {@link UnsupportedOperationException}) keeps the resulting
  * {@code SyncRecord.failureCause} readable and greppable.
  */
-public class OrisEventSaveNotSupportedException extends RuntimeException {
+class OrisEventSaveNotSupportedException extends RuntimeException {
 
-    public OrisEventSaveNotSupportedException(int orisId) {
+    OrisEventSaveNotSupportedException(int orisId) {
         super("ORIS is a read-only sync source; cannot push event %d to ORIS".formatted(orisId));
     }
 }
