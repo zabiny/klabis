@@ -31,6 +31,8 @@ paths:
   /api/oris/events:
     get:
       operationId: listOrisEvents
+      # Passthrough of an external ORIS listing; these are not Klabis resources.
+      x-klabis-hal: false
       tags: [OrisImport]
       summary: List upcoming ORIS events
       description: |

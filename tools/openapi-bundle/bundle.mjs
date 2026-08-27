@@ -52,7 +52,7 @@ function main() {
         console.error(`Spec bundling failed: ${e.message}`);
         process.exit(1);
     }
-    const {document, conflicts} = bundled;
+    const {document, conflicts, collisions} = bundled;
 
     if (conflicts.length > 0) {
         console.error('Conflicting component definitions (same name, different shape):');
@@ -60,6 +60,15 @@ function main() {
         process.exit(1);
     }
 
+    if (collisions?.length > 0) {
+        console.error('HAL envelope derivation failed:');
+        for (const c of collisions) console.error(`  components.schemas.${c.name}: ${c.message}`);
+        process.exit(1);
+    }
+
+    // Must stay downstream of bundleSpec's envelope derivation: the enveloped-payload rule reads a
+    // missing hal-forms entry as "the deriver skipped this", which is only true post-derivation.
+    // Validating first would flag every hand-written envelope instead.
     const authorities = loadAuthorities(AUTHORITY_JAVA);
     const errors = validateSpec(document, {authorities});
 

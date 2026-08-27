@@ -188,6 +188,35 @@ This turns each migration step into a proof rather than a review. It also constr
 it must reproduce today's schema names, property order and `_embedded` keys exactly — which is why
 naming follows the existing convention rather than being improved in the same change.
 
+### Decision 7 — `_templates` on every HAL envelope (added during implementation)
+
+Whether an envelope declares `_templates` turns out **not to be derivable from any existing signal**,
+because today's hand-written envelopes are simply inconsistent about it: 27 of 43 enveloped responses
+carry it, and it disagrees with `x-hal-templates` in 12 cases — 6 in each direction. Neither
+presence nor the extension predicts the other.
+
+The resolution is that the distinction carries no information to begin with. `_templates` is typed as
+`HalFormsTemplates`, an `additionalProperties` map with no named members, whose own description says:
+
+> Which templates appear is authorization- and state-dependent — see `x-hal-templates` on each
+> response.
+
+The real contract is `x-hal-templates`, which `haltypes.mjs` turns into the named union in
+`halTypes.ts` — that is what the frontend navigates by (`HalFormPanel.tsx` reads
+`_templates?.[templateName]`). The envelope's `_templates` property only says "a template map may
+appear here", which is true of every HAL-FORMS response.
+
+**Rule: the deriver emits `_templates` on every envelope it derives.** Uniform, needs no marker, and
+tells the truth. Consequence: migrating a module whose envelopes currently omit `_templates` produces
+an intended additive diff, so those steps are verified as "only the expected `_templates` additions"
+rather than by an unchanged hash. This does not affect the generated Java (the backend never sees
+envelope types) nor `halTypes.ts` (built from `x-hal-templates`).
+
+**One exception: the nested `EntityModel`s produced by `x-hal-entity-items` (Decision 3) carry
+`_links` but no `_templates`.** Affordances attach to the response, not to an embedded row, and all 7
+nested EntityModels in today's bundle omit `_templates` — emitting it would break byte-identity when
+`groups` is migrated.
+
 ## Risks / Trade-offs
 
 **[The `_embedded` fallback is wrong for some schema]** → Verified against live responses before the

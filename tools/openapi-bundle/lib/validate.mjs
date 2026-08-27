@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 
 import {HTTP_METHODS, sortKeysDeep} from './bundle.mjs';
+import {forEachHalResponse, halResponsePayloadNames, isEnvelopeShaped} from './derive.mjs';
 
 /**
  * Validation of Klabis-specific OpenAPI extensions.
@@ -20,9 +21,17 @@ export const KNOWN_KLABIS_EXTENSIONS = new Set([
     'x-klabis-url',
     'x-klabis-class-constraint',
     'x-klabis-relation',
+    'x-klabis-hal',
 ]);
 
 export const HALFORMS_ACCESS_VALUES = new Set(['READ_ONLY', 'NONE', 'READ_WRITE', 'DEFAULT']);
+
+/** Extensions that belong on the HTTP-method node rather than on a schema property. */
+const OPERATION_LEVEL_EXTENSIONS = new Set([
+    'x-klabis-authority',
+    'x-klabis-owner-visible',
+    'x-klabis-hal',
+]);
 
 /**
  * Boolean flags standing in for Bean Validation constraints OpenAPI cannot express. They are
@@ -120,11 +129,46 @@ function walk(node, path, visit, context, parentKind) {
 }
 
 /**
+ * Catches the deriver's one silent failure mode.
+ *
+ * `isEnvelopeShaped` is a shape test: any schema owning a `_links`/`_embedded` property counts as
+ * already-enveloped and is skipped. That is deliberate — it protects the hand-written envelopes and
+ * the `EntityModelRootModel`/`EntityModelDashboardModel` marker types. But a genuine payload that
+ * declared such a property would be skipped just as quietly, and the only symptom would be a hal-forms
+ * media type missing from the bundle much later.
+ *
+ * Run on the bundled document, *after* derivation, this is exact rather than heuristic: every HAL
+ * response the deriver handled now carries a hal-forms entry, so a HAL response still pointing
+ * `application/json` at an envelope-shaped schema is precisely one the deriver walked over. The
+ * legitimate hand-written envelopes never reach here — `forEachHalResponse` skips any response that
+ * already has a hal-forms entry, and the marker types are served through one.
+ */
+function envelopedPayloadErrors(document) {
+    const errors = [];
+    const schemas = document?.components?.schemas ?? {};
+
+    forEachHalResponse(document, ({jsonSchema, where}) => {
+        for (const name of halResponsePayloadNames(jsonSchema)) {
+            if (!isEnvelopeShaped(schemas[name])) continue;
+            errors.push({
+                path: `/components/schemas/${name}`,
+                message: `payload schema "${name}" declares _links or _embedded, so the deriver `
+                    + `treats it as an already-written envelope and skips it — ${where} gets no `
+                    + 'hal-forms media type. Remove the property, or write the envelope explicitly.',
+            });
+        }
+    });
+
+    return errors;
+}
+
+/**
  * @returns {Array<{path: string, message: string}>} empty when the document is valid
  */
 export function validateSpec(document, {authorities}) {
     const operationIds = collectOperationIds(document);
     const errors = duplicateOperationIdErrors(operationIds);
+    errors.push(...envelopedPayloadErrors(document));
 
     walk(document, '', (node, path, context) => {
         if (!isPlainObject(node)) return;
@@ -140,16 +184,32 @@ export function validateSpec(document, {authorities}) {
                 continue;
             }
 
-            // x-klabis-authority (-> method-level @HasAuthority) and x-klabis-owner-visible
-            // (-> paired @OwnerVisible/@OwnerId, see below) make sense directly on an operation.
-            // The others describe field-level access on a schema property and have no meaning
-            // without a property to attach to.
-            if (context === 'operation' && key !== 'x-klabis-authority' && key !== 'x-klabis-owner-visible') {
+            // x-klabis-authority (-> method-level @HasAuthority), x-klabis-owner-visible
+            // (-> paired @OwnerVisible/@OwnerId, see below) and x-klabis-hal (-> the deriver's
+            // opt-out) make sense directly on an operation. The others describe field-level access
+            // on a schema property and have no meaning without a property to attach to.
+            if (context === 'operation' && !OPERATION_LEVEL_EXTENSIONS.has(key)) {
                 errors.push({
                     path: `${path}/${key}`,
                     message: `"${key}" is not valid on an operation — it is a schema-property extension`,
                 });
                 continue;
+            }
+
+            // The mirror image: the deriver reads x-klabis-hal off the operation node only, so
+            // anywhere else it would be silently ignored rather than opting anything out.
+            if (key === 'x-klabis-hal' && context !== 'operation') {
+                errors.push({
+                    path: `${path}/${key}`,
+                    message: '"x-klabis-hal" is only valid on an operation',
+                });
+                continue;
+            }
+
+            // Opt-out only: HAL is the default for all but 6 operations, and `true` would read as
+            // an opt-in that the deriver does not implement.
+            if (key === 'x-klabis-hal' && value !== false) {
+                errors.push({path: `${path}/${key}`, message: 'must be false when present'});
             }
 
             if (key === 'x-klabis-authority') {
@@ -254,6 +314,37 @@ export function validateSpec(document, {authorities}) {
                         path: `${path}/${key}`,
                         message: `owner-id parameter "${ownerIdParams[0].name}" is in `
                             + `"${ownerIdParams[0].in}"; @OwnerId is only generated for path parameters`,
+                    });
+                }
+            }
+        }
+
+        // Restricted to `type: array` with a `$ref` items schema (Decision 3). A singular
+        // HAL-wrapped property would need the marker beside the `$ref`, where OpenAPI 3.0 ignores
+        // siblings outright and 3.1 tooling honours them inconsistently — refused until a real
+        // case appears. Pointing at an already-enveloped schema would double-wrap it.
+        if (Object.hasOwn(node, 'x-hal-entity-items')) {
+            const value = node['x-hal-entity-items'];
+            if (value !== true) {
+                errors.push({path: `${path}/x-hal-entity-items`, message: 'must be true when present'});
+            } else if (node.type !== 'array') {
+                errors.push({
+                    path: `${path}/x-hal-entity-items`,
+                    message: 'is only valid on a schema with "type: array"',
+                });
+            } else if (typeof node.items?.$ref !== 'string') {
+                errors.push({
+                    path: `${path}/x-hal-entity-items`,
+                    message: 'requires the array\'s "items" to be a $ref to a payload schema',
+                });
+            } else {
+                const match = node.items.$ref.match(/^#\/components\/schemas\/(.+)$/);
+                const target = match ? document.components?.schemas?.[match[1]] : undefined;
+                if (isEnvelopeShaped(target)) {
+                    errors.push({
+                        path: `${path}/x-hal-entity-items`,
+                        message: `"${match[1]}" is already shaped as a HAL envelope — `
+                            + 'the marker would wrap it a second time',
                     });
                 }
             }
