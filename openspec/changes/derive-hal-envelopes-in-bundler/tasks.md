@@ -287,9 +287,26 @@
       mechanism 6.5 relied on — verified empirically: with 6.3 applied, all 7 properties generate as
       `List<Payload>` and `:compileJava` fails with 4 errors. **6.3 and 6.5 are mutually exclusive
       without 7.3a**, which is why both moved there.
-- [ ] 6.6 Run backend tests via `test-runner`; commit (6.2 only).
+- [x] 6.6 Run backend tests via `test-runner`; commit (6.2 only). Committed as `04a60436` (deriver:
+      uniform `_templates`, marker strip) and `0e1e7b31` (six groups endpoints). Bundler 122/122,
+      groups 423/423, buildSrc 42/42, `:compileJava` green.
 
 ## 7. Remove the detector
+
+**Order matters — do NOT follow the task numbers.** 7.3a had to run first: it is what makes `groups`
+work without the `schemaMappings`, so deleting the detector before it would have broken the build in
+between. Remaining order: resolve the suppression blocker below, then 7.1 → 7.2 → 7.3 → 7.4 → 7.5.
+
+**Blocker for 7.1 — envelope suppression needs a replacement.** `postProcessAllModels` uses
+`HalEnvelopeDetector.detect` (~line 574) to stop hand-written envelope schemas being emitted as Java
+classes. Four hand-written envelopes remain repo-wide, and two of them have no `schemaMappings`
+entry, so the detector is the *only* thing suppressing them:
+  - `EntityModelMembershipFeeGroupResponseWithMembers`, `EntityModelEventDtoWithRegistrations` — own
+    an `_embedded` block, so the deriver cannot produce them; they stay hand-written permanently.
+  - `EntityModelRootModel`, `EntityModelDashboardModel` — covered by `common`'s `schemaMappings`.
+Deleting the detector without a replacement generates the first two as stray, unreferenced classes.
+Options: add `schemaMappings` entries for them as `common` does, or introduce an explicit marker.
+Decide before 7.1.
 
 - [ ] 7.1 Delete `backend/buildSrc/src/main/java/com/klabis/openapi/codegen/HalEnvelopeDetector.java`
       and `EnvelopeUnwrap.java`.
@@ -298,8 +315,9 @@
 - [ ] 7.3 Simplify `KlabisSpringCodegen`: remove the envelope-detection paths in
       `handleMethodResponse()`, `fromProperty()` and `getContent()`, leaving the
       `x-hal-entity-items` reader.
-- [ ] 7.3a Absorbs deferred tasks 6.3, 6.4 and 6.5 — all three are one indivisible change and each
-      alone breaks compilation, so they land in a single commit:
+- [x] 7.3a **Done — committed as `061642f4`**, ahead of 7.1–7.4 (see the ordering note above).
+      Absorbed deferred tasks 6.3, 6.4, 6.5 and the second half of 6.2 — all one indivisible change,
+      each alone breaking compilation, so they landed in a single commit:
       1. Make `fromProperty()` resolve an `x-hal-entity-items: true` array to
          `List<EntityModel<Item>>` (the type the 7 `schemaMappings` currently force).
       2. Replace the 7 nested envelope schemas in `groups.yaml` with `x-hal-entity-items: true` on
@@ -315,19 +333,41 @@
       3. Remove the 7 `schemaMappings` + 7 `extraImportMappings` from the `groups`
          `openApiModule(...)` block in `backend/build.gradle.kts` (was 6.4).
 
-      Verification (was 6.5): all 7 properties must generate as
-      `List<org.springframework.hateoas.EntityModel<X>>`, not `List<X>`, and `./gradlew :compileJava`
-      must pass — `FamilyGroupController:176`, `TrainingGroupController:129`/`:241` and
-      `FreeGroupController` pass `List<EntityModel<X>>` into those generated record constructors.
-      Expected bundle diff: additive `_templates` on the 7 nested item schemas (Decision 7 has no
-      exception — see design.md), and `x-hal-entity-items` absent from the bundle (the deriver strips
-      it after acting).
+      Verification (was 6.5) — all confirmed: the 7 properties still generate as
+      `List<org.springframework.hateoas.EntityModel<X>>`, byte-identical to baseline with no stray
+      nested `@Valid`; `:compileJava` green; bundle diff exactly the additive `_templates` on the 7
+      nested item schemas plus the `*ForInvitationsList` collapse, `_embedded` key
+      `pendingInvitationResponseList` preserved, `x-hal-entity-items` absent from the bundle.
+      buildSrc 42/42 (forced `--rerun-tasks` — a cached UP-TO-DATE result does not prove the tests
+      ran against the changed codegen), groups 423/423, full backend 3213/3213, bundler 122/122,
+      frontend build clean.
+
+      Two findings worth keeping:
+      - **Mappings must be seeded in `preprocessOpenAPI`, not `fromProperty`.** The stock generator
+        suppresses the nested `@Valid` on an array item only when the item `$ref` both resolves AND
+        is mapped, so a mapping registered at `fromProperty` time comes too late and yields
+        `EntityModel<@Valid Item>`. A minimal synthetic `EntityModelItem` schema (`allOf: [Item]`) is
+        injected alongside the mapping; being mapped, it is never emitted as a Java file.
+      - **The marker check in `fromProperty` must stay first.** Resolution is three-way (marker →
+        `schemaMappings` → structural detector) and the first two now overlap: the synthetic name is
+        itself a `schemaMapping()` key, so `isMappedEnvelopeItem` would otherwise catch the rewritten
+        property and delegate the original unrewritten schema. Ordering, not mutual exclusivity, is
+        what keeps the marker authoritative.
 - [ ] 7.4 Update `KlabisSpringCodegenFromPropertyTest`, `KlabisSpringCodegenGetContentTest` and
       `KlabisSpringCodegenHandleMethodResponseTest` — remove envelope-detection cases, keep and adapt
       the assertions covering the marker-driven path.
+- [ ] 7.4a **Add the missing unit coverage for the marker path.** 7.3a shipped without it: the 7
+      `x-hal-entity-items` properties are currently pinned only end-to-end (generated Java + a green
+      `:compileJava`), and `KlabisSpringCodegenFromPropertyTest` still covers only the detector
+      fallback that 7.3 deletes. Cover at least: a marked array resolving to
+      `List<EntityModel<Item>>` with no nested `@Valid`; an unmarked array left alone; and the
+      precedence rule that the marker check runs before `isMappedEnvelopeItem`.
 - [ ] 7.5 Full clean build (`./gradlew clean build`) plus the frontend check
       (`npm run openapi && npm run build`); confirm `klabis-full.json`, `halTypes.ts` and the
-      frontend TypeScript types are all unchanged.
+      frontend TypeScript types are all unchanged. Note the generated-Java baseline at
+      `~/.cache/klabis-openapi-baseline/` is stale by design from sections 3–7 (removed empty
+      `EntityModel*AllOf{Value,OptionsInlineOneOf,Links}` helper records, `LinksValueOneOf` renames);
+      rebuild it once section 7 lands so `cmp-generated.sh` is clean for section 8.
 
 ## 8. Documentation
 
