@@ -2,7 +2,7 @@ package com.klabis.events.infrastructure.sync;
 
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisWebUrls;
-import com.klabis.common.sync.SyncId;
+import com.klabis.common.sync.SyncItemId;
 import com.klabis.common.sync.SyncParty;
 import com.klabis.common.sync.SyncSource;
 import com.klabis.common.sync.SyncType;
@@ -27,14 +27,14 @@ class OrisEventSyncSource implements SyncSource<EventSyncData> {
     }
 
     @Override
-    public Optional<EventSyncData> fetch(SyncId syncId) {
-        int orisId = EventSyncIds.toOrisId(syncId);
+    public Optional<EventSyncData> fetch(SyncItemId syncItemId) {
+        int orisId = EventSyncIds.toOrisId(syncItemId);
         return orisApiClient.getEventDetails(orisId).payload()
                 .map(details -> new EventSyncData(null, orisId, details, orisWebUrls.eventUrl(orisId)));
     }
 
     @Override
-    public SyncId save(EventSyncData data) {
+    public SyncItemId save(EventSyncData data) {
         throw new OrisEventSaveNotSupportedException(data.orisId());
     }
 

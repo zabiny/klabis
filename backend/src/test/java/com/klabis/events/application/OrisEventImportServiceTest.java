@@ -2,7 +2,7 @@ package com.klabis.events.application;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.sync.DataSync;
-import com.klabis.common.sync.SyncId;
+import com.klabis.common.sync.SyncItemId;
 import com.klabis.common.sync.SyncRecord;
 import com.klabis.common.sync.SyncType;
 import com.klabis.events.EventId;
@@ -20,14 +20,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrisEventImportService")
@@ -57,8 +52,8 @@ class OrisEventImportServiceTest {
             EventId eventId = EventId.generate();
             Event imported = EventTestDataBuilder.anEventWithId(eventId).withOrisId(orisId).build();
 
-            SyncId externalId = SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
-            SyncId localId = SyncId.localId(SyncType.EVENT, eventId.value().toString());
+            SyncItemId externalId = SyncItemId.externalId(SyncType.EVENT, Integer.toString(orisId));
+            SyncItemId localId = SyncItemId.localId(SyncType.EVENT, eventId.value().toString());
             when(dataSync.sync(externalId, DataSync.Direction.PULL))
                     .thenReturn(SyncRecord.success(localId, externalId));
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(imported));
@@ -72,9 +67,9 @@ class OrisEventImportServiceTest {
         @DisplayName("rethrows the exact DuplicateOrisImportException carried by the ERROR record")
         void shouldRethrowDuplicate() {
             int orisId = 1111;
-            SyncId externalId = SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
+            SyncItemId externalId = SyncItemId.externalId(SyncType.EVENT, Integer.toString(orisId));
             DuplicateOrisImportException failure = new DuplicateOrisImportException(orisId);
-            when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
+            when(dataSync.sync(any(SyncItemId.class), any(DataSync.Direction.class)))
                     .thenReturn(SyncRecord.failure(null, externalId, failure));
 
             assertThatThrownBy(() -> service.importEventFromOris(orisId))
@@ -85,9 +80,9 @@ class OrisEventImportServiceTest {
         @DisplayName("rethrows the exact EventNotFoundException carried by the ERROR record")
         void shouldRethrowNotFound() {
             int orisId = 9999;
-            SyncId externalId = SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
+            SyncItemId externalId = SyncItemId.externalId(SyncType.EVENT, Integer.toString(orisId));
             EventNotFoundException failure = new EventNotFoundException(orisId);
-            when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
+            when(dataSync.sync(any(SyncItemId.class), any(DataSync.Direction.class)))
                     .thenReturn(SyncRecord.failure(null, externalId, failure));
 
             assertThatThrownBy(() -> service.importEventFromOris(orisId))
@@ -98,11 +93,11 @@ class OrisEventImportServiceTest {
         @DisplayName("rethrows the BusinessRuleViolationException carried by the ERROR record")
         void shouldRethrowBusinessRuleViolation() {
             int orisId = 1003;
-            SyncId externalId = SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
+            SyncItemId externalId = SyncItemId.externalId(SyncType.EVENT, Integer.toString(orisId));
             BusinessRuleViolationException failure = new BusinessRuleViolationException(
                     "ORIS event 1003 has invalid registration deadlines") {
             };
-            when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
+            when(dataSync.sync(any(SyncItemId.class), any(DataSync.Direction.class)))
                     .thenReturn(SyncRecord.failure(null, externalId, failure));
 
             assertThatThrownBy(() -> service.importEventFromOris(orisId))
@@ -113,9 +108,9 @@ class OrisEventImportServiceTest {
         @DisplayName("rethrows an engine-internal IllegalStateException unchanged")
         void shouldRethrowEngineInternalError() {
             int orisId = 4242;
-            SyncId externalId = SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
+            SyncItemId externalId = SyncItemId.externalId(SyncType.EVENT, Integer.toString(orisId));
             IllegalStateException failure = new IllegalStateException("No sync record found for " + externalId);
-            when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
+            when(dataSync.sync(any(SyncItemId.class), any(DataSync.Direction.class)))
                     .thenReturn(SyncRecord.failure(null, externalId, failure));
 
             assertThatThrownBy(() -> service.importEventFromOris(orisId))
@@ -126,9 +121,9 @@ class OrisEventImportServiceTest {
         @DisplayName("wraps a checked exception carried by the ERROR record in IllegalStateException")
         void shouldWrapCheckedException() {
             int orisId = 5000;
-            SyncId externalId = SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
+            SyncItemId externalId = SyncItemId.externalId(SyncType.EVENT, Integer.toString(orisId));
             Exception checked = new Exception("checked failure");
-            when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
+            when(dataSync.sync(any(SyncItemId.class), any(DataSync.Direction.class)))
                     .thenReturn(SyncRecord.failure(null, externalId, checked));
 
             assertThatThrownBy(() -> service.importEventFromOris(orisId))
@@ -148,13 +143,13 @@ class OrisEventImportServiceTest {
             Event event = EventTestDataBuilder.anEventWithId(eventId).withOrisId(42).build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
-            SyncId localId = SyncId.localId(SyncType.EVENT, eventId.value().toString());
+            SyncItemId localId = SyncItemId.localId(SyncType.EVENT, eventId.value().toString());
             when(dataSync.sync(localId, DataSync.Direction.PULL))
-                    .thenReturn(SyncRecord.success(localId, SyncId.externalId(SyncType.EVENT, "42")));
+                    .thenReturn(SyncRecord.success(localId, SyncItemId.externalId(SyncType.EVENT, "42")));
 
             assertThatCode(() -> service.syncEventFromOris(eventId)).doesNotThrowAnyException();
 
-            ArgumentCaptor<SyncId> captor = ArgumentCaptor.forClass(SyncId.class);
+            ArgumentCaptor<SyncItemId> captor = ArgumentCaptor.forClass(SyncItemId.class);
             verify(dataSync).sync(captor.capture(), any(DataSync.Direction.class));
             assertThat(captor.getValue().isLocalId()).isTrue();
             assertThat(captor.getValue().idValue()).isEqualTo(eventId.value().toString());
@@ -192,9 +187,9 @@ class OrisEventImportServiceTest {
             BusinessRuleViolationException failure = new BusinessRuleViolationException(
                     "ORIS event 77 has invalid registration deadlines") {
             };
-            when(dataSync.sync(any(SyncId.class), any(DataSync.Direction.class)))
+            when(dataSync.sync(any(SyncItemId.class), any(DataSync.Direction.class)))
                     .thenReturn(SyncRecord.failure(
-                            SyncId.localId(SyncType.EVENT, eventId.value().toString()), null, failure));
+                            SyncItemId.localId(SyncType.EVENT, eventId.value().toString()), null, failure));
 
             assertThatThrownBy(() -> service.syncEventFromOris(eventId))
                     .isSameAs(failure);

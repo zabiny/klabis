@@ -1,7 +1,7 @@
 package com.klabis.events.application;
 
 import com.klabis.common.sync.DataSync;
-import com.klabis.common.sync.SyncId;
+import com.klabis.common.sync.SyncItemId;
 import com.klabis.common.sync.SyncRecord;
 import com.klabis.common.sync.SyncType;
 import com.klabis.events.domain.Event;
@@ -39,7 +39,7 @@ class OrisBulkSyncService implements OrisBulkSyncPort {
 
         for (Event event : events) {
             SyncRecord record = dataSync.sync(
-                    SyncId.localId(SyncType.EVENT, event.getId().value().toString()),
+                    SyncItemId.localId(SyncType.EVENT, event.getId().value().toString()),
                     DataSync.Direction.PULL);
             if (record.result() == DataSync.SyncResult.SYNCED) {
                 results.add(BulkSyncResult.EventSyncEntry.synced(event.getId(), event.getName()));

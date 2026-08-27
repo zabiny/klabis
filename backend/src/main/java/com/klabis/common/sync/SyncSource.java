@@ -12,16 +12,16 @@ import java.util.Optional;
 @SecondaryPort
 public interface SyncSource<T extends SyncData> {
 
-    Optional<T> fetch(SyncId syncId);
+    Optional<T> fetch(SyncItemId syncItemId);
 
-    SyncId save(T data);
+    SyncItemId save(T data);
 
     SyncType type();
 
     SyncParty party();
 
-    default boolean matches(SyncId syncId) {
-        return syncId.type().equals(type()) && syncId.party().equals(party());
+    default boolean matches(SyncItemId syncItemId) {
+        return syncItemId.type().equals(type()) && syncItemId.party().equals(party());
     }
 
     default boolean isOppositeOf(SyncSource<?> other) {

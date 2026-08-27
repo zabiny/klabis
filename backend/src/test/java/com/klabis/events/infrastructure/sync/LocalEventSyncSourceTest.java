@@ -4,19 +4,14 @@ import com.dpolach.api.orisclient.dto.Discipline;
 import com.dpolach.api.orisclient.dto.EventClass;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Organizer;
-import com.klabis.common.sync.SyncId;
+import com.klabis.common.sync.SyncItemId;
 import com.klabis.common.sync.SyncParty;
 import com.klabis.common.sync.SyncType;
 import com.klabis.events.EventCategory;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.application.DuplicateOrisImportException;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
-import com.klabis.events.domain.EventRepository;
-import com.klabis.events.domain.EventType;
-import com.klabis.events.domain.EventTypeRepository;
-import com.klabis.events.domain.SiCardNumber;
+import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,13 +32,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("LocalEventSyncSource")
@@ -82,7 +72,7 @@ class LocalEventSyncSourceTest {
         when(eventRepository.findByOrisId(orisId)).thenReturn(Optional.empty());
         when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        SyncId result = testedInstance.save(data);
+        SyncItemId result = testedInstance.save(data);
 
         ArgumentCaptor<Event> saved = ArgumentCaptor.forClass(Event.class);
         verify(eventRepository).save(saved.capture());
@@ -111,7 +101,7 @@ class LocalEventSyncSourceTest {
         when(eventRepository.findByOrisId(orisId)).thenReturn(Optional.of(existing));
         when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        SyncId result = testedInstance.save(data);
+        SyncItemId result = testedInstance.save(data);
 
         verify(eventRepository, never()).findById(any(EventId.class));
         assertThat(existing.getName()).isEqualTo("New Name from ORIS");
@@ -256,7 +246,7 @@ class LocalEventSyncSourceTest {
         when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
 
         Optional<EventSyncData> result = testedInstance.fetch(
-                SyncId.localId(SyncType.EVENT, event.getId().value().toString()));
+                SyncItemId.localId(SyncType.EVENT, event.getId().value().toString()));
 
         assertThat(result).isPresent();
         assertThat(result.get().eventId()).isEqualTo(event.getId());

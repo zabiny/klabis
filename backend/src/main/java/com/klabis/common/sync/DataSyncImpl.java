@@ -23,27 +23,27 @@ public class DataSyncImpl implements DataSync {
     }
 
     @Override
-    public SyncRecord sync(SyncId syncId, Direction direction) {
-        SyncLine<?, ?> syncLine = findSyncLine(syncId)
-                .orElseThrow(() -> new IllegalArgumentException("No sync line found for " + syncId));
+    public SyncRecord sync(SyncItemId syncItemId, Direction direction) {
+        SyncLine<?, ?> syncLine = findSyncLine(syncItemId)
+                .orElseThrow(() -> new IllegalArgumentException("No sync line found for " + syncItemId));
 
         return direction == Direction.PUSH
-                ? syncPush(syncId, syncLine)
-                : syncPull(syncId, syncLine);
+                ? syncPush(syncItemId, syncLine)
+                : syncPull(syncItemId, syncLine);
     }
 
     /**
      * To push, the local ID is required. When the caller holds an external ID, it is translated to
      * the local ID via the existing {@link SyncRecord} for the pair.
      */
-    private SyncRecord syncPush(SyncId syncId, SyncLine<?, ?> syncLine) {
-        SyncId localId = null;
+    private SyncRecord syncPush(SyncItemId syncItemId, SyncLine<?, ?> syncLine) {
+        SyncItemId localId = null;
         try {
-            localId = resolveLocalId(syncId);
-            SyncId externalId = syncLine.push(localId);
+            localId = resolveLocalId(syncItemId);
+            SyncItemId externalId = syncLine.push(localId);
             return persist(SyncRecord.success(localId, externalId));
         } catch (Exception e) {
-            return persistFailure(syncId, localId, null, e);
+            return persistFailure(syncItemId, localId, null, e);
         }
     }
 
@@ -51,51 +51,51 @@ public class DataSyncImpl implements DataSync {
      * To pull, the external ID is required. When the caller holds a local ID, it is translated to
      * the external ID via the existing {@link SyncRecord} for the pair.
      */
-    private SyncRecord syncPull(SyncId syncId, SyncLine<?, ?> syncLine) {
-        SyncId externalId = null;
+    private SyncRecord syncPull(SyncItemId syncItemId, SyncLine<?, ?> syncLine) {
+        SyncItemId externalId = null;
         try {
-            externalId = resolveExternalId(syncId);
-            SyncId localId = syncLine.pull(externalId);
+            externalId = resolveExternalId(syncItemId);
+            SyncItemId localId = syncLine.pull(externalId);
             return persist(SyncRecord.success(localId, externalId));
         } catch (Exception e) {
-            return persistFailure(syncId, null, externalId, e);
+            return persistFailure(syncItemId, null, externalId, e);
         }
     }
 
-    private SyncId resolveLocalId(SyncId syncId) {
-        if (syncId.isLocalId()) {
-            return syncId;
+    private SyncItemId resolveLocalId(SyncItemId syncItemId) {
+        if (syncItemId.isLocalId()) {
+            return syncItemId;
         }
-        Optional<SyncRecord> record = syncRecords.findById(syncId);
+        Optional<SyncRecord> record = syncRecords.findById(syncItemId);
         if (record.isEmpty()) {
-            throw new IllegalStateException("No sync record found for " + syncId);
+            throw new IllegalStateException("No sync record found for " + syncItemId);
         }
-        SyncId localId = record.get().localId();
+        SyncItemId localId = record.get().localId();
         if (localId == null) {
-            throw new IllegalStateException("Sync record for " + syncId + " has no local ID");
+            throw new IllegalStateException("Sync record for " + syncItemId + " has no local ID");
         }
         return localId;
     }
 
-    private SyncId resolveExternalId(SyncId syncId) {
-        if (syncId.isExternalId()) {
-            return syncId;
+    private SyncItemId resolveExternalId(SyncItemId syncItemId) {
+        if (syncItemId.isExternalId()) {
+            return syncItemId;
         }
-        Optional<SyncRecord> record = syncRecords.findById(syncId);
+        Optional<SyncRecord> record = syncRecords.findById(syncItemId);
         if (record.isEmpty()) {
-            throw new IllegalStateException("No sync record found for " + syncId);
+            throw new IllegalStateException("No sync record found for " + syncItemId);
         }
-        SyncId externalId = record.get().externalId();
+        SyncItemId externalId = record.get().externalId();
         if (externalId == null) {
-            throw new IllegalStateException("Sync record for " + syncId + " has no external ID");
+            throw new IllegalStateException("Sync record for " + syncItemId + " has no external ID");
         }
         return externalId;
     }
 
-    private SyncRecord persistFailure(SyncId syncId, SyncId resolvedLocalId, SyncId resolvedExternalId, Exception cause) {
-        log.warn("Sync failed for {}", syncId, cause);
-        SyncId localId = resolvedLocalId != null ? resolvedLocalId : (syncId.isLocalId() ? syncId : null);
-        SyncId externalId = resolvedExternalId != null ? resolvedExternalId : (syncId.isExternalId() ? syncId : null);
+    private SyncRecord persistFailure(SyncItemId syncItemId, SyncItemId resolvedLocalId, SyncItemId resolvedExternalId, Exception cause) {
+        log.warn("Sync failed for {}", syncItemId, cause);
+        SyncItemId localId = resolvedLocalId != null ? resolvedLocalId : (syncItemId.isLocalId() ? syncItemId : null);
+        SyncItemId externalId = resolvedExternalId != null ? resolvedExternalId : (syncItemId.isExternalId() ? syncItemId : null);
         return persist(SyncRecord.failure(localId, externalId, cause));
     }
 
@@ -112,14 +112,14 @@ public class DataSyncImpl implements DataSync {
     }
 
     private Optional<UUID> existingIdFor(SyncRecord record) {
-        SyncId lookup = record.localId() != null ? record.localId() : record.externalId();
+        SyncItemId lookup = record.localId() != null ? record.localId() : record.externalId();
         return syncRecords.findById(lookup)
                 .filter(existing -> Objects.equals(existing.localId(), record.localId())
                         && Objects.equals(existing.externalId(), record.externalId()))
                 .map(SyncRecord::id);
     }
 
-    private Optional<SyncLine<?, ?>> findSyncLine(SyncId syncId) {
-        return syncLines.stream().filter(t -> t.canProcess(syncId)).findAny();
+    private Optional<SyncLine<?, ?>> findSyncLine(SyncItemId syncItemId) {
+        return syncLines.stream().filter(t -> t.canProcess(syncItemId)).findAny();
     }
 }

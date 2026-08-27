@@ -1,7 +1,7 @@
 package com.klabis.events.infrastructure.sync;
 
 import com.dpolach.api.orisclient.dto.EventDetails;
-import com.klabis.common.sync.SyncId;
+import com.klabis.common.sync.SyncItemId;
 import com.klabis.common.sync.SyncParty;
 import com.klabis.common.sync.SyncSource;
 import com.klabis.common.sync.SyncType;
@@ -43,15 +43,15 @@ class LocalEventSyncSource implements SyncSource<EventSyncData> {
     }
 
     @Override
-    public Optional<EventSyncData> fetch(SyncId syncId) {
-        EventId id = EventSyncIds.toEventId(syncId);
+    public Optional<EventSyncData> fetch(SyncItemId syncItemId) {
+        EventId id = EventSyncIds.toEventId(syncItemId);
         return eventRepository.findById(id)
                 .map(e -> new EventSyncData(e.getId(), e.getOrisId(), null, null));
     }
 
     @Override
     @Transactional
-    public SyncId save(EventSyncData data) {
+    public SyncItemId save(EventSyncData data) {
         Objects.requireNonNull(data.orisDetails(), "ORIS payload required to save an event from sync");
 
         Optional<Event> existing = data.eventId() != null

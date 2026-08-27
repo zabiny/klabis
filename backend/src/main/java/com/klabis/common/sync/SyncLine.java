@@ -25,11 +25,11 @@ public record SyncLine<L extends SyncData, E extends SyncData>(SyncSource<L> loc
         }
     }
 
-    public boolean canProcess(SyncId syncId) {
-        return localSource.matches(syncId) || externalSource.matches(syncId);
+    public boolean canProcess(SyncItemId syncItemId) {
+        return localSource.matches(syncItemId) || externalSource.matches(syncItemId);
     }
 
-    public SyncId pull(SyncId externalId) {
+    public SyncItemId pull(SyncItemId externalId) {
         if (!externalId.isExternalId()) {
             throw new IllegalArgumentException("to pull, external ID must be provided");
         }
@@ -41,7 +41,7 @@ public record SyncLine<L extends SyncData, E extends SyncData>(SyncSource<L> loc
                 .orElseThrow(() -> new IllegalStateException("External item with ID %s not found".formatted(externalId)));
     }
 
-    public SyncId push(SyncId localId) {
+    public SyncItemId push(SyncItemId localId) {
         if (!localId.isLocalId()) {
             throw new IllegalArgumentException("to push, local ID must be provided");
         }

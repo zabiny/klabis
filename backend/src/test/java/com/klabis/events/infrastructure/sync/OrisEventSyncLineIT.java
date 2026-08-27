@@ -4,13 +4,7 @@ import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Organizer;
-import com.klabis.common.sync.DataSync;
-import com.klabis.common.sync.DataSyncImpl;
-import com.klabis.common.sync.SyncId;
-import com.klabis.common.sync.SyncLine;
-import com.klabis.common.sync.SyncRecord;
-import com.klabis.common.sync.SyncRecordRepository;
-import com.klabis.common.sync.SyncType;
+import com.klabis.common.sync.*;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
@@ -66,8 +60,7 @@ class OrisEventSyncLineIT {
         LocalEventSyncSource local = new LocalEventSyncSource(
                 eventRepository, Mappers.getMapper(OrisEventDetailsMapper.class), support);
         OrisEventSyncSource oris = new OrisEventSyncSource(orisApiClient, orisWebUrls);
-        IdentityEventConverter identity = new IdentityEventConverter();
-        SyncLine<EventSyncData, EventSyncData> syncLine = new SyncLine<>(local, oris, identity, identity);
+        SyncLine<EventSyncData, EventSyncData> syncLine = SyncLine.withoutMapping(local, oris);
 
         dataSync = new DataSyncImpl(List.of(syncLine), new InMemoryFakeSyncRecordRepository());
 
@@ -85,11 +78,11 @@ class OrisEventSyncLineIT {
                 .thenReturn(new OrisApiClient.OrisResponse<>(imported, "JSON", "OK", null, "getEvent"))
                 .thenReturn(new OrisApiClient.OrisResponse<>(resynced, "JSON", "OK", null, "getEvent"));
 
-        SyncRecord first = dataSync.sync(SyncId.externalId(SyncType.EVENT, "123"), DataSync.Direction.PULL);
+        SyncRecord first = dataSync.sync(SyncItemId.externalId(SyncType.EVENT, "123"), DataSync.Direction.PULL);
 
         assertThat(first.result()).isEqualTo(DataSync.SyncResult.SYNCED);
         assertThat(first.localId()).isNotNull();
-        assertThat(first.externalId()).isEqualTo(SyncId.externalId(SyncType.EVENT, "123"));
+        assertThat(first.externalId()).isEqualTo(SyncItemId.externalId(SyncType.EVENT, "123"));
 
         UUID createdId = UUID.fromString(first.localId().idValue());
         assertThat(eventRepository.findById(new EventId(createdId))).isPresent();
@@ -145,7 +138,7 @@ class OrisEventSyncLineIT {
         private final Map<UUID, SyncRecord> records = new ConcurrentHashMap<>();
 
         @Override
-        public Optional<SyncRecord> findById(SyncId id) {
+        public Optional<SyncRecord> findById(SyncItemId id) {
             return records.values().stream()
                     .filter(r -> id.equals(r.localId()) || id.equals(r.externalId()))
                     .findAny();

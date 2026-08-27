@@ -14,8 +14,8 @@ import static org.mockito.Mockito.*;
 @DisplayName("DataSyncImpl")
 class DataSyncImplTest {
 
-    private static final SyncId LOCAL_ID = SyncId.localId(SyncType.EVENT, "local-1");
-    private static final SyncId EXTERNAL_ID = SyncId.externalId(SyncType.EVENT, "external-1");
+    private static final SyncItemId LOCAL_ID = SyncItemId.localId(SyncType.EVENT, "local-1");
+    private static final SyncItemId EXTERNAL_ID = SyncItemId.externalId(SyncType.EVENT, "external-1");
 
     private SyncLine<?, ?> syncLine;
     private FakeSyncRecordRepository syncRecords;

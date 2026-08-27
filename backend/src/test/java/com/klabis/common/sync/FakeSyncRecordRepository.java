@@ -11,7 +11,7 @@ class FakeSyncRecordRepository implements SyncRecordRepository {
     }
 
     @Override
-    public Optional<SyncRecord> findById(SyncId id) {
+    public Optional<SyncRecord> findById(SyncItemId id) {
         return records.values().stream()
                 .filter(t -> id.equals(t.localId()) || id.equals(t.externalId()))
                 .findAny();

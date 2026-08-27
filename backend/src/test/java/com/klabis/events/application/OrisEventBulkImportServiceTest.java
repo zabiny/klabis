@@ -1,7 +1,7 @@
 package com.klabis.events.application;
 
 import com.klabis.common.sync.DataSync;
-import com.klabis.common.sync.SyncId;
+import com.klabis.common.sync.SyncItemId;
 import com.klabis.common.sync.SyncRecord;
 import com.klabis.common.sync.SyncType;
 import com.klabis.events.EventTestDataBuilder;
@@ -41,12 +41,12 @@ class OrisEventBulkImportServiceTest {
         service = new OrisEventBulkImportService(dataSync, eventRepository);
     }
 
-    private static SyncId externalId(int orisId) {
-        return SyncId.externalId(SyncType.EVENT, Integer.toString(orisId));
+    private static SyncItemId externalId(int orisId) {
+        return SyncItemId.externalId(SyncType.EVENT, Integer.toString(orisId));
     }
 
     private void stubSyncSuccess(int orisId, Event importedEvent) {
-        SyncId localId = SyncId.localId(SyncType.EVENT, importedEvent.getId().value().toString());
+        SyncItemId localId = SyncItemId.localId(SyncType.EVENT, importedEvent.getId().value().toString());
         when(dataSync.sync(eq(externalId(orisId)), eq(DataSync.Direction.PULL)))
                 .thenReturn(SyncRecord.success(localId, externalId(orisId)));
         when(eventRepository.findById(importedEvent.getId())).thenReturn(Optional.of(importedEvent));

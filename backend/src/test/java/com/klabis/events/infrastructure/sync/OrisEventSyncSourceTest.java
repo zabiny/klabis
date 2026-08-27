@@ -3,7 +3,7 @@ package com.klabis.events.infrastructure.sync;
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.EventDetails;
-import com.klabis.common.sync.SyncId;
+import com.klabis.common.sync.SyncItemId;
 import com.klabis.common.sync.SyncParty;
 import com.klabis.common.sync.SyncType;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +53,7 @@ class OrisEventSyncSourceTest {
                 new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
         when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-        Optional<EventSyncData> result = testedInstance.fetch(SyncId.externalId(SyncType.EVENT, "123"));
+        Optional<EventSyncData> result = testedInstance.fetch(SyncItemId.externalId(SyncType.EVENT, "123"));
 
         assertThat(result).isPresent();
         assertThat(result.get().eventId()).isNull();
@@ -69,7 +69,7 @@ class OrisEventSyncSourceTest {
         when(orisApiClient.getEventDetails(orisId)).thenReturn(
                 new OrisApiClient.OrisResponse<>(null, "JSON", "OK", null, "getEvent"));
 
-        assertThat(testedInstance.fetch(SyncId.externalId(SyncType.EVENT, "999"))).isEmpty();
+        assertThat(testedInstance.fetch(SyncItemId.externalId(SyncType.EVENT, "999"))).isEmpty();
     }
 
     @Test

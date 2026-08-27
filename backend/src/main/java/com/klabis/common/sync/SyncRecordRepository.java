@@ -7,7 +7,7 @@ import java.util.Optional;
 @SecondaryPort
 public interface SyncRecordRepository {
 
-    Optional<SyncRecord> findById(SyncId id);
+    Optional<SyncRecord> findById(SyncItemId id);
 
     SyncRecord save(SyncRecord record);
 

@@ -14,8 +14,7 @@ import org.springframework.context.annotation.Configuration;
 class EventSyncConfiguration {
 
     @Bean
-    SyncLine<EventSyncData, EventSyncData> orisEventSyncLine(
-            LocalEventSyncSource local, OrisEventSyncSource oris, IdentityEventConverter identity) {
-        return new SyncLine<>(local, oris, identity, identity);
+    SyncLine<EventSyncData, EventSyncData> orisEventSyncLine(LocalEventSyncSource klabisDataSource, OrisEventSyncSource orisDataSource) {
+        return SyncLine.withoutMapping(klabisDataSource, orisDataSource);
     }
 }

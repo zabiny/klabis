@@ -11,9 +11,9 @@ public interface DataSync {
 
     enum Direction { PUSH, PULL }
 
-    SyncRecord sync(SyncId syncId, Direction direction);
+    SyncRecord sync(SyncItemId syncItemId, Direction direction);
 
-    default SyncRecord sync(SyncId syncId) {
-        return sync(syncId, syncId.isLocalId() ? Direction.PUSH : Direction.PULL);
+    default SyncRecord sync(SyncItemId syncItemId) {
+        return sync(syncItemId, syncItemId.isLocalId() ? Direction.PUSH : Direction.PULL);
     }
 }

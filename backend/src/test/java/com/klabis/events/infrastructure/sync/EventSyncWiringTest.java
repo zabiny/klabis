@@ -1,11 +1,7 @@
 package com.klabis.events.infrastructure.sync;
 
 import com.klabis.TestApplicationConfiguration;
-import com.klabis.common.sync.DataSync;
-import com.klabis.common.sync.SyncId;
-import com.klabis.common.sync.SyncLine;
-import com.klabis.common.sync.SyncRecord;
-import com.klabis.common.sync.SyncType;
+import com.klabis.common.sync.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +46,7 @@ class EventSyncWiringTest {
         SyncRecord[] record = new SyncRecord[1];
 
         assertThatCode(() -> record[0] = dataSync.sync(
-                SyncId.localId(SyncType.EVENT, java.util.UUID.randomUUID().toString()), DataSync.Direction.PUSH))
+                SyncItemId.localId(SyncType.EVENT, java.util.UUID.randomUUID().toString()), DataSync.Direction.PUSH))
                 .doesNotThrowAnyException();
 
         assertThat(record[0].result()).isEqualTo(DataSync.SyncResult.ERROR);

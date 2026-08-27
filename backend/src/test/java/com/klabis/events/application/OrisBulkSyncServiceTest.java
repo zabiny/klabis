@@ -1,7 +1,7 @@
 package com.klabis.events.application;
 
 import com.klabis.common.sync.DataSync;
-import com.klabis.common.sync.SyncId;
+import com.klabis.common.sync.SyncItemId;
 import com.klabis.common.sync.SyncRecord;
 import com.klabis.common.sync.SyncType;
 import com.klabis.events.EventTestDataBuilder;
@@ -22,10 +22,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrisBulkSyncService")
@@ -44,8 +41,8 @@ class OrisBulkSyncServiceTest {
         service = new OrisBulkSyncService(eventRepository, dataSync);
     }
 
-    private static SyncId localIdOf(Event event) {
-        return SyncId.localId(SyncType.EVENT, event.getId().value().toString());
+    private static SyncItemId localIdOf(Event event) {
+        return SyncItemId.localId(SyncType.EVENT, event.getId().value().toString());
     }
 
     @Nested
@@ -61,9 +58,9 @@ class OrisBulkSyncServiceTest {
 
             when(eventRepository.findAllUpcomingOrisEvents(any(LocalDate.class)))
                     .thenReturn(List.of(event1, event2, event3));
-            when(dataSync.sync(any(SyncId.class), eq(DataSync.Direction.PULL)))
+            when(dataSync.sync(any(SyncItemId.class), eq(DataSync.Direction.PULL)))
                     .thenAnswer(inv -> SyncRecord.success(inv.getArgument(0),
-                            SyncId.externalId(SyncType.EVENT, "0")));
+                            SyncItemId.externalId(SyncType.EVENT, "0")));
 
             BulkSyncResult result = service.syncAllUpcoming();
 
@@ -84,11 +81,11 @@ class OrisBulkSyncServiceTest {
             when(eventRepository.findAllUpcomingOrisEvents(any(LocalDate.class)))
                     .thenReturn(List.of(event1, event2, event3));
             when(dataSync.sync(eq(localIdOf(event1)), eq(DataSync.Direction.PULL)))
-                    .thenReturn(SyncRecord.success(localIdOf(event1), SyncId.externalId(SyncType.EVENT, "101")));
+                    .thenReturn(SyncRecord.success(localIdOf(event1), SyncItemId.externalId(SyncType.EVENT, "101")));
             when(dataSync.sync(eq(localIdOf(event2)), eq(DataSync.Direction.PULL)))
                     .thenReturn(SyncRecord.failure(localIdOf(event2), null, new RuntimeException("boom")));
             when(dataSync.sync(eq(localIdOf(event3)), eq(DataSync.Direction.PULL)))
-                    .thenReturn(SyncRecord.success(localIdOf(event3), SyncId.externalId(SyncType.EVENT, "103")));
+                    .thenReturn(SyncRecord.success(localIdOf(event3), SyncItemId.externalId(SyncType.EVENT, "103")));
 
             BulkSyncResult result = service.syncAllUpcoming();
 
@@ -116,17 +113,17 @@ class OrisBulkSyncServiceTest {
 
             when(eventRepository.findAllUpcomingOrisEvents(any(LocalDate.class)))
                     .thenReturn(List.of(event1, event2));
-            when(dataSync.sync(any(SyncId.class), eq(DataSync.Direction.PULL)))
+            when(dataSync.sync(any(SyncItemId.class), eq(DataSync.Direction.PULL)))
                     .thenAnswer(inv -> SyncRecord.success(inv.getArgument(0),
-                            SyncId.externalId(SyncType.EVENT, "0")));
+                            SyncItemId.externalId(SyncType.EVENT, "0")));
 
             service.syncAllUpcoming();
 
-            ArgumentCaptor<SyncId> captor = ArgumentCaptor.forClass(SyncId.class);
+            ArgumentCaptor<SyncItemId> captor = ArgumentCaptor.forClass(SyncItemId.class);
             verify(dataSync, times(2)).sync(captor.capture(), eq(DataSync.Direction.PULL));
             assertThat(captor.getAllValues())
                     .containsExactly(localIdOf(event1), localIdOf(event2));
-            assertThat(captor.getAllValues()).allMatch(SyncId::isLocalId);
+            assertThat(captor.getAllValues()).allMatch(SyncItemId::isLocalId);
         }
 
         @Test

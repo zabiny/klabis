@@ -8,7 +8,7 @@ package com.klabis.common.sync;
  * @param result
  * @param failureException
  */
-public record SyncRecord(java.util.UUID id, SyncId localId, SyncId externalId,
+public record SyncRecord(java.util.UUID id, SyncItemId localId, SyncItemId externalId,
                          DataSync.SyncResult result, Throwable failureException) {
 
     public SyncRecord {
@@ -32,11 +32,11 @@ public record SyncRecord(java.util.UUID id, SyncId localId, SyncId externalId,
         }
     }
 
-    public static SyncRecord success(SyncId localId, SyncId externalId) {
+    public static SyncRecord success(SyncItemId localId, SyncItemId externalId) {
         return new SyncRecord(null, localId, externalId, DataSync.SyncResult.SYNCED, null);
     }
 
-    public static SyncRecord failure(SyncId localId, SyncId externalId, Throwable failureException) {
+    public static SyncRecord failure(SyncItemId localId, SyncItemId externalId, Throwable failureException) {
         return new SyncRecord(null, localId, externalId, DataSync.SyncResult.ERROR, failureException);
     }
 }
