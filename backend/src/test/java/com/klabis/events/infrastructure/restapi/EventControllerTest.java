@@ -2118,6 +2118,107 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("item self link is present for a caller with EVENTS:REGISTRATIONS who is neither the row member nor the coordinator")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID, authorities = {Authority.EVENTS_REGISTRATIONS})
+        void itemSelfLinkPresentWhenCallerHasRegistrationsAuthority() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId rowMemberId = new MemberId(UUID.randomUUID());
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .addRegistrations(List.of(EventRegistration.reconstruct(
+                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now())))
+                    .build();
+            event.publish();
+
+            MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
+                    "John", "Doe", "AB123456", java.time.LocalDate.of(2028, 1, 1),
+                    java.time.LocalDate.of(1985, 5, 15), "Main St 1", "Prague", "11000", "CZ");
+
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(members.findAccommodationDataByIds(any())).thenReturn(Map.of(rowMemberId, accommodationDto));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.accommodationList[0]._links.self.href")
+                            .value(org.hamcrest.Matchers.containsString(
+                                    "/api/events/" + eventId + "/registrations/" + rowMemberId.value())));
+        }
+
+        @Test
+        @DisplayName("item self link is present for a caller who is the row's own member, with no authorities")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        void itemSelfLinkPresentWhenCallerIsTheRowMember() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            // The caller is the coordinator (so it may reach the accommodation list) AND is the row's
+            // own member. It holds no EVENTS:REGISTRATIONS authority, so the getRegistration link can
+            // only be offered through the owner-visible branch of that endpoint's gate.
+            MemberId callerId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(callerId)
+                    .addRegistrations(List.of(EventRegistration.reconstruct(
+                            UUID.randomUUID(), callerId, SiCardNumber.of("1234"), null, Instant.now())))
+                    .build();
+            event.publish();
+
+            MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
+                    "John", "Doe", "AB123456", java.time.LocalDate.of(2028, 1, 1),
+                    java.time.LocalDate.of(1985, 5, 15), "Main St 1", "Prague", "11000", "CZ");
+
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(members.findAccommodationDataByIds(any())).thenReturn(Map.of(callerId, accommodationDto));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.accommodationList[0]._links.self.href")
+                            .value(org.hamcrest.Matchers.containsString(
+                                    "/api/events/" + eventId + "/registrations/" + callerId.value())));
+        }
+
+        @Test
+        @DisplayName("item self link is withheld from a coordinator who lacks EVENTS:REGISTRATIONS and is not the row member")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        void itemSelfLinkAbsentWhenCallerMayNotReadTheRegistration() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId rowMemberId = new MemberId(UUID.randomUUID());
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(coordinatorId)
+                    .addRegistrations(List.of(EventRegistration.reconstruct(
+                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now())))
+                    .build();
+            event.publish();
+
+            MemberAccommodationDto accommodationDto = new MemberAccommodationDto(
+                    "John", "Doe", "AB123456", java.time.LocalDate.of(2028, 1, 1),
+                    java.time.LocalDate.of(1985, 5, 15), "Main St 1", "Prague", "11000", "CZ");
+
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(members.findAccommodationDataByIds(any())).thenReturn(Map.of(rowMemberId, accommodationDto));
+
+            // getRegistration is gated by EVENTS:REGISTRATIONS OR being the target member. The caller
+            // is the coordinator — which opens the accommodation list but NOT getRegistration — holds
+            // no EVENTS:REGISTRATIONS, and is not the row member. Neither half of the gate applies, so
+            // the item self link is not offered.
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].firstName").value("John"))
+                    .andExpect(jsonPath("$._embedded.accommodationList[0]._links.self").doesNotExist());
+        }
+
+        @Test
         @DisplayName("event link is offered to a caller who may read the event")
         @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
         void eventLinkPresentWhenCallerMayReadTheEvent() throws Exception {

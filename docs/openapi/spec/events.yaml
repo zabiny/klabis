@@ -1932,10 +1932,6 @@ components:
     # record, not from the schema name — see "A payload schema's name is wire contract" in the
     # klabis-api-spec skill.
     #
-    # Items are bare payloads with no _links of their own: an accommodation row is not an addressable
-    # resource and no postprocessor targets EntityModel<AccommodationListItemDto>. Only the
-    # collection carries links (self, event).
-    #
     # Named so schemaMappings can retarget it onto Collection<AccommodationListItemDto> — an inline
     # array has no schema name to map from, and the generator would otherwise infer
     # List<AccommodationListItemDto> straight from this application/json sibling.
@@ -1953,9 +1949,17 @@ components:
             accommodationList:
               type: array
               items:
-                $ref: '#/components/schemas/AccommodationListItemDto'
+                $ref: '#/components/schemas/EntityModelAccommodationListItemDto'
         _links:
           $ref: './_shared/hal.yaml#/components/schemas/Links'
+
+    EntityModelAccommodationListItemDto:
+      allOf:
+        - $ref: '#/components/schemas/AccommodationListItemDto'
+        - type: object
+          properties:
+            _links:
+              $ref: './_shared/hal.yaml#/components/schemas/Links'
 
     AccommodationListItemDto:
       type: object
