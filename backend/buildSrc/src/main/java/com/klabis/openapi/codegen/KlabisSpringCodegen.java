@@ -70,6 +70,8 @@ import java.util.Set;
  */
 public class KlabisSpringCodegen extends SpringCodegen {
 
+    private static final String HAL_FORMS_MEDIA_TYPE = "application/prs.hal-forms+json";
+
     /**
      * Set by {@link #fromOperation} before delegating to {@code super}, cleared in a
      * {@code finally} block; consulted by {@link #fromResponse} to know whether the response it
@@ -100,10 +102,86 @@ public class KlabisSpringCodegen extends SpringCodegen {
     public CodegenOperation fromOperation(String path, String httpMethod, Operation operation, List<Server> servers) {
         currentOperation = operation;
         try {
+            addDerivedHalFormsContentType(operation);
             return super.fromOperation(path, httpMethod, operation, servers);
         } finally {
             currentOperation = null;
         }
+    }
+
+    /**
+     * Ensures every HAL response advertises {@value #HAL_FORMS_MEDIA_TYPE} in the generated
+     * interface's {@code produces} clause, even when the source spec no longer spells the media type
+     * out.
+     *
+     * <p>The bundler ({@code tools/openapi-bundle/lib/derive.mjs}) derives the HAL envelope schema
+     * and its {@code application/prs.hal-forms+json} content entry into {@code klabis-full.json}
+     * from the {@code application/json} payload alone. But
+     * {@code produces} is not built from the schema — {@code DefaultCodegen.fromOperation()} calls
+     * the {@code private} {@code addProducesInfo()} for each response BEFORE any override here runs,
+     * and it reads the response's content-map key set verbatim. A response whose only content entry
+     * is {@code application/json} would therefore drop {@code application/prs.hal-forms+json} from
+     * {@code produces}, and — {@code MemberAccountController}'s class-level
+     * {@code @RequestMapping(produces = HAL_FORMS_JSON_VALUE)} being overridden by the method-level
+     * clause — answer 406 to the {@code Accept} header the frontend sends.
+     *
+     * <p>So the same derivation happens here: a bare content key with no schema is added to each
+     * qualifying response, which is exactly what {@code addProducesInfo()} consumes and what an
+     * emptied {@code application/prs.hal-forms+json: {}} entry left in a not-yet-migrated spec still
+     * does. {@link #getContent} tolerates a schemaless media type (it only unwraps entries that have
+     * a schema), so nothing else in the pipeline is affected.
+     *
+     * <p><b>The "is this a HAL response" test in {@link #isHalResponse} must stay in agreement with
+     * {@code derive.mjs}'s {@code forEachHalResponse}</b> — the two are the same rule on either side
+     * of the language boundary. Change one, change the other.
+     */
+    private void addDerivedHalFormsContentType(Operation operation) {
+        if (isHalOptedOut(operation) || operation.getResponses() == null) {
+            return;
+        }
+        for (Map.Entry<String, ApiResponse> entry : operation.getResponses().entrySet()) {
+            if (!isHalResponse(entry.getKey(), entry.getValue())) {
+                continue;
+            }
+            Content content = entry.getValue().getContent();
+            if (!content.containsKey(HAL_FORMS_MEDIA_TYPE)) {
+                content.addMediaType(HAL_FORMS_MEDIA_TYPE, new MediaType());
+            }
+        }
+    }
+
+    /**
+     * A response the bundler would derive a HAL envelope for, and whose generated interface must
+     * therefore advertise {@value #HAL_FORMS_MEDIA_TYPE}. Counterpart of {@code derive.mjs}'s
+     * {@code forEachHalResponse} — see {@link #addDerivedHalFormsContentType}; the two must agree.
+     *
+     * <p>The rule: a {@code 2xx} response carrying an {@code application/json} entry with a schema.
+     * Error bodies ({@code problem+json}, or {@code suspendMember}'s plain-JSON 409 warning) are not
+     * hypermedia resources; a response with no {@code application/json} schema (a bodyless 201/204)
+     * has nothing to wrap. The operation-level opt-out is checked by the caller.
+     */
+    private static boolean isHalResponse(String statusCode, ApiResponse response) {
+        if (!statusCode.matches("2\\d\\d") || response == null || response.getContent() == null) {
+            return false;
+        }
+        MediaType json = response.getContent().get("application/json");
+        return json != null && json.getSchema() != null;
+    }
+
+    /**
+     * True when the operation carries {@code x-klabis-hal: false} — the sole opt-out from HAL being
+     * added by default. Counterpart of the same check in {@code derive.mjs}'s {@code forEachHalResponse}.
+     *
+     * <p>Matches boolean {@code false} only, exactly as the deriver's {@code === false} does.
+     * {@code validate.mjs} rejects the extension with any other value, so the bundle this reads can
+     * only ever carry the boolean — accepting a {@code "false"} string here would be tolerance the
+     * deriver does not share, and the two must not drift.
+     */
+    private static boolean isHalOptedOut(Operation operation) {
+        if (operation.getExtensions() == null) {
+            return false;
+        }
+        return Boolean.FALSE.equals(operation.getExtensions().get("x-klabis-hal"));
     }
 
     /**
@@ -322,9 +400,11 @@ public class KlabisSpringCodegen extends SpringCodegen {
      * Mirrors the stock generator's own content selection (first entry in the response's
      * {@code content} map — see {@code ModelUtils.getSchemaFromContent}; the bundler already sorts
      * {@code application/json} first wherever it exists), used only to feed {@link
-     * HalEnvelopeDetector}. The full {@code content} map is untouched and still drives the
-     * {@code produces} clause, computed separately in {@code fromOperation()}'s
-     * {@code addProducesInfo(...)} call before {@code handleMethodResponse()} ever runs.
+     * HalEnvelopeDetector}. The {@code produces} clause is computed separately, from the content
+     * map's key set, in {@code fromOperation()}'s {@code addProducesInfo(...)} call before
+     * {@code handleMethodResponse()} ever runs — {@link #addDerivedHalFormsContentType} adds the
+     * schemaless {@code application/prs.hal-forms+json} key just before that, never disturbing the
+     * {@code application/json}-first ordering this method relies on.
      */
     private static Schema<?> resolveResponseSchema(ApiResponse response) {
         Content content = response.getContent();

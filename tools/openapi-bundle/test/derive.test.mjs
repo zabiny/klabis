@@ -267,20 +267,21 @@ describe('deriveHalEnvelopes', () => {
             expect(JSON.stringify(document)).toBe(before);
         });
 
-        // An empty entry declares the media type without claiming a schema. The source spec keeps
-        // it because `produces` on the generated Java interface is built from these content keys —
-        // dropping it there would make the endpoint answer 406 to the Accept header the frontend
-        // sends. So it is a slot to fill, not hand-written work to preserve.
-        it('fills in a hal-forms entry that declares the media type but no schema', () => {
+        // An empty hal-forms entry (a bodyless 201/204 declaring only the media type) is left
+        // untouched — the deriver never invents a schema for it. `produces` on the generated Java
+        // interface does not depend on this entry: KlabisSpringCodegen.addDerivedHalFormsContentType()
+        // adds the media type for the same responses this deriver walks.
+        it('leaves an empty hal-forms entry untouched', () => {
             const document = docWith(ref('MemberAccountResource'), {
                 MemberAccountResource: {type: 'object', properties: {balance: {type: 'number'}}},
             });
             document.paths['/api/things'].get.responses['200']
                 .content['application/prs.hal-forms+json'] = {};
+            const before = JSON.stringify(document);
 
             deriveHalEnvelopes(document);
 
-            expect(halForms(document).schema).toEqual(ref('EntityModelMemberAccountResource'));
+            expect(JSON.stringify(document)).toBe(before);
         });
 
         it('does not wrap a payload that is itself already envelope-shaped', () => {
