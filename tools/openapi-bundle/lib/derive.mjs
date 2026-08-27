@@ -176,6 +176,11 @@ function deriveEntityItems(node, schemas, collisions) {
  * Mutates `document` in place and returns it. HAL is the default (105 of 111 operations);
  * `x-klabis-hal: false` on the operation is the only way out — see Decision 4.
  *
+ * The "is this a HAL response" test below (2xx, `application/json` with a schema, not opted out)
+ * has a Java-side counterpart: `KlabisSpringCodegen.isHalResponse` / `isHalOptedOut`, which add
+ * `application/prs.hal-forms+json` to the generated interface's `produces` clause for the same set
+ * of responses. The two must stay in agreement — change one, change the other.
+ *
  * @returns {{document: object, collisions: Array<{name: string, message: string}>}}
  */
 export function forEachHalResponse(document, visit) {
@@ -196,12 +201,16 @@ export function forEachHalResponse(document, visit) {
 
                 const content = response?.content;
                 if (!isPlainObject(content)) continue;
-                // An entry *with a schema* is hand-enveloped — the migration's coexistence
-                // guarantee. An empty one only declares the media type, which the source spec must
-                // keep stating: `produces` on the generated interface is built from these content
-                // keys, and dropping hal-forms there would make the endpoint answer 406 to the
-                // Accept header the frontend actually sends.
-                if (isPlainObject(content[HAL_FORMS]?.schema)) continue;
+                // A hal-forms entry already present — with a schema (hand-enveloped, not yet
+                // migrated) or empty (a bodyless 201/204 declaring only the media type) — is left
+                // exactly as it is. This is the migration's coexistence guarantee.
+                //
+                // `produces` on the generated Java interface does NOT depend on this entry being in
+                // the source spec: KlabisSpringCodegen.addDerivedHalFormsContentType() adds the
+                // media type for the same set of responses this function walks. That method's
+                // isHalResponse()/isHalOptedOut() are the Java-side counterpart of the conditions
+                // below and must stay in agreement with them.
+                if (Object.hasOwn(content, HAL_FORMS)) continue;
 
                 const jsonSchema = content[JSON_MEDIA]?.schema;
                 if (!isPlainObject(jsonSchema)) continue;

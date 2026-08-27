@@ -51,7 +51,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MemberAccountResource'
-            application/prs.hal-forms+json: {}
           x-hal-links:
             self:
               description: This account
@@ -130,7 +129,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TransactionResource'
-            application/prs.hal-forms+json: {}
           x-hal-links:
             self:
               description: This collection, with the current paging and filter parameters
@@ -264,7 +262,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TransactionResource'
-            application/prs.hal-forms+json: {}
           x-hal-links:
             self:
               description: This transaction
