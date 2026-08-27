@@ -1798,7 +1798,6 @@ export interface components {
             identityCardValidityDate?: string;
             lastName?: string;
         };
-        AccommodationListItemDtoList: components["schemas"]["AccommodationListItemDto"][];
         AddMemberRequest: {
             /** Format: uuid */
             memberId: string;
@@ -1916,7 +1915,6 @@ export interface components {
             id?: string;
             name?: string;
         };
-        CategoryPresetDtoList: components["schemas"]["CategoryPresetDto"][];
         ChangeDeadlineRequest: {
             /** Format: date */
             votingDeadline: string;
@@ -1944,6 +1942,7 @@ export interface components {
                 accommodationList?: components["schemas"]["EntityModelAccommodationListItemDto"][];
             };
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         CollectionModelEntityModelCalendarItemDto: {
             _embedded?: {
@@ -2016,6 +2015,7 @@ export interface components {
                 registrationDtoList?: components["schemas"]["EntityModelRegistrationSummaryDto"][];
             };
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         CollectionModelEntityModelTrainingGroupSummaryResponse: {
             _embedded?: {
@@ -2150,12 +2150,15 @@ export interface components {
         };
         EntityModelAccommodationListItemDto: components["schemas"]["AccommodationListItemDto"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelBulkImportResult: components["schemas"]["BulkImportResult"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelBulkSyncResult: components["schemas"]["BulkSyncResult"] & {
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         EntityModelCalendarItemDto: components["schemas"]["CalendarItemDto"] & {
             _links?: components["schemas"]["Links"];
@@ -2364,7 +2367,6 @@ export interface components {
             status?: components["schemas"]["EventStatus"];
             websiteUrl?: string;
         };
-        EventSummaryDtoList: components["schemas"]["EventSummaryDto"][];
         EventSyncEntry: {
             error?: string;
             /** Format: uuid */
@@ -2385,7 +2387,6 @@ export interface components {
             /** Format: int32 */
             sortOrder?: number;
         };
-        EventTypeDtoList: components["schemas"]["EventTypeDto"][];
         FamilyGroupMembershipResponse: {
             /** Format: date-time */
             joinedAt?: string;
@@ -2784,6 +2785,7 @@ export interface components {
                 eventSummaryDtoList?: components["schemas"]["EntityModelEventSummaryDto"][];
             };
             _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
             page?: components["schemas"]["PageMetadata"];
         };
         PagedModelEntityModelMemberSummaryResponse: {
@@ -2963,7 +2965,6 @@ export interface components {
             /** Format: date-time */
             registrationTime?: string;
         };
-        RegistrationSummaryDtoList: components["schemas"]["RegistrationSummaryDto"][];
         RenameGroupRequest: {
             name: string;
         };
@@ -3612,7 +3613,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CategoryPresetDtoList"];
+                    "application/json": components["schemas"]["CategoryPresetDto"][];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelCategoryPresetDto"];
                 };
             };
@@ -3790,7 +3791,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventTypeDtoList"];
+                    "application/json": components["schemas"]["EventTypeDto"][];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelEventTypeDto"];
                 };
             };
@@ -3972,7 +3973,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EventSummaryDtoList"];
+                    "application/json": components["schemas"]["EventSummaryDto"][];
                     "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelEventSummaryDto"];
                 };
             };
@@ -4124,7 +4125,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AccommodationListItemDtoList"];
+                    "application/json": components["schemas"]["AccommodationListItemDto"][];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelAccommodationListItemDto"];
                     "text/csv": string;
                 };
@@ -4166,7 +4167,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RegistrationSummaryDtoList"];
+                    "application/json": components["schemas"]["RegistrationSummaryDto"][];
                     "application/prs.hal-forms+json": components["schemas"]["CollectionModelEntityModelRegistrationSummaryDto"];
                 };
             };
