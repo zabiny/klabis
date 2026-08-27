@@ -139,10 +139,17 @@
 
 ## 3. Migrate `finance` (3 envelopes — proves the approach)
 
-- [ ] 3.1 Rewrite `docs/openapi/spec/finance.yaml`: delete the envelope schemas and bare-array `*List`
+- [x] 3.1 Rewrite `docs/openapi/spec/finance.yaml`: delete the envelope schemas and bare-array `*List`
       siblings, drop the `application/prs.hal-forms+json` content entries, point the
       `application/json` responses at the payload schemas directly.
-- [ ] 3.2 Run `./gradlew openapiBundle` and diff the bundle against the current baseline
+
+      **Delete those entries outright — do not leave them emptied as `{}`.** An emptied entry is
+      still HAL boilerplate in the source spec, which is what this change exists to remove.
+      `KlabisSpringCodegen.addDerivedHalFormsContentType()` re-adds the media type for the
+      `produces` clause; see the correction under 3.5. Leave the bodyless 201/204 entries alone —
+      they have no `application/json` sibling and declare the media type for a response with no
+      schema.
+- [x] 3.2 Run `./gradlew openapiBundle` and diff the bundle against the current baseline
       (`308677b5…`, see 2.8). (`git diff` cannot be used — the file is gitignored, see Decision 6.)
 
       **Expect a non-empty but bounded diff, not an unchanged hash.** Per Decision 7 the deriver
@@ -151,12 +158,41 @@
       that the diff contains *only* such `_templates` additions. Anything else — a changed
       `_embedded` key, a renamed schema, a lost property — means the deriver is wrong; fix the
       deriver, never the spec.
-- [ ] 3.3 Run `./gradlew openApiGenerateFinance`; confirm the generated Java under
+- [x] 3.3 Run `./gradlew openApiGenerateFinance`; confirm the generated Java under
       `build/generated/openapi/finance/` is unchanged against the 1.3 baseline, via
       `~/.cache/klabis-openapi-baseline/cmp-generated.sh finance` (a plain `diff -r` cannot be used —
       the `@Generated` timestamp changes every run).
-- [ ] 3.4 Run backend tests via the `test-runner` agent; confirm no failures and no test edits needed.
-- [ ] 3.5 Commit. This is the go/no-go point for the whole change.
+
+      Result: 7 modules byte-identical. `finance` differs only by 4 **removed** empty `record X()`
+      types (`EntityModel{MemberAccountResource,TransactionResource}AllOf{Value,OptionsInlineOneOf}`),
+      emitted only because the generator walked the hand-written `allOf` wrappers; 0 usages in
+      `src/`. The finance baseline is therefore stale by exactly those 4 files.
+- [x] 3.4 Run backend tests via the `test-runner` agent; confirm no failures and no test edits needed.
+      Result: finance 100/100, buildSrc 42/42, bundler 121/121, `npm run build` OK,
+      `klabisApi.d.ts` unchanged vs HEAD.
+- [x] 3.5 Commit. This is the go/no-go point for the whole change.
+
+      **Two corrections were required here; both apply to every later module.**
+
+      *Decision 7 was not actually implemented.* The deriver gated `_templates` on
+      `x-hal-templates`, contradicting the design. `TransactionResource` is returned both by
+      `getTransaction` (has it) and as the item of `listTransactions` (does not), so one payload
+      derived two incompatible `EntityModelTransactionResource` definitions and hit the collision
+      guard. `_templates` is now unconditional on response-level envelopes, keeping the
+      `x-hal-entity-items` exception for nested rows.
+
+      *`produces` is built from content-map keys, not from schemas.* `DefaultCodegen`'s private
+      `addProducesInfo()` reads the response's content keys verbatim, so deleting the hal-forms
+      entry dropped the media type from `produces` — and because method-level `produces` overrides
+      `MemberAccountController`'s class-level `@RequestMapping`, those endpoints answered 406 to
+      the Accept header the frontend sends. `KlabisSpringCodegen.addDerivedHalFormsContentType()`
+      now adds the media type itself for the same responses the deriver walks. The "is this a HAL
+      response" rule consequently exists on both sides of the language boundary
+      (`derive.mjs`'s `forEachHalResponse` ↔ `isHalResponse`/`isHalOptedOut`) — **change one,
+      change the other.**
+
+      Landed as `563ad846` (migration, containing the rejected emptied-entry intermediate) plus a
+      follow-up commit correcting it.
 
 ## 4. Migrate the remaining simple modules
 
