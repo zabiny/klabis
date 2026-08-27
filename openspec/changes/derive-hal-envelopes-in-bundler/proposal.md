@@ -79,14 +79,21 @@ unchanged — only the route by which the generator arrives at the same records 
 structural detection to reading a declared marker.
 
 The acceptance criterion makes this verifiable rather than merely asserted: **`klabis-full.json` must
-stay byte-identical** (`git diff` on that committed file reports nothing). Since that document is
-what the frontend types, `halTypes.ts` and Swagger UI are generated from, an empty diff proves no
+stay byte-identical** to a baseline hash recorded before any spec is touched. Since that document is
+what the frontend types, `halTypes.ts` and Swagger UI are generated from, an unchanged hash proves no
 `Content-Type`, `_embedded` key, `page` block or link relation could have shifted. A second
 criterion covers the other half: the generated Java under `build/generated/openapi/` must be
-identical before and after, per module.
+identical before and after, per module, comparing with the `@Generated` timestamp stripped.
 
-If either diff is non-empty at any point during the migration, the change has altered observable
-behavior and must stop.
+If either check fails at any point during the migration, the change has altered observable behavior
+and must stop.
+
+**One deliberate exception**, taken before the migration began: the accommodation-list endpoint was
+the only collection whose `_embedded` items were bare payloads rather than `EntityModel`s. It was
+brought in line with the other 15 (each row now carries a `self` link to its registration) so the
+deriver needs no special case. This adds a `_links` object per accommodation row in the runtime JSON
+— hypermedia metadata on the infrastructure envelope, not a change to the row's data fields. The
+baseline hash was re-recorded after that fix.
 
 ## Impact
 

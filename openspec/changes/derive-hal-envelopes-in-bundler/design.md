@@ -82,8 +82,22 @@ flowchart TD
     E -->|no| G["CollectionModel&lt;EntityModel&lt;Item&gt;&gt;"]
 ```
 
-Collection items are always themselves wrapped in `EntityModel` — that is uniformly true across all
-16 existing collection envelopes.
+Collection items are always themselves wrapped in `EntityModel`. This is what
+`HalResponseBodyAdvice.wrapCollection` already does unconditionally at runtime — every item of every
+collection becomes an `EntityModel`, whether or not any postprocessor gives it links.
+
+**Correction (found during implementation).** One of the 16 collection envelopes did *not* follow
+this: `CollectionModelEntityModelAccommodationListItemDto` pointed `_embedded.accommodationList.items`
+at the bare `AccommodationListItemDto`, because no postprocessor targeted
+`EntityModel<AccommodationListItemDto>` and the rows therefore rendered without `_links` — despite
+the envelope's own name claiming otherwise.
+
+Rather than teach the deriver an exception, the endpoint was brought in line with the other 15: a new
+`AccommodationListItemPostprocessor` gives each row a `self` link to the registration it projects
+(`/api/events/{eventId}/registrations/{memberId}`), and the spec now wraps the items in
+`EntityModelAccommodationListItemDto`. The runtime JSON gains a `_links` object per accommodation
+row. This is hypermedia metadata on an infrastructure envelope, not a change to the row's data
+fields, so the change stays spec-free — a decision explicitly taken by the user.
 
 Pagination is deliberately read from the **operation**, not inferred from the presence of a `page`
 property. This follows the rule `HalEnvelopeDetector` already established (its Shape 2 check
@@ -153,8 +167,22 @@ before anything depends on it (task 1).
 
 ### Decision 6 — Byte-identical output as the acceptance test
 
-`klabis-full.json` is committed. After rewriting a module's source spec, `git diff` on it must report
-nothing; likewise the generated Java under `build/generated/openapi/<module>/` must be unchanged.
+After rewriting a module's source spec, `klabis-full.json` must be byte-identical to the recorded
+baseline, and likewise the generated Java under `build/generated/openapi/<module>/`.
+
+**Correction (found during implementation).** `klabis-full.json` is *not* committed — `.gitignore:36`
+excludes it as a build artifact, so `git diff` on it is always empty and proves nothing. The
+criterion itself survives; only its measurement changes:
+
+- **Bundle:** compare `sha256sum docs/openapi/klabis-full.json` against the baseline recorded in
+  task 1.3. The bundler was verified to be deterministic — regenerating from the unmodified specs
+  reproduces the baseline hash exactly.
+- **Generated Java:** `diff -r` reports every file as changed, because `@Generated(date = "...")`
+  carries a fresh timestamp on each run. Compare with that attribute stripped;
+  `~/.cache/klabis-openapi-baseline/cmp-generated.sh` does this against the baseline copy beside it.
+
+When a step *intends* to change the bundle (as the accommodation fix did), the check becomes: produce
+the before and after bundles and confirm the diff contains only the intended change.
 
 This turns each migration step into a proof rather than a review. It also constrains the deriver:
 it must reproduce today's schema names, property order and `_embedded` keys exactly — which is why

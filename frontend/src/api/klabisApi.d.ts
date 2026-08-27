@@ -1942,7 +1942,7 @@ export interface components {
         };
         CollectionModelEntityModelAccommodationListItemDto: {
             _embedded?: {
-                accommodationList?: components["schemas"]["AccommodationListItemDto"][];
+                accommodationList?: components["schemas"]["EntityModelAccommodationListItemDto"][];
             };
             _links?: components["schemas"]["Links"];
         };
@@ -2148,6 +2148,9 @@ export interface components {
             /** Format: uuid */
             categoryId?: string;
             siCardNumber: string;
+        };
+        EntityModelAccommodationListItemDto: components["schemas"]["AccommodationListItemDto"] & {
+            _links?: components["schemas"]["Links"];
         };
         EntityModelBulkImportResult: components["schemas"]["BulkImportResult"] & {
             _links?: components["schemas"]["Links"];

@@ -605,13 +605,37 @@ class AccommodationListPostprocessor
     @Override
     public CollectionModel<EntityModel<AccommodationListItemDto>> process(
             CollectionModel<EntityModel<AccommodationListItemDto>> model) {
-        currentEventId().ifPresent(eventId ->
+        AccommodationListSupport.currentEventId().ifPresent(eventId ->
                 klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
                         .ifPresent(link -> model.add(link.withRel("event"))));
         return model;
     }
+}
 
-    private static Optional<UUID> currentEventId() {
+/**
+ * Gives each accommodation row a {@code self} link pointing at the registration it projects. The
+ * eventId comes from the URI template, since {@link EventRegistration} carries no reference back to
+ * its event.
+ */
+@MvcComponent
+class AccommodationListItemPostprocessor
+        extends ModelWithDomainPostprocessor<AccommodationListItemDto, EventRegistration> {
+
+    @Override
+    public void process(EntityModel<AccommodationListItemDto> dtoModel, EventRegistration registration) {
+        AccommodationListSupport.currentEventId().ifPresent(eventId ->
+                klabisLinkTo(methodOn(EventRegistrationsApi.class)
+                        .getRegistration(registration.memberId().value(), eventId, false))
+                        .ifPresent(link -> dtoModel.add(link.withSelfRel())));
+    }
+}
+
+final class AccommodationListSupport {
+
+    private AccommodationListSupport() {
+    }
+
+    static Optional<UUID> currentEventId() {
         RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
         if (attrs == null) {
             return Optional.empty();
