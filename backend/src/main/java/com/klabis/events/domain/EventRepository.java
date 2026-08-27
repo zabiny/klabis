@@ -3,6 +3,7 @@ package com.klabis.events.domain;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
@@ -36,6 +37,17 @@ public interface EventRepository extends Events {
      * @return true if an event with this orisId already exists
      */
     boolean existsByOrisId(int orisId);
+
+    /**
+     * Finds the event imported from ORIS under the given ORIS event ID.
+     * <p>
+     * Used by the sync engine to resolve an existing local event when only the ORIS payload
+     * is available (the local {@code EventId} is not yet known on the import/resync path).
+     *
+     * @param orisId the ORIS event identifier
+     * @return the matching event, or empty if no event has this orisId
+     */
+    Optional<Event> findByOrisId(int orisId);
 
     /**
      * Returns the subset of {@code candidateOrisIds} that already have a matching event in the repository.

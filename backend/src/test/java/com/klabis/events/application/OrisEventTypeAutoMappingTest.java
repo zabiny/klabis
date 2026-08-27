@@ -11,6 +11,7 @@ import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
+import com.klabis.events.infrastructure.sync.OrisEventMappingSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -47,7 +48,8 @@ class OrisEventTypeAutoMappingTest {
 
     @BeforeEach
     void setUp() {
-        service = new OrisEventImportService(eventRepository, orisApiClient, orisWebUrls, eventTypeRepository);
+        service = new OrisEventImportService(eventRepository, orisApiClient, orisWebUrls,
+                new OrisEventMappingSupport(eventTypeRepository));
     }
 
     @Nested

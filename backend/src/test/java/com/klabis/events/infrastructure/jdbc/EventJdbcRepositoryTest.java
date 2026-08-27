@@ -543,6 +543,36 @@ class EventJdbcRepositoryTest {
         }
 
         @Test
+        @DisplayName("findByOrisId should return the saved event for a known orisId")
+        void findByOrisIdShouldReturnSavedEvent() {
+            // Given
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(54321)
+                    .name("Findable ORIS Event")
+                    .eventDate(LocalDate.of(2026, 8, 15))
+                    .location("Test Location")
+                    .organizer("OOB")
+                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=54321"))
+                    .build());
+            Event saved = eventRepository.save(event);
+
+            // When
+            Optional<Event> found = eventRepository.findByOrisId(54321);
+
+            // Then
+            assertThat(found).isPresent();
+            assertThat(found.get().getId()).isEqualTo(saved.getId());
+            assertThat(found.get().getOrisId()).isEqualTo(54321);
+        }
+
+        @Test
+        @DisplayName("findByOrisId should return empty for an unknown orisId")
+        void findByOrisIdShouldReturnEmptyForUnknownOrisId() {
+            // When & Then
+            assertThat(eventRepository.findByOrisId(88888)).isEmpty();
+        }
+
+        @Test
         @DisplayName("should reject duplicate orisId via unique constraint")
         void shouldRejectDuplicateOrisIdViaUniqueConstraint() {
             // Given — save the first event with orisId 1111

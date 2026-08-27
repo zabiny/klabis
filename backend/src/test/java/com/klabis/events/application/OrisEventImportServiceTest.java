@@ -9,6 +9,7 @@ import com.klabis.events.EventCategory;
 import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
+import com.klabis.events.infrastructure.sync.OrisEventMappingSupport;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +54,8 @@ class OrisEventImportServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OrisEventImportService(eventRepository, orisApiClient, orisWebUrls, eventTypeRepository);
+        OrisEventMappingSupport mappingSupport = new OrisEventMappingSupport(eventTypeRepository);
+        service = new OrisEventImportService(eventRepository, orisApiClient, orisWebUrls, mappingSupport);
     }
 
     @Nested
