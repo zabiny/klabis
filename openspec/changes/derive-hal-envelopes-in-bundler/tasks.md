@@ -227,9 +227,27 @@
 
 ## 5. Migrate the large modules
 
-- [ ] 5.1 `events` (13 envelopes, 1 `x-spring-paginated`, 2 `x-klabis-relation`) — same 5 steps,
-      one commit.
-- [ ] 5.2 `membershipfees` (13 envelopes, 1 `x-klabis-relation`) — same, one commit.
+- [x] 5.1 `events` (13 envelopes, 1 `x-spring-paginated`, 2 `x-klabis-relation`) — `d20f3afa`,
+      tests 806/806. 12 envelopes + 5 `*List` aliases removed (−204 lines). `EventsApi.java`
+      differs only by `@Content`/`produces` ordering; media-type counts and every return type
+      (`Page<EventSummaryDto>`, `List<AccommodationListItemDto>`, `EventDto`) identical.
+- [x] 5.2 `membershipfees` (13 envelopes, 1 `x-klabis-relation`) — `25705efe`, tests 284/284.
+      12 envelopes + 4 aliases removed (−176 lines). `MembershipFeesApi.java` **byte-identical** to
+      baseline — the spec already listed `application/json` first, so not even the ordering moved.
+
+      **Three envelopes are permanently exempt from derivation**, all because they declare their own
+      `_embedded` block, which the deriver — building from the `application/json` payload alone —
+      cannot reproduce:
+      `EntityModelEventDtoWithRegistrations` (`_embedded.registrationDtoList`) and
+      `EntityModelMembershipFeeGroupResponseWithMembers` (`_embedded.members`). Both responses have
+      no `application/json` sibling, so the deriver skips them outright.
+      (`common`'s `EntityModelRootModel`/`EntityModelDashboardModel` are exempt for a different
+      reason — empty marker records, see 4.3.)
+
+      **Four stale comments corrected** across events/membershipfees: each claimed `schemaMappings`
+      resolves a return type, but all three modules have `mappings = emptyMap()` — it is
+      `HalEnvelopeDetector` unwrapping the `allOf`. Section 7 deletes that class, so these comments
+      must be revisited there.
 
 ## 6. Migrate `groups` (18 envelopes + 7 nested + 14 mappings)
 
