@@ -6,10 +6,14 @@ frontend types are all generated from it.
 ## Pipeline
 
 ```
-docs/openapi/spec/  ──npm run openapi (bundles, then generates)──▶  docs/openapi/klabis-full.json  ──▶  frontend types
+docs/openapi/spec/  ──npm run openapi (bundles, then generates)──▶  docs/openapi/klabis-full.json  ──▶  frontend types + Swagger UI
         │
         └──────────openApiGenerate<Module>──────────▶  backend DTOs + *Api interfaces
 ```
+
+The two branches read **different documents**, which matters for HAL (see below): the frontend
+consumes the bundle, while each `openApiGenerate<Module>` task reads its own
+`docs/openapi/spec/<module>.yaml` directly.
 
 - `docs/openapi/spec/` — hand-written spec; edit here
 - `docs/openapi/klabis-full.json` — gitignored build artifact, generated; never hand-edit
@@ -112,11 +116,57 @@ Hypermedia, on **response objects** (not on schemas — links belong to the repr
 
 - `x-hal-links` — link relations the response may carry
 - `x-hal-templates` — HAL-FORMS templates the response may carry
+- `x-hal-embedded` — a nested collection the controller assembles at runtime
 
-Both describe the **maximal variant**. `klabisLinkTo` returns `Optional` and `klabisAfford` returns an
-empty list when the user lacks authorization, so any link or template may be absent at runtime, and the
-same endpoint returns different `_links`/`_templates` per user. Conditions are not expressible here —
-put them in `description`.
+Both `x-hal-links` and `x-hal-templates` describe the **maximal variant**. `klabisLinkTo` returns
+`Optional` and `klabisAfford` returns an empty list when the user lacks authorization, so any link or
+template may be absent at runtime, and the same endpoint returns different `_links`/`_templates` per
+user. Conditions are not expressible here — put them in `description`.
+
+## HAL envelopes are derived, not written
+
+A response declares its `application/json` payload and nothing else:
+
+```yaml
+        '200':
+          description: Member found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberDetailsResponse'
+```
+
+`tools/openapi-bundle/lib/derive.mjs` adds the `application/prs.hal-forms+json` content entry and the
+`EntityModel`/`CollectionModel`/`PagedModel` schema behind it when writing `klabis-full.json` — the
+single place in the repo encoding envelope structure. The envelopes exist for the frontend types and
+Swagger UI only; Spring HATEOAS builds the real ones at runtime from the plain DTO, and the backend
+codegen reads the module YAML, where no envelope appears.
+
+**HAL is the default.** Every 2xx response with an `application/json` schema gets one. What the
+deriver produces:
+
+| payload schema | derived envelope | generated Java |
+|---|---|---|
+| `$ref: FooResponse` | `EntityModelFooResponse` | `FooResponse` |
+| `type: array, items: $ref FooDto` | `CollectionModelEntityModelFooDto` | `List<FooDto>` |
+| the same, with `x-spring-paginated: true` on the operation | `PagedModelEntityModelFooDto` + `page` | `Page<FooDto>` |
+
+The `_embedded` key is the payload's declared `x-klabis-relation.collectionRelation`, or Spring
+HATEOAS's default `uncapitalize(schemaName) + "List"` — so renaming a payload schema renames a JSON
+key clients read literally.
+
+Three facts the payload cannot state get an extension:
+
+| extension | where | states |
+|---|---|---|
+| `x-klabis-hal: false` | operation | not a hypermedia endpoint — the sole opt-out (6 operations: the pre-auth password endpoints, `getMySchedule`, `listOrisEvents`) |
+| `x-hal-entity-items: true` | an array **property** | its items are independently addressable resources: each gets its own `EntityModel`, and the generated Java property becomes `List<EntityModel<Item>>` |
+| `x-hal-embedded: {items, suffix}` | a **response** | a nested collection assembled at runtime via `HalResponseContext.embed`. `items` names the row payload (its own `x-klabis-relation` supplies the key); `suffix` keeps the name distinct from the plain `EntityModel<Payload>` |
+
+Two exceptions to "never write an envelope", both in `common.yaml`: `EntityModelRootModel` and
+`EntityModelDashboardModel`. `GET /api` and `GET /api/dashboard` are pure navigation — their response
+is nothing but `_links`, so there is no payload to derive from, and a `schemaMappings` entry keeps
+each from being emitted as a Java class.
 
 Extension values are validated during bundling: `x-klabis-authority` must be a constant of
 `Authority.java`, and `operation:` inside `x-hal-*` must match an existing `operationId`.
@@ -142,6 +192,14 @@ Klabis branch across. Each file opens with a note saying so.
 - API DTOs carry **wire types**, not domain types — `string`/`format: uuid`, never a `MemberId` object.
   Conversion to domain types belongs in the mapper or controller.
 - Never hand-edit `docs/openapi/klabis-full.json` — it is generated and gitignored.
+- Never write an `EntityModel*`/`CollectionModel*`/`PagedModel*` schema or an
+  `application/prs.hal-forms+json` content entry — the bundler derives both. A hal-forms entry that
+  is already present makes the deriver skip that response. The exception is a bodyless `201`/`204`,
+  which has no `application/json` payload to derive from and so declares the media type itself with
+  an empty schema (`application/prs.hal-forms+json: {}`); without it the endpoint answers **406** to
+  the `Accept` header the frontend sends.
+- Never give a payload schema a `_links` or `_embedded` property. The deriver identifies envelopes by
+  shape and would skip the payload as one; `validate.mjs` reports this.
 - Reference operations by `operation: <operationId>`, not by escaped `operationRef` pointers.
 - **Nullable properties use the OpenAPI 3.1 union spelling**, `type: [string, 'null']`, never the
   3.0 `nullable: true`. These documents declare `openapi: 3.1.0`; `nullable: true` is a 3.0 keyword

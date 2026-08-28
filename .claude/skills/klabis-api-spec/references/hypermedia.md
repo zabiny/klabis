@@ -1,42 +1,54 @@
 # Responses & Hypermedia
 
-Everything about what an endpoint returns: which media types it declares, how the HAL envelope
-relates to the plain payload schema, why a payload schema's *name* is part of the wire contract,
-and how `x-hal-*` declares the links and affordances that envelope carries.
+Everything about what an endpoint returns: which media types it declares, how the bundler derives the
+HAL envelope from the payload schema, why a payload schema's *name* is part of the wire contract, and
+how `x-hal-*` declares the links and affordances that envelope carries.
 
 Envelope shape and the links inside it are one concern — a change to either usually needs the other,
 which is why they live in one file. Read this before adding or changing any response.
 
 ## Contents
 
-- **Payload and envelope are separate schemas** — the core split, and bodyless 201/204 responses
-- **Declare both `application/json` and a HAL type** — the default and its four exceptions
-- **Structural unwrapping** — how the generator resolves envelope -> payload without `schemaMappings`
+- **Declare the payload; the bundler derives the envelope** — the core rule, and bodyless 201/204
+- **What the deriver produces** — collection vs. item, paged vs. unpaged, `_templates`
+- **`x-klabis-hal: false`** — the opt-out, and who uses it
+- **`x-hal-entity-items`** — array items that are resources in their own right
+- **`x-hal-embedded`** — a nested collection assembled at runtime
 - **`mappings` for hand-written overrides** — the narrow remaining use
 - **A payload schema's name is wire contract** — `_embedded` keys and frontend indexing
 - **`x-hal-*`** — declaring links and affordances, what the frontend generates, the MAXIMAL variant
 
-## Payload and envelope are separate schemas
+## Declare the payload; the bundler derives the envelope
 
-`_links` is not part of a DTO — Spring HATEOAS adds it when the controller wraps the payload in an
-`EntityModel`. Model that split, or the generated Java record grows a bogus `links` component:
+A response declares its `application/json` payload and stops there:
 
 ```yaml
-EntityModelMemberDetailsResponse:      # envelope; never generated into Java
-  allOf:
-    - $ref: '#/components/schemas/MemberDetailsResponse'
-    - type: object
-      properties:
-        _links:
-          $ref: './_shared/hal.yaml#/components/schemas/Links'
-
-MemberDetailsResponse:                 # payload; this is what becomes a record
-  type: object
-  properties: …
+      responses:
+        '200':
+          description: Member found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberDetailsResponse'
 ```
 
-Same rule for `_embedded` and `page` on collections — they belong to `PagedModel*` /
-`CollectionModel*`, not to the item.
+`tools/openapi-bundle/lib/derive.mjs` adds the `application/prs.hal-forms+json` content entry and the
+`EntityModelMemberDetailsResponse` schema behind it into `klabis-full.json`. It is **the only place
+in the repo encoding HAL envelope structure**, and it exists for the frontend's TypeScript types and
+Swagger UI alone: the backend never needs envelope types, because Spring HATEOAS builds them at
+runtime from the plain DTO (ADR-002). `KlabisSpringCodegen` reads `docs/openapi/spec/<module>.yaml`
+directly and never sees an envelope.
+
+So `_links` is never part of a schema you write. A payload declaring one of its own is not just
+redundant — the deriver recognises envelopes by *shape*, so it would take that payload for an
+already-written envelope and skip it silently. `validate.mjs` reports the case rather than letting it
+through.
+
+Two things follow for the generated Java: the record is built from the payload schema exactly as
+written, and `produces` gains the hal-forms media type from
+`KlabisSpringCodegen.addDerivedHalFormsContentType()` — the Java-side counterpart of the deriver's
+own "is this a HAL response" test. **The two encode the same rule on either side of the language
+boundary; change one, change the other.**
 
 ### Bodyless success responses still need an empty HAL content block
 
@@ -56,70 +68,119 @@ No body is produced; this only pins the negotiated media type. Easy to miss beca
 that omit `.accept(...)` pass either way — the gap surfaces only against a real client, or a test that
 sets the header.
 
-## HAL envelopes are unwrapped structurally — no `schemaMappings`, no separate codegen bundle
+## What the deriver produces
 
-`KlabisSpringCodegen` (`backend/buildSrc/`) resolves a response's `EntityModel*` / `PagedModel*` /
-`CollectionModel*` HAL envelope schema down to its real payload type by inspecting the schema's
-*shape*, not its name — see `openspec/changes/custom-openapi-codegen/design.md` for the full
-rationale and `HalEnvelopeDetector` for the two shapes it matches:
+The rule, applied to every 2xx response with an `application/json` schema:
 
-- **Shape 1 — single entity:** `allOf` of exactly two members, the first a `$ref`, the second an
-  inline object whose properties are a subset of `{_links, _templates, _embedded}`. Unwraps to the
-  `$ref` target.
-- **Shape 2 — collection:** a plain object with a `_links` property and exactly one
-  `_embedded.<name>: array[$ref]`-shaped property. Unwraps to the array item's payload type (composed
-  through a nested Shape 1, if the item is itself an envelope), as `List<T>` or — when the operation
-  declares `x-spring-paginated: true` — `Page<T>`.
-
-This means **the generator needs no separate `application/json` sibling to resolve the payload
-type** — it reads the HAL envelope schema directly. The single codegen-only bundle
-(`bundleSpecForCodegen` / `bundle.mjs --strip-hal`) this used to require no longer exists — backend
-codegen reads `docs/openapi/klabis-full.json` directly, the exact same bundle the frontend consumes.
-
-| response shape | `application/json` schema (optional, real content negotiation) | generated Java |
+| payload schema | derived envelope | generated Java |
 |---|---|---|
-| single resource (`EntityModelFooResponse`) | `$ref: FooResponse` | `FooResponse` |
-| collection (`CollectionModelEntityModelFooDto`) | `type: array, items: $ref FooDto` | `List<FooDto>` |
-| paged (`PagedModelEntityModelFooResponse`) | named array schema, e.g. `FooResponseList` | `Page<FooResponse>` |
+| `$ref: FooResponse` | `EntityModelFooResponse` | `FooResponse` |
+| `type: array, items: $ref FooDto` | `CollectionModelEntityModelFooDto` | `List<FooDto>` |
+| the same, operation has `x-spring-paginated: true` | `PagedModelEntityModelFooDto` + `page` | `Page<FooDto>` |
 
-Pagination is read from `x-spring-paginated: true` on the **operation**, independent of which content
-type resolves the payload — an operation serving only `application/json` still gets `Page<T>`, and a
-paginated operation's `application/json` sibling (even a bare array with no `page`/`_links`) still
-resolves to `Page<T>`, never `List<T>`.
+Collection items are always themselves wrapped in `EntityModel` — matching
+`HalResponseBodyAdvice.wrapCollection`, which does this unconditionally at runtime whether or not any
+postprocessor gives the item links.
 
-### Declare both `application/json` and a HAL type — the default for body-carrying responses
+**Pagination is read from `x-spring-paginated` on the operation**, never inferred from the payload.
+An array response without it is a `CollectionModel`, with it a `PagedModel`; there is no third
+signal.
 
-Even though codegen does not need it, a body-carrying 2xx response normally declares **both** a HAL
-content type and an `application/json` sibling: the plain-JSON option is a real content-negotiation
-choice for callers that do not want hypermedia, not a codegen workaround. See "Bodyless success
-responses" above for why a bare `{}` entry still matters for `produces` on 201/204.
+Every derived envelope carries `_templates`, uniformly. That property is an `additionalProperties`
+map with no named members — it declares only that a template map may appear, which is true of every
+HAL-FORMS resource. The contract that actually says *which* templates is `x-hal-templates`, which
+`haltypes.mjs` turns into the named union in `halTypes.ts`.
 
-Four situations legitimately depart from this, and recognising them matters — "fixing" one by adding
-a sibling breaks it:
+## `x-klabis-hal: false` — the opt-out
 
-- **Pure navigation** (`GET /api`, `GET /api/dashboard`) — the response is only `_links`, so a plain
-  JSON sibling would be an empty object. These declare `application/hal+json` *and*
-  `application/prs.hal-forms+json` instead: two HAL variants, no payload.
-- **Non-hypermedia endpoints** (`/api/auth/password-setup/*`, `/api/oris/events`) — plain JSON only.
-  The auth endpoints are called before login, where hypermedia has nothing to offer; `oris` proxies an
-  external API.
-- **Non-JSON feeds** (`/ical/my-schedule.ics` → `text/calendar`).
-- **Endpoints whose schema is an envelope carrying `_embedded`** (`GET /api/events/{id}`,
-  `GET /api/membership-fee-groups/{id}`, schemas like `EntityModelEventDtoWithRegistrations`). There
-  is no plain payload sibling to declare, because the `_embedded` collection is a different *shape* of
-  data rather than a different serialisation of the same payload.
+HAL is the default. The marker goes on the **operation** and is the only way out:
 
-  **Treat that last group as debt, not a pattern to copy.** Declaring the envelope as the schema
-  predates structural unwrapping and keeps these two endpoints outside it. Do not spell a new endpoint
-  this way — model the payload and let the advice assemble `_embedded` at runtime (the backend side is
-  `HalResponseContext.embed`, see the `backend-patterns` skill).
+```yaml
+  get:
+    operationId: listOrisEvents
+    x-klabis-hal: false
+```
+
+Six operations use it, and they are coherent rather than arbitrary: `getMySchedule`
+(`text/calendar`), the four pre-auth password endpoints in `common.yaml` (called without a token,
+outside hypermedia navigation), and `listOrisEvents` (an external ORIS passthrough). All six opt out
+wholesale — per-response granularity does not exist, because no endpoint has needed it.
+
+Two responses are skipped without any marker, and neither is an opt-out worth imitating: a `2xx`
+whose only content is `text/csv` or `text/calendar` has no `application/json` schema to derive from,
+and non-2xx responses are never enveloped (error bodies are not hypermedia resources — this is why
+`suspendMember`'s plain-JSON `409` warning does not grow an envelope).
+
+### Bodyless 201/204 declare the media type themselves
+
+They have no `application/json` sibling, so the deriver has nothing to work from — see the empty
+content block above.
+
+## `x-hal-entity-items: true` — array items that are resources
+
+An array property whose items are independently addressable — each carrying its own `_links` and
+possibly affordances — is an API design choice, not something derivable. Mark the **array**:
+
+```yaml
+    GroupResponse:
+      properties:
+        owners:
+          type: array
+          x-hal-entity-items: true
+          items:
+            $ref: '#/components/schemas/OwnerResponse'
+```
+
+The deriver emits `EntityModelOwnerResponse` and retargets `items.$ref` at it;
+`KlabisSpringCodegen.fromProperty` reads the same marker off the module YAML and resolves the
+property to `List<EntityModel<OwnerResponse>>`. No `schemaMappings` entry is involved — though
+an explicit per-module mapping on the item `$ref` still wins over the marker, which is what lets a
+module override the resolution when it has to.
+
+The marker sits on the array rather than beside the `$ref` deliberately: a `$ref` sibling is ignored
+outright in OpenAPI 3.0 and honoured inconsistently by 3.1 tooling, so each of
+`openapi-typescript`, openapi-generator and `haltypes.mjs` would have to be trusted separately.
+`validate.mjs` restricts it to `type: array` with a `$ref` items schema; a singular HAL-wrapped
+property is refused until a real case appears.
+
+All 7 uses are in `groups.yaml` — the `parents`/`members`/`owners`/`pendingInvitations`/`trainers`
+collections of the three group responses, whose rows carry per-row affordances like
+`removeGroupOwner` and `cancelInvitation`.
+
+## `x-hal-embedded` — a nested collection assembled at runtime
+
+Some responses carry a nested collection in `_embedded` that is a different *shape* of data, not a
+different serialisation of the payload: the controller assembles it at runtime via
+`HalResponseContext.embed` (see the `backend-patterns` skill). The deriver cannot infer it from the
+`application/json` payload, so the response declares it:
+
+```yaml
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDto'
+          x-hal-embedded:
+            items: RegistrationSummaryDto
+            suffix: WithRegistrations
+```
+
+- `items` names the **row payload**. The `_embedded` key comes from that schema's own
+  `x-klabis-relation.collectionRelation` (or the default), never restated here — one value, so spec
+  and runtime cannot drift.
+- `suffix` (PascalCase) disambiguates the derived name — here `EntityModelEventDtoWithRegistrations`
+  — from the plain `EntityModelEventDto` the same payload would get if returned bare elsewhere.
+  `MembershipFeeGroupResponse` is exactly that case: `listGroupsForYear` returns it bare while
+  `getFeeGroup` embeds its members.
+
+Two operations use it: `getEvent` and `getFeeGroup`.
 
 ## `mappings` is now only for hand-written overrides the generator cannot derive from spec structure
 
-Envelope→payload redirection needs **zero** `mappings`/`extraImportMappings` entries — the structural
-detection above handles every `EntityModel*`/`PagedModel*`/`CollectionModel*` schema in the spec, by
-shape, with no naming convention to follow. A `mappings` entry in `openApiModule(...)` is only for a
-case the generator genuinely cannot infer from the spec alone:
+Envelopes need **zero** `mappings`/`extraImportMappings` entries — a module spec contains none for
+the generator to trip over, and `x-hal-entity-items` carries the one case that used to need them. A
+`mappings` entry in `openApiModule(...)` is only for a case the generator genuinely cannot infer from
+the spec alone:
 
 - **A nested Java class.** `PaymentRuleResponse` → `MembershipFeeTierResponse.PaymentRuleResponse` —
   the schema name matches a top-level class name that isn't the one actually used.
@@ -128,10 +189,11 @@ case the generator genuinely cannot infer from the spec alone:
 - **A cross-module application type.** `BulkSyncResult` → `com.klabis.events.application.BulkSyncResult`
   — the target package differs from the module's own `restapi` package.
 - **A marker type with no payload of its own.** `EntityModelRootModel` → `common.ui.RootModel`,
-  `EntityModelDashboardModel` → `common.ui.DashboardModel` — shaped as
-  `{type: object, properties: {_links}}` (no `allOf`, no `_embedded`), which
-  `HalEnvelopeDetector` **deliberately does not match** — see "Payload and envelope are separate
-  schemas" below for why these two are legitimately envelope-only.
+  `EntityModelDashboardModel` → `common.ui.DashboardModel`. These are the only two envelopes still
+  written by hand, and they have to be: `GET /api` and `GET /api/dashboard` are pure navigation,
+  their response is nothing but `_links`, so there is no `application/json` payload for the deriver
+  to build from. Adding one collapses the generated return type to `ResponseEntity<Void>`. Their
+  `mappings` entries are what keep the generator from emitting them as Java classes.
 - **The `java.lang.Object` fallback.** `SuspensionBlockedWarning` → `java.lang.Object` — a
   discriminator-less `oneOf` union with no single Java type to stand for it. `KlabisSpringCodegen`
   suppresses the resulting (illegal) `@Schema(implementation = java.lang.Object.class)` doc block the
@@ -155,19 +217,12 @@ generator's type system, dropped *silently*, producing `ResponseEntity<>` with n
 is a non-issue now that array schemas are left unmapped rather than redirected onto anything, but
 worth knowing if a future case seems to need remapping a `List<T>` response onto something else.
 
-**`models` still needs every payload schema listed explicitly, per module.** Structural envelope
-unwrapping is unrelated to *discovery* — a proposal to have the generator discover a module's schemas
-by tag reachability was investigated and withdrawn (design.md Decision 5: the generator exposes no
-hook for it; model filtering lives entirely in `DefaultGenerator`, outside any `CodegenConfig`
-override point). Adding a new request/response DTO to an already-migrated module still means adding
-its schema name to that module's `models` list in `openApiModule(...)`, exactly as before.
-
-### `frontend/src/api/halTypes.ts` must still type off the HAL envelope, not an `application/json` sibling
+### `frontend/src/api/halTypes.ts` must type off the HAL envelope, not the `application/json` payload
 
 `haltypes.mjs` builds each `*Resource` type by picking a schema out of the response's `content` map.
 Because the bundler alphabetizes content-type keys, `"application/json"` always sorts ahead of
-`"application/prs.hal-forms+json"` — so without an explicit preference, declaring both content types
-would silently retype `*Resource` off the *bare* payload/array instead of the envelope, dropping
+`"application/prs.hal-forms+json"` — so without an explicit preference, every response would retype
+`*Resource` off the *bare* payload/array instead of the derived envelope, dropping
 `_embedded`/`page` from the generated type even though the wire response still has them.
 `haltypes.mjs` explicitly prefers `application/prs.hal-forms+json`/`application/hal+json` over any
 other content type (falling back only if neither is present) — this is handled centrally, so nothing
@@ -175,34 +230,17 @@ extra is required per-endpoint. But if a `*Resource` type ever looks wrong, this
 to suspect, and the fix belongs in `haltypes.mjs`, not in per-endpoint content ordering (ordering in
 the YAML doesn't survive bundling anyway — keys are re-sorted).
 
-### A response already declaring more than one HAL-ish content type may reject a third
+### A test asserting on `_links` needs an explicit `Accept` header
 
-Adding `application/json` to a response that already lists **two** content types pointing at the same
-schema (`application/hal+json` *and* `application/prs.hal-forms+json` — the `common` module's
-`rootNavigation`/`dashboard` are the only endpoints in the spec that do this) can make the generator's
-return-type resolution give up and collapse the method to `ResponseEntity<Void>`, silently breaking
-the controller's `@Override`. Confirmed empirically (generating with two vs. three content types on
-the same schema) — there's no known clean fix, so **skip the `application/json` sibling** for a
-response in this situation and leave a comment explaining why, the same way `common.yaml` does for
-`rootNavigation`/`dashboard`. This is rare: it only arises for a marker-type response with no real
-payload of its own, which is the same shape that makes the sibling low-value anyway.
-
-### A test without an explicit `Accept` header may start asserting against the wrong content type
-
-Content negotiation for a response now has a plain `application/json` option alongside HAL-FORMS. A
-`MockMvc` test asserting `$._links...`/`$._templates...` that omits `.accept(...)` can start resolving
-to the bare payload instead, failing those assertions even though the endpoint still serves HAL-FORMS
-correctly to the real frontend (which always sends `Accept: application/prs.hal-forms+json`). Fix by
-adding the header explicitly:
+Every HAL response offers both the bare `application/json` payload and HAL-FORMS, so a `MockMvc` test
+asserting `$._links...`/`$._templates...` without `.accept(...)` can negotiate to the payload and
+fail, even though the endpoint serves HAL-FORMS correctly to the real frontend (which always sends
+`Accept: application/prs.hal-forms+json`). State the header:
 
 ```java
 mockMvc.perform(get("/api/users/{id}/permissions", id).accept(MediaTypes.HAL_FORMS_JSON))
     .andExpect(jsonPath("$._links.self.href").exists());
 ```
-
-Same root cause as "Bodyless success responses" above (a test without `.accept(...)` "passes either
-way" until the set of producible media types changes) — check for this whenever migrating a module
-whose controller tests assert on `_links`/`_templates`.
 
 ## A payload schema's name is wire contract
 
@@ -214,39 +252,22 @@ schema EventTypeDto  ->  record EventTypeDto  ->  "_embedded": { "eventTypeDtoLi
 ```
 
 So renaming a payload schema renames a JSON key that clients read literally — a breaking change, not
-a rename. The envelope schema must spell the same key:
+a rename. The deriver reproduces that rule (`uncapitalize(schemaName) + "List"`), which is purely
+lexical: `EventSummaryDto` becomes `eventSummaryDtoList`, suffix and all.
+
+**`x-klabis-relation` overrides the default**, on the payload schema:
 
 ```yaml
-CollectionModelEntityModelEventTypeDto:
-  type: object
-  properties:
-    _embedded:
-      type: object
-      properties:
-        eventTypeDtoList:          # <camelCase payload class name> + "List"
-          type: array
-          items:
-            $ref: '#/components/schemas/EntityModelEventTypeDto'
+    TransactionResource:
+      x-klabis-relation:
+        collectionRelation: transactions      # not "transactionResourceList"
+        itemRelation: transaction
 ```
 
-**`@Relation` overrides that default.** The class-name rule above only holds when the payload class
-carries no `@Relation`. When it does, the annotation wins and the spec must spell the annotation's
-value:
-
-```java
-@Relation(collectionRelation = "transactions", itemRelation = "transaction")
-public record TransactionResource(...) { }
-```
-```yaml
-_embedded:
-  type: object
-  properties:
-    transactions:              # from @Relation, NOT "transactionResourceList"
-```
-
-So before writing an envelope, grep the payload class for `@Relation` rather than deriving the key
-from its name. Applying the default to a class that overrides it produces a key no response ever
-contains, and — per the second guard below — nothing reports it.
+One declaration feeds both paths — `pojo.mustache` emits `@Relation` onto the record from it, and the
+deriver reads the same value for the bundle's `_embedded` key — so the runtime response and the
+published document cannot disagree. Never hand-write the `@Relation` annotation on a DTO instead;
+that reintroduces the drift this replaced.
 
 Two guards, both worth knowing because each fails at a different moment:
 
@@ -254,9 +275,10 @@ Two guards, both worth knowing because each fails at a different moment:
   (`components['schemas']['EntityModelEventTypeDto']`). A name that does not exist there is a `tsc`
   error — loud, immediate. Since the bundler owns `klabis-full.json`, that name comes from the spec,
   so the fix is to correct the schema name there and regenerate — never to edit `klabisApi.d.ts`.
-- **The `_embedded` key is not checked by anything.** Getting it wrong in the envelope produces
-  frontend types naming a property no response ever contains: `undefined` at runtime, an empty list
-  in the UI, no error anywhere.
+- **The `_embedded` key itself is not checked by anything.** Spec and runtime now share one
+  declaration, so they cannot drift from each other — but a wrong `x-klabis-relation` is wrong in
+  both at once, and the frontend types then name a property no response contains: `undefined` at
+  runtime, an empty list in the UI, no error anywhere.
 
 If a rename looks harmless because the tests stayed green, check whether a test was edited in the
 same change. Adjusting a `$._embedded.*List` JSON path *is* the breakage surfacing — not the fix.
@@ -269,8 +291,8 @@ On the **response object**, not on the schema — links describe the representat
 responses:
   '200':
     content:
-      application/prs.hal-forms+json:
-        schema: { $ref: '#/components/schemas/EntityModelMemberDetailsResponse' }
+      application/json:
+        schema: { $ref: '#/components/schemas/MemberDetailsResponse' }
     x-hal-links:
       self: { description: This member }
       collection: { operation: listMembers, description: Back to the member list }

@@ -73,7 +73,11 @@
       by regenerating from an unmodified tree). Regenerating brought it back in sync, so that diff
       rides along in this commit.
 
-- [ ] 1.5 **Two `EntityModel*` schemas carry a `description` the deriver cannot reproduce**
+- [x] 1.5 **Resolved by the migration itself** — step 4.1 deleted both envelopes outright, so the
+      two `description` lines went with them. No `EntityModel*` schema remains in `members.yaml` and
+      no "wrapped in a HAL EntityModel" text anywhere in the specs. Original note follows.
+
+      **Two `EntityModel*` schemas carry a `description` the deriver cannot reproduce**
       (`members.yaml:433`, `:534` — "X as served, wrapped in a HAL EntityModel."). The other 38 have
       none. Delete both as part of step 4.1 (`members`), accepting a two-line intended bundle diff;
       they are decoration with no effect on the frontend types or the generated Java.
@@ -384,11 +388,54 @@ Decide before 7.1.
 
 ## 8. Documentation
 
-- [ ] 8.1 Update `.claude/skills/klabis-api-spec/SKILL.md` — remove the hand-written-envelope
+- [x] 8.1 Update `.claude/skills/klabis-api-spec/SKILL.md` — remove the hand-written-envelope
       authoring rules, document `x-hal-entity-items` and `x-klabis-hal`, and state that HAL is added
       by default.
-- [ ] 8.2 Update `docs/openapi/spec/README.md` with the same.
-- [ ] 8.3 Delete the obsolete `groups.yaml` header comment explaining the `schemaMapping` /
-      Category-C interaction.
-- [ ] 8.4 Add an ADR section to `docs/design-decisions.md` recording that HAL envelope structure now
-      lives solely in the bundler, and why.
+
+      New "Core rule: declare the payload, not the envelope" section states the default and tables
+      the three extensions (`x-klabis-hal`, `x-hal-entity-items`, `x-hal-embedded`). Five
+      anti-patterns rewritten: the `HalEnvelopeDetector` line (was 139) and the three
+      "adding an `application/json` sibling" entries described a workflow that no longer exists —
+      replaced by "never write an envelope / never write a hal-forms entry / never give a payload its
+      own `_links`". The `@Relation` entry now points at `x-klabis-relation` (verified: zero
+      hand-written `@Relation` remain in `src/main/java`; `pojo.mustache:30` emits them all).
+
+- [x] 8.1b Rewrite `references/hypermedia.md` around the deriver. The "unwrapped structurally"
+      section (its two Shape descriptions, the `custom-openapi-codegen` design.md pointer and the
+      "declare both / four exceptions" list) is replaced by four sections: what the deriver produces,
+      `x-klabis-hal: false`, `x-hal-entity-items`, `x-hal-embedded`. The `EntityModelRootModel`
+      bullet now explains why those two stay hand-written instead of citing the detector.
+
+      **Two stale claims corrected beyond section 8's list**, both found while editing:
+      - "`models` still needs every payload schema listed explicitly, per module" — no `models` list
+        exists in `build.gradle.kts` any more (every module is `mappings = emptyMap()`, generate-all).
+        Paragraph deleted.
+      - "Adding `application/json` to a response that already lists two content types may collapse
+        the return type" — the sibling-adding workflow is gone; the surviving fact (marker responses
+        cannot have a payload) moved into the `mappings` bullet where it is actionable.
+
+- [x] 8.2 Update `docs/openapi/spec/README.md` with the same. New "HAL envelopes are derived, not
+      written" section (payload-only example, derivation table, the three extensions, the two
+      `common` exceptions) plus three entries in Rules. The pipeline diagram now says the two
+      branches read different documents — the frontend the bundle, the codegen the module YAML.
+
+- [x] 8.3 Verified, no change needed. The `groups.yaml` header was rewritten during 7.3a and now
+      describes the marker mechanism correctly (lines 10-22: payload-only responses, the bundler
+      deriving the envelope, `x-hal-entity-items` read by both the deriver and
+      `KlabisSpringCodegen#fromProperty`, "no per-schema schemaMappings entry is involved").
+
+- [x] 8.4 Add an ADR section to `docs/design-decisions.md` recording that HAL envelope structure now
+      lives solely in the bundler, and why. Added as **ADR-004**, referencing ADR-002 for why the
+      backend needs no envelope types rather than restating it. Covers what the codegen no longer
+      does, the three extensions, why the codegen reads module specs rather than the bundle (deriving
+      for both would restore the round trip the detector existed to perform), and why the two
+      `common` markers stay hand-written.
+
+      Also fixed `tools/openapi-bundle/bundle.mjs:10-11`, whose header cited the superseded
+      `custom-openapi-codegen` design.md **and** claimed the backend codegen generates from
+      `klabis-full.json` directly — it reads `docs/openapi/spec/<module>.yaml`. Comment only.
+
+      Verified: bundler `npm test` 132/132; `node tools/openapi-bundle/bundle.mjs` prints
+      "Unchanged" (111 operations); `HalEnvelopeDetector`/`EnvelopeUnwrap`/`custom-openapi-codegen`
+      now appear only under `openspec/changes/archive/**`, `.claude/worktrees/**` and this change's
+      own artifacts.

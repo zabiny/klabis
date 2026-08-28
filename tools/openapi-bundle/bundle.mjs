@@ -6,10 +6,11 @@
  *   --out        destination (default: docs/openapi/klabis-full.json)
  *   --check      validate and bundle, but do not write
  *
- * This is the sole producer of docs/openapi/klabis-full.json, which both the frontend's TypeScript
- * types and the backend's KlabisSpringCodegen-based Java codegen generate from directly — see
- * custom-openapi-codegen design.md. Run it via `./gradlew openapiBundle` from backend/, or directly.
- * See docs/openapi/spec/README.md.
+ * This is the sole producer of docs/openapi/klabis-full.json, which the frontend's TypeScript types
+ * and Swagger UI generate from. The backend's Java codegen reads docs/openapi/spec/<module>.yaml
+ * directly instead, so the HAL envelopes derived here exist only for those consumers — see
+ * openspec/changes/derive-hal-envelopes-in-bundler/design.md. Run it via `./gradlew openapiBundle`
+ * from backend/, or directly. See docs/openapi/spec/README.md.
  */
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
