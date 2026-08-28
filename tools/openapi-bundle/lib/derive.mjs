@@ -75,13 +75,20 @@ export function embeddedKey(payloadName, payloadSchema) {
  * declares "a template map may appear here", which is true of every HAL-FORMS resource, and the
  * `x-hal-entity-items` rows demonstrably carry affordances at runtime (see design.md Decision 7).
  */
-function entityModel(payloadName) {
-    return {
-        allOf: [
-            schemaRef(payloadName),
-            {type: 'object', properties: {_links: {$ref: LINKS_REF}, _templates: {$ref: TEMPLATES_REF}}},
-        ],
-    };
+function entityModel(payloadName, embedded, schemas) {
+    const wrapper = {type: 'object', properties: {_links: {$ref: LINKS_REF}, _templates: {$ref: TEMPLATES_REF}}};
+    if (embedded !== undefined) {
+        // The key comes from the item payload's own `x-klabis-relation`, the same source
+        // `collectionModel` uses — never restated on the marker, so the two cannot drift.
+        const rel = embeddedKey(embedded.items, schemas?.[embedded.items]);
+        wrapper.properties._embedded = {
+            type: 'object',
+            properties: {
+                [rel]: {type: 'array', items: schemaRef(embedded.items)},
+            },
+        };
+    }
+    return {allOf: [schemaRef(payloadName), wrapper]};
 }
 
 function collectionModel(itemSchemaName, embedded, {paged}) {
@@ -127,7 +134,7 @@ function define(schemas, name, definition, collisions) {
  * @returns the name of the schema the hal-forms entry should reference, or undefined when the
  *          schema is not something the deriver can wrap (an inline array of inline items, say).
  */
-function deriveResponseEnvelope(jsonSchema, schemas, {paged}, collisions) {
+function deriveResponseEnvelope(jsonSchema, schemas, {paged, embedded}, collisions) {
     if (jsonSchema.type === 'array') {
         const itemName = schemaName(jsonSchema.items);
         if (itemName === undefined) return undefined;
@@ -146,8 +153,13 @@ function deriveResponseEnvelope(jsonSchema, schemas, {paged}, collisions) {
     if (payloadName === undefined) return undefined;
     if (isEnvelopeShaped(schemas[payloadName])) return undefined;
 
-    return define(schemas, `EntityModel${payloadName}`,
-        entityModel(payloadName), collisions);
+    // An x-hal-embedded response takes a distinct name: the same payload is usually also returned
+    // bare elsewhere (MembershipFeeGroupResponse by listGroupsForYear), and that plain
+    // EntityModelX must not collide with this one's extra _embedded block.
+    const name = embedded === undefined
+        ? `EntityModel${payloadName}`
+        : `EntityModel${payloadName}${embedded.suffix}`;
+    return define(schemas, name, entityModel(payloadName, embedded, schemas), collisions);
 }
 
 /**
@@ -238,6 +250,8 @@ export function forEachHalResponse(document, visit) {
                     content,
                     jsonSchema,
                     paged,
+                    embedded: isPlainObject(response['x-hal-embedded'])
+                        ? response['x-hal-embedded'] : undefined,
                     where: `${method.toUpperCase()} ${pathName} ${status}`,
                 });
             }
@@ -261,8 +275,8 @@ export function deriveHalEnvelopes(document) {
     const schemas = document?.components?.schemas;
     if (!isPlainObject(schemas)) return {document, collisions};
 
-    forEachHalResponse(document, ({content, jsonSchema, paged}) => {
-        const derived = deriveResponseEnvelope(jsonSchema, schemas, {paged}, collisions);
+    forEachHalResponse(document, ({content, jsonSchema, paged, embedded}) => {
+        const derived = deriveResponseEnvelope(jsonSchema, schemas, {paged, embedded}, collisions);
         if (derived === undefined) return;
         content[HAL_FORMS] = {schema: schemaRef(derived)};
     });

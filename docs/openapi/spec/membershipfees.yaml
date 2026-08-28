@@ -7,10 +7,10 @@
 # Their parameter is named MembershipFeeMemberIdParam to avoid colliding with members.yaml's
 # MemberIdParam — component names are one global namespace after bundling.
 #
-# getFeeGroup (MembershipFeeGroupController) is generated like any other operation; only its
-# response schema is documentation-only, mapped down to the bare payload — see the comment on that
-# operation below and the matching comment in backend/build.gradle.kts. Same precedent as
-# events.yaml's getEvent.
+# getFeeGroup (MembershipFeeGroupController) declares x-hal-embedded: the group's members ride
+# along in the response's _embedded block, assembled at runtime by HalResponseContext.embed. The
+# deriver reads that marker to build the envelope; the generated Java returns the bare payload.
+# Same precedent as events.yaml's getEvent.
 #
 # MemberFeeChoice's and MemberFeeSummary's 5 operations are restricted to the member themselves,
 # with no MANAGE-authority alternative. That is exactly x-klabis-owner-visible WITHOUT a paired
@@ -717,9 +717,16 @@ paths:
         '200':
           description: Membership fee group found
           content:
-            application/prs.hal-forms+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/EntityModelMembershipFeeGroupResponseWithMembers'
+                $ref: '#/components/schemas/MembershipFeeGroupResponse'
+          # The group's members ride along in _embedded, assembled at runtime by
+          # HalResponseContext.embed (MembershipFeeGroupController). The suffix keeps this envelope
+          # distinct from the plain EntityModelMembershipFeeGroupResponse that listGroupsForYear
+          # derives for the same payload.
+          x-hal-embedded:
+            items: MemberInGroupResponse
+            suffix: WithMembers
           x-hal-links:
             self:
               description: This fee group
@@ -1413,32 +1420,6 @@ components:
         votingDeadline:
           type: string
           format: date
-
-    # The full wire shape of getFeeGroup: MembershipFeeGroupResponse's properties plus an
-    # _embedded.members (per @Relation(collectionRelation = "members") on MemberInGroupResponse).
-    # HalEnvelopeDetector unwraps the allOf, so the generated method returns the payload alone —
-    # the _embedded block is declared by the controller (HalResponseContext.embed) and assembled by
-    # HalResponseBodyAdvice, like _links and _templates.
-    #
-    # Stays hand-written where the module's other envelopes are now derived: the deriver builds an
-    # envelope from the application/json payload alone and would emit no _embedded block. The
-    # response deliberately has no application/json sibling, so the deriver skips it entirely.
-    EntityModelMembershipFeeGroupResponseWithMembers:
-      allOf:
-        - $ref: '#/components/schemas/MembershipFeeGroupResponse'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-            _embedded:
-              type: object
-              properties:
-                members:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/MemberInGroupResponse'
 
     MembershipFeeGroupResponse:
       type: object

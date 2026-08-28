@@ -422,17 +422,15 @@ paths:
         '200':
           description: Event found
           content:
-            # No application/json sibling here, deliberately: the bundler alphabetizes content keys
-            # (sortKeysDeep in bundle.mjs), so "application/json" always sorts ahead of
-            # "application/prs.hal-forms+json" regardless of source order. haltypes.mjs types
-            # GetEventResource off the FIRST content entry's schema — adding a bare EventDto sibling
-            # would make it win over EntityModelEventDtoWithRegistrations and silently drop
-            # _embedded.registrationDtoList from the frontend's GetEventResource type. The backend
-            # Java return type is unaffected either way (HalEnvelopeDetector unwraps the allOf to
-            # EventDto), so this endpoint keeps only the HAL/HAL+FORMS content entry.
-            application/prs.hal-forms+json:
+            application/json:
               schema:
-                $ref: '#/components/schemas/EntityModelEventDtoWithRegistrations'
+                $ref: '#/components/schemas/EventDto'
+          # The event's registrations ride along in _embedded, assembled at runtime by
+          # HalResponseContext.embed (EventController). The suffix keeps this envelope distinct from
+          # a plain EntityModelEventDto should the payload ever be returned bare elsewhere.
+          x-hal-embedded:
+            items: RegistrationSummaryDto
+            suffix: WithRegistrations
           x-hal-links:
             self:
               description: This event
@@ -1395,27 +1393,6 @@ components:
           type: number
         currency:
           type: string
-
-    # The full wire shape of getEvent: EventDto's properties plus an _embedded.registrationDtoList.
-    # schemaMappings points at EventDto, so the generated method returns the payload alone — the
-    # _embedded block is declared by the controller (HalResponseContext.embed) and assembled by
-    # HalResponseBodyAdvice, exactly like _links and _templates.
-    EntityModelEventDtoWithRegistrations:
-      allOf:
-        - $ref: '#/components/schemas/EventDto'
-        - type: object
-          properties:
-            _links:
-              $ref: './_shared/hal.yaml#/components/schemas/Links'
-            _templates:
-              $ref: './_shared/hal.yaml#/components/schemas/HalFormsTemplates'
-            _embedded:
-              type: object
-              properties:
-                registrationDtoList:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/RegistrationSummaryDto'
 
     EventDto:
       type: object

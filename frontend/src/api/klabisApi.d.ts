@@ -4375,6 +4375,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["EventDto"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelEventDtoWithRegistrations"];
                 };
             };
@@ -6135,6 +6136,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["MembershipFeeGroupResponse"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelMembershipFeeGroupResponseWithMembers"];
                 };
             };
