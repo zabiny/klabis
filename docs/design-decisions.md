@@ -115,3 +115,42 @@ Bean Validation forces the removal to be all-or-nothing. Hibernate Validator rej
 - Test-local controllers in `AffordanceAuthorizationTest`, `FieldLevelAuthorizationTest` and `HalFormsExpectationsTest` deliberately have no interface — they exercise `HalFormsSupport` directly and are excluded from the architecture guard, which only scans `src/main/java`.
 
 **References:** `openspec/changes/affordance-interface-routing/`, `backend-patterns` skill.
+
+## ADR-004: HAL envelope structure lives solely in the bundler
+
+**Status:** Accepted
+
+**Context:**
+
+Under ADR-002 controllers return plain DTOs and Spring HATEOAS builds the HAL envelope at runtime, so the backend never needs an envelope *type*. The envelopes exist in the OpenAPI document for one audience only: the frontend's generated TypeScript types and Swagger UI.
+
+Nevertheless the hand-written specs in `docs/openapi/spec/` spelled every envelope out — an `EntityModel*` wrapper around each payload, a `CollectionModel*`/`PagedModel*` around that, a bare-array `*List` sibling, and a second `application/prs.hal-forms+json` content entry per operation. 56 envelope schemas and 105 hal-forms content entries across 9 module files, all mechanically derivable from the payload plus two facts stated elsewhere: whether the response is a collection (`x-spring-paginated`) and what the `_embedded` key is called (`x-klabis-relation`).
+
+The redundancy was paid twice. Authors wrote the `_embedded` key in two places and kept them in sync by hand — nothing checked agreement, and a mismatch produced frontend types naming a property no response contains, with no error at any stage. And `KlabisSpringCodegen` spent `HalEnvelopeDetector` (233 lines) plus `EnvelopeUnwrap` and four test classes structurally re-deriving the payload back out of those envelopes so the generated Java records would be payloads again. The information made a full round trip and came back unchanged.
+
+**Decision:**
+
+Module specs declare only the `application/json` payload. `tools/openapi-bundle/lib/derive.mjs` derives the hal-forms content entry and the `EntityModel`/`CollectionModel`/`PagedModel` schemas into `docs/openapi/klabis-full.json`, and is the only place in the repo encoding envelope structure.
+
+HAL is the **default**: every 2xx response carrying an `application/json` schema is enveloped. Three facts are not derivable from a payload and are declared:
+
+- `x-klabis-hal: false` on an **operation** — the sole opt-out. Opt-in would mean 105 markers and one silent failure per forgotten marker; opt-out means 6 (`getMySchedule`, the four pre-auth password endpoints, `listOrisEvents`).
+- `x-hal-entity-items: true` on an array **property** — its items are independently addressable resources. The deriver emits `EntityModel<Item>` for them and `KlabisSpringCodegen.fromProperty` resolves the property to `List<EntityModel<Item>>`, replacing 7 `schemaMappings` + 7 `extraImportMappings` entries. An explicit per-module `schemaMappings` entry on the item `$ref` still wins.
+- `x-hal-embedded: {items, suffix}` on a **response** — a nested collection the controller assembles at runtime via `HalResponseContext.embed`, which cannot be inferred from the payload. The `_embedded` key comes from the item payload's own `x-klabis-relation`, never restated on the marker.
+
+**The codegen reads `docs/openapi/spec/<module>.yaml` directly, not the bundle.** Deriving in the bundler and reading the module YAML in the generator are two halves of the same decision: the alternative — derive for both, so the generator sees the document the frontend sees — means the generator immediately unwrapping what the bundler just wrapped, which is precisely the round trip the 233 lines of detection existed to perform. The Java side is better served by the source, where the envelope never appears.
+
+`HalEnvelopeDetector` and `EnvelopeUnwrap` are deleted along with their tests; `KlabisSpringCodegen` went from ~950 to 419 lines, losing the `getContent` override and `postProcessAllModels`/`envelopeAndFragmentNames` with them.
+
+Two hand-written envelopes remain, both in `common.yaml`: `EntityModelRootModel` and `EntityModelDashboardModel`. `GET /api` and `GET /api/dashboard` are pure navigation whose response is nothing but `_links`, so they have no `application/json` payload for the deriver to build from — and giving them one collapses the generated return type to `ResponseEntity<Void>`. `common`'s `schemaMappings` keeps both from being emitted as Java classes.
+
+**Consequences:**
+
+- Authoring a HAL endpoint drops from "payload schema + 2-3 envelope schemas + 2 content entries" to "payload schema + 1 content entry". Source specs lost 54 envelope schemas, 18 bare-array `*List` aliases and 41 hal-forms content entries — about 820 lines net.
+- The `_embedded` key is declared once and feeds both paths — `pojo.mustache` emits `@Relation` from it, the deriver writes the bundle key from it — so the document and the runtime response cannot disagree. That is structural, not a test.
+- Complexity moved rather than disappearing: ~250 lines of Java detection became a comparable amount of JS derivation. The win is that HAL knowledge collapsed from three places to one, not a smaller diff.
+- The "is this a HAL response" rule now exists on both sides of a language boundary — `derive.mjs`'s `forEachHalResponse` decides which responses get an envelope, and `KlabisSpringCodegen.isHalResponse`/`isHalOptedOut` decide which get the media type in their `produces` clause. They must stay in agreement; a divergence makes an endpoint answer 406 to the `Accept` header the frontend sends.
+- `derive.mjs` is a no-op on already-enveloped input — a response with a hal-forms entry, or a schema already envelope-shaped, is left alone. This let the modules migrate one at a time, and is also what protects the two `common` marker schemas. The cost is that a genuine payload declaring its own `_links` would be mistaken for an envelope and skipped silently; `validate.mjs` reports that case explicitly.
+- `_templates` is emitted on every derived envelope, uniformly. The property is an `additionalProperties` map with no named members, so it only declares that a template map may appear — true of every HAL-FORMS resource. The contract that says *which* templates is `x-hal-templates`, which `haltypes.mjs` turns into the named union in `halTypes.ts`.
+
+**References:** OpenSpec change `derive-hal-envelopes-in-bundler`, ADR-002 (why the backend needs no envelope types at all), `klabis-api-spec` skill.

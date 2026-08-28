@@ -32,7 +32,7 @@ differ enough between them that generalising from one to another produces broken
 
 | Working on | Read |
 |---|---|
-| Any response: media types, HAL envelope vs. payload schema, `_embedded` keys, `x-hal-links`/`x-hal-templates` | `references/hypermedia.md` |
+| Any response: media types, the derived HAL envelope, `_embedded` keys, `x-hal-entity-items`/`x-hal-embedded`, `x-hal-links`/`x-hal-templates` | `references/hypermedia.md` |
 | Hiding/masking a response field, authorizing a request field, endpoint authorization (`x-klabis-authority`, `x-klabis-owner-visible`) | `references/field-security.md` |
 | Constraints on request fields, cross-field rules | `references/validation.md` |
 | A PATCH endpoint (the `JsonNullable<T>` tri-state) | `references/patch-bodies.md` |
@@ -48,6 +48,29 @@ API DTOs are transport records mirroring the JSON payload. `string`/`format: uui
 
 The spec describes JSON — a domain type is not derivable from it, and a generated DTO cannot invent
 one.
+
+## Core rule: declare the payload, not the envelope
+
+A response declares its `application/json` payload and nothing else. The bundler
+(`tools/openapi-bundle/lib/derive.mjs`) derives the `application/prs.hal-forms+json` content entry
+and the `EntityModel`/`CollectionModel`/`PagedModel` schema around it into `klabis-full.json`, which
+is what the frontend types and Swagger UI are generated from. It is the only place in the repo
+encoding envelope structure; the backend codegen reads the module YAML directly and never sees one.
+
+**HAL is the default** — every 2xx response with an `application/json` schema gets an envelope.
+`x-klabis-hal: false` on the **operation** is the sole opt-out (6 operations: the pre-auth password
+endpoints, `getMySchedule`, `listOrisEvents`).
+
+Three facts the payload cannot state get an extension:
+
+| extension | where | states |
+|---|---|---|
+| `x-klabis-hal: false` | operation | this endpoint is not hypermedia |
+| `x-hal-entity-items: true` | an array **property** | its items are independently addressable — each gets its own `EntityModel` wrapper, and the generated Java property becomes `List<EntityModel<Item>>` |
+| `x-hal-embedded: {items, suffix}` | a **response** | a nested collection the controller assembles at runtime via `HalResponseContext.embed`, which is not derivable from the payload |
+
+Everything else — collection vs. item, paged vs. unpaged (`x-spring-paginated`), the `_embedded` key
+— is derived. `references/hypermedia.md` has the rules in full.
 
 ## Layout
 
@@ -135,10 +158,15 @@ annotations: `OpenApiConfig` (global info + security scheme), `MvcExceptionHandl
 - Adding an endpoint by writing the controller method first
 - Putting a domain type in a DTO
 - Putting another module's endpoints in a module file because the URL prefix matches
-- Adding a `mappings` entry to unwrap an `EntityModel*`/`PagedModel*`/`CollectionModel*` envelope —
-  `HalEnvelopeDetector` does this structurally for every shape-matching schema in the spec; a
+- Writing an `EntityModel*`/`PagedModel*`/`CollectionModel*` schema by hand, or a `mappings` entry to
+  unwrap one — a module spec declares only the payload and the bundler derives the envelope. A
   `mappings` entry is only for the hand-written-override cases listed above (nested classes, domain
   enums, cross-module types, marker types, the `java.lang.Object` fallback)
+- Declaring an `application/prs.hal-forms+json` content entry — the deriver adds it, and an entry
+  already present makes the deriver skip that response entirely (the coexistence guarantee that let
+  the modules migrate one at a time). Bodyless `201`/`204` responses are the exception: they have no
+  `application/json` sibling to derive from, so they declare the media type with an empty schema
+  themselves
 - Adding a `schemaMappings` entry for a `List<T>` collection response "just in case" — an unmapped
   `type: array` schema (named or inline) always generates `List<T>` directly with no wrapper class,
   confirmed against the pinned generator version; a mapping here is pure ceremony. Only `Page<T>`
@@ -148,21 +176,20 @@ annotations: `OpenApiConfig` (global info + security scheme), `MvcExceptionHandl
   `Collection<T>` from an array schema, only `List<T>`, so the mapping exists purely to preserve an
   incidental signature choice. Change the controller instead (usually a one-line type change, since
   the underlying value is already a `List`)
-- Adding an `application/json` sibling to an endpoint whose controller never returns a HAL envelope in
-  the first place (plain `produces = MediaType.APPLICATION_JSON_VALUE`, no `EntityModel`/`PagedModel`/
-  `CollectionModel`, no `x-hal-links`/`x-hal-templates`) — there is no envelope to redirect away from,
-  the single `application/json` entry the response already has is correct as-is
-- Adding an `application/json` sibling to a response that already declares two other content types
-  pointing at the same schema (`application/hal+json` alongside `application/prs.hal-forms+json`) — a
-  third content type on the same schema can make the generator collapse the return type to
-  `ResponseEntity<Void>`, silently breaking the controller's `@Override`; skip the sibling instead
 - Leaving a `MockMvc` test asserting `$._links`/`$._templates` without an explicit
-  `.accept(MediaTypes.HAL_FORMS_JSON)` after adding an `application/json` sibling to that endpoint's
-  response — content negotiation can now resolve to the bare payload instead, and the assertions fail
-  even though the endpoint still serves HAL-FORMS correctly to a client that asks for it
-- Renaming a payload schema for tidiness — it renames the `_embedded` key on the wire
-- Deriving the `_embedded` key from the class name without checking the payload class for
-  `@Relation(collectionRelation = ...)`, which overrides it
+  `.accept(MediaTypes.HAL_FORMS_JSON)` — every HAL response also serves its bare `application/json`
+  payload, so content negotiation resolves to the payload and the assertions fail even though the
+  endpoint still serves HAL-FORMS correctly to a client that asks for it
+- Forgetting `x-klabis-hal: false` on an endpoint that is not hypermedia — HAL is the default, so the
+  bundle grows an envelope and a hal-forms media type the controller never serves
+- Declaring a payload schema with a `_links` or `_embedded` property of its own. The deriver
+  recognises envelopes by shape, so it would take the payload for an already-written envelope and
+  skip it silently; `validate.mjs` reports this rather than letting it pass
+- Renaming a payload schema for tidiness — the `_embedded` key defaults to
+  `uncapitalize(schemaName) + "List"`, so the rename changes a JSON key on the wire
+- Writing `@Relation(collectionRelation = ...)` on a payload class instead of `x-klabis-relation` in
+  the spec — `pojo.mustache` emits the annotation from the extension, and the deriver reads the same
+  value for the bundle's `_embedded` key, so declaring it once is what keeps spec and runtime in step
 - Reusing a generic component name (`MemberIdParam`) across module files — component names are one
   global namespace after bundling; prefix them per module
 - Leaving the path on a class-level `@RequestMapping` after the controller starts implementing a
@@ -171,7 +198,9 @@ annotations: `OpenApiConfig` (global info + security scheme), `MvcExceptionHandl
   sends `Accept: application/prs.hal-forms+json`
 - Giving an operation a multi-word `tags:` value — the generator drops it silently and the `*Api`
   interface never appears
-- Mapping an envelope schema onto `java.util.List<...>`; the generator drops it silently
+- Mapping any schema onto `java.util.List<...>`; `List` is a reserved container name in the
+  generator's type system and the mapping is dropped silently, producing `ResponseEntity<>` with no
+  diagnostic
 - Concluding an endpoint needs no authority because the controller has no annotation — check the
   method body for an imperative `checkXxxAccess()` first
 - Relaxing an assertion in a link/affordance unit test that started failing after authorization moved
