@@ -1735,9 +1735,9 @@ components:
           type: string
           format: uuid
 
-    # Named so schemaMappings can retarget it onto Collection<RegistrationSummaryDto> — an inline
-    # array has no schema name to map from, and the generator would otherwise infer
-    # List<RegistrationSummaryDto> straight from this application/json sibling.
+    # A named schema, not an inline array: the item payload needs a stable wire-contract name. Two
+    # operations derive from it — getEvent's x-hal-embedded builds the
+    # EntityModel<RegistrationSummaryDto> row, listRegistrations the collection envelope.
     RegistrationSummaryDto:
       type: object
       description: |
@@ -1800,9 +1800,8 @@ components:
     # record, not from the schema name — see "A payload schema's name is wire contract" in the
     # klabis-api-spec skill.
     #
-    # Named so schemaMappings can retarget it onto Collection<AccommodationListItemDto> — an inline
-    # array has no schema name to map from, and the generator would otherwise infer
-    # List<AccommodationListItemDto> straight from this application/json sibling.
+    # A named schema, not an inline array: the item payload needs a stable wire-contract name for
+    # the bundler to reconstruct the collection envelope in klabis-full.json from.
     AccommodationListItemDto:
       type: object
       description: Fields not recorded for a member are returned as null.
@@ -1868,9 +1867,8 @@ components:
           items:
             type: string
 
-    # Named so schemaMappings can retarget it onto Collection<EventTypeDto> — an inline array has no
-    # schema name to map from, and the generator would otherwise infer List<EventTypeDto> straight
-    # from this application/json sibling (it wins type resolution over the emptied HAL schema).
+    # A named schema, not an inline array: the item payload needs a stable wire-contract name for
+    # the bundler to reconstruct the collection envelope in klabis-full.json from.
     EventTypeDto:
       type: object
       description: Event type catalog entry.
