@@ -1,5 +1,7 @@
 package com.klabis.openapi.codegen;
 
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
@@ -28,9 +30,17 @@ class KlabisSpringCodegenProducesTest {
 
     private static final String HAL_FORMS = "application/prs.hal-forms+json";
 
+    private static OpenAPI openApiWithSchemas(Map<String, Schema> schemas) {
+        OpenAPI openAPI = new OpenAPI();
+        Components components = new Components();
+        schemas.forEach(components::addSchemas);
+        openAPI.setComponents(components);
+        return openAPI;
+    }
+
     private static KlabisSpringCodegen newCodegen() {
         KlabisSpringCodegen codegen = new KlabisSpringCodegen();
-        codegen.setOpenAPI(HalEnvelopeFixtures.openApiWithSchemas(Map.of(
+        codegen.setOpenAPI(openApiWithSchemas(Map.of(
             "MemberAccountResource", new Schema<>().type("object").addProperty("balance", new Schema<>().type("number"))
         )));
         return codegen;

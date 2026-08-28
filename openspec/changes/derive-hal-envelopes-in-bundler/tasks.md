@@ -297,7 +297,12 @@
 work without the `schemaMappings`, so deleting the detector before it would have broken the build in
 between. Remaining order: resolve the suppression blocker below, then 7.1 → 7.2 → 7.3 → 7.4 → 7.5.
 
-**Blocker for 7.1 — envelope suppression needs a replacement.** `postProcessAllModels` uses
+**Blocker for 7.1 — RESOLVED** by commit `65db7f8f`, which taught the deriver `x-hal-embedded`
+so the two `_embedded`-owning envelopes are derived rather than hand-written. Hand-written envelopes
+are down to the 2 `common` marker records, both covered by `schemaMappings`, so nothing needed the
+detector's suppression any more. Original text follows.
+
+**Blocker for 7.1 — envelope suppression needed a replacement.** `postProcessAllModels` uses
 `HalEnvelopeDetector.detect` (~line 574) to stop hand-written envelope schemas being emitted as Java
 classes. Four hand-written envelopes remain repo-wide, and two of them have no `schemaMappings`
 entry, so the detector is the *only* thing suppressing them:
@@ -308,11 +313,11 @@ Deleting the detector without a replacement generates the first two as stray, un
 Options: add `schemaMappings` entries for them as `common` does, or introduce an explicit marker.
 Decide before 7.1.
 
-- [ ] 7.1 Delete `backend/buildSrc/src/main/java/com/klabis/openapi/codegen/HalEnvelopeDetector.java`
+- [x] 7.1 Delete `backend/buildSrc/src/main/java/com/klabis/openapi/codegen/HalEnvelopeDetector.java`
       and `EnvelopeUnwrap.java`.
-- [ ] 7.2 Delete `HalEnvelopeDetectorShape1Test`, `HalEnvelopeDetectorShape2Test`,
+- [x] 7.2 Delete `HalEnvelopeDetectorShape1Test`, `HalEnvelopeDetectorShape2Test`,
       `HalEnvelopeDetectorPropertyItemTest` and `HalEnvelopeFixtures`.
-- [ ] 7.3 Simplify `KlabisSpringCodegen`: remove the envelope-detection paths in
+- [x] 7.3 Simplify `KlabisSpringCodegen`: remove the envelope-detection paths in
       `handleMethodResponse()`, `fromProperty()` and `getContent()`, leaving the
       `x-hal-entity-items` reader.
 - [x] 7.3a **Done — committed as `061642f4`**, ahead of 7.1–7.4 (see the ordering note above).
@@ -353,16 +358,24 @@ Decide before 7.1.
         itself a `schemaMapping()` key, so `isMappedEnvelopeItem` would otherwise catch the rewritten
         property and delegate the original unrewritten schema. Ordering, not mutual exclusivity, is
         what keeps the marker authoritative.
-- [ ] 7.4 Update `KlabisSpringCodegenFromPropertyTest`, `KlabisSpringCodegenGetContentTest` and
+- [x] 7.4 Update `KlabisSpringCodegenFromPropertyTest`, `KlabisSpringCodegenGetContentTest` and
       `KlabisSpringCodegenHandleMethodResponseTest` — remove envelope-detection cases, keep and adapt
       the assertions covering the marker-driven path.
-- [ ] 7.4a **Add the missing unit coverage for the marker path.** 7.3a shipped without it: the 7
+- [x] 7.4a **Add the missing unit coverage for the marker path.** 7.3a shipped without it: the 7
       `x-hal-entity-items` properties are currently pinned only end-to-end (generated Java + a green
       `:compileJava`), and `KlabisSpringCodegenFromPropertyTest` still covers only the detector
       fallback that 7.3 deletes. Cover at least: a marked array resolving to
       `List<EntityModel<Item>>` with no nested `@Valid`; an unmarked array left alone; and the
       precedence rule that the marker check runs before `isMappedEnvelopeItem`.
-- [ ] 7.5 Full clean build (`./gradlew clean build`) plus the frontend check
+      Outcome: `KlabisSpringCodegen` went ~950 -> 419 lines. The `getContent` override disappeared
+      entirely (so `KlabisSpringCodegenGetContentTest` was deleted, not adapted), along with
+      `postProcessAllModels`/`envelopeAndFragmentNames` — with no envelope left in any module spec
+      they had nothing to suppress. `isMappedEnvelopeItem` lost its last caller and went too.
+      `entityItemsArray` gained a `schemaMapping().containsKey(itemName)` guard so an explicit
+      per-module mapping still wins over the marker; `registerEntityItemsMappings` carries the same
+      guard, and `explicitSchemaMappingOnItemRefWinsOverMarker` pins it. buildSrc tests 42 -> 17,
+      the drop being the 4 deleted detector/getContent classes.
+- [x] 7.5 Full clean build (`./gradlew clean build`) plus the frontend check
       (`npm run openapi && npm run build`); confirm `klabis-full.json`, `halTypes.ts` and the
       frontend TypeScript types are all unchanged. Note the generated-Java baseline at
       `~/.cache/klabis-openapi-baseline/` is stale by design from sections 3–7 (removed empty

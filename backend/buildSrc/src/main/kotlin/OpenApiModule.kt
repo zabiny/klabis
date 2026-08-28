@@ -25,12 +25,17 @@ import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
  * @param specFile path under docs/openapi/spec/ this module generates from (its full paths/schemas
  *                 scope, no models/apis enumeration needed)
  * @param mappings schema name to existing Java type, for types reused instead of regenerated. HAL
- *                 envelope schemas no longer need an entry here — KlabisSpringCodegen unwraps them
- *                 structurally, see custom-openapi-codegen design.md. Only hand-written overrides
- *                 the generator cannot infer from spec structure alone still need one: nested
- *                 classes, domain-enum redirection, cross-module application types, and marker
- *                 types shaped as a plain object with only a links property (no allOf, no embedded
- *                 block — deliberately not matched by HalEnvelopeDetector).
+ *                 envelope schemas never reach this codegen — the bundler
+ *                 (`tools/openapi-bundle`) reconstructs them into `klabis-full.json` for the
+ *                 frontend only, and this task reads the hand-written module spec, which no longer
+ *                 spells any envelope out (see
+ *                 `openspec/changes/derive-hal-envelopes-in-bundler/design.md`). An entry is still
+ *                 needed only for hand-written overrides the generator cannot infer from spec
+ *                 structure: nested classes, domain-enum redirection, cross-module application
+ *                 types, and the two `common` marker records (`EntityModelRootModel` /
+ *                 `EntityModelDashboardModel`) that have no `application/json` payload to derive
+ *                 from and are mapped straight onto their plain `RootModel` / `DashboardModel`
+ *                 records.
  */
 fun Project.openApiModule(
     module: String,
@@ -115,15 +120,16 @@ fun Project.openApiModule(
         // the rest of the codebase (see backend-patterns: ZonedDateTime/Instant in domain, LocalDate in API).
         typeMappings.set(mapOf("DateTime" to "Instant"))
 
-        // Envelope schemas (EntityModel*/PagedModel*/CollectionModel*) are auto-unwrapped structurally
-        // by KlabisSpringCodegen (see custom-openapi-codegen design.md) — only hand-written overrides
-        // the generator cannot infer from spec structure alone (nested classes, domain-enum
-        // redirection, cross-module application types, marker types with no allOf/_embedded shape)
-        // need a mappings entry here. The API interface signature must match what HalResponseBodyAdvice
-        // expects (plain payload DTO / Page<T> / List<T>, see ADR-002). KlabisSpringCodegen also never
-        // emits an illegal generic class literal (e.g. `Page<X>.class`) in the springdoc `@Schema`
-        // annotations it generates, so no post-process patch is needed for that either (see design.md
-        // Decision 4).
+        // HAL envelope schemas (EntityModel*/PagedModel*/CollectionModel*) never appear in a module
+        // spec — the bundler reconstructs them into klabis-full.json for the frontend, and this task
+        // reads the module spec directly (see derive-hal-envelopes-in-bundler design.md). A mappings
+        // entry is needed only for hand-written overrides the generator cannot infer from spec
+        // structure (nested classes, domain-enum redirection, cross-module application types, the
+        // two common marker records). The API interface signature must match what
+        // HalResponseBodyAdvice expects (plain payload DTO / Page<T> / List<T>, see ADR-002).
+        // KlabisSpringCodegen never emits an illegal generic class literal (e.g. `Page<X>.class`) in
+        // the springdoc `@Schema` annotations it generates, so no post-process patch is needed for
+        // that either.
         val commonMappings = mapOf("ProblemDetail" to "org.springframework.http.ProblemDetail")
         schemaMappings.set(mappings + commonMappings)
         importMappings.set(mappings + commonMappings + extraImportMappings + mapOf("Instant" to "java.time.Instant"))
