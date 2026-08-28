@@ -502,6 +502,77 @@ describe('validateSpec — x-klabis-hal', () => {
     });
 });
 
+describe('validateSpec — x-hal-embedded', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const docWithEmbedded = (embedded) => ({
+        paths: {
+            '/api/groups/{id}': {
+                get: {
+                    operationId: 'getFeeGroup',
+                    responses: {
+                        '200': {
+                            description: 'ok',
+                            'x-hal-embedded': embedded,
+                            content: {
+                                'application/json': {
+                                    schema: {$ref: '#/components/schemas/MembershipFeeGroupResponse'},
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        components: {
+            schemas: {
+                MembershipFeeGroupResponse: {type: 'object', properties: {}},
+                MemberInGroupResponse: {type: 'object', properties: {}},
+            },
+        },
+    });
+    const validate = (doc) => validateSpec(doc, {authorities});
+    const valid = {items: 'MemberInGroupResponse', suffix: 'WithMembers'};
+
+    it('accepts a complete marker', () => {
+        expect(validate(docWithEmbedded(valid))).toEqual([]);
+    });
+
+    it.each(['items', 'suffix'])('rejects a marker missing %s', (field) => {
+        const {[field]: _omitted, ...incomplete} = valid;
+        const errors = validate(docWithEmbedded(incomplete));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain(`${field} is required`);
+    });
+
+    it('rejects items naming a schema that does not exist', () => {
+        const errors = validate(docWithEmbedded({...valid, items: 'NoSuchSchema'}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('does not name a schema');
+    });
+
+    it('rejects a non-object marker', () => {
+        const errors = validate(docWithEmbedded('members'));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('must be an object');
+    });
+
+    it('rejects a suffix that is not PascalCase', () => {
+        const errors = validate(docWithEmbedded({...valid, suffix: 'withMembers'}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('PascalCase');
+    });
+
+    // The deriver only visits 2xx responses carrying an application/json schema; a marker anywhere
+    // else is silently ignored, which looks live but does nothing.
+    it('rejects a marker on a response the deriver never visits', () => {
+        const doc = docWithEmbedded(valid);
+        delete doc.paths['/api/groups/{id}'].get.responses['200'].content['application/json'];
+        const errors = validate(doc);
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('application/json schema');
+    });
+});
+
 describe('validateSpec — x-hal-entity-items', () => {
     const authorities = parseAuthorities(AUTHORITY_JAVA);
     const docWithProperty = (property, extraSchemas = {}) => ({

@@ -315,6 +315,87 @@ describe('deriveHalEnvelopes', () => {
         });
     });
 
+    describe('x-hal-embedded', () => {
+        const embedded = {items: 'MemberInGroupResponse', suffix: 'WithMembers'};
+        const schemas = {
+            MembershipFeeGroupResponse: {type: 'object', properties: {}},
+            MemberInGroupResponse: {
+                type: 'object',
+                'x-klabis-relation': {collectionRelation: 'members'},
+                properties: {},
+            },
+        };
+
+        it('adds the declared _embedded block and names the envelope with the suffix', () => {
+            const document = docWith(ref('MembershipFeeGroupResponse'), schemas,
+                {response: {'x-hal-embedded': embedded}});
+
+            const {collisions} = deriveHalEnvelopes(document);
+
+            expect(collisions).toEqual([]);
+            expect(halForms(document))
+                .toEqual({schema: ref('EntityModelMembershipFeeGroupResponseWithMembers')});
+            expect(document.components.schemas.EntityModelMembershipFeeGroupResponseWithMembers)
+                .toEqual({
+                    allOf: [
+                        ref('MembershipFeeGroupResponse'),
+                        {
+                            type: 'object',
+                            properties: {
+                                _links: LINKS,
+                                _templates: TEMPLATES,
+                                _embedded: {
+                                    type: 'object',
+                                    properties: {
+                                        members: {type: 'array', items: ref('MemberInGroupResponse')},
+                                    },
+                                },
+                            },
+                        },
+                    ],
+                });
+        });
+
+        it('coexists with the plain envelope derived for the same payload elsewhere', () => {
+            const document = docWith(ref('MembershipFeeGroupResponse'), schemas,
+                {response: {'x-hal-embedded': embedded}});
+            // A second operation returns the same payload bare — the suffix is what keeps the two
+            // envelopes from colliding on one name.
+            document.paths['/api/groups'] = {
+                get: {
+                    operationId: 'listGroupsForYear',
+                    responses: {
+                        '200': {
+                            description: 'ok',
+                            content: {'application/json': {schema: ref('MembershipFeeGroupResponse')}},
+                        },
+                    },
+                },
+            };
+
+            const {collisions} = deriveHalEnvelopes(document);
+
+            expect(collisions).toEqual([]);
+            const derived = document.components.schemas;
+            expect(derived.EntityModelMembershipFeeGroupResponseWithMembers).toBeDefined();
+            expect(derived.EntityModelMembershipFeeGroupResponse).toBeDefined();
+            expect(derived.EntityModelMembershipFeeGroupResponse.allOf[1].properties._embedded)
+                .toBeUndefined();
+        });
+
+        it('reports a collision when a hand-written schema already holds the suffixed name', () => {
+            const document = docWith(ref('MembershipFeeGroupResponse'), {
+                ...schemas,
+                EntityModelMembershipFeeGroupResponseWithMembers: {type: 'object', properties: {}},
+            }, {response: {'x-hal-embedded': embedded}});
+
+            const {collisions} = deriveHalEnvelopes(document);
+
+            expect(collisions).toHaveLength(1);
+            expect(collisions[0].name).toBe('EntityModelMembershipFeeGroupResponseWithMembers');
+        });
+    });
+
     describe('no-op on already-enveloped input', () => {
         it('skips a response that already has a hal-forms entry', () => {
             const document = docWith(ref('MemberSummaryResponseList'), {

@@ -359,6 +359,52 @@ export function validateSpec(document, {authorities}) {
             }
         }
 
+        // `x-hal-embedded` declares a nested collection the controller assembles at runtime
+        // (HalResponseContext.embed), which the deriver cannot infer from the application/json
+        // payload alone. `items` names the row payload — its `x-klabis-relation` supplies the
+        // `_embedded` key, so the key is never restated here. `suffix` disambiguates the envelope
+        // name from the plain EntityModel<Payload> the same payload gets when returned bare
+        // elsewhere (MembershipFeeGroupResponse via listGroupsForYear).
+        if (Object.hasOwn(node, 'x-hal-embedded')) {
+            const embedded = node['x-hal-embedded'];
+            const schemas = document.components?.schemas ?? {};
+            if (!isPlainObject(embedded)) {
+                errors.push({path: `${path}/x-hal-embedded`, message: 'must be an object'});
+            } else {
+                for (const field of ['items', 'suffix']) {
+                    const value = embedded[field];
+                    if (typeof value !== 'string' || value === '') {
+                        errors.push({
+                            path: `${path}/x-hal-embedded/${field}`,
+                            message: `${field} is required and must be a non-empty string`,
+                        });
+                    }
+                }
+                if (typeof embedded.items === 'string' && !Object.hasOwn(schemas, embedded.items)) {
+                    errors.push({
+                        path: `${path}/x-hal-embedded/items`,
+                        message: `"${embedded.items}" does not name a schema`,
+                    });
+                }
+                if (typeof embedded.suffix === 'string' && !/^[A-Z][A-Za-z0-9]*$/.test(embedded.suffix)) {
+                    errors.push({
+                        path: `${path}/x-hal-embedded/suffix`,
+                        message: 'suffix must be PascalCase — it is appended to a schema name',
+                    });
+                }
+                // A marker anywhere the deriver does not walk is dead weight that looks live:
+                // `forEachHalResponse` only visits a 2xx response whose content has an
+                // application/json schema.
+                const jsonSchema = node.content?.['application/json']?.schema;
+                if (!isPlainObject(jsonSchema)) {
+                    errors.push({
+                        path: `${path}/x-hal-embedded`,
+                        message: 'is only honoured on a response with an application/json schema',
+                    });
+                }
+            }
+        }
+
         for (const halKey of ['x-hal-links', 'x-hal-templates']) {
             const rels = node[halKey];
             if (!isPlainObject(rels)) continue;
