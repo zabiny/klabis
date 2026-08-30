@@ -3,6 +3,7 @@ import type {components, paths} from "./klabisApi.d.ts";
 import type {PathsWithMethod} from "openapi-typescript-helpers";
 
 export * from './types';
+export * from './halTypes';
 
 const client = klabisOpenapiQueryClient;
 

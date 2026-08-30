@@ -2,7 +2,7 @@ import {useMemo} from 'react';
 import {useHalRoute} from '../contexts/halRouteContext';
 import {useHalActions} from './useHalActions';
 import {useIsAdmin} from './useIsAdmin';
-import type {HalFormsTemplate, HalResourceLinks, HalResponse, Link, PageMetadata} from '../api';
+import type {HalEnvelope, HalFormsTemplate, HalResourceLinks, HalResponse, Link, PageMetadata} from '../api';
 
 /**
  * Return type for useHalPageData hook
@@ -12,7 +12,7 @@ import type {HalFormsTemplate, HalResourceLinks, HalResponse, Link, PageMetadata
  *
  * @template T - The specific HalResponse type for resource-specific typing
  */
-export interface UseHalPageDataReturn<T extends HalResponse = HalResponse> {
+export interface UseHalPageDataReturn<T = HalResponse> {
     // --- Top-level properties (most commonly used) ---
 
     /** The fetched HAL resource data */
@@ -120,7 +120,7 @@ export interface UseHalPageDataReturn<T extends HalResponse = HalResponse> {
  * );
  * ```
  */
-export function useHalPageData<T extends HalResponse = HalResponse>(): UseHalPageDataReturn<T> {
+export function useHalPageData<T = HalResponse>(): UseHalPageDataReturn<T> {
     // Call the three underlying hooks
     const halRoute = useHalRoute();
     const halActions = useHalActions();
@@ -131,53 +131,59 @@ export function useHalPageData<T extends HalResponse = HalResponse>(): UseHalPag
 
     // Memoize helper methods to prevent unnecessary re-renders
     const helpers = useMemo(() => {
-        const resourceData = halRoute.resourceData as T | null;
+        // Widening cast to the structural HAL-envelope view: the helpers below only read
+        // _links / _embedded / _templates / page, so T (a closed generated *Resource type)
+        // does not have to satisfy any index-signature constraint.
+        const env = halRoute.resourceData as HalEnvelope | null;
 
         return {
             getLinks: (): Record<string, HalResourceLinks> | undefined => {
-                return resourceData?._links;
+                return env?._links;
             },
 
             getTemplates: (): Record<string, HalFormsTemplate> | undefined => {
-                return resourceData?._templates;
+                return env?._templates;
             },
 
             hasEmbedded: (): boolean => {
-                if (!resourceData?._embedded) return false;
-                return Object.keys(resourceData._embedded).length > 0;
+                if (!env?._embedded) return false;
+                return Object.keys(env._embedded).length > 0;
             },
 
+            // Stays unknown[] on purpose: _embedded is a union of unrelated { xxxList?: A[] }
+            // shapes, so Object.values().flat() genuinely erases the element type. Pages that
+            // need typed rows read resourceData._embedded?.<listKey> directly (now typed via T).
             getEmbeddedItems: (): unknown[] => {
-                if (!resourceData?._embedded) return [];
-                return Object.values(resourceData._embedded).flat();
+                if (!env?._embedded) return [];
+                return Object.values(env._embedded).flat();
             },
 
             isCollection: (): boolean => {
-                if (!resourceData) return false;
-                const hasPage = (resourceData as Record<string, unknown>)['page'] !== undefined;
+                if (!env) return false;
+                const hasPage = env.page !== undefined;
                 const hasEmbedded =
-                    resourceData._embedded !== undefined &&
-                    Object.keys(resourceData._embedded).length > 0;
+                    env._embedded !== undefined &&
+                    Object.keys(env._embedded).length > 0;
                 return hasPage || hasEmbedded;
             },
 
             hasLink: (linkName: string): boolean => {
-                return !!resourceData?._links?.[linkName];
+                return !!env?._links?.[linkName];
             },
 
             hasTemplate: (templateName: string): boolean => {
-                return !!resourceData?._templates?.[templateName];
+                return !!env?._templates?.[templateName];
             },
 
             hasForms: (): boolean => {
                 return (
-                    !!resourceData?._templates &&
-                    Object.keys(resourceData._templates).length > 0
+                    !!env?._templates &&
+                    Object.keys(env._templates).length > 0
                 );
             },
 
             getPageMetadata: (): PageMetadata | undefined => {
-                return resourceData?.['page'] as PageMetadata | undefined;
+                return env?.page;
             },
         };
     }, [halRoute.resourceData]);
