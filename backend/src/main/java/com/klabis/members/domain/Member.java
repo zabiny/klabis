@@ -12,7 +12,6 @@ import com.klabis.members.MemberSuspendedEvent;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
@@ -108,74 +107,60 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * a given caller is permitted to set — admin-only fields (firstName, lastName, dateOfBirth,
      * gender, birthNumber) are blocked for non-admins before the command reaches the domain.
      * <p>
-     * Optional fields are {@link JsonNullable} so a caller can tell "leave alone" (undefined) from
-     * "clear it" (present null); a plain {@code null} is normalised to undefined, which keeps the
-     * builder usable without naming every field. The required fields of
-     * {@link PersonalInformation} stay plain: they have no meaningful cleared state, and null there
-     * still means "retain".
+     * Every field carries a concrete value: the command is always a full snapshot of the intended
+     * end state, so {@link #update(UpdateMember)} applies each field unconditionally. Callers build
+     * it by taking {@link #from(Member)} as the baseline and overlaying only the fields the request
+     * actually changed — a field left at its baseline value is applied as a no-op. The PATCH
+     * "undefined vs. present-null" distinction lives entirely in the REST mapper, not here.
      */
     @RecordBuilder
     public record UpdateMember(
-            JsonNullable<EmailAddress> email,
-            JsonNullable<PhoneNumber> phone,
-            JsonNullable<Address> address,
-            JsonNullable<String> chipNumber,
+            EmailAddress email,
+            PhoneNumber phone,
+            Address address,
+            String chipNumber,
             String nationality,
-            JsonNullable<BankAccountNumber> bankAccountNumber,
-            JsonNullable<IdentityCard> identityCard,
-            JsonNullable<DrivingLicenseGroup> drivingLicenseGroup,
-            JsonNullable<MedicalCourse> medicalCourse,
-            JsonNullable<TrainerLicense> trainerLicense,
-            JsonNullable<RefereeLicense> refereeLicense,
-            JsonNullable<String> dietaryRestrictions,
-            JsonNullable<GuardianInformation> guardian,
+            BankAccountNumber bankAccountNumber,
+            IdentityCard identityCard,
+            DrivingLicenseGroup drivingLicenseGroup,
+            MedicalCourse medicalCourse,
+            TrainerLicense trainerLicense,
+            RefereeLicense refereeLicense,
+            String dietaryRestrictions,
+            GuardianInformation guardian,
             String firstName,
             String lastName,
             LocalDate dateOfBirth,
             Gender gender,
-            JsonNullable<BirthNumber> birthNumber,
+            BirthNumber birthNumber,
             UserId updatedBy
     ) {
-        public UpdateMember {
-            email = undefinedIfNull(email);
-            phone = undefinedIfNull(phone);
-            address = undefinedIfNull(address);
-            chipNumber = undefinedIfNull(chipNumber);
-            bankAccountNumber = undefinedIfNull(bankAccountNumber);
-            identityCard = undefinedIfNull(identityCard);
-            drivingLicenseGroup = undefinedIfNull(drivingLicenseGroup);
-            medicalCourse = undefinedIfNull(medicalCourse);
-            trainerLicense = undefinedIfNull(trainerLicense);
-            refereeLicense = undefinedIfNull(refereeLicense);
-            dietaryRestrictions = undefinedIfNull(dietaryRestrictions);
-            guardian = undefinedIfNull(guardian);
-            birthNumber = undefinedIfNull(birthNumber);
-        }
 
-        private static <T> JsonNullable<T> undefinedIfNull(JsonNullable<T> value) {
-            return value == null ? JsonNullable.undefined() : value;
-        }
-
+        /**
+         * The baseline command: every field carries the member's current value, so applying it
+         * as-is is a no-op. REST callers overlay only the fields their PATCH request changed.
+         */
         public static UpdateMember from(Member member) {
+            PersonalInformation pi = member.personalInformation;
             return new UpdateMember(
-                    JsonNullable.of(member.email),
-                    JsonNullable.of(member.phone),
-                    JsonNullable.of(member.address),
-                    JsonNullable.of(member.chipNumber),
-                    member.personalInformation != null ? member.personalInformation.getNationalityCode() : null,
-                    JsonNullable.of(member.bankAccountNumber),
-                    JsonNullable.of(member.identityCard),
-                    JsonNullable.of(member.drivingLicenseGroup),
-                    JsonNullable.of(member.medicalCourse),
-                    JsonNullable.of(member.trainerLicense),
-                    JsonNullable.of(member.refereeLicense),
-                    JsonNullable.of(member.dietaryRestrictions),
-                    JsonNullable.of(member.guardian),
-                    member.personalInformation != null ? member.personalInformation.getFirstName() : null,
-                    member.personalInformation != null ? member.personalInformation.getLastName() : null,
-                    member.personalInformation != null ? member.personalInformation.getDateOfBirth() : null,
-                    member.personalInformation != null ? member.personalInformation.getGender() : null,
-                    JsonNullable.of(member.birthNumber),
+                    member.email,
+                    member.phone,
+                    member.address,
+                    member.chipNumber,
+                    pi != null ? pi.getNationalityCode() : null,
+                    member.bankAccountNumber,
+                    member.identityCard,
+                    member.drivingLicenseGroup,
+                    member.medicalCourse,
+                    member.trainerLicense,
+                    member.refereeLicense,
+                    member.dietaryRestrictions,
+                    member.guardian,
+                    pi != null ? pi.getFirstName() : null,
+                    pi != null ? pi.getLastName() : null,
+                    pi != null ? pi.getDateOfBirth() : null,
+                    pi != null ? pi.getGender() : null,
+                    member.birthNumber,
                     null
             );
         }
@@ -583,32 +568,23 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
     // ========== Command Handlers (Domain Methods) ==========
 
+    /**
+     * Applies a full end-state snapshot: every field of the command is written as-is. Callers that
+     * only mean to touch some fields pass {@link UpdateMember#from(Member)} as the baseline and
+     * overlay just those — a field left at its baseline value round-trips to the same value here.
+     */
     public void update(UpdateMember command) {
-        EmailAddress newEmail = command.email().orElse(this.email);
-        PhoneNumber newPhone = command.phone().orElse(this.phone);
-        Address newAddress = command.address().orElse(this.address);
-        GuardianInformation newGuardian = command.guardian().orElse(this.guardian);
+        GuardianInformation newGuardian = command.guardian();
 
-        validateContactInformation(newEmail, newPhone, newGuardian);
+        validateContactInformation(command.email(), command.phone(), newGuardian);
 
-        boolean anyPersonalFieldChanged = command.firstName() != null || command.lastName() != null
-                || command.dateOfBirth() != null || command.nationality() != null || command.gender() != null;
-
-        PersonalInformation newPersonalInfo;
-        if (anyPersonalFieldChanged) {
-            String newFirstName = command.firstName() != null ? command.firstName() : this.personalInformation.getFirstName();
-            String newLastName = command.lastName() != null ? command.lastName() : this.personalInformation.getLastName();
-            LocalDate newDateOfBirth = command.dateOfBirth() != null ? command.dateOfBirth() : this.personalInformation.getDateOfBirth();
-            Gender newGender = command.gender() != null ? command.gender() : this.personalInformation.getGender();
-            String newNationality = command.nationality() != null ? command.nationality() : this.personalInformation.getNationalityCode();
-            newPersonalInfo = PersonalInformation.of(newFirstName, newLastName, newDateOfBirth, newNationality, newGender);
-        } else {
-            newPersonalInfo = this.personalInformation;
-        }
+        PersonalInformation newPersonalInfo = PersonalInformation.of(
+                command.firstName(), command.lastName(), command.dateOfBirth(),
+                command.nationality(), command.gender());
 
         validateGuardianForMinors(newPersonalInfo, newGuardian);
 
-        BirthNumber newBirthNumber = command.birthNumber().orElse(this.birthNumber);
+        BirthNumber newBirthNumber = command.birthNumber();
         if (newBirthNumber != null && !Nationality.of(newPersonalInfo.getNationalityCode()).isCzech()) {
             newBirthNumber = null;
         }
@@ -616,24 +592,22 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
         BirthNumber previousBirthNumber = this.birthNumber;
 
-        this.email = newEmail;
-        this.phone = newPhone;
-        this.address = newAddress;
+        this.email = command.email();
+        this.phone = command.phone();
+        this.address = command.address();
         this.guardian = newGuardian;
         this.personalInformation = newPersonalInfo;
         this.birthNumber = newBirthNumber;
+        this.chipNumber = command.chipNumber();
+        this.bankAccountNumber = command.bankAccountNumber();
+        this.identityCard = command.identityCard();
+        this.drivingLicenseGroup = command.drivingLicenseGroup();
+        this.medicalCourse = command.medicalCourse();
+        this.trainerLicense = command.trainerLicense();
+        this.refereeLicense = command.refereeLicense();
+        this.dietaryRestrictions = command.dietaryRestrictions();
 
-        command.chipNumber().ifPresent(value -> this.chipNumber = value);
-        command.bankAccountNumber().ifPresent(value -> this.bankAccountNumber = value);
-        command.identityCard().ifPresent(value -> this.identityCard = value);
-        command.drivingLicenseGroup().ifPresent(value -> this.drivingLicenseGroup = value);
-        command.medicalCourse().ifPresent(value -> this.medicalCourse = value);
-        command.trainerLicense().ifPresent(value -> this.trainerLicense = value);
-        command.refereeLicense().ifPresent(value -> this.refereeLicense = value);
-        command.dietaryRestrictions().ifPresent(value -> this.dietaryRestrictions = value);
-
-        if (command.birthNumber().isPresent() && command.updatedBy() != null
-            && !Objects.equals(this.birthNumber, previousBirthNumber)) {
+        if (command.updatedBy() != null && !Objects.equals(this.birthNumber, previousBirthNumber)) {
             registerEvent(BirthNumberAccessedEvent.modified(command.updatedBy(), this.id));
         }
     }

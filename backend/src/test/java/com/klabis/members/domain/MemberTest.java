@@ -12,7 +12,6 @@ import com.klabis.members.domain.MemberSuspendMembershipBuilder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -787,7 +786,7 @@ class MemberTest {
             Member member = createAdultMember();
             EmailAddress newEmail = EmailAddress.of("new@example.com");
 
-            member.update(MemberUpdateMemberBuilder.builder().email(JsonNullable.of(newEmail)).build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).email(newEmail).build());
 
             assertThat(member.getEmail()).isEqualTo(newEmail);
             assertThat(member.getPhone().value()).isEqualTo("+420123456789");
@@ -799,7 +798,7 @@ class MemberTest {
             Member member = createAdultMember();
             PhoneNumber newPhone = PhoneNumber.of("+420999888777");
 
-            member.update(MemberUpdateMemberBuilder.builder().phone(JsonNullable.of(newPhone)).build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).phone(newPhone).build());
 
             assertThat(member.getPhone()).isEqualTo(newPhone);
             assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
@@ -811,7 +810,7 @@ class MemberTest {
             Member member = createAdultMember();
             Address newAddress = Address.of("Nová 1", "Brno", "60200", "CZ");
 
-            member.update(MemberUpdateMemberBuilder.builder().address(JsonNullable.of(newAddress)).build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).address(newAddress).build());
 
             assertThat(member.getAddress().street()).isEqualTo("Nová 1");
         }
@@ -821,7 +820,7 @@ class MemberTest {
         void shouldUpdateDietaryRestrictionsWhenProvided() {
             Member member = createAdultMember();
 
-            member.update(MemberUpdateMemberBuilder.builder().dietaryRestrictions(JsonNullable.of("Vegan")).build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).dietaryRestrictions("Vegan").build());
 
             assertThat(member.getDietaryRestrictions()).isEqualTo("Vegan");
         }
@@ -830,9 +829,9 @@ class MemberTest {
         @DisplayName("should clear dietary restrictions when explicitly set to null")
         void shouldClearDietaryRestrictionsWhenExplicitlyNull() {
             Member member = createAdultMember();
-            member.update(MemberUpdateMemberBuilder.builder().dietaryRestrictions(JsonNullable.of("Vegan")).build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).dietaryRestrictions("Vegan").build());
 
-            member.update(MemberUpdateMemberBuilder.builder().dietaryRestrictions(JsonNullable.of(null)).build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).dietaryRestrictions(null).build());
 
             assertThat(member.getDietaryRestrictions()).isNull();
         }
@@ -841,9 +840,9 @@ class MemberTest {
         @DisplayName("should leave dietary restrictions untouched when field is absent")
         void shouldLeaveDietaryRestrictionsUntouchedWhenAbsent() {
             Member member = createAdultMember();
-            member.update(MemberUpdateMemberBuilder.builder().dietaryRestrictions(JsonNullable.of("Vegan")).build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).dietaryRestrictions("Vegan").build());
 
-            member.update(MemberUpdateMemberBuilder.builder().chipNumber(JsonNullable.of("999")).build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).chipNumber("999").build());
 
             assertThat(member.getDietaryRestrictions()).isEqualTo("Vegan");
         }
@@ -854,7 +853,7 @@ class MemberTest {
             Member member = createAdultMember();
 
             assertThatThrownBy(() -> member.update(
-                    MemberUpdateMemberBuilder.builder().email(JsonNullable.of(null)).build()))
+                    MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).email(null).build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("At least one email address is required");
         }
@@ -864,8 +863,8 @@ class MemberTest {
         void shouldPreservePersonalInfoFieldsWhenNotProvided() {
             Member member = createAdultMember();
 
-            member.update(MemberUpdateMemberBuilder.builder()
-                    .email(JsonNullable.of(EmailAddress.of("changed@example.com")))
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .email(EmailAddress.of("changed@example.com"))
                     .build());
 
             assertThat(member.getFirstName()).isEqualTo("Jan");
@@ -879,7 +878,7 @@ class MemberTest {
         void shouldPreserveExistingValuesWhenNullPassed() {
             Member member = createAdultMember();
 
-            member.update(MemberUpdateMemberBuilder.builder().build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).build());
 
             assertThat(member.getEmail().value()).isEqualTo("jan.novak@example.com");
             assertThat(member.getPhone().value()).isEqualTo("+420123456789");
@@ -901,8 +900,8 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> minorWithoutGuardian.update(MemberUpdateMemberBuilder.builder()
-                    .address(JsonNullable.of(Address.of("Nová 5", "Brno", "60200", "CZ")))
+            assertThatThrownBy(() -> minorWithoutGuardian.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(minorWithoutGuardian))
+                    .address(Address.of("Nová 5", "Brno", "60200", "CZ"))
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Guardian is required for minors");
@@ -934,7 +933,7 @@ class MemberTest {
         void shouldUpdateFirstNameWhenProvided() {
             Member member = createAdultMember();
 
-            member.update(MemberUpdateMemberBuilder.builder().firstName("Petr").build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).firstName("Petr").build());
 
             assertThat(member.getFirstName()).isEqualTo("Petr");
             assertThat(member.getLastName()).isEqualTo("Novák");
@@ -945,7 +944,7 @@ class MemberTest {
         void shouldUpdateLastNameWhenProvided() {
             Member member = createAdultMember();
 
-            member.update(MemberUpdateMemberBuilder.builder().lastName("Svoboda").build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).lastName("Svoboda").build());
 
             assertThat(member.getLastName()).isEqualTo("Svoboda");
             assertThat(member.getFirstName()).isEqualTo("Jan");
@@ -957,7 +956,7 @@ class MemberTest {
             Member member = createAdultMember();
             LocalDate newDob = LocalDate.of(1985, 3, 20);
 
-            member.update(MemberUpdateMemberBuilder.builder().dateOfBirth(newDob).build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).dateOfBirth(newDob).build());
 
             assertThat(member.getDateOfBirth()).isEqualTo(newDob);
         }
@@ -967,7 +966,7 @@ class MemberTest {
         void shouldUpdateGenderWhenProvided() {
             Member member = createAdultMember();
 
-            member.update(MemberUpdateMemberBuilder.builder().gender(Gender.FEMALE).build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).gender(Gender.FEMALE).build());
 
             assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
         }
@@ -979,9 +978,9 @@ class MemberTest {
             EmailAddress newEmail = EmailAddress.of("admin.set@example.com");
             PhoneNumber newPhone = PhoneNumber.of("+420111222333");
 
-            member.update(MemberUpdateMemberBuilder.builder()
-                    .email(JsonNullable.of(newEmail))
-                    .phone(JsonNullable.of(newPhone))
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .email(newEmail)
+                    .phone(newPhone)
                     .build());
 
             assertThat(member.getEmail()).isEqualTo(newEmail);
@@ -993,7 +992,7 @@ class MemberTest {
         void shouldPreserveUnchangedFieldsWhenUpdatingAdminOnlyFields() {
             Member member = createAdultMember();
 
-            member.update(MemberUpdateMemberBuilder.builder()
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
                     .firstName("Petr")
                     .lastName("Svoboda")
                     .build());
@@ -1009,7 +1008,7 @@ class MemberTest {
             Member member = createAdultMember();
             LocalDate minorDateOfBirth = LocalDate.now().minusYears(10);
 
-            assertThatThrownBy(() -> member.update(MemberUpdateMemberBuilder.builder()
+            assertThatThrownBy(() -> member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
                     .dateOfBirth(minorDateOfBirth)
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -1031,8 +1030,8 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            member.update(MemberUpdateMemberBuilder.builder()
-                    .birthNumber(JsonNullable.of(BirthNumber.of("9005151234")))
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .birthNumber(BirthNumber.of("9005151234"))
                     .build());
 
             assertThat(member.getBirthNumber()).isNull();
@@ -1043,8 +1042,8 @@ class MemberTest {
         void shouldAllowSettingBirthNumberOnCzechMember() {
             Member member = createAdultMember();
 
-            member.update(MemberUpdateMemberBuilder.builder()
-                    .birthNumber(JsonNullable.of(BirthNumber.of("9005151234")))
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .birthNumber(BirthNumber.of("9005151234"))
                     .build());
 
             assertThat(member.getBirthNumber()).isNotNull();
@@ -1065,7 +1064,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> member.update(MemberUpdateMemberBuilder.builder()
+            assertThatThrownBy(() -> member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
                     .nationality("CZ")
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
@@ -1077,10 +1076,10 @@ class MemberTest {
         void shouldAllowUpdateWhenGuardianProvidesEmailCoverage() {
             Member member = createAdultMember();
 
-            member.update(MemberUpdateMemberBuilder.builder()
-                    .email(JsonNullable.of(EmailAddress.of("temp@example.com")))
-                    .guardian(JsonNullable.of(new GuardianInformation("Jane", "Doe", "PARENT",
-                            EmailAddress.of("jane@example.com"), PhoneNumber.of("+420111222333"))))
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .email(EmailAddress.of("temp@example.com"))
+                    .guardian(new GuardianInformation("Jane", "Doe", "PARENT",
+                            EmailAddress.of("jane@example.com"), PhoneNumber.of("+420111222333")))
                     .build());
 
             assertThat(member.getEmail()).isEqualTo(EmailAddress.of("temp@example.com"));
@@ -1103,8 +1102,8 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> minorWithoutGuardian.update(MemberUpdateMemberBuilder.builder()
-                    .chipNumber(JsonNullable.of("NEW_CHIP"))
+            assertThatThrownBy(() -> minorWithoutGuardian.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(minorWithoutGuardian))
+                    .chipNumber("NEW_CHIP")
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Guardian is required for minors");
@@ -1189,8 +1188,8 @@ class MemberTest {
                     .withGuardian(aGuardian())
                     .build();
 
-            member.update(MemberUpdateMemberBuilder.builder()
-                    .email(JsonNullable.of(EmailAddress.of("new@example.com")))
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .email(EmailAddress.of("new@example.com"))
                     .build());
 
             assertThat(member.getEmail()).isEqualTo(EmailAddress.of("new@example.com"));
@@ -1206,7 +1205,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> memberWithNoEmail.update(MemberUpdateMemberBuilder.builder().build()))
+            assertThatThrownBy(() -> memberWithNoEmail.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(memberWithNoEmail)).build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one email address is required (member or guardian)");
         }
@@ -1221,7 +1220,7 @@ class MemberTest {
                     .withNoGuardian()
                     .build();
 
-            assertThatThrownBy(() -> memberWithNoPhone.update(MemberUpdateMemberBuilder.builder().build()))
+            assertThatThrownBy(() -> memberWithNoPhone.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(memberWithNoPhone)).build()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("At least one phone number is required (member or guardian)");
         }
@@ -1237,7 +1236,7 @@ class MemberTest {
                     .withGuardian(aGuardian())
                     .build();
 
-            member.update(MemberUpdateMemberBuilder.builder().build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).build());
 
             assertThat(member.getGuardian()).isNotNull();
         }

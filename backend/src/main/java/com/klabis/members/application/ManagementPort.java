@@ -8,6 +8,15 @@ import org.jmolecules.architecture.hexagonal.PrimaryPort;
 @PrimaryPort
 public interface ManagementPort {
 
+    /**
+     * The baseline {@link Member.UpdateMember} for a member: every field pre-filled with the current
+     * value. REST callers overlay only the fields their PATCH request changed, then pass the result
+     * to {@link #updateMember(MemberId, Member.UpdateMember)}.
+     *
+     * @throws MemberNotFoundException if no member with the given id exists
+     */
+    Member.UpdateMember prefilledUpdateCommand(MemberId memberId);
+
     Member updateMember(MemberId memberId, Member.UpdateMember command);
 
     Member suspendMember(MemberId memberId, Member.SuspendMembership command);
