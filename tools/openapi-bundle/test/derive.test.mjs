@@ -7,6 +7,24 @@ const TEMPLATES = {$ref: '#/components/schemas/HalFormsTemplates'};
 
 const ref = (name) => ({$ref: `#/components/schemas/${name}`});
 
+/** The three shared envelope base models the deriver composes with a payload. */
+const ENTITY_MODEL = ref('EntityModel');
+const COLLECTION_MODEL = ref('CollectionModel');
+const PAGED_MODEL = ref('PagedModel');
+
+/** `{_embedded: {<rel>: {type: array, items}}}` — the payload-specific block the deriver adds. */
+const embeddedBlock = (rel, itemsRef) => ({
+    type: 'object',
+    properties: {
+        _embedded: {
+            type: 'object',
+            properties: {
+                [rel]: {type: 'array', items: itemsRef},
+            },
+        },
+    },
+});
+
 /** Minimal document: one GET whose 200 returns `jsonSchema`, plus the given payload schemas. */
 function docWith(jsonSchema, schemas = {}, {operation = {}, response = {}} = {}) {
     return {
@@ -45,18 +63,31 @@ describe('embeddedKey', () => {
 });
 
 describe('isEnvelopeShaped', () => {
-    it('recognises the allOf EntityModel form', () => {
+    it('recognises the allOf form composing the shared EntityModel', () => {
+        expect(isEnvelopeShaped({allOf: [ref('Thing'), ENTITY_MODEL]})).toBe(true);
+    });
+
+    it('recognises the allOf form composing the shared CollectionModel', () => {
+        expect(isEnvelopeShaped({allOf: [COLLECTION_MODEL, embeddedBlock('thingList', ref('EntityModelThing'))]}))
+            .toBe(true);
+    });
+
+    it('recognises the allOf form composing the shared PagedModel', () => {
+        expect(isEnvelopeShaped({allOf: [PAGED_MODEL, embeddedBlock('thingList', ref('EntityModelThing'))]}))
+            .toBe(true);
+    });
+
+    it('recognises the hand-written marker types, which carry an inline _links property', () => {
+        expect(isEnvelopeShaped({type: 'object', properties: {_links: LINKS}})).toBe(true);
+    });
+
+    it('recognises the legacy allOf form with an inline _links member', () => {
         expect(isEnvelopeShaped({allOf: [ref('Thing'), {type: 'object', properties: {_links: LINKS}}]}))
             .toBe(true);
     });
 
-    it('recognises the flat collection form', () => {
-        expect(isEnvelopeShaped({type: 'object', properties: {_embedded: {}, _links: LINKS}}))
-            .toBe(true);
-    });
-
-    it('recognises the hand-written marker types, which carry only _links', () => {
-        expect(isEnvelopeShaped({type: 'object', properties: {_links: LINKS}})).toBe(true);
+    it('recognises a flat collection shape with an inline _embedded property', () => {
+        expect(isEnvelopeShaped({type: 'object', properties: {_embedded: {}, _links: LINKS}})).toBe(true);
     });
 
     it('does not mistake a plain payload for an envelope', () => {
@@ -65,21 +96,18 @@ describe('isEnvelopeShaped', () => {
 });
 
 describe('deriveHalEnvelopes', () => {
-    it('wraps a non-array payload in EntityModel', () => {
+    it('wraps a non-array payload in EntityModel via allOf with the shared base', () => {
         const {document} = deriveHalEnvelopes(docWith(ref('MemberDetailsResponse'), {
             MemberDetailsResponse: {type: 'object', properties: {id: {type: 'string'}}},
         }));
 
         expect(halForms(document).schema).toEqual(ref('EntityModelMemberDetailsResponse'));
         expect(document.components.schemas.EntityModelMemberDetailsResponse).toEqual({
-            allOf: [
-                ref('MemberDetailsResponse'),
-                {type: 'object', properties: {_links: LINKS, _templates: TEMPLATES}},
-            ],
+            allOf: [ref('MemberDetailsResponse'), ENTITY_MODEL],
         });
     });
 
-    it('wraps an unpaginated array in CollectionModel<EntityModel<Item>>', () => {
+    it('wraps an unpaginated array in CollectionModel composed with an _embedded block', () => {
         const {document} = deriveHalEnvelopes(docWith(
             {type: 'array', items: ref('CalendarItemDto')},
             {CalendarItemDto: {type: 'object', properties: {id: {type: 'string'}}}},
@@ -87,25 +115,17 @@ describe('deriveHalEnvelopes', () => {
 
         expect(halForms(document).schema).toEqual(ref('CollectionModelEntityModelCalendarItemDto'));
         expect(document.components.schemas.CollectionModelEntityModelCalendarItemDto).toEqual({
-            type: 'object',
-            properties: {
-                _embedded: {
-                    type: 'object',
-                    properties: {
-                        calendarItemDtoList: {
-                            type: 'array',
-                            items: ref('EntityModelCalendarItemDto'),
-                        },
-                    },
-                },
-                _links: LINKS,
-                _templates: TEMPLATES,
-            },
+            allOf: [
+                COLLECTION_MODEL,
+                embeddedBlock('calendarItemDtoList', ref('EntityModelCalendarItemDto')),
+            ],
         });
-        expect(document.components.schemas.EntityModelCalendarItemDto).toBeDefined();
+        expect(document.components.schemas.EntityModelCalendarItemDto).toEqual({
+            allOf: [ref('CalendarItemDto'), ENTITY_MODEL],
+        });
     });
 
-    it('wraps a paginated array in PagedModel and adds the page property', () => {
+    it('wraps a paginated array in PagedModel composed with an _embedded block', () => {
         const {document} = deriveHalEnvelopes(docWith(
             {type: 'array', items: ref('MemberSummaryResponse')},
             {MemberSummaryResponse: {type: 'object', properties: {id: {type: 'string'}}}},
@@ -114,9 +134,12 @@ describe('deriveHalEnvelopes', () => {
 
         const paged = document.components.schemas.PagedModelEntityModelMemberSummaryResponse;
         expect(halForms(document).schema).toEqual(ref('PagedModelEntityModelMemberSummaryResponse'));
-        expect(paged.properties.page).toEqual({$ref: '#/components/schemas/PageMetadata'});
-        expect(paged.properties._embedded.properties.memberSummaryResponseList.items)
-            .toEqual(ref('EntityModelMemberSummaryResponse'));
+        expect(paged).toEqual({
+            allOf: [
+                PAGED_MODEL,
+                embeddedBlock('memberSummaryResponseList', ref('EntityModelMemberSummaryResponse')),
+            ],
+        });
         expect(document.components.schemas.CollectionModelEntityModelMemberSummaryResponse)
             .toBeUndefined();
     });
@@ -133,31 +156,10 @@ describe('deriveHalEnvelopes', () => {
             },
         ));
 
-        const embedded = document.components.schemas
-            .CollectionModelEntityModelAccommodationListItemDto.properties._embedded;
-        expect(Object.keys(embedded.properties)).toEqual(['accommodationList']);
-    });
-
-    // Decision 7: `_templates` is uniform, not conditional on x-hal-templates. The real contract is
-    // the extension itself (which haltypes.mjs turns into the named union); the envelope property
-    // only says a template map may appear, which is true of every HAL-FORMS response. Making it
-    // conditional also split one payload into two incompatible EntityModels when the same schema was
-    // returned both as an item and inside a collection.
-    it('emits _templates on every derived envelope, with or without x-hal-templates', () => {
-        const withExt = deriveHalEnvelopes(docWith(
-            ref('CalendarItemDto'),
-            {CalendarItemDto: {type: 'object', properties: {id: {type: 'string'}}}},
-            {response: {'x-hal-templates': {update: {operation: 'updateCalendarItem'}}}},
-        )).document;
-        const withoutExt = deriveHalEnvelopes(docWith(
-            ref('CalendarItemDto'),
-            {CalendarItemDto: {type: 'object', properties: {id: {type: 'string'}}}},
-        )).document;
-
-        for (const document of [withExt, withoutExt]) {
-            expect(document.components.schemas.EntityModelCalendarItemDto.allOf[1].properties)
-                .toEqual({_links: LINKS, _templates: TEMPLATES});
-        }
+        const collection = document.components.schemas
+            .CollectionModelEntityModelAccommodationListItemDto;
+        expect(Object.keys(collection.allOf[1].properties._embedded.properties))
+            .toEqual(['accommodationList']);
     });
 
     it('leaves an operation carrying x-klabis-hal: false untouched', () => {
@@ -228,24 +230,12 @@ describe('deriveHalEnvelopes', () => {
 
             const trainers = document.components.schemas.TrainingGroupResponse.properties.trainers;
             expect(trainers.items).toEqual(ref('EntityModelTrainerResponse'));
-            // The marker is consumed by derivation, not carried into the bundle — leaving it would
-            // contradict the items $ref it just rewrote. validate.mjs's already-enveloped check
-            // relies on this.
             expect(trainers['x-hal-entity-items']).toBeUndefined();
-            // Decision 7: nested x-hal-entity-items rows carry _templates like every other envelope
-            // — they demonstrably attach affordances at runtime.
             expect(document.components.schemas.EntityModelTrainerResponse).toEqual({
-                allOf: [
-                    ref('TrainerResponse'),
-                    {type: 'object', properties: {_links: LINKS, _templates: TEMPLATES}},
-                ],
+                allOf: [ref('TrainerResponse'), ENTITY_MODEL],
             });
         });
 
-        // The case that first broke the deriver: a payload used BOTH as a response-level collection
-        // item and as an x-hal-entity-items target. With the old {templates: false} nested exception
-        // the two branches derived EntityModel<PendingInvitationResponse> with contradictory shapes
-        // and hit define()'s collision guard. Uniform _templates makes them one schema.
         it('derives one consistent schema for a payload used as both a response item and a nested row', () => {
             const document = docWith(ref('GroupResponse'), {
                 GroupResponse: {
@@ -260,7 +250,6 @@ describe('deriveHalEnvelopes', () => {
                 },
                 PendingInvitationResponse: {type: 'object', properties: {id: {type: 'string'}}},
             });
-            // A second operation returns an array of the same payload at the response level.
             document.paths['/api/invitations'] = {
                 get: {
                     responses: {
@@ -279,22 +268,16 @@ describe('deriveHalEnvelopes', () => {
             const {collisions} = deriveHalEnvelopes(document);
 
             expect(collisions).toEqual([]);
-            const expected = {
-                allOf: [
-                    ref('PendingInvitationResponse'),
-                    {type: 'object', properties: {_links: LINKS, _templates: TEMPLATES}},
-                ],
-            };
-            expect(document.components.schemas.EntityModelPendingInvitationResponse).toEqual(expected);
+            expect(document.components.schemas.EntityModelPendingInvitationResponse).toEqual({
+                allOf: [ref('PendingInvitationResponse'), ENTITY_MODEL],
+            });
             expect(document.components.schemas.GroupResponse.properties.pendingInvitations.items)
                 .toEqual(ref('EntityModelPendingInvitationResponse'));
             expect(document.paths['/api/invitations'].get.responses['200']
                 .content['application/prs.hal-forms+json'].schema)
                 .toEqual(ref('CollectionModelEntityModelPendingInvitationResponse'));
-            // The wire-visible half of the collapse: task 7.3a replaces the hand-written
-            // *ForInvitationsList pair with this derived one, and the _embedded key must survive it.
             expect(Object.keys(document.components.schemas
-                .CollectionModelEntityModelPendingInvitationResponse.properties._embedded.properties))
+                .CollectionModelEntityModelPendingInvitationResponse.allOf[1].properties._embedded.properties))
                 .toEqual(['pendingInvitationResponseList']);
         });
 
@@ -326,7 +309,7 @@ describe('deriveHalEnvelopes', () => {
             },
         };
 
-        it('adds the declared _embedded block and names the envelope with the suffix', () => {
+        it('composes payload + EntityModel + the declared _embedded block, suffixing the name', () => {
             const document = docWith(ref('MembershipFeeGroupResponse'), schemas,
                 {response: {'x-hal-embedded': embedded}});
 
@@ -339,19 +322,8 @@ describe('deriveHalEnvelopes', () => {
                 .toEqual({
                     allOf: [
                         ref('MembershipFeeGroupResponse'),
-                        {
-                            type: 'object',
-                            properties: {
-                                _links: LINKS,
-                                _templates: TEMPLATES,
-                                _embedded: {
-                                    type: 'object',
-                                    properties: {
-                                        members: {type: 'array', items: ref('MemberInGroupResponse')},
-                                    },
-                                },
-                            },
-                        },
+                        ENTITY_MODEL,
+                        embeddedBlock('members', ref('MemberInGroupResponse')),
                     ],
                 });
         });
@@ -359,8 +331,6 @@ describe('deriveHalEnvelopes', () => {
         it('coexists with the plain envelope derived for the same payload elsewhere', () => {
             const document = docWith(ref('MembershipFeeGroupResponse'), schemas,
                 {response: {'x-hal-embedded': embedded}});
-            // A second operation returns the same payload bare — the suffix is what keeps the two
-            // envelopes from colliding on one name.
             document.paths['/api/groups'] = {
                 get: {
                     operationId: 'listGroupsForYear',
@@ -378,9 +348,9 @@ describe('deriveHalEnvelopes', () => {
             expect(collisions).toEqual([]);
             const derived = document.components.schemas;
             expect(derived.EntityModelMembershipFeeGroupResponseWithMembers).toBeDefined();
-            expect(derived.EntityModelMembershipFeeGroupResponse).toBeDefined();
-            expect(derived.EntityModelMembershipFeeGroupResponse.allOf[1].properties._embedded)
-                .toBeUndefined();
+            expect(derived.EntityModelMembershipFeeGroupResponse).toEqual({
+                allOf: [ref('MembershipFeeGroupResponse'), ENTITY_MODEL],
+            });
         });
 
         it('reports a collision when a hand-written schema already holds the suffixed name', () => {
@@ -413,10 +383,6 @@ describe('deriveHalEnvelopes', () => {
             expect(JSON.stringify(document)).toBe(before);
         });
 
-        // An empty hal-forms entry (a bodyless 201/204 declaring only the media type) is left
-        // untouched — the deriver never invents a schema for it. `produces` on the generated Java
-        // interface does not depend on this entry: KlabisSpringCodegen.addDerivedHalFormsContentType()
-        // adds the media type for the same responses this deriver walks.
         it('leaves an empty hal-forms entry untouched', () => {
             const document = docWith(ref('MemberAccountResource'), {
                 MemberAccountResource: {type: 'object', properties: {balance: {type: 'number'}}},

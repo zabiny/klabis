@@ -271,6 +271,63 @@ paths: {}
 
         expect(() => bundleSpec('/spec/klabis.yaml', {readYaml})).toThrow(/Unresolvable/);
     });
+
+    it('hoists the HAL envelope base models from _shared/hal.yaml before deriving', () => {
+        // No path references EntityModel/CollectionModel/PagedModel — the deriver adds the refs,
+        // and it runs after bundling. bundleSpec must pull them in from _shared/hal.yaml so the
+        // derived `allOf` members resolve.
+        const readYaml = fakeReader({
+            'klabis.yaml': `
+openapi: 3.1.0
+paths:
+  /api/things:
+    get:
+      operationId: listThings
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: './things.yaml#/components/schemas/ThingResponse'
+`,
+            'things.yaml': `
+components:
+  schemas:
+    ThingResponse:
+      type: object
+      properties:
+        id:
+          type: string
+`,
+            '_shared/hal.yaml': `
+components:
+  schemas:
+    EntityModel:
+      type: object
+      properties:
+        _links: {type: object}
+        _templates: {type: object}
+    CollectionModel:
+      type: object
+      properties:
+        _links: {type: object}
+        _templates: {type: object}
+    PagedModel:
+      allOf:
+        - {type: object}
+`,
+        });
+
+        const {document} = bundleSpec('/spec/klabis.yaml', {readYaml});
+
+        expect(document.components.schemas.EntityModel).toBeDefined();
+        expect(document.components.schemas.EntityModelThingResponse).toEqual({
+            allOf: [
+                {$ref: '#/components/schemas/ThingResponse'},
+                {$ref: '#/components/schemas/EntityModel'},
+            ],
+        });
+    });
 });
 
 describe('x-klabis-authority on an operation', () => {

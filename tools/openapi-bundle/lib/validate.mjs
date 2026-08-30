@@ -163,12 +163,44 @@ function envelopedPayloadErrors(document) {
 }
 
 /**
+ * The deriver composes every envelope with a shared `EntityModel` / `CollectionModel` / `PagedModel`
+ * base, which `bundleSpec` hoists from `_shared/hal.yaml`. If that hoist silently produced nothing
+ * (a bad path, a renamed model) the bundle would carry `allOf` members pointing at a missing schema
+ * and only the frontend type generation would complain, cryptically. This catches it at the bundle.
+ */
+function missingEnvelopeBaseErrors(document) {
+    const schemas = document?.components?.schemas ?? {};
+    const BASES = ['EntityModel', 'CollectionModel', 'PagedModel'];
+    const baseRefs = new Set(BASES.map((name) => `#/components/schemas/${name}`));
+
+    const referenced = new Set();
+    for (const schema of Object.values(schemas)) {
+        if (!Array.isArray(schema?.allOf)) continue;
+        for (const member of schema.allOf) {
+            if (typeof member?.$ref === 'string' && baseRefs.has(member.$ref)) {
+                referenced.add(member.$ref.split('/').pop());
+            }
+        }
+    }
+    if (referenced.size === 0) return [];
+
+    return BASES
+        .filter((base) => referenced.has(base) && schemas[base] === undefined)
+        .map((base) => ({
+            path: `/components/schemas/${base}`,
+            message: `derived HAL envelopes reference "${base}" but it was not hoisted from `
+                + '_shared/hal.yaml into the bundle',
+        }));
+}
+
+/**
  * @returns {Array<{path: string, message: string}>} empty when the document is valid
  */
 export function validateSpec(document, {authorities}) {
     const operationIds = collectOperationIds(document);
     const errors = duplicateOperationIdErrors(operationIds);
     errors.push(...envelopedPayloadErrors(document));
+    errors.push(...missingEnvelopeBaseErrors(document));
 
     walk(document, '', (node, path, context) => {
         if (!isPlainObject(node)) return;

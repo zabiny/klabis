@@ -155,3 +155,51 @@ components:
       type: object
       additionalProperties:
         $ref: '#/components/schemas/HalFormsTemplate'
+
+    # --- HAL envelope base models ---
+    #
+    # A module spec declares only its `application/json` payload; the bundler's HAL deriver
+    # (tools/openapi-bundle/lib/derive.mjs) reconstructs the `application/prs.hal-forms+json`
+    # envelope around it by composing one of these three with the payload:
+    #
+    #   EntityModel<X>                 allOf: [X, EntityModel]
+    #   CollectionModel<EntityModel<X>>  allOf: [CollectionModel, {_embedded: {xList: [...]}}]
+    #   PagedModel<EntityModel<X>>       allOf: [PagedModel, {_embedded: {xList: [...]}}]
+    #
+    # These carry the parts common to every envelope — the `_links` map, the `_templates` map, and
+    # (paged only) the `page` metadata Spring HATEOAS always emits. The deriver adds the
+    # payload-specific `_embedded` block on top. No module YAML references them directly; the bundler
+    # hoists them into the bundled document before the deriver runs (bundleSpec in bundle.mjs).
+
+    EntityModel:
+      description: |
+        Base of the HAL-FORMS wrapper for a single resource — combined with the payload as
+        `allOf: [<Payload>, EntityModel]`.
+      type: object
+      properties:
+        _links:
+          $ref: '#/components/schemas/Links'
+        _templates:
+          $ref: '#/components/schemas/HalFormsTemplates'
+
+    CollectionModel:
+      description: |
+        Base of the HAL-FORMS wrapper for an unpaged collection. The deriver adds the `_embedded`
+        block naming the item relation: `allOf: [CollectionModel, {_embedded: …}]`.
+      type: object
+      properties:
+        _links:
+          $ref: '#/components/schemas/Links'
+        _templates:
+          $ref: '#/components/schemas/HalFormsTemplates'
+
+    PagedModel:
+      description: |
+        Base of the HAL-FORMS wrapper for a paged collection — CollectionModel plus the `page`
+        metadata Spring HATEOAS always emits for a `Page<T>` response.
+      allOf:
+        - $ref: '#/components/schemas/CollectionModel'
+        - type: object
+          properties:
+            page:
+              $ref: '#/components/schemas/PageMetadata'
