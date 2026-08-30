@@ -91,6 +91,29 @@ map with no named members — it declares only that a template map may appear, w
 HAL-FORMS resource. The contract that actually says *which* templates is `x-hal-templates`, which
 `haltypes.mjs` turns into the named union in `halTypes.ts`.
 
+### Envelope shape: composition, not repetition
+
+The derived schemas do not restate `_links`/`_templates`/`page` — they compose three shared base
+models from `_shared/hal.yaml` via `allOf`:
+
+| base model | carries |
+|---|---|
+| `EntityModel` | `_links`, `_templates` |
+| `CollectionModel` | `_links`, `_templates` |
+| `PagedModel` | `allOf: [CollectionModel, {page}]` |
+
+So `EntityModelFooResponse` is `allOf: [FooResponse, EntityModel]`;
+`CollectionModelEntityModelFooDto` is `allOf: [CollectionModel, {_embedded: {fooDtoList: [...]}}]`;
+an `x-hal-embedded` response adds a third member, `allOf: [Foo, EntityModel, {_embedded: {...}}]`.
+No module YAML references the three base models — `bundleSpec` hoists them from `_shared/hal.yaml`
+before the deriver runs, and `validate.mjs` fails the bundle if a derived envelope references a base
+model that was not hoisted.
+
+The two hand-written marker types (`EntityModelRootModel`, `EntityModelDashboardModel` in
+`common.yaml`, `schemaMappings`-bound to `RootModel`/`DashboardModel`) keep their older flat
+`{_links}` shape and are the one envelope kind the backend codegen *does* see. Leave them as they
+are.
+
 ## `x-klabis-hal: false` — the opt-out
 
 HAL is the default. The marker goes on the **operation** and is the only way out:
