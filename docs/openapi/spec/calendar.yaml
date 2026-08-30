@@ -184,7 +184,7 @@ paths:
               operation: listCalendarItems
               description: Back to the current month's calendar item list
           x-hal-templates:
-            default:
+            updateCalendarItem:
               operation: updateCalendarItem
               description: Present only for manual items and callers with CALENDAR:MANAGE
             deleteCalendarItem:
@@ -304,7 +304,7 @@ paths:
             self:
               description: This token state
           x-hal-templates:
-            default:
+            generateToken:
               operation: generateToken
               description: Generates or rotates the token; the full subscribe URL is returned once
         '400':

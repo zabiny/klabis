@@ -123,9 +123,9 @@ they are read-only.
   };
   _templates?: {
     /** Present only for manual items and callers with CALENDAR:MANAGE */
-    'default'?: HalFormsTemplate;
-    /** Present only for manual items and callers with CALENDAR:MANAGE */
     'deleteCalendarItem'?: HalFormsTemplate;
+    /** Present only for manual items and callers with CALENDAR:MANAGE */
+    'updateCalendarItem'?: HalFormsTemplate;
   };
 }
 
@@ -134,7 +134,7 @@ export type GetCalendarItemResource =
 
 export const GetCalendarItemRels = {
   links: ['collection', 'event', 'self'] as const,
-  templates: ['default', 'deleteCalendarItem'] as const,
+  templates: ['deleteCalendarItem', 'updateCalendarItem'] as const,
 } as const;
 
 export type GetCalendarItemLinkRel = typeof GetCalendarItemRels.links[number];
@@ -164,8 +164,6 @@ being offered
   _templates?: {
     /** Present for DRAFT/ACTIVE events and callers with EVENTS:MANAGE */
     'cancelEvent'?: HalFormsTemplate;
-    /** Present for the event coordinator or callers with EVENTS:MANAGE */
-    'default'?: HalFormsTemplate;
     /** Present when registrations are open and the caller is registered */
     'editRegistration'?: HalFormsTemplate;
     /** Present for DRAFT events and callers with EVENTS:MANAGE */
@@ -176,6 +174,8 @@ being offered
     'syncEventFromOris'?: HalFormsTemplate;
     /** Present when registrations are open and the caller is registered */
     'unregisterFromEvent'?: HalFormsTemplate;
+    /** Present for the event coordinator or callers with EVENTS:MANAGE */
+    'updateEvent'?: HalFormsTemplate;
   };
 }
 
@@ -184,7 +184,7 @@ export type GetEventResource =
 
 export const GetEventRels = {
   links: ['accommodation-list', 'collection', 'coordinator', 'event-type', 'newRegistration', 'registrations', 'self'] as const,
-  templates: ['cancelEvent', 'default', 'editRegistration', 'publishEvent', 'registerForEvent', 'syncEventFromOris', 'unregisterFromEvent'] as const,
+  templates: ['cancelEvent', 'editRegistration', 'publishEvent', 'registerForEvent', 'syncEventFromOris', 'unregisterFromEvent', 'updateEvent'] as const,
 } as const;
 
 export type GetEventLinkRel = typeof GetEventRels.links[number];
@@ -200,12 +200,12 @@ export interface GetEventTypeHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
+    /** Present only for callers with EVENTS:MANAGE */
+    'deleteEventType'?: HalFormsTemplate;
     /** Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
 populated at runtime with the available ORIS discipline options.
  */
-    'default'?: HalFormsTemplate;
-    /** Present only for callers with EVENTS:MANAGE */
-    'deleteEventType'?: HalFormsTemplate;
+    'updateEventType'?: HalFormsTemplate;
   };
 }
 
@@ -214,7 +214,7 @@ export type GetEventTypeResource =
 
 export const GetEventTypeRels = {
   links: ['collection', 'self'] as const,
-  templates: ['default', 'deleteEventType'] as const,
+  templates: ['deleteEventType', 'updateEventType'] as const,
 } as const;
 
 export type GetEventTypeLinkRel = typeof GetEventTypeRels.links[number];
@@ -258,7 +258,7 @@ export interface GetFeeGroupHal {
     /** Present only for callers with MEMBERS:MANAGE */
     'assignMember'?: HalFormsTemplate;
     /** Present for callers with MEMBERS:MANAGE, only while the group is EDITABLE */
-    'default'?: HalFormsTemplate;
+    'editSnapshot'?: HalFormsTemplate;
   };
 }
 
@@ -267,7 +267,7 @@ export type GetFeeGroupResource =
 
 export const GetFeeGroupRels = {
   links: ['rules', 'self', 'sourceLevel'] as const,
-  templates: ['assignMember', 'default'] as const,
+  templates: ['assignMember', 'editSnapshot'] as const,
 } as const;
 
 export type GetFeeGroupLinkRel = typeof GetFeeGroupRels.links[number];
@@ -305,7 +305,7 @@ export interface GetFeeSummaryHal {
   };
   _templates?: {
     /** Present only while voting is open for this year */
-    'default'?: HalFormsTemplate;
+    'chooseTier'?: HalFormsTemplate;
   };
 }
 
@@ -314,7 +314,7 @@ export type GetFeeSummaryResource =
 
 export const GetFeeSummaryRels = {
   links: ['group', 'self'] as const,
-  templates: ['default'] as const,
+  templates: ['chooseTier'] as const,
 } as const;
 
 export type GetFeeSummaryLinkRel = typeof GetFeeSummaryRels.links[number];
@@ -329,7 +329,16 @@ export interface GetGroupHal {
     /** This group. Carries write affordances only for owners. */
     'self'?: HalResourceLinks;
   };
-  _templates?: Record<never, never>;
+  _templates?: {
+    /** Present only for group owners */
+    'addGroupOwner'?: HalFormsTemplate;
+    /** Present only for group owners */
+    'deleteGroup'?: HalFormsTemplate;
+    /** Present only for group owners */
+    'inviteMember'?: HalFormsTemplate;
+    /** Present only for group owners */
+    'updateGroup'?: HalFormsTemplate;
+  };
 }
 
 export type GetGroupResource =
@@ -337,7 +346,7 @@ export type GetGroupResource =
 
 export const GetGroupRels = {
   links: ['collection', 'self'] as const,
-  templates: [] as const,
+  templates: ['addGroupOwner', 'deleteGroup', 'inviteMember', 'updateGroup'] as const,
 } as const;
 
 export type GetGroupLinkRel = typeof GetGroupRels.links[number];
@@ -356,7 +365,7 @@ export interface GetChoiceHal {
   };
   _templates?: {
     /** Choose a fee level for this year */
-    'default'?: HalFormsTemplate;
+    'chooseTier'?: HalFormsTemplate;
     /** Remove the fee level choice for this year */
     'removeChoice'?: HalFormsTemplate;
   };
@@ -367,7 +376,7 @@ export type GetChoiceResource =
 
 export const GetChoiceRels = {
   links: ['currentGroup', 'recommendedLevel', 'self'] as const,
-  templates: ['default', 'removeChoice'] as const,
+  templates: ['chooseTier', 'removeChoice'] as const,
 } as const;
 
 export type GetChoiceLinkRel = typeof GetChoiceRels.links[number];
@@ -395,11 +404,11 @@ export interface GetMemberHal {
     'trainingGroup'?: HalResourceLinks;
   };
   _templates?: {
-    'default'?: HalFormsTemplate;
     /** Present only while the member is suspended */
     'resume'?: HalFormsTemplate;
     /** Present only while the member is active */
     'suspend'?: HalFormsTemplate;
+    'updateMember'?: HalFormsTemplate;
   };
 }
 
@@ -408,7 +417,7 @@ export type GetMemberResource =
 
 export const GetMemberRels = {
   links: ['account', 'collection', 'familyGroup', 'feeSummary', 'ical-token', 'permissions', 'self', 'trainingGroup'] as const,
-  templates: ['default', 'resume', 'suspend'] as const,
+  templates: ['resume', 'suspend', 'updateMember'] as const,
 } as const;
 
 export type GetMemberLinkRel = typeof GetMemberRels.links[number];
@@ -445,10 +454,10 @@ export interface GetPresetHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
-    /** Update this category preset */
-    'default'?: HalFormsTemplate;
     /** Delete this category preset */
     'deleteCategoryPreset'?: HalFormsTemplate;
+    /** Update this category preset */
+    'updateCategoryPreset'?: HalFormsTemplate;
   };
 }
 
@@ -457,7 +466,7 @@ export type GetPresetResource =
 
 export const GetPresetRels = {
   links: ['collection', 'self'] as const,
-  templates: ['default', 'deleteCategoryPreset'] as const,
+  templates: ['deleteCategoryPreset', 'updateCategoryPreset'] as const,
 } as const;
 
 export type GetPresetLinkRel = typeof GetPresetRels.links[number];
@@ -475,12 +484,12 @@ export interface GetPublicationHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
+    /** Present for callers with MEMBERS:MANAGE, while the campaign is not closed */
+    'changeDeadline'?: HalFormsTemplate;
     /** Present for callers with MEMBERS:MANAGE, while the campaign is not closed and not
 yet processed
  */
     'closeCampaign'?: HalFormsTemplate;
-    /** Present for callers with MEMBERS:MANAGE, while the campaign is not closed */
-    'default'?: HalFormsTemplate;
   };
 }
 
@@ -489,7 +498,7 @@ export type GetPublicationResource =
 
 export const GetPublicationRels = {
   links: ['collection', 'levels', 'self'] as const,
-  templates: ['closeCampaign', 'default'] as const,
+  templates: ['changeDeadline', 'closeCampaign'] as const,
 } as const;
 
 export type GetPublicationLinkRel = typeof GetPublicationRels.links[number];
@@ -534,7 +543,7 @@ export interface GetRuleHal {
   };
   _templates?: {
     /** Present only for callers with MEMBERS:MANAGE */
-    'default'?: HalFormsTemplate;
+    'editRule'?: HalFormsTemplate;
     /** Present only for callers with MEMBERS:MANAGE */
     'removeRule'?: HalFormsTemplate;
   };
@@ -545,7 +554,7 @@ export type GetRuleResource =
 
 export const GetRuleRels = {
   links: ['eventType', 'self'] as const,
-  templates: ['default', 'removeRule'] as const,
+  templates: ['editRule', 'removeRule'] as const,
 } as const;
 
 export type GetRuleLinkRel = typeof GetRuleRels.links[number];
@@ -564,9 +573,9 @@ export interface GetTierHal {
   };
   _templates?: {
     /** Present only for callers with MEMBERS:MANAGE */
-    'default'?: HalFormsTemplate;
-    /** Present only for callers with MEMBERS:MANAGE */
     'deleteTier'?: HalFormsTemplate;
+    /** Present only for callers with MEMBERS:MANAGE */
+    'editTier'?: HalFormsTemplate;
   };
 }
 
@@ -575,7 +584,7 @@ export type GetTierResource =
 
 export const GetTierRels = {
   links: ['collection', 'rules', 'self'] as const,
-  templates: ['default', 'deleteTier'] as const,
+  templates: ['deleteTier', 'editTier'] as const,
 } as const;
 
 export type GetTierLinkRel = typeof GetTierRels.links[number];
@@ -590,7 +599,7 @@ export interface GetTokenStateHal {
   };
   _templates?: {
     /** Generates or rotates the token; the full subscribe URL is returned once */
-    'default'?: HalFormsTemplate;
+    'generateToken'?: HalFormsTemplate;
   };
 }
 
@@ -599,7 +608,7 @@ export type GetTokenStateResource =
 
 export const GetTokenStateRels = {
   links: ['self'] as const,
-  templates: ['default'] as const,
+  templates: ['generateToken'] as const,
 } as const;
 
 export type GetTokenStateLinkRel = typeof GetTokenStateRels.links[number];
@@ -670,7 +679,7 @@ export interface GetUserPermissionsHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
-    'default'?: HalFormsTemplate;
+    'updatePermissions'?: HalFormsTemplate;
   };
 }
 
@@ -679,7 +688,7 @@ export type GetUserPermissionsResource =
 
 export const GetUserPermissionsRels = {
   links: ['self'] as const,
-  templates: ['default'] as const,
+  templates: ['updatePermissions'] as const,
 } as const;
 
 export type GetUserPermissionsLinkRel = typeof GetUserPermissionsRels.links[number];
@@ -827,7 +836,7 @@ export interface ListFamilyGroupsHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
-    'default'?: HalFormsTemplate;
+    'createFamilyGroup'?: HalFormsTemplate;
   };
 }
 
@@ -836,7 +845,7 @@ export type ListFamilyGroupsResource =
 
 export const ListFamilyGroupsRels = {
   links: ['self'] as const,
-  templates: ['default'] as const,
+  templates: ['createFamilyGroup'] as const,
 } as const;
 
 export type ListFamilyGroupsLinkRel = typeof ListFamilyGroupsRels.links[number];
@@ -871,7 +880,7 @@ export interface ListGroupsHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
-    'default'?: HalFormsTemplate;
+    'createGroup'?: HalFormsTemplate;
   };
 }
 
@@ -880,7 +889,7 @@ export type ListGroupsResource =
 
 export const ListGroupsRels = {
   links: ['self'] as const,
-  templates: ['default'] as const,
+  templates: ['createGroup'] as const,
 } as const;
 
 export type ListGroupsLinkRel = typeof ListGroupsRels.links[number];
@@ -923,10 +932,10 @@ export interface ListMembersHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
-    /** Edit template used by the table's inline row editor */
-    'default'?: HalFormsTemplate;
     /** Present only for callers with MEMBERS:MANAGE */
     'registerMember'?: HalFormsTemplate;
+    /** Edit template used by the table's inline row editor */
+    'updateMember'?: HalFormsTemplate;
   };
 }
 
@@ -935,7 +944,7 @@ export type ListMembersResource =
 
 export const ListMembersRels = {
   links: ['first', 'last', 'next', 'prev', 'self'] as const,
-  templates: ['default', 'registerMember'] as const,
+  templates: ['registerMember', 'updateMember'] as const,
 } as const;
 
 export type ListMembersLinkRel = typeof ListMembersRels.links[number];
@@ -1074,7 +1083,7 @@ export interface ListTrainingGroupsHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
-    'default'?: HalFormsTemplate;
+    'createTrainingGroup'?: HalFormsTemplate;
   };
 }
 
@@ -1083,7 +1092,7 @@ export type ListTrainingGroupsResource =
 
 export const ListTrainingGroupsRels = {
   links: ['self'] as const,
-  templates: ['default'] as const,
+  templates: ['createTrainingGroup'] as const,
 } as const;
 
 export type ListTrainingGroupsLinkRel = typeof ListTrainingGroupsRels.links[number];

@@ -156,7 +156,7 @@ paths:
               operation: listRules
               description: Payment rules for this tier
           x-hal-templates:
-            default:
+            editTier:
               operation: editTier
               description: Present only for callers with MEMBERS:MANAGE
             deleteTier:
@@ -351,7 +351,7 @@ paths:
             eventType:
               description: The event type this rule applies to
           x-hal-templates:
-            default:
+            editRule:
               operation: editRule
               description: Present only for callers with MEMBERS:MANAGE
             removeRule:
@@ -564,7 +564,7 @@ paths:
               operation: listGroupsForYear
               description: Fee groups published for this campaign's year
           x-hal-templates:
-            default:
+            changeDeadline:
               operation: changeDeadline
               description: Present for callers with MEMBERS:MANAGE, while the campaign is not closed
             closeCampaign:
@@ -737,7 +737,7 @@ paths:
               operation: getTier
               description: The membership fee tier this group's snapshot was published from
           x-hal-templates:
-            default:
+            editSnapshot:
               operation: editSnapshot
               description: Present for callers with MEMBERS:MANAGE, only while the group is EDITABLE
             assignMember:
@@ -904,7 +904,7 @@ paths:
               operation: getTier
               description: Present when a recommended tier exists for this year
           x-hal-templates:
-            default:
+            chooseTier:
               operation: chooseTier
               description: Choose a fee level for this year
             removeChoice:
@@ -1037,7 +1037,7 @@ paths:
               operation: getFeeGroup
               description: Present when the member has a current fee group
           x-hal-templates:
-            default:
+            chooseTier:
               operation: chooseTier
               description: Present only while voting is open for this year
         '400':
