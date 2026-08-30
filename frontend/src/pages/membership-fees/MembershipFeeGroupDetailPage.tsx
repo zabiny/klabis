@@ -4,7 +4,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
-import type {GetFeeGroupResource, HalFormsTemplate} from '../../api';
+import type {GetFeeGroupResource} from '../../api';
 import {getEnumLabel, labels} from '../../localization';
 import {ChevronRight, Pencil, UserPlus, Users} from 'lucide-react';
 import {formatDate} from '../../utils/dateUtils.ts';
@@ -114,7 +114,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
 
                 {isEditing && editTemplate ? (
                     <HalFormDisplay
-                        template={editTemplate as HalFormsTemplate}
+                        template={editTemplate}
                         templateName="editSnapshot"
                         resourceData={resourceData as unknown as Record<string, unknown>}
                         pathname={route.pathname}
@@ -208,7 +208,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
             {assignMemberTemplate && assignMemberModal && (
                 <HalFormModal
                     title={labels.templates.assignMember}
-                    template={assignMemberTemplate as HalFormsTemplate}
+                    template={assignMemberTemplate}
                     templateName="assignMember"
                     resourceData={resourceData as unknown as Record<string, unknown>}
                     pathname={route.pathname}

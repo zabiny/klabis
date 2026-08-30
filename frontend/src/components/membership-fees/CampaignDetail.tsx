@@ -3,7 +3,7 @@ import {Calendar, Lock} from 'lucide-react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
 import {HalFormModal} from '../HalNavigator2/HalFormModal.tsx';
-import type {GetPublicationResource, HalFormsTemplate} from '../../api';
+import type {GetPublicationResource} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
@@ -89,7 +89,7 @@ export const CampaignDetail = (): ReactElement | null => {
             {changeDeadlineTemplate && changeDeadlineOpen && (
                 <HalFormModal
                     title={labels.templates.changeDeadline}
-                    template={changeDeadlineTemplate as HalFormsTemplate}
+                    template={changeDeadlineTemplate}
                     templateName="changeDeadline"
                     resourceData={resourceData as unknown as Record<string, unknown>}
                     pathname={route.pathname}
@@ -101,7 +101,7 @@ export const CampaignDetail = (): ReactElement | null => {
             {closeCampaignTemplate && closeCampaignOpen && (
                 <HalFormModal
                     title={labels.templates.closeCampaign}
-                    template={closeCampaignTemplate as HalFormsTemplate}
+                    template={closeCampaignTemplate}
                     templateName="closeCampaign"
                     resourceData={resourceData as unknown as Record<string, unknown>}
                     pathname={route.pathname}
