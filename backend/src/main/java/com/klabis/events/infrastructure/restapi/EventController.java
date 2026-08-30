@@ -87,7 +87,7 @@ public class EventController implements EventsApi {
     public ResponseEntity<Void> createEvent(
             CreateEventRequest request) {
 
-        Event.CreateEvent command = CreateEventRequestMapper.toCommand(request);
+        Event.CreateEvent command = conversionService.convert(request, Event.CreateEvent.class);
         Event created = eventManagementService.createEvent(command);
 
         return ResponseEntity
