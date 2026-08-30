@@ -45,7 +45,7 @@ export function yesterdayOf(isoDate: string): string {
     return `${y}-${m}-${d}`;
 }
 
-export const formatDate = (dateString: string) => {
+export const formatDate = (dateString: string | undefined | null) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return '-';
