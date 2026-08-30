@@ -14,6 +14,7 @@ import com.klabis.membershipfees.domain.FeeGroupMembership;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -39,13 +40,16 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
     private final FeeSelectionCampaignManagementPort managementPort;
     private final AdminFeeAssignmentPort adminFeeAssignmentPort;
     private final Members members;
+    private final ConversionService conversionService;
 
     MembershipFeeGroupController(FeeSelectionCampaignManagementPort managementPort,
                                  AdminFeeAssignmentPort adminFeeAssignmentPort,
-                                 Members members) {
+                                 Members members,
+                                 ConversionService conversionService) {
         this.managementPort = managementPort;
         this.adminFeeAssignmentPort = adminFeeAssignmentPort;
         this.members = members;
+        this.conversionService = conversionService;
     }
 
     @Override
@@ -58,7 +62,7 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
         // FeeSelectionCampaignController.listGroupsForYear, whose items carry no such collection.
         HalResponseContext.setDomain(group);
         HalResponseContext.embed(buildGroupMembers(group), MemberInGroupResponse.class);
-        return ResponseEntity.ok(MembershipFeesResponseMapper.toResponse(group));
+        return ResponseEntity.ok(conversionService.convert(group, MembershipFeeGroupResponse.class));
     }
 
     private List<MemberInGroupResponse> buildGroupMembers(MembershipFeeGroup group) {
