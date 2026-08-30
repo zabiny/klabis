@@ -705,3 +705,64 @@ describe('validateSpec — payload schema mistaken for an envelope', () => {
         }, {'x-klabis-hal': false}))).toEqual([]);
     });
 });
+
+describe('validateSpec — HAL envelope base models', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const validate = (doc) => validateSpec(doc, {authorities});
+
+    const ENTITY_MODEL = {
+        type: 'object',
+        properties: {_links: {type: 'object'}, _templates: {type: 'object'}},
+    };
+    const derivedDoc = (schemas) => ({paths: {}, components: {schemas}});
+
+    it('flags a derived EntityModel envelope when the shared base was not hoisted', () => {
+        const errors = validate(derivedDoc({
+            CollectionModel: ENTITY_MODEL,
+            PagedModel: {allOf: [{$ref: '#/components/schemas/CollectionModel'}]},
+            EntityModelThingResponse: {
+                allOf: [
+                    {$ref: '#/components/schemas/ThingResponse'},
+                    {$ref: '#/components/schemas/EntityModel'},
+                ],
+            },
+        }));
+
+        expect(errors).toHaveLength(1);
+        expect(errors[0].path).toBe('/components/schemas/EntityModel');
+        expect(errors[0].message).toContain('not hoisted from');
+    });
+
+    it('flags only the base models actually referenced by a derived envelope', () => {
+        const errors = validate(derivedDoc({
+            CollectionModelEntityModelThing: {
+                allOf: [
+                    {$ref: '#/components/schemas/CollectionModel'},
+                    {type: 'object', properties: {_embedded: {type: 'object'}}},
+                ],
+            },
+        }));
+
+        expect(errors.map((e) => e.path)).toEqual(['/components/schemas/CollectionModel']);
+    });
+
+    it('accepts the same envelope once the base models are present', () => {
+        expect(validate(derivedDoc({
+            EntityModel: ENTITY_MODEL,
+            CollectionModel: ENTITY_MODEL,
+            PagedModel: {allOf: [{$ref: '#/components/schemas/CollectionModel'}]},
+            EntityModelThingResponse: {
+                allOf: [
+                    {$ref: '#/components/schemas/ThingResponse'},
+                    {$ref: '#/components/schemas/EntityModel'},
+                ],
+            },
+        }))).toEqual([]);
+    });
+
+    it('says nothing when no derived envelope is present', () => {
+        expect(validate(derivedDoc({
+            ThingResponse: {type: 'object', properties: {id: {type: 'string'}}},
+        }))).toEqual([]);
+    });
+});

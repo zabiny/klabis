@@ -5,6 +5,14 @@ import {parse} from 'yaml';
 import {deriveHalEnvelopes} from './derive.mjs';
 
 /**
+ * The HAL envelope base models the deriver composes with each payload. They live in
+ * `_shared/hal.yaml` but no module YAML references them (the deriver adds the refs, and it runs
+ * after bundling), so `collectComponents` never hoists them on its own. `ensureEnvelopeBaseModels`
+ * pulls them in explicitly.
+ */
+const ENVELOPE_BASE_MODELS = ['EntityModel', 'CollectionModel', 'PagedModel'];
+
+/**
  * Bundles a multi-file OpenAPI spec into a single document.
  *
  * Cross-file `$ref`s (`./members.yaml#/paths/...`, `./_shared/hal.yaml#/components/schemas/Link`)
@@ -116,6 +124,33 @@ function inlineRefs(node, baseDir, loadFile, components, conflicts) {
     return result;
 }
 
+/**
+ * Hoists the HAL envelope base models from `_shared/hal.yaml` into `components.schemas` if they are
+ * not already there. Called after ref inlining and before the deriver, which references them by a
+ * local `#/components/schemas/EntityModel` ref it adds itself.
+ *
+ * `loadHal` returns the parsed `_shared/hal.yaml` through the injected reader. A reader that has no
+ * entry for that file (some bundle.test.mjs stubs) makes this a no-op rather than an error: those
+ * tests never assert on a derived envelope's inner shape, and the real bundle run — which always has
+ * the file — is additionally checked by validate.mjs's envelope-schema pass.
+ */
+function ensureEnvelopeBaseModels(components, loadHal) {
+    const missing = ENVELOPE_BASE_MODELS.filter((name) => !components.schemas?.[name]);
+    if (missing.length === 0) return;
+
+    let halSchemas;
+    try {
+        halSchemas = loadHal()?.components?.schemas ?? {};
+    } catch {
+        return;
+    }
+
+    components.schemas ??= {};
+    for (const name of missing) {
+        if (halSchemas[name] !== undefined) components.schemas[name] = halSchemas[name];
+    }
+}
+
 /** Recursively sorts object keys so the emitted JSON is stable across runs. */
 export function sortKeysDeep(value) {
     if (Array.isArray(value)) return value.map(sortKeysDeep);
@@ -163,6 +198,10 @@ export function bundleSpec(rootFile, options = {}) {
     if (Object.keys(components).length > 0) {
         document.components = components;
     }
+
+    // The deriver composes each payload with a shared EntityModel/CollectionModel/PagedModel base;
+    // no module YAML references those, so hoist them from _shared/hal.yaml here.
+    ensureEnvelopeBaseModels(components, () => loadFile(resolve(rootDir, '_shared/hal.yaml')).doc);
 
     // After ref inlining (the deriver needs every payload schema present and locally addressable)
     // and before sortKeysDeep, so derived schemas are ordered like every other one.
