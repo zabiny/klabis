@@ -17,7 +17,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.time.Instant;
 import java.util.List;
@@ -160,11 +159,10 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    JsonNullable.of("Seniors"),
-                    JsonNullable.undefined(),
-                    JsonNullable.undefined()
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommandBuilder
+                    .builder(UpdateTrainingGroupCommand.from(group))
+                    .name("Seniors")
+                    .build();
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
 
@@ -181,11 +179,10 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(false);
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    JsonNullable.undefined(),
-                    JsonNullable.of(new AgeRange(5, 12)),
-                    JsonNullable.undefined()
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommandBuilder
+                    .builder(UpdateTrainingGroupCommand.from(group))
+                    .ageRange(new AgeRange(5, 12))
+                    .build();
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
 
@@ -201,11 +198,10 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(groupToUpdate));
             when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(true);
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    JsonNullable.undefined(),
-                    JsonNullable.of(new AgeRange(18, 25)),
-                    JsonNullable.undefined()
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommandBuilder
+                    .builder(UpdateTrainingGroupCommand.from(groupToUpdate))
+                    .ageRange(new AgeRange(18, 25))
+                    .build();
 
             assertThatThrownBy(() -> service.updateTrainingGroup(GROUP_ID, command))
                     .isInstanceOf(AgeRange.OverlappingAgeRangeException.class);
@@ -219,11 +215,10 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    JsonNullable.undefined(),
-                    JsonNullable.undefined(),
-                    JsonNullable.of(Set.of(TRAINER_2))
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommandBuilder
+                    .builder(UpdateTrainingGroupCommand.from(group))
+                    .trainers(Set.of(TRAINER_2))
+                    .build();
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
 
@@ -239,11 +234,12 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(false);
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    JsonNullable.of("Updated Juniors"),
-                    JsonNullable.of(new AgeRange(8, 14)),
-                    JsonNullable.of(Set.of(TRAINER_2))
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommandBuilder
+                    .builder(UpdateTrainingGroupCommand.from(group))
+                    .name("Updated Juniors")
+                    .ageRange(new AgeRange(8, 14))
+                    .trainers(Set.of(TRAINER_2))
+                    .build();
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
 
@@ -260,11 +256,7 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    JsonNullable.undefined(),
-                    JsonNullable.undefined(),
-                    JsonNullable.undefined()
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommand.from(group);
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
 
@@ -279,10 +271,7 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    JsonNullable.of("New Name"),
-                    JsonNullable.undefined(),
-                    JsonNullable.undefined()
-            );
+                    "New Name", new AgeRange(10, 18), Set.of(TRAINER));
 
             assertThatThrownBy(() -> service.updateTrainingGroup(GROUP_ID, command))
                     .isInstanceOf(GroupNotFoundException.class);
