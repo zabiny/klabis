@@ -6,7 +6,6 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -173,8 +172,8 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
         ));
 
         if (chipNumber != null) {
-            member.update(MemberUpdateMemberBuilder.builder()
-                    .chipNumber(JsonNullable.of(chipNumber))
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .chipNumber(chipNumber)
                     .build());
         }
 

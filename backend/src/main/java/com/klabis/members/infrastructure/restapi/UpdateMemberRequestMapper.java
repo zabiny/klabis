@@ -6,56 +6,71 @@ import com.klabis.members.domain.*;
 import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Consumer;
 
+/**
+ * Applies a PATCH {@link UpdateMemberRequest} onto a fully pre-filled {@link Member.UpdateMember}
+ * baseline (from {@link com.klabis.members.application.ManagementPort#prefilledUpdateCommand}).
+ * <p>
+ * This is where the three PATCH states are resolved, so the domain never sees {@link JsonNullable}:
+ * an <em>undefined</em> field leaves the baseline value in place, a <em>present-null</em> field
+ * clears it, and a <em>present</em> value sets it. Fields of {@link PersonalInformation} have no
+ * cleared state, so a present-null there also just retains the baseline.
+ */
 class UpdateMemberRequestMapper {
 
     private UpdateMemberRequestMapper() {}
 
-    static Member.UpdateMember toCommand(UpdateMemberRequest request, UserId updatedBy) {
+    static Member.UpdateMember toCommand(UpdateMemberRequest request, Member.UpdateMember prefilled, UserId updatedBy) {
         try {
-            return new Member.UpdateMember(
-                    map(request.email(), EmailAddress::of),
-                    map(request.phone(), PhoneNumber::of),
-                    map(request.address(), UpdateMemberRequestMapper::toAddress),
-                    request.chipNumber(),
-                    unwrap(request.nationality()),
-                    map(request.bankAccountNumber(), UpdateMemberRequestMapper::toBankAccountNumber),
-                    map(request.identityCard(), dto -> IdentityCard.of(dto.cardNumber(), dto.validityDate())),
-                    map(request.drivingLicenseGroup(), UpdateMemberRequestMapper::toDrivingLicenseGroup),
-                    map(request.medicalCourse(), UpdateMemberRequestMapper::toMedicalCourse),
-                    map(request.trainerLicense(), dto -> TrainerLicense.of(toTrainerLevel(dto.level()), dto.validityDate())),
-                    map(request.refereeLicense(), dto -> RefereeLicense.of(toRefereeLevel(dto.level()), dto.validityDate())),
-                    request.dietaryRestrictions(),
-                    map(request.guardian(), UpdateMemberRequestMapper::toGuardianInformation),
-                    unwrap(request.firstName()),
-                    unwrap(request.lastName()),
-                    unwrap(request.dateOfBirth()),
-                    toGender(unwrap(request.gender())),
-                    map(request.birthNumber(), UpdateMemberRequestMapper::toBirthNumber),
-                    updatedBy
-            );
+            var b = MemberUpdateMemberBuilder.builder(prefilled).updatedBy(updatedBy);
+
+            overlay(request.email(), v -> b.email(v == null ? null : EmailAddress.of(v)));
+            overlay(request.phone(), v -> b.phone(v == null ? null : PhoneNumber.of(v)));
+            overlay(request.address(), v -> b.address(v == null ? null : toAddress(v)));
+            overlay(request.chipNumber(), b::chipNumber);
+            overlay(request.bankAccountNumber(), v -> b.bankAccountNumber(toBankAccountNumber(v)));
+            overlay(request.identityCard(), v -> b.identityCard(v == null ? null : IdentityCard.of(v.cardNumber(), v.validityDate())));
+            overlay(request.drivingLicenseGroup(), v -> b.drivingLicenseGroup(toDrivingLicenseGroup(v)));
+            overlay(request.medicalCourse(), v -> b.medicalCourse(v == null ? null : toMedicalCourse(v)));
+            overlay(request.trainerLicense(), v -> b.trainerLicense(v == null ? null : TrainerLicense.of(toTrainerLevel(v.level()), v.validityDate())));
+            overlay(request.refereeLicense(), v -> b.refereeLicense(v == null ? null : RefereeLicense.of(toRefereeLevel(v.level()), v.validityDate())));
+            overlay(request.dietaryRestrictions(), b::dietaryRestrictions);
+            overlay(request.guardian(), v -> b.guardian(v == null ? null : toGuardianInformation(v)));
+            overlay(request.birthNumber(), v -> b.birthNumber(toBirthNumber(v)));
+
+            overlayValue(request.nationality(), b::nationality);
+            overlayValue(request.firstName(), b::firstName);
+            overlayValue(request.lastName(), b::lastName);
+            overlayValue(request.dateOfBirth(), b::dateOfBirth);
+            overlayValue(request.gender(), v -> b.gender(toGender(v)));
+
+            return b.build();
         } catch (IllegalArgumentException e) {
             throw new InvalidUpdateException(e.getMessage(), e);
         }
     }
 
     /**
-     * Applies {@code converter} only to a present non-null value, so an explicit null survives as a
-     * present null — the domain reads that as "clear this field" — instead of being handed to a
-     * factory that would reject it.
+     * Runs {@code apply} for a present field (including a present null, which means "clear"); an
+     * undefined field is left alone so the pre-filled baseline value stands.
      */
-    private static <T, R> JsonNullable<R> map(JsonNullable<T> field, Function<T, R> converter) {
-        return field.map(value -> value == null ? null : converter.apply(value));
+    private static <T> void overlay(JsonNullable<T> field, Consumer<T> apply) {
+        if (field.isPresent()) {
+            apply.accept(field.get());
+        }
     }
 
     /**
-     * For the fields of {@link PersonalInformation}, which have no cleared state: an explicit null
-     * collapses to "retain", matching the plain-null contract of the command's required fields.
-     * gender needs no unwrapping — it is not wrapped, see PatchRequestWrapperArchitectureTest.
+     * For {@link PersonalInformation} fields, which have no cleared state: only a present non-null
+     * value overrides the baseline; a present null retains it, matching the pre-refactor contract.
      */
-    private static <T> T unwrap(JsonNullable<T> field) {
-        return field.isPresent() ? field.orElseThrow() : null;
+    private static <T> void overlayValue(JsonNullable<T> field, Consumer<T> apply) {
+        field.ifPresent(value -> {
+            if (value != null) {
+                apply.accept(value);
+            }
+        });
     }
 
     private static Address toAddress(AddressRequest a) {
@@ -63,7 +78,7 @@ class UpdateMemberRequestMapper {
     }
 
     private static BankAccountNumber toBankAccountNumber(String value) {
-        return value.isBlank() ? null : BankAccountNumber.of(value);
+        return value == null || value.isBlank() ? null : BankAccountNumber.of(value);
     }
 
     private static MedicalCourse toMedicalCourse(MedicalCourseDto dto) {
@@ -71,7 +86,7 @@ class UpdateMemberRequestMapper {
     }
 
     private static BirthNumber toBirthNumber(String value) {
-        return value.isBlank() ? null : BirthNumber.of(value);
+        return value == null || value.isBlank() ? null : BirthNumber.of(value);
     }
 
     private static com.klabis.members.domain.DrivingLicenseGroup toDrivingLicenseGroup(DrivingLicenseGroup dto) {

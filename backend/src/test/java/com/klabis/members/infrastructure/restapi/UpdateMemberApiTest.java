@@ -24,7 +24,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
-import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -106,6 +105,8 @@ class UpdateMemberApiTest {
             @DisplayName("updating member email should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldUpdateMemberEmailWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -125,15 +126,17 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email().orElseThrow()).isEqualTo(EmailAddress.of("new.email@example.com"));
-                assertThat(command.phone().isPresent()).isFalse();
-                assertThat(command.address().isPresent()).isFalse();
+                assertThat(command.email()).isEqualTo(EmailAddress.of("new.email@example.com"));
+                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420777123456"));
+                assertThat(command.address()).isEqualTo(stubMember().getAddress());
             }
 
             @Test
             @DisplayName("updating member phone should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldUpdateMemberPhoneWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -153,15 +156,17 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email().isPresent()).isFalse();
-                assertThat(command.phone().orElseThrow()).isEqualTo(PhoneNumber.of("+420777123456"));
-                assertThat(command.address().isPresent()).isFalse();
+                assertThat(command.email()).isEqualTo(EmailAddress.of("jan.novak@example.com"));
+                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420777123456"));
+                assertThat(command.address()).isEqualTo(stubMember().getAddress());
             }
 
             @Test
             @DisplayName("updating member address should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldUpdateMemberAddressWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -186,19 +191,20 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email().isPresent()).isFalse();
-                assertThat(command.phone().isPresent()).isFalse();
-                assertThat(command.address().isPresent()).isTrue();
-                assertThat(command.address().orElseThrow().street()).isEqualTo("New Street 123");
-                assertThat(command.address().orElseThrow().city()).isEqualTo("Prague");
-                assertThat(command.address().orElseThrow().postalCode()).isEqualTo("11000");
-                assertThat(command.address().orElseThrow().country()).isEqualTo("CZ");
+                assertThat(command.email()).isEqualTo(EmailAddress.of("jan.novak@example.com"));
+                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420777123456"));
+                assertThat(command.address().street()).isEqualTo("New Street 123");
+                assertThat(command.address().city()).isEqualTo("Prague");
+                assertThat(command.address().postalCode()).isEqualTo("11000");
+                assertThat(command.address().country()).isEqualTo("CZ");
             }
 
             @Test
             @DisplayName("updating admin-only fields should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldUpdateAdminOnlyFieldsWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -222,9 +228,9 @@ class UpdateMemberApiTest {
 
                 var command = captor.getValue();
                 assertThat(command.gender()).isEqualTo(Gender.FEMALE);
-                assertThat(command.chipNumber().orElseThrow()).isEqualTo("12345");
-                assertThat(command.drivingLicenseGroup().orElseThrow()).isEqualTo(DrivingLicenseGroup.B);
-                assertThat(command.dietaryRestrictions().orElseThrow()).isEqualTo("Vegetarian");
+                assertThat(command.chipNumber()).isEqualTo("12345");
+                assertThat(command.drivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.B);
+                assertThat(command.dietaryRestrictions()).isEqualTo("Vegetarian");
             }
 
             /**
@@ -236,6 +242,8 @@ class UpdateMemberApiTest {
             @DisplayName("updating admin-only fields without MEMBERS:MANAGE authority should return 403")
             @WithKlabisMockUser(authorities = {})
             void shouldRejectUpdateAdminOnlyFieldsWithoutAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -261,6 +269,8 @@ class UpdateMemberApiTest {
             @DisplayName("updating birth number and bank account should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldUpdateBirthNumberAndBankAccountWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -281,14 +291,16 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber().orElseThrow()).isEqualTo(BirthNumber.of("900101/1234"));
-                assertThat(command.bankAccountNumber().orElseThrow()).isEqualTo(BankAccountNumber.of("12345/5678"));
+                assertThat(command.birthNumber()).isEqualTo(BirthNumber.of("900101/1234"));
+                assertThat(command.bankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
             }
 
             @Test
             @DisplayName("updating only birth number should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldUpdateOnlyBirthNumberWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -308,14 +320,16 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber().orElseThrow()).isEqualTo(BirthNumber.of("850520/9876"));
-                assertThat(command.bankAccountNumber().isPresent()).isFalse();
+                assertThat(command.birthNumber()).isEqualTo(BirthNumber.of("850520/9876"));
+                assertThat(command.bankAccountNumber()).isEqualTo(null);
             }
 
             @Test
             @DisplayName("sending null for birthNumber and bankAccountNumber should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldAcceptNullBirthNumberAndBankAccountNumberWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -338,20 +352,18 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber().isPresent()).isTrue();
-                assertThat(command.birthNumber().orElseThrow()).isNull();
-                assertThat(command.bankAccountNumber().isPresent()).isTrue();
-                assertThat(command.bankAccountNumber().orElseThrow()).isNull();
-                assertThat(command.chipNumber().isPresent()).isTrue();
-                assertThat(command.chipNumber().orElseThrow()).isNull();
-                assertThat(command.dietaryRestrictions().isPresent()).isTrue();
-                assertThat(command.dietaryRestrictions().orElseThrow()).isNull();
+                assertThat(command.birthNumber()).isNull();
+                assertThat(command.bankAccountNumber()).isNull();
+                assertThat(command.chipNumber()).isNull();
+                assertThat(command.dietaryRestrictions()).isNull();
             }
 
             @Test
             @DisplayName("updating only bank account number should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldUpdateOnlyBankAccountNumberWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -371,14 +383,16 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.birthNumber().isPresent()).isFalse();
-                assertThat(command.bankAccountNumber().orElseThrow()).isEqualTo(BankAccountNumber.of("12345/5678"));
+                assertThat(command.birthNumber()).isEqualTo(null);
+                assertThat(command.bankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
             }
 
             @Test
             @DisplayName("updating documents should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldUpdateDocumentsWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -413,15 +427,17 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.identityCard().isPresent()).isTrue();
-                assertThat(command.medicalCourse().isPresent()).isTrue();
-                assertThat(command.trainerLicense().isPresent()).isTrue();
+                assertThat(command.identityCard()).isNotNull();
+                assertThat(command.medicalCourse()).isNotNull();
+                assertThat(command.trainerLicense()).isNotNull();
             }
 
             @Test
             @DisplayName("performing partial update should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldPerformPartialUpdateWhenAdmin() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -442,8 +458,8 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(any(MemberId.class), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email().orElseThrow()).isEqualTo(EmailAddress.of("partial.update@example.com"));
-                assertThat(command.dietaryRestrictions().orElseThrow()).isEqualTo("No dairy");
+                assertThat(command.email()).isEqualTo(EmailAddress.of("partial.update@example.com"));
+                assertThat(command.dietaryRestrictions()).isEqualTo("No dairy");
             }
         }
 
@@ -456,6 +472,8 @@ class UpdateMemberApiTest {
             @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
             void shouldAllowMemberToUpdateOwnEmail() throws Exception {
                 UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -475,7 +493,7 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.email().orElseThrow()).isEqualTo(EmailAddress.of("my.new.email@example.com"));
+                assertThat(command.email()).isEqualTo(EmailAddress.of("my.new.email@example.com"));
             }
 
             @Test
@@ -483,6 +501,8 @@ class UpdateMemberApiTest {
             @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
             void shouldAllowMemberToUpdateOwnPhone() throws Exception {
                 UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -502,7 +522,7 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.phone().orElseThrow()).isEqualTo(PhoneNumber.of("+420987654321"));
+                assertThat(command.phone()).isEqualTo(PhoneNumber.of("+420987654321"));
             }
 
             @Test
@@ -510,6 +530,8 @@ class UpdateMemberApiTest {
             @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
             void shouldAllowMemberToUpdateOwnAddress() throws Exception {
                 UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -534,9 +556,8 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.address().isPresent()).isTrue();
-                assertThat(command.address().orElseThrow().street()).isEqualTo("My New Address 456");
-                assertThat(command.address().orElseThrow().city()).isEqualTo("Brno");
+                assertThat(command.address().street()).isEqualTo("My New Address 456");
+                assertThat(command.address().city()).isEqualTo("Brno");
             }
 
             @Test
@@ -544,6 +565,8 @@ class UpdateMemberApiTest {
             @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
             void shouldAllowMemberToUpdateDietaryRestrictions() throws Exception {
                 UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -563,7 +586,7 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.dietaryRestrictions().orElseThrow()).isEqualTo("Gluten-free, no nuts");
+                assertThat(command.dietaryRestrictions()).isEqualTo("Gluten-free, no nuts");
             }
 
             @Test
@@ -571,6 +594,8 @@ class UpdateMemberApiTest {
             @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
             void shouldAcceptNullOptionalStringFieldsWhenSelfUpdate() throws Exception {
                 UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -592,12 +617,9 @@ class UpdateMemberApiTest {
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
 
                 var command = captor.getValue();
-                assertThat(command.chipNumber().isPresent()).isTrue();
-                assertThat(command.chipNumber().orElseThrow()).isNull();
-                assertThat(command.bankAccountNumber().isPresent()).isTrue();
-                assertThat(command.bankAccountNumber().orElseThrow()).isNull();
-                assertThat(command.dietaryRestrictions().isPresent()).isTrue();
-                assertThat(command.dietaryRestrictions().orElseThrow()).isNull();
+                assertThat(command.chipNumber()).isNull();
+                assertThat(command.bankAccountNumber()).isNull();
+                assertThat(command.dietaryRestrictions()).isNull();
             }
 
             @Test
@@ -659,6 +681,8 @@ class UpdateMemberApiTest {
             @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
             void shouldAllowMemberToUpdateOwnChipNumber() throws Exception {
                 UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -675,7 +699,7 @@ class UpdateMemberApiTest {
 
                 var captor = forClass(Member.UpdateMember.class);
                 verify(memberService).updateMember(eq(new MemberId(currentMemberId)), captor.capture());
-                assertThat(captor.getValue().chipNumber().orElseThrow()).isEqualTo("12345");
+                assertThat(captor.getValue().chipNumber()).isEqualTo("12345");
             }
         }
 
@@ -729,6 +753,8 @@ class UpdateMemberApiTest {
             @DisplayName("empty update should return 400")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldReturn400WhenUpdateIsEmpty() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenThrow(new InvalidUpdateException("Update request must contain at least one field"));
 
@@ -747,6 +773,8 @@ class UpdateMemberApiTest {
             @DisplayName("invalid email format should return 400")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldReturn400WhenEmailInvalid() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenThrow(new InvalidUpdateException("Invalid email format: invalid-email"));
 
@@ -769,6 +797,8 @@ class UpdateMemberApiTest {
             @DisplayName("invalid phone format should return 400")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldReturn400WhenPhoneInvalid() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenThrow(new InvalidUpdateException("Invalid phone format: 123"));
 
@@ -995,6 +1025,8 @@ class UpdateMemberApiTest {
             void shouldReturn404WhenMemberNotFound() throws Exception {
                 UUID nonExistentId = UUID.randomUUID();
 
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenThrow(new MemberNotFoundException(new MemberId(nonExistentId)));
 
@@ -1018,6 +1050,8 @@ class UpdateMemberApiTest {
             @DisplayName("concurrent update should return 409")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldReturn409WhenConcurrentUpdate() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenThrow(new OptimisticLockingFailureException("Concurrent update for member - test purpose"));
 
@@ -1045,6 +1079,8 @@ class UpdateMemberApiTest {
             @DisplayName("PATCH should return 204 No Content (HATEOAS links available via GET)")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldReturn204NoContentForPatchWithHalFormsAccept() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -1066,6 +1102,8 @@ class UpdateMemberApiTest {
             @DisplayName("response should include collection link")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldIncludeCollectionLink() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -1087,6 +1125,8 @@ class UpdateMemberApiTest {
             @DisplayName("response should include edit link")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldIncludeEditLink() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 
@@ -1108,6 +1148,8 @@ class UpdateMemberApiTest {
             @DisplayName("PATCH with multiple fields should return 204 No Content")
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
             void shouldReturn204NoContentWhenUpdatingMultipleFields() throws Exception {
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(stubMember()));
                 when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                         .thenReturn(stubMember());
 

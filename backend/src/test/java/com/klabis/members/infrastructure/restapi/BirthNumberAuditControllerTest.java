@@ -102,6 +102,8 @@ class BirthNumberAuditControllerTest {
                     .withNoGuardian()
                     .build();
 
+            when(managementService.prefilledUpdateCommand(any(MemberId.class)))
+                    .thenReturn(Member.UpdateMember.from(existingMember));
             when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                     .thenReturn(existingMember);
 
@@ -115,7 +117,7 @@ class BirthNumberAuditControllerTest {
             verify(managementService).updateMember(eq(new MemberId(memberId)), commandCaptor.capture());
 
             Member.UpdateMember command = commandCaptor.getValue();
-            assertThat(command.birthNumber().orElseThrow()).isEqualTo(BirthNumber.of("900101/1234"));
+            assertThat(command.birthNumber()).isEqualTo(BirthNumber.of("900101/1234"));
             assertThat(command.updatedBy()).isNotNull();
         }
 
@@ -129,6 +131,8 @@ class BirthNumberAuditControllerTest {
                     .withNoGuardian()
                     .build();
 
+            when(managementService.prefilledUpdateCommand(any(MemberId.class)))
+                    .thenReturn(Member.UpdateMember.from(existingMember));
             when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
                     .thenReturn(existingMember);
 
@@ -142,7 +146,7 @@ class BirthNumberAuditControllerTest {
             verify(managementService).updateMember(eq(new MemberId(memberId)), commandCaptor.capture());
 
             Member.UpdateMember command = commandCaptor.getValue();
-            assertThat(command.birthNumber().isPresent()).isFalse();
+            assertThat(command.birthNumber()).isEqualTo(existingMember.getBirthNumber());
             assertThat(command.updatedBy()).isNotNull();
         }
     }

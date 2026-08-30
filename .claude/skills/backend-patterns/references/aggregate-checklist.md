@@ -36,14 +36,17 @@ Use this checklist when adding a new Spring Modulith module or new Aggregate to 
   - [ ] `@ExposesResourceFor(<Aggregate>.class)`
   - [ ] `@SecurityRequirement(name = "KlabisAuth", scopes = {...})`
 - [ ] Convert UUID path variables to typed IDs at controller boundary: `new <Aggregate>Id(uuid)`
-- [ ] Implement role-based command routing (admin vs. self-update)
 - [ ] Add state-driven HATEOAS affordances using `klabisLinkTo()` / `klabisAfford()`, passing the
       generated `*Api` interface to `methodOn(...)` — never the controller class, or the template
       loses its input metadata (see references/rest-adapter.md, "HATEOAS Rules")
 - [ ] Leave `@RequestBody` and Bean Validation constraints on the interface; the override declares
       only `@Parameter` / `@Operation` for springdoc
-- [ ] Create MapStruct `@Mapper` for simple DTO mapping
-- [ ] Create manual mapper utility class for complex PATCH operations with `JsonNullable`
+- [ ] Create MapStruct `Converter<S,T>` per conversion for simple DTO mapping (see rest-adapter.md,
+      "DTO ↔ Domain Mapping")
+- [ ] For PATCH: expose `prefilledUpdateCommand(<Aggregate>Id)` on the port, a `from(<Aggregate>)`
+      baseline factory on the domain command (plain types, no `JsonNullable`), and a hand-written
+      `toCommand(request, prefilled, updatedBy)` mapper that overlays only present request fields
+      (see rest-adapter.md, "PATCH endpoints")
 
 ## 4. Infrastructure — JDBC
 
