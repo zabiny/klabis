@@ -1,0 +1,507 @@
+# Calendar module — the API surface of CalendarController, IcalTokenController and
+# IcalFeedController (calendar module).
+#
+# CalendarController manages calendar items (manual and event-linked). IcalTokenController manages
+# the current user's personal iCal feed token. IcalFeedController serves the actual iCalendar feed —
+# see the note on getMySchedule below for why it is documented rather than fully spec-first.
+#
+# All CALENDAR_MANAGE checks were plain @HasAuthority on the controller — no imperative
+# checkXxx()-style authorization was found in this module, so every operation maps directly to
+# x-klabis-authority with no x-klabis-owner-visible pairing.
+
+# Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
+# from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
+# klabis.yaml rather than shared, because $ref cannot target a document's own info; the
+# bundler ignores both keys (modules are pulled in by #/paths/... pointer, never whole-file)
+# and validate.mjs pins version to the root's so the two cannot drift.
+openapi: 3.1.0
+
+info:
+  title: Klabis API — Calendar module
+  description: The Calendar slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
+paths:
+
+  /api/calendar-items:
+    get:
+      operationId: listCalendarItems
+      tags: [Calendar]
+      summary: List calendar items with date range filtering
+      description: |
+        Retrieves a list of calendar items filtered by date range.
+        If dates not provided, defaults to current month.
+        Maximum date range is 1 year (366 days).
+        Default sort: startDate,asc. Allowed fields: id, name, startDate, endDate.
+        When mySchedule=true, returns only EVENT_DATE items linked to events where the current
+        user is an active participant or event coordinator.
+      security:
+        - KlabisAuth: [CALENDAR]
+      # No x-klabis-authority: reading the calendar requires authentication only. There is no
+      # CALENDAR:READ authority (Authority.java has CALENDAR_MANAGE alone), and the controller
+      # never restricted these reads — adding one here would change behaviour, not describe it.
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - name: startDate
+          in: query
+          description: Start date for filtering (ISO DATE format, defaults to first day of current month)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          description: End date for filtering (ISO DATE format, defaults to last day of current month)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: sort
+          in: query
+          description: 'Sorting parameters (default: startDate,asc)'
+          required: false
+          schema:
+            type: string
+            default: startDate,asc
+        - name: mySchedule
+          in: query
+          description: |
+            When true, restricts results to EVENT_DATE items for events where the current user is
+            a participant or coordinator
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of calendar items retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarItemDto'
+          x-hal-links:
+            self:
+              description: This collection, with the current date-range, sort and mySchedule parameters
+            next:
+              description: Same range shifted forward by one month
+            prev:
+              description: Same range shifted back by one month
+          x-hal-templates:
+            createCalendarItem:
+              operation: createCalendarItem
+              description: Present only for callers with CALENDAR:MANAGE
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: createCalendarItem
+      tags: [Calendar]
+      summary: Create a new manual calendar item
+      description: |
+        Creates a new manual calendar item (not linked to an event). Manual items can be updated
+        and deleted. Returns Location header pointing to the created resource.
+      security:
+        - KlabisAuth: [CALENDAR]
+      x-klabis-authority: CALENDAR_MANAGE
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCalendarItemRequest'
+      responses:
+        '201':
+          description: Calendar item successfully created
+          headers:
+            Location:
+              description: URI of the created calendar item
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/calendar-items/{id}:
+    get:
+      operationId: getCalendarItem
+      tags: [Calendar]
+      summary: Get calendar item by ID
+      description: |
+        Retrieves detailed calendar item information by ID. Returns HATEOAS links based on whether
+        the item is manually created or event-linked.
+      security:
+        - KlabisAuth: [CALENDAR]
+      # See listCalendarItems: authenticated-only, no CALENDAR:READ authority exists.
+      parameters:
+        - $ref: '#/components/parameters/CalendarItemIdParam'
+      responses:
+        '200':
+          description: Calendar item found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarItemDto'
+          x-hal-links:
+            self:
+              description: |
+                This calendar item. Event-linked items carry no update/delete affordances since
+                they are read-only.
+            event:
+              operation: getEvent
+              description: Present only for event-linked items — the event this item is derived from
+            collection:
+              operation: listCalendarItems
+              description: Back to the current month's calendar item list
+          x-hal-templates:
+            default:
+              operation: updateCalendarItem
+              description: Present only for manual items and callers with CALENDAR:MANAGE
+            deleteCalendarItem:
+              operation: deleteCalendarItem
+              description: Present only for manual items and callers with CALENDAR:MANAGE
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    put:
+      operationId: updateCalendarItem
+      tags: [Calendar]
+      summary: Update a manual calendar item
+      description: |
+        Updates calendar item information. Only allowed for manual items (not event-linked).
+        Event-linked items are read-only and managed automatically.
+      security:
+        - KlabisAuth: [CALENDAR]
+      x-klabis-authority: CALENDAR_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/CalendarItemIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCalendarItemRequest'
+      responses:
+        '204':
+          description: Calendar item successfully updated
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          description: Cannot update event-linked calendar item
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: deleteCalendarItem
+      tags: [Calendar]
+      summary: Delete a manual calendar item
+      description: |
+        Deletes a manual calendar item. Only allowed for manual items (not event-linked).
+        Event-linked items are read-only and managed automatically.
+      security:
+        - KlabisAuth: [CALENDAR]
+      x-klabis-authority: CALENDAR_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/CalendarItemIdParam'
+      responses:
+        '204':
+          description: Calendar item successfully deleted
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          description: Cannot delete event-linked calendar item
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/me/ical-token:
+    get:
+      operationId: getTokenState
+      tags: [IcalToken]
+      summary: Get iCal feed token state
+      description: |
+        Returns the current iCal feed token state for the authenticated user.
+        If a token exists, returns the masked subscribe URL and the timestamp when the token was
+        last set. The URL is masked — the full raw token is never stored and can only be revealed
+        at generation time. Use the 'regenerate' affordance (POST) to create or rotate the token
+        and receive the full URL once. If no token exists, returns url=null.
+      security:
+        - KlabisAuth: [openid]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+      responses:
+        '200':
+          description: Token state returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IcalTokenResponse'
+          x-hal-links:
+            self:
+              description: This token state
+          x-hal-templates:
+            default:
+              operation: generateToken
+              description: Generates or rotates the token; the full subscribe URL is returned once
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: generateToken
+      tags: [IcalToken]
+      summary: Generate or regenerate iCal feed token
+      description: |
+        Generates a new iCal feed token for the authenticated user, or regenerates (rotates) it if
+        one already exists. The previous subscribe URL immediately stops working.
+        Returns the full subscribe URL exactly once — it cannot be recovered afterwards.
+        Store it securely and add it to your calendar application.
+      security:
+        - KlabisAuth: [openid]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+      responses:
+        '200':
+          description: New token generated; full subscribe URL returned once
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IcalTokenResponse'
+          x-hal-links:
+            self:
+              description: This token state
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  # getMySchedule IS wired into openApiModule/codegen (IcalFeedApi, tag IcalFeed) even though it
+  # returns a raw RFC 5545 string rather than a HAL envelope — a String/text/calendar response is
+  # no less legitimate a codegen target than a DTO one; ResponseEntity<String> is exactly what
+  # IcalFeedController already returns. What stays different from every other operation:
+  #   - it lives outside /api/, which every other spec-first path assumes
+  #   - no x-klabis-authority / security scheme: authentication is a raw `?token=` PAT checked by
+  #     IcalTokenAuthenticationFilter (see WebSecurityCommonConfiguration), not a bearer JWT — the
+  #     token parameter below stays a plain @RequestParam with no x-klabis-authority, since the
+  #     authorization decision is made from the token's value, not from a caller identity/role
+  # Verified HalResponseBodyAdvice.isHalMediaType(selectedContentType) returns false for
+  # "text/calendar", so the advice clears HalResponseContext and passes the ResponseEntity<String>
+  # body through untouched — consistent with this endpoint never populating HalResponseContext at all.
+  /ical/my-schedule.ics:
+    get:
+      operationId: getMySchedule
+      # Serves text/calendar to calendar clients, not hypermedia.
+      x-klabis-hal: false
+      tags: [IcalFeed]
+      summary: Personal schedule iCalendar feed
+      description: |
+        Returns an iCalendar (RFC 5545) feed for the authenticated user's personal schedule.
+        Includes events where the user is an active participant OR acts as coordinator.
+        Authenticate via the ?token= query parameter (Personal Access Token).
+      parameters:
+        - name: token
+          in: query
+          description: Personal Access Token for calendar authentication
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: iCalendar feed returned
+          content:
+            text/calendar:
+              schema:
+                type: string
+        '401':
+          description: Missing or invalid token
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+
+components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
+
+  parameters:
+    CalendarItemIdParam:
+      name: id
+      in: path
+      description: Calendar item UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+
+    CalendarItemDto:
+      type: object
+      description: A calendar item — either manually created or derived from an event's date.
+      properties:
+        id:
+          type: string
+          format: uuid
+          x-klabis-halforms-access: READ_ONLY
+        name:
+          type: string
+        description:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        eventId:
+          type: string
+          format: uuid
+          description: Present only for event-linked items — the event this item is derived from.
+          x-klabis-halforms-access: READ_ONLY
+
+    CreateCalendarItemRequest:
+      type: object
+      description: Manual calendar item creation data
+      required: [name, startDate, endDate]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          # Reproduces @NotBlank(message = "Calendar item name is required"); the custom message is
+          # lost, the constraint is not. CalendarItem.validateName() (Assert.hasText) guards the
+          # same rule in the domain.
+          x-klabis-not-blank: true
+        description:
+          type: string
+          maxLength: 1000
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+
+    UpdateCalendarItemRequest:
+      type: object
+      description: Manual calendar item update data
+      required: [name, startDate, endDate]
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          x-klabis-not-blank: true
+        description:
+          type: string
+          maxLength: 1000
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+
+    IcalTokenResponse:
+      type: object
+      description: |
+        Current state of the caller's personal iCal feed token. `url` is masked except immediately
+        after generateToken, when it carries the full subscribe URL exactly once.
+      properties:
+        url:
+          type: string
+          x-klabis-halforms-access: READ_ONLY
+        lastSetAt:
+          type: string
+          format: date-time
+          x-klabis-halforms-access: READ_ONLY

@@ -181,4 +181,52 @@ describe('HalEmbeddedTable', () => {
         const table = screen.getByTestId('klabis-table-with-query');
         expect(table).toHaveAttribute('data-link', '/api/test/resource');
     });
+
+    it('appends extraParams to a relative self link without throwing (regression: Invalid URL)', () => {
+        mockGetResourceLink.mockReturnValue({href: '/api/events'});
+
+        render(
+            <HalEmbeddedTable
+                collectionName="testCollection"
+                extraParams={{year: '2026', when: 'budouci'}}
+            >
+                {mockTableCell}
+            </HalEmbeddedTable>
+        );
+
+        const table = screen.getByTestId('klabis-table-with-query');
+        expect(table).toHaveAttribute('data-link', '/api/events?year=2026&when=budouci');
+    });
+
+    it('supports multi-value extraParams on a relative self link', () => {
+        mockGetResourceLink.mockReturnValue({href: '/api/events'});
+
+        render(
+            <HalEmbeddedTable
+                collectionName="testCollection"
+                extraParams={{status: ['OPEN', 'CLOSED']}}
+            >
+                {mockTableCell}
+            </HalEmbeddedTable>
+        );
+
+        const table = screen.getByTestId('klabis-table-with-query');
+        expect(table).toHaveAttribute('data-link', '/api/events?status=OPEN&status=CLOSED');
+    });
+
+    it('normalises an absolute self link to origin-relative when appending extraParams', () => {
+        mockGetResourceLink.mockReturnValue({href: 'https://api.example.com/api/events'});
+
+        render(
+            <HalEmbeddedTable
+                collectionName="testCollection"
+                extraParams={{year: '2026'}}
+            >
+                {mockTableCell}
+            </HalEmbeddedTable>
+        );
+
+        const table = screen.getByTestId('klabis-table-with-query');
+        expect(table).toHaveAttribute('data-link', '/api/events?year=2026');
+    });
 });

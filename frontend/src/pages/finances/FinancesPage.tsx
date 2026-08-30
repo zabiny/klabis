@@ -12,6 +12,7 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {Button} from "../../components/UI";
 import {formatCurrency, formatDate} from "./financeFormatters.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
+import {parseHalHref, serializeHalHref} from "../../api/hateoas.ts";
 import {MemberName} from "../../components/members/MemberName.tsx";
 
 type TransactionItem = EntityModel<{
@@ -106,7 +107,7 @@ const TransactionsTableContent = ({
     const {sort, setSort, reset} = useTableSort(TRANSACTIONS_TABLE_ID, defaultSort);
 
     const queryUrl = useMemo(() => {
-        const url = new URL(selfHref);
+        const url = parseHalHref(selfHref);
         url.searchParams.set('page', String(page));
         url.searchParams.set('size', String(rowsPerPage));
         url.searchParams.delete('sort');
@@ -118,7 +119,7 @@ const TransactionsTableContent = ({
                 url.searchParams.set(key, value);
             });
         }
-        return url.toString();
+        return serializeHalHref(url);
     }, [selfHref, page, rowsPerPage, sort, extraParams]);
 
     const {data: response, error} = useAuthorizedQuery<HalCollectionResponse>(queryUrl, {

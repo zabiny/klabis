@@ -31,3 +31,9 @@ backend/local.env
 
 # mailpit TLS certificates (generate locally, never commit private key)
 /tools/mailpit/certs/
+
+# OpenAPI spec-first migration: build artifacts, generated on demand from docs/openapi/spec/
+/docs/openapi/klabis-full.json
+/docs/openapi/generated/
+/docs/openapi/build/
+/tools/openapi-bundle/node_modules/

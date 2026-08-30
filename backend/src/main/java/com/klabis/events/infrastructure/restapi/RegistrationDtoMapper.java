@@ -8,6 +8,8 @@ import com.klabis.members.Members;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 class RegistrationDtoMapper {
 
@@ -17,19 +19,27 @@ class RegistrationDtoMapper {
             member = members.findById(registration.memberId())
                     .orElseThrow(() -> new IllegalStateException("Member not found for registration: " + registration.memberId()));
         }
-        return new RegistrationSummaryDto(
-                member.firstName(),
-                member.lastName(),
-                toCategoryDto(registration, event),
-                registration.registeredAt(),
-                event.getCoordinators(),
-                registration.memberId()
-        );
+        return RegistrationSummaryDtoBuilder.builder()
+                .firstName(member.firstName())
+                .lastName(member.lastName())
+                .category(toCategoryDto(registration, event))
+                .registrationTime(registration.registeredAt())
+                .coordinators(toCoordinatorUuids(event.getCoordinators()))
+                .registeredMemberId(registration.memberId().uuid())
+                .build();
     }
 
-    static EventDto.EventCategoryDto toCategoryDto(EventRegistration registration, Event event) {
+    private static List<UUID> toCoordinatorUuids(Set<MemberId> coordinators) {
+        return coordinators.stream().map(MemberId::uuid).toList();
+    }
+
+    static EventCategoryDto toCategoryDto(EventRegistration registration, Event event) {
         return event.findCategory(registration.categoryId())
-                .map(category -> new EventDto.EventCategoryDto(category.id(), category.name(), null))
+                .map(category -> EventCategoryDtoBuilder.builder()
+                        .id(category.id().value())
+                        .name(category.name())
+                        .fee(null)
+                        .build())
                 .orElse(null);
     }
 

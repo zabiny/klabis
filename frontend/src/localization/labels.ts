@@ -13,6 +13,7 @@ export const labels = {
         'membership-fee-tiers': 'Katalog tierů',
         'fee-selection-campaigns': 'Kampaň volby členského příspěvku',
         'membership-fees': 'Členské příspěvky',
+        admin: 'Přehled administrace',
     },
 
     buttons: {

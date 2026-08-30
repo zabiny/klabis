@@ -244,13 +244,30 @@ class TrainingGroupControllerTest {
     @DisplayName("PATCH /api/training-groups/{id}")
     class UpdateTrainingGroupTests {
 
+        private TrainingGroup stubGroup() {
+            return buildTrainingGroup(GROUP_UUID, "Original", new AgeRange(10, 18), TRAINER_ID);
+        }
+
+        private void stubPrefill() {
+            when(trainingGroupManagementService.prefilledUpdateCommand(any(TrainingGroupId.class)))
+                    .thenReturn(com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.from(stubGroup()));
+        }
+
+        private com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand capturedCommand() {
+            var captor = org.mockito.ArgumentCaptor.forClass(
+                    com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
+            org.mockito.Mockito.verify(trainingGroupManagementService)
+                    .updateTrainingGroup(any(TrainingGroupId.class), captor.capture());
+            return captor.getValue();
+        }
+
         @Test
-        @DisplayName("should return 204 when updating name only")
+        @DisplayName("should return 204 when updating name only; other fields keep the baseline value")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
         void shouldReturn204WhenUpdatingNameOnly() throws Exception {
-            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+            stubPrefill();
             when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
-                    .thenReturn(group);
+                    .thenReturn(stubGroup());
 
             mockMvc.perform(
                             patch("/api/training-groups/{id}", GROUP_UUID)
@@ -261,15 +278,21 @@ class TrainingGroupControllerTest {
                                             """)
                     )
                     .andExpect(status().isNoContent());
+
+            var command = capturedCommand();
+            org.assertj.core.api.Assertions.assertThat(command.name()).isEqualTo("Updated");
+            org.assertj.core.api.Assertions.assertThat(command.ageRange()).isEqualTo(new AgeRange(10, 18));
+            org.assertj.core.api.Assertions.assertThat(command.trainers())
+                    .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
         }
 
         @Test
-        @DisplayName("should return 204 when name is updated and trainers field is explicitly null (HAL forms sends null for untouched list)")
+        @DisplayName("an explicit null for a non-clearable field retains the baseline value (HAL forms sends null for untouched list)")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
-        void shouldReturn204WhenUpdatingNameWithExplicitNullTrainers() throws Exception {
-            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+        void shouldRetainBaselineWhenExplicitNullTrainers() throws Exception {
+            stubPrefill();
             when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
-                    .thenReturn(group);
+                    .thenReturn(stubGroup());
 
             mockMvc.perform(
                             patch("/api/training-groups/{id}", GROUP_UUID)
@@ -280,15 +303,20 @@ class TrainingGroupControllerTest {
                                             """)
                     )
                     .andExpect(status().isNoContent());
+
+            var command = capturedCommand();
+            org.assertj.core.api.Assertions.assertThat(command.name()).isEqualTo("Updated");
+            org.assertj.core.api.Assertions.assertThat(command.trainers())
+                    .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
         }
 
         @Test
         @DisplayName("should return 204 and pass trainer MemberIds to command when trainers list is provided")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
         void shouldReturn204WhenUpdatingTrainersList() throws Exception {
-            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+            stubPrefill();
             when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
-                    .thenReturn(group);
+                    .thenReturn(stubGroup());
 
             mockMvc.perform(
                             patch("/api/training-groups/{id}", GROUP_UUID)
@@ -300,11 +328,74 @@ class TrainingGroupControllerTest {
                     )
                     .andExpect(status().isNoContent());
 
-            var commandCaptor = org.mockito.ArgumentCaptor.forClass(
-                    com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
-            org.mockito.Mockito.verify(trainingGroupManagementService)
-                    .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
-            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().throwIfNotProvided())
+            org.assertj.core.api.Assertions.assertThat(capturedCommand().trainers())
+                    .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
+        }
+
+        @Test
+        @DisplayName("should map ageRange to the domain type when provided")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldMapAgeRangeWhenProvided() throws Exception {
+            stubPrefill();
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(stubGroup());
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"ageRange": {"minAge": 12, "maxAge": 20}}
+                                            """)
+                    )
+                    .andExpect(status().isNoContent());
+
+            org.assertj.core.api.Assertions.assertThat(capturedCommand().ageRange())
+                    .isEqualTo(new AgeRange(12, 20));
+        }
+
+        @Test
+        @DisplayName("an explicit null ageRange retains the baseline value")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldRetainBaselineForExplicitNullAgeRange() throws Exception {
+            stubPrefill();
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(stubGroup());
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"ageRange": null}
+                                            """)
+                    )
+                    .andExpect(status().isNoContent());
+
+            org.assertj.core.api.Assertions.assertThat(capturedCommand().ageRange())
+                    .isEqualTo(new AgeRange(10, 18));
+        }
+
+        @Test
+        @DisplayName("an empty body applies the baseline command unchanged")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldApplyBaselineForEmptyBody() throws Exception {
+            stubPrefill();
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(stubGroup());
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            var command = capturedCommand();
+            org.assertj.core.api.Assertions.assertThat(command.name()).isEqualTo("Original");
+            org.assertj.core.api.Assertions.assertThat(command.ageRange()).isEqualTo(new AgeRange(10, 18));
+            org.assertj.core.api.Assertions.assertThat(command.trainers())
                     .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
         }
 
@@ -312,9 +403,9 @@ class TrainingGroupControllerTest {
         @DisplayName("should deduplicate repeated trainer ids instead of failing")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
         void shouldDeduplicateRepeatedTrainerIds() throws Exception {
-            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Updated", new AgeRange(10, 18), TRAINER_ID);
+            stubPrefill();
             when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
-                    .thenReturn(group);
+                    .thenReturn(stubGroup());
 
             mockMvc.perform(
                             patch("/api/training-groups/{id}", GROUP_UUID)
@@ -326,11 +417,7 @@ class TrainingGroupControllerTest {
                     )
                     .andExpect(status().isNoContent());
 
-            var commandCaptor = org.mockito.ArgumentCaptor.forClass(
-                    com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand.class);
-            org.mockito.Mockito.verify(trainingGroupManagementService)
-                    .updateTrainingGroup(any(TrainingGroupId.class), commandCaptor.capture());
-            org.assertj.core.api.Assertions.assertThat(commandCaptor.getValue().trainers().throwIfNotProvided())
+            org.assertj.core.api.Assertions.assertThat(capturedCommand().trainers())
                     .containsExactly(new MemberId(UUID.fromString(TRAINER_ID)));
         }
 

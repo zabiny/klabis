@@ -4,7 +4,6 @@ import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.common.domain.GroupNotFoundException;
 import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
-import com.klabis.common.patch.PatchField;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
@@ -160,11 +159,10 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.of("Seniors"),
-                    PatchField.notProvided(),
-                    PatchField.notProvided()
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommandBuilder
+                    .builder(UpdateTrainingGroupCommand.from(group))
+                    .name("Seniors")
+                    .build();
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
 
@@ -181,11 +179,10 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(false);
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.notProvided(),
-                    PatchField.of(new AgeRange(5, 12)),
-                    PatchField.notProvided()
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommandBuilder
+                    .builder(UpdateTrainingGroupCommand.from(group))
+                    .ageRange(new AgeRange(5, 12))
+                    .build();
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
 
@@ -201,11 +198,10 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(groupToUpdate));
             when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(true);
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.notProvided(),
-                    PatchField.of(new AgeRange(18, 25)),
-                    PatchField.notProvided()
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommandBuilder
+                    .builder(UpdateTrainingGroupCommand.from(groupToUpdate))
+                    .ageRange(new AgeRange(18, 25))
+                    .build();
 
             assertThatThrownBy(() -> service.updateTrainingGroup(GROUP_ID, command))
                     .isInstanceOf(AgeRange.OverlappingAgeRangeException.class);
@@ -219,11 +215,10 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.notProvided(),
-                    PatchField.notProvided(),
-                    PatchField.of(Set.of(TRAINER_2))
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommandBuilder
+                    .builder(UpdateTrainingGroupCommand.from(group))
+                    .trainers(Set.of(TRAINER_2))
+                    .build();
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
 
@@ -239,11 +234,12 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.exists(any(TrainingGroupFilter.class))).thenReturn(false);
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.of("Updated Juniors"),
-                    PatchField.of(new AgeRange(8, 14)),
-                    PatchField.of(Set.of(TRAINER_2))
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommandBuilder
+                    .builder(UpdateTrainingGroupCommand.from(group))
+                    .name("Updated Juniors")
+                    .ageRange(new AgeRange(8, 14))
+                    .trainers(Set.of(TRAINER_2))
+                    .build();
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
 
@@ -260,11 +256,7 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(trainingGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.notProvided(),
-                    PatchField.notProvided(),
-                    PatchField.notProvided()
-            );
+            UpdateTrainingGroupCommand command = UpdateTrainingGroupCommand.from(group);
 
             TrainingGroup result = service.updateTrainingGroup(GROUP_ID, command);
 
@@ -279,10 +271,7 @@ class TrainingGroupManagementServiceTest {
             when(trainingGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
 
             UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                    PatchField.of("New Name"),
-                    PatchField.notProvided(),
-                    PatchField.notProvided()
-            );
+                    "New Name", new AgeRange(10, 18), Set.of(TRAINER));
 
             assertThatThrownBy(() -> service.updateTrainingGroup(GROUP_ID, command))
                     .isInstanceOf(GroupNotFoundException.class);

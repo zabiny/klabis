@@ -48,7 +48,7 @@ class AffordanceAuthorizationTest {
 
     @MvcComponent
     @RestController
-    static class AffordanceTestController {
+    static class AffordanceTestController implements AffordanceApi {
 
         @GetMapping(value = "/api/afford-test/no-auth", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
         EntityModel<AffordanceTestResponse> getNoAuth() {
@@ -142,6 +142,79 @@ class AffordanceAuthorizationTest {
         EntityModel<AffordanceTestResponse> getSecuredEndpoint() {
             return EntityModel.of(new AffordanceTestResponse("secured"));
         }
+
+        @GetMapping(value = "/api/afford-test/iface-has-authority/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        EntityModel<AffordanceTestResponse> getIfaceHasAuthority(@PathVariable UUID id) {
+            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
+            klabisLinkTo(methodOn(AffordanceTestController.class).getIfaceHasAuthority(id))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateIfaceHasAuthority(id, null)))));
+            return model;
+        }
+
+        @PatchMapping("/api/afford-test/iface-has-authority/{id}")
+        @Override
+        public ResponseEntity<Void> updateIfaceHasAuthority(@PathVariable UUID id, @RequestBody AffordanceTestRequest body) {
+            return ResponseEntity.noContent().build();
+        }
+
+        @GetMapping(value = "/api/afford-test/iface-routed/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        @Override
+        public EntityModel<AffordanceTestResponse> getIfaceRouted(@PathVariable UUID id) {
+            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
+            klabisLinkTo(methodOn(AffordanceApi.class).getIfaceRouted(id))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(AffordanceApi.class).updateIfaceRouted(id, null)))));
+            return model;
+        }
+
+        @PatchMapping("/api/afford-test/iface-routed/{id}")
+        @Override
+        public ResponseEntity<Void> updateIfaceRouted(@PathVariable UUID id, AffordanceTestRequest body) {
+            return ResponseEntity.noContent().build();
+        }
+
+        @GetMapping(value = "/api/afford-test/iface-link-to-secured", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        EntityModel<AffordanceTestResponse> getIfaceLinkToSecured() {
+            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
+            klabisLinkTo(methodOn(AffordanceTestController.class).getIfaceLinkToSecured()).ifPresent(self ->
+                    model.add(self.withSelfRel())
+            );
+            klabisLinkTo(methodOn(AffordanceTestController.class).getIfaceSecuredEndpoint()).ifPresent(link ->
+                    model.add(link.withRel("secured"))
+            );
+            return model;
+        }
+
+        @GetMapping(value = "/api/afford-test/iface-secured-endpoint", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        @Override
+        public EntityModel<AffordanceTestResponse> getIfaceSecuredEndpoint() {
+            return EntityModel.of(new AffordanceTestResponse("secured"));
+        }
+    }
+
+    /**
+     * Mirrors a generated OpenAPI {@code *Api} interface: the security annotation lives on the
+     * interface method only, the controller implementation carries none of its own.
+     */
+    interface AffordanceApi {
+
+        @HasAuthority(Authority.MEMBERS_MANAGE)
+        ResponseEntity<Void> updateIfaceHasAuthority(UUID id, AffordanceTestRequest body);
+
+        @HasAuthority(Authority.MEMBERS_MANAGE)
+        EntityModel<AffordanceTestResponse> getIfaceSecuredEndpoint();
+
+        /**
+         * The @RequestBody lives here and nowhere else — the implementation deliberately omits it,
+         * reproducing the shape of a generated controller. An affordance recorded against the
+         * implementation would find no body annotation and lose its input metadata.
+         */
+        @RequestMapping(method = RequestMethod.PATCH, value = "/api/afford-test/iface-routed/{id}")
+        ResponseEntity<Void> updateIfaceRouted(@PathVariable UUID id, @RequestBody AffordanceTestRequest body);
+
+        @RequestMapping(method = RequestMethod.GET, value = "/api/afford-test/iface-routed/{id}")
+        EntityModel<AffordanceTestResponse> getIfaceRouted(@PathVariable UUID id);
     }
 
     @Nested
@@ -274,6 +347,75 @@ class AffordanceAuthorizationTest {
             mockMvc.perform(get("/api/afford-test/link-to-secured").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.self").exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("method with @HasAuthority declared only on the implemented interface")
+    class InterfaceLevelHasAuthorityMethod {
+
+        @Test
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        @DisplayName("affordance present when user has the authority declared on the interface method")
+        void affordancePresentWhenAuthorized() throws Exception {
+            mockMvc.perform(get("/api/afford-test/iface-has-authority/{id}", OTHER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates").exists());
+        }
+
+        @Test
+        @WithKlabisMockUser(username = "noAuthUser")
+        @DisplayName("affordance absent when user lacks the authority declared on the interface method")
+        void affordanceAbsentWhenNotAuthorized() throws Exception {
+            mockMvc.perform(get("/api/afford-test/iface-has-authority/{id}", OTHER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates").doesNotExist());
+        }
+    }
+
+    @Nested
+    @DisplayName("klabisLinkTo with @HasAuthority declared only on the implemented interface")
+    class InterfaceLevelKlabisLinkToAuthorization {
+
+        @Test
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        @DisplayName("link is present when user has the authority declared on the interface method")
+        void linkPresentWhenAuthorized() throws Exception {
+            mockMvc.perform(get("/api/afford-test/iface-link-to-secured").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.secured").exists());
+        }
+
+        @Test
+        @WithKlabisMockUser(username = "noAuthUser")
+        @DisplayName("link is absent when user lacks the authority declared on the interface method")
+        void linkAbsentWhenNotAuthorized() throws Exception {
+            mockMvc.perform(get("/api/afford-test/iface-link-to-secured").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.secured").doesNotExist());
+        }
+    }
+
+    @Nested
+    @DisplayName("affordance recorded against the interface, @RequestBody declared only there")
+    class InterfaceRoutedInputMetadata {
+
+        @Test
+        @WithKlabisMockUser(username = "anyUser")
+        @DisplayName("template carries writable input metadata even though the override omits @RequestBody")
+        void templateHasWritableInputMetadata() throws Exception {
+            UUID id = UUID.randomUUID();
+
+            // readOnly's absence is the regression under guard: when the affordance resolves against
+            // the implementation, HalFormsSupport finds no @RequestBody, skips
+            // HalFormsInputPayloadMetadata and every field comes back readOnly: true.
+            mockMvc.perform(get("/api/afford-test/iface-routed/{id}", id)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateIfaceRouted.properties[?(@.name=='value')]")
+                            .value(org.hamcrest.Matchers.hasSize(1)))
+                    .andExpect(jsonPath("$._templates.updateIfaceRouted.properties[?(@.name=='value')].readOnly")
+                            .doesNotExist());
         }
     }
 }

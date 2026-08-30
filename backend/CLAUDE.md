@@ -112,7 +112,7 @@ These are the Klabis-specific hooks on top of Spring Security / Spring Authoriza
 - **JWT custom claims** — access tokens carry `registrationNumber`, `memberIdUuid`, and the user's `authorities`. `Authority.isKnownAuthority()` filters out the `FACTOR_PASSWORD` authority that `DaoAuthenticationProvider` auto-adds for the MFA framework.
 - **`MemberIdToUuidConverter` + `CurrentUserArgumentResolver`** (`members.infrastructure.mvc`) — resolve `@CurrentUser Member` parameters in controllers from the JWT subject (`memberIdUuid` claim). See `backend-patterns` skill.
 - **`@HasAuthority(Authority.X)`** — type-safe alternative to `@PreAuthorize("hasAuthority('X:Y')")` for single-authority global checks. Method/class level. See `backend-patterns` skill.
-- **Field-level authorization** — `@OwnerVisible`, `@HasAuthority`, `PatchField<T>` on record components. See `backend-patterns` skill.
+- **Field-level authorization** — `@OwnerVisible`, `@HasAuthority`, `JsonNullable<T>` on record components. See `backend-patterns` skill.
 - **`KlabisUserDetailsService`** (`com.klabis.authorizationserver`) — bridges `users` aggregate + `Authority` enum into Spring Security `UserDetails`.
 - **Custom `AuthenticationEntryPoint`** — validates the OAuth2 `redirect_uri` against `RegisteredClientRepository` before redirecting (prevents open-redirector).
 

@@ -172,7 +172,9 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
         ));
 
         if (chipNumber != null) {
-            member.update(MemberUpdateMemberBuilder.builder().chipNumber(chipNumber).build());
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .chipNumber(chipNumber)
+                    .build());
         }
 
         memberRepository.save(member);

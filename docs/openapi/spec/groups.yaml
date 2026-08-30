@@ -1,0 +1,1581 @@
+# Groups module — the API surface of FamilyGroupController, FreeGroupController,
+# PendingInvitationsController and TrainingGroupController (groups module).
+#
+# Three Java packages share this one spec file: groups.familygroup.infrastructure.restapi,
+# groups.freegroup.infrastructure.restapi and groups.traininggroup.infrastructure.restapi.
+# openApiModule(...) in build.gradle.kts registers THREE separate codegen tasks against this single
+# file (groupsFamily / groupsFree / groupsTraining), one per package, each scoped to its own tags —
+# see klabis-api-spec skill: "Registering a module for codegen".
+#
+# getFamilyGroup, getGroup and getTrainingGroup return the payload DTO, like every other operation.
+# Each response declares only its application/json payload; the bundler derives the
+# application/prs.hal-forms+json envelope into klabis-full.json.
+#
+# FamilyGroupResponse, GroupResponse and TrainingGroupResponse are ALL fully generated. Their
+# collection fields (parents/members/owners/pendingInvitations/trainers) resolve to
+# List<EntityModel<Item>> — each item may carry its own _links/_templates, which ones depending on
+# the caller's authorization (e.g. removeGroupOwner appears on an owner row only for an owner). Each such array
+# is marked x-hal-entity-items: true with items pointing at the bare payload schema. The bundler's
+# deriver reads that marker to reconstruct the EntityModel<Item> schema in klabis-full.json;
+# KlabisSpringCodegen#fromProperty reads the same marker off this file and maps the property onto
+# org.springframework.hateoas.EntityModel<Item>. No per-schema schemaMappings entry is involved.
+#
+# Three different authorization patterns coexist in this module — transcribed here exactly as found,
+# never normalized:
+#   a) Declarative — FamilyGroupController (MEMBERS_MANAGE) and TrainingGroupController
+#      (GROUPS_TRAINING) carry @HasAuthority on most operations -> x-klabis-authority.
+#   b) Authorization inside the domain service — every FreeGroupController operation (Groups tag)
+#      passes @ActingMember into FreeGroupManagementPort and the ownership rule (owner-only /
+#      member-only) is enforced down in FreeGroup itself. The controller carries NO @HasAuthority.
+#      These 13 operations get NO x-klabis-authority / x-klabis-owner-visible — the check is neither
+#      an authority nor an owner-id-vs-caller comparison the framework can express, it is "is the
+#      caller a member of THIS group's owner/member set", which only the aggregate can answer.
+#   c) Imperative in the method body — FamilyGroupController.getFamilyGroup and
+#      TrainingGroupController.getTrainingGroup throw InsufficientAuthorityException unless the
+#      caller has the module's MANAGE/TRAINING authority OR is a member of the specific group.
+#      x-klabis-authority alone would lock out those members, and pairing it with
+#      x-klabis-owner-visible (which does OR with an authority) cannot help either: group
+#      membership is a set stored on the group, not an owner ID this spec can name as a parameter.
+#      PendingInvitationsController.getPendingInvitations has
+#      no annotation either — it always acts on the caller's own invitations, via @ActingMember, so
+#      there is nothing to authorize beyond authentication.
+#
+# _embedded keys on the four collection responses come from the deriver (Decision 5): the payload's
+# x-klabis-relation.collectionRelation where declared, else Spring HATEOAS's uncapitalize(name)+"List"
+# default. Cross-checked against @Relation on each payload class (grep across groups/ found only
+# GroupSummaryResponse and PendingInvitationResponse annotated; both match the default, so no
+# divergence):
+#   FamilyGroupSummaryResponse (no @Relation) -> familyGroupSummaryResponseList (default)
+#   GroupSummaryResponse       @Relation(collectionRelation = "groupSummaryResponseList") (= default)
+#   TrainingGroupSummaryResponse (no @Relation) -> trainingGroupSummaryResponseList (default)
+#   PendingInvitationResponse  @Relation(collectionRelation = "pendingInvitationResponseList") (= default)
+
+# Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
+# from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
+# klabis.yaml rather than shared, because $ref cannot target a document's own info; the
+# bundler ignores both keys (modules are pulled in by #/paths/... pointer, never whole-file)
+# and validate.mjs pins version to the root's so the two cannot drift.
+openapi: 3.1.0
+
+info:
+  title: Klabis API — Groups module
+  description: The Groups slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
+paths:
+
+  # ---------------------------------------------------------------------------------------------
+  # FamilyGroups (FamilyGroupController, /api/family-groups) — 8 operations
+  # ---------------------------------------------------------------------------------------------
+
+  /api/family-groups:
+    get:
+      operationId: listFamilyGroups
+      tags: [FamilyGroups]
+      summary: List all family groups
+      description: Returns all family groups. Requires MEMBERS:MANAGE.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      responses:
+        '200':
+          description: List of family groups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FamilyGroupSummaryResponse'
+          x-hal-links:
+            self:
+              description: This collection
+          x-hal-templates:
+            default:
+              operation: createFamilyGroup
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: createFamilyGroup
+      tags: [FamilyGroups]
+      summary: Create a family group
+      description: Creates a new family group with a single parent. Requires MEMBERS:MANAGE.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFamilyGroupRequest'
+      responses:
+        '201':
+          description: Family group created
+          headers:
+            Location:
+              description: URI of the created family group
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/family-groups/{id}:
+    get:
+      operationId: getFamilyGroup
+      tags: [FamilyGroups]
+      summary: Get family group details
+      # Imperative check in FamilyGroupController.getFamilyGroup: MEMBERS:MANAGE OR family-group
+      # membership, which no extension can express — group membership is not an owner ID nameable
+      # as a parameter. See module header comment (pattern c).
+      description: |
+        Returns family group details including parents and children with their own hypermedia links.
+        Requires MEMBERS:MANAGE, or the caller must be a member (parent or child) of this group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/FamilyGroupIdParam'
+      responses:
+        '200':
+          description: Family group found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FamilyGroupResponse'
+          x-hal-links:
+            self:
+              description: This family group
+            collection:
+              operation: listFamilyGroups
+              description: Present only for callers with MEMBERS:MANAGE
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: deleteFamilyGroup
+      tags: [FamilyGroups]
+      summary: Delete a family group
+      description: Deletes a family group. Requires MEMBERS:MANAGE.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/FamilyGroupIdParam'
+      responses:
+        '204':
+          description: Family group deleted
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/family-groups/{id}/parents:
+    post:
+      operationId: addFamilyGroupParent
+      tags: [FamilyGroups]
+      summary: Add a parent to family group
+      description: Adds a parent to the family group. Requires MEMBERS:MANAGE.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/FamilyGroupIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberRequest'
+      responses:
+        '204':
+          description: Parent added
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/family-groups/{id}/parents/{memberId}:
+    delete:
+      operationId: removeFamilyGroupParent
+      tags: [FamilyGroups]
+      summary: Remove a parent from family group
+      description: Removes a parent from the family group. Requires MEMBERS:MANAGE.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/FamilyGroupIdParam'
+        - name: memberId
+          in: path
+          required: true
+          description: Parent member UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Parent removed
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/family-groups/{id}/children:
+    post:
+      operationId: addFamilyGroupChild
+      tags: [FamilyGroups]
+      summary: Add a child to family group
+      description: Adds a child to the family group. Requires MEMBERS:MANAGE.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/FamilyGroupIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberRequest'
+      responses:
+        '204':
+          description: Child added
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/family-groups/{id}/children/{memberId}:
+    delete:
+      operationId: removeFamilyGroupChild
+      tags: [FamilyGroups]
+      summary: Remove a child from family group
+      description: Removes a child from the family group. Requires MEMBERS:MANAGE.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/FamilyGroupIdParam'
+        - name: memberId
+          in: path
+          required: true
+          description: Child member UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Child removed
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  # ---------------------------------------------------------------------------------------------
+  # Groups (FreeGroupController, /api/groups) — 13 operations
+  #
+  # NONE of these carry x-klabis-authority / x-klabis-owner-visible. Authorization is enforced
+  # inside FreeGroupManagementPort/FreeGroup itself from the @ActingMember passed by the controller
+  # (module header comment, pattern b) — "is the caller a member/owner of THIS group", which is not
+  # an authority check and not a simple owner-id-vs-path-variable comparison. Do not add either
+  # extension here; that would either lock out legitimate callers or grant access the domain does not.
+  # ---------------------------------------------------------------------------------------------
+
+  /api/groups:
+    get:
+      operationId: listGroups
+      tags: [Groups]
+      summary: List groups where the authenticated member is a member
+      description: Returns free groups the authenticated member belongs to (owner or plain member).
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      responses:
+        '200':
+          description: List of groups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupSummaryResponse'
+          x-hal-links:
+            self:
+              description: This collection
+          x-hal-templates:
+            default:
+              operation: createGroup
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: createGroup
+      tags: [Groups]
+      summary: Create a members group
+      description: Creates a new free group; the authenticated member becomes its first owner.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+      responses:
+        '201':
+          description: Group created
+          headers:
+            Location:
+              description: URI of the created group
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/groups/{id}:
+    get:
+      operationId: getGroup
+      tags: [Groups]
+      summary: Get group details (owner or member only)
+      # Imperative check in FreeGroupController.getGroup: FreeGroup.isOwner/hasMember. See module
+      # header comment (pattern b/c).
+      description: |
+        Returns group details including owners, members and — for owners only — pending invitations,
+        each with its own hypermedia links. Caller must be an owner or a member of this group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FreeGroupIdParam'
+      responses:
+        '200':
+          description: Group found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+          x-hal-links:
+            self:
+              description: This group. Carries write affordances only for owners.
+            collection:
+              operation: listGroups
+              description: Back to the group list
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    patch:
+      operationId: updateGroup
+      tags: [Groups]
+      summary: Rename a group (owner only)
+      description: Renames a group. Caller must be an owner of this group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FreeGroupIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenameGroupRequest'
+      responses:
+        '204':
+          description: Group renamed
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: deleteGroup
+      tags: [Groups]
+      summary: Delete a group (owner only)
+      description: Deletes a group. Caller must be an owner of this group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FreeGroupIdParam'
+      responses:
+        '204':
+          description: Group deleted
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/groups/{id}/members/{memberId}:
+    delete:
+      operationId: removeGroupMember
+      tags: [Groups]
+      summary: Remove a member from group (owner only)
+      description: Removes a member from a group. Caller must be an owner of this group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FreeGroupIdParam'
+        - name: memberId
+          in: path
+          required: true
+          description: Member UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Member removed
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/groups/{id}/owners:
+    post:
+      operationId: addGroupOwner
+      tags: [Groups]
+      summary: Add an owner to group (owner only)
+      description: Promotes an existing member to owner. Caller must be an owner of this group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FreeGroupIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddOwnerRequest'
+      responses:
+        '204':
+          description: Owner added
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/groups/{id}/owners/{memberId}:
+    delete:
+      operationId: removeGroupOwner
+      tags: [Groups]
+      summary: Remove an owner from group (owner only)
+      description: Demotes an owner back to plain member. Caller must be an owner of this group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FreeGroupIdParam'
+        - name: memberId
+          in: path
+          required: true
+          description: Owner member UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Owner removed
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/groups/{id}/invitations:
+    post:
+      operationId: inviteMember
+      tags: [Groups]
+      summary: Invite a member to a members group (owner only)
+      description: Creates a pending invitation. Caller must be an owner of this group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FreeGroupIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteMemberRequest'
+      responses:
+        '204':
+          description: Invitation created
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/groups/{id}/invitations/{invitationId}:
+    delete:
+      operationId: cancelInvitation
+      tags: [Groups]
+      summary: Cancel a pending invitation (owner only)
+      description: Cancels a pending invitation. Caller must be an owner of this group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FreeGroupIdParam'
+        - $ref: '#/components/parameters/InvitationIdParam'
+      requestBody:
+        required: false
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelInvitationRequest'
+      responses:
+        '204':
+          description: Invitation cancelled
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/groups/{id}/invitations/{invitationId}/accept:
+    post:
+      operationId: acceptInvitation
+      tags: [Groups]
+      summary: Accept a pending invitation
+      description: Accepts a pending invitation addressed to the authenticated member.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FreeGroupIdParam'
+        - $ref: '#/components/parameters/InvitationIdParam'
+      responses:
+        '204':
+          description: Invitation accepted
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/groups/{id}/invitations/{invitationId}/reject:
+    post:
+      operationId: rejectInvitation
+      tags: [Groups]
+      summary: Reject a pending invitation
+      description: Rejects a pending invitation addressed to the authenticated member.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/FreeGroupIdParam'
+        - $ref: '#/components/parameters/InvitationIdParam'
+      responses:
+        '204':
+          description: Invitation rejected
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  # ---------------------------------------------------------------------------------------------
+  # Invitations (PendingInvitationsController, /api/invitations) — 1 operation
+  # ---------------------------------------------------------------------------------------------
+
+  /api/invitations/pending:
+    get:
+      operationId: getPendingInvitations
+      tags: [Invitations]
+      summary: List current user's pending invitations across all groups
+      # No annotation in PendingInvitationsController — @ActingMember means the endpoint always acts
+      # on the caller's own invitations, so there is nothing beyond authentication to authorize
+      # (module header comment, pattern c).
+      description: Returns pending invitations addressed to the authenticated member, across all groups.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      responses:
+        '200':
+          description: Pending invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingInvitationResponse'
+          x-hal-links:
+            self:
+              description: This collection
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  # ---------------------------------------------------------------------------------------------
+  # TrainingGroups (TrainingGroupController, /api/training-groups) — 9 operations
+  # ---------------------------------------------------------------------------------------------
+
+  /api/training-groups:
+    get:
+      operationId: listTrainingGroups
+      tags: [TrainingGroups]
+      summary: List all training groups
+      description: Returns all training groups. Requires GROUPS:TRAINING.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: GROUPS_TRAINING
+      responses:
+        '200':
+          description: List of training groups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainingGroupSummaryResponse'
+          x-hal-links:
+            self:
+              description: This collection
+          x-hal-templates:
+            default:
+              operation: createTrainingGroup
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: createTrainingGroup
+      tags: [TrainingGroups]
+      summary: Create a training group
+      description: Creates a new training group with a trainer and an age range. Requires GROUPS:TRAINING.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: GROUPS_TRAINING
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTrainingGroupRequest'
+      responses:
+        '201':
+          description: Training group created
+          headers:
+            Location:
+              description: URI of the created training group
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/training-groups/{id}:
+    get:
+      operationId: getTrainingGroup
+      tags: [TrainingGroups]
+      summary: Get training group details
+      # Imperative check in TrainingGroupController.getTrainingGroup: GROUPS:TRAINING OR
+      # membership OR being a trainer of this group. An OR-rule, so no x-klabis-authority is
+      # declared — see module header comment (pattern c).
+      # Callers without GROUPS:TRAINING receive a reduced response (name/trainers
+      # only, no members, no ageRange) built by buildLimitedGroupResponse — not expressible as a
+      # single schema; documented here as the full (GROUPS:TRAINING) shape.
+      description: |
+        Returns training group details including trainers and members with their own hypermedia
+        links. Requires GROUPS:TRAINING, or the caller must be a member or trainer of this group (in
+        which case a reduced response — name and trainers only — is returned).
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/TrainingGroupIdParam'
+      responses:
+        '200':
+          description: Training group found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingGroupResponse'
+          x-hal-links:
+            self:
+              description: This training group
+            collection:
+              operation: listTrainingGroups
+              description: Present only for callers with GROUPS:TRAINING
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    patch:
+      operationId: updateTrainingGroup
+      tags: [TrainingGroups]
+      summary: Update a training group
+      description: Partially updates a training group. Requires GROUPS:TRAINING.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: GROUPS_TRAINING
+      parameters:
+        - $ref: '#/components/parameters/TrainingGroupIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTrainingGroupRequest'
+      responses:
+        '204':
+          description: Training group updated
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: deleteTrainingGroup
+      tags: [TrainingGroups]
+      summary: Delete a training group
+      description: Deletes a training group. Requires GROUPS:TRAINING.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: GROUPS_TRAINING
+      parameters:
+        - $ref: '#/components/parameters/TrainingGroupIdParam'
+      responses:
+        '204':
+          description: Training group deleted
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/training-groups/{id}/members:
+    post:
+      operationId: addTrainingGroupMember
+      tags: [TrainingGroups]
+      summary: Add a member to training group
+      description: Adds a member to the training group. Requires GROUPS:TRAINING.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: GROUPS_TRAINING
+      parameters:
+        - $ref: '#/components/parameters/TrainingGroupIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingGroupAddMemberRequest'
+      responses:
+        '204':
+          description: Member added
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/training-groups/{id}/members/{memberId}:
+    delete:
+      operationId: removeTrainingGroupMember
+      tags: [TrainingGroups]
+      summary: Remove a member from training group
+      description: Removes a member from the training group. Requires GROUPS:TRAINING.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: GROUPS_TRAINING
+      parameters:
+        - $ref: '#/components/parameters/TrainingGroupIdParam'
+        - name: memberId
+          in: path
+          required: true
+          description: Member UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Member removed
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/training-groups/{id}/trainers:
+    post:
+      operationId: addTrainer
+      tags: [TrainingGroups]
+      summary: Add a trainer to training group
+      description: Adds a trainer to the training group. Requires GROUPS:TRAINING.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: GROUPS_TRAINING
+      parameters:
+        - $ref: '#/components/parameters/TrainingGroupIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddTrainerRequest'
+      responses:
+        '204':
+          description: Trainer added
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/training-groups/{id}/trainers/{memberId}:
+    delete:
+      operationId: removeTrainer
+      tags: [TrainingGroups]
+      summary: Remove a trainer from training group
+      description: Removes a trainer from the training group. Requires GROUPS:TRAINING.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: GROUPS_TRAINING
+      parameters:
+        - $ref: '#/components/parameters/TrainingGroupIdParam'
+        - name: memberId
+          in: path
+          required: true
+          description: Trainer member UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Trainer removed
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
+
+  parameters:
+    FamilyGroupIdParam:
+      name: id
+      in: path
+      required: true
+      description: Family group UUID
+      schema:
+        type: string
+        format: uuid
+
+    FreeGroupIdParam:
+      name: id
+      in: path
+      required: true
+      description: Group UUID
+      schema:
+        type: string
+        format: uuid
+
+    InvitationIdParam:
+      name: invitationId
+      in: path
+      required: true
+      description: Invitation UUID
+      schema:
+        type: string
+        format: uuid
+
+    TrainingGroupIdParam:
+      name: id
+      in: path
+      required: true
+      description: Training group UUID
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+
+    # === FamilyGroups ============================================================================
+
+    CreateFamilyGroupRequest:
+      type: object
+      required: [name, parent]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        parent:
+          type: string
+          format: uuid
+
+    AddMemberRequest:
+      type: object
+      required: [memberId]
+      properties:
+        memberId:
+          type: string
+          format: uuid
+
+    FamilyGroupSummaryResponse:
+      type: object
+      x-klabis-relation:
+        collectionRelation: familyGroupSummaryResponseList
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        memberCount:
+          type: integer
+          format: int32
+
+    # getFamilyGroup's payload. parents/members are arrays of HAL-wrapped items (each carrying its
+    # own _links/_templates at runtime), so the Java record fields resolve to List<EntityModel<X>>.
+    # x-hal-entity-items: true on each array declares that: the bundler derives an EntityModel<X>
+    # item schema, KlabisSpringCodegen.fromProperty reads the same marker and maps the property onto
+    # org.springframework.hateoas.EntityModel<X>. The response-level HAL envelope is derived too.
+    FamilyGroupResponse:
+      type: object
+      description: Family group detail with parents and children as independently linked items.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        parents:
+          type: array
+          x-hal-entity-items: true
+          items:
+            $ref: '#/components/schemas/ParentResponse'
+        members:
+          type: array
+          x-hal-entity-items: true
+          items:
+            $ref: '#/components/schemas/FamilyGroupMembershipResponse'
+
+    ParentResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+
+    FamilyGroupMembershipResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        joinedAt:
+          type: string
+          format: date-time
+
+    # === Groups (FreeGroup) ======================================================================
+
+    CreateGroupRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+    RenameGroupRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+
+    AddOwnerRequest:
+      type: object
+      required: [memberId]
+      properties:
+        memberId:
+          type: string
+          format: uuid
+
+    InviteMemberRequest:
+      type: object
+      required: [memberId]
+      properties:
+        memberId:
+          type: string
+          format: uuid
+
+    CancelInvitationRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+
+    GroupSummaryResponse:
+      type: object
+      x-klabis-relation:
+        collectionRelation: groupSummaryResponseList
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    # getGroup's payload — see FamilyGroupResponse for why owners/members/pendingInvitations resolve
+    # to List<EntityModel<X>> via x-hal-entity-items.
+    GroupResponse:
+      type: object
+      description: Free group detail with owners, members and invitations as independently linked items.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        owners:
+          type: array
+          x-hal-entity-items: true
+          items:
+            $ref: '#/components/schemas/OwnerResponse'
+        members:
+          type: array
+          x-hal-entity-items: true
+          items:
+            $ref: '#/components/schemas/FreeGroupMembershipResponse'
+        pendingInvitations:
+          type: array
+          description: Present only when the caller is an owner of this group.
+          x-hal-entity-items: true
+          items:
+            $ref: '#/components/schemas/PendingInvitationResponse'
+
+    OwnerResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+
+    FreeGroupMembershipResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        joinedAt:
+          type: string
+          format: date-time
+
+    PendingInvitationResponse:
+      type: object
+      x-klabis-relation:
+        collectionRelation: pendingInvitationResponseList
+      properties:
+        groupId:
+          type: string
+          format: uuid
+        groupName:
+          type: string
+        invitationId:
+          type: string
+          format: uuid
+        invitedBy:
+          type: string
+          format: uuid
+
+    # === TrainingGroups ===========================================================================
+
+    CreateTrainingGroupRequest:
+      type: object
+      required: [name, trainerId, minAge, maxAge]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        trainerId:
+          type: string
+          format: uuid
+        minAge:
+          type: integer
+          format: int32
+          minimum: 0
+        maxAge:
+          type: integer
+          format: int32
+          minimum: 0
+
+    # TrainingGroupAddMemberRequest, not AddMemberRequest — a same-named FamilyGroups schema already
+    # occupies that name in this one global component namespace after bundling (both wrap a single
+    # memberId field but are unrelated types); see klabis-api-spec skill: "Component names are global
+    # once bundled" / "Prefix module-owned components rather than reaching for the generic name".
+    TrainingGroupAddMemberRequest:
+      type: object
+      required: [memberId]
+      properties:
+        memberId:
+          type: string
+          format: uuid
+
+    AddTrainerRequest:
+      type: object
+      required: [memberId]
+      properties:
+        memberId:
+          type: string
+          format: uuid
+
+    AgeRangeRequest:
+      type: object
+      required: [minAge, maxAge]
+      properties:
+        minAge:
+          type: integer
+          format: int32
+          minimum: 0
+        maxAge:
+          type: integer
+          format: int32
+          minimum: 0
+
+    # Every property is nullable so the generator emits JsonNullable<T>, which carries the
+    # absent/null/value tri-state a PATCH body needs. Properties are inlined rather than sharing
+    # named wrapper schemas: a shared schema cannot carry per-property constraints.
+    UpdateTrainingGroupRequest:
+      type: object
+      description: |
+        Partial update request. An absent property is left untouched, whereas an explicitly null
+        value is rejected by the domain (name/ageRange cannot be cleared). trainers, when provided,
+        replaces the full trainer set.
+      properties:
+        name:
+          type: ['string', 'null']
+        ageRange:
+          oneOf:
+            - $ref: '#/components/schemas/AgeRangeRequest'
+            - type: 'null'
+        trainers:
+          type: ['array', 'null']
+          items:
+            type: string
+            format: uuid
+
+    TrainingGroupSummaryResponse:
+      type: object
+      x-klabis-relation:
+        collectionRelation: trainingGroupSummaryResponseList
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        minAge:
+          type: integer
+          format: int32
+        maxAge:
+          type: integer
+          format: int32
+        memberCount:
+          type: integer
+          format: int32
+
+    # getTrainingGroup's payload — see FamilyGroupResponse for why trainers/members resolve to
+    # List<EntityModel<X>> via x-hal-entity-items. ageRange and members are omitted
+    # (JsonInclude.NON_NULL) in the reduced response returned to callers without GROUPS:TRAINING —
+    # see the description on getTrainingGroup.
+    TrainingGroupResponse:
+      type: object
+      description: Training group detail with trainers and members as independently linked items.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        ageRange:
+          $ref: '#/components/schemas/AgeRangeResponse'
+        trainers:
+          type: array
+          x-hal-entity-items: true
+          items:
+            $ref: '#/components/schemas/TrainerResponse'
+        members:
+          type: array
+          x-hal-entity-items: true
+          items:
+            $ref: '#/components/schemas/GroupMembershipResponse'
+
+    AgeRangeResponse:
+      type: object
+      properties:
+        minAge:
+          type: integer
+          format: int32
+        maxAge:
+          type: integer
+          format: int32
+
+    TrainerResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+
+    GroupMembershipResponse:
+      type: object
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        joinedAt:
+          type: string
+          format: date-time

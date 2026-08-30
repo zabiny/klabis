@@ -9,6 +9,7 @@ import {KlabisTableWithQuery} from '../KlabisTable'
 import {ErrorDisplay, Spinner} from '../UI'
 import {containerStyles} from '../../theme/designTokens'
 import {type SortDirection} from '../../api'
+import {parseHalHref, serializeHalHref} from '../../api/hateoas'
 
 /**
  * Props for HalEmbeddedTable component
@@ -100,7 +101,7 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = Record<stri
 
     const tableLinkHref = (() => {
         if (!extraParams || Object.keys(extraParams).length === 0) return selfLink.href;
-        const url = new URL(selfLink.href);
+        const url = parseHalHref(selfLink.href);
         Object.entries(extraParams).forEach(([key, value]) => {
             if (Array.isArray(value)) {
                 value.forEach((v) => url.searchParams.append(key, v));
@@ -108,7 +109,7 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = Record<stri
                 url.searchParams.set(key, value);
             }
         });
-        return url.toString();
+        return serializeHalHref(url);
     })();
 
     const tableLink = {href: tableLinkHref};

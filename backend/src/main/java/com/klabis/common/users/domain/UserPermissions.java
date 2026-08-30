@@ -115,7 +115,9 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
     }
 
     public Set<Authority> getManageableAuthorities() {
-        return Authority.withoutStandard(directAuthorities);
+        Set<Authority> manageable = Authority.withoutStandard(directAuthorities);
+        manageable.remove(Authority.DEVELOPER);
+        return manageable;
     }
 
     /**

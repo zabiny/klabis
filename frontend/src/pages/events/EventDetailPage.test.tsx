@@ -82,6 +82,8 @@ vi.mock('../../api/hateoas', () => ({
         if (!links) return [];
         return Array.isArray(links) ? links : [links];
     }),
+    parseHalHref: (href: string) => new URL(href, window.location.origin),
+    serializeHalHref: (url: URL) => `${url.pathname}${url.search}${url.hash}`,
 }));
 
 vi.mock('../../components/UI/Modal.tsx', () => ({

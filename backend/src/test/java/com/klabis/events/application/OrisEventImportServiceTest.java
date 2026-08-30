@@ -218,10 +218,14 @@ class OrisEventImportServiceTest {
                     EventCategoryId.generate(), "M21", "M21", null);
             EventCategory w21 = new EventCategory(
                     EventCategoryId.generate(), "W21", "W21", null);
+            // registerMember() below refuses to register on or after the event date, so this one
+            // has to stay in the future as the suite ages — unlike the fixed dates elsewhere in
+            // this class, which never reach the domain's LocalDate.now() comparison.
+            LocalDate eventDate = LocalDate.now().plusDays(30);
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .orisId(orisId)
                     .name("Race")
-                    .eventDate(LocalDate.of(2026, 8, 1))
+                    .eventDate(eventDate)
                     .location("Forest")
                     .organizer("OOB")
                     .categories(java.util.List.of(m21, w21))
@@ -231,7 +235,7 @@ class OrisEventImportServiceTest {
             event.registerMember(memberId, new SiCardNumber("12345"), m21.id());
 
             Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
-            EventDetails details = buildEventDetailsWithClasses(orisId, "Race Updated", LocalDate.of(2026, 8, 15), "Forest",
+            EventDetails details = buildEventDetailsWithClasses(orisId, "Race Updated", eventDate.plusDays(14), "Forest",
                     org1, null, Map.of("W21", mockClass("W21")));
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));

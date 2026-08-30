@@ -1,0 +1,93 @@
+## 0. Baseline
+
+- [x] 0.1 Capture the current generated output for all 11 modules as the parity reference
+      (`./gradlew compileJava`, then copy `backend/build/generated/openapi/`). Every task below
+      is verified against it: the only acceptable diff is the `@Generated` annotation. Anything
+      else is a regression, per proposal.md's acceptance bar.
+      Baseline stored at `backend/build/generated-openapi-baseline/` (93 files, all 11 modules).
+
+## 1. `isArraySchema` in the detector (smallest slice first)
+
+- [x] 1.1 Write a failing unit test: an `_embedded` block whose array property is spelled
+      `type: ["array"]` (the OpenAPI 3.1 list form) is detected as Shape 2. It fails today
+      because `asSingleArrayOfRefProperty` compares `getType()` against the string `"array"`.
+- [x] 1.2 Replace that comparison with `ModelUtils.isArraySchema(...)`. Note it is a superset —
+      it also matches `ArraySchema` instances and `types`-only schemas — so it cannot stop
+      matching a shape that matches today.
+- [x] 1.3 Run the buildSrc unit tests; regenerate and diff against 0.1. Expect no change: the
+      current bundle emits scalar `type` strings, so this is robustness, not a live fix.
+      24/24 buildSrc tests pass; regenerated output diffs clean vs baseline (only `@Generated`
+      timestamp line differs across all 93 files).
+
+## 2. `getContent()` override replaces the name-based import cleanup
+
+- [x] 2.1 Write a failing test at the `getContent` level: a response whose content map holds
+      both `application/json` (bare payload) and `application/prs.hal-forms+json` (envelope)
+      contributes NO import for the envelope type to the `imports` set it is handed.
+      Added `KlabisSpringCodegenGetContentTest.java` (4 tests); confirmed RED before the override
+      existed (`getContent` is protected in a different package, so the test failed to compile).
+- [x] 2.2 Override `getContent(Content, Set<String>, String)` (protected, `DefaultCodegen`
+      sources line 7864) to map each media type's schema through the existing
+      `resolveRef` + `HalEnvelopeDetector.detect` + `unwrappedResponseSchema` pipeline before
+      delegating to `super`, so the envelope type is never imported in the first place.
+      Widened to `public` on the override (same pattern already used for `handleMethodResponse`).
+- [x] 2.3 Delete `postProcessOperationsWithModels` and its `KlabisSpringCodegenPostProcessOperationsTest`
+      counterpart — or repoint that test at the new hook if its aggregation-flow coverage is
+      still worth keeping (it is what caught the promoted-`$ref` bug originally).
+      Deleted both; kept one `fromOperation()`-level regression test
+      (`fromOperationNeverAddsEnvelopeImportForPromotedEmbeddedRef`) covering the promoted-`$ref`
+      case — the old test's tag-level import aggregation coverage is redundant now that
+      `getContent` prevents the import from entering `op.imports` in the first place.
+- [x] 2.4 Regenerate and diff against 0.1 for all 11 modules. Pay attention to `groupsFamily`,
+      `groupsFree`, `groupsTraining` (single-item envelopes with no `application/json` sibling)
+      and `event-types` (the promoted `_embedded` `$ref` case) — those exercise the paths where
+      an envelope import could survive.
+      All 11 modules regenerated + compiled clean; diffed vs baseline, every diff line across
+      ~90 changed files is exclusively the `@Generated` timestamp. groupsFamily/Free/Training and
+      event-types specifically checked clean.
+- [x] 2.5 Confirm `CodegenResponse.content` is not rendered anywhere: verified during planning
+      that no template under `backend/src/main/openapi-templates/` reads `{{#content}}` — re-check
+      after the change, since `getContent`'s return value populates that field.
+      Only hit is `api.mustache` line 197, a literal `@Schema(implementation=...)` string gated by
+      `baseType`, not by `{{#content}}`/mustache field access. Confirmed clean.
+- [x] 2.6 Run the full backend test suite.
+      buildSrc: 29/29 pass. Full backend suite: 3200/3200 passed.
+
+## 3. Shared test fixture builder
+
+- [x] 3.1 Add a package-private builder under `buildSrc/src/test/java/com/klabis/openapi/codegen/`
+      covering the three shapes rebuilt by hand across the suite: Shape 1
+      (`allOf[$ref X, {_links, ...}]`), Shape 2 (`{_embedded: {<name>: array[$ref]}, _links}`,
+      with an optional `page` property), and the `OpenAPI` + `Components` assembly that
+      `KlabisSpringCodegenHandleMethodResponseTest` already extracted as `openApiWithSchemas`.
+      Added `HalEnvelopeFixtures.java` with `shape1Envelope`, `shape2Envelope` (each with an
+      overload for the optional properties), and `openApiWithSchemas`.
+- [x] 3.2 Migrate the positive-case fixtures in all four test files onto the builder.
+      Migrated across `HalEnvelopeDetectorShape1Test` (3/5), `HalEnvelopeDetectorShape2Test` (4/8),
+      `KlabisSpringCodegenHandleMethodResponseTest` (6/10, plus deleted its now-redundant local
+      `openApiWithSchemas` helper), `KlabisSpringCodegenGetContentTest` (2/4).
+- [x] 3.3 Leave the negative-case fixtures hand-built and add a comment saying why: they exist to
+      deviate from the canonical shape, and routing them through a builder would hide which
+      property makes them invalid.
+      Added a one-line "why hand-built" comment above each file's negative-case block.
+- [x] 3.4 Run the buildSrc unit tests — same count, same outcomes. No production code changes in
+      this section, so no regeneration is needed.
+      29/29 buildSrc tests pass, same count as before migration. Confirmed no production code
+      touched (`git diff --stat buildSrc/src/main/` empty).
+
+## 4. Close out
+
+- [x] 4.1 Full backend test suite plus a from-scratch regeneration (`rm -rf build/generated/openapi`)
+      diffed against 0.1 across all 11 modules.
+      Forced fresh regen (`--rerun-tasks`) and test run (`--rerun`): all 11 modules / 115 files diff
+      clean (only `@Generated` timestamp). Full suite: 3200 tests, 14 skipped, 0 failures.
+- [x] 4.2 Update the `KlabisSpringCodegen` class Javadoc: it lists four overrides, and the set
+      changes here (`postProcessOperationsWithModels` out, `getContent` in). The note that
+      model/API discovery is not this class's concern stays.
+      Already correct from iteration 2 — verified, no edit needed.
+- [x] 4.3 Remove the "Known follow-ups" section from the archived
+      `openspec/changes/archive/2026-08-25-custom-openapi-codegen/design.md`, or annotate it with
+      a pointer to this change — whichever the project prefers for archived documents.
+      No existing precedent found in other archived design.md files, so annotated (lightest option):
+      added a one-line pointer to `openapi-codegen-followups` under the heading; original three
+      bullets left untouched as historical record.

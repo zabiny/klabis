@@ -1,0 +1,19 @@
+{
+  "name": "klabis-openapi-bundle",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Bundles the hand-written OpenAPI spec in docs/openapi/spec/ into a single document, and compares it against the springdoc output during the code-first to spec-first migration.",
+  "scripts": {
+    "bundle": "node bundle.mjs",
+    "drift": "node drift.mjs",
+    "haltypes": "node haltypes.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  }
+}

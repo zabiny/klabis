@@ -5,16 +5,29 @@ import {Alert, Button, Spinner, Toast} from '../components/UI'
 import {LogoutIcon} from '../components/UI/icons'
 import {ThemeToggle} from '../components/ThemeToggle/ThemeToggle'
 import {AdminToggle} from '../components/AdminToggle/AdminToggle'
-import {useAuth} from '../contexts/authContext'
 import type {AuthUserDetails} from '../contexts/authContext'
+import {useAuth} from '../contexts/authContext'
 import {useRootNavigation} from '../hooks/useRootNavigation'
 import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout.tsx"
 import {HalFormProvider} from '../contexts/HalFormContext.tsx'
 import {ToastProvider} from '../contexts/ToastContext.tsx'
 import {useToast} from '../contexts/toastContext'
 import {labels} from '../localization'
-import {Home, Calendar, Trophy, Users, UsersRound, Layers, Dumbbell, Heart, Tags, ListChecks, Banknote} from 'lucide-react'
 import type {LucideIcon} from 'lucide-react'
+import {
+    Banknote,
+    Calendar,
+    Dumbbell,
+    Heart,
+    Home,
+    Layers,
+    LayoutDashboard,
+    ListChecks,
+    Tags,
+    Trophy,
+    Users,
+    UsersRound
+} from 'lucide-react'
 
 const navIcons: Record<string, LucideIcon> = {
     home: Home,
@@ -27,6 +40,7 @@ const navIcons: Record<string, LucideIcon> = {
     'category-presets': Tags,
     'event-types': ListChecks,
     account: Banknote,
+    admin: LayoutDashboard,
 }
 
 const getNavIcon = (rel: string): LucideIcon => navIcons[rel] ?? Layers

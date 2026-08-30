@@ -8,6 +8,7 @@
 import {type ReactElement, useMemo, useState} from 'react'
 import type {HalCollectionResponse, SortDirection} from '../../api'
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch'
+import {parseHalHref, serializeHalHref} from '../../api/hateoas'
 import {usePersistedState} from '../../hooks/usePersistedState'
 import {useTableSort, type SortState} from '../../hooks/useTableSort'
 import {KlabisTable} from './KlabisTable'
@@ -85,7 +86,7 @@ function KlabisTableCore<T extends Record<string, unknown> = Record<string, unkn
     const [rowsPerPage, setRowsPerPage] = usePersistedState('klabis-table-rows-per-page', defaultRowsPerPage)
 
     const queryUrl = useMemo(() => {
-        const url = new URL(link.href)
+        const url = parseHalHref(link.href)
         url.searchParams.set('page', `${page}`)
         url.searchParams.set('size', `${rowsPerPage}`)
 
@@ -94,7 +95,7 @@ function KlabisTableCore<T extends Record<string, unknown> = Record<string, unkn
             url.searchParams.append('sort', `${sort.by},${sort.direction}`)
         }
 
-        return url.toString()
+        return serializeHalHref(url)
     }, [link.href, page, rowsPerPage, sort])
 
     const {data: response, error} = useAuthorizedQuery<HalCollectionResponse>(queryUrl, {

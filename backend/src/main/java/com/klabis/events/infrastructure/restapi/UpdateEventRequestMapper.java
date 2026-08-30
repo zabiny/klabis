@@ -1,103 +1,104 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
-import com.klabis.events.EventTypeId;
-import com.klabis.events.domain.Event;
 import com.klabis.events.EventCategory;
 import com.klabis.events.EventCategoryId;
+import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRanking;
-import com.klabis.events.domain.Money;
-import com.klabis.events.domain.RegistrationDeadlines;
-import com.klabis.members.MemberId;
+import com.klabis.events.domain.EventUpdateEventBuilder;
+import org.openapitools.jackson.nullable.JsonNullable;
 
-import java.time.LocalDate;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+/**
+ * Applies a PATCH {@link UpdateEventRequest} onto a fully pre-filled {@link Event.UpdateEvent}
+ * baseline ({@link Event.UpdateEvent#from(Event)} — the controller already holds the {@link Event}
+ * for the authorization check).
+ * <p>
+ * The three PATCH states are resolved here so the domain command never sees {@link JsonNullable}:
+ * an <em>undefined</em> field leaves the baseline value in place, a <em>present-null</em> field
+ * clears the (optional) target, and a <em>present</em> value sets it. {@code name}, {@code eventDate}
+ * and {@code organizer} have no cleared state, so a present-null there retains the baseline.
+ */
 class UpdateEventRequestMapper {
 
     private UpdateEventRequestMapper() {}
 
-    /**
-     * Merges a partial PATCH request with the current event state to produce a complete UpdateEvent command.
-     * Fields absent from the request retain their current values from the event.
-     * An explicitly provided null clears optional fields (e.g. eventTypeId, websiteUrl, location, ranking, baseEntryFee).
-     */
-    static Event.UpdateEvent toCommand(UpdateEventRequest request, Event existingEvent) {
-        String name = request.name().patchValue(existingEvent.getName());
-        LocalDate eventDate = request.eventDate().patchValue(existingEvent.getEventDate());
-        String location = request.location().patchValue(existingEvent.getLocation());
-        String organizer = request.organizer().patchValue(existingEvent.getOrganizer());
-        String websiteUrl = request.websiteUrl().patchValue(
-                existingEvent.getWebsiteUrl() != null ? existingEvent.getWebsiteUrl().value() : null);
-        LinkedHashSet<MemberId> coordinators = request.coordinators().patchValue(new LinkedHashSet<>(existingEvent.getCoordinators()));
-        EventTypeId eventTypeId = request.eventTypeId().patchValue(existingEvent.getEventTypeId().orElse(null));
-        RegistrationDeadlines registrationDeadlines = request.deadlines().isProvided()
-                ? toRegistrationDeadlines(request.deadlines().throwIfNotProvided())
-                : existingEvent.getRegistrationDeadlines();
-        List<EventCategory> categories = request.categories().isProvided()
-                ? toCategories(request.categories().throwIfNotProvided(), existingEvent)
-                : existingEvent.getCategories();
+    static Event.UpdateEvent toCommand(UpdateEventRequest request, Event.UpdateEvent prefilled) {
+        var b = EventUpdateEventBuilder.builder(prefilled);
 
-        EventRanking ranking = request.ranking().map(UpdateEventRequestMapper::toRanking).patchValue(existingEvent.getRanking());
-        Money baseEntryFee = request.baseEntryFee().map(UpdateEventRequestMapper::toMoney).patchValue(existingEvent.getBaseEntryFee());
+        overlayValue(request.name(), b::name);
+        overlayValue(request.eventDate(), b::eventDate);
+        overlayValue(request.organizer(), b::organizer);
 
-        return new Event.UpdateEvent(name, eventDate, location, organizer, websiteUrl,
-                coordinators, eventTypeId, registrationDeadlines, categories, ranking, baseEntryFee);
+        overlay(request.location(), b::location);
+        overlay(request.websiteUrl(), b::websiteUrl);
+        overlay(request.eventTypeId(), v -> b.eventTypeId(EventRequestConversions.toEventTypeId(v)));
+        overlay(request.ranking(), v -> b.ranking(toRanking(v)));
+        overlay(request.baseEntryFee(), v -> b.baseEntryFee(EventRequestConversions.toMoney(v)));
+
+        overlay(request.coordinators(), v -> b.coordinators(EventRequestConversions.toCoordinators(v)));
+        overlay(request.deadlines(), v -> b.registrationDeadlines(EventRequestConversions.toRegistrationDeadlines(v)));
+        overlay(request.categories(), v -> b.categories(mergeCategories(v, prefilled.categories())));
+
+        return b.build();
+    }
+
+    /** present (incl. present-null) → apply; undefined → leave the baseline value. */
+    private static <T> void overlay(JsonNullable<T> field, Consumer<T> apply) {
+        if (field.isPresent()) {
+            apply.accept(field.get());
+        }
+    }
+
+    /** For fields with no cleared state: only a present non-null value overrides the baseline. */
+    private static <T> void overlayValue(JsonNullable<T> field, Consumer<T> apply) {
+        field.ifPresent(value -> {
+            if (value != null) {
+                apply.accept(value);
+            }
+        });
     }
 
     /**
-     * Applies the id / no-id / missing-id semantics from the design: a request category carrying
-     * an {@code id} must reference one already on this event (updates name/fee, id and any
-     * registration links are preserved); a request category without an {@code id} is new and gets
-     * a freshly generated one; any existing category id absent from the request is dropped.
+     * id / no-id / missing-id semantics: a request category carrying an {@code id} must reference
+     * one already on this event (updates name/fee, id and any registration links are preserved); a
+     * request category without an {@code id} is new and gets a freshly generated one; any existing
+     * category id absent from the request is dropped.
      */
-    private static List<EventCategory> toCategories(List<UpdateEventRequest.CategoryRequest> requested, Event existingEvent) {
+    private static List<EventCategory> mergeCategories(List<UpdateEventCategoryRequest> requested,
+                                                      List<EventCategory> current) {
         if (requested == null) {
             return List.of();
         }
-        Map<EventCategoryId, EventCategory> existingById = existingEvent.getCategories().stream()
+        Map<EventCategoryId, EventCategory> existingById = current.stream()
                 .collect(Collectors.toMap(EventCategory::id, c -> c));
 
         return requested.stream()
                 .map(request -> {
                     if (request.id() == null) {
-                        return new EventCategory(EventCategoryId.generate(), null, request.name(), toMoney(request.fee()));
+                        return new EventCategory(EventCategoryId.generate(), null, request.name(),
+                                EventRequestConversions.toMoney(request.fee()));
                     }
-                    EventCategory existing = existingById.get(request.id());
+                    EventCategoryId id = new EventCategoryId(request.id());
+                    EventCategory existing = existingById.get(id);
                     if (existing == null) {
                         throw new BusinessRuleViolationException(
-                                "Category id '" + request.id() + "' does not belong to this event") {};
+                                "Category id '" + id + "' does not belong to this event") {};
                     }
-                    return new EventCategory(existing.id(), existing.orisId(), request.name(), toMoney(request.fee()));
+                    return new EventCategory(existing.id(), existing.orisId(), request.name(),
+                            EventRequestConversions.toMoney(request.fee()));
                 })
                 .toList();
     }
 
-    private static EventRanking toRanking(UpdateEventRequest.RankingRequest rankingRequest) {
+    private static EventRanking toRanking(UpdateEventRankingRequest rankingRequest) {
         if (rankingRequest == null) {
             return null;
         }
         return EventRanking.of(rankingRequest.levelId(), rankingRequest.shortName(), rankingRequest.name());
-    }
-
-    private static Money toMoney(UpdateEventRequest.EntryFeeRequest feeRequest) {
-        if (feeRequest == null) {
-            return null;
-        }
-        return Money.of(feeRequest.amount(), Money.parseCurrency(feeRequest.currency()));
-    }
-
-    private static RegistrationDeadlines toRegistrationDeadlines(List<LocalDate> deadlines) {
-        if (deadlines == null || deadlines.isEmpty()) {
-            return RegistrationDeadlines.none();
-        }
-        return RegistrationDeadlines.of(
-                deadlines.get(0),
-                deadlines.size() > 1 ? deadlines.get(1) : null,
-                deadlines.size() > 2 ? deadlines.get(2) : null
-        );
     }
 }

@@ -10,6 +10,7 @@ import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
 import type {components} from "../../api/klabisApi";
 import type {HalFormsTemplate, HalResponse} from "../../api";
+import type {GetMemberHal} from "../../api/halTypes";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {Banknote, Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
@@ -25,6 +26,13 @@ import {MemberFeeSection} from "./MemberFeeSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
 
 type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
+
+// Rel names are checked against the generated interface, not retyped as string literals —
+// a renamed rel in the OpenAPI spec then fails the build here instead of breaking silently
+// at runtime. `memberRel` is a typed identity: its argument must be a real key of `_links`.
+type MemberLinks = NonNullable<GetMemberHal['_links']>;
+const memberRel = <K extends keyof MemberLinks>(rel: K): K => rel;
+const memberLink = <K extends keyof MemberLinks>(links: MemberLinks | undefined, rel: K): MemberLinks[K] => links?.[rel];
 
 const val = (value: ReactNode): ReactNode => value || '\u2014';
 
@@ -92,7 +100,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
     const navigate = useNavigate();
 
-    const icalTokenLink = resourceData._links?.['ical-token'];
+    const icalTokenLink = memberLink(resourceData._links as MemberLinks | undefined, 'ical-token');
     const icalTokenHref = icalTokenLink != null
         ? (Array.isArray(icalTokenLink)
             ? (icalTokenLink[0] as {href: string}).href
@@ -296,34 +304,34 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     {labels.changePassword.sectionButtonLabel}
                                 </Button>
                             )}
-                            {hasLink('account') && (
+                            {hasLink(memberRel('account')) && (
                                 <Button
                                     variant="secondary"
-                                    onClick={() => route.navigateToResource(route.getResourceLink('account')!)}
+                                    onClick={() => route.navigateToResource(route.getResourceLink(memberRel('account'))!)}
                                     startIcon={<Banknote className="w-4 h-4"/>}
                                 >
                                     {labels.finance.openMemberAccount}
                                 </Button>
                             )}
-                            {hasLink('trainingGroup') && (
+                            {hasLink(memberRel('trainingGroup')) && (
                                 <Button
                                     variant="secondary"
-                                    onClick={() => route.navigateToResource(route.getResourceLink('trainingGroup')!)}
+                                    onClick={() => route.navigateToResource(route.getResourceLink(memberRel('trainingGroup'))!)}
                                     startIcon={<Dumbbell className="w-4 h-4"/>}
                                 >
                                     {labels.links.trainingGroup}
                                 </Button>
                             )}
-                            {hasLink('familyGroup') && (
+                            {hasLink(memberRel('familyGroup')) && (
                                 <Button
                                     variant="secondary"
-                                    onClick={() => route.navigateToResource(route.getResourceLink('familyGroup')!)}
+                                    onClick={() => route.navigateToResource(route.getResourceLink(memberRel('familyGroup'))!)}
                                     startIcon={<Heart className="w-4 h-4"/>}
                                 >
                                     {labels.links.familyGroup}
                                 </Button>
                             )}
-                            {hasEditTemplate && hasLink('permissions') && (
+                            {hasEditTemplate && hasLink(memberRel('permissions')) && (
                                 <Button
                                     variant="secondary"
                                     onClick={() => setIsPermissionsDialogOpen(true)}
@@ -414,7 +422,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
         );
     };
 
-    const permissionsUrl = route.getResourceLink('permissions')?.href;
+    const permissionsUrl = route.getResourceLink(memberRel('permissions'))?.href;
 
     const permissionsEditor = usePermissionsEditor(
         permissionsUrl,

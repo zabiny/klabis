@@ -4,12 +4,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.patch.PatchField;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.hateoas.EntityModel;
@@ -70,19 +70,19 @@ class FieldLevelAuthorizationTest {
     }
 
     record PatchSensitiveDataRequest(
-            PatchField<String> publicField,
+            JsonNullable<String> publicField,
 
             @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
-            PatchField<String> hiddenField,
+            JsonNullable<String> hiddenField,
 
             @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
-            PatchField<String> maskedField,
+            JsonNullable<String> maskedField,
 
             @HasAuthority(Authority.MEMBERS_MANAGE)
-            PatchField<String> hasAuthorityHiddenField,
+            JsonNullable<String> hasAuthorityHiddenField,
 
             @HasAuthority(Authority.MEMBERS_MANAGE)
-            PatchField<String> hasAuthorityMaskedField
+            JsonNullable<String> hasAuthorityMaskedField
     ) {
     }
 
@@ -97,9 +97,9 @@ class FieldLevelAuthorizationTest {
     ) {}
 
     record OwnershipPatchRequest(
-            PatchField<String> publicField,
-            @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible PatchField<String> ownerOrAdminField,
-            @OwnerVisible PatchField<String> ownerOnlyField
+            JsonNullable<String> publicField,
+            @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible JsonNullable<String> ownerOrAdminField,
+            @OwnerVisible JsonNullable<String> ownerOnlyField
     ) {}
 
     @MvcComponent
@@ -194,7 +194,7 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser(authorities = {FIELD_READ_AUTHORITY})
-        @DisplayName("PATCH with PatchField request should succeed when user has required authority from @PreAuthorize")
+        @DisplayName("PATCH with JsonNullable request should succeed when user has required authority from @PreAuthorize")
         void patchShouldSucceedWithRequiredAuthorityForPreAuthorize() throws Exception {
             mockMvc.perform(patch("/test/field-auth")
                             .with(csrf())
@@ -205,7 +205,7 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-        @DisplayName("PATCH with PatchField request should return 2XX when user has required authority from @HasAuthority")
+        @DisplayName("PATCH with JsonNullable request should return 2XX when user has required authority from @HasAuthority")
         void patchShouldSucceedWithRequiredAuthorityForHasAuthority() throws Exception {
             mockMvc.perform(patch("/test/field-auth")
                             .with(csrf())
@@ -329,7 +329,7 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser
-        @DisplayName("PATCH with PatchField request should return 403 when user attempts to update field where he lacks required authority defined by @PreAuthorize")
+        @DisplayName("PATCH with JsonNullable request should return 403 when user attempts to update field where he lacks required authority defined by @PreAuthorize")
         void patchShouldReturn403WithoutRequiredAuthorityPreAuthorize() throws Exception {
             mockMvc.perform(patch("/test/field-auth")
                             .with(csrf())
@@ -340,7 +340,7 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser
-        @DisplayName("PATCH with PatchField request should return 403 when user attempts to update field where he lacks required authority defined by @HasAuthority")
+        @DisplayName("PATCH with JsonNullable request should return 403 when user attempts to update field where he lacks required authority defined by @HasAuthority")
         void patchShouldReturn403WithoutRequiredAuthorityHasAuthority() throws Exception {
             mockMvc.perform(patch("/test/field-auth")
                             .with(csrf())
@@ -351,7 +351,7 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser
-        @DisplayName("PATCH with PatchField request should return 2XX when user update only public fields")
+        @DisplayName("PATCH with JsonNullable request should return 2XX when user update only public fields")
         void patchShouldReturn200IfAllUpdatedFieldsAreAvailableForUser() throws Exception {
             mockMvc.perform(patch("/test/field-auth")
                             .with(csrf())
@@ -375,7 +375,7 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser
-        @DisplayName("PATCH with empty body succeeds when no secured PatchField is provided")
+        @DisplayName("PATCH with empty body succeeds when no secured JsonNullable is provided")
         void patchWithEmptyBodySucceeds() throws Exception {
             mockMvc.perform(patch("/test/field-auth")
                             .with(csrf())
@@ -386,7 +386,7 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser
-        @DisplayName("PATCH with explicit null for secured field returns 403 because PatchField.of(null) is still provided")
+        @DisplayName("PATCH with explicit null for secured field returns 403 because JsonNullable.of(null) is still provided")
         void patchWithExplicitNullForSecuredFieldReturns403() throws Exception {
             mockMvc.perform(patch("/test/field-auth")
                             .with(csrf())

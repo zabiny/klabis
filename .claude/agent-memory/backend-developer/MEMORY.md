@@ -1,5 +1,9 @@
 # Backend Developer Memory
 
+## Project
+
+- [Shared HAL envelope base models](project_hal_shared_envelope_models.md) — bundler deriver composes EntityModel/CollectionModel/PagedModel from _shared/hal.yaml via allOf; markers keep flat shape
+
 ## Project patterns confirmed
 
 ### ResponseEntity.noContent() is a HeadersBuilder, not BodyBuilder

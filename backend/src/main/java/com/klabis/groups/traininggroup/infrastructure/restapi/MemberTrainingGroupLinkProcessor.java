@@ -2,6 +2,7 @@ package com.klabis.groups.traininggroup.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.groups.common.domain.TrainingGroupFilter;
+import com.klabis.groups.infrastructure.restapi.TrainingGroupsApi;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
@@ -22,9 +23,9 @@ public class MemberTrainingGroupLinkProcessor implements RepresentationModelProc
 
     @Override
     public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
-        MemberId memberId = model.getContent().id();
+        MemberId memberId = new MemberId(model.getContent().id());
         trainingGroupRepository.findOne(TrainingGroupFilter.all().withMemberIs(memberId))
-                .ifPresent(group -> klabisLinkTo(methodOn(TrainingGroupController.class).getTrainingGroup(group.getId().uuid(), null))
+                .ifPresent(group -> klabisLinkTo(methodOn(TrainingGroupsApi.class).getTrainingGroup(group.getId().uuid(), null))
                         .map(link -> link.withRel("trainingGroup"))
                         .ifPresent(model::add));
         return model;

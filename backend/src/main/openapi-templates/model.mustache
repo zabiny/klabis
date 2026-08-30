@@ -1,0 +1,25 @@
+package {{package}};
+
+{{#imports}}import {{import}};
+{{/imports}}
+{{#useBeanValidation}}
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
+{{/useBeanValidation}}
+import java.util.*;
+import jakarta.annotation.Generated;
+
+{{#models}}
+{{#model}}
+{{! A model can itself be an enum (e.g. a RESOLVE_INLINE_ENUMS-promoted inline enum property left
+    unmapped by schemaMappings, or a $ref'd top-level enum schema) rather than an object. That has
+    no fields to carry x-klabis-* field-security extensions, so unlike pojo.mustache this stays the
+    stock JavaSpring output (enumOuterClass) verbatim — nothing Klabis-specific to fork here. }}
+{{#isEnum}}
+{{>enumOuterClass}}
+{{/isEnum}}
+{{^isEnum}}
+{{>pojo}}
+{{/isEnum}}
+{{/model}}
+{{/models}}

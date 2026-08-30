@@ -4,7 +4,6 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.BirthNumberAccessedEvent;
-import com.klabis.members.MemberHasOutstandingDebtException;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberSuspensionRequestedEvent;
 import com.klabis.members.MonetaryAmount;
@@ -38,6 +37,11 @@ public class ManagementService implements ManagementPort {
         this.memberFinancialStatePort = memberFinancialStatePort.orElseGet(NoOpMemberFinancialStatePort::new);
     }
 
+    @Override
+    public Member.UpdateMember prefilledUpdateCommand(MemberId memberId) {
+        return Member.UpdateMember.from(loadMember(memberId));
+    }
+
     @Transactional
     @Override
     public Member updateMember(MemberId memberId, Member.UpdateMember command) {
@@ -55,13 +59,15 @@ public class ManagementService implements ManagementPort {
 
         MemberSuspensionRequestedEvent event = new MemberSuspensionRequestedEvent(memberId);
         eventPublisher.publishEvent(event);
-        if (!event.blockingGroups().isEmpty()) {
-            throw new MemberIsLastGroupOwnerException(event.blockingGroups());
-        }
 
         MemberFinancialStatePort.MemberFinancialSnapshot snapshot = memberFinancialStatePort.getFinancialSnapshot(memberId);
-        if (snapshot.hasOutstandingDebt()) {
-            throw new MemberHasOutstandingDebtException(snapshot);
+
+        boolean hasBlockingGroups = !event.blockingGroups().isEmpty();
+        boolean hasOutstandingDebt = snapshot.hasOutstandingDebt();
+        if (hasBlockingGroups || hasOutstandingDebt) {
+            throw new SuspensionBlockedException(
+                    event.blockingGroups(),
+                    hasOutstandingDebt ? snapshot : null);
         }
 
         log.info("Processing membership suspension: memberId={}, reason={}", memberId, command.reason());

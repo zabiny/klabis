@@ -1,6 +1,5 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.*;
 import org.junit.jupiter.api.Disabled;
@@ -28,11 +27,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @DisplayName("Member Controller Mapping Tests")
 @ExtendWith(SpringExtension.class)
-@Import(MemberMapperImpl.class)
+@Import({MemberMapperImpl.class, MemberSummaryConverterImpl.class, MemberDetailsConverterImpl.class})
 class MemberMappingTests {
 
     @Autowired
     private MemberMapper testedSubject;
+
+    @Autowired
+    private MemberSummaryConverter summaryConverter;
+
+    @Autowired
+    private MemberDetailsConverter detailsConverter;
 
     @Nested
     @DisplayName("mapToIdentityCardDto()")
@@ -94,7 +99,7 @@ class MemberMappingTests {
 
             assertThat(dto).isNotNull();
             assertThat(dto.completionDate()).isEqualTo(LocalDate.of(2024, 6, 15));
-            assertThat(dto.validityDate()).hasValue(LocalDate.of(2026, 6, 15));
+            assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 6, 15));
         }
 
         @Test
@@ -112,7 +117,7 @@ class MemberMappingTests {
             MedicalCourseDto dto = testedSubject.medicalCourseToDto(course);
 
             assertThat(dto.completionDate()).isEqualTo(LocalDate.of(2024, 6, 15));
-            assertThat(dto.validityDate()).isEmpty();
+            assertThat(dto.validityDate()).isNull();
         }
 
         @Test
@@ -139,7 +144,7 @@ class MemberMappingTests {
             TrainerLicenseDto dto = testedSubject.trainerLicenseToDto(license);
 
             assertThat(dto).isNotNull();
-            assertThat(dto.level()).isEqualTo(TrainerLevel.T1);
+            assertThat(dto.level()).isEqualTo(TrainerLicenseDtoLevel.T1);
             assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 12, 31));
         }
 
@@ -157,7 +162,7 @@ class MemberMappingTests {
             TrainerLicense license = new TrainerLicense(TrainerLevel.T3, today);
             TrainerLicenseDto dto = testedSubject.trainerLicenseToDto(license);
 
-            assertThat(dto.level()).isEqualTo(TrainerLevel.T3);
+            assertThat(dto.level()).isEqualTo(TrainerLicenseDtoLevel.T3);
             assertThat(dto.validityDate()).isEqualTo(today);
         }
     }
@@ -173,7 +178,7 @@ class MemberMappingTests {
             RefereeLicenseDto dto = testedSubject.refereeLicenseToDto(license);
 
             assertThat(dto).isNotNull();
-            assertThat(dto.level()).isEqualTo(RefereeLevel.R2);
+            assertThat(dto.level()).isEqualTo(RefereeLicenseDtoLevel.R2);
             assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2026, 12, 31));
         }
 
@@ -195,10 +200,10 @@ class MemberMappingTests {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
 
-            MemberSummaryResponse dto = testedSubject.toSummaryResponse(member);
+            MemberSummaryResponse dto = summaryConverter.convert(member);
 
             assertThat(dto).isNotNull();
-            assertThat(dto.id()).isEqualTo(new MemberId(memberId));
+            assertThat(dto.id()).isEqualTo(memberId);
             assertThat(dto.firstName()).isEqualTo("Jan");
             assertThat(dto.lastName()).isEqualTo("Novák");
             assertThat(dto.registrationNumber()).isEqualTo("ZBM1234");
@@ -212,7 +217,7 @@ class MemberMappingTests {
                     .withName("Petra", "Nováková")
                     .build();
 
-            MemberSummaryResponse dto = testedSubject.toSummaryResponse(member);
+            MemberSummaryResponse dto = summaryConverter.convert(member);
 
             assertThat(dto.firstName()).isEqualTo("Petra");
             assertThat(dto.lastName()).isEqualTo("Nováková");
@@ -226,7 +231,7 @@ class MemberMappingTests {
                     .withRegistrationNumber("ZBM9999")
                     .build();
 
-            MemberSummaryResponse dto = testedSubject.toSummaryResponse(member);
+            MemberSummaryResponse dto = summaryConverter.convert(member);
 
             assertThat(dto.registrationNumber()).isEqualTo("ZBM9999");
         }
@@ -253,14 +258,14 @@ class MemberMappingTests {
                     .withMedicalCourse(medicalCourse)
                     .withTrainerLicense(trainerLicense)
                     .withChipNumber("CHIP123")
-                    .withDrivingLicenseGroup(DrivingLicenseGroup.B)
+                    .withDrivingLicenseGroup(com.klabis.members.domain.DrivingLicenseGroup.B)
                     .withDietaryRestrictions("No restrictions")
                     .build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto).isNotNull();
-            assertThat(dto.id()).isEqualTo(new MemberId(memberId));
+            assertThat(dto.id()).isEqualTo(memberId);
             assertThat(dto.firstName()).isEqualTo("Jan");
             assertThat(dto.lastName()).isEqualTo("Novák");
             assertThat(dto.registrationNumber()).isEqualTo("ZBM1234");
@@ -274,8 +279,9 @@ class MemberMappingTests {
             assertThat(dto.medicalCourse()).isNotNull();
             assertThat(dto.medicalCourse().completionDate()).isEqualTo(LocalDate.of(2024, 1, 1));
             assertThat(dto.trainerLicense()).isNotNull();
-            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLevel.T2);
-            assertThat(dto.drivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.B);
+            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLicenseDtoLevel.T2);
+            assertThat(dto.drivingLicenseGroup()).isEqualTo(
+                    com.klabis.members.infrastructure.restapi.DrivingLicenseGroup.B);
             assertThat(dto.dietaryRestrictions()).isEqualTo("No restrictions");
         }
 
@@ -285,7 +291,7 @@ class MemberMappingTests {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto).isNotNull();
             assertThat(dto.chipNumber()).isNull();
@@ -306,7 +312,7 @@ class MemberMappingTests {
                     .withIdentityCard(identityCard)
                     .build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto.identityCard()).isNotNull();
             assertThat(dto.identityCard().cardNumber()).isEqualTo("ONLY-IC");
@@ -327,7 +333,7 @@ class MemberMappingTests {
                     .withMedicalCourse(medicalCourse)
                     .build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto.identityCard()).isNull();
             assertThat(dto.medicalCourse()).isNotNull();
@@ -345,12 +351,12 @@ class MemberMappingTests {
                     .withTrainerLicense(trainerLicense)
                     .build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto.identityCard()).isNull();
             assertThat(dto.medicalCourse()).isNull();
             assertThat(dto.trainerLicense()).isNotNull();
-            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLevel.T1);
+            assertThat(dto.trainerLicense().level()).isEqualTo(TrainerLicenseDtoLevel.T1);
         }
 
         @Test
@@ -370,7 +376,7 @@ class MemberMappingTests {
                     .withTrainerLicense(trainerLicense)
                     .build();
 
-            MemberDetailsResponse dto = testedSubject.toDetailsResponse(member);
+            MemberDetailsResponse dto = detailsConverter.convert(member);
 
             assertThat(dto.identityCard()).isNotNull();
             assertThat(dto.medicalCourse()).isNotNull();

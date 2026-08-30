@@ -453,7 +453,7 @@ class OrisEventControllerTest {
                     .andExpect(jsonPath("$.successCount").value(2))
                     .andExpect(jsonPath("$.failureCount").value(0))
                     .andExpect(jsonPath("$.results[0].orisId").value(101))
-                    .andExpect(jsonPath("$.results[0].status").value("IMPORTED"))
+                    .andExpect(jsonPath("$.results[0].status").value("SUCCESS"))
                     .andExpect(jsonPath("$.results[1].orisId").value(102));
         }
 

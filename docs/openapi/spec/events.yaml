@@ -1,0 +1,1943 @@
+# Events module — the API surface of EventController, OrisEventController,
+# EventRegistrationController, CategoryPresetController and EventTypeController (events module).
+#
+# EventController and OrisEventController share the URL prefix /api/events but carry different
+# spec tags (Events / OrisEvents) so each gets its own generated *Api interface — see
+# klabis-api-spec skill: "one *Api interface per tag", and this file's OrisEvents section for why.
+#
+# EventRegistrations is a single-word tag standing in for the original multi-word @Tag
+# "Event Registrations" — multi-word tags are silently dropped by the generator (see
+# klabis-api-spec skill).
+#
+# getEvent and both accommodation-list operations are documented here but excluded from
+# openApiModule's `apis`/`models` generation — see the comments on each operation below and the
+# matching comment in backend/build.gradle.kts.
+
+# Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
+# from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
+# klabis.yaml rather than shared, because $ref cannot target a document's own info; the
+# bundler ignores both keys (modules are pulled in by #/paths/... pointer, never whole-file)
+# and validate.mjs pins version to the root's so the two cannot drift.
+openapi: 3.1.0
+
+info:
+  title: Klabis API — Events module
+  description: The Events slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
+paths:
+
+  /api/event-types:
+    get:
+      operationId: listEventTypes
+      tags: [EventTypes]
+      summary: List all event types
+      description: Returns all event types sorted by sort order.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_READ
+      responses:
+        '200':
+          description: List of event types
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventTypeDto'
+          x-hal-links:
+            self:
+              description: This collection
+          x-hal-templates:
+            createEventType:
+              operation: createEventType
+              description: |
+                Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
+                populated at runtime with the available ORIS discipline options.
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: createEventType
+      tags: [EventTypes]
+      summary: Create an event type
+      description: Creates a new event type. When sortOrder is omitted it is assigned automatically.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventTypeRequest'
+      responses:
+        '201':
+          description: Event type created
+          headers:
+            Location:
+              description: URI of the created event type
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/event-types/{id}:
+    get:
+      operationId: getEventType
+      tags: [EventTypes]
+      summary: Get event type by ID
+      description: Returns a single event type.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_READ
+      parameters:
+        - $ref: '#/components/parameters/EventTypeIdParam'
+      responses:
+        '200':
+          description: Event type found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventTypeDto'
+          x-hal-links:
+            self:
+              description: This event type
+            collection:
+              operation: listEventTypes
+              description: Back to the event type list
+          x-hal-templates:
+            default:
+              operation: updateEventType
+              description: |
+                Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
+                populated at runtime with the available ORIS discipline options.
+            deleteEventType:
+              operation: deleteEventType
+              description: Present only for callers with EVENTS:MANAGE
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    put:
+      operationId: updateEventType
+      tags: [EventTypes]
+      summary: Update an event type
+      description: Updates an existing event type.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/EventTypeIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventTypeRequest'
+      responses:
+        '204':
+          description: Event type updated
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: deleteEventType
+      tags: [EventTypes]
+      summary: Delete an event type
+      description: Deletes an event type that is not in use by any event.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/EventTypeIdParam'
+      responses:
+        '204':
+          description: Event type deleted
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/events:
+    get:
+      operationId: listEvents
+      tags: [Events]
+      summary: List events with pagination and filtering
+      description: |
+        Retrieves a paginated list of events. Supports filtering by status and sorting by various
+        fields. Default: page=0, size=10, sort=eventDate,desc.
+        Allowed sort fields: id, name, eventDate, location, organizer, status, registrationDeadline.
+        registeredBy and notRegisteredBy currently accept only the literal value "me" — any other
+        value is a 400. When "me" is requested but the caller has no member profile, an empty page
+        is returned rather than an error.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_READ
+      x-spring-paginated: true
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
+        - $ref: './_shared/pagination.yaml#/components/parameters/SizeParam'
+        - $ref: '#/components/parameters/EventSortParam'
+        - name: status
+          in: query
+          description: Filter by event status
+          required: false
+          schema:
+            $ref: '#/components/schemas/EventStatus'
+        - name: q
+          in: query
+          description: Fulltext search on event name and location
+          required: false
+          schema:
+            type: string
+        - name: organizer
+          in: query
+          description: Filter by organizer code
+          required: false
+          schema:
+            type: string
+        - name: coordinator
+          in: query
+          description: Filter by coordinator member UUID
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: registeredBy
+          in: query
+          description: 'Filter by registration: only ''me'' is currently accepted'
+          required: false
+          schema:
+            type: string
+        - name: dateFrom
+          in: query
+          description: Filter events from this date (inclusive)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: dateTo
+          in: query
+          description: Filter events up to this date (inclusive)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: deadlineWithin
+          in: query
+          description: |
+            Return events whose nearest future registration deadline falls within
+            [today, today+period] (ISO-8601 duration, e.g. P7D)
+          required: false
+          schema:
+            type: string
+            format: duration
+        - name: notRegisteredBy
+          in: query
+          description: 'Exclude events where the given member is registered: only ''me'' is currently accepted'
+          required: false
+          schema:
+            type: string
+        - name: eventTypeId
+          in: query
+          description: 'Filter by event type UUID (multi-value: ?eventTypeId=x&eventTypeId=y)'
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+      responses:
+        '200':
+          description: Paginated list of events retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventSummaryDto'
+          x-hal-links:
+            self:
+              description: This collection, with the current paging and filter parameters
+            first:
+              description: First page (present when the result is paged)
+            last:
+              description: Last page (present when the result is paged)
+            next:
+              description: Next page (present when one exists)
+            prev:
+              description: Previous page (present when one exists)
+          x-hal-templates:
+            createEvent:
+              operation: createEvent
+              description: Present only for callers with EVENTS:MANAGE
+            importEvent:
+              operation: importEvent
+              description: Present only when ORIS integration is active and caller has EVENTS:MANAGE
+            importEventsBatch:
+              operation: importEventsBatch
+              description: Present only when ORIS integration is active and caller has EVENTS:MANAGE
+            syncAllUpcomingFromOris:
+              operation: syncAllUpcomingFromOris
+              description: Present only when ORIS integration is active and caller has EVENTS:MANAGE
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: createEvent
+      tags: [Events]
+      summary: Create a new event
+      description: |
+        Creates a new event in DRAFT status. Returns Location header pointing to the created
+        resource.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '201':
+          description: Event successfully created
+          headers:
+            Location:
+              description: URI of the created event
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/events/{id}:
+    # getEvent returns the plain EventDto payload. The second, independently-shaped collection
+    # (registrationDtoList) is declared by the controller via HalResponseContext.embed(...) and
+    # rendered under _embedded by HalResponseBodyAdvice — the same deferred-assembly path as _links
+    # and _templates, so it stays out of the generated return type.
+    get:
+      operationId: getEvent
+      tags: [Events]
+      summary: Get event by ID
+      description: |
+        Retrieves detailed event information by ID. Returns HATEOAS links based on event status and
+        includes embedded registrations.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_READ
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/EventIdParam'
+      responses:
+        '200':
+          description: Event found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDto'
+          # The event's registrations ride along in _embedded, assembled at runtime by
+          # HalResponseContext.embed (EventController). The suffix keeps this envelope distinct from
+          # a plain EntityModelEventDto should the payload ever be returned bare elsewhere.
+          x-hal-embedded:
+            items: RegistrationSummaryDto
+            suffix: WithRegistrations
+          x-hal-links:
+            self:
+              description: This event
+            collection:
+              operation: listEvents
+              description: Back to the event list
+            registrations:
+              operation: listRegistrations
+              description: Present for events not in DRAFT status
+            coordinator:
+              operation: getMember
+              description: One link per event coordinator
+            event-type:
+              operation: getEventType
+              description: Present when the event has an event type assigned
+            accommodation-list:
+              operation: getAccommodationList
+              description: Present only for the event coordinator or callers with EVENTS:REGISTRATIONS
+            newRegistration:
+              operation: getRegistration
+              description: |
+                Present for the caller's own not-yet-existing registration when registration is
+                being offered
+          x-hal-templates:
+            default:
+              operation: updateEvent
+              description: Present for the event coordinator or callers with EVENTS:MANAGE
+            publishEvent:
+              operation: publishEvent
+              description: Present for DRAFT events and callers with EVENTS:MANAGE
+            cancelEvent:
+              operation: cancelEvent
+              description: Present for DRAFT/ACTIVE events and callers with EVENTS:MANAGE
+            syncEventFromOris:
+              operation: syncEventFromOris
+              description: Present when ORIS integration is active and the event has an orisId
+            registerForEvent:
+              operation: registerForEvent
+              description: Present when registrations are open and the caller is not yet registered
+            editRegistration:
+              operation: editRegistration
+              description: Present when registrations are open and the caller is registered
+            unregisterFromEvent:
+              operation: unregisterFromEvent
+              description: Present when registrations are open and the caller is registered
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    patch:
+      operationId: updateEvent
+      tags: [Events]
+      summary: Update an event
+      description: |
+        Updates event information. Only allowed for DRAFT and ACTIVE events. Any subset of fields
+        may be provided; absent fields are left unchanged.
+      security:
+        - KlabisAuth: [EVENTS]
+      # No x-klabis-authority / x-klabis-owner-visible: authorization is enforced imperatively in
+      # the controller (EventAffordanceSupport.isCoordinatorOrHasManageAuthority — event coordinator
+      # OR EVENTS:MANAGE), but "coordinator" is a set of member IDs stored on the event itself, not
+      # a single path/query parameter this spec extension can name. Modeling it here would require
+      # inventing a new x-klabis-* extension (see klabis-api-spec skill's anti-patterns), so the
+      # check stays in the controller and is only documented in prose.
+      parameters:
+        - $ref: '#/components/parameters/EventIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        '204':
+          description: Event successfully updated
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/events/{id}/publish:
+    post:
+      operationId: publishEvent
+      tags: [Events]
+      summary: Publish an event
+      description: Transitions event from DRAFT to ACTIVE status.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/EventIdParam'
+      responses:
+        '204':
+          description: Event published successfully
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/events/{id}/cancel:
+    post:
+      operationId: cancelEvent
+      tags: [Events]
+      summary: Cancel an event
+      description: |
+        Transitions event to CANCELLED status. An optional cancellation reason may be provided.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/EventIdParam'
+      requestBody:
+        required: false
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelEventRequest'
+      responses:
+        '204':
+          description: Event cancelled successfully
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  # This operation has two produces variants on the same 200 response (HAL JSON and text/csv), but
+  # the generator emits ONE Java method with ONE return type
+  # (Collection<AccommodationListItemDto>) — it cannot describe the CSV variant's byte[] body.
+  # getAccommodationList (JSON) DOES implement the generated EventsApi method; the CSV variant
+  # (getAccommodationListAsCsv) stays a separate hand-written method with no interface counterpart.
+  # See the matching comment in backend/build.gradle.kts and on both methods in EventController.
+  /api/events/{eventId}/accommodation-list:
+    get:
+      operationId: getAccommodationList
+      tags: [Events]
+      summary: Get accommodation list for an event
+      description: |
+        Returns the accommodation list for an event with personal details for each registered
+        member. Accessible only to the event coordinator or users with EVENTS:REGISTRATIONS
+        authority. Fields that are not recorded for a member are returned as null.
+
+        This operation also supports `Accept: text/csv`, returning a UTF-8 BOM, semicolon-delimited
+        CSV file with Czech headers (Content-Disposition: attachment) instead of the JSON
+        representation described below.
+      security:
+        - KlabisAuth: [EVENTS]
+      # No x-klabis-authority / x-klabis-owner-visible: authorization is enforced imperatively
+      # (EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority — event coordinator OR
+      # EVENTS:REGISTRATIONS), for the same reason as updateEvent above: "coordinator" cannot be
+      # named as a single owner parameter.
+      parameters:
+        - $ref: '#/components/parameters/RegEventIdParam'
+      responses:
+        '200':
+          description: Accommodation list retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccommodationListItemDto'
+            text/csv:
+              schema:
+                type: string
+                format: binary
+          x-hal-links:
+            self:
+              description: This accommodation list
+            event:
+              operation: getEvent
+              description: |
+                The event this accommodation list belongs to. Present only when the caller may also
+                read the event: reaching this list needs EVENTS:REGISTRATIONS or being the
+                coordinator, which does not imply EVENTS:READ.
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - must be the event coordinator or have EVENTS:REGISTRATIONS
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/events/import:
+    post:
+      operationId: importEvent
+      tags: [OrisEvents]
+      summary: Import event from ORIS
+      description: Creates a new event in DRAFT status by importing data from ORIS.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportCommand'
+      responses:
+        '201':
+          description: Event imported successfully
+          headers:
+            Location:
+              description: URI of the created event
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/events/{id}/sync-from-oris:
+    post:
+      operationId: syncEventFromOris
+      tags: [OrisEvents]
+      summary: Sync event from ORIS
+      description: |
+        Re-fetches event data from ORIS and overwrites all local fields. Only allowed for DRAFT and
+        ACTIVE events with an orisId.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/EventIdParam'
+      responses:
+        '204':
+          description: Event synced from ORIS successfully
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/events/sync-from-oris/all-upcoming:
+    post:
+      operationId: syncAllUpcomingFromOris
+      tags: [OrisEvents]
+      summary: Bulk sync all upcoming ORIS events
+      description: |
+        Synchronises all DRAFT/ACTIVE events with eventDate >= today that have an ORIS ID.
+        Processes each event sequentially; partial failures are collected and returned in the
+        summary. Always returns 200 — check failureCount in the response body.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      responses:
+        '200':
+          description: Bulk sync completed; inspect failureCount for partial failures
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkSyncResult'
+          x-hal-links:
+            self:
+              description: This sync result
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/events/import-batch:
+    post:
+      operationId: importEventsBatch
+      tags: [OrisEvents]
+      summary: Batch import events from ORIS
+      description: |
+        Imports multiple ORIS events in a single request. Each event is processed independently; a
+        failure to import one event does not prevent the others from being imported. Always returns
+        200 — check failureCount in the response body for partial failures.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportBatchRequest'
+      responses:
+        '200':
+          description: Batch import completed; inspect failureCount for partial failures
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkImportResult'
+          x-hal-links:
+            self:
+              description: This import result
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/events/{eventId}/registrations:
+    post:
+      operationId: registerForEvent
+      tags: [EventRegistrations]
+      summary: Register for an event
+      description: |
+        Register the authenticated member for an event with SI card number. Only allowed for ACTIVE
+        events. Returns Location header pointing to the registration.
+      security:
+        - KlabisAuth: [EVENTS]
+      # No x-klabis-authority / x-klabis-owner-visible: this endpoint acts on the CALLER's own
+      # registration via @ActingMember — authorization is implicit in the caller's identity, there
+      # is no separate authority to check.
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/RegEventIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterEventRequest'
+      responses:
+        '201':
+          description: Successfully registered for event
+          headers:
+            Location:
+              description: URI of the created registration
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          description: User already registered to this event
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: unregisterFromEvent
+      tags: [EventRegistrations]
+      summary: Unregister from an event
+      description: |
+        Unregister the authenticated member from an event. Only allowed before the event date.
+      security:
+        - KlabisAuth: [EVENTS]
+      # No x-klabis-authority / x-klabis-owner-visible: acts on the caller's own registration via
+      # @ActingMember, same reasoning as registerForEvent above.
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
+      parameters:
+        - $ref: '#/components/parameters/RegEventIdParam'
+      responses:
+        '204':
+          description: Successfully unregistered
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    get:
+      operationId: listRegistrations
+      tags: [EventRegistrations]
+      summary: List event registrations
+      description: |
+        List all registrations for an event. SI card numbers are not included for privacy
+        protection. Supported sort fields: firstName, lastName, category, registrationTime.
+        Default sort: registrationTime ASC. sort=registrationTime is silently ignored for members
+        without EVENTS:REGISTRATIONS authority who are not the event coordinator. Unknown sort
+        fields also fall back to default.
+      security:
+        - KlabisAuth: [EVENTS]
+      # No x-klabis-authority / x-klabis-owner-visible: this endpoint acts on the CALLER's own
+      # view of the event's registrations — every authenticated caller may list registrations, and
+      # the registrationTime field is separately field-level-protected (see RegistrationSummaryDto).
+      parameters:
+        - $ref: '#/components/parameters/RegEventIdParam'
+        - name: sort
+          in: query
+          description: Sort field and optional direction, e.g. 'lastName' or 'lastName,desc'
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of registrations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistrationSummaryDto'
+          x-hal-links:
+            self:
+              description: This collection, with the current sort parameter
+            event:
+              operation: getEvent
+              description: The event these registrations belong to
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/events/{eventId}/registrations/{memberId}:
+    put:
+      operationId: editRegistration
+      tags: [EventRegistrations]
+      summary: Edit event registration
+      description: |
+        Update SI card number and/or category for a member's registration. Accessible by the
+        member themselves or a user with EVENTS:REGISTRATIONS authority. Only allowed when
+        registrations are open.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_REGISTRATIONS
+      x-klabis-owner-visible: true
+      parameters:
+        - $ref: '#/components/parameters/RegEventIdParam'
+        - $ref: '#/components/parameters/RegMemberIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditRegistrationRequest'
+      responses:
+        '204':
+          description: Registration updated successfully
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - must be the member or have EVENTS:REGISTRATIONS
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    get:
+      operationId: getRegistration
+      tags: [EventRegistrations]
+      summary: Get registration by member ID
+      description: |
+        Get a member's event registration including SI card number. Accessible by the member
+        themselves or a user with EVENTS:REGISTRATIONS authority. When new=true, returns prefilled
+        defaults (siCardNumber from profile) for a not-yet-existing registration — this still
+        requires the caller to be the target member themselves regardless of authority.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_REGISTRATIONS
+      x-klabis-owner-visible: true
+      parameters:
+        - $ref: '#/components/parameters/RegMemberIdParam'
+        - $ref: '#/components/parameters/RegEventIdParam'
+        - name: newRegistration
+          in: query
+          description: |
+            When true, returns default prefilled registration data instead of looking up an
+            existing registration
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Registration retrieved successfully or defaults returned (new=true)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationDto'
+          x-hal-links:
+            self:
+              description: This registration
+            event:
+              operation: getEvent
+              description: The event this registration belongs to
+          x-hal-templates:
+            editRegistration:
+              operation: editRegistration
+              description: Present when registrations are open
+            unregisterFromEvent:
+              operation: unregisterFromEvent
+              description: Present when registrations are open and the caller is the registered member
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          description: |
+            Forbidden - must be the member or have EVENTS:REGISTRATIONS; or new=true with
+            mismatched memberId
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          description: Member not registered for this event (new=false only)
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/category-presets:
+    get:
+      operationId: listPresets
+      tags: [CategoryPresets]
+      summary: List all category presets
+      description: Returns all category presets. Requires EVENTS:MANAGE authority.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      responses:
+        '200':
+          description: List of category presets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryPresetDto'
+          x-hal-links:
+            self:
+              description: This collection
+          x-hal-templates:
+            createCategoryPreset:
+              operation: createCategoryPreset
+              description: Create a new category preset
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: createCategoryPreset
+      tags: [CategoryPresets]
+      summary: Create a category preset
+      description: Creates a new category preset. Requires EVENTS:MANAGE authority.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryPresetRequest'
+      responses:
+        '201':
+          description: Category preset created
+          headers:
+            Location:
+              description: URI of the created category preset
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/category-presets/{id}:
+    get:
+      operationId: getPreset
+      tags: [CategoryPresets]
+      summary: Get category preset by ID
+      description: Returns a single category preset. Requires EVENTS:MANAGE authority.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/CategoryPresetIdParam'
+      responses:
+        '200':
+          description: Category preset found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryPresetDto'
+          x-hal-links:
+            self:
+              description: This category preset
+            collection:
+              operation: listPresets
+              description: Back to the category preset list
+          x-hal-templates:
+            default:
+              operation: updateCategoryPreset
+              description: Update this category preset
+            deleteCategoryPreset:
+              operation: deleteCategoryPreset
+              description: Delete this category preset
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    patch:
+      operationId: updateCategoryPreset
+      tags: [CategoryPresets]
+      summary: Update a category preset
+      description: Updates an existing category preset. Requires EVENTS:MANAGE authority.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/CategoryPresetIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryPresetRequest'
+      responses:
+        '204':
+          description: Category preset updated
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: deleteCategoryPreset
+      tags: [CategoryPresets]
+      summary: Delete a category preset
+      description: Deletes a category preset. Requires EVENTS:MANAGE authority.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/CategoryPresetIdParam'
+      responses:
+        '204':
+          description: Category preset deleted
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
+
+  parameters:
+    EventIdParam:
+      name: id
+      in: path
+      description: Event UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    EventTypeIdParam:
+      name: id
+      in: path
+      description: Event type UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    RegEventIdParam:
+      name: eventId
+      in: path
+      description: Event UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    RegMemberIdParam:
+      name: memberId
+      in: path
+      description: Member UUID
+      required: true
+      # Marks the owner for operations that declare x-klabis-owner-visible. Inert on its own:
+      # @OwnerId is only consulted for a method or field already marked @OwnerVisible, so the
+      # operations here that do not opt into ownership are unaffected.
+      x-klabis-owner-id: true
+      schema:
+        type: string
+        format: uuid
+
+    CategoryPresetIdParam:
+      name: id
+      in: path
+      description: Category preset UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    EventSortParam:
+      name: sort
+      in: query
+      description: |
+        Sorting criteria in the format: property,(asc|desc). Allowed fields: id, name, eventDate,
+        location, organizer, status, registrationDeadline.
+      required: false
+      schema:
+        type: array
+        default: [eventDate,DESC]
+        items:
+          type: string
+
+  schemas:
+
+    EventStatus:
+      type: string
+      enum: [DRAFT, ACTIVE, FINISHED, CANCELLED]
+
+    EventSummaryDto:
+      type: object
+      description: |
+        Event summary for list views. The status field is only visible to callers with
+        EVENTS:MANAGE authority.
+      properties:
+        id:
+          type: string
+          format: uuid
+          x-klabis-halforms-access: READ_ONLY
+        name:
+          type: string
+        eventDate:
+          type: string
+          format: date
+        location:
+          type: string
+        organizer:
+          type: string
+        websiteUrl:
+          type: string
+        coordinators:
+          type: array
+          items:
+            type: string
+            format: uuid
+        eventTypeId:
+          type: string
+          format: uuid
+        status:
+          allOf:
+            - $ref: '#/components/schemas/EventStatus'
+          x-klabis-authority: EVENTS_MANAGE
+          x-klabis-halforms-access: READ_ONLY
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventCategoryDto'
+        cancellationReason:
+          type: string
+          x-klabis-halforms-access: READ_ONLY
+        deadlines:
+          type: array
+          items:
+            type: string
+            format: date
+          x-klabis-halforms-access: READ_ONLY
+
+    EventCategoryDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        fee:
+          $ref: '#/components/schemas/EntryFeeDto'
+
+    EntryFeeDto:
+      type: object
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+
+    EventDto:
+      type: object
+      description: Complete event information for display purposes.
+      properties:
+        id:
+          type: string
+          format: uuid
+          x-klabis-halforms-access: READ_ONLY
+        name:
+          type: string
+        eventDate:
+          type: string
+          format: date
+        location:
+          type: string
+        organizer:
+          type: string
+        websiteUrl:
+          type: string
+        coordinators:
+          type: array
+          items:
+            type: string
+            format: uuid
+        eventTypeId:
+          type: string
+          format: uuid
+        status:
+          allOf:
+            - $ref: '#/components/schemas/EventStatus'
+          x-klabis-halforms-access: READ_ONLY
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventCategoryDto'
+        cancellationReason:
+          type: string
+          x-klabis-halforms-access: READ_ONLY
+        deadlines:
+          type: array
+          items:
+            type: string
+            format: date
+          x-klabis-halforms-access: READ_ONLY
+        ranking:
+          $ref: '#/components/schemas/RankingDto'
+        baseEntryFee:
+          $ref: '#/components/schemas/EntryFeeDto'
+
+    RankingDto:
+      type: object
+      properties:
+        shortName:
+          type: string
+        name:
+          type: string
+
+    CreateEventRequest:
+      type: object
+      x-klabis-class-constraint: com.klabis.events.infrastructure.restapi.DeadlinesOrdered
+      description: |
+        Accepts deadlines as a list of dates (max 3) and coordinators/categories inline. Category
+        `id` is never supplied on create — the server always assigns a fresh id. Deadlines must be
+        in non-decreasing order.
+
+        Nested category and fee constraints are enforced: the generated record carries `@Valid` on
+        `categories`, which the hand-written predecessor lacked. A blank category name used to reach
+        the domain and fail its `Assert.hasText` as a 500; a negative fee amount was not checked
+        anywhere at all. Both are now a 400 with field errors.
+      required: [name, eventDate, organizer]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          x-klabis-not-blank: true
+        eventDate:
+          type: string
+          format: date
+        location:
+          type: string
+          maxLength: 100
+        organizer:
+          type: string
+          maxLength: 10
+          x-klabis-not-blank: true
+        # No `format: uri` — see the note on UpdateEventRequest.websiteUrl.
+        websiteUrl:
+          type: string
+          x-klabis-url: true
+        coordinators:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        eventTypeId:
+          type: string
+          format: uuid
+        deadlines:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+            format: date
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateEventCategoryRequest'
+
+    CreateEventCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          x-klabis-not-blank: true
+        fee:
+          $ref: '#/components/schemas/EntryFeeRequest'
+
+    EntryFeeRequest:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+
+    UpdateEventRequest:
+      type: object
+      x-klabis-class-constraint: com.klabis.events.infrastructure.restapi.DeadlinesOrdered
+      description: |
+        Partial update request. Every property is a JsonNullable wrapper: an absent property is left
+        untouched, whereas an explicitly null value clears the field (where the underlying field is
+        optional). Category `id` present = update an existing category (must belong to this event);
+        absent = a new category, server assigns a fresh id. Deadlines, when provided, must be in
+        non-decreasing order.
+
+        Properties are inlined rather than sharing PatchField* wrapper schemas: a shared schema
+        cannot carry per-property constraints, and the generator drops maxLength/pattern from a
+        mapped schema. See the klabis-api-spec skill.
+      properties:
+        name:
+          type: [string, 'null']
+          maxLength: 100
+          x-klabis-not-blank: true
+        eventDate:
+          type: [string, 'null']
+          format: date
+        location:
+          type: [string, 'null']
+          maxLength: 100
+        organizer:
+          type: [string, 'null']
+          maxLength: 10
+          x-klabis-not-blank: true
+        # No `format: uri`: it makes the generator emit java.net.URI, which @URL cannot validate
+        # (it constrains CharSequence) and which would change the mapper's contract. x-klabis-url
+        # carries the validation instead.
+        websiteUrl:
+          type: [string, 'null']
+          x-klabis-url: true
+        coordinators:
+          type: [array, 'null']
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        eventTypeId:
+          type: [string, 'null']
+          format: uuid
+        deadlines:
+          type: [array, 'null']
+          maxItems: 3
+          items:
+            type: string
+            format: date
+        categories:
+          type: [array, 'null']
+          items:
+            $ref: '#/components/schemas/UpdateEventCategoryRequest'
+        ranking:
+          oneOf:
+            - $ref: '#/components/schemas/UpdateEventRankingRequest'
+            - type: 'null'
+        baseEntryFee:
+          oneOf:
+            - $ref: '#/components/schemas/EntryFeeRequest'
+            - type: 'null'
+
+    UpdateEventCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 50
+          pattern: '^(?!\s*$).+'
+        fee:
+          $ref: '#/components/schemas/EntryFeeRequest'
+
+    UpdateEventRankingRequest:
+      type: object
+      required: [levelId, shortName, name]
+      properties:
+        levelId:
+          type: integer
+          format: int32
+          minimum: 1
+        shortName:
+          type: string
+          pattern: '^(?!\s*$).+'
+        name:
+          type: string
+          pattern: '^(?!\s*$).+'
+
+    CancelEventRequest:
+      type: object
+      properties:
+        cancellationReason:
+          type: string
+          maxLength: 500
+          x-field-extra-annotation: com.klabis.common.ui.HalForms(formInputType = "textarea")
+
+    ImportCommand:
+      type: object
+      description: ORIS import command.
+      required: [orisId]
+      properties:
+        orisId:
+          type: integer
+          format: int32
+          minimum: 1
+
+    ImportBatchRequest:
+      type: object
+      required: [orisIds]
+      properties:
+        orisIds:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: integer
+            format: int32
+
+    BulkSyncResult:
+      type: object
+      properties:
+        totalProcessed:
+          type: integer
+          format: int32
+        successCount:
+          type: integer
+          format: int32
+        failureCount:
+          type: integer
+          format: int32
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventSyncEntry'
+
+    EventSyncEntry:
+      type: object
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [SUCCESS, FAILED]
+        error:
+          type: string
+
+    BulkImportResult:
+      type: object
+      properties:
+        totalProcessed:
+          type: integer
+          format: int32
+        successCount:
+          type: integer
+          format: int32
+        failureCount:
+          type: integer
+          format: int32
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventImportEntry'
+
+    EventImportEntry:
+      type: object
+      properties:
+        orisId:
+          type: integer
+          format: int32
+        name:
+          type: string
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [SUCCESS, FAILED]
+        error:
+          type: string
+
+    RegisterEventRequest:
+      type: object
+      description: Registration data submitted by the acting member.
+      required: [siCardNumber]
+      properties:
+        siCardNumber:
+          type: string
+          pattern: '\d{6,7}'
+        categoryId:
+          type: string
+          format: uuid
+
+    EditRegistrationRequest:
+      type: object
+      required: [siCardNumber]
+      properties:
+        siCardNumber:
+          type: string
+          pattern: '\d{6,7}'
+        categoryId:
+          type: string
+          format: uuid
+
+    # A named schema, not an inline array: the item payload needs a stable wire-contract name. Two
+    # operations derive from it — getEvent's x-hal-embedded builds the
+    # EntityModel<RegistrationSummaryDto> row, listRegistrations the collection envelope.
+    RegistrationSummaryDto:
+      type: object
+      description: |
+        Registration summary for list views. SI card numbers are not included. registrationTime is
+        visible to the registered member OR callers with EVENTS:REGISTRATIONS.
+      x-klabis-relation:
+        collectionRelation: registrationDtoList
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        category:
+          $ref: '#/components/schemas/EventCategoryDto'
+          x-field-extra-annotation: com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)
+        registrationTime:
+          type: string
+          format: date-time
+          x-klabis-authority: EVENTS_REGISTRATIONS
+          x-klabis-owner-visible: true
+        # Kept off the wire (@JsonIgnore) but present in the generated Java: coordinators doubles
+        # as the @OwnerId source OwnershipResolver needs to evaluate registrationTime's
+        # @OwnerVisible. See design.md Decision 0 / x-field-extra-annotation for why plain omission
+        # from this schema (the approach used elsewhere for @JsonIgnore) does not work here.
+        coordinators:
+          type: array
+          items:
+            type: string
+            format: uuid
+          x-klabis-owner-id: true
+          x-field-extra-annotation: com.fasterxml.jackson.annotation.JsonIgnore
+        # Needed only by RegistrationRecordTransactionLinkProcessor at runtime (never on the wire);
+        # no ownership role, unlike coordinators above.
+        registeredMemberId:
+          type: string
+          format: uuid
+          x-field-extra-annotation: com.fasterxml.jackson.annotation.JsonIgnore
+
+    RegistrationDto:
+      type: object
+      properties:
+        firstName:
+          type: string
+          x-klabis-halforms-access: READ_ONLY
+        lastName:
+          type: string
+          x-klabis-halforms-access: READ_ONLY
+        siCardNumber:
+          type: string
+        category:
+          allOf:
+            - $ref: '#/components/schemas/EventCategoryDto'
+          x-klabis-halforms-access: READ_ONLY
+        registeredAt:
+          type: string
+          format: date-time
+          x-klabis-halforms-access: READ_ONLY
+
+    # The _embedded key comes from @Relation(collectionRelation = "accommodationList") on the payload
+    # record, not from the schema name — see "A payload schema's name is wire contract" in the
+    # klabis-api-spec skill.
+    #
+    # A named schema, not an inline array: the item payload needs a stable wire-contract name for
+    # the bundler to reconstruct the collection envelope in klabis-full.json from.
+    AccommodationListItemDto:
+      type: object
+      description: Fields not recorded for a member are returned as null.
+      x-klabis-relation:
+        collectionRelation: accommodationList
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        identityCardNumber:
+          type: string
+        identityCardValidityDate:
+          type: string
+          format: date
+        dateOfBirth:
+          type: string
+          format: date
+        addressStreet:
+          type: string
+        addressCity:
+          type: string
+        addressPostalCode:
+          type: string
+        addressCountry:
+          type: string
+
+    CategoryPresetDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          x-klabis-halforms-access: READ_ONLY
+        name:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+
+    CreateCategoryPresetRequest:
+      type: object
+      required: [name, categories]
+      properties:
+        name:
+          type: string
+          x-klabis-not-blank: true
+        categories:
+          type: array
+          items:
+            type: string
+
+    UpdateCategoryPresetRequest:
+      type: object
+      required: [name, categories]
+      properties:
+        name:
+          type: string
+          x-klabis-not-blank: true
+        categories:
+          type: array
+          items:
+            type: string
+
+    # A named schema, not an inline array: the item payload needs a stable wire-contract name for
+    # the bundler to reconstruct the collection envelope in klabis-full.json from.
+    EventTypeDto:
+      type: object
+      description: Event type catalog entry.
+      properties:
+        id:
+          type: string
+          format: uuid
+          x-klabis-halforms-access: READ_ONLY
+        name:
+          type: string
+        color:
+          type: string
+          description: Hex color code used to render the event type in the UI.
+          pattern: '^#[0-9a-fA-F]{6}$'
+        sortOrder:
+          type: integer
+          format: int32
+        orisDisciplineIds:
+          type: array
+          description: ORIS discipline identifiers mapped onto this event type.
+          uniqueItems: true
+          items:
+            type: integer
+            format: int32
+
+    CreateEventTypeRequest:
+      type: object
+      description: Event type creation data
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+        sortOrder:
+          type: integer
+          format: int32
+          description: Assigned automatically when omitted.
+          minimum: 0
+        orisDisciplineIds:
+          type: array
+          uniqueItems: true
+          items:
+            type: integer
+            format: int32
+
+    UpdateEventTypeRequest:
+      type: object
+      description: Event type update data
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+        sortOrder:
+          type: integer
+          format: int32
+          description: Left unchanged when omitted.
+          minimum: 0
+        orisDisciplineIds:
+          type: array
+          uniqueItems: true
+          items:
+            type: integer
+            format: int32

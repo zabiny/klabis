@@ -1,0 +1,68 @@
+{{!
+  Klabis customization: emits a Java record instead of the default generator's mutable class.
+
+  Rationale: hand-written Klabis response/request DTOs are records (see backend-patterns skill —
+  MemberDetailsResponse, AddressResponse, GuardianDTO, ...). MapStruct maps into these records by
+  calling the canonical constructor with named-argument resolution against record components, and
+  @RecordBuilder (io.soabase.recordbuilder) needs a genuine record to generate a builder.
+  The stock JavaSpring pojo.mustache only emits classes with getters/setters, so this file replaces
+  it wholesale rather than patching it.
+
+  additionalModelTypeAnnotations (configOptions) carries @RecordBuilder / @JsonInclude /
+  @HandleAuthorizationDenied uniformly - see build.gradle.kts. They are harmless no-ops on models
+  that don't need them.
+}}
+/**
+ * {{description}}{{^description}}{{classname}}{{/description}}
+ */
+{{>additionalModelTypeAnnotations}}
+{{! Class-level constraints, for cross-field rules OpenAPI cannot express. Unlike
+    additionalModelTypeAnnotations — which is global to every model in the task — this is keyed on
+    the individual schema. The value is a fully-qualified annotation name written without its
+    leading '@', and rendered with no argument list — so the annotation's members must all have
+    defaults. Supporting a constraint with a mandatory attribute means extending this block to
+    carry arguments. See x-klabis-class-constraint in the klabis-api-spec skill. }}
+{{#vendorExtensions.x-klabis-class-constraint}}@{{.}}
+{{/vendorExtensions.x-klabis-class-constraint}}
+{{! Schema-level, same rendering position as x-klabis-class-constraint above. Names the _embedded
+    collection key for Spring HATEOAS, overriding the decapitalize(ClassName) + "List" default —
+    see x-klabis-relation in the klabis-api-spec skill / design.md Decision 2. }}
+{{#vendorExtensions.x-klabis-relation}}@org.springframework.hateoas.server.core.Relation(collectionRelation = "{{collectionRelation}}"{{#itemRelation}}, itemRelation = "{{itemRelation}}"{{/itemRelation}})
+{{/vendorExtensions.x-klabis-relation}}
+{{>generatedAnnotation}}
+public record {{classname}}(
+    {{! Field-level security: x-klabis-* extensions on the spec property map 1:1 onto the
+        annotations documented in the klabis-api-spec skill. They render as parameter annotations,
+        same position as on the hand-written records (see backend-patterns: @OwnerId MemberId id).
+
+        Bean Validation constraints (@Email, @Size, @Pattern, ...) come from the stock
+        JavaSpring beanValidation partial so request-side schemas (e.g. GuardianDTO, shared between
+        RegisterMemberRequest and MemberDetailsResponse) keep the same runtime validation the
+        hand-written DTOs had.
+
+        @NotBlank, @Past and @URL are the exceptions: OpenAPI has no keyword for any of them ("not
+        blank", "strictly in the past", "a syntactically valid URL" — `format: uri` is documentation
+        only and the generator emits no constraint for it), so they come from x-klabis-not-blank /
+        x-klabis-past / x-klabis-url rather than the partial. A field that is both `required` and
+        not-blank therefore carries a redundant
+        @NotNull from the partial as well; that is harmless, and suppressing it would mean forking
+        the stock beanValidation template too.
+
+        A nullable property becomes JsonNullable<T>, giving a PATCH body the absent/null/value
+        tri-state. This mirrors the stock pojo.mustache, which gates the same wrapper on
+        openApiNullable + isNullable; the record form just has no setters to also guard. The spec
+        must use the OpenAPI 3.1 spelling `type: [x, "null"]` — the 3.0 `nullable: true` keyword is
+        not recognised in a 3.1 document and leaves isNullable false. The type is fully qualified,
+        so model.mustache needs no extra import.
+
+        x-field-extra-annotation stamps an arbitrary fully-qualified annotation (without its leading
+        '@') onto the property, for a one-off case none of the x-klabis-* extensions above cover —
+        e.g. @JsonIgnore on a field kept in the generated Java only so OwnershipResolver has
+        something to read (see RegistrationSummaryDto.coordinators), or a per-property
+        @JsonInclude override. Same key/rendering style as pathParams.mustache's use of it on path
+        parameters; unlike x-klabis-*, it is not validated by validate.mjs, so a typo compiles into
+        a broken annotation reference rather than failing the bundle. }}
+    {{#vars}}{{^-first}},
+    {{/-first}}{{#vendorExtensions.x-klabis-owner-id}}@com.klabis.common.security.fieldsecurity.OwnerId {{/vendorExtensions.x-klabis-owner-id}}{{#vendorExtensions.x-klabis-owner-visible}}@com.klabis.common.security.fieldsecurity.OwnerVisible {{/vendorExtensions.x-klabis-owner-visible}}{{#vendorExtensions.x-klabis-authority}}@com.klabis.common.users.HasAuthority(com.klabis.common.users.Authority.{{.}}) {{/vendorExtensions.x-klabis-authority}}{{#vendorExtensions.x-klabis-halforms-access}}@com.klabis.common.ui.HalForms(access = com.klabis.common.ui.HalForms.Access.{{.}}) {{/vendorExtensions.x-klabis-halforms-access}}{{#vendorExtensions.x-klabis-not-blank}}@jakarta.validation.constraints.NotBlank {{/vendorExtensions.x-klabis-not-blank}}{{#vendorExtensions.x-klabis-past}}@jakarta.validation.constraints.Past {{/vendorExtensions.x-klabis-past}}{{#vendorExtensions.x-klabis-url}}@org.hibernate.validator.constraints.URL {{/vendorExtensions.x-klabis-url}}{{#vendorExtensions.x-field-extra-annotation}}@{{{.}}} {{/vendorExtensions.x-field-extra-annotation}}{{#useBeanValidation}}{{>beanValidation}}{{/useBeanValidation}}{{#openApiNullable}}{{#isNullable}}org.openapitools.jackson.nullable.JsonNullable<{{{datatypeWithEnum}}}>{{/isNullable}}{{^isNullable}}{{{datatypeWithEnum}}}{{/isNullable}}{{/openApiNullable}}{{^openApiNullable}}{{{datatypeWithEnum}}}{{/openApiNullable}} {{name}}{{/vars}}
+) {
+}

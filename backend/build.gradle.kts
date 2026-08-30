@@ -44,6 +44,7 @@ repositories {
 }
 
 val mapstructVersion = "1.6.3"
+val mapstructSpringExtensionsVersion = "2.0.0"
 val testcontainersVersion = "1.19.3"
 val springModulithVersion = "2.0.0"
 
@@ -99,6 +100,12 @@ dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor:$mapstructVersion")
     testAnnotationProcessor("org.mapstruct:mapstruct-processor:$mapstructVersion")
 
+    // MapStruct Spring Extensions (loose coupling between Spring-managed mappers via ConversionService)
+    implementation("org.mapstruct.extensions.spring:mapstruct-spring-annotations:$mapstructSpringExtensionsVersion")
+    annotationProcessor("org.mapstruct.extensions.spring:mapstruct-spring-extensions:$mapstructSpringExtensionsVersion")
+    testAnnotationProcessor("org.mapstruct.extensions.spring:mapstruct-spring-extensions:$mapstructSpringExtensionsVersion")
+    testImplementation("org.mapstruct.extensions.spring:mapstruct-spring-test-extensions:$mapstructSpringExtensionsVersion")
+
     // RecordBuilder for type-safe record builders
     compileOnly("io.soabase.record-builder:record-builder-core:44")
     annotationProcessor("io.soabase.record-builder:record-builder-processor:44")
@@ -120,6 +127,11 @@ dependencies {
 
     // Apache Commons CSV for accommodation list CSV export
     implementation("org.apache.commons:commons-csv:1.13.0")
+
+    // JsonNullable: tri-state (absent / null / value) wrapper for PATCH request bodies.
+    // 0.2.10+ ships a Jackson 3 module (tools.jackson); the Jackson 2 artifacts it also declares
+    // stay off the classpath because both are `provided` upstream.
+    implementation("org.openapitools:jackson-databind-nullable:0.2.11")
 
     // jMolecules: DDD and hexagonal architecture annotations
     implementation("org.jmolecules:jmolecules-ddd")
@@ -193,12 +205,130 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 // SpringDoc OpenAPI Gradle Plugin configuration
+//
+// The API is spec-first: docs/openapi/spec/ is the source of truth and `openapiBundle` produces the
+// committed klabis-full.json. This task is kept only to dump what the running application actually
+// serves, into gitignored docs/openapi/generated/, for ad-hoc comparison against the spec. Nothing
+// in the build depends on its output.
 openApi {
     apiDocsUrl.set("http://localhost:8080/v3/api-docs")
-    outputDir.set(file("../docs/openapi"))
-    outputFileName.set("klabis-full.json")
+    outputDir.set(file("../docs/openapi/generated"))
+    outputFileName.set("klabis-codefirst.json")
     waitTimeInSeconds.set(30)
     customBootRun {
         args.set(listOf("--server.ssl.enabled=false", "--server.port=8080", "--jasypt.encryptor.password=something"))
     }
 }
+
+// ---------------------------------------------------------------------------
+// Spec bundling (tools/openapi-bundle)
+// ---------------------------------------------------------------------------
+
+val openapiToolDir = layout.projectDirectory.dir("../tools/openapi-bundle")
+
+// IDE-launched Gradle daemons (e.g. IntelliJ) don't inherit the interactive shell's PATH, so a
+// bare "node" fails with "A problem occurred starting process 'command 'node''" when Node is
+// only available via nvm. run-node.sh sources nvm itself (nvm use 24) before exec'ing node, so
+// it works no matter what environment launched Gradle.
+val runNodeScript = openapiToolDir.file("run-node.sh").asFile.absolutePath
+
+/**
+ * Produces the committed klabis-full.json from docs/openapi/spec/, which the frontend's
+ * `npm run openapi` reads to generate its TypeScript types.
+ *
+ * Writes by default rather than only validating: this is now the sole producer of the file, so
+ * `./gradlew openapiBundle` has to be enough to refresh it. Pass -PopenapiOut to redirect it, or
+ * -PopenapiCheck to validate without writing (what CI wants).
+ */
+val openapiBundle by tasks.registering(Exec::class) {
+    group = "openapi"
+    description = "Bundles the hand-written OpenAPI spec into docs/openapi/klabis-full.json"
+    workingDir = openapiToolDir.asFile
+    val bundleArgs = when {
+        project.hasProperty("openapiCheck") && project.hasProperty("openapiOut") ->
+            throw GradleException("openapiCheck and openapiOut are mutually exclusive: "
+                + "-PopenapiCheck writes nothing, so -PopenapiOut would have no effect")
+        project.hasProperty("openapiCheck") -> arrayOf("--check")
+        project.hasProperty("openapiOut") -> arrayOf("--out", project.property("openapiOut").toString())
+        else -> emptyArray()
+    }
+    commandLine(runNodeScript, "bundle.mjs", *bundleArgs)
+}
+
+// ---------------------------------------------------------------------------
+// Java DTO + API interface codegen from docs/openapi/spec/
+//
+// One generate task PER MODULE, registered via the openApiModule(...) extension function
+// (buildSrc/src/main/kotlin/OpenApiModule.kt). A single shared task cannot serve more than one
+// module: modelPackage/apiPackage are scalars, and schemaMappings is global per task — two modules
+// each defining their own (say) AddressRequest would collide irreconcilably. Per-module tasks keep
+// each module's mappings in its own namespace, which is what makes this scale past the two pilot
+// modules.
+//
+// Each module's specFile points at its own docs/openapi/spec/<file>.yaml — one file, one Gradle
+// task, no models/apis enumeration; the target file's full paths/components.schemas content is the
+// module's generation scope.
+// ---------------------------------------------------------------------------
+
+openApiModule(
+    module = "members",
+    pkg = "com.klabis.members.infrastructure.restapi",
+    specFile = "members.yaml",
+    mappings = emptyMap()
+)
+
+openApiModule(
+    module = "finance",
+    pkg = "com.klabis.finance.infrastructure.restapi",
+    specFile = "finance.yaml",
+    mappings = emptyMap()
+)
+
+openApiModule(
+    module = "events",
+    pkg = "com.klabis.events.infrastructure.restapi",
+    specFile = "events.yaml",
+    mappings = emptyMap()
+)
+
+openApiModule(
+    module = "calendar",
+    pkg = "com.klabis.calendar.infrastructure.restapi",
+    specFile = "calendar.yaml",
+    mappings = emptyMap()
+)
+
+openApiModule(
+    module = "membershipfees",
+    pkg = "com.klabis.membershipfees.infrastructure.restapi",
+    specFile = "membershipfees.yaml",
+    mappings = emptyMap()
+)
+
+openApiModule(
+    module = "groups",
+    pkg = "com.klabis.groups.infrastructure.restapi",
+    specFile = "groups.yaml",
+    // The FamilyGroup/Group/TrainingGroup response payloads have array properties whose items each
+    // carry their own _links (parents/members/owners/pendingInvitations/trainers). Those arrays are
+    // marked x-hal-entity-items: true in groups.yaml; KlabisSpringCodegen.fromProperty reads the
+    // marker and resolves them to List<EntityModel<X>>, so no per-schema schemaMappings are needed.
+    mappings = emptyMap()
+)
+
+openApiModule(
+    module = "common",
+    pkg = "com.klabis.common.users.infrastructure.restapi",
+    specFile = "common.yaml",
+    mappings = mapOf(
+        "EntityModelRootModel" to "com.klabis.common.ui.RootModel",
+        "EntityModelDashboardModel" to "com.klabis.common.ui.DashboardModel"
+    )
+)
+
+openApiModule(
+    module = "oris",
+    pkg = "com.klabis.oris",
+    specFile = "oris.yaml",
+    mappings = emptyMap()
+)
