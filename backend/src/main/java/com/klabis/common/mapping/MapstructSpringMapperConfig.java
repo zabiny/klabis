@@ -6,13 +6,10 @@ import org.mapstruct.extensions.spring.SpringMapperConfig;
 
 /**
  * Shared MapStruct config for all Spring-managed mappers: componentModel = "spring" with
- * constructor injection. Does not generate a cross-mapper ConversionServiceAdapter — no mapper in
- * this codebase composes another mapper's output via {@code uses = <OtherMapper>}, and generating
- * that adapter is actively harmful: it aggregates every Converter's source/target types into one
- * class in {@code com.klabis.common.mapping}, so as soon as any Converter touches a
- * Modulith-module-private {@code .domain} type (e.g. {@code members.domain.Member}), the generated
- * adapter makes the {@code common} module illegally depend on that module's internals, failing
- * {@code ModuleStructureVerificationTest}.
+ * constructor injection. The generated cross-mapper adapter is emitted into
+ * {@code com.klabis.mapstruct} — a package outside every Spring Modulith module — so the classes it
+ * references (including module-private {@code .domain} types) are not seen by
+ * {@code ModuleStructureVerificationTest} as illegal cross-module dependencies.
  */
 @MapperConfig(
         componentModel = "spring",
