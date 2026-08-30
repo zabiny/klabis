@@ -4,32 +4,20 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
-import type {HalFormsTemplate, HalResponse} from '../../api';
+import type {GetFeeGroupResource, HalFormsTemplate} from '../../api';
 import {getEnumLabel, labels} from '../../localization';
 import {ChevronRight, Pencil, UserPlus, Users} from 'lucide-react';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {RulesTable} from '../../components/membership-fees/RulesTable.tsx';
 
-interface FeeGroupMember {
-    memberId: string;
-    firstName?: string;
-    lastName?: string;
-    registrationNumber?: string;
-    joinedAt: string;
-    source: 'MEMBER_CHOICE' | 'ADMIN_ASSIGNMENT';
-}
-
-interface MembershipFeeGroupDetail extends HalResponse {
-    id: string;
-    name: string;
-    yearlyFeeAmount: number;
-    yearlyFeeCurrency: string;
-    status: 'EDITABLE' | 'FROZEN';
-    _embedded?: {
-        members?: FeeGroupMember[];
-    };
-}
+// yearlyFeeAmount / yearlyFeeCurrency are returned by the backend but absent from the
+// MembershipFeeGroupResponse schema (spec gap — see plan hand-back items), so they are
+// re-declared here as optional over the generated resource type.
+type MembershipFeeGroupDetail = GetFeeGroupResource & {
+    yearlyFeeAmount?: number;
+    yearlyFeeCurrency?: string;
+};
 
 const MemberSourceBadge = ({source}: {source: 'MEMBER_CHOICE' | 'ADMIN_ASSIGNMENT'}): ReactElement => {
     if (source === 'MEMBER_CHOICE') {
@@ -158,7 +146,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                                 Status
                             </label>
                             <div className="h-[38px] flex items-center">
-                                <StatusBadge status={resourceData.status}/>
+                                {resourceData.status && <StatusBadge status={resourceData.status}/>}
                             </div>
                         </div>
                     </div>
@@ -214,7 +202,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                                     <td className="px-5" style={{color: '#18181B'}}>{member.registrationNumber ?? '—'}</td>
                                     <td className="px-5" style={{color: '#18181B'}}>{formatDate(member.joinedAt)}</td>
                                     <td className="px-5">
-                                        <MemberSourceBadge source={member.source}/>
+                                        {member.source && <MemberSourceBadge source={member.source}/>}
                                     </td>
                                 </tr>
                             ))}
