@@ -4,15 +4,10 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {HalEmbeddedTable} from '../HalNavigator2/HalEmbeddedTable.tsx';
 import {HalFormButton} from '../HalNavigator2/HalFormButton.tsx';
 import {TableCell} from '../KlabisTable';
-import type {EntityModel} from '../../api';
+import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 
-type FeeTierSummary = EntityModel<{
-    id: string;
-    name: string;
-    yearlyFeeAmount: number;
-    yearlyFeeCurrency: string;
-}>;
+type FeeTierSummary = components['schemas']['EntityModelMembershipFeeTierSummaryResponse'];
 
 export const TierCatalogSection = (): ReactElement => {
     const {route} = useHalPageData();
