@@ -16,9 +16,15 @@ import {HTTP_METHODS, sortKeysDeep} from './bundle.mjs';
 const HAL_FORMS = 'application/prs.hal-forms+json';
 const JSON_MEDIA = 'application/json';
 
-const LINKS_REF = '#/components/schemas/Links';
-const TEMPLATES_REF = '#/components/schemas/HalFormsTemplates';
-const PAGE_METADATA_REF = '#/components/schemas/PageMetadata';
+// The three shared envelope base models, defined once in _shared/hal.yaml and hoisted into the
+// bundled document before this deriver runs (see bundleSpec). The deriver composes them with each
+// payload via `allOf` rather than re-emitting the `_links`/`_templates`/`page` structure per schema.
+const ENTITY_MODEL_REF = '#/components/schemas/EntityModel';
+const COLLECTION_MODEL_REF = '#/components/schemas/CollectionModel';
+const PAGED_MODEL_REF = '#/components/schemas/PagedModel';
+
+// Names, not full refs — for the isEnvelopeShaped allOf-member test.
+const ENVELOPE_BASE_NAMES = new Set(['EntityModel', 'CollectionModel', 'PagedModel']);
 
 const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 
@@ -36,10 +42,15 @@ const schemaRef = (name) => ({$ref: `#/components/schemas/${name}`});
 /**
  * Recognises a schema the deriver would itself have produced, so it is not wrapped a second time.
  *
- * Both real shapes count: the `allOf` form an EntityModel takes, and the flat `{type, properties}`
- * form of a collection envelope — the latter also covering the hand-written marker types
- * (`EntityModelRootModel`, `EntityModelDashboardModel`) which have `schemaMappings` in
- * build.gradle.kts and must survive untouched.
+ * Three shapes count:
+ *  - the current `allOf` form, which composes a shared envelope base
+ *    (`{$ref: .../EntityModel|CollectionModel|PagedModel}`) with the payload and/or an `_embedded`
+ *    block;
+ *  - the legacy `allOf` form with an inline `{properties: {_links}}` member — still emitted by the
+ *    hand-written `EntityModelOwnerResponse`-style marker in groups.yaml;
+ *  - the flat `{type, properties}` form with an inline `_links`/`_embedded` property — the
+ *    hand-written marker types (`EntityModelRootModel`, `EntityModelDashboardModel`) which have
+ *    `schemaMappings` in build.gradle.kts and must survive untouched.
  *
  * It is a shape test, not a declaration, so a genuine payload owning a `_links`/`_embedded` property
  * of its own would be mistaken for an envelope and skipped in silence. `validate.mjs` catches that —
@@ -49,8 +60,10 @@ export function isEnvelopeShaped(schema) {
     if (!isPlainObject(schema)) return false;
 
     if (Array.isArray(schema.allOf)) {
-        return schema.allOf.some((member) => isPlainObject(member?.properties)
-            && Object.hasOwn(member.properties, '_links'));
+        return schema.allOf.some((member) => ENVELOPE_BASE_NAMES.has(schemaName(member))
+            || (isPlainObject(member?.properties)
+                && (Object.hasOwn(member.properties, '_links')
+                    || Object.hasOwn(member.properties, '_embedded'))));
     }
 
     return isPlainObject(schema.properties)
@@ -69,41 +82,49 @@ export function embeddedKey(payloadName, payloadSchema) {
     return `${uncapitalize(payloadName)}List`;
 }
 
-/**
- * `EntityModel<Payload>` — `allOf: [payload, {_links, _templates}]`. Every envelope the deriver
- * emits carries `_templates`, response-level and nested `x-hal-entity-items` rows alike: it only
- * declares "a template map may appear here", which is true of every HAL-FORMS resource, and the
- * `x-hal-entity-items` rows demonstrably carry affordances at runtime (see design.md Decision 7).
- */
-function entityModel(payloadName, embedded, schemas) {
-    const wrapper = {type: 'object', properties: {_links: {$ref: LINKS_REF}, _templates: {$ref: TEMPLATES_REF}}};
-    if (embedded !== undefined) {
-        // The key comes from the item payload's own `x-klabis-relation`, the same source
-        // `collectionModel` uses — never restated on the marker, so the two cannot drift.
-        const rel = embeddedKey(embedded.items, schemas?.[embedded.items]);
-        wrapper.properties._embedded = {
-            type: 'object',
-            properties: {
-                [rel]: {type: 'array', items: schemaRef(embedded.items)},
-            },
-        };
-    }
-    return {allOf: [schemaRef(payloadName), wrapper]};
-}
-
-function collectionModel(itemSchemaName, embedded, {paged}) {
-    const properties = {
-        _embedded: {
-            type: 'object',
-            properties: {
-                [embedded]: {type: 'array', items: schemaRef(itemSchemaName)},
+/** `{_embedded: {<rel>: {type: array, items: <ref>}}}` — the payload-specific block of any envelope. */
+function embeddedBlock(rel, itemsRef) {
+    return {
+        type: 'object',
+        properties: {
+            _embedded: {
+                type: 'object',
+                properties: {
+                    [rel]: {type: 'array', items: itemsRef},
+                },
             },
         },
-        _links: {$ref: LINKS_REF},
-        _templates: {$ref: TEMPLATES_REF},
     };
-    if (paged) properties.page = {$ref: PAGE_METADATA_REF};
-    return {type: 'object', properties};
+}
+
+/**
+ * `EntityModel<Payload>` — `allOf: [payload, {$ref: EntityModel}]`, i.e. the payload plus the shared
+ * `_links` + `_templates` base. `_templates` is uniform (design.md Decision 7): the base only
+ * declares "a template map may appear here", true of every HAL-FORMS resource, and the
+ * `x-hal-entity-items` rows demonstrably carry affordances at runtime.
+ *
+ * When `embedded` is given (an `x-hal-embedded` response) a third `allOf` member adds the declared
+ * `_embedded` block. Its key comes from the item payload's own `x-klabis-relation` — the same
+ * source `collectionModel` reads — so the two cannot drift.
+ */
+function entityModel(payloadName, embedded, schemas) {
+    const members = [schemaRef(payloadName), {$ref: ENTITY_MODEL_REF}];
+    if (embedded !== undefined) {
+        const rel = embeddedKey(embedded.items, schemas?.[embedded.items]);
+        members.push(embeddedBlock(rel, schemaRef(embedded.items)));
+    }
+    return {allOf: members};
+}
+
+/**
+ * `CollectionModel<EntityModel<Item>>` / `PagedModel<EntityModel<Item>>` —
+ * `allOf: [{$ref: CollectionModel|PagedModel}, {_embedded: {<rel>: [EntityModel<Item>]}}]`.
+ * The shared base carries `_links` + `_templates` (+ `page` for the paged one); this adds only the
+ * item-relation `_embedded` block.
+ */
+function collectionModel(itemSchemaName, embedded, {paged}) {
+    const base = {$ref: paged ? PAGED_MODEL_REF : COLLECTION_MODEL_REF};
+    return {allOf: [base, embeddedBlock(embedded, schemaRef(itemSchemaName))]};
 }
 
 /**
