@@ -22,6 +22,7 @@ import com.klabis.members.infrastructure.restapi.MembersApi;
 import jakarta.annotation.Nullable;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -66,17 +67,20 @@ public class EventController implements EventsApi {
     private final EventRegistrationPort eventRegistrationService;
     private final Members members;
     private final AccommodationListCsvRenderer csvRenderer;
+    private final ConversionService conversionService;
 
     public EventController(
             EventManagementPort eventManagementService,
             EventRegistrationPort eventRegistrationService,
             Members members,
             java.util.Optional<OrisEventImportPort> orisEventImportPort,
-            AccommodationListCsvRenderer csvRenderer) {
+            AccommodationListCsvRenderer csvRenderer,
+            ConversionService conversionService) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
         this.csvRenderer = csvRenderer;
+        this.conversionService = conversionService;
     }
 
     @Override
@@ -122,7 +126,7 @@ public class EventController implements EventsApi {
         // they are scanned by every @WebMvcTest, so unrelated slice tests would have to mock them.
         HalResponseContext.setDomain(event);
         HalResponseContext.embed(buildRegistrationDtos(event), RegistrationSummaryDto.class);
-        return ResponseEntity.ok(EventDtoMapper.toDto(event));
+        return ResponseEntity.ok(conversionService.convert(event, EventDto.class));
     }
 
     private List<RegistrationSummaryDto> buildRegistrationDtos(Event event) {
@@ -154,12 +158,12 @@ public class EventController implements EventsApi {
         if (filter == null) {
             Page<Event> empty = new PageImpl<>(List.of(), pageable, 0);
             HalResponseContext.setDomainList(List.of());
-            return ResponseEntity.ok(empty.map(EventDtoMapper::toSummaryDto));
+            return ResponseEntity.ok(empty.map(e -> conversionService.convert(e, EventSummaryDto.class)));
         }
         Page<Event> page = eventManagementService.listEvents(filter, pageable, EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE));
 
         HalResponseContext.setDomainList(page.getContent());
-        return ResponseEntity.ok(page.map(EventDtoMapper::toSummaryDto));
+        return ResponseEntity.ok(page.map(e -> conversionService.convert(e, EventSummaryDto.class)));
     }
 
     /**
