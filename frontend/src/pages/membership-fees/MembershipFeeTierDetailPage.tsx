@@ -4,18 +4,13 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
-import type {HalFormsTemplate, HalResponse} from '../../api';
+import type {GetTierResource, HalFormsTemplate} from '../../api';
 import {labels} from '../../localization';
 import {ChevronRight, Pencil, Save, Trash2} from 'lucide-react';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {RulesTable} from '../../components/membership-fees/RulesTable.tsx';
 
-interface FeeTierDetail extends HalResponse {
-    id: string;
-    name: string;
-    yearlyFeeAmount: number;
-    yearlyFeeCurrency: string;
-}
+type FeeTierDetail = GetTierResource;
 
 const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): ReactElement => {
     const {route} = useHalPageData<FeeTierDetail>();
