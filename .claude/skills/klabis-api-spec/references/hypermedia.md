@@ -321,22 +321,59 @@ responses:
       collection: { operation: listMembers, description: Back to the member list }
       permissions: { description: 'Requires MEMBERS:PERMISSIONS' }
     x-hal-templates:
-      default: { operation: updateMember }
+      updateMember: { operation: updateMember }
       suspend: { operation: suspendMember, description: Present only while the member is active }
 ```
 
 Reference operations by `operation: <operationId>` — never `operationRef` with escaped slashes.
 The bundler validates that the target exists.
 
+### The template key must be the runtime affordance name — never `default`
+
+`klabisAfford` builds every affordance through Spring HATEOAS's `afford()`, which names the
+HAL-FORMS template **after the controller method** (`updateMember`, `editSnapshot`,
+`changeDeadline`, …). It never emits a template called `default`. An older convention keyed the
+primary update/create affordance as `x-hal-templates.default`; `haltypes.mjs` copied that key
+verbatim into `halTypes.ts`, so `*Hal._templates` then declared a `default` rel the wire response
+never carries and omitted the real one. Every `default` key was renamed to its operation name —
+match that: **the key equals the `operation:` value** for the primary affordance just as for every
+other. If a `_templates.<name>` read on the frontend has no matching key in the generated `*Hal`,
+that is the spec being wrong, not the read.
+
 ### What the frontend gets from them
 
 `npm run openapi` generates `frontend/src/api/halTypes.ts` from these declarations — per operation a
-`*Rels` constant, a `*Hal` interface and a `*Resource` type intersecting the payload schema:
+`*Rels` constant, a `*Hal` interface and a `*Resource` type (`<payload schema> & <*Hal>`, i.e. the
+`EntityModel…`/`CollectionModel…`/`PagedModel…` schema from `klabisApi.d.ts` intersected with the
+typed `_links`/`_templates`):
 
 ```ts
-import {GetMemberRels} from '@/api/halTypes';
+import {GetMemberRels, type GetMemberResource} from '@/api';   // re-exported from the api barrel
 GetMemberRels.links[0]        // 'account' — typed, not a bare string literal
 ```
+
+`halTypes.ts` is re-exported from `frontend/src/api/index.ts`, so pages import `Get*Resource` /
+`List*Resource` / `*Hal` / `*Rels` from `@/api`, not a deep `@/api/halTypes` path.
+
+**Type the page's HAL response with the `*Resource` type**, passed to `useHalPageData<T>()`:
+
+```ts
+const { resourceData } = useHalPageData<GetMemberResource>();
+// resourceData.firstName        — typed from MemberDetailsResponse
+// resourceData._embedded?.…     — typed row lists
+// resourceData._templates?.suspend — typed rel (GetMemberHal keys)
+```
+
+`useHalPageData<T = HalResponse>` no longer constrains `T` (generated `*Resource` types are closed
+objects that cannot satisfy `HalResponse`'s index signatures); its body reads the envelope through a
+single internal cast to the structural `HalEnvelope` type in `types.ts`. Do **not** intersect
+`*Resource` with `HalResponse` at the call site (`T & HalResponse` collapses every payload field to
+`unknown`) — pass the bare `*Resource`.
+
+For a collection row whose per-row `_links`/`_templates` are added at runtime (not in the schema),
+extend the schema type: `components['schemas']['EntityModelFooDto'] & { _templates?: Record<string,
+HalFormsTemplate> }`. For a detail payload whose array field carries such rows, override it:
+`Omit<GetFooResource, 'members'> & { members?: FooMemberRow[] }`.
 
 Use those constants instead of string literals so renaming a relation in the spec breaks the build
 rather than silently breaking at runtime.

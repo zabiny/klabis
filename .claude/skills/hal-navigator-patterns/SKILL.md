@@ -1,7 +1,7 @@
 ---
 name: hal-navigator-patterns
 description: This skill should be used when the user asks to "implement frontend page in Klabis", "create HAL page component", "display HAL table", "add form modal", "work with HalRouteContext", "build page with KlabisTable", "add MultiStepFormModal", "render HAL+FORMS data", "navigate HAL resources", or mentions Klabis frontend patterns for HAL+FORMS API.
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Klabis Frontend Patterns for HAL+FORMS API
@@ -29,16 +29,34 @@ Page Component
 Entry point for every page. Combines route data, actions, and admin state.
 
 ```tsx
-const { resourceData, isLoading, error, isAdmin, route } = useHalPageData();
+import type { GetMemberResource } from '@/api';
+
+const { resourceData, isLoading, error, isAdmin, route } = useHalPageData<GetMemberResource>();
 ```
 
+**Type the response with the generated `*Resource` type.** `npm run openapi` emits one per HAL
+operation into `frontend/src/api/halTypes.ts`, re-exported from `@/api`:
+`GetMemberResource`, `ListEventsResource`, `GetFeeGroupResource`, … Each is `<payload schema> &
+<typed _links/_templates>`. Passing it makes `resourceData.<field>`, `resourceData._embedded?.<list>`
+and `resourceData._templates?.<rel>` all typed. Omit the type argument only on pages that read just
+`route` / `isAdmin` and never touch `resourceData`.
+
+- Do **not** write `useHalPageData<GetMemberResource & HalResponse>()` — `& HalResponse` collapses
+  every payload field to `unknown`. Pass the bare `*Resource`.
+- The generic is unconstrained (`<T = HalResponse>`); the hook reads the envelope through an
+  internal `HalEnvelope` cast, so any `*Resource` is accepted.
+- Legacy pages still use `EntityModel<{...}>` hand-written shapes and `resourceData as any` — that
+  is the old pattern; use `*Resource` / `components['schemas'][...]` in new code.
+
 **Key properties:**
-- `resourceData` — fetched HAL response (with `_links`, `_embedded`, `_templates`)
+- `resourceData` — fetched HAL response, typed as `T` (with `_links`, `_embedded`, `_templates`)
 - `isLoading` / `error` — loading and error states
 - `route.navigateToResource(resource)` — navigate to a HAL resource (accepts `HalResponse` or `Link`)
 - `route.getResourceLink(linkName?)` — get specific link from current resource (defaults to `'self'`)
 - `route.refetch()` — manually refetch current resource
 - Helper methods: `hasLink()`, `hasTemplate()`, `isCollection()`, `getEmbeddedItems()`, `hasForms()`
+  — `getEmbeddedItems()` stays `unknown[]`; for typed rows read `resourceData._embedded?.<listKey>`
+  directly
 
 ## Displaying Collections: HalEmbeddedTable
 
@@ -65,10 +83,21 @@ Display `_embedded` collections as paginated, sortable tables. Automatically fet
 
 **TableCell props:** `column` (data field name), `sortable` (enables sorting), `dataRender` (custom cell renderer receiving `{value, item}`)
 
-**Type the items** with `EntityModel<T>` for items that include `_links`:
+**Type the row** with the generated schema type for the `_embedded` item, not a hand-written
+`EntityModel<{...}>`:
 ```tsx
-type MyItem = EntityModel<{ id: string; name: string; status: string }>;
+import type { components } from '@/api/klabisApi';
+
+// row payload + EntityModel wrapper, straight from the spec
+type MyRow = components['schemas']['EntityModelMemberSummaryResponse'];
+
+// if the backend adds per-row affordances at runtime (not in the schema), extend:
+type MyRow = components['schemas']['EntityModelMemberSummaryResponse'] & {
+  _templates?: Record<string, HalFormsTemplate>;
+};
 ```
+Generated payload fields are all optional (`firstName?`), reflecting field-level authority — expect
+`?.` / `?? ''` at the call site.
 
 ## Forms: HalFormButton
 
@@ -187,10 +216,13 @@ For detailed component APIs and advanced patterns, consult:
 
 ### Key Source Files
 
-- `frontend/src/hooks/useHalPageData.ts` — main page data hook
+- `frontend/src/hooks/useHalPageData.ts` — main page data hook (`useHalPageData<T>()`)
 - `frontend/src/contexts/HalRouteContext.tsx` — HAL route context + HalSubresourceProvider
 - `frontend/src/components/HalNavigator2/HalEmbeddedTable.tsx` — embedded table
 - `frontend/src/components/HalNavigator2/HalFormButton.tsx` — form button
 - `frontend/src/components/HalNavigator2/MultiStepFormModal.tsx` — multi-step modal
 - `frontend/src/components/HalNavigator2/halforms/HalFormsForm.tsx` — form renderer
-- `frontend/src/api/types.ts` — HAL type definitions (HalResponse, HalFormsTemplate, EntityModel)
+- `frontend/src/api/index.ts` — api barrel; re-exports `halTypes.ts` (`Get*Resource`, `List*Resource`, `*Hal`, `*Rels`)
+- `frontend/src/api/halTypes.ts` — generated per-operation HAL types (do not edit; `npm run openapi`)
+- `frontend/src/api/klabisApi.d.ts` — generated OpenAPI types (`components['schemas'][...]`)
+- `frontend/src/api/types.ts` — hand-written HAL media-type types (`HalResponse`, `HalFormsTemplate`, `HalEnvelope`, `EntityModel`)
