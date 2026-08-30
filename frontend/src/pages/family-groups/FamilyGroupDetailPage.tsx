@@ -3,7 +3,7 @@ import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, Modal, Skeleton} from '../../components/UI';
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
-import type {HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
+import type {GetFamilyGroupResource, HalFormsTemplate, HalResourceLinks} from '../../api';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {labels} from '../../localization';
 import {Trash2, UserPlus} from 'lucide-react';
@@ -29,12 +29,14 @@ interface FamilyGroupChild {
     _templates?: Record<string, HalFormsTemplate>;
 }
 
-interface FamilyGroupDetail extends HalResponse {
-    id: string;
-    name: string;
+// GetFamilyGroupResource types name / _templates from the spec. Its parents/members arrays
+// carry per-row _links / _templates added at runtime (member link, removeFamilyGroupParent,
+// removeFamilyGroupChild) that the generated schema does not describe, so those rows keep the
+// view types above.
+type FamilyGroupDetail = Omit<GetFamilyGroupResource, 'parents' | 'members'> & {
     parents?: FamilyGroupParent[];
     members?: FamilyGroupChild[];
-}
+};
 
 type AddMemberRole = 'parent' | 'child';
 
