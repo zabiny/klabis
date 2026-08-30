@@ -1,5 +1,6 @@
 import {type ReactElement, useState} from "react";
-import type {EntityModel, HalFormsTemplate} from "../../api";
+import type {HalFormsTemplate} from "../../api";
+import type {components} from "../../api/klabisApi";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
@@ -11,12 +12,7 @@ import {Button, Modal} from "../../components/UI";
 import {Pencil, Trash2} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 
-type EventTypeListItem = EntityModel<{
-    id: string;
-    name: string;
-    color?: string;
-    sortOrder: number;
-}> & {
+type EventTypeListItem = components['schemas']['EntityModelEventTypeDto'] & {
     _templates?: Record<string, HalFormsTemplate>;
 };
 

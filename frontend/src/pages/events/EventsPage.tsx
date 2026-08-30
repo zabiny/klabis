@@ -1,6 +1,7 @@
 import {type ReactElement, useState} from "react";
 import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
-import type {EntityModel, HalFormsTemplate, HalResourceLinks, Link} from "../../api";
+import type {HalFormsTemplate, HalResourceLinks, Link} from "../../api";
+import type {components} from "../../api/klabisApi";
 import {TableCell} from "../../components/KlabisTable";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
@@ -30,18 +31,7 @@ import {useEventTypes} from "../../hooks/useEventTypes.ts";
 import {getTodayIso} from "../../components/events/eventsFilterUtils.ts";
 import {useEventsFilterState} from "./useEventsFilterState.ts";
 
-type EventListData = EntityModel<{
-    id: string,
-    name: string,
-    eventDate: string,
-    location: string | null,
-    organizer: string,
-    websiteUrl?: string,
-    deadlines?: string[],
-    cancellationReason?: string,
-    status?: 'DRAFT' | 'ACTIVE' | 'FINISHED' | 'CANCELLED',
-    eventTypeId?: string | null,
-}> & {
+type EventListData = components['schemas']['EntityModelEventSummaryDto'] & {
     _templates?: Record<string, HalFormsTemplate>;
 }
 
