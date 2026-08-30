@@ -6,7 +6,9 @@ import {Alert, Button, Modal, Skeleton} from '../UI';
 import {authorizedFetch} from '../../api/authorizedFetch';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';
-import type {HalResponse, HalFormsTemplate, Link} from '../../api/types';
+import type {HalFormsTemplate, Link} from '../../api/types';
+import type {GetAccountResource} from '../../api';
+import type {components} from '../../api/klabisApi';
 import {formatCurrency} from '../../pages/finances/financeFormatters';
 
 export interface FinanceTransactionDialogProps {
@@ -20,16 +22,9 @@ type TabId = 'deposit' | 'charge';
 
 const LAST_TAB_KEY = 'klabis.financeDialog.lastTab';
 
-interface AccountData extends HalResponse {
-    balance?: number;
-    currency?: string;
-}
+type AccountData = GetAccountResource;
 
-interface MemberData {
-    firstName?: string;
-    lastName?: string;
-    registrationNumber?: string;
-}
+type MemberData = components['schemas']['MemberSummaryResponse'];
 
 function resolveInitialTab(
     storedTab: string | null,

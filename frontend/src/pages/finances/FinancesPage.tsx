@@ -1,5 +1,6 @@
 import {type ReactElement, useCallback, useMemo, useState} from "react";
-import type {EntityModel, HalCollectionResponse, HalFormsTemplate} from "../../api";
+import type {HalFormsTemplate, ListTransactionsResource} from "../../api";
+import type {components} from "../../api/klabisApi";
 import {KlabisTable, TableCell} from "../../components/KlabisTable";
 import {Card, Spinner} from "../../components/UI";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
@@ -15,15 +16,8 @@ import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {parseHalHref, serializeHalHref} from "../../api/hateoas.ts";
 import {MemberName} from "../../components/members/MemberName.tsx";
 
-type TransactionItem = EntityModel<{
-    id: string;
-    type: string;
-    amount: number;
-    currency: string;
-    note: string | null;
-    occurredAt: string;
-    recordedAt: string;
-    reversesTransactionId: string | null;
+// TransactionResource payload + the per-row _links / _templates the backend adds at runtime.
+type TransactionItem = components['schemas']['TransactionResource'] & {
     _links?: {
         self?: { href: string };
         reverses?: { href: string };
@@ -33,7 +27,7 @@ type TransactionItem = EntityModel<{
     _templates?: {
         reverse?: HalFormsTemplate;
     };
-}>;
+};
 
 export const BalanceCard = ({balance, currency}: {balance: number | undefined; currency: string | undefined}): ReactElement => {
     const isNegative = typeof balance === 'number' && balance < 0;
@@ -122,7 +116,7 @@ const TransactionsTableContent = ({
         return serializeHalHref(url);
     }, [selfHref, page, rowsPerPage, sort, extraParams]);
 
-    const {data: response, error} = useAuthorizedQuery<HalCollectionResponse>(queryUrl, {
+    const {data: response, error} = useAuthorizedQuery<ListTransactionsResource>(queryUrl, {
         staleTime: 30000,
         gcTime: 1000 * 60 * 5,
         retry: 1,
@@ -159,7 +153,7 @@ const TransactionsTableContent = ({
         const currency = tx.currency as string;
         const isNegative = amount < 0;
         const isReversal = !!tx.reversesTransactionId;
-        const isReversed = reversedIds.has(tx.id);
+        const isReversed = !!tx.id && reversedIds.has(tx.id);
 
         return (
             <span className={`font-semibold ${isNegative ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'} ${(isReversal || isReversed) ? 'line-through opacity-60' : ''}`}>
@@ -175,7 +169,7 @@ const TransactionsTableContent = ({
     const renderNoteCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
         const tx = item as unknown as TransactionItem;
         const isReversal = !!tx.reversesTransactionId;
-        const isReversed = reversedIds.has(tx.id);
+        const isReversed = !!tx.id && reversedIds.has(tx.id);
 
         return (
             <span className={`${(isReversal || isReversed) ? 'line-through opacity-60' : ''}`}>
@@ -212,7 +206,7 @@ const TransactionsTableContent = ({
                         e.stopPropagation();
                         onReverseRequest({
                             reverseTarget,
-                            txId: tx.id,
+                            txId: tx.id ?? '',
                             amount: tx.amount as number,
                             currency: tx.currency as string,
                             occurredAt: tx.occurredAt as string,
