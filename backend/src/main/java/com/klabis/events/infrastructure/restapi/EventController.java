@@ -108,7 +108,8 @@ public class EventController implements EventsApi {
             throw new AccessDeniedException("Access to event update requires EVENTS:MANAGE authority or being the event coordinator");
         }
 
-        Event.UpdateEvent command = UpdateEventRequestMapper.toCommand(request, existingEvent);
+        Event.UpdateEvent prefilled = Event.UpdateEvent.from(existingEvent);
+        Event.UpdateEvent command = UpdateEventRequestMapper.toCommand(request, prefilled);
         eventManagementService.updateEvent(eventId, command);
         return ResponseEntity.noContent().build();
     }
