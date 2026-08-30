@@ -1937,96 +1937,77 @@ export interface components {
             /** Format: uuid */
             membershipFeeGroupId: string;
         };
-        CollectionModelEntityModelAccommodationListItemDto: {
+        /** @description Base of the HAL-FORMS wrapper for an unpaged collection. The deriver adds the `_embedded`
+         *     block naming the item relation: `allOf: [CollectionModel, {_embedded: …}]`.
+         *      */
+        CollectionModel: {
+            _links?: components["schemas"]["Links"];
+            _templates?: components["schemas"]["HalFormsTemplates"];
+        };
+        CollectionModelEntityModelAccommodationListItemDto: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 accommodationList?: components["schemas"]["EntityModelAccommodationListItemDto"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelCalendarItemDto: {
+        CollectionModelEntityModelCalendarItemDto: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 calendarItemDtoList?: components["schemas"]["EntityModelCalendarItemDto"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelCategoryPresetDto: {
+        CollectionModelEntityModelCategoryPresetDto: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 categoryPresetDtoList?: components["schemas"]["EntityModelCategoryPresetDto"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelEventTypeDto: {
+        CollectionModelEntityModelEventTypeDto: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 eventTypeDtoList?: components["schemas"]["EntityModelEventTypeDto"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelFamilyGroupSummaryResponse: {
+        CollectionModelEntityModelFamilyGroupSummaryResponse: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 familyGroupSummaryResponseList?: components["schemas"]["EntityModelFamilyGroupSummaryResponse"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelFeeSelectionCampaignResponse: {
+        CollectionModelEntityModelFeeSelectionCampaignResponse: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 feeSelectionCampaignResponseList?: components["schemas"]["EntityModelFeeSelectionCampaignResponse"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelGroupSummaryResponse: {
+        CollectionModelEntityModelGroupSummaryResponse: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 groupSummaryResponseList?: components["schemas"]["EntityModelGroupSummaryResponse"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelMembershipFeeGroupResponse: {
+        CollectionModelEntityModelMembershipFeeGroupResponse: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 membershipFeeGroupResponseList?: components["schemas"]["EntityModelMembershipFeeGroupResponse"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelMembershipFeeTierSummaryResponse: {
+        CollectionModelEntityModelMembershipFeeTierSummaryResponse: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 membershipFeeTierSummaryResponseList?: components["schemas"]["EntityModelMembershipFeeTierSummaryResponse"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelPaymentRuleResponse: {
+        CollectionModelEntityModelPaymentRuleResponse: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 paymentRuleResponseList?: components["schemas"]["EntityModelPaymentRuleResponse"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelPendingInvitationResponse: {
+        CollectionModelEntityModelPendingInvitationResponse: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 pendingInvitationResponseList?: components["schemas"]["EntityModelPendingInvitationResponse"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelRegistrationSummaryDto: {
+        CollectionModelEntityModelRegistrationSummaryDto: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 registrationDtoList?: components["schemas"]["EntityModelRegistrationSummaryDto"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        CollectionModelEntityModelTrainingGroupSummaryResponse: {
+        CollectionModelEntityModelTrainingGroupSummaryResponse: components["schemas"]["CollectionModel"] & {
             _embedded?: {
                 trainingGroupSummaryResponseList?: components["schemas"]["EntityModelTrainingGroupSummaryResponse"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
         /** @description Manual calendar item creation data */
         CreateCalendarItemRequest: {
@@ -2153,170 +2134,65 @@ export interface components {
             categoryId?: string;
             siCardNumber: string;
         };
-        EntityModelAccommodationListItemDto: components["schemas"]["AccommodationListItemDto"] & {
+        /** @description Base of the HAL-FORMS wrapper for a single resource — combined with the payload as
+         *     `allOf: [<Payload>, EntityModel]`.
+         *      */
+        EntityModel: {
             _links?: components["schemas"]["Links"];
             _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        EntityModelBulkImportResult: components["schemas"]["BulkImportResult"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelBulkSyncResult: components["schemas"]["BulkSyncResult"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelCalendarItemDto: components["schemas"]["CalendarItemDto"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelCategoryPresetDto: components["schemas"]["CategoryPresetDto"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
+        EntityModelAccommodationListItemDto: components["schemas"]["AccommodationListItemDto"] & components["schemas"]["EntityModel"];
+        EntityModelBulkImportResult: components["schemas"]["BulkImportResult"] & components["schemas"]["EntityModel"];
+        EntityModelBulkSyncResult: components["schemas"]["BulkSyncResult"] & components["schemas"]["EntityModel"];
+        EntityModelCalendarItemDto: components["schemas"]["CalendarItemDto"] & components["schemas"]["EntityModel"];
+        EntityModelCategoryPresetDto: components["schemas"]["CategoryPresetDto"] & components["schemas"]["EntityModel"];
         EntityModelDashboardModel: {
             _links?: components["schemas"]["Links"];
         };
-        EntityModelEventDtoWithRegistrations: components["schemas"]["EventDto"] & {
+        EntityModelEventDtoWithRegistrations: components["schemas"]["EventDto"] & components["schemas"]["EntityModel"] & {
             _embedded?: {
                 registrationDtoList?: components["schemas"]["RegistrationSummaryDto"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        EntityModelEventSummaryDto: components["schemas"]["EventSummaryDto"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelEventTypeDto: components["schemas"]["EventTypeDto"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelFamilyGroupMembershipResponse: components["schemas"]["FamilyGroupMembershipResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelFamilyGroupResponse: components["schemas"]["FamilyGroupResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelFamilyGroupSummaryResponse: components["schemas"]["FamilyGroupSummaryResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelFeeSelectionCampaignResponse: components["schemas"]["FeeSelectionCampaignResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelFreeGroupMembershipResponse: components["schemas"]["FreeGroupMembershipResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelGroupMembershipResponse: components["schemas"]["GroupMembershipResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelGroupResponse: components["schemas"]["GroupResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelGroupSummaryResponse: components["schemas"]["GroupSummaryResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelIcalTokenResponse: components["schemas"]["IcalTokenResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelMemberAccountResource: components["schemas"]["MemberAccountResource"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelMemberDetailsResponse: components["schemas"]["MemberDetailsResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelMemberFeeChoiceResponse: components["schemas"]["MemberFeeChoiceResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelMemberFeeHistoryResponse: components["schemas"]["MemberFeeHistoryResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelMemberFeeSummaryResponse: components["schemas"]["MemberFeeSummaryResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelMemberSummaryResponse: components["schemas"]["MemberSummaryResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelMembershipFeeGroupResponse: components["schemas"]["MembershipFeeGroupResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelMembershipFeeGroupResponseWithMembers: components["schemas"]["MembershipFeeGroupResponse"] & {
+        EntityModelEventSummaryDto: components["schemas"]["EventSummaryDto"] & components["schemas"]["EntityModel"];
+        EntityModelEventTypeDto: components["schemas"]["EventTypeDto"] & components["schemas"]["EntityModel"];
+        EntityModelFamilyGroupMembershipResponse: components["schemas"]["FamilyGroupMembershipResponse"] & components["schemas"]["EntityModel"];
+        EntityModelFamilyGroupResponse: components["schemas"]["FamilyGroupResponse"] & components["schemas"]["EntityModel"];
+        EntityModelFamilyGroupSummaryResponse: components["schemas"]["FamilyGroupSummaryResponse"] & components["schemas"]["EntityModel"];
+        EntityModelFeeSelectionCampaignResponse: components["schemas"]["FeeSelectionCampaignResponse"] & components["schemas"]["EntityModel"];
+        EntityModelFreeGroupMembershipResponse: components["schemas"]["FreeGroupMembershipResponse"] & components["schemas"]["EntityModel"];
+        EntityModelGroupMembershipResponse: components["schemas"]["GroupMembershipResponse"] & components["schemas"]["EntityModel"];
+        EntityModelGroupResponse: components["schemas"]["GroupResponse"] & components["schemas"]["EntityModel"];
+        EntityModelGroupSummaryResponse: components["schemas"]["GroupSummaryResponse"] & components["schemas"]["EntityModel"];
+        EntityModelIcalTokenResponse: components["schemas"]["IcalTokenResponse"] & components["schemas"]["EntityModel"];
+        EntityModelMemberAccountResource: components["schemas"]["MemberAccountResource"] & components["schemas"]["EntityModel"];
+        EntityModelMemberDetailsResponse: components["schemas"]["MemberDetailsResponse"] & components["schemas"]["EntityModel"];
+        EntityModelMemberFeeChoiceResponse: components["schemas"]["MemberFeeChoiceResponse"] & components["schemas"]["EntityModel"];
+        EntityModelMemberFeeHistoryResponse: components["schemas"]["MemberFeeHistoryResponse"] & components["schemas"]["EntityModel"];
+        EntityModelMemberFeeSummaryResponse: components["schemas"]["MemberFeeSummaryResponse"] & components["schemas"]["EntityModel"];
+        EntityModelMemberSummaryResponse: components["schemas"]["MemberSummaryResponse"] & components["schemas"]["EntityModel"];
+        EntityModelMembershipFeeGroupResponse: components["schemas"]["MembershipFeeGroupResponse"] & components["schemas"]["EntityModel"];
+        EntityModelMembershipFeeGroupResponseWithMembers: components["schemas"]["MembershipFeeGroupResponse"] & components["schemas"]["EntityModel"] & {
             _embedded?: {
                 members?: components["schemas"]["MemberInGroupResponse"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
         };
-        EntityModelMembershipFeeTierResponse: components["schemas"]["MembershipFeeTierResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelMembershipFeeTierSummaryResponse: components["schemas"]["MembershipFeeTierSummaryResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelOwnerResponse: components["schemas"]["OwnerResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelParentResponse: components["schemas"]["ParentResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelPaymentRuleResponse: components["schemas"]["PaymentRuleResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelPendingInvitationResponse: components["schemas"]["PendingInvitationResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelPermissionsResponse: components["schemas"]["PermissionsResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelRegistrationDto: components["schemas"]["RegistrationDto"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelRegistrationSummaryDto: components["schemas"]["RegistrationSummaryDto"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
+        EntityModelMembershipFeeTierResponse: components["schemas"]["MembershipFeeTierResponse"] & components["schemas"]["EntityModel"];
+        EntityModelMembershipFeeTierSummaryResponse: components["schemas"]["MembershipFeeTierSummaryResponse"] & components["schemas"]["EntityModel"];
+        EntityModelOwnerResponse: components["schemas"]["OwnerResponse"] & components["schemas"]["EntityModel"];
+        EntityModelParentResponse: components["schemas"]["ParentResponse"] & components["schemas"]["EntityModel"];
+        EntityModelPaymentRuleResponse: components["schemas"]["PaymentRuleResponse"] & components["schemas"]["EntityModel"];
+        EntityModelPendingInvitationResponse: components["schemas"]["PendingInvitationResponse"] & components["schemas"]["EntityModel"];
+        EntityModelPermissionsResponse: components["schemas"]["PermissionsResponse"] & components["schemas"]["EntityModel"];
+        EntityModelRegistrationDto: components["schemas"]["RegistrationDto"] & components["schemas"]["EntityModel"];
+        EntityModelRegistrationSummaryDto: components["schemas"]["RegistrationSummaryDto"] & components["schemas"]["EntityModel"];
         EntityModelRootModel: {
             _links?: components["schemas"]["Links"];
         };
-        EntityModelTrainerResponse: components["schemas"]["TrainerResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelTrainingGroupResponse: components["schemas"]["TrainingGroupResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelTrainingGroupSummaryResponse: components["schemas"]["TrainingGroupSummaryResponse"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
-        EntityModelTransactionResource: components["schemas"]["TransactionResource"] & {
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-        };
+        EntityModelTrainerResponse: components["schemas"]["TrainerResponse"] & components["schemas"]["EntityModel"];
+        EntityModelTrainingGroupResponse: components["schemas"]["TrainingGroupResponse"] & components["schemas"]["EntityModel"];
+        EntityModelTrainingGroupSummaryResponse: components["schemas"]["TrainingGroupSummaryResponse"] & components["schemas"]["EntityModel"];
+        EntityModelTransactionResource: components["schemas"]["TransactionResource"] & components["schemas"]["EntityModel"];
         EntryFeeDto: {
             amount?: number;
             currency?: string;
@@ -2791,29 +2667,26 @@ export interface components {
             /** Format: int64 */
             totalPages: number;
         };
-        PagedModelEntityModelEventSummaryDto: {
+        /** @description Base of the HAL-FORMS wrapper for a paged collection — CollectionModel plus the `page`
+         *     metadata Spring HATEOAS always emits for a `Page<T>` response.
+         *      */
+        PagedModel: components["schemas"]["CollectionModel"] & {
+            page?: components["schemas"]["PageMetadata"];
+        };
+        PagedModelEntityModelEventSummaryDto: components["schemas"]["PagedModel"] & {
             _embedded?: {
                 eventSummaryDtoList?: components["schemas"]["EntityModelEventSummaryDto"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-            page?: components["schemas"]["PageMetadata"];
         };
-        PagedModelEntityModelMemberSummaryResponse: {
+        PagedModelEntityModelMemberSummaryResponse: components["schemas"]["PagedModel"] & {
             _embedded?: {
                 memberSummaryResponseList?: components["schemas"]["EntityModelMemberSummaryResponse"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-            page?: components["schemas"]["PageMetadata"];
         };
-        PagedModelEntityModelTransactionResource: {
+        PagedModelEntityModelTransactionResource: components["schemas"]["PagedModel"] & {
             _embedded?: {
                 transactions?: components["schemas"]["EntityModelTransactionResource"][];
             };
-            _links?: components["schemas"]["Links"];
-            _templates?: components["schemas"]["HalFormsTemplates"];
-            page?: components["schemas"]["PageMetadata"];
         };
         ParentResponse: {
             /** Format: uuid */
