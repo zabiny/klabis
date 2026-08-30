@@ -21,9 +21,6 @@ class MembersExceptionHandler {
         this.conversionService = conversionService;
     }
 
-    record OutstandingDebtWarning(MonetaryAmount balance, String accountLink) {
-    }
-
     @ExceptionHandler(SuspensionBlockedException.class)
     ResponseEntity<SuspensionBlockedWarning> handleSuspensionBlocked(SuspensionBlockedException ex) {
         LastOwnerWarning groups = null;
