@@ -13,6 +13,7 @@ import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 class TrainingGroupManagementService implements TrainingGroupManagementPort {
@@ -49,16 +50,26 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
         return trainingGroupRepository.save(group);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public UpdateTrainingGroupCommand prefilledUpdateCommand(TrainingGroupId id) {
+        return UpdateTrainingGroupCommand.from(loadTrainingGroup(id));
+    }
+
     @Transactional
     @Override
     public TrainingGroup updateTrainingGroup(TrainingGroupId id, UpdateTrainingGroupCommand command) {
         TrainingGroup group = loadTrainingGroup(id);
-        command.name().ifPresent(group::rename);
-        command.ageRange().ifPresent(newAgeRange -> {
-            validateNoOverlappingAgeRange(newAgeRange, id);
-            group.updateAgeRange(newAgeRange);
-        });
-        command.trainers().ifPresent(group::replaceTrainers);
+
+        group.rename(command.name());
+
+        if (!Objects.equals(group.getAgeRange(), command.ageRange())) {
+            validateNoOverlappingAgeRange(command.ageRange(), id);
+            group.updateAgeRange(command.ageRange());
+        }
+
+        group.replaceTrainers(command.trainers());
+
         return trainingGroupRepository.save(group);
     }
 

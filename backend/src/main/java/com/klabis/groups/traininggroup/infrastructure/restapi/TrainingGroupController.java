@@ -9,11 +9,9 @@ import com.klabis.common.users.Authority;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
-import com.klabis.groups.traininggroup.application.UpdateTrainingGroupCommand;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.groups.infrastructure.restapi.AddTrainerRequest;
-import com.klabis.groups.infrastructure.restapi.AgeRangeRequest;
 import com.klabis.groups.infrastructure.restapi.AgeRangeResponse;
 import com.klabis.groups.infrastructure.restapi.AgeRangeResponseBuilder;
 import com.klabis.groups.infrastructure.restapi.CreateTrainingGroupRequest;
@@ -46,7 +44,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
-import static java.util.stream.Collectors.toSet;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -135,26 +132,10 @@ class TrainingGroupController implements TrainingGroupsApi {
     public ResponseEntity<Void> updateTrainingGroup(UUID id, UpdateTrainingGroupRequest request) {
 
         TrainingGroupId groupId = new TrainingGroupId(id);
-        UpdateTrainingGroupCommand command = new UpdateTrainingGroupCommand(
-                request.name(),
-                request.ageRange().map(TrainingGroupController::toAgeRange),
-                request.trainers().map(TrainingGroupController::toMemberIds)
-        );
+        var prefilled = trainingGroupManagementService.prefilledUpdateCommand(groupId);
+        var command = UpdateTrainingGroupRequestMapper.toCommand(request, prefilled);
         trainingGroupManagementService.updateTrainingGroup(groupId, command);
         return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Both converters forward an explicit null instead of dereferencing it, so the domain's own
-     * Assert rejects it as a 400. Mapping it here would NPE into a 500 — {@code map} applies the
-     * mapper on presence, not on nullness.
-     */
-    private static AgeRange toAgeRange(AgeRangeRequest request) {
-        return request == null ? null : new AgeRange(request.minAge(), request.maxAge());
-    }
-
-    private static Set<MemberId> toMemberIds(List<UUID> trainers) {
-        return trainers == null ? null : trainers.stream().map(MemberId::new).collect(toSet());
     }
 
     @Override

@@ -16,6 +16,13 @@ public interface TrainingGroupManagementPort {
 
     TrainingGroup createTrainingGroup(TrainingGroup.CreateTrainingGroup command);
 
+    /**
+     * The baseline {@link UpdateTrainingGroupCommand} for a group: every field pre-filled with the
+     * current value. REST callers overlay only the fields their PATCH request changed, then pass the
+     * result to {@link #updateTrainingGroup(TrainingGroupId, UpdateTrainingGroupCommand)}.
+     */
+    UpdateTrainingGroupCommand prefilledUpdateCommand(TrainingGroupId id);
+
     TrainingGroup updateTrainingGroup(TrainingGroupId id, UpdateTrainingGroupCommand command);
 
     void deleteTrainingGroup(TrainingGroupId id);
