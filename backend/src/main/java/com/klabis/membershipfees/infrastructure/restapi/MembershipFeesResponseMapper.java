@@ -5,7 +5,6 @@ import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
-import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import org.jspecify.annotations.Nullable;
 
@@ -85,20 +84,6 @@ final class MembershipFeesResponseMapper {
                 .currentGroup(currentGroup)
                 .votingOpen(info.votingOpen())
                 .recommendedLevelId(recommendedLevelId)
-                .build();
-    }
-
-    static MembershipFeeGroupResponse toResponse(MembershipFeeGroup group) {
-        return MembershipFeeGroupResponseBuilder.builder()
-                .id(group.getId().value())
-                .sourceLevelId(group.getSourceLevelId().value())
-                .name(group.getName())
-                .year(group.getYear())
-                .yearlyFeeAmount(group.getYearlyFeeSnapshot().amount())
-                .yearlyFeeCurrency(group.getYearlyFeeSnapshot().currency().getCurrencyCode())
-                .status(MembershipFeeGroupResponseStatus.valueOf(group.getStatus().name()))
-                .memberCount(group.memberCount())
-                .rulesSnapshot(group.getRulesSnapshot().stream().map(MembershipFeesResponseMapper::toResponse).toList())
                 .build();
     }
 
