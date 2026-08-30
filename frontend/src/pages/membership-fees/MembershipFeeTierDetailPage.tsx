@@ -4,18 +4,13 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
-import type {HalFormsTemplate, HalResponse} from '../../api';
+import type {GetTierResource} from '../../api';
 import {labels} from '../../localization';
 import {ChevronRight, Pencil, Save, Trash2} from 'lucide-react';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {RulesTable} from '../../components/membership-fees/RulesTable.tsx';
 
-interface FeeTierDetail extends HalResponse {
-    id: string;
-    name: string;
-    yearlyFeeAmount: number;
-    yearlyFeeCurrency: string;
-}
+type FeeTierDetail = GetTierResource;
 
 const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): ReactElement => {
     const {route} = useHalPageData<FeeTierDetail>();
@@ -86,7 +81,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                 ) : (
                     editTemplate && (
                         <HalFormDisplay
-                            template={editTemplate as HalFormsTemplate}
+                            template={editTemplate}
                             templateName="editTier"
                             resourceData={resourceData as unknown as Record<string, unknown>}
                             pathname={route.pathname}
@@ -106,8 +101,8 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
 
             {deleteTemplate && deleteModal && (
                 <HalFormModal
-                    title={(deleteTemplate as HalFormsTemplate).title ?? labels.templates.deleteMembershipFeeTier}
-                    template={deleteTemplate as HalFormsTemplate}
+                    title={deleteTemplate.title ?? labels.templates.deleteMembershipFeeTier}
+                    template={deleteTemplate}
                     templateName="deleteTier"
                     resourceData={resourceData as unknown as Record<string, unknown>}
                     pathname={route.pathname}

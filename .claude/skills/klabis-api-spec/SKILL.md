@@ -2,7 +2,7 @@
 name: klabis-api-spec
 description: Authoring the hand-written OpenAPI spec in docs/openapi/spec/ — x-klabis-* field-security and x-hal-* hypermedia extensions, module layout, and the spec-first workflow. Use whenever adding, changing or removing a REST endpoint, request/response field, HAL link or HAL+FORMS template; when writing the API chapter of an OpenSpec design.md; or when migrating a module from code-first to spec-first.
 user-invocable: false
-version: 0.7.0
+version: 0.8.0
 ---
 
 # Klabis API Spec
@@ -192,6 +192,9 @@ annotations: `OpenApiConfig` (global info + security scheme), `MvcExceptionHandl
 - Declaring a payload schema with a `_links` or `_embedded` property of its own. The deriver
   recognises envelopes by shape, so it would take the payload for an already-written envelope and
   skip it silently; `validate.mjs` reports this rather than letting it pass
+- Keying an `x-hal-templates` entry as `default`. Spring HATEOAS's `afford()` names every template
+  after the controller method, never `default`; the key must equal the `operation:` value. An
+  older `default` convention was removed everywhere — see `references/hypermedia.md`
 - Renaming a payload schema for tidiness — the `_embedded` key defaults to
   `uncapitalize(schemaName) + "List"`, so the rename changes a JSON key on the wire
 - Writing `@Relation(collectionRelation = ...)` on a payload class instead of `x-klabis-relation` in

@@ -2,6 +2,12 @@
 
 Real page implementations from the Klabis frontend, demonstrating common patterns.
 
+> **Typing note.** New code types the row / response with generated types —
+> `components['schemas']['EntityModelFooDto']` for `_embedded` rows,
+> `Get*Resource` / `List*Resource` (from `@/api`) for `useHalPageData<T>()`. The
+> `EntityModel<{...}>` hand-written shapes and `resourceData as any` below are the **older**
+> pattern still present in the codebase; prefer the generated types. See the SKILL.md typing note.
+
 ## Pattern 1: Collection List Page (EventsPage)
 
 Simple list page with sortable table and row navigation.
@@ -9,20 +15,13 @@ Simple list page with sortable table and row navigation.
 ```tsx
 // frontend/src/pages/events/EventsPage.tsx
 import {type ReactElement} from "react";
-import type {EntityModel} from "../../api";
+import type {components} from "../../api/klabisApi";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {formatDate} from "../../utils/dateUtils.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 
-interface EventListData extends EntityModel<{
-    id: string,
-    name: string,
-    eventDate: string,
-    location: string,
-    organizer: string,
-    status: 'DRAFT' | 'ACTIVE' | 'FINISHED' | 'CANCELLED'
-}> {}
+type EventListData = components['schemas']['EntityModelEventSummaryDto'];
 
 export const EventsPage = (): ReactElement => {
     const {route} = useHalPageData();
@@ -56,7 +55,7 @@ List page with create action using multi-step form modal.
 ```tsx
 // frontend/src/pages/members/MembersPage.tsx
 import {type ReactElement} from "react";
-import type {EntityModel} from "../../api";
+import type {components} from "../../api/klabisApi";
 import {TableCell} from "../../components/KlabisTable";
 import {HalLinksSection} from "../../components/HalNavigator2/HalLinksSection.tsx";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
@@ -64,12 +63,7 @@ import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormStep, MultiStepFormModal} from "../../components/HalNavigator2/MultiStepFormModal.tsx";
 
-type MemberListData = EntityModel<{
-    id: string,
-    firstName: string,
-    lastName: string,
-    registrationNumber: string
-}>;
+type MemberListData = components['schemas']['EntityModelMemberSummaryResponse'];
 
 export const MembersPage = (): ReactElement => {
     const {route} = useHalPageData();
@@ -187,22 +181,23 @@ const MemberName = () => {
 }
 ```
 
-## Pattern 4: Detail Page with Conditional Sections (MemberDetailsPage)
+## Pattern 4: Detail Page with Conditional Sections (MemberDetailPage)
 
 Detail page rendering resource properties directly, with conditional sections and link-based navigation.
 
 Key patterns:
-- Cast `resourceData as any` for untyped access to resource fields
+- Type the response with `useHalPageData<GetMemberResource>()` — fields are typed, no `as any`
 - Conditionally render sections based on data presence
 - Navigation buttons based on available `_links`
 - Use `extractNavigationPath(href)` to convert API hrefs to router paths
 
 ```tsx
-// Key excerpts from frontend/src/pages/members/MemberDetailsPage.tsx
+// Key excerpts from frontend/src/pages/members/MemberDetailPage.tsx
+import type { GetMemberResource } from '@/api';
 
-const { resourceData, isLoading, error, route } = useHalPageData();
+const { resourceData, isLoading, error, route } = useHalPageData<GetMemberResource>();
 const navigate = useNavigate();
-const member = resourceData as any;
+const member = resourceData;   // typed as GetMemberResource | null
 
 // Navigate via link
 const handleNavigateToLink = (href: string) => {
@@ -274,7 +269,9 @@ import {type FormStep, MultiStepFormModal} from '../../components/HalNavigator2/
 import {HalLinksSection} from '../../components/HalNavigator2/HalLinksSection.tsx';
 
 // Types
-import type {EntityModel, HalResponse} from '../../api';
+import type {components} from '../../api/klabisApi';        // components['schemas']['EntityModel…'] for rows
+import type {GetMemberResource} from '../../api';            // Get*Resource / List*Resource for useHalPageData<T>
+import type {HalResponse, HalFormsTemplate} from '../../api';
 
 // Utilities
 import {formatDate} from '../../utils/dateUtils.ts';

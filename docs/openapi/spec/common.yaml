@@ -313,7 +313,7 @@ paths:
             self:
               description: This user's permissions
           x-hal-templates:
-            default:
+            updatePermissions:
               operation: updatePermissions
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'

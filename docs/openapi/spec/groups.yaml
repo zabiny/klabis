@@ -96,7 +96,7 @@ paths:
             self:
               description: This collection
           x-hal-templates:
-            default:
+            createFamilyGroup:
               operation: createFamilyGroup
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
@@ -398,7 +398,7 @@ paths:
             self:
               description: This collection
           x-hal-templates:
-            default:
+            createGroup:
               operation: createGroup
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
@@ -482,6 +482,19 @@ paths:
             collection:
               operation: listGroups
               description: Back to the group list
+          x-hal-templates:
+            updateGroup:
+              operation: updateGroup
+              description: Present only for group owners
+            deleteGroup:
+              operation: deleteGroup
+              description: Present only for group owners
+            addGroupOwner:
+              operation: addGroupOwner
+              description: Present only for group owners
+            inviteMember:
+              operation: inviteMember
+              description: Present only for group owners
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -876,7 +889,7 @@ paths:
             self:
               description: This collection
           x-hal-templates:
-            default:
+            createTrainingGroup:
               operation: createTrainingGroup
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'

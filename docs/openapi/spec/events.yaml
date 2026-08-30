@@ -137,7 +137,7 @@ paths:
               operation: listEventTypes
               description: Back to the event type list
           x-hal-templates:
-            default:
+            updateEventType:
               operation: updateEventType
               description: |
                 Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
@@ -455,7 +455,7 @@ paths:
                 Present for the caller's own not-yet-existing registration when registration is
                 being offered
           x-hal-templates:
-            default:
+            updateEvent:
               operation: updateEvent
               description: Present for the event coordinator or callers with EVENTS:MANAGE
             publishEvent:
@@ -1161,7 +1161,7 @@ paths:
               operation: listPresets
               description: Back to the category preset list
           x-hal-templates:
-            default:
+            updateCategoryPreset:
               operation: updateCategoryPreset
               description: Update this category preset
             deleteCategoryPreset:

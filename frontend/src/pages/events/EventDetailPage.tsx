@@ -11,8 +11,9 @@ import {HalRouteProvider, HalSubresourceProvider} from '../../contexts/HalRouteC
 import {useHalRoute} from '../../contexts/halRouteContext.ts';
 import {TableCell} from '../../components/KlabisTable';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils.ts';
-import type {EntityModel, Link as HalLink} from '../../api';
-import type {HalFormsTemplate, HalResponse} from '../../api';
+import type {EntityModel, GetEventResource, Link as HalLink} from '../../api';
+import type {components} from '../../api/klabisApi';
+import type {HalFormsTemplate} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
@@ -24,44 +25,11 @@ import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFac
 import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
 import {FinanceTransactionDialog} from '../../components/finance/FinanceTransactionDialog.tsx';
 
-interface RankingInfo {
-    shortName: string;
-    name: string;
-}
+type EventCategory = components['schemas']['EventCategoryDto'];
 
-interface MoneyAmount {
-    amount: number;
-    currency: string;
-}
+type EventDetail = GetEventResource;
 
-interface EventCategory {
-    id: string;
-    name: string;
-    fee?: MoneyAmount | null;
-}
-
-interface EventDetail {
-    name: string;
-    eventDate: string;
-    location?: string | null;
-    organizer?: string;
-    websiteUrl?: string;
-    deadlines?: string[];
-    cancellationReason?: string;
-    coordinators?: {value: string}[];
-    eventTypeId?: string | null;
-    status?: string;
-    categories?: EventCategory[];
-    ranking?: RankingInfo | null;
-    baseEntryFee?: MoneyAmount | null;
-    [key: string]: unknown;
-}
-
-interface RegistrationData extends EntityModel<{
-    firstName: string;
-    lastName: string;
-    registrationTime?: string;
-    category?: EventCategory | null;
+interface RegistrationData extends EntityModel<components['schemas']['RegistrationSummaryDto'] & {
     [key: string]: unknown;
 }> {
     _templates?: Record<string, HalFormsTemplate>;
@@ -187,7 +155,7 @@ const RegistrationsTable = ({event, onOpenEditModal, onOpenTransactionDialog}: R
 };
 
 interface EventDetailContentProps {
-    resourceData: EventDetail & HalResponse;
+    resourceData: EventDetail;
 }
 
 const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactElement => {

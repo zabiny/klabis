@@ -3,40 +3,32 @@ import {Calendar, Lock} from 'lucide-react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
 import {HalFormModal} from '../HalNavigator2/HalFormModal.tsx';
-import type {HalFormsTemplate, HalResponse} from '../../api';
+import type {GetPublicationResource} from '../../api';
+import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {toHref} from '../../api/hateoas.ts';
 import {FeeGroupsTable} from './FeeGroupsTable.tsx';
 import type {FeeGroupSummary} from './FeeGroupsTable.tsx';
 
-export interface FeeSelectionCampaignDetail extends HalResponse {
-    id: string;
-    year: number;
-    votingDeadline: string;
-    _links: {
-        self: {href: string};
-        levels?: {href: string};
-    };
-}
+export type FeeSelectionCampaignDetail = GetPublicationResource;
 
-interface FeeGroupsCollection {
-    _embedded?: {
-        membershipFeeGroupResponseList?: FeeGroupSummary[];
-    };
-}
+type FeeGroupsCollection = components['schemas']['CollectionModelEntityModelMembershipFeeGroupResponse'];
 
 export const CampaignDetail = (): ReactElement | null => {
     const {resourceData, route} = useHalPageData<FeeSelectionCampaignDetail>();
     const [changeDeadlineOpen, setChangeDeadlineOpen] = useState(false);
     const [closeCampaignOpen, setCloseCampaignOpen] = useState(false);
 
-    const levelsHref = resourceData?._links?.levels?.href ?? '';
+    const levelsHref = resourceData?._links?.levels ? toHref(resourceData._links.levels) : '';
     const {data: groupsData} = useAuthorizedQuery<FeeGroupsCollection>(
         levelsHref ? extractNavigationPath(levelsHref) : '',
         {enabled: !!levelsHref}
     );
-    const groups = groupsData?._embedded?.membershipFeeGroupResponseList ?? [];
+    // The rows carry per-row _links added at runtime; FeeGroupsTable's FeeGroupSummary is the
+    // view type for those.
+    const groups = (groupsData?._embedded?.membershipFeeGroupResponseList ?? []) as unknown as FeeGroupSummary[];
 
     const changeDeadlineTemplate = resourceData?._templates?.changeDeadline ?? null;
     const closeCampaignTemplate = resourceData?._templates?.closeCampaign ?? null;
@@ -97,7 +89,7 @@ export const CampaignDetail = (): ReactElement | null => {
             {changeDeadlineTemplate && changeDeadlineOpen && (
                 <HalFormModal
                     title={labels.templates.changeDeadline}
-                    template={changeDeadlineTemplate as HalFormsTemplate}
+                    template={changeDeadlineTemplate}
                     templateName="changeDeadline"
                     resourceData={resourceData as unknown as Record<string, unknown>}
                     pathname={route.pathname}
@@ -109,7 +101,7 @@ export const CampaignDetail = (): ReactElement | null => {
             {closeCampaignTemplate && closeCampaignOpen && (
                 <HalFormModal
                     title={labels.templates.closeCampaign}
-                    template={closeCampaignTemplate as HalFormsTemplate}
+                    template={closeCampaignTemplate}
                     templateName="closeCampaign"
                     resourceData={resourceData as unknown as Record<string, unknown>}
                     pathname={route.pathname}

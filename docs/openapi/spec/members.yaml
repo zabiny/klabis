@@ -76,7 +76,7 @@ paths:
             prev:
               description: Previous page (present when one exists)
           x-hal-templates:
-            default:
+            updateMember:
               operation: updateMember
               description: Edit template used by the table's inline row editor
             registerMember:
@@ -227,7 +227,7 @@ paths:
             ical-token:
               description: Calendar subscription token — only on the caller's own detail
           x-hal-templates:
-            default:
+            updateMember:
               operation: updateMember
             suspend:
               operation: suspendMember

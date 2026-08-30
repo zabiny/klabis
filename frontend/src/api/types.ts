@@ -52,6 +52,18 @@ export interface HalFormsResponse extends HalResponse {
     };
 }
 
+/**
+ * Strukturální pohled na HAL-obálku (_links / _embedded / _templates / page), který navigační
+ * hooky čtou. Slouží jen k typování interních čtení hooku — nikdy v `extends` pozici, aby ho
+ * generované resource typy (uzavřené objekty bez index signatur) nemusely splňovat.
+ */
+export interface HalEnvelope {
+    _links?: { [rel: string]: HalResourceLinks };
+    _embedded?: Record<string, unknown>;
+    _templates?: { [name: string]: HalFormsTemplate };
+    page?: PageMetadata;
+}
+
 // --- Typy ---
 
 export type HalFormsOptionValue = string | number;

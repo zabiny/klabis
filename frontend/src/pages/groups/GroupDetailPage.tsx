@@ -4,7 +4,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
-import type {HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
+import type {GetGroupResource, HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
 import type {PendingInvitation} from './types.ts';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
@@ -31,13 +31,16 @@ interface GroupMember extends HalResponse {
     };
 }
 
-interface GroupDetail extends HalResponse {
-    id: string;
-    name: string;
+// GetGroupResource types the payload (id, name, _templates) from the spec. Its
+// owners/members/pendingInvitations arrays carry per-row _links / _templates added at runtime
+// by the backend (member link, removeGroupOwner, removeGroupMember, cancelInvitation) that the
+// generated schema does not describe, so those rows are read through the view types above and
+// in ./types.ts.
+type GroupDetail = Omit<GetGroupResource, 'owners' | 'members' | 'pendingInvitations'> & {
     owners?: GroupOwner[];
     members?: GroupMember[];
     pendingInvitations?: PendingInvitation[];
-}
+};
 
 interface MemberActionModalState {
     member: GroupMember;

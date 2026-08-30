@@ -1,6 +1,7 @@
 import {type ReactElement, useCallback, useMemo, useState} from "react";
 import {useSearchParams} from "react-router-dom";
-import type {EntityModel, HalFormsTemplate, HalResourceLinks, Link} from "../../api";
+import type {HalFormsTemplate, Link} from "../../api";
+import type {components} from "../../api/klabisApi";
 import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
@@ -22,17 +23,8 @@ import {DEFAULT_MEMBER_STATUS, MembersFilterBar, type MembersFilterValue} from "
 import {useDefaultSearchParam} from "../../hooks/useDefaultSearchParam.ts";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 
-type MemberSummaryData = EntityModel<{
-    id: string,
-    registrationNumber: string,
-    lastName: string,
-    firstName: string,
-    email: string | null,
-    active: boolean | null,
-}> & {
+type MemberSummaryData = components['schemas']['EntityModelMemberSummaryResponse'] & {
     _templates?: Record<string, HalFormsTemplate>;
-    _links: Record<string, HalResourceLinks>;
-    [key: string]: unknown;
 };
 
 interface MemberActionModalState {

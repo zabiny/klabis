@@ -8,9 +8,7 @@ import {ErrorPage} from "../ErrorPage.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
-import type {components} from "../../api/klabisApi";
-import type {HalFormsTemplate, HalResponse} from "../../api";
-import type {GetMemberHal} from "../../api/halTypes";
+import type {GetMemberHal, GetMemberResource, HalFormsTemplate} from "../../api";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {Banknote, Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
@@ -25,7 +23,7 @@ import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
 import {MemberFeeSection} from "./MemberFeeSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
 
-type MemberDetail = components['schemas']['EntityModelMemberDetailsResponse'] & HalResponse;
+type MemberDetail = GetMemberResource;
 
 // Rel names are checked against the generated interface, not retyped as string literals —
 // a renamed rel in the OpenAPI spec then fails the build here instead of breaking silently

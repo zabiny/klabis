@@ -1,26 +1,21 @@
 import {type ReactElement, useState} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {HalFormModal} from '../HalNavigator2/HalFormModal.tsx';
-import type {HalFormsTemplate, HalResponse, OptionItem} from '../../api';
+import type {HalFormsTemplate, ListGroupRulesResource, OptionItem} from '../../api';
+import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {Pencil, Plus, X} from 'lucide-react';
 import {useEventTypes, type EventTypeCatalogItem} from '../../hooks/useEventTypes.ts';
 import {CoParticipationRuleTypeBadge} from './CoParticipationRuleTypeBadge.tsx';
 
-interface PaymentRuleItem extends HalResponse {
-    eventTypeId: string;
-    rankingShortName: string;
-    ruleType: 'PERCENTAGE' | 'FIXED_AMOUNT';
-    percentage?: number;
-    fixedAmount?: number;
-    fixedCurrency?: string;
-}
+// PaymentRuleResponse payload + the per-row _links / _templates the backend adds at runtime
+// (editRule, removeRule) which the generated schema does not describe.
+type PaymentRuleItem = components['schemas']['PaymentRuleResponse'] & {
+    _links?: { self?: { href: string } };
+    _templates?: Record<string, HalFormsTemplate>;
+};
 
-interface RulesCollection extends HalResponse {
-    _embedded?: {
-        paymentRuleResponseList?: PaymentRuleItem[];
-    };
-}
+type RulesCollection = ListGroupRulesResource;
 
 const RuleRow = ({rule, getRankingLabel, getEventTypeById}: {
     rule: PaymentRuleItem;
@@ -34,9 +29,9 @@ const RuleRow = ({rule, getRankingLabel, getEventTypeById}: {
     return (
         <tr className="border-t border-zinc-100" style={{height: '52px'}}>
             <td className="px-5 text-zinc-800">{getEventTypeById(rule.eventTypeId)?.name ?? rule.eventTypeId}</td>
-            <td className="px-5 text-zinc-800">{getRankingLabel(rule.rankingShortName)}</td>
+            <td className="px-5 text-zinc-800">{getRankingLabel(rule.rankingShortName ?? '')}</td>
             <td className="px-5">
-                <CoParticipationRuleTypeBadge ruleType={rule.ruleType}/>
+                {rule.ruleType && <CoParticipationRuleTypeBadge ruleType={rule.ruleType}/>}
             </td>
             <td className="px-5 text-zinc-800">
                 {rule.ruleType === 'PERCENTAGE'

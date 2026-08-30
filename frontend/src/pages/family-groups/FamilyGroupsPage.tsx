@@ -4,14 +4,10 @@ import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {TableCell} from '../../components/KlabisTable';
 import {Alert, Skeleton} from '../../components/UI';
-import type {EntityModel} from '../../api';
+import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 
-type FamilyGroupSummaryItem = EntityModel<{
-    id: string;
-    name: string;
-    memberCount: number;
-}>;
+type FamilyGroupSummaryItem = components['schemas']['EntityModelFamilyGroupSummaryResponse'];
 
 export const FamilyGroupsPage = (): ReactElement => {
     const {isLoading, error, route} = useHalPageData();

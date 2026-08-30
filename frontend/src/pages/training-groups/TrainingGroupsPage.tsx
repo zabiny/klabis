@@ -4,16 +4,10 @@ import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {TableCell} from '../../components/KlabisTable';
 import {Alert, Skeleton} from '../../components/UI';
-import type {EntityModel} from '../../api';
+import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 
-type TrainingGroupSummaryItem = EntityModel<{
-    id: string;
-    name: string;
-    minAge: number;
-    maxAge: number;
-    memberCount: number;
-}>;
+type TrainingGroupSummaryItem = components['schemas']['EntityModelTrainingGroupSummaryResponse'];
 
 export const TrainingGroupsPage = (): ReactElement => {
     const {isLoading, error, route} = useHalPageData();

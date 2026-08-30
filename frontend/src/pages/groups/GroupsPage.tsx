@@ -4,7 +4,8 @@ import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {TableCell} from '../../components/KlabisTable';
 import {Alert, Button, Card, Skeleton} from '../../components/UI';
-import type {EntityModel, HalResponse} from '../../api';
+import type {GetPendingInvitationsResource} from '../../api';
+import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
 import {useQueryClient} from '@tanstack/react-query';
@@ -12,16 +13,15 @@ import {toHref} from '../../api/hateoas.ts';
 import {Check, X} from 'lucide-react';
 import type {PendingInvitation} from './types.ts';
 
-type GroupSummary = EntityModel<{
-    id: string;
-    name: string;
-}>;
+type GroupSummary = components['schemas']['EntityModelGroupSummaryResponse'];
 
-interface PendingInvitationsData extends HalResponse {
+// GetPendingInvitationsResource types the collection envelope; its rows carry per-row
+// _links (accept / reject / invitedMember) added at runtime, described by the ./types.ts view type.
+type PendingInvitationsData = Omit<GetPendingInvitationsResource, '_embedded'> & {
     _embedded?: {
         pendingInvitationResponseList?: PendingInvitation[];
     };
-}
+};
 
 const PendingInvitationsSection = (): ReactElement | null => {
     const queryClient = useQueryClient();

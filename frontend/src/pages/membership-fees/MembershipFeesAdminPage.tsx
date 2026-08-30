@@ -5,20 +5,13 @@ import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {CampaignDetail} from '../../components/membership-fees/CampaignDetail.tsx';
 import {TierCatalogSection} from '../../components/membership-fees/TierCatalogSection.tsx';
 import {PastCampaignsSection} from '../../components/membership-fees/PastCampaignsSection.tsx';
-import type {HalResponse} from '../../api';
+import type {ListTiersResource} from '../../api';
+import {toHref} from '../../api/hateoas.ts';
 import {labels} from '../../localization';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 
-interface TierCatalogResource extends HalResponse {
-    _links: {
-        self: { href: string };
-        activeCampaign?: { href: string };
-        pastCampaigns?: { href: string };
-    };
-}
-
 export const MembershipFeesAdminPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<TierCatalogResource>();
+    const {resourceData, isLoading, error} = useHalPageData<ListTiersResource>();
 
     if (isLoading) {
         return <Skeleton/>;
@@ -32,8 +25,10 @@ export const MembershipFeesAdminPage = (): ReactElement => {
         return <Skeleton/>;
     }
 
-    const activeCampaignHref = resourceData._links?.activeCampaign?.href ?? null;
-    const pastCampaignsHref = resourceData._links?.pastCampaigns?.href ?? null;
+    const activeCampaignHref = resourceData._links?.activeCampaign
+        ? toHref(resourceData._links.activeCampaign) : null;
+    const pastCampaignsHref = resourceData._links?.pastCampaigns
+        ? toHref(resourceData._links.pastCampaigns) : null;
 
     return (
         <div className="flex flex-col gap-8">

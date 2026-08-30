@@ -93,6 +93,9 @@ interface HalEmbeddedTableProps<T> {
 }
 ```
 
+`T` is unconstrained (`= Record<string, unknown>`). Pass the generated row type:
+`<HalEmbeddedTable<components['schemas']['EntityModelFooDto']>>`.
+
 ## HalFormButton
 
 Location: `frontend/src/components/HalNavigator2/HalFormButton.tsx`

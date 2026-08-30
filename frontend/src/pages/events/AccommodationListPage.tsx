@@ -7,30 +7,13 @@ import {ErrorPage} from '../ErrorPage.tsx';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {Download, Printer} from 'lucide-react';
-import type {HalResponse} from '../../api';
+import type {GetAccommodationListResource, GetEventResource} from '../../api';
+import type {components} from '../../api/klabisApi';
 import {toHref} from '../../api/hateoas.ts';
 
-interface AccommodationListItem {
-    firstName: string;
-    lastName: string;
-    identityCardNumber?: string | null;
-    identityCardValidityDate?: string | null;
-    dateOfBirth?: string | null;
-    addressStreet?: string | null;
-    addressCity?: string | null;
-    addressPostalCode?: string | null;
-    addressCountry?: string | null;
-}
-
-interface AccommodationListResponse extends HalResponse {
-    _embedded?: {
-        accommodationList: AccommodationListItem[];
-    };
-}
-
-interface EventData extends HalResponse {
-    name?: string;
-}
+type AccommodationListItem = components['schemas']['AccommodationListItemDto'];
+type AccommodationListResponse = GetAccommodationListResource;
+type EventData = GetEventResource;
 
 function formatAddress(item: AccommodationListItem): string | null {
     const parts = [
