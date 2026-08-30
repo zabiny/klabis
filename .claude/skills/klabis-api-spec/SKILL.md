@@ -2,7 +2,7 @@
 name: klabis-api-spec
 description: Authoring the hand-written OpenAPI spec in docs/openapi/spec/ — x-klabis-* field-security and x-hal-* hypermedia extensions, module layout, and the spec-first workflow. Use whenever adding, changing or removing a REST endpoint, request/response field, HAL link or HAL+FORMS template; when writing the API chapter of an OpenSpec design.md; or when migrating a module from code-first to spec-first.
 user-invocable: false
-version: 0.6.0
+version: 0.7.0
 ---
 
 # Klabis API Spec
@@ -53,9 +53,11 @@ one.
 
 A response declares its `application/json` payload and nothing else. The bundler
 (`tools/openapi-bundle/lib/derive.mjs`) derives the `application/prs.hal-forms+json` content entry
-and the `EntityModel`/`CollectionModel`/`PagedModel` schema around it into `klabis-full.json`, which
-is what the frontend types and Swagger UI are generated from. It is the only place in the repo
-encoding envelope structure; the backend codegen reads the module YAML directly and never sees one.
+and, behind it, an `allOf` composing the payload with a shared `EntityModel` / `CollectionModel` /
+`PagedModel` base model (defined once in `_shared/hal.yaml`, hoisted into `klabis-full.json` by the
+bundler). That bundle is what the frontend types and Swagger UI are generated from. It is the only
+place in the repo encoding envelope structure; the backend codegen reads the module YAML directly
+and never sees one.
 
 **HAL is the default** — every 2xx response with an `application/json` schema gets an envelope.
 `x-klabis-hal: false` on the **operation** is the sole opt-out (6 operations: the pre-auth password
@@ -78,7 +80,8 @@ Everything else — collection vs. item, paged vs. unpaged (`x-spring-paginated`
 docs/openapi/spec/
   klabis.yaml          root: info, servers, securitySchemes, $ref per path to module files
   _shared/
-    hal.yaml           Link, Links, PageMetadata, HalFormsTemplate(s), HalFormsProperty, HalFormsOptions
+    hal.yaml           Link, Links, PageMetadata, HalFormsTemplate(s), HalFormsProperty, HalFormsOptions,
+                       and the EntityModel / CollectionModel / PagedModel envelope base models the deriver composes
     problem.yaml       RFC 7807 ProblemDetail
     pagination.yaml    generic PageParam/SizeParam
     responses.yaml     shared error responses (BadRequest, Unauthorized, Forbidden, NotFound, …)
@@ -142,9 +145,10 @@ descriptions 51 → 111, parameter descriptions 95 → 133.
 renders each response's baseType into `@Schema(implementation = <baseType>.class)`, and a paginated
 response's real type is `Page<X>` — not legal Java there (JLS 15.8.2: a class literal takes a raw
 type). Same problem for a `schemaMappings` target of `java.lang.Object` (springdoc would render it as
-`"type": "string"`, worse than nothing). `KlabisSpringCodegen.fromResponse()` (`buildSrc/`) handles
-both by leaving that response's `baseType` unset, so `api.mustache`'s `{{#baseType}}...{{/baseType}}`
-never opens the `content = {...}` block for it — no post-process patch needed.
+`"type": "string"`, worse than nothing). `KlabisSpringCodegen.fromResponse()` (`backend/buildSrc/`)
+handles both by leaving that response's `baseType` unset, so `api.mustache`'s
+`{{#baseType}}...{{/baseType}}` never opens the `content = {...}` block for it — no post-process
+patch needed.
 
 The exceptions are the 7 files with no generated counterpart, which legitimately keep their
 annotations: `OpenApiConfig` (global info + security scheme), `MvcExceptionHandler` and
@@ -158,10 +162,13 @@ annotations: `OpenApiConfig` (global info + security scheme), `MvcExceptionHandl
 - Adding an endpoint by writing the controller method first
 - Putting a domain type in a DTO
 - Putting another module's endpoints in a module file because the URL prefix matches
-- Writing an `EntityModel*`/`PagedModel*`/`CollectionModel*` schema by hand, or a `mappings` entry to
-  unwrap one — a module spec declares only the payload and the bundler derives the envelope. A
-  `mappings` entry is only for the hand-written-override cases listed above (nested classes, domain
-  enums, cross-module types, marker types, the `java.lang.Object` fallback)
+- Writing a *derived* envelope schema by hand — a per-payload `EntityModelFoo` / `PagedModelEntityModelFoo`
+  / `CollectionModelEntityModelFoo` in a module spec, or a `mappings` entry to unwrap one. A module
+  spec declares only the payload and the bundler derives the envelope. (The three *unsuffixed* base
+  models `EntityModel` / `CollectionModel` / `PagedModel` in `_shared/hal.yaml` are the exception —
+  they are hand-written on purpose and the deriver composes every envelope from them.) A `mappings`
+  entry is only for the hand-written-override cases listed above (nested classes, domain enums,
+  cross-module types, the two `common` marker records, the `java.lang.Object` fallback)
 - Declaring an `application/prs.hal-forms+json` content entry — the deriver adds it, and an entry
   already present makes the deriver skip that response entirely (the coexistence guarantee that let
   the modules migrate one at a time). Bodyless `201`/`204` responses are the exception: they have no
