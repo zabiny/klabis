@@ -108,7 +108,7 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
             Integer year) {
         List<MembershipFeeGroup> groups = managementPort.listGroupsForYear(year);
         List<MembershipFeeGroupResponse> items = groups.stream()
-                .map(MembershipFeesResponseMapper::toResponse)
+                .map(group -> conversionService.convert(group, MembershipFeeGroupResponse.class))
                 .toList();
 
         HalResponseContext.setDomainList(groups);
