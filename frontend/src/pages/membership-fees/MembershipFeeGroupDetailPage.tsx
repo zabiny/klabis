@@ -11,13 +11,7 @@ import {formatDate} from '../../utils/dateUtils.ts';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
 import {RulesTable} from '../../components/membership-fees/RulesTable.tsx';
 
-// yearlyFeeAmount / yearlyFeeCurrency are returned by the backend but absent from the
-// MembershipFeeGroupResponse schema (spec gap — see plan hand-back items), so they are
-// re-declared here as optional over the generated resource type.
-type MembershipFeeGroupDetail = GetFeeGroupResource & {
-    yearlyFeeAmount?: number;
-    yearlyFeeCurrency?: string;
-};
+type MembershipFeeGroupDetail = GetFeeGroupResource;
 
 const MemberSourceBadge = ({source}: {source: 'MEMBER_CHOICE' | 'ADMIN_ASSIGNMENT'}): ReactElement => {
     if (source === 'MEMBER_CHOICE') {
