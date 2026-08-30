@@ -59,12 +59,61 @@ public ResponseEntity<Void> updateMember(@PathVariable UUID id,
                                          UpdateMemberRequest request,
                                          @ActingUser CurrentUserData currentUser) {
     MemberId memberId = new MemberId(id);  // Convert UUID → type-safe ID at boundary
-    managementService.updateMember(memberId, UpdateMemberRequestMapper.toCommand(request, currentUser.userId()));
+    var prefilled = managementService.prefilledUpdateCommand(memberId);
+    var command = UpdateMemberRequestMapper.toCommand(request, prefilled, currentUser.userId());
+    managementService.updateMember(memberId, command);
     return ResponseEntity.noContent().build();
 }
 ```
 
-Note the override repeats `@PathVariable` here but carries no `@RequestBody` on `request` — that asymmetry is deliberate and explained under "Which annotations belong on the override".
+Note the override repeats `@PathVariable` here but carries no `@RequestBody` on `request` — that asymmetry is deliberate and explained under "Which annotations belong on the override". The prefill + overlay step is the PATCH pattern below.
+
+## PATCH endpoints — `JsonNullable` stays in the adapter, never reaches the domain
+
+A PATCH request has three states per field: **undefined** (absent → leave alone), **present-null** (`"x": null` → clear), **present-value** (set). The generated request DTO carries every field as `org.openapitools.jackson.nullable.JsonNullable<T>` to preserve that distinction on the wire (see the `PatchRequestWrapperArchitectureTest` guard, and `field-security.md` for why the wrapper also gates field-level auth).
+
+**That `JsonNullable` must not leak past the mapper.** The domain update command (`Member.UpdateMember`, `UpdateTrainingGroupCommand`, …) holds plain domain types only — no `JsonNullable`, no framework import. The three-state merge is resolved in `infrastructure/restapi` by the **prefill + overlay** pattern:
+
+1. **Prefill** — the application port exposes a baseline command built from current aggregate state:
+
+   ```java
+   // ManagementPort
+   Member.UpdateMember prefilledUpdateCommand(MemberId memberId);   // = Member.UpdateMember.from(load(id))
+   ```
+
+   The aggregate owns the `from(aggregate)` factory: every field set to its current value, so applying the command unchanged is a no-op.
+
+2. **Overlay** — the mapper takes the prefilled command as the baseline and writes only the fields the request actually carries, via the `@RecordBuilder` copy-builder:
+
+   ```java
+   static Member.UpdateMember toCommand(UpdateMemberRequest request, Member.UpdateMember prefilled, UserId updatedBy) {
+       var b = MemberUpdateMemberBuilder.builder(prefilled).updatedBy(updatedBy);
+       overlay(request.email(), v -> b.email(v == null ? null : EmailAddress.of(v)));      // clearable: present-null clears
+       overlay(request.chipNumber(), b::chipNumber);
+       overlayValue(request.firstName(), b::firstName);                                     // no cleared state: present-null retains
+       // … one line per field
+       return b.build();
+   }
+
+   /** present (incl. present-null) → apply; undefined → leave the baseline value. */
+   private static <T> void overlay(JsonNullable<T> field, Consumer<T> apply) {
+       if (field.isPresent()) apply.accept(field.get());
+   }
+
+   /** For fields with no cleared state: only a present non-null value overrides the baseline. */
+   private static <T> void overlayValue(JsonNullable<T> field, Consumer<T> apply) {
+       field.ifPresent(v -> { if (v != null) apply.accept(v); });
+   }
+   ```
+
+3. **Apply** — the domain method applies the full snapshot unconditionally (`this.email = command.email()`), with no per-field "was it set?" branching. Validation runs over the resolved end-state values.
+
+**Consequences:**
+- This mapper is **not** a `Converter<S,T>` — it is two inputs (request + prefilled baseline) plus merge semantics. Keep it a hand-written package-private class with static `toCommand`; the controller calls it directly, not through `ConversionService`.
+- An empty PATCH body (`{}`) is a legitimate no-op that returns 204 — there is no "must contain at least one field" rule in the domain any more.
+- `RequestBodyFieldAuthorizationAdvice` is unaffected — it inspects the `JsonNullable` components of the **request DTO**, before the mapper runs.
+- `@WebMvcTest` for a PATCH controller must stub **both** `prefilledUpdateCommand(...)` (return `Aggregate.UpdateCmd.from(stubAggregate())`) and the update method; without the first, the mapper hits `builder(null)` → NPE before the endpoint logic runs.
+- Domain unit tests build the command from the baseline too: `MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).email(newValue).build()` — never the bare `builder()`, which would leave required fields null.
 
 ## HATEOAS — Controllers Return Plain DTOs; HalResponseBodyAdvice Wraps Them
 

@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 
@@ -74,16 +73,16 @@ class ManagementServiceTest {
         @Test
         @DisplayName("should update member birth number via update command")
         void shouldUpdateMemberWithBirthNumber() {
-            var command = MemberUpdateMemberBuilder.builder()
-                    .bankAccountNumber(JsonNullable.of(BankAccountNumber.of("12345/5678")))
-                    .birthNumber(JsonNullable.of(BirthNumber.of("900101/1234")))
-                    .build();
-
             Member czechMember = MemberTestDataBuilder.aMember()
                     .withId(testMemberId)
                     .withNationality("CZ")
                     .withBirthNumber("900515/1234")
                     .build();
+            var command = MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(czechMember))
+                    .bankAccountNumber(BankAccountNumber.of("12345/5678"))
+                    .birthNumber(BirthNumber.of("900101/1234"))
+                    .build();
+
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(czechMember));
             when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -96,8 +95,8 @@ class ManagementServiceTest {
         @Test
         @DisplayName("should update member bank account number via update command")
         void shouldUpdateMemberWithBankAccountNumber() {
-            var command = MemberUpdateMemberBuilder.builder()
-                    .bankAccountNumber(JsonNullable.of(BankAccountNumber.of("12345/5678")))
+            var command = MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(testMember))
+                    .bankAccountNumber(BankAccountNumber.of("12345/5678"))
                     .build();
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));
@@ -112,8 +111,8 @@ class ManagementServiceTest {
         @Test
         @DisplayName("should update member contact info via update command")
         void shouldUpdateMemberContactInfo() {
-            var command = MemberUpdateMemberBuilder.builder()
-                    .email(JsonNullable.of(EmailAddress.of("new@example.com")))
+            var command = MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(testMember))
+                    .email(EmailAddress.of("new@example.com"))
                     .build();
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testMember));

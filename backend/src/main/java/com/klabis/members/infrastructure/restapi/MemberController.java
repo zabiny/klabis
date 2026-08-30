@@ -66,7 +66,8 @@ public class MemberController implements MembersApi {
             @ActingUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);
-        var command = UpdateMemberRequestMapper.toCommand(request, currentUser.userId());
+        var prefilled = managementService.prefilledUpdateCommand(memberId);
+        var command = UpdateMemberRequestMapper.toCommand(request, prefilled, currentUser.userId());
         Member updatedMember = managementService.updateMember(memberId, command);
 
         List<String> warnings = updatedMember.birthNumberConsistencyWarnings();

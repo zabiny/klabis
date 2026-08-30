@@ -2030,6 +2030,8 @@ class MemberControllerApiTest {
                     .withBirthNumber("905101/1239")
                     .withNoGuardian()
                     .build();
+            when(managementService.prefilledUpdateCommand(any(MemberId.class)))
+                    .thenReturn(Member.UpdateMember.from(member));
             when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMember.class))).thenReturn(member);
 
             mockMvc.perform(patch("/api/members/{id}", memberId)
@@ -2051,6 +2053,8 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withNoGuardian()
                     .build();
+            when(managementService.prefilledUpdateCommand(any(MemberId.class)))
+                    .thenReturn(Member.UpdateMember.from(member));
             when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMember.class))).thenReturn(member);
 
             mockMvc.perform(patch("/api/members/{id}", memberId)
@@ -2075,8 +2079,12 @@ class MemberControllerApiTest {
         void selfUpdateShouldOnlyPassAllowedFieldsToService() throws Exception {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withEmail("original@example.com")
+                    .withPhone("+420111000111")
                     .withNoGuardian()
                     .build();
+            when(managementService.prefilledUpdateCommand(any(MemberId.class)))
+                    .thenReturn(Member.UpdateMember.from(member));
             when(managementService.updateMember(any(MemberId.class), any(Member.UpdateMember.class))).thenReturn(member);
 
             mockMvc.perform(patch("/api/members/{id}", memberId)
@@ -2090,7 +2098,9 @@ class MemberControllerApiTest {
 
             Mockito.verify(managementService).updateMember(
                     eq(new MemberId(memberId)),
-                    argThat((Member.UpdateMember cmd) -> cmd.email().isPresent() && !cmd.phone().isPresent())
+                    argThat((Member.UpdateMember cmd) ->
+                            cmd.email().equals(EmailAddress.of("new@example.com"))
+                            && cmd.phone().equals(PhoneNumber.of("+420111000111")))
             );
         }
     }
