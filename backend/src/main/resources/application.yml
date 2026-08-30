@@ -3,9 +3,10 @@ spring:
     name: klabis-backend
 
   profiles:
-    active: h2,ssl,debug,metrics,oris
+    active: h2,ssl,debug,metrics,oris,example-data
     group:
       test: h2,debug,test
+      test-bootstrap: example-data
 
   mvc:
     problemdetails:

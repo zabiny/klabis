@@ -42,7 +42,9 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 
 **Migrations:** Three layers - V001 (domain: 6 tables), V002 (OAuth2: 3 tables), V003 (Modulith: 1 table). 
 - H2 resets on restart
-- data Bootstrap via `BootstrapDataLoader`
+- data Bootstrap via `BootstrapDataLoader` (runs in every profile):
+  - **Always**: admin user (`UsersDataBootstrap`), OAuth2 registered clients (`OidcRegisteredClientsBootstrap`), event types Závod/Trénink (`EventTypeDataBootstrap`)
+  - **Only with `example-data` profile**: demo members, training groups, events, membership fee tiers
 - do not add new migration scripts - update best fitting script (domain DDL into V001)
 
 ### Testing
@@ -127,14 +129,18 @@ Feature-based profiles (composable independently):
 - **debug** — verbose logging (`com.klabis: DEBUG`, `spring.security: DEBUG`)
 - **email** — activates real email sending via JavaMailSender (requires `KLABIS_SMTP_HOST` env var; without this profile, `LoggingEmailService` is used)
 - **metrics** — enables custom Klabis metrics (Modulith event counters, listener latency)
-- **test** — for integration tests, isolated H2 database (auto-includes `h2` and `metrics` via profile group)
+- **test** — for integration tests, isolated H2 database (auto-includes `h2` and `debug` via profile group). `BootstrapDataLoader` runs with only the necessary initializers (admin user, OAuth2 clients, event types).
+- **test-bootstrap** — test-only addition: activates `example-data` via profile group so tests can also bootstrap demo data (`@ActiveProfiles({"test", "test-bootstrap"})`)
 - **local-dev** — **local developer machines only**. Registers a second OAuth2 client `klabis-web-local` (confidential, `CLIENT_SECRET_POST`, PKCE required, `AUTHORIZATION_CODE` + `REFRESH_TOKEN` grants). This enables refresh-token-based silent token renewal when the frontend runs on `http://localhost:3000` (cross-origin from the backend on `:8443`). Spring AS refuses to issue refresh tokens to public clients, so this profile adds a confidential workaround client that stays out of production entirely. See `openspec/changes/enable-refresh-tokens-for-local-dev` for full rationale. **Never activate in any deployed environment.**
 - **pwa** — opt-in. Exposes `manifest.webmanifest` and `sw.js` so browsers offer the "Install" affordance and register the PWA service worker. Without this profile, `PwaDisabledController` returns 404 on those paths, hiding the install prompt and skipping SW registration. Off by default to avoid stale caches in dev/staging — enable explicitly on production.
+- **example-data** — seeds demo data (17 members incl. ZBM9000/ZBM9500, 4 training groups, 27 events, 3 membership fee tiers) via the profile-gated `BootstrapDataInitializer`s. Without it the database starts empty apart from always-bootstrapped data (admin user, OAuth2 clients, event types). Drop it to get a clean database, e.g. before synchronizing real data from ORIS.
 
-Default active profiles: `h2,ssl,debug,metrics` (zero-config local dev, HTTPS on 8443, H2 database)
-`runLocalEnvironment.sh` adds `local-dev` automatically, so developers get refresh-token-based silent renew out of the box.
+Default active profiles: `h2,ssl,debug,metrics,oris,example-data` (zero-config local dev, HTTPS on 8443, H2 database with demo data)
+`runLocalEnvironment.sh` adds `local-dev` and `example-data` automatically, so developers get refresh-token-based silent renew and demo data out of the box.
 
-Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics,pwa`
+Clean database (ORIS sync scenario): `SPRING_PROFILES_ACTIVE=h2,ssl,debug,metrics,oris ./gradlew bootRun`
+
+Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics,pwa` (do NOT include `example-data` in deployed environments)
 
 **Email testing with MailPit:**
 1. Start the container: `docker compose -f docker-compose.mailpit.yml up -d`

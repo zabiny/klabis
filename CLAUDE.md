@@ -33,8 +33,12 @@ For frontend testing prefer http://localhost:3000 because of that HMR auto reloa
 
 ### Available users for testing
 
+These example users exist only when the `example-data` profile is active (default for local development; absent in clean-database/production runs):
+
 - Admin user (have all permissions) - registration number `ZBM9000`, password `password`
 - Club member user (have standard permissions as club member) - reigstration number `ZBM9500`, password `password`
+
+The always-bootstrapped `admin` username user (password from `KLABIS_ADMIN_PASSWORD`, `admin123` via runLocalEnvironment.sh) is available in every profile.
 
 ## Development Workflow Best Practices
 
