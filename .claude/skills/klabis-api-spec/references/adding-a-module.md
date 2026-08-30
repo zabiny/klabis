@@ -6,28 +6,37 @@ generated interface, and the test gotchas that show up on the first build.
 # Registering a module for codegen
 
 Writing the YAML generates nothing on its own. Each module gets its own codegen task, registered with
-`openApiModule(...)` in `backend/build.gradle.kts`:
+`openApiModule(...)` in `backend/build.gradle.kts` (the helper is
+`backend/buildSrc/src/main/kotlin/OpenApiModule.kt`):
 
 ```kotlin
 openApiModule(
-    module = "members",                                       // -> build/generated/openapi/members
-    pkg = "com.klabis.members.infrastructure.restapi",         // same package as the controller
-    apis = listOf("Members", "Registration"),                  // OpenAPI tags
-    models = listOf("MemberDetailsResponse", /* ... */),
-    mappings = mapOf(
-        // listMembers' PagedModelEntityModelMemberSummaryResponse envelope and its
-        // MemberSummaryResponseList application/json sibling both resolve to
-        // Page<MemberSummaryResponse> structurally — no mapping needed (see "HAL envelopes are
-        // unwrapped structurally" above). suspendMember's 409 body has no single Java type
-        // (a discriminator-less oneOf) — Object is the honest hand-written fallback.
-        "SuspensionBlockedWarning" to "java.lang.Object"
-    ),
-    generator = "klabis-spring"
+    module = "members",                                   // -> build/generated/openapi/members
+    pkg = "com.klabis.members.infrastructure.restapi",     // same package as the controller
+    specFile = "members.yaml",                             // under docs/openapi/spec/
+    mappings = emptyMap()
 )
 ```
 
-A module with no hand-written overrides needs no `mappings` at all — `event-types` and `calendar` are
-`mappings = mapOf()` end to end. `models` must still list every payload schema explicitly either way.
+Just four required parameters — `module`, `pkg`, `specFile`, `mappings` (plus an optional
+`extraImportMappings`). **There is no `apis` / `models` enumeration.** The task points straight at
+`docs/openapi/spec/<specFile>`, and that one file's entire `paths` + `components.schemas` content
+*is* the module's generation scope. `globalProperties` sets `models=""` / `apis=""` inside the
+helper (present-but-empty means "generate all" — an *omitted* key would skip generation entirely).
+
+A module with no hand-written overrides passes `mappings = emptyMap()` — `members`, `finance`,
+`events`, `calendar`, `membershipfees`, `groups`, `oris` all do. Only `common` has entries, for its
+two marker records:
+
+```kotlin
+mappings = mapOf(
+    "EntityModelRootModel" to "com.klabis.common.ui.RootModel",
+    "EntityModelDashboardModel" to "com.klabis.common.ui.DashboardModel"
+)
+```
+
+`schemaMappings` also always carries `ProblemDetail -> org.springframework.http.ProblemDetail` and
+`importMappings` carries `Instant -> java.time.Instant`; the helper adds both, do not restate them.
 
 One task **per module**, not one shared task: `modelPackage`/`apiPackage` are scalars and
 `schemaMappings` is global per task, so a single task could never let two modules each define their
@@ -36,23 +45,21 @@ own `AddressRequest`.
 `pkg` must be the package the hand-written controller already lives in — cross-module link processors
 reach these types through Modulith named interfaces.
 
-**`apis` must list the tags explicitly.** The underlying `apis` global property generates *every*
-tag when given an empty string, which would emit every other module's `*Api.java` into this module's
-package. Forgetting a tag is safe by comparison: the interface is simply not generated and
-`implements XApi` fails to compile.
-
-**Tags must be single words.** A tag containing a space (`Calendar Feed Token`, `Event
-Registrations`, `My Profile`) is silently dropped: the build succeeds, no warning is printed, and the
-interface simply never appears. Watch for a trailing space too — `"Members "` is not `"Members"`.
-Existing controllers carry several multi-word `@Tag` names, so when migrating one, give the spec a
-single-word tag (`IcalToken`, not `Calendar Feed Token`) and use that same string in `apis`. The tag
-is spec-side only, so renaming it changes neither the wire nor `klabis-full.json`, which takes its
-tags from `@Tag` on the controller.
+**`useTags` is on**, so the `*Api` interface name comes from the operation's `tags:` value. A tag
+containing a space (`Calendar Feed Token`, `Event Registrations`, `My Profile`) is silently dropped:
+the build succeeds, no warning is printed, and the interface simply never appears. Watch for a
+trailing space too. Give every operation a single-word tag (`IcalToken`, not `Calendar Feed Token`).
+`klabis-full.json` takes its tags from `@Tag` on the controller, so a spec-side tag rename changes
+neither the wire nor the bundle.
 
 **The generator never deletes.** It only writes, so a schema you rename or drop leaves its old record
 behind in `build/generated/openapi/<module>/`— and since that directory is on `sourceSets.main`, the
 ghost keeps compiling. Local builds stay green while a clean CI build fails. `openApiModule` handles
 this with `doFirst { delete(outputDir) }`; keep it when touching that function.
+
+**The bundle is still a build dependency**, though backend codegen no longer reads it: the task
+`dependsOn(openapiBundle)` for its `validateSpec` / `validateModuleDocuments` side effect, so a
+module file that has drifted from `klabis.yaml` fails the build here rather than silently.
 
 # Adding a module
 
