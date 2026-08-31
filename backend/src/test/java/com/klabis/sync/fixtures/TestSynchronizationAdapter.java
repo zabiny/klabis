@@ -22,6 +22,8 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
     private ExternalVersionToken versionToken;
     private int externalReadCount = 0;
     private int localReadCount = 0;
+    private int fireHookOnLocalReadNumber = -1;
+    private Runnable countedHook;
 
     public TestSynchronizationAdapter(SyncEntityType entityType, ExternalSystem system) {
         this.entityType = entityType;
@@ -50,6 +52,19 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
     }
 
     /**
+     * Registers a hook that fires on the Nth call to {@link #readLocal(String)} within
+     * a pass (1-based, counted from the last {@link #reset()}), before it returns —
+     * lets a test target a specific re-read point (e.g. the guard re-read inside the
+     * write, as opposed to the earlier decision read) when a pass reads the local side
+     * more than once.
+     */
+    public TestSynchronizationAdapter onLocalReadNumber(int readNumber, Runnable hook) {
+        this.fireHookOnLocalReadNumber = readNumber;
+        this.countedHook = hook;
+        return this;
+    }
+
+    /**
      * Clears the version token and read counters. This adapter is typically wired as
      * a Spring singleton bean shared across every test in a class, so a test that sets
      * a version token or relies on read counts should reset it in {@code @BeforeEach}
@@ -59,6 +74,8 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
         this.versionToken = null;
         this.externalReadCount = 0;
         this.localReadCount = 0;
+        this.fireHookOnLocalReadNumber = -1;
+        this.countedHook = null;
     }
 
     public int externalReadCount() {
@@ -67,6 +84,15 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
 
     public int localReadCount() {
         return localReadCount;
+    }
+
+    /**
+     * Zeroes the local-read counter only, leaving state, capabilities and hooks
+     * untouched — useful to target {@link #onLocalReadNumber} at reads within a
+     * specific upcoming pass rather than counting from the start of the test.
+     */
+    public void resetLocalReadCount() {
+        this.localReadCount = 0;
     }
 
     @Override
@@ -92,6 +118,12 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
     @Override
     public SyncProjection readLocal(String entityId) {
         localReadCount++;
+        if (localReadCount == fireHookOnLocalReadNumber) {
+            Runnable hook = countedHook;
+            fireHookOnLocalReadNumber = -1;
+            countedHook = null;
+            hook.run();
+        }
         TestSyncProjection projection = localState.get(entityId);
         if (projection == null) {
             throw new IllegalStateException("No local test state configured for entityId " + entityId);

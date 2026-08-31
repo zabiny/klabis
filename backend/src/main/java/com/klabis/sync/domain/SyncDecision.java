@@ -7,10 +7,10 @@ import org.jmolecules.ddd.annotation.ValueObject;
  * baseline (design.md D4's decision table). {@code kind} names the row; {@code direction}
  * is only meaningful for {@link Kind#WRITE}.
  * <p>
- * Slice 1 produces {@link Kind#NOTHING_TO_DO} and {@link Kind#WRITE} (inward only, via
+ * Slice 1 produced {@link Kind#NOTHING_TO_DO} and inward {@link Kind#WRITE} (via
  * {@link Kind#ADOPT_EXTERNAL} on first enrolment or {@link Kind#WRITE} thereafter).
- * Outward writes, convergence and conflicts are added by later slices without changing
- * this shape.
+ * Slice 2 adds outward {@link Kind#WRITE} and {@link Kind#CONVERGED}. Conflicts are
+ * added by Slice 3 without changing this shape.
  */
 @ValueObject
 public record SyncDecision(Kind kind, SyncDirection direction) {
@@ -21,7 +21,12 @@ public record SyncDecision(Kind kind, SyncDirection direction) {
         /** No baseline exists yet — first pass adopts the external side (design.md D5). */
         ADOPT_EXTERNAL,
         /** One side changed and the write in that direction is available. */
-        WRITE
+        WRITE,
+        /**
+         * Both sides changed since the baseline but now hold the same value — rebase
+         * both baselines onto the shared state, write nothing (design.md D4).
+         */
+        CONVERGED
     }
 
     public static SyncDecision nothingToDo() {
@@ -34,5 +39,9 @@ public record SyncDecision(Kind kind, SyncDirection direction) {
 
     public static SyncDecision write(SyncDirection direction) {
         return new SyncDecision(Kind.WRITE, direction);
+    }
+
+    public static SyncDecision converged() {
+        return new SyncDecision(Kind.CONVERGED, null);
     }
 }

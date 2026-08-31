@@ -8,13 +8,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 /**
- * Orchestrates one synchronisation pass (design.md D9, "How a pass runs"). Slice 1
- * covers: the version-token short-circuit, reading both sides, comparing against the
- * baseline, adopting the external side on first enrolment, writing inward when only
- * the external side changed, and appending the attempt to history.
+ * Orchestrates one synchronisation pass (design.md D9, "How a pass runs"): the
+ * version-token short-circuit, reading both sides, comparing against the baseline,
+ * adopting the external side on first enrolment, writing inward or outward depending
+ * on which side changed, rebasing the baseline on convergence, and appending the
+ * attempt to history. Both inward and outward writes re-read the local projection
+ * immediately before writing and abort if it moved since the decision was made
+ * (design.md D9) — the concurrent-edit guard.
  * <p>
- * Outward writes, convergence, conflicts, retry/claim handling and scheduling are
- * added by later slices around this same orchestration.
+ * Conflicts, retry/claim handling and scheduling are added by later slices around
+ * this same orchestration.
  */
 @Service
 class SynchronizationService implements SynchronizationPort {
@@ -101,7 +104,7 @@ class SynchronizationService implements SynchronizationPort {
         SyncSnapshot currentLocal = SyncSnapshot.of(localProjection, hasher);
         SyncSnapshot currentExternal = SyncSnapshot.of(externalProjection, hasher);
 
-        SyncDecision decision = record.decide(currentLocal, currentExternal);
+        SyncDecision decision = record.decide(currentLocal, currentExternal, adapter.capabilities());
 
         SyncHash localHashForAttempt = currentLocal.hash();
         SyncHash externalHashForAttempt = currentExternal.hash();
@@ -111,11 +114,32 @@ class SynchronizationService implements SynchronizationPort {
                 appendAttempt(record, trigger, null, SyncOutcome.SUCCESS, localHashForAttempt, externalHashForAttempt, null, actingUser);
                 return record;
             }
+            case CONVERGED -> {
+                // Both sides changed independently to the same value: rebase both
+                // baselines, write nothing (design.md D4).
+                record.recordConverged(currentLocal);
+                SyncRecord savedConverged = syncRecordRepository.save(record);
+                appendAttempt(savedConverged, trigger, null, SyncOutcome.SUCCESS, localHashForAttempt, externalHashForAttempt, null, actingUser);
+                return savedConverged;
+            }
             case ADOPT_EXTERNAL, WRITE -> {
-                if (decision.direction() == SyncDirection.INWARD) {
-                    writeInward(record, adapter, currentExternal);
-                } else {
-                    throw new UnsupportedOperationException("Outward writes are added in a later slice");
+                boolean written = decision.direction() == SyncDirection.INWARD
+                        ? writeInward(record, adapter, currentExternal, currentLocal)
+                        : writeOutward(record, adapter, currentLocal);
+                if (!written) {
+                    // The local side moved again between the decision read and the
+                    // write (design.md D9): abort, leave the record due for the next
+                    // pass, and record the attempt as a no-op rather than a success. An
+                    // inward abort leaves the record untouched; an outward abort still
+                    // rebases the external side and the whole baseline onto what was
+                    // actually pushed (recordOutwardWriteWithSkippedAdvance), so the
+                    // next pass sees only the newer local edit as due, not the engine's
+                    // own write — persist that either way.
+                    SyncRecord savedAfterAbort = syncRecordRepository.save(record);
+                    SyncHash externalHashAfterAbort = savedAfterAbort.getExternal() != null
+                            ? savedAfterAbort.getExternal().hash() : externalHashForAttempt;
+                    appendAttempt(savedAfterAbort, trigger, decision.direction(), SyncOutcome.SKIPPED, localHashForAttempt, externalHashAfterAbort, null, actingUser);
+                    return savedAfterAbort;
                 }
             }
         }
@@ -131,15 +155,61 @@ class SynchronizationService implements SynchronizationPort {
      * projection so the post-write state becomes both the local snapshot and the
      * baseline (design.md D9) — never the pushed value itself, since the write may
      * have been transformed (e.g. field-ownership merges) on the way in.
+     * <p>
+     * Immediately before the write, the local projection is re-read; if its hash no
+     * longer matches the one the direction decision was based on, the write is
+     * aborted and this returns {@code false} so the record stays due.
+     *
+     * @return {@code true} if the write happened, {@code false} if aborted
      */
-    private void writeInward(SyncRecord record, SynchronizationAdapter adapter, SyncSnapshot currentExternal) {
+    private boolean writeInward(SyncRecord record, SynchronizationAdapter adapter, SyncSnapshot currentExternal, SyncSnapshot decisionLocal) {
         String entityId = record.getTarget().entityId();
+
+        SyncSnapshot freshLocal = SyncSnapshot.of(adapter.readLocal(entityId), hasher);
+        if (!freshLocal.matches(decisionLocal)) {
+            return false;
+        }
+
         adapter.applyToLocal(entityId, currentExternal.projection());
 
         SyncProjection postWriteLocal = adapter.readLocal(entityId);
         SyncSnapshot postWriteSnapshot = SyncSnapshot.of(postWriteLocal, hasher);
 
         record.recordSuccess(SyncDirection.INWARD, postWriteSnapshot, currentExternal);
+        return true;
+    }
+
+    /**
+     * Writes the local projection to the external side (design.md D9). Immediately
+     * before the baseline is written, the local projection is re-read; if it no
+     * longer matches what was pushed, this returns {@code false} so the record stays
+     * due for the next pass — but the external side, and the whole baseline, still
+     * rebase onto what was actually pushed
+     * ({@link SyncRecord#recordOutwardWriteWithSkippedAdvance}), since the write to
+     * the external system happened regardless and the next pass must not mistake it
+     * for an independent external change.
+     * <p>
+     * On success, the external side now holds what was pushed — {@code currentLocal}'s
+     * content — so that (not the stale pre-write {@code currentExternal} snapshot)
+     * becomes both the record's external snapshot and the external half of the new
+     * baseline.
+     *
+     * @return {@code true} if the baseline was written, {@code false} if skipped
+     */
+    private boolean writeOutward(SyncRecord record, SynchronizationAdapter adapter, SyncSnapshot currentLocal) {
+        String entityId = record.getTarget().entityId();
+        String externalId = record.getExternalReference().externalId();
+
+        adapter.applyToExternal(externalId, currentLocal.projection());
+
+        SyncSnapshot freshLocal = SyncSnapshot.of(adapter.readLocal(entityId), hasher);
+        if (!freshLocal.matches(currentLocal)) {
+            record.recordOutwardWriteWithSkippedAdvance(currentLocal);
+            return false;
+        }
+
+        record.recordSuccess(SyncDirection.OUTWARD, currentLocal, currentLocal);
+        return true;
     }
 
     private void appendAttempt(

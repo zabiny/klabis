@@ -13,10 +13,11 @@ import java.time.Instant;
  * (design.md, Target Domain Model). Owns direction resolution, conflict state, retry
  * scheduling and last-success information.
  * <p>
- * Slice 1 implements enrolment, claiming, {@link #recordSuccess} and direction
- * resolution for: nothing changed, only external changed (inward), and first
- * enrolment (adopt external). Outward writes, convergence and conflict handling are
- * added by later slices on top of this same shape.
+ * Implements enrolment, claiming, {@link #recordSuccess}/{@link #recordConverged} and
+ * direction resolution for: nothing changed, only external changed (inward), first
+ * enrolment (adopt external), only local changed with an outward write available, and
+ * both sides converging on the same value. Conflict handling is added by Slice 3 on
+ * top of this same shape.
  */
 @AggregateRoot
 public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
@@ -119,13 +120,18 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
 
     /**
      * Compares the current local/external snapshots against the baseline and decides
-     * what, if anything, needs to happen (design.md D4's decision table). Slice 1
-     * covers: no baseline yet → adopt external (D5); neither side moved → nothing to
-     * do; only the external side moved → write inward.
+     * what, if anything, needs to happen (design.md D4's decision table).
+     * <p>
+     * Covered so far: no baseline yet → adopt external (D5); neither side moved →
+     * nothing to do; only the external side moved → write inward; only the local side
+     * moved with an outward write available → write outward; both sides moved to the
+     * same value → converged. A local-only change with no outward write capability is
+     * a conflict (D6), added in Slice 3.
      */
-    public SyncDecision decide(SyncSnapshot currentLocal, SyncSnapshot currentExternal) {
+    public SyncDecision decide(SyncSnapshot currentLocal, SyncSnapshot currentExternal, SyncCapabilities capabilities) {
         Assert.notNull(currentLocal, "currentLocal is required");
         Assert.notNull(currentExternal, "currentExternal is required");
+        Assert.notNull(capabilities, "capabilities is required");
 
         if (baseline == null) {
             return SyncDecision.adoptExternal();
@@ -140,11 +146,27 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         if (!localChanged && externalChanged) {
             return SyncDecision.write(SyncDirection.INWARD);
         }
+        if (localChanged && !externalChanged) {
+            if (capabilities.writesExternal()) {
+                return SyncDecision.write(SyncDirection.OUTWARD);
+            }
+            // A local change that cannot be sent onward is a conflict (design.md D6),
+            // added in Slice 3.
+            throw new UnsupportedOperationException(
+                    "Conflict handling for a local change with no outward write capability is added in a later slice");
+        }
 
-        // Outward writes, convergence and conflict resolution for the remaining rows
-        // (local-only changed, both changed) are added in later slices.
+        // From here on, both sides changed since the baseline (design.md D4's last two
+        // rows). Equal current hashes is convergence; anything else is a genuine
+        // conflict, including the accepted-divergence guard (D6) that turns a further
+        // external change into a conflict even though only the external side moved
+        // this time — Slice 3 adds that guard as an earlier branch in this method.
+        if (currentLocal.matches(currentExternal)) {
+            return SyncDecision.converged();
+        }
+
         throw new UnsupportedOperationException(
-                "Direction resolution for this combination of changes is not yet implemented in this slice");
+                "Conflict handling for sides that changed to different values is added in a later slice");
     }
 
     /**
@@ -160,6 +182,52 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         this.external = external;
         this.baseline = SyncBaseline.reconciled(direction == SyncDirection.INWARD ? local : external);
         this.lastDirection = direction;
+        this.lastSuccessfulSyncAt = Instant.now();
+        this.status = SyncStatus.IN_SYNC;
+        this.dirtySince = null;
+        this.nextAttemptDueAt = null;
+    }
+
+    /**
+     * Records an outward write that reached the external system but whose baseline
+     * advance had to be skipped, because the local side moved again before the guard
+     * re-read (design.md D9). The external side really does hold {@code pushedSnapshot}
+     * now, and the write is itself an external change the engine caused — mirroring
+     * D9's "an inward write is itself a local change" for the outward direction — so
+     * both the external snapshot and the *whole baseline pair* rebase onto it, exactly
+     * as an ordinary reconciliation would.
+     * <p>
+     * Deliberately not {@code SyncBaseline.accepted(local, external)} with unequal
+     * halves: that shape is reserved for a standing accepted divergence (design.md D6)
+     * and Slice 3's inward guard treats it as such. Using it here for a purely
+     * temporary bookkeeping value would make Slice 3 mistake this record for one with
+     * a manager-accepted divergence and block a perfectly ordinary inward write. The
+     * baseline pair here stays a normal, reconciled (equal-halves) pair.
+     * <p>
+     * The local side is intentionally left as it was: it is still due — the very edit
+     * that raced the guard re-read has not been pushed — and {@code dirtySince}
+     * already marks the record for re-evaluation. The next pass then correctly sees
+     * only the local side as changed and pushes the newer value outward.
+     */
+    public void recordOutwardWriteWithSkippedAdvance(SyncSnapshot pushedSnapshot) {
+        Assert.notNull(pushedSnapshot, "pushedSnapshot is required");
+        this.external = pushedSnapshot;
+        this.baseline = SyncBaseline.reconciled(pushedSnapshot);
+        this.dirtySince = Instant.now();
+    }
+
+    /**
+     * Records a converged pass (design.md D4): both sides changed independently but
+     * now hold the same value. Nothing is written; both baseline halves rebase onto
+     * the shared state, same as an ordinary reconciliation, but with no direction to
+     * report — a convergence is not a write.
+     */
+    public void recordConverged(SyncSnapshot agreedSnapshot) {
+        Assert.notNull(agreedSnapshot, "agreedSnapshot is required");
+
+        this.local = agreedSnapshot;
+        this.external = agreedSnapshot;
+        this.baseline = SyncBaseline.reconciled(agreedSnapshot);
         this.lastSuccessfulSyncAt = Instant.now();
         this.status = SyncStatus.IN_SYNC;
         this.dirtySince = null;

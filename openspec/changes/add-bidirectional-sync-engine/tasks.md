@@ -33,14 +33,14 @@ Delivers: enrol an entity, first pass adopts the external side, a later external
 
 Delivers: the remaining non-conflict outcomes, and the correctness rules that keep a concurrent local edit from being lost.
 
-- [ ] 2.1 Domain tests (red): only local changed and outward write available → outward; both sides changed to the *same* values → converged, rebase both baselines, write nothing [D4]
-- [ ] 2.2 Domain: extend direction resolution with the outward and convergence rows
-- [ ] 2.3 Application: outward pass — write through the adapter, then re-read the local projection; if it no longer matches what was pushed, skip the baseline write and leave the record due [D9]
-- [ ] 2.4 Application: inward pass — re-read the local projection immediately before the write and abort if it moved; re-read again after the write and use that state as both local snapshot and baseline [D9]
-- [ ] 2.5 Domain: `dirtySince` as a scheduling marker only — set on an observed local change, never consulted to decide whether a write is safe [D9]
-- [ ] 2.6 Integration tests: local edit committed between the decision read and the inward write → attempt aborts, nothing overwritten, record stays due; local edit committed during an outward pass → baseline not written, next pass pushes again
-- [ ] 2.7 Integration test: an inward write marks its own record dirty, and the following pass lands on "nothing to do" or convergence and clears it — no conflict is raised [D9]
-- [ ] 2.8 Run tests, code review, commit
+- [x] 2.1 Domain tests (red): only local changed and outward write available → outward; both sides changed to the *same* values → converged, rebase both baselines, write nothing [D4]
+- [x] 2.2 Domain: extend direction resolution with the outward and convergence rows
+- [x] 2.3 Application: outward pass — write through the adapter, then re-read the local projection; if it no longer matches what was pushed, skip the baseline write and leave the record due [D9]
+- [x] 2.4 Application: inward pass — re-read the local projection immediately before the write and abort if it moved; re-read again after the write and use that state as both local snapshot and baseline [D9]
+- [x] 2.5 Domain: `dirtySince` as a scheduling marker only — set on an observed local change, never consulted to decide whether a write is safe [D9]
+- [x] 2.6 Integration tests: local edit committed between the decision read and the inward write → attempt aborts, nothing overwritten, record stays due; local edit committed during an outward pass → baseline not written, next pass pushes again
+- [x] 2.7 Integration test: an inward write marks its own record dirty, and the following pass lands on "nothing to do" or convergence and clears it — no conflict is raised [D9]
+- [x] 2.8 Run tests, code review, commit
 
 ## 3. Slice: Conflicts — detection, attribution and resolution
 

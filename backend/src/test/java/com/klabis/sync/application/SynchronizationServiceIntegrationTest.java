@@ -20,15 +20,15 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * End-to-end tests for the synchronisation engine's slice-1 pass orchestration
- * (tasks.md 1.15), driven entirely through {@link TestSynchronizationAdapter} — no
- * ORIS involvement (design.md Migration Plan, step 1).
+ * End-to-end tests for the synchronisation engine's pass orchestration (tasks.md 1.15,
+ * 2.6, 2.7), driven entirely through {@link TestSynchronizationAdapter} — no ORIS
+ * involvement (design.md Migration Plan, step 1).
  */
 @ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
 @Import({TestApplicationConfiguration.class, SynchronizationServiceIntegrationTest.TestAdapterConfiguration.class})
-@DisplayName("Synchronisation engine: slice 1 (inward, walking skeleton)")
+@DisplayName("Synchronisation engine: inward, outward, convergence and re-read rules")
 class SynchronizationServiceIntegrationTest {
 
     @TestConfiguration
@@ -57,9 +57,11 @@ class SynchronizationServiceIntegrationTest {
     void setUp() {
         adapter = (TestSynchronizationAdapter) synchronizationAdapter;
         // The adapter bean is a Spring singleton shared across every nested test in
-        // this class — reset its version token and read counters so one test's state
-        // cannot leak into another.
+        // this class — reset its version token, hooks and read counters, and default
+        // capabilities to inward+outward writable, so one test's state cannot leak
+        // into another. Tests that need pull-only capabilities set them explicitly.
         adapter.reset();
+        adapter.withCapabilities(new SyncCapabilities(true, true, true, true, false, false, false));
     }
 
     @Nested
@@ -155,6 +157,181 @@ class SynchronizationServiceIntegrationTest {
             var history = syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(afterShortCircuitedPass.getId());
             assertThat(history).hasSizeGreaterThanOrEqualTo(2);
             assertThat(history.get(0).getOutcome()).isEqualTo(SyncOutcome.SKIPPED);
+        }
+    }
+
+    @Nested
+    @DisplayName("local change → outward write")
+    class LocalChangeFlowsOutward {
+
+        @Test
+        @DisplayName("a local change is written outward when the integration can write there")
+        void localChangeWrittenOutward() {
+            adapter.withExternalState("8104", new TestSyncProjection("Long Distance", "Ostrava"));
+            adapter.withLocalState("event-104", new TestSyncProjection("Long Distance", "Ostrava"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-104");
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8104");
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            adapter.withLocalState("event-104", new TestSyncProjection("Long Distance Updated", "Ostrava"));
+            SyncRecord afterSecondPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            assertThat(afterSecondPass.getLastDirection()).isEqualTo(SyncDirection.OUTWARD);
+            assertThat(afterSecondPass.getExternal().projection()).isEqualTo(new TestSyncProjection("Long Distance Updated", "Ostrava"));
+            assertThat(adapter.readExternal("8104")).isEqualTo(new TestSyncProjection("Long Distance Updated", "Ostrava"));
+        }
+    }
+
+    @Nested
+    @DisplayName("both sides converge on the same value")
+    class Convergence {
+
+        @Test
+        @DisplayName("both sides changed independently to the same value → rebase baselines, write nothing")
+        void bothSidesConvergeOnSameValue() {
+            adapter.withExternalState("8105", new TestSyncProjection("Middle Distance", "Zlín"));
+            adapter.withLocalState("event-105", new TestSyncProjection("Middle Distance", "Zlín"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-105");
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8105");
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            // Both sides receive the same correction independently.
+            adapter.withLocalState("event-105", new TestSyncProjection("Middle Distance Corrected", "Zlín"));
+            adapter.withExternalState("8105", new TestSyncProjection("Middle Distance Corrected", "Zlín"));
+
+            SyncRecord afterConvergedPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            assertThat(afterConvergedPass.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+            // A convergence is not a write: lastDirection still reflects the previous
+            // pass's inward adoption, unchanged by this converged pass.
+            assertThat(afterConvergedPass.getLastDirection()).isEqualTo(SyncDirection.INWARD);
+            assertThat(afterConvergedPass.getBaseline().local().projection())
+                    .isEqualTo(new TestSyncProjection("Middle Distance Corrected", "Zlín"));
+            assertThat(afterConvergedPass.getBaseline().external().projection())
+                    .isEqualTo(new TestSyncProjection("Middle Distance Corrected", "Zlín"));
+        }
+    }
+
+    @Nested
+    @DisplayName("concurrent local edit — inward write")
+    class ConcurrentLocalEditDuringInwardWrite {
+
+        @Test
+        @DisplayName("an edit committed between the decision read and the inward write aborts the attempt")
+        void localEditBetweenDecisionAndInwardWriteAborts() {
+            adapter.withExternalState("8106", new TestSyncProjection("Sprint", "Brno"));
+            adapter.withLocalState("event-106", new TestSyncProjection("(unset)", "(unset)"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-106");
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8106");
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            adapter.withExternalState("8106", new TestSyncProjection("Sprint Updated", "Brno"));
+            adapter.resetLocalReadCount();
+            // The 1st local read in this next pass is the decision read; the 2nd is the
+            // guard re-read immediately before the inward write (design.md D9) — commit
+            // the concurrent edit exactly there.
+            adapter.onLocalReadNumber(2, () ->
+                    adapter.withLocalState("event-106", new TestSyncProjection("Concurrently Edited Locally", "Brno")));
+
+            SyncRecord afterAbortedPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            assertThat(adapter.readLocal("event-106")).isEqualTo(new TestSyncProjection("Concurrently Edited Locally", "Brno"));
+            assertThat(afterAbortedPass.getBaseline().local().projection()).isEqualTo(new TestSyncProjection("Sprint", "Brno"));
+            assertThat(afterAbortedPass.getLastDirection()).isEqualTo(SyncDirection.INWARD);
+
+            var history = syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(afterAbortedPass.getId());
+            assertThat(history.get(0).getOutcome()).isEqualTo(SyncOutcome.SKIPPED);
+        }
+    }
+
+    @Nested
+    @DisplayName("concurrent local edit — outward write")
+    class ConcurrentLocalEditDuringOutwardWrite {
+
+        @Test
+        @DisplayName("an edit committed during an outward pass rebases the baseline onto the push; the next pass pushes the newer edit again")
+        void localEditDuringOutwardPassSkipsBaselineWrite() {
+            adapter.withExternalState("8107", new TestSyncProjection("Relay", "Praha"));
+            adapter.withLocalState("event-107", new TestSyncProjection("Relay", "Praha"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-107");
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8107");
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            adapter.withLocalState("event-107", new TestSyncProjection("Relay Updated", "Praha"));
+            adapter.resetLocalReadCount();
+            // The 1st local read in this next pass is the decision read; the 2nd is the
+            // guard re-read performed right before the outward baseline write
+            // (design.md D9) — commit a further concurrent edit exactly there.
+            adapter.onLocalReadNumber(2, () ->
+                    adapter.withLocalState("event-107", new TestSyncProjection("Relay Updated Again", "Praha")));
+
+            SyncRecord afterSkippedAdvance = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            // The outward write to the external side still happened (it pushed what the
+            // decision read saw)...
+            assertThat(adapter.readExternal("8107")).isEqualTo(new TestSyncProjection("Relay Updated", "Praha"));
+            // ...and the record's own external snapshot, and the WHOLE baseline pair,
+            // rebase onto that push — an outward write is itself an external change the
+            // engine caused (symmetric to D9's "an inward write is itself a local
+            // change"), so the baseline must not stay at the old "Relay" or the next
+            // pass would misread the engine's own write as an independent external
+            // change. This must be a normal reconciled (equal-halves) baseline, not the
+            // divergent shape D6 reserves for an accepted divergence.
+            assertThat(afterSkippedAdvance.getExternal().projection()).isEqualTo(new TestSyncProjection("Relay Updated", "Praha"));
+            assertThat(afterSkippedAdvance.getBaseline().isDiverged()).isFalse();
+            assertThat(afterSkippedAdvance.getBaseline().local().projection()).isEqualTo(new TestSyncProjection("Relay Updated", "Praha"));
+            assertThat(afterSkippedAdvance.getBaseline().external().projection()).isEqualTo(new TestSyncProjection("Relay Updated", "Praha"));
+
+            var history = syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(afterSkippedAdvance.getId());
+            assertThat(history.get(0).getOutcome()).isEqualTo(SyncOutcome.SKIPPED);
+
+            // The next pass re-evaluates: local is "Relay Updated Again" (changed since
+            // the rebased baseline "Relay Updated"), external is "Relay Updated"
+            // (unchanged since that same baseline) — a clean outward push of the newest
+            // local edit, never a false conflict with the engine's own prior write.
+            adapter.resetLocalReadCount();
+            SyncRecord afterFollowUpPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            assertThat(afterFollowUpPass.getLastDirection()).isEqualTo(SyncDirection.OUTWARD);
+            assertThat(afterFollowUpPass.getExternal().projection()).isEqualTo(new TestSyncProjection("Relay Updated Again", "Praha"));
+            assertThat(adapter.readExternal("8107")).isEqualTo(new TestSyncProjection("Relay Updated Again", "Praha"));
+        }
+    }
+
+    @Nested
+    @DisplayName("an inward write is itself a local change, but raises no conflict")
+    class InwardWriteIsItselfALocalChange {
+
+        @Test
+        @DisplayName("the pass after an inward write lands on nothing-to-do, never a conflict (design.md D9)")
+        void passAfterInwardWriteResolvesWithoutConflict() {
+            adapter.withExternalState("8108", new TestSyncProjection("Sprint", "Brno"));
+            adapter.withLocalState("event-108", new TestSyncProjection("(unset)", "(unset)"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-108");
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8108");
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord afterInwardWrite = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+            assertThat(afterInwardWrite.getLastDirection()).isEqualTo(SyncDirection.INWARD);
+
+            // In the real system, Event.syncFromOris publishes EventUpdatedEvent exactly
+            // like every other mutating command, so the inward write above would mark
+            // this very record dirty (design.md D9). That trigger wiring is added by a
+            // later slice (events module integration); here we drive the pass the same
+            // trigger would cause and assert it resolves to "nothing to do" rather than
+            // misreading the write it just performed as a conflicting local edit.
+            SyncRecord afterFollowUpPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            assertThat(afterFollowUpPass.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+            assertThat(afterFollowUpPass.getLocal().projection()).isEqualTo(new TestSyncProjection("Sprint", "Brno"));
         }
     }
 }
