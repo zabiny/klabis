@@ -448,7 +448,9 @@ paths:
               description: Present when the event has an event type assigned
             accommodation-list:
               operation: getAccommodationList
-              description: Present only for the event coordinator or callers with EVENTS:REGISTRATIONS
+              description: |
+                Present only when the event offers shared accommodation and the caller is the
+                event coordinator or has EVENTS:REGISTRATIONS
             newRegistration:
               operation: getRegistration
               description: |
@@ -457,7 +459,9 @@ paths:
           x-hal-templates:
             updateEvent:
               operation: updateEvent
-              description: Present for the event coordinator or callers with EVENTS:MANAGE
+              description: |
+                Present for the event coordinator or callers with EVENTS:MANAGE. Includes the
+                sharedTransportEnabled / sharedAccommodationEnabled properties.
             publishEvent:
               operation: publishEvent
               description: Present for DRAFT events and callers with EVENTS:MANAGE
@@ -469,10 +473,16 @@ paths:
               description: Present when ORIS integration is active and the event has an orisId
             registerForEvent:
               operation: registerForEvent
-              description: Present when registrations are open and the caller is not yet registered
+              description: |
+                Present when registrations are open and the caller is not yet registered. The
+                wantsSharedTransport / wantsSharedAccommodation properties are included only for
+                the offers the event has enabled.
             editRegistration:
               operation: editRegistration
-              description: Present when registrations are open and the caller is registered
+              description: |
+                Present when registrations are open and the caller is registered. The
+                wantsSharedTransport / wantsSharedAccommodation properties are included only for
+                the offers the event has enabled.
             unregisterFromEvent:
               operation: unregisterFromEvent
               description: Present when registrations are open and the caller is registered
@@ -1032,7 +1042,10 @@ paths:
           x-hal-templates:
             editRegistration:
               operation: editRegistration
-              description: Present when registrations are open
+              description: |
+                Present when registrations are open. The wantsSharedTransport /
+                wantsSharedAccommodation properties are included only for the offers the event
+                has enabled.
             unregisterFromEvent:
               operation: unregisterFromEvent
               description: Present when registrations are open and the caller is the registered member
@@ -1442,6 +1455,37 @@ components:
           $ref: '#/components/schemas/RankingDto'
         baseEntryFee:
           $ref: '#/components/schemas/EntryFeeDto'
+        sharedTransportEnabled:
+          type: boolean
+          description: Whether the event offers shared transport members can opt into at registration.
+        sharedAccommodationEnabled:
+          type: boolean
+          description: Whether the event offers shared accommodation members can opt into at registration.
+        sharedServicesSummary:
+          allOf:
+            - $ref: '#/components/schemas/SharedServicesSummaryDto'
+          x-klabis-halforms-access: READ_ONLY
+
+    SharedServicesSummaryDto:
+      type: object
+      description: |
+        Per-offer counts of registered members who opted into a shared service. Populated by the
+        server only for the event coordinator or callers with EVENTS:REGISTRATIONS, only for ACTIVE
+        events, and only while at least one offer is enabled; omitted entirely otherwise. Each
+        sub-object is present only when the corresponding offer is enabled.
+      properties:
+        sharedTransport:
+          $ref: '#/components/schemas/SharedServiceCountDto'
+        sharedAccommodation:
+          $ref: '#/components/schemas/SharedServiceCountDto'
+
+    SharedServiceCountDto:
+      type: object
+      properties:
+        count:
+          type: integer
+          format: int32
+          description: Number of registered members who opted into this shared service.
 
     RankingDto:
       type: object
@@ -1502,6 +1546,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CreateEventCategoryRequest'
+        sharedTransportEnabled:
+          type: boolean
+          default: false
+          description: Offer shared transport for this event. Defaults to false when omitted.
+        sharedAccommodationEnabled:
+          type: boolean
+          default: false
+          description: Offer shared accommodation for this event. Defaults to false when omitted.
 
     CreateEventCategoryRequest:
       type: object
@@ -1587,6 +1639,16 @@ components:
           oneOf:
             - $ref: '#/components/schemas/EntryFeeRequest'
             - type: 'null'
+        sharedTransportEnabled:
+          type: [boolean, 'null']
+          description: |
+            Offer shared transport. Absent leaves the current setting; a value replaces it.
+            Turning it off is always allowed and retains any member choices already made.
+        sharedAccommodationEnabled:
+          type: [boolean, 'null']
+          description: |
+            Offer shared accommodation. Absent leaves the current setting; a value replaces it.
+            Turning it off is always allowed and retains any member choices already made.
 
     UpdateEventCategoryRequest:
       type: object
@@ -1723,6 +1785,18 @@ components:
         categoryId:
           type: string
           format: uuid
+        wantsSharedTransport:
+          type: boolean
+          default: false
+          description: |
+            Member opts into the event's shared transport. Meaningful only when the event offers
+            it; the registration form omits this property otherwise. Defaults to false.
+        wantsSharedAccommodation:
+          type: boolean
+          default: false
+          description: |
+            Member opts into the event's shared accommodation. Meaningful only when the event
+            offers it; the registration form omits this property otherwise. Defaults to false.
 
     EditRegistrationRequest:
       type: object
@@ -1734,6 +1808,18 @@ components:
         categoryId:
           type: string
           format: uuid
+        wantsSharedTransport:
+          type: boolean
+          default: false
+          description: |
+            Member's shared-transport choice. Meaningful only when the event offers it; the edit
+            form omits this property otherwise. Defaults to false.
+        wantsSharedAccommodation:
+          type: boolean
+          default: false
+          description: |
+            Member's shared-accommodation choice. Meaningful only when the event offers it; the
+            edit form omits this property otherwise. Defaults to false.
 
     # A named schema, not an inline array: the item payload needs a stable wire-contract name. Two
     # operations derive from it — getEvent's x-hal-embedded builds the
@@ -1795,6 +1881,15 @@ components:
           type: string
           format: date-time
           x-klabis-halforms-access: READ_ONLY
+        wantsSharedTransport:
+          type: boolean
+          description: |
+            Member's shared-transport choice. Present only when the event offers shared transport.
+        wantsSharedAccommodation:
+          type: boolean
+          description: |
+            Member's shared-accommodation choice. Present only when the event offers shared
+            accommodation.
 
     # The _embedded key comes from @Relation(collectionRelation = "accommodationList") on the payload
     # record, not from the schema name — see "A payload schema's name is wire contract" in the

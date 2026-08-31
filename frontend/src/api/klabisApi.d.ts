@@ -2046,6 +2046,16 @@ export interface components {
             location?: string;
             name: string;
             organizer: string;
+            /**
+             * @description Offer shared accommodation for this event. Defaults to false when omitted.
+             * @default false
+             */
+            sharedAccommodationEnabled: boolean;
+            /**
+             * @description Offer shared transport for this event. Defaults to false when omitted.
+             * @default false
+             */
+            sharedTransportEnabled: boolean;
             websiteUrl?: string;
         };
         /** @description Event type creation data */
@@ -2133,6 +2143,20 @@ export interface components {
             /** Format: uuid */
             categoryId?: string;
             siCardNumber: string;
+            /**
+             * @description Member's shared-accommodation choice. Meaningful only when the event offers it; the
+             *     edit form omits this property otherwise. Defaults to false.
+             *
+             * @default false
+             */
+            wantsSharedAccommodation: boolean;
+            /**
+             * @description Member's shared-transport choice. Meaningful only when the event offers it; the edit
+             *     form omits this property otherwise. Defaults to false.
+             *
+             * @default false
+             */
+            wantsSharedTransport: boolean;
         };
         /** @description Base of the HAL-FORMS wrapper for a single resource — combined with the payload as
          *     `allOf: [<Payload>, EntityModel]`.
@@ -2224,6 +2248,11 @@ export interface components {
             name?: string;
             organizer?: string;
             ranking?: components["schemas"]["RankingDto"];
+            /** @description Whether the event offers shared accommodation members can opt into at registration. */
+            sharedAccommodationEnabled?: boolean;
+            sharedServicesSummary?: components["schemas"]["SharedServicesSummaryDto"];
+            /** @description Whether the event offers shared transport members can opt into at registration. */
+            sharedTransportEnabled?: boolean;
             status?: components["schemas"]["EventStatus"];
             websiteUrl?: string;
         };
@@ -2776,6 +2805,20 @@ export interface components {
             /** Format: uuid */
             categoryId?: string;
             siCardNumber: string;
+            /**
+             * @description Member opts into the event's shared accommodation. Meaningful only when the event
+             *     offers it; the registration form omits this property otherwise. Defaults to false.
+             *
+             * @default false
+             */
+            wantsSharedAccommodation: boolean;
+            /**
+             * @description Member opts into the event's shared transport. Meaningful only when the event offers
+             *     it; the registration form omits this property otherwise. Defaults to false.
+             *
+             * @default false
+             */
+            wantsSharedTransport: boolean;
         };
         /** @description Member registration request */
         RegisterMemberRequest: {
@@ -2833,6 +2876,13 @@ export interface components {
             /** Format: date-time */
             registeredAt?: string;
             siCardNumber?: string;
+            /** @description Member's shared-accommodation choice. Present only when the event offers shared
+             *     accommodation.
+             *      */
+            wantsSharedAccommodation?: boolean;
+            /** @description Member's shared-transport choice. Present only when the event offers shared transport.
+             *      */
+            wantsSharedTransport?: boolean;
         };
         /** @description Registration summary for list views. SI card numbers are not included. registrationTime is
          *     visible to the registered member OR callers with EVENTS:REGISTRATIONS.
@@ -2864,6 +2914,22 @@ export interface components {
             password: string;
             passwordConfirmation: string;
             token: string;
+        };
+        SharedServiceCountDto: {
+            /**
+             * Format: int32
+             * @description Number of registered members who opted into this shared service.
+             */
+            count?: number;
+        };
+        /** @description Per-offer counts of registered members who opted into a shared service. Populated by the
+         *     server only for the event coordinator or callers with EVENTS:REGISTRATIONS, only for ACTIVE
+         *     events, and only while at least one offer is enabled; omitted entirely otherwise. Each
+         *     sub-object is present only when the corresponding offer is enabled.
+         *      */
+        SharedServicesSummaryDto: {
+            sharedAccommodation?: components["schemas"]["SharedServiceCountDto"];
+            sharedTransport?: components["schemas"]["SharedServiceCountDto"];
         };
         /** @description Suspension request */
         SuspendMembershipRequest: {
@@ -2987,6 +3053,14 @@ export interface components {
             name?: string | null;
             organizer?: string | null;
             ranking?: components["schemas"]["UpdateEventRankingRequest"] | null;
+            /** @description Offer shared accommodation. Absent leaves the current setting; a value replaces it.
+             *     Turning it off is always allowed and retains any member choices already made.
+             *      */
+            sharedAccommodationEnabled?: boolean | null;
+            /** @description Offer shared transport. Absent leaves the current setting; a value replaces it.
+             *     Turning it off is always allowed and retains any member choices already made.
+             *      */
+            sharedTransportEnabled?: boolean | null;
             websiteUrl?: string | null;
         };
         /** @description Event type update data */
