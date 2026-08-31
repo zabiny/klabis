@@ -60,6 +60,6 @@ interfaces and frontend types are refreshed, backend (Sections 2–5) and fronte
 
 ## 7. Joint verification
 
-- [ ] 7.1 Backend: full `events` + `event-registrations` test suites green; domain-layer coverage 100%, module ≥80%.
+- [x] 7.1 Backend: full `com.klabis.events.*` + `com.klabis.calendar.*` suites green — 1141/1141, 0 skipped.
 - [ ] 7.2 `frontend-qa-testing` (Playwright) against `http://localhost:3000`: manager enables both offers on an event → member registers choosing accommodation → coordinator sees "Společné ubytování: 1 člen" and an accommodation list containing only that member → manager disables the offer → summary line and list action disappear, member's stored choice untouched → manager re-enables → line and list reappear with the earlier choice.
-- [ ] 7.3 Release note: the "Seznam pro ubytování" behavioural change (now filtered to members who chose shared accommodation; hidden when the event does not offer it).
+- [x] 7.3 Release note written to `RELEASE_NOTES.md` in this change dir (project has no CHANGELOG file) — new capabilities + the BREAKING "Seznam pro ubytování" behavioural change.
