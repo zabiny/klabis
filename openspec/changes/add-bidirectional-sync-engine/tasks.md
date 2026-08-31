@@ -12,22 +12,22 @@ References in brackets point at the decision in `design.md` that a task implemen
 
 Delivers: enrol an entity, first pass adopts the external side, a later external change flows inward, an unchanged pair does nothing. Establishes every shared building block the later slices plug into.
 
-- [ ] 1.1 Module skeleton: `com.klabis.sync` with `application`, `domain`, `infrastructure` packages and `@NamedInterface("application")` in `application/package-info.java` [D1]
-- [ ] 1.2 Domain tests (red): `SyncProjection` canonicalisation and hashing — equal projections hash equally; field order, null representation and `BigDecimal` scale (`100` vs `100.00`) do not change the hash; different values do [D3]
-- [ ] 1.3 Domain: `SyncProjection` interface plus `SyncHash`, and the canonical JSON serialisation used for both storage and hashing [D3]
-- [ ] 1.4 Domain: `SyncSnapshot` (projection + its own hash, neither half replaceable independently) and `SyncBaseline` (the local/external snapshot pair) [D4]
-- [ ] 1.5 Domain: `SyncTarget`, `ExternalReference`, `ExternalVersionToken`, `SyncEntityType` (with its declared REST path segment), `ExternalSystem`, `SyncStatus`, `SyncDirection`, `SyncTriggerKind`, `SyncOutcome`
-- [ ] 1.6 Domain tests (red): direction resolution table — neither side changed → nothing to do; only external changed → inward; enrolled record with no baseline → adopt external [D4, D5]
-- [ ] 1.7 Domain: `SyncRecord` aggregate with enrolment, claim, `recordSuccess`, and the direction resolution for the cases above
-- [ ] 1.8 Domain: `SyncAttempt` as a separate append-only aggregate with its repository interface [D15]
-- [ ] 1.9 Secondary port: `SynchronizationAdapter` with `SyncCapabilities` (reads/writes local and external, creates, `containsSensitiveData`) and the optional external version token [D3]
-- [ ] 1.10 Persistence: `sync_record` and `sync_attempt` tables in `V001` — projection columns `TEXT` and typed as `EncryptedString`, hash columns plaintext, `baseline_external_*` nullable, unique constraints, `@Version`, index on `(sync_record_id, started_at DESC)` [D13, D19]
-- [ ] 1.11 Persistence: mementos and repository adapters; verify encryption is transparent through the globally registered converters
-- [ ] 1.12 Persistence tests: round-trip a record with all three snapshots; the projection column is unreadable as plaintext in the database; ciphertext differs between two saves of an identical projection while the hash column does not [D13]
-- [ ] 1.13 Application: `SynchronizationPort` with `enroll`, `synchronizeNow`, `state`, `retire`; the pass orchestration performing the version-token short-circuit, the reads, the comparison and the attempt append [D3, D9]
-- [ ] 1.14 Test fixtures: a test adapter and test projection (in the sync module's test sources) with configurable capabilities and controllable both-side state — the harness every later slice extends
-- [ ] 1.15 Integration tests: enrol → first pass adopts external; external change → inward write, baseline from the post-write re-read; unchanged pair → nothing written, attempt recorded; unknown entity type → enrolment rejected
-- [ ] 1.16 Run tests (`test-runner`), code review, commit
+- [x] 1.1 Module skeleton: `com.klabis.sync` with `application`, `domain`, `infrastructure` packages and `@NamedInterface("application")` in `application/package-info.java` [D1]
+- [x] 1.2 Domain tests (red): `SyncProjection` canonicalisation and hashing — equal projections hash equally; field order, null representation and `BigDecimal` scale (`100` vs `100.00`) do not change the hash; different values do [D3]
+- [x] 1.3 Domain: `SyncProjection` interface plus `SyncHash`, and the canonical JSON serialisation used for both storage and hashing [D3]
+- [x] 1.4 Domain: `SyncSnapshot` (projection + its own hash, neither half replaceable independently) and `SyncBaseline` (the local/external snapshot pair) [D4]
+- [x] 1.5 Domain: `SyncTarget`, `ExternalReference`, `ExternalVersionToken`, `SyncEntityType` (with its declared REST path segment), `ExternalSystem`, `SyncStatus`, `SyncDirection`, `SyncTriggerKind`, `SyncOutcome`
+- [x] 1.6 Domain tests (red): direction resolution table — neither side changed → nothing to do; only external changed → inward; enrolled record with no baseline → adopt external [D4, D5]
+- [x] 1.7 Domain: `SyncRecord` aggregate with enrolment, claim, `recordSuccess`, and the direction resolution for the cases above
+- [x] 1.8 Domain: `SyncAttempt` as a separate append-only aggregate with its repository interface [D15]
+- [x] 1.9 Secondary port: `SynchronizationAdapter` with `SyncCapabilities` (reads/writes local and external, creates, `containsSensitiveData`) and the optional external version token [D3]
+- [x] 1.10 Persistence: `sync_record` and `sync_attempt` tables in `V001` — projection columns `TEXT` and typed as `EncryptedString`, hash columns plaintext, `baseline_external_*` nullable, unique constraints, `@Version`, index on `(sync_record_id, started_at DESC)` [D13, D19]
+- [x] 1.11 Persistence: mementos and repository adapters; verify encryption is transparent through the globally registered converters
+- [x] 1.12 Persistence tests: round-trip a record with all three snapshots; the projection column is unreadable as plaintext in the database; ciphertext differs between two saves of an identical projection while the hash column does not [D13]
+- [x] 1.13 Application: `SynchronizationPort` with `enroll`, `synchronizeNow`, `state`, `retire`; the pass orchestration performing the version-token short-circuit, the reads, the comparison and the attempt append [D3, D9]
+- [x] 1.14 Test fixtures: a test adapter and test projection (in the sync module's test sources) with configurable capabilities and controllable both-side state — the harness every later slice extends
+- [x] 1.15 Integration tests: enrol → first pass adopts external; external change → inward write, baseline from the post-write re-read; unchanged pair → nothing written, attempt recorded; unknown entity type → enrolment rejected
+- [x] 1.16 Run tests (`test-runner`), code review, commit
 
 ## 2. Slice: Outward synchronisation, convergence and the re-read rules
 

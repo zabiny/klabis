@@ -6,7 +6,7 @@
 -- Bootstrap data (admin user, OAuth2 clients) managed by BootstrapDataLoader component
 --
 -- Domain tables are organized into module schemas:
---   members, common, events, calendar, groups, finance, membershipfees
+--   members, common, events, calendar, groups, finance, membershipfees, sync
 -- Framework tables (Spring AS, Spring Modulith) remain in public schema.
 --
 -- Tables in dependency order:
@@ -21,6 +21,8 @@
 -- 8. members.birth_number_audit_log (no FK)
 -- 9. groups.user_groups (unified table: type discriminator FREE/TRAINING/FAMILY)
 -- 10. groups.user_group_owners + user_group_members + user_group_invitations (FK → groups.user_groups)
+-- 37. sync.sync_record (no FK — opaque entity/external references)
+-- 38. sync.sync_attempt (FK → sync.sync_record)
 --
 -- OAuth2 infrastructure tables created in V002 migration
 -- Spring Modulith infrastructure tables created in V003 migration
@@ -36,6 +38,7 @@ CREATE SCHEMA calendar;
 CREATE SCHEMA groups;
 CREATE SCHEMA finance;
 CREATE SCHEMA membershipfees;
+CREATE SCHEMA sync;
 
 -- ============================================================================
 -- 1. MEMBERS TABLE
@@ -964,6 +967,97 @@ CREATE TABLE events.member_registration_block
 COMMENT ON TABLE events.member_registration_block IS 'Active event-registration blocks for members who missed the fee selection deadline. Owned by the events module.';
 COMMENT ON COLUMN events.member_registration_block.member_id IS 'Reference to Member aggregate (no FK — cross-module value object reference)';
 COMMENT ON COLUMN events.member_registration_block.blocked_at IS 'Timestamp when the block was applied';
+
+-- ============================================================================
+-- 37. SYNC_RECORD TABLE
+-- The synchronisation state of one Klabis entity against one external system
+-- (openspec/changes/add-bidirectional-sync-engine/design.md D13, D19).
+-- Projection columns are TEXT and encrypted (EncryptedString); hash columns are
+-- plaintext — hashes cover the whole projection only, never a single field.
+-- baseline_external_* are populated only while an accepted divergence stands, so the
+-- common case (identical baseline halves) costs no extra encrypted payload.
+-- ============================================================================
+
+CREATE TABLE sync.sync_record
+(
+    id                        UUID         NOT NULL PRIMARY KEY,
+    entity_type               VARCHAR(50)  NOT NULL,
+    entity_id                 VARCHAR(100) NOT NULL,
+    external_system           VARCHAR(50)  NOT NULL,
+    external_id               VARCHAR(200) NOT NULL,
+    status                    VARCHAR(20)  NOT NULL,
+
+    baseline_local_projection TEXT         NULL,
+    baseline_local_hash       VARCHAR(64)  NULL,
+    baseline_external_projection TEXT      NULL,
+    baseline_external_hash    VARCHAR(64)  NULL,
+
+    local_projection          TEXT         NULL,
+    local_hash                VARCHAR(64)  NULL,
+    external_projection       TEXT         NULL,
+    external_hash             VARCHAR(64)  NULL,
+
+    external_version_token    VARCHAR(200) NULL,
+
+    dirty_since               TIMESTAMP    NULL,
+    claimed_at                TIMESTAMP    NULL,
+
+    acknowledged_local_hash   VARCHAR(64)  NULL,
+    acknowledged_external_hash VARCHAR(64) NULL,
+    acknowledged_at           TIMESTAMP    NULL,
+    acknowledged_by           VARCHAR(100) NULL,
+
+    next_attempt_due_at       TIMESTAMP    NULL,
+    last_successful_sync_at   TIMESTAMP    NULL,
+    last_direction            VARCHAR(20)  NULL,
+    retired_at                TIMESTAMP    NULL,
+
+    -- Audit fields
+    created_at                TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by                VARCHAR(100) NOT NULL,
+    modified_at                TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_by                VARCHAR(100) NOT NULL,
+    version                    BIGINT      NOT NULL DEFAULT 0,
+
+    CONSTRAINT uq_sync_record_target UNIQUE (entity_type, entity_id, external_system),
+    CONSTRAINT uq_sync_record_external UNIQUE (external_system, external_id, entity_type)
+);
+
+-- Comments for sync_record
+COMMENT ON TABLE sync.sync_record IS 'Synchronisation state of one Klabis entity against one external system';
+COMMENT ON COLUMN sync.sync_record.entity_id IS 'Opaque entity identifier — the engine depends on no module''s identifier type';
+COMMENT ON COLUMN sync.sync_record.baseline_local_projection IS 'Encrypted at rest via EncryptedString converters (design.md D13)';
+COMMENT ON COLUMN sync.sync_record.baseline_external_projection IS 'Populated only while an accepted divergence stands (D6); null otherwise';
+COMMENT ON COLUMN sync.sync_record.local_hash IS 'Plaintext digest of the whole local projection — never a per-field digest (D13)';
+
+-- ============================================================================
+-- 38. SYNC_ATTEMPT TABLE
+-- Append-only audit trail (design.md D15). Holds hashes only, never projections, so
+-- payload data lives in exactly one table.
+-- ============================================================================
+
+CREATE TABLE sync.sync_attempt
+(
+    id              UUID         NOT NULL PRIMARY KEY,
+    sync_record_id  UUID         NOT NULL,
+    started_at      TIMESTAMP    NOT NULL,
+    trigger         VARCHAR(20)  NOT NULL,
+    direction       VARCHAR(20)  NULL,
+    outcome         VARCHAR(20)  NOT NULL,
+    local_hash      VARCHAR(64)  NULL,
+    external_hash   VARCHAR(64)  NULL,
+    failure_reason  VARCHAR(2000) NULL,
+    acting_user     VARCHAR(100) NULL,
+
+    CONSTRAINT fk_sync_attempt_record FOREIGN KEY (sync_record_id) REFERENCES sync.sync_record (id)
+);
+
+-- Index backing "attempts since last success/reset" and retention pruning
+CREATE INDEX idx_sync_attempt_record_started_at ON sync.sync_attempt (sync_record_id, started_at DESC);
+
+-- Comments for sync_attempt
+COMMENT ON TABLE sync.sync_attempt IS 'Append-only history of synchronisation attempts (design.md D15)';
+COMMENT ON COLUMN sync.sync_attempt.acting_user IS 'Opaque acting-user identifier for manually triggered attempts only (D15)';
 
 -- ============================================================================
 -- BOOTSTRAP DATA NOTE
