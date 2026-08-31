@@ -33,6 +33,8 @@ public class EventTestDataBuilder {
     private AuditMetadata auditMetadata = null;
     private EventRanking ranking = null;
     private Money baseEntryFee = null;
+    private boolean sharedTransportEnabled = false;
+    private boolean sharedAccommodationEnabled = false;
 
     private EventTestDataBuilder() {
     }
@@ -137,6 +139,16 @@ public class EventTestDataBuilder {
         return this;
     }
 
+    public EventTestDataBuilder withSharedTransportEnabled(boolean enabled) {
+        this.sharedTransportEnabled = enabled;
+        return this;
+    }
+
+    public EventTestDataBuilder withSharedAccommodationEnabled(boolean enabled) {
+        this.sharedAccommodationEnabled = enabled;
+        return this;
+    }
+
     public Event build() {
         return Event.reconstruct(eventId,
                 name,
@@ -153,6 +165,8 @@ public class EventTestDataBuilder {
                 categories,
                 ranking,
                 baseEntryFee,
+                sharedTransportEnabled,
+                sharedAccommodationEnabled,
                 registrations,
                 auditMetadata);
     }

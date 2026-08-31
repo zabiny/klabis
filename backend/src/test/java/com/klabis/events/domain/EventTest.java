@@ -566,6 +566,142 @@ class EventTest {
     }
 
     @Nested
+    @DisplayName("Shared transport / accommodation offer flags")
+    class SharedServiceOfferFlags {
+
+        @Test
+        @DisplayName("create() persists both flags when set")
+        void createPersistsBothFlagsWhenSet() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .sharedTransportEnabled(true)
+                    .sharedAccommodationEnabled(true)
+                    .build());
+
+            assertThat(event.isSharedTransportEnabled()).isTrue();
+            assertThat(event.isSharedAccommodationEnabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("create() defaults both flags to false when the command omits them")
+        void createDefaultsBothFlagsToFalseWhenOmitted() {
+            Event event = Event.create(defaultCreateEvent());
+
+            assertThat(event.isSharedTransportEnabled()).isFalse();
+            assertThat(event.isSharedAccommodationEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("create() sets only the flag that is ticked, leaving the other off")
+        void createSetsOnlyTheTickedFlag() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .sharedTransportEnabled(true)
+                    .build());
+
+            assertThat(event.isSharedTransportEnabled()).isTrue();
+            assertThat(event.isSharedAccommodationEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("updateEvent() toggles a flag on a DRAFT event")
+        void updateTogglesFlagOnDraftEvent() {
+            Event event = Event.create(defaultCreateEvent());
+            EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedAccommodationEnabled(true)
+                    .build());
+
+            assertThat(event.isSharedAccommodationEnabled()).isTrue();
+            assertThat(event.isSharedTransportEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("updateEvent() toggles a flag on an ACTIVE event")
+        void updateTogglesFlagOnActiveEvent() {
+            Event event = Event.create(defaultCreateEvent());
+            event.publish();
+            EventAssert.assertThat(event).hasStatus(EventStatus.ACTIVE);
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedTransportEnabled(true)
+                    .build());
+
+            assertThat(event.isSharedTransportEnabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("updateEvent() can turn a flag back off")
+        void updateCanTurnFlagOff() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .sharedAccommodationEnabled(true)
+                    .build());
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedAccommodationEnabled(false)
+                    .build());
+
+            assertThat(event.isSharedAccommodationEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("updateEvent() raises the existing 'cannot be modified' rule on a FINISHED event")
+        void updateRejectedOnFinishedEvent() {
+            Event event = Event.create(defaultCreateEvent());
+            event.publish();
+            event.finish();
+
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedTransportEnabled(true)
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Cannot update event in FINISHED status");
+        }
+
+        @Test
+        @DisplayName("updateEvent() raises the existing 'cannot be modified' rule on a CANCELLED event")
+        void updateRejectedOnCancelledEvent() {
+            Event event = Event.create(defaultCreateEvent());
+            event.cancel();
+
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedAccommodationEnabled(true)
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Cannot update event in CANCELLED status");
+        }
+
+        @Test
+        @DisplayName("turning sharedAccommodationEnabled off does not mutate registrations that chose it; turning it back on leaves the choices intact")
+        void turningAccommodationOffKeepsRegistrationChoices() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).location("Forest").organizer("Club")
+                    .sharedAccommodationEnabled(true)
+                    .build());
+            event.publish();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, true);
+            assertThat(event.findRegistration(memberId).orElseThrow().wantsSharedAccommodation()).isTrue();
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedAccommodationEnabled(false)
+                    .build());
+
+            assertThat(event.isSharedAccommodationEnabled()).isFalse();
+            assertThat(event.findRegistration(memberId).orElseThrow().wantsSharedAccommodation()).isTrue();
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedAccommodationEnabled(true)
+                    .build());
+
+            assertThat(event.isSharedAccommodationEnabled()).isTrue();
+            assertThat(event.findRegistration(memberId).orElseThrow().wantsSharedAccommodation()).isTrue();
+        }
+    }
+
+    @Nested
     @DisplayName("Member Registration")
     class MemberRegistration {
 

@@ -160,6 +160,31 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("should pass the shared-service offer flags to the service on create")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldPassSharedServiceFlagsOnCreate() throws Exception {
+            Event createdEvent = EventTestDataBuilder.anEvent()
+                    .withName("Spring Cup 2026")
+                    .withSharedTransportEnabled(true)
+                    .withSharedAccommodationEnabled(true)
+                    .build();
+            when(eventManagementService.createEvent(any(Event.CreateEvent.class))).thenReturn(createdEvent);
+
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Spring Cup 2026\",\"eventDate\":\"2026-03-15\",\"organizer\":\"OOB\","
+                                             + "\"sharedTransportEnabled\":true,\"sharedAccommodationEnabled\":true}")
+                    )
+                    .andExpect(status().isCreated());
+
+            verify(eventManagementService).createEvent(argThat((Event.CreateEvent cmd) ->
+                    Boolean.TRUE.equals(cmd.sharedTransportEnabled())
+                    && Boolean.TRUE.equals(cmd.sharedAccommodationEnabled())));
+        }
+
+        @Test
         @DisplayName("should return 201 when location is omitted")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldCreateEventWithoutLocation() throws Exception {
@@ -355,6 +380,33 @@ class EventControllerTest {
                     cmd.registrationDeadlines().deadline1().map(d -> d.equals(LocalDate.of(2026, 9, 1))).orElse(false)
                     && cmd.registrationDeadlines().deadline2().map(d -> d.equals(LocalDate.of(2026, 9, 10))).orElse(false)
             ));
+        }
+
+        @Test
+        @DisplayName("should pass a present shared-service flag to the service and keep an absent one unchanged")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldOverlaySharedServiceFlagsOnUpdate() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            defaultExistingEvent = EventTestDataBuilder.anEvent()
+                    .withName("Existing Event")
+                    .withDate(LocalDate.of(2026, 5, 1))
+                    .withOrganizer("OOB")
+                    .withSharedTransportEnabled(true)
+                    .withSharedAccommodationEnabled(false)
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", eventId)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"sharedAccommodationEnabled\":true}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    Boolean.TRUE.equals(cmd.sharedAccommodationEnabled())
+                    && Boolean.TRUE.equals(cmd.sharedTransportEnabled())));
         }
 
         @Test
@@ -776,6 +828,26 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("DRAFT"));
+        }
+
+        @Test
+        @DisplayName("event detail echoes the shared-service offer flags")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldEchoSharedServiceFlagsOnEventDetail() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent()
+                    .withSharedTransportEnabled(true)
+                    .withSharedAccommodationEnabled(false)
+                    .build();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sharedTransportEnabled").value(true))
+                    .andExpect(jsonPath("$.sharedAccommodationEnabled").value(false));
         }
 
         @Test

@@ -324,6 +324,10 @@ CREATE TABLE events.events
     base_entry_fee_amount   DECIMAL(10, 2) NULL,
     base_entry_fee_currency CHAR(3)        NULL,
 
+    -- Opt-in shared-service offers (off by default; editable while the event is DRAFT or ACTIVE)
+    shared_transport_enabled     BOOLEAN NOT NULL DEFAULT FALSE,
+    shared_accommodation_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+
     -- Audit fields
     created_at           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by           VARCHAR(100) NOT NULL,
@@ -349,6 +353,8 @@ COMMENT ON COLUMN events.events.registration_deadline IS 'First (earliest) regis
 COMMENT ON COLUMN events.events.registration_deadline_2 IS 'Second registration deadline; requires registration_deadline to be set';
 COMMENT ON COLUMN events.events.registration_deadline_3 IS 'Third (latest) registration deadline; requires registration_deadline_2 to be set';
 COMMENT ON COLUMN events.events.status IS 'Event status (e.g., DRAFT, PUBLISHED, CANCELLED, COMPLETED)';
+COMMENT ON COLUMN events.events.shared_transport_enabled IS 'Whether the event offers shared transport for members to opt into; off by default';
+COMMENT ON COLUMN events.events.shared_accommodation_enabled IS 'Whether the event offers shared accommodation for members to opt into; off by default';
 COMMENT ON COLUMN events.events.created_at IS 'Timestamp when event was created';
 COMMENT ON COLUMN events.events.created_by IS 'User who created the event';
 COMMENT ON COLUMN events.events.modified_at IS 'Timestamp when event was last modified';
@@ -369,6 +375,11 @@ CREATE TABLE events.event_registrations
     category_id    UUID NULL,
     registered_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
+    -- Member's opt-in choices for the event's shared-service offers (off by default; only meaningful
+    -- while the matching offer is enabled on the event, retained but ignored when it is turned off)
+    wants_shared_transport     BOOLEAN NOT NULL DEFAULT FALSE,
+    wants_shared_accommodation BOOLEAN NOT NULL DEFAULT FALSE,
+
     -- Unique constraint: one registration per member per event
     CONSTRAINT uk_event_registrations_event_member UNIQUE (event_id, member_id)
 );
@@ -384,6 +395,8 @@ COMMENT ON COLUMN events.event_registrations.member_id IS 'Reference to the regi
 COMMENT ON COLUMN events.event_registrations.si_card_number IS 'SI (SportIdent) card number used for the event';
 COMMENT ON COLUMN events.event_registrations.category_id IS 'Reference to events.event_categories.id (nullable: null when event has no categories, or orphaned when the category was later removed from the event — no FK constraint so the row is preserved either way)';
 COMMENT ON COLUMN events.event_registrations.registered_at IS 'Timestamp when member registered for the event';
+COMMENT ON COLUMN events.event_registrations.wants_shared_transport IS 'Member asked to use the event''s shared transport offer; retained but not shown when the offer is off';
+COMMENT ON COLUMN events.event_registrations.wants_shared_accommodation IS 'Member asked to use the event''s shared accommodation offer; retained but not shown when the offer is off';
 
 -- ============================================================================
 -- 6b. EVENT_COORDINATORS TABLE

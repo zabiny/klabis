@@ -18,21 +18,21 @@ interfaces and frontend types are refreshed, backend (Sections 2–5) and fronte
 
 ## 2. Backend — event offer flags (vertical slice: manager enables offers)
 
-- [ ] 2.1 Add `shared_transport_enabled` / `shared_accommodation_enabled` `BOOLEAN NOT NULL DEFAULT FALSE` columns (+ `COMMENT ON COLUMN`) to the `events.events` `CREATE TABLE` in `V001__initial_schema.sql`.
-- [ ] 2.2 Domain test (red): `Event.createEvent` with both flags set persists them; default is `false` when the command omits them.
-- [ ] 2.3 Add `sharedTransportEnabled` / `sharedAccommodationEnabled` fields to `Event`, extend `CreateEvent` and `UpdateEvent` command records, `reconstruct` signature, and the create/update logic (green + refactor).
-- [ ] 2.4 Domain test: `Event.updateEvent` toggles a flag on a DRAFT and an ACTIVE event; toggling on a FINISHED / CANCELLED event raises the existing "cannot be modified" rule.
-- [ ] 2.5 Domain test: turning `sharedAccommodationEnabled` off while registrations have `wantsSharedAccommodation = true` succeeds and does **not** mutate those registrations; turning it back on leaves the choices intact.
-- [ ] 2.6 Extend `EventMemento` (`@Column` fields, `from` / `toEvent`) for the two flags; JDBC round-trip test.
-- [ ] 2.7 Controller/API test: `createEvent` and `updateEvent` accept and echo the flags via `EventDto`; `updateEvent` with the field absent leaves it unchanged.
+- [x] 2.1 Add `shared_transport_enabled` / `shared_accommodation_enabled` `BOOLEAN NOT NULL DEFAULT FALSE` columns (+ `COMMENT ON COLUMN`) to the `events.events` `CREATE TABLE` in `V001__initial_schema.sql`.
+- [x] 2.2 Domain test (red): `Event.createEvent` with both flags set persists them; default is `false` when the command omits them.
+- [x] 2.3 Add `sharedTransportEnabled` / `sharedAccommodationEnabled` fields to `Event`, extend `CreateEvent` and `UpdateEvent` command records, `reconstruct` signature, and the create/update logic (green + refactor). _Deviation: old-arity `reconstruct` / `registerMember` / `withChanges` / `CreateEvent` kept as delegating overloads defaulting to false, to avoid a ~60-call-site sweep._
+- [x] 2.4 Domain test: `Event.updateEvent` toggles a flag on a DRAFT and an ACTIVE event; toggling on a FINISHED / CANCELLED event raises the existing "cannot be modified" rule.
+- [x] 2.5 Domain test: turning `sharedAccommodationEnabled` off while registrations have `wantsSharedAccommodation = true` succeeds and does **not** mutate those registrations; turning it back on leaves the choices intact. _Deviation: `EventRegistration` boolean fields + the `event_registrations` columns (task 3.1) pulled forward here so this compiles._
+- [x] 2.6 Extend `EventMemento` (`@Column` fields, `from` / `toEvent`) for the two flags; JDBC round-trip test.
+- [x] 2.7 Controller/API test: `createEvent` and `updateEvent` accept and echo the flags via `EventDto`; `updateEvent` with the field absent leaves it unchanged.
 
 ## 3. Backend — registration choices (vertical slice: member picks offers)
 
-- [ ] 3.1 Add `wants_shared_transport` / `wants_shared_accommodation` `BOOLEAN NOT NULL DEFAULT FALSE` columns (+ comments) to `events.event_registrations` `CREATE TABLE` in `V001__initial_schema.sql`.
+- [x] 3.1 Add `wants_shared_transport` / `wants_shared_accommodation` `BOOLEAN NOT NULL DEFAULT FALSE` columns (+ comments) to `events.event_registrations` `CREATE TABLE` in `V001__initial_schema.sql`. _(done in phase 2 as prerequisite for task 2.5)_
 - [ ] 3.2 Domain test (red): `Event.registerMember` records both choice flags; defaults to `false` when omitted.
-- [ ] 3.3 Extend `EventRegistration` (two `boolean` fields), `CreateEventRegistration`, `create` / `reconstruct` / `withChanges`, and `Event.registerMember` + `EditRegistrationCommand` + `Event.editRegistration` signatures (green + refactor).
+- [~] 3.3 Extend `EventRegistration` (two `boolean` fields), `CreateEventRegistration`, `create` / `reconstruct` / `withChanges` _(done in phase 2)_, **and** `Event.registerMember` + `EditRegistrationCommand` + `Event.editRegistration` signatures (green + refactor) _(remaining)_.
 - [ ] 3.4 Domain test: `editRegistration` updates the two choice flags under the open-registration window; refused after the deadline / on/after the event date (reuses existing guard).
-- [ ] 3.5 Extend `EventRegistrationMemento` (`@Column` fields, `from` / `toEventRegistration`); JDBC round-trip test.
+- [ ] 3.5 Extend `EventRegistrationMemento` (`@Column` fields, `from` / `toEventRegistration`); JDBC round-trip test. _(EventRegistrationMemento done in phase 2; verify the round-trip test exists)_
 - [ ] 3.6 Controller/API test: `registerForEvent` and `editRegistration` accept the flags; `RegistrationDto` returns them; verify they are only meaningful when the event enables the offer.
 
 ## 4. Backend — count summary on event detail (vertical slice: coordinator sees counts)
