@@ -62,12 +62,12 @@ export const Modal = ({
                 aria-labelledby={title ? 'modal-title' : undefined}
             >
                 <div
-                    className={`bg-surface-raised rounded-md shadow-lg w-full ${sizeClasses[size]} animate-scale-in ${className}`}
+                    className={`bg-surface-raised rounded-md shadow-lg w-full ${sizeClasses[size]} animate-scale-in ${className} flex flex-col max-h-[90vh]`}
                     onClick={handleContentClick}
                 >
                     {(title || closeButton) && (
                         <div
-                            className="flex items-center justify-between border-b border-border px-6 py-4 bg-surface-base rounded-t-md"
+                            className="flex items-center justify-between border-b border-border px-6 py-4 bg-surface-base rounded-t-md flex-shrink-0"
                             data-testid="modal-header"
                         >
                             {title && (
@@ -88,10 +88,10 @@ export const Modal = ({
                         </div>
                     )}
 
-                    <div className="px-6 py-4 text-text-primary">{children}</div>
+                    <div className="px-6 py-4 text-text-primary overflow-y-auto flex-1 min-h-0">{children}</div>
 
                     {footer && (
-                        <div className="border-t border-border px-6 py-4 flex justify-end gap-3">
+                        <div className="border-t border-border px-6 py-4 flex justify-end gap-3 flex-shrink-0">
                             {footer}
                         </div>
                     )}

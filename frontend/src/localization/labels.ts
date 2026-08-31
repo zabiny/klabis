@@ -186,6 +186,8 @@ export const labels = {
         eventTypeId: 'Typ závodu',
         orisDisciplineIds: 'ORIS disciplíny',
         ranking: 'Žebříček',
+        rankingLevelId: 'ID úrovně',
+        rankingName: 'Název žebříčku',
         baseEntryFee: 'Startovné',
         sharedTransportEnabled: 'Nabídnout společnou dopravu',
         sharedAccommodationEnabled: 'Nabídnout společné ubytování',
