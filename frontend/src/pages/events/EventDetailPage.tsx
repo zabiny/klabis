@@ -287,6 +287,26 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 {ri('deadlines')}
                             </DetailRow>
                         )}
+                        {isEditing && enrichedFieldNames.has('sharedTransportEnabled') && (
+                            <DetailRow label={labels.fields.sharedTransportEnabled}>
+                                {ri('sharedTransportEnabled')}
+                            </DetailRow>
+                        )}
+                        {isEditing && enrichedFieldNames.has('sharedAccommodationEnabled') && (
+                            <DetailRow label={labels.fields.sharedAccommodationEnabled}>
+                                {ri('sharedAccommodationEnabled')}
+                            </DetailRow>
+                        )}
+                        {!isEditing && event.sharedTransportEnabled != null && (
+                            <DetailRow label={labels.fields.sharedTransportEnabled}>
+                                {event.sharedTransportEnabled ? labels.ui.yes : labels.ui.no}
+                            </DetailRow>
+                        )}
+                        {!isEditing && event.sharedAccommodationEnabled != null && (
+                            <DetailRow label={labels.fields.sharedAccommodationEnabled}>
+                                {event.sharedAccommodationEnabled ? labels.ui.yes : labels.ui.no}
+                            </DetailRow>
+                        )}
                         {(isEditing || (event.categories && event.categories.length > 0)) && (
                             <DetailRow label={labels.fields.categories}>
                                 {ri('categories') ?? (
@@ -362,6 +382,24 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                     );
                                 });
                             })()}
+                        </ul>
+                    </Card>
+                )}
+
+                {!isEditing && event.sharedServicesSummary && (
+                    <Card className="p-6">
+                        <h3 className="text-xs uppercase font-semibold text-text-secondary mb-4">{labels.sections.sharedServices}</h3>
+                        <ul className="space-y-1">
+                            {event.sharedServicesSummary.sharedTransport && (
+                                <li className="text-text-primary">
+                                    {labels.ui.sharedTransportCount(event.sharedServicesSummary.sharedTransport.count ?? 0)}
+                                </li>
+                            )}
+                            {event.sharedServicesSummary.sharedAccommodation && (
+                                <li className="text-text-primary">
+                                    {labels.ui.sharedAccommodationCount(event.sharedServicesSummary.sharedAccommodation.count ?? 0)}
+                                </li>
+                            )}
                         </ul>
                     </Card>
                 )}

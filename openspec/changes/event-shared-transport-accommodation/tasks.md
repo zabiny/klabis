@@ -51,12 +51,12 @@ interfaces and frontend types are refreshed, backend (Sections 2–5) and fronte
 
 ## 6. Frontend (parallel with Sections 2–5 after Task 1.9)
 
-- [ ] 6.1 Event create form + inline edit: render "Nabídnout společnou dopravu" and "Nabídnout společné ubytování" checkboxes from the `createEvent` / `updateEvent` template metadata; wire to the request payload.
-- [ ] 6.2 Registration form: render "Chci využít společnou dopravu" / "Chci využít společné ubytování" checkboxes **only when** present in the `registerForEvent` template; default unchecked.
-- [ ] 6.3 Edit-own-registration form: same conditional checkboxes from the `updateRegistration` template, prefilled from `RegistrationDto`.
-- [ ] 6.4 Event detail page: render a "Společná doprava: N členů" / "Společné ubytování: M členů" summary section iff `sharedServicesSummary` (resp. each sub-object) is present in the response; show `0 členů` when count is 0.
-- [ ] 6.5 Event detail page: show the "Seznam pro ubytování" action only when the `accommodation-list` link is present (already link-driven — verify it now also disappears when the offer is off).
-- [ ] 6.6 `npm run build` (tsc + bundle) passes; component tests for the conditional checkbox rendering and the summary section.
+- [x] 6.1 Event create form (EventsPage custom layout) + inline edit (EventDetailPage `DetailRow`s): checkboxes for `sharedTransportEnabled` / `sharedAccommodationEnabled` from the `createEvent` / `updateEvent` template metadata; wired to payload.
+- [x] 6.2 Registration form: `wantsSharedTransport` / `wantsSharedAccommodation` checkboxes render from the `registerForEvent` template `properties[]` (present only when the event enables the offer). _No page change needed — fixed the generic `HalFormsFieldFactory` to route HAL-FORMS `type: "Boolean"` → `HalFormsCheckbox` (renderer previously only handled lowercase `boolean`, which the backend never emits)._
+- [x] 6.3 Edit-own-registration form: same conditional checkboxes from the `editRegistration` / `updateRegistration` template, prefilled from `RegistrationDto.wantsShared*`.
+- [x] 6.4 EventDetailPage: count-summary `Card` near the registrations section — renders iff `sharedServicesSummary` present; each line iff its sub-object present; `count ?? 0` (so "0 členů" shows).
+- [x] 6.5 EventDetailPage: "Seznam pro ubytování" action already purely `_links['accommodation-list']`-driven; verified it disappears when the backend omits the link.
+- [x] 6.6 `npm run build` (`tsc -b` + vite) passes; `npm run lint` clean; component tests added for boolean-checkbox dispatch, conditional checkbox rendering, and the summary section.
 
 ## 7. Joint verification
 

@@ -218,4 +218,24 @@ describe('eventFormFieldsFactory', () => {
             expect(screen.getByTestId('hal-input-name')).toBeInTheDocument();
         });
     });
+
+    describe('shared-service boolean fields (event-shared-transport-accommodation 6.1)', () => {
+        // The backend serialises boolean HAL-FORMS properties with type "Boolean"
+        // (Spring HATEOAS has no HtmlInputType for java.lang.Boolean).
+        const renderField = (name: string) => render(
+            <Formik initialValues={{[name]: false}} onSubmit={vi.fn()}>
+                <Form>{eventFormFieldsFactory('Boolean', createConf(name, 'Boolean'))}</Form>
+            </Formik>
+        );
+
+        it('renders a checkbox for sharedTransportEnabled', () => {
+            renderField('sharedTransportEnabled');
+            expect(screen.getByRole('checkbox')).toBeInTheDocument();
+        });
+
+        it('renders a checkbox for sharedAccommodationEnabled', () => {
+            renderField('sharedAccommodationEnabled');
+            expect(screen.getByRole('checkbox')).toBeInTheDocument();
+        });
+    });
 });

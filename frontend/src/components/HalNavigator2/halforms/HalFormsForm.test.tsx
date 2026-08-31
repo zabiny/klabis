@@ -222,3 +222,39 @@ describe('HalFormsForm onSubmit value sanitization', () => {
         );
     });
 });
+
+describe('HalFormsForm — conditional boolean checkboxes (event-shared-transport-accommodation 6.2/6.3)', () => {
+    // Registration / edit-registration templates carry wantsShared* properties
+    // (type "Boolean") only for the offers the event enables — the form must
+    // render a checkbox iff the property is present.
+    it('renders a checkbox for a Boolean property present in the template', () => {
+        const template = createTemplate([
+            createProperty({name: 'siCardNumber', type: 'text'}),
+            createProperty({name: 'wantsSharedTransport', type: 'Boolean', prompt: undefined}),
+        ]);
+        renderForm(template);
+        expect(screen.getByRole('checkbox')).toBeInTheDocument();
+    });
+
+    it('does not render a checkbox when no Boolean property is in the template', () => {
+        const template = createTemplate([createProperty({name: 'siCardNumber', type: 'text'})]);
+        renderForm(template);
+        expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    });
+
+    it('prefills the checkbox from the data (edit-own-registration)', () => {
+        const template = createTemplate([
+            createProperty({name: 'wantsSharedAccommodation', type: 'Boolean', prompt: undefined}),
+        ]);
+        renderForm(template, {wantsSharedAccommodation: true});
+        expect(screen.getByRole('checkbox')).toBeChecked();
+    });
+
+    it('leaves the checkbox unchecked by default when data omits the value', () => {
+        const template = createTemplate([
+            createProperty({name: 'wantsSharedTransport', type: 'Boolean', prompt: undefined}),
+        ]);
+        renderForm(template);
+        expect(screen.getByRole('checkbox')).not.toBeChecked();
+    });
+});

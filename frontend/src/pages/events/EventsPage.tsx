@@ -95,6 +95,7 @@ const CoordinatorName = ({onNavigate}: { onNavigate: () => void }): ReactElement
 
 const CREATE_FORM_BASIC_FIELDS = ['name', 'eventDate', 'location', 'organizer', 'websiteUrl'];
 const CREATE_FORM_COORDINATION_FIELDS = ['coordinators', 'eventTypeId'];
+const CREATE_FORM_SHARED_SERVICE_FIELDS = ['sharedTransportEnabled', 'sharedAccommodationEnabled'];
 
 export const EventsPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
@@ -220,6 +221,20 @@ export const EventsPage = (): ReactElement => {
                                     {hasField('categories') && (
                                         <Section title={labels.sections.eventCategories}>
                                             {renderInput('categories')}
+                                        </Section>
+                                    )}
+                                    {hasFields(CREATE_FORM_SHARED_SERVICE_FIELDS) && (
+                                        <Section title={labels.sections.sharedServices}>
+                                            {hasField('sharedTransportEnabled') && (
+                                                <DetailRow label={labels.fields.sharedTransportEnabled}>
+                                                    {renderInput('sharedTransportEnabled')}
+                                                </DetailRow>
+                                            )}
+                                            {hasField('sharedAccommodationEnabled') && (
+                                                <DetailRow label={labels.fields.sharedAccommodationEnabled}>
+                                                    {renderInput('sharedAccommodationEnabled')}
+                                                </DetailRow>
+                                            )}
                                         </Section>
                                     )}
                                     <div className="flex flex-wrap justify-end gap-3 pt-4 border-t border-border">

@@ -949,6 +949,88 @@ describe('EventDetailPage', () => {
         });
     });
 
+    describe('shared services — inline edit checkboxes (6.1)', () => {
+        const updateEventTemplateWithSharedFlags = mockHalFormsTemplate({
+            method: 'PUT',
+            target: '/api/events/1',
+            title: 'Upravit závod',
+            properties: [
+                {name: 'name', prompt: 'Název', type: 'text', required: true, value: 'Jarní závod 2025'},
+                {name: 'eventDate', prompt: 'Datum konání', type: 'date', required: true, value: '2025-04-15'},
+                {name: 'sharedTransportEnabled', type: 'Boolean'},
+                {name: 'sharedAccommodationEnabled', type: 'Boolean'},
+            ],
+        });
+
+        it('renders both shared-service checkboxes in edit mode when the template has the properties', () => {
+            const data = mockEventDetailData({
+                _templates: {updateEvent: updateEventTemplateWithSharedFlags},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getByText('Nabídnout společnou dopravu')).toBeInTheDocument();
+            expect(screen.getByText('Nabídnout společné ubytování')).toBeInTheDocument();
+            expect(screen.getAllByRole('checkbox')).toHaveLength(2);
+        });
+
+        it('does not render the shared-service checkboxes when the template omits the properties', () => {
+            const templateWithoutSharedFlags = mockHalFormsTemplate({
+                method: 'PUT',
+                target: '/api/events/1',
+                title: 'Upravit závod',
+                properties: [
+                    {name: 'name', prompt: 'Název', type: 'text', required: true, value: 'Jarní závod 2025'},
+                    {name: 'eventDate', prompt: 'Datum konání', type: 'date', required: true, value: '2025-04-15'},
+                ],
+            });
+            const data = mockEventDetailData({
+                _templates: {updateEvent: templateWithoutSharedFlags},
+            });
+            renderPage(createMockPageData(data));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.queryByText('Nabídnout společnou dopravu')).not.toBeInTheDocument();
+            expect(screen.queryByText('Nabídnout společné ubytování')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('shared services — count summary section (6.4)', () => {
+        it('renders both summary lines when sharedServicesSummary has both sub-objects', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                sharedServicesSummary: {
+                    sharedTransport: {count: 12},
+                    sharedAccommodation: {count: 8},
+                },
+            })));
+            expect(screen.getByText('Společná doprava: 12 členů')).toBeInTheDocument();
+            expect(screen.getByText('Společné ubytování: 8 členů')).toBeInTheDocument();
+        });
+
+        it('renders only the transport line when only sharedTransport is present', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                sharedServicesSummary: {sharedTransport: {count: 3}},
+            })));
+            expect(screen.getByText('Společná doprava: 3 členů')).toBeInTheDocument();
+            expect(screen.queryByText(/Společné ubytování/)).not.toBeInTheDocument();
+        });
+
+        it('shows 0 členů when a sub-object is present with count 0', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                sharedServicesSummary: {sharedAccommodation: {count: 0}},
+            })));
+            expect(screen.getByText('Společné ubytování: 0 členů')).toBeInTheDocument();
+        });
+
+        it('renders no summary section when sharedServicesSummary is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData()));
+            expect(screen.queryByText(/Společná doprava:/)).not.toBeInTheDocument();
+            expect(screen.queryByText(/Společné ubytování:/)).not.toBeInTheDocument();
+        });
+    });
+
     describe('deadlines section (6.3)', () => {
         beforeEach(() => {
             vi.useFakeTimers();
