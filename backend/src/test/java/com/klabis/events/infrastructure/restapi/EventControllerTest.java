@@ -1208,7 +1208,7 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_REGISTRATIONS})
         void accommodationListLinkPresentForEventsRegistrationsUser() throws Exception {
             UUID eventId = UUID.randomUUID();
-            Event event = EventTestDataBuilder.anEvent().buildPublished();
+            Event event = EventTestDataBuilder.anEvent().withSharedAccommodationEnabled(true).buildPublished();
 
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
@@ -1229,6 +1229,7 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
             Event event = EventTestDataBuilder.anEvent()
                     .withCoordinator(coordinatorId)
+                    .withSharedAccommodationEnabled(true)
                     .buildPublished();
 
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
@@ -1250,6 +1251,7 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
             Event event = EventTestDataBuilder.anEvent()
                     .withCoordinator(coordinatorId)
+                    .withSharedAccommodationEnabled(true)
                     .buildPublished();
 
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
@@ -2302,9 +2304,10 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .withCoordinator(coordinatorId)
                     .addRegistrations(registrations)
                     .build();
@@ -2340,9 +2343,10 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .withCoordinator(coordinatorId)
                     .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now())))
+                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
                     .build();
             event.publish();
 
@@ -2374,9 +2378,10 @@ class EventControllerTest {
             MemberId callerId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .withCoordinator(callerId)
                     .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), callerId, SiCardNumber.of("1234"), null, Instant.now())))
+                            UUID.randomUUID(), callerId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
                     .build();
             event.publish();
 
@@ -2406,9 +2411,10 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .withCoordinator(coordinatorId)
                     .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now())))
+                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
                     .build();
             event.publish();
 
@@ -2470,9 +2476,10 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .withCoordinator(coordinatorId)
                     .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())))
+                            UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
                     .build();
             event.publish();
 
@@ -2494,9 +2501,10 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .withCoordinator(coordinatorId)
                     .addRegistrations(registrations)
                     .build();
@@ -2525,6 +2533,7 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .withCoordinator(coordinatorId)
                     .build();
             event.publish();
@@ -2546,9 +2555,10 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .addRegistrations(registrations)
                     .build();
             event.publish();
@@ -2578,9 +2588,10 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .addRegistrations(registrations)
                     .build();
             event.publish();
@@ -2617,9 +2628,10 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("9876"), null, Instant.now())
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("9876"), null, Instant.now(), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .withName("Zimní soustředění 2026")
                     .addRegistrations(registrations)
                     .build();
@@ -2653,9 +2665,10 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("5555"), null, Instant.now())
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("5555"), null, Instant.now(), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .withName("Test Event")
                     .addRegistrations(registrations)
                     .build();
@@ -2686,6 +2699,7 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
                     .withCoordinator(coordinatorId)
                     .build();
             event.publish();
@@ -2697,6 +2711,225 @@ class EventControllerTest {
                                     .accept("text/csv")
                     )
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("Section 5 — accommodation list filtered to wantsSharedAccommodation & gated on sharedAccommodationEnabled")
+    class AccommodationListSharedAccommodationGateTests {
+
+        private static final String COORDINATOR_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+        private static final String REGULAR_MEMBER_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+
+        private EventRegistration registration(MemberId memberId, boolean wantsAccommodation) {
+            return EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"),
+                    null, Instant.now(), false, wantsAccommodation);
+        }
+
+        private MemberAccommodationDto accommodationDto(String firstName) {
+            return new MemberAccommodationDto(
+                    firstName, "Doe", "AB123456", java.time.LocalDate.of(2028, 1, 1),
+                    java.time.LocalDate.of(1985, 5, 15), "Main St 1", "Prague", "11000", "CZ");
+        }
+
+        @Test
+        @DisplayName("5.1 HAL: only registrations with wantsSharedAccommodation=true appear")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        void halListContainsOnlyMembersWhoWantSharedAccommodation() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+            MemberId wantsIt = new MemberId(UUID.randomUUID());
+            MemberId doesNot = new MemberId(UUID.randomUUID());
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
+                    .withCoordinator(coordinatorId)
+                    .withSharedAccommodationEnabled(true)
+                    .addRegistrations(List.of(registration(wantsIt, true), registration(doesNot, false)))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(members.findAccommodationDataByIds(any())).thenReturn(Map.of(
+                    wantsIt, accommodationDto("Wants"),
+                    doesNot, accommodationDto("DoesNot")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.accommodationList", hasSize(1)))
+                    .andExpect(jsonPath("$._embedded.accommodationList[0].firstName").value("Wants"));
+        }
+
+        @Test
+        @DisplayName("5.1 CSV: renderer is handed only the rows for members who want shared accommodation")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        void csvListContainsOnlyMembersWhoWantSharedAccommodation() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+            MemberId wantsIt = new MemberId(UUID.randomUUID());
+            MemberId doesNot = new MemberId(UUID.randomUUID());
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
+                    .withCoordinator(coordinatorId)
+                    .withSharedAccommodationEnabled(true)
+                    .addRegistrations(List.of(registration(wantsIt, true), registration(doesNot, false)))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(members.findAccommodationDataByIds(any())).thenReturn(Map.of(
+                    wantsIt, accommodationDto("Wants"),
+                    doesNot, accommodationDto("DoesNot")));
+            when(csvRenderer.renderToBytes(any())).thenReturn("csv".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept("text/csv")
+                    )
+                    .andExpect(status().isOk());
+
+            @SuppressWarnings("unchecked")
+            org.mockito.ArgumentCaptor<List<AccommodationListItemDto>> captor =
+                    org.mockito.ArgumentCaptor.forClass(List.class);
+            verify(csvRenderer).renderToBytes(captor.capture());
+            org.assertj.core.api.Assertions.assertThat(captor.getValue())
+                    .extracting(AccommodationListItemDto::firstName)
+                    .containsExactly("Wants");
+        }
+
+        @Test
+        @DisplayName("5.3 HAL: authorized caller gets 403 when sharedAccommodationEnabled is false")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        void halRejectedWhenOfferOff() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
+                    .withCoordinator(coordinatorId)
+                    .withSharedAccommodationEnabled(false)
+                    .addRegistrations(List.of(registration(new MemberId(UUID.randomUUID()), true)))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("5.3 CSV: authorized caller gets 403 when sharedAccommodationEnabled is false")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        void csvRejectedWhenOfferOff() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
+                    .withCoordinator(coordinatorId)
+                    .withSharedAccommodationEnabled(false)
+                    .addRegistrations(List.of(registration(new MemberId(UUID.randomUUID()), true)))
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept("text/csv")
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("5.3 unauthorized caller still gets 403 when offer is off (auth check runs first)")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
+        void unauthorizedStillForbiddenWhenOfferOff() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
+                    .withCoordinator(coordinatorId)
+                    .withSharedAccommodationEnabled(false)
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("5.4 accommodation-list link present on getEvent when offer on AND caller authorized")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_REGISTRATIONS})
+        void linkPresentWhenOfferOnAndAuthorized() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
+                    .withSharedAccommodationEnabled(true)
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links['accommodation-list'].href").exists());
+        }
+
+        @Test
+        @DisplayName("5.4 accommodation-list link absent on getEvent when offer off even for authorized caller")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_REGISTRATIONS})
+        void linkAbsentWhenOfferOffEvenForAuthorized() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
+                    .withSharedAccommodationEnabled(false)
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links['accommodation-list']").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("5.4 accommodation-list link absent on getEvent for unauthorized caller even when offer on")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
+        void linkAbsentForUnauthorizedCallerWhenOfferOn() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
+            Event event = EventTestDataBuilder.anEvent()
+                    .withSharedAccommodationEnabled(true)
+                    .withCoordinator(coordinatorId)
+                    .withSharedAccommodationEnabled(true)
+                    .buildPublished();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links['accommodation-list']").doesNotExist());
         }
     }
 

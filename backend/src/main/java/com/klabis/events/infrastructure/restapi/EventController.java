@@ -331,9 +331,10 @@ public class EventController implements EventsApi {
             @PathVariable UUID eventId) {
 
         Event event = loadAuthorizedEventForAccommodation(eventId);
-        List<AccommodationListItemDto> items = assembleAccommodationItems(event);
+        List<EventRegistration> accommodationRegistrations = registrationsWantingSharedAccommodation(event);
+        List<AccommodationListItemDto> items = assembleAccommodationItems(accommodationRegistrations);
 
-        HalResponseContext.setDomainList(event.getRegistrations());
+        HalResponseContext.setDomainList(accommodationRegistrations);
         return ResponseEntity.ok(items);
     }
 
@@ -342,7 +343,7 @@ public class EventController implements EventsApi {
             @PathVariable UUID eventId) {
 
         Event event = loadAuthorizedEventForAccommodation(eventId);
-        List<AccommodationListItemDto> items = assembleAccommodationItems(event);
+        List<AccommodationListItemDto> items = assembleAccommodationItems(registrationsWantingSharedAccommodation(event));
         byte[] csv = csvRenderer.renderToBytes(items);
 
         String filename = "ubytovani-" + EventNameSlugifier.slugify(event.getName()) + ".csv";
@@ -359,11 +360,19 @@ public class EventController implements EventsApi {
         if (!EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
             throw new AccessDeniedException("Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator");
         }
+        if (!event.isSharedAccommodationEnabled()) {
+            throw new AccessDeniedException("Accommodation list is available only when the event offers shared accommodation");
+        }
         return event;
     }
 
-    private List<AccommodationListItemDto> assembleAccommodationItems(Event event) {
-        List<EventRegistration> registrations = event.getRegistrations();
+    private static List<EventRegistration> registrationsWantingSharedAccommodation(Event event) {
+        return event.getRegistrations().stream()
+                .filter(EventRegistration::wantsSharedAccommodation)
+                .toList();
+    }
+
+    private List<AccommodationListItemDto> assembleAccommodationItems(List<EventRegistration> registrations) {
         List<MemberId> memberIds = registrations.stream().map(EventRegistration::memberId).toList();
         Map<MemberId, MemberAccommodationDto> accommodationIndex = members.findAccommodationDataByIds(memberIds);
         return registrations.stream()
@@ -535,7 +544,8 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                 klabisLinkTo(methodOn(EventTypesApi.class).getEventType(eventTypeId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
 
-        if (EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
+        if (event.isSharedAccommodationEnabled()
+                && EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
             klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }

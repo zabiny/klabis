@@ -43,11 +43,11 @@ interfaces and frontend types are refreshed, backend (Sections 2–5) and fronte
 
 ## 5. Backend — accommodation list filter + gate (vertical slice: filtered list)
 
-- [ ] 5.1 Controller/API test (red): `getAccommodationList` (HAL and `text/csv`) on an event with `sharedAccommodationEnabled = true` returns only registrations with `wantsSharedAccommodation = true`.
-- [ ] 5.2 Filter `assembleAccommodationItems` in `EventController` to `wantsSharedAccommodation`.
-- [ ] 5.3 Add the flag precondition to `loadAuthorizedEventForAccommodation`: when `!event.sharedAccommodationEnabled()` throw `AccessDeniedException` for both variants. Settle Open Question 2 (403 vs 404) here — default 403.
-- [ ] 5.4 Emit the `accommodation-list` HAL link in `getEvent` only when the flag is on **and** the caller is authorized; controller test for link presence/absence.
-- [ ] 5.5 Test: existing "unauthorized user" and "placeholder for missing identity card" / "CSV leaves missing values empty" scenarios still pass against the filtered row set.
+- [x] 5.1 Controller/API test (red): `getAccommodationList` (HAL and `text/csv`) on an event with `sharedAccommodationEnabled = true` returns only registrations with `wantsSharedAccommodation = true`. _(CSV variant verified via ArgumentCaptor on `csvRenderer.renderToBytes`.)_
+- [x] 5.2 Filter `assembleAccommodationItems` in `EventController` to `wantsSharedAccommodation` (new `registrationsWantingSharedAccommodation(Event)` helper); the same filtered list feeds `HalResponseContext.setDomainList`.
+- [x] 5.3 Flag precondition in `loadAuthorizedEventForAccommodation` → `AccessDeniedException` (403, Open Question 2) for both HAL and CSV variants, after the existing auth check.
+- [x] 5.4 `accommodation-list` HAL link (in `EventDetailsPostprocessor`) gated on `isSharedAccommodationEnabled() && isCoordinatorOrHasRegistrationsAuthority`; presence/absence tests added.
+- [x] 5.5 Existing `AccommodationListTests` / `AccommodationListCsvTests` / link-presence fixtures updated (`withSharedAccommodationEnabled(true)` + `wantsSharedAccommodation = true` on their registrations); "unauthorized user" tests still assert 403 (auth check precedes flag check).
 
 ## 6. Frontend (parallel with Sections 2–5 after Task 1.9)
 
