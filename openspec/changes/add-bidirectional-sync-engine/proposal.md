@@ -21,26 +21,36 @@ This change introduces a generic, bidirectional synchronisation engine that owns
 stateDiagram-v2
     [*] --> New: entity enrolled by an integration
     New --> InSync: first pass adopts the external side
+    New --> Retrying: first pass failed retryably
 
     InSync --> InSync: neither side moved (no work)
     InSync --> InSync: only one side moved (synchronised in that direction)
-    InSync --> Conflict: both sides moved
+    InSync --> InSync: both sides moved to the same state (baseline rebased)
+    InSync --> Conflict: both sides moved to different states
     InSync --> Conflict: local side moved but the integration cannot write outward
-    InSync --> Failed: attempts exhausted
+    InSync --> Retrying: attempt failed retryably
+    InSync --> Failed: non-retryable failure
 
-    Conflict --> InSync: a side reverts, or a manager forces a direction
+    Retrying --> InSync: a later attempt succeeds
+    Retrying --> Conflict: a later attempt finds a conflict
+    Retrying --> Failed: attempts exhausted, or a non-retryable failure
+
+    Conflict --> InSync: a side reverts, a manager forces a direction, or accepts the divergence
     Failed --> InSync: manager resets the record and it succeeds
     InSync --> Retired: entity finished, cancelled or deactivated
+    Retrying --> Retired: entity finished, cancelled or deactivated
     Conflict --> Retired: entity finished, cancelled or deactivated
     Failed --> Retired: entity finished, cancelled or deactivated
     Retired --> [*]
 ```
 
-**Conflicts are never resolved automatically.** When both sides moved, the record stops synchronising and reports which fields diverged. A manager acknowledges the conflict and then explicitly forces a direction; nothing is written until they do. The same applies when only the local side moved but the external system offers no way to write that entity back — the situation that silently destroys a manager's edit today.
+**Conflicts are never resolved automatically.** When both sides moved and their current states differ, the record stops synchronising and reports which fields diverged. A manager acknowledges the conflict and then explicitly resolves it — forces a direction, or **accepts the divergence**: both sides stay as they are, and any later external change asks again instead of overwriting the accepted local value. Nothing is written until the manager decides. The same applies when only the local side moved but the external system offers no way to write that entity back — the situation that silently destroys a manager's edit today; accepting the divergence is what lets such an edit survive permanently.
 
 **Retry with backoff and a terminal state.** A failed synchronisation is retried on a growing delay; once the attempts since the last success exceed the limit, the record is marked terminally failed, stops consuming external calls, and waits for a manager to reset it. An outage of the external system trips a circuit breaker that ends the pass instead of burning every record's retry budget.
 
-**Audit trail.** Every attempt is appended to a synchronisation history: when, what triggered it, which direction, the outcome, and the failure reason. The record itself carries the time and direction of the last successful synchronisation.
+Resilience4j covers what it is built for — the in-attempt retry and the circuit breaker, both as configurable named instances. The cross-pass backoff (the growing delay between scheduled attempts) is deliberately not Resilience4j: it must survive restarts and span hours to days, so it is engine-owned persistent state (a due timestamp on the record), configurable through the same properties block.
+
+**Audit trail.** Every attempt is appended to a synchronisation history: when, what triggered it, which direction, the outcome, the failure reason, and — for manually triggered work — who asked for it. The record itself carries the time and direction of the last successful synchronisation. Domain events are published only for the two states that strand work — a detected conflict and a terminal failure; successful synchronisations are recorded in the history but deliberately not published as events.
 
 **Existing ORIS event synchronisation moves onto the engine.** The endpoints, HAL affordances and frontend stay as they are; the behaviour behind them gains change detection, conflict handling, retry and audit. The visible change is that a local edit to an ORIS-owned field now raises a conflict instead of being silently overwritten.
 
@@ -70,7 +80,7 @@ stateDiagram-v2
 - Primary port for enrolment, synchronisation, conflict acknowledgement, forced direction and reset.
 - REST resources for synchronisation state and conflict resolution, addressed uniformly across entity types.
 - Domain events for conflict detected and terminal failure.
-- A scheduled pass over due records, and a scheduled cleanup of expired history.
+- Two scheduled cadences — a nightly full pass and a frequent due scan for dirty or retry-due records — and a scheduled cleanup of expired history.
 
 **Affected code — ORIS integration**
 - A new `oris.sync` package holding the ORIS event adapter, built from the existing import/sync mapping logic.
@@ -84,11 +94,11 @@ stateDiagram-v2
 **Not affected — members module**
 - No changes. No member adapter, no member-updated event, no listener, no member projection.
 
-**APIs (REST)** — additive and owned by the `sync` module: read synchronisation state, acknowledge a conflict, force a direction, reset a failed record. They are addressed uniformly for every synchronised entity type rather than duplicated per module. Existing ORIS synchronisation endpoints keep their paths and operation identifiers. A new `SYNC:MANAGE` authority gates the new operations.
+**APIs (REST)** — additive and owned by the `sync` module: read synchronisation state, acknowledge a conflict, resolve it (force a direction or accept the divergence), reset a failed record. They are addressed uniformly for every synchronised entity type rather than duplicated per module. Existing ORIS synchronisation endpoints keep their paths and operation identifiers. A new `SYNC:MANAGE` authority gates the new operations.
 
 **Data** — new `sync_record` and `sync_attempt` tables in `V001`. Projection columns are encrypted at rest from the start: projections will carry personal data as soon as an entity such as a member is synchronised, and retrofitting encryption onto a populated column is considerably worse than starting with it.
 
-**Configuration** — new properties with defaults for the attempt limit, retry delay growth, claim lease, history retention and scan cadence, plus Resilience4j retry and circuit-breaker instances alongside the existing rate-limiter configuration.
+**Configuration** — new properties with defaults for the attempt limit, retry delay growth, claim lease, history retention and the two scan cadences (nightly full pass, frequent due scan), plus Resilience4j retry and circuit-breaker instances alongside the existing rate-limiter configuration.
 
 **Dependencies** — Resilience4j (already a dependency, currently used only for rate limiting) gains retry and circuit-breaker configuration. Scheduling already exists.
 
