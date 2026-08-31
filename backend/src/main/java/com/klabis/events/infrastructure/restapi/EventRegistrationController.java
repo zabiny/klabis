@@ -70,7 +70,9 @@ class EventRegistrationController implements EventRegistrationsApi {
 
         Event.RegisterCommand command = new Event.RegisterCommand(
                 request.siCardNumber(),
-                request.categoryId() != null ? new EventCategoryId(request.categoryId()) : null);
+                request.categoryId() != null ? new EventCategoryId(request.categoryId()) : null,
+                Boolean.TRUE.equals(request.wantsSharedTransport()),
+                Boolean.TRUE.equals(request.wantsSharedAccommodation()));
         registrationService.registerMember(new EventId(eventId), actingMember, command);
 
         return ResponseEntity.created(
@@ -97,7 +99,9 @@ class EventRegistrationController implements EventRegistrationsApi {
 
         Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(
                 SiCardNumber.of(request.siCardNumber()),
-                request.categoryId() != null ? new EventCategoryId(request.categoryId()) : null
+                request.categoryId() != null ? new EventCategoryId(request.categoryId()) : null,
+                Boolean.TRUE.equals(request.wantsSharedTransport()),
+                Boolean.TRUE.equals(request.wantsSharedAccommodation())
         );
         registrationService.editRegistration(new EventId(eventId), new MemberId(memberId), command);
 
@@ -183,6 +187,8 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .siCardNumber(registration.siCardNumber().value())
                 .category(RegistrationDtoMapper.toCategoryDto(registration, event))
                 .registeredAt(registration.registeredAt())
+                .wantsSharedTransport(event.isSharedTransportEnabled() ? registration.wantsSharedTransport() : null)
+                .wantsSharedAccommodation(event.isSharedAccommodationEnabled() ? registration.wantsSharedAccommodation() : null)
                 .build();
     }
 

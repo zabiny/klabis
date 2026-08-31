@@ -29,11 +29,11 @@ interfaces and frontend types are refreshed, backend (Sections 2–5) and fronte
 ## 3. Backend — registration choices (vertical slice: member picks offers)
 
 - [x] 3.1 Add `wants_shared_transport` / `wants_shared_accommodation` `BOOLEAN NOT NULL DEFAULT FALSE` columns (+ comments) to `events.event_registrations` `CREATE TABLE` in `V001__initial_schema.sql`. _(done in phase 2 as prerequisite for task 2.5)_
-- [ ] 3.2 Domain test (red): `Event.registerMember` records both choice flags; defaults to `false` when omitted.
-- [~] 3.3 Extend `EventRegistration` (two `boolean` fields), `CreateEventRegistration`, `create` / `reconstruct` / `withChanges` _(done in phase 2)_, **and** `Event.registerMember` + `EditRegistrationCommand` + `Event.editRegistration` signatures (green + refactor) _(remaining)_.
-- [ ] 3.4 Domain test: `editRegistration` updates the two choice flags under the open-registration window; refused after the deadline / on/after the event date (reuses existing guard).
-- [ ] 3.5 Extend `EventRegistrationMemento` (`@Column` fields, `from` / `toEventRegistration`); JDBC round-trip test. _(EventRegistrationMemento done in phase 2; verify the round-trip test exists)_
-- [ ] 3.6 Controller/API test: `registerForEvent` and `editRegistration` accept the flags; `RegistrationDto` returns them; verify they are only meaningful when the event enables the offer.
+- [x] 3.2 Domain test (red): `Event.registerMember` records both choice flags; defaults to `false` when omitted.
+- [x] 3.3 Extend `EventRegistration` (two `boolean` fields), `CreateEventRegistration`, `create` / `reconstruct` / `withChanges` _(phase 2)_, **and** `Event.registerMember` + `RegisterCommand` + `EditRegistrationCommand` + `Event.editRegistration` + `EventRegistrationService.registerMember` signatures (green + refactor). _Deviation: also extended `RegisterCommand` + service (controller builds a command, not a direct call); 2-arg delegating constructors keep old call sites._
+- [x] 3.4 Domain test: `editRegistration` updates the two choice flags under the open-registration window; refused after the deadline / on/after the event date (reuses existing guard).
+- [x] 3.5 `EventRegistrationMemento` done in phase 2; round-trip verified by `EventJdbcRepositoryTest.SharedServiceFlagsPersistence`.
+- [x] 3.6 Controller/API test: `registerForEvent` and `editRegistration` accept the flags; `RegistrationDto` returns them **only when the event enables the offer** (Open Question 3 → omit gated fields, `@JsonInclude(NON_NULL)`).
 
 ## 4. Backend — count summary on event detail (vertical slice: coordinator sees counts)
 

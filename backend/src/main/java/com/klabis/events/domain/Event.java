@@ -208,8 +208,14 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @NotBlank(message = "SI card number is required")
             @Pattern(regexp = "\\d{6,7}", message = "SI card number must be 6-7 digits")
             String siCardNumber,
-            EventCategoryId categoryId
+            EventCategoryId categoryId,
+            boolean wantsSharedTransport,
+            boolean wantsSharedAccommodation
     ) {
+        public RegisterCommand(String siCardNumber, EventCategoryId categoryId) {
+            this(siCardNumber, categoryId, false, false);
+        }
+
         public static RegisterCommand from(Event event) {
             return new RegisterCommand(null, null);
         }
@@ -284,8 +290,14 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     @RecordBuilder
     public record EditRegistrationCommand(
             SiCardNumber siCardNumber,
-            EventCategoryId categoryId
-    ) {}
+            EventCategoryId categoryId,
+            boolean wantsSharedTransport,
+            boolean wantsSharedAccommodation
+    ) {
+        public EditRegistrationCommand(SiCardNumber siCardNumber, EventCategoryId categoryId) {
+            this(siCardNumber, categoryId, false, false);
+        }
+    }
 
     /**
      * Private constructor for creating new Event instances.
@@ -901,7 +913,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
         EventCategoryId resolvedCategoryId = resolveCategoryId(command.categoryId());
         EventRegistration updated = current.withChanges(command.siCardNumber(), resolvedCategoryId,
-                current.wantsSharedTransport(), current.wantsSharedAccommodation());
+                command.wantsSharedTransport(), command.wantsSharedAccommodation());
 
         registrations.remove(current);
         registrations.add(updated);

@@ -212,4 +212,4 @@ No new endpoints, no renamed operations.
 
 1. ~~Count summary wire shape~~ **Resolved:** READ_ONLY `sharedServicesSummary` object property on `EventDto`, populated by the controller, `@JsonInclude(NON_NULL)` — same pattern as `deadlines` / `ranking`. Not `x-hal-embedded` (that is for collections).
 2. **403 vs. 404 for the accommodation list when the offer is off** — `AccessDeniedException` (403) is consistent with the existing authorization failure on that endpoint; a 404 ("no such list") is arguably more truthful. Lean 403 for consistency.
-3. **Does `RegistrationDto` always carry the two boolean fields (as `false`) or omit them when the offer is off?** Omitting is consistent with the form-template gating; always-present is simpler for the frontend. Lean: omit when the offer is off, matching the template.
+3. ~~Does `RegistrationDto` always carry the two boolean fields?~~ **Resolved:** omit them when the event does not offer the matching service — the generated `RegistrationDto` carries record-level `@JsonInclude(NON_NULL)` and the mapper passes `null` for a non-offered service. Mirrors the form-template gating.
