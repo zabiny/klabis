@@ -44,6 +44,8 @@ stateDiagram-v2
 
 **Existing ORIS event synchronisation moves onto the engine.** The endpoints, HAL affordances and frontend stay as they are; the behaviour behind them gains change detection, conflict handling, retry and audit. The visible change is that a local edit to an ORIS-owned field now raises a conflict instead of being silently overwritten.
 
+**Member synchronisation is explicitly out of scope.** No member adapter, no changes to the `members` module — no new domain event, no listener, no member projection. Members remain the motivating case that keeps the engine contract honest about two-way integrations; building that integration is a separate change.
+
 ## Capabilities
 
 ### New Capabilities
@@ -59,28 +61,34 @@ stateDiagram-v2
 **Affected specs**
 - `openspec/specs/data-synchronization/spec.md` — new.
 - `openspec/specs/events/spec.md` — ORIS synchronisation requirements gain conflict, resolution and failure scenarios; the row-level "Synchronizovat" action requirement is extended with the conflicted and failed cases.
-- `openspec/specs/non-functional-requirements/spec.md` — retention and protection of synchronisation snapshots holding personal data.
+- `openspec/specs/non-functional-requirements/spec.md` — protection and retention of synchronisation data.
 
 **Affected code — new `sync` module**
 - Synchronisation record and attempt history aggregates, their repositories and persistence.
 - Direction resolution, conflict detection, claiming, retry scheduling and circuit breaking.
 - The adapter contract integrations implement, including declared capabilities and the canonical projection.
 - Primary port for enrolment, synchronisation, conflict acknowledgement, forced direction and reset.
-- Domain events for conflict detected, terminal failure and sensitive-snapshot access.
+- REST resources for synchronisation state and conflict resolution, addressed uniformly across entity types.
+- Domain events for conflict detected and terminal failure.
+- A scheduled pass over due records, and a scheduled cleanup of expired history.
 
 **Affected code — ORIS integration**
 - A new `oris.sync` package holding the ORIS event adapter, built from the existing import/sync mapping logic.
 - `OrisEventImportService` keeps first-time import; its synchronisation path moves behind the engine.
 - `OrisBulkSyncService` becomes a scheduled pass over due records instead of a loop over events.
 
-**Affected code — events and members modules**
+**Affected code — events module**
 - `events` enrols an event with the engine when it is imported from ORIS, and retires the record when the event finishes or is cancelled.
-- `members` publishes a member-updated domain event, which does not exist today, so that local changes to a member can mark a synchronisation record as dirty.
-- `members` listens for sensitive-snapshot access and writes its existing birth-number audit log.
+- Local changes to an event already announce themselves (`EventUpdatedEvent`), so the engine can mark a record as needing attention without any new event.
 
-**APIs (REST)** — additive, nested under the entity: read synchronisation state, acknowledge a conflict, force a direction, reset a failed record. Existing ORIS synchronisation endpoints keep their paths and operation identifiers. A new `SYNC:MANAGE` authority gates the new operations.
+**Not affected — members module**
+- No changes. No member adapter, no member-updated event, no listener, no member projection.
 
-**Data** — new `sync_record` and `sync_attempt` tables in `V001`. Snapshot columns are encrypted at rest, because a member projection contains personal data including the birth number.
+**APIs (REST)** — additive and owned by the `sync` module: read synchronisation state, acknowledge a conflict, force a direction, reset a failed record. They are addressed uniformly for every synchronised entity type rather than duplicated per module. Existing ORIS synchronisation endpoints keep their paths and operation identifiers. A new `SYNC:MANAGE` authority gates the new operations.
+
+**Data** — new `sync_record` and `sync_attempt` tables in `V001`. Projection columns are encrypted at rest from the start: projections will carry personal data as soon as an entity such as a member is synchronised, and retrofitting encryption onto a populated column is considerably worse than starting with it.
+
+**Configuration** — new properties with defaults for the attempt limit, retry delay growth, claim lease, history retention and scan cadence, plus Resilience4j retry and circuit-breaker instances alongside the existing rate-limiter configuration.
 
 **Dependencies** — Resilience4j (already a dependency, currently used only for rate limiting) gains retry and circuit-breaker configuration. Scheduling already exists.
 

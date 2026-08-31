@@ -2,9 +2,9 @@
 
 Synchronisation with ORIS exists today as one concrete pull path inside the events module. `OrisEventImportService.syncEventFromOris` fetches the upstream event and overwrites every ORIS-owned field on the local aggregate. Two protections exist, both by field ownership rather than by change detection: categories added manually in Klabis (`orisId == null`) survive because ORIS does not own them, and `applyAutoMappedEventType` only fills an event type that is still empty. Everything ORIS does own is replaced without asking, and a manager's correction to it disappears.
 
-The external side constrains what is even possible. The ORIS API offers no way to write an event back — there is no `updateEvent` — so events are structurally pull-only. Persons and club memberships do have write operations (`createPerson`, `editPerson`, `createClubUser`, `editClubUser`), and entries have a full create/update/delete set, so those are genuinely two-way. A synchronisation engine therefore cannot assume symmetry; it must let each integration declare what it can do, and behave correctly when a change appears on a side that cannot be written.
+The external side constrains what is even possible. The ORIS API offers no way to write an event back — there is no `updateEvent` — so events are structurally pull-only. Persons and club memberships do have write operations, and entries have a full create/update/delete set, so those would be genuinely two-way. A synchronisation engine therefore cannot assume symmetry; it must let each integration declare what it can do, and behave correctly when a change appears on a side that cannot be written.
 
-The engine is the deliverable of this change. Event synchronisation is migrated onto it to prove the whole loop against real data; member synchronisation is a later change and only shapes the contract here.
+The engine is the deliverable of this change. Event synchronisation is migrated onto it to prove the whole loop against real data. Member synchronisation is out of scope — no adapter, no `members` module changes — and appears here only as the case the contract must be able to accommodate later.
 
 ## Goals / Non-Goals
 
@@ -18,7 +18,7 @@ The engine is the deliverable of this change. Event synchronisation is migrated 
 
 **Non-Goals**
 
-- Implementing member synchronisation. The contract must accommodate it; this change does not build the adapter.
+- Member synchronisation, in any form. No member adapter, no member projection, no changes to the `members` module — no new domain event and no listener there.
 - Automatic conflict resolution or merging of any kind, including merging disjoint field changes.
 - A user interface for synchronisation state or conflict resolution.
 - Bulk/batch external calls. The engine is record-oriented for now.
@@ -35,9 +35,9 @@ The engine lives in `com.klabis.sync` with `application`, `domain` and `infrastr
 
 ### D2: Adapters live in the integration's own module; the mapping between the two identities lives only in the synchronisation record
 
-The ORIS event adapter lives in `com.klabis.oris.sync`, implements the adapter contract published by the `sync` module, and reaches domain data through `events.application` — the direction `OrisController` already takes. The `events` and `members` modules therefore gain no knowledge of ORIS, and `Event` and `Member` gain no external identifier fields: the pairing between a Klabis entity and its external counterpart is held by the synchronisation record alone.
+The ORIS event adapter lives in `com.klabis.oris.sync`, implements the adapter contract published by the `sync` module, and reaches domain data through `events.application` — the direction `OrisController` already takes. The `events` module therefore gains no knowledge of ORIS internals it does not already have, and `Event` gains no external identifier fields beyond the `orisId` it already carries: the pairing between a Klabis entity and its external counterpart is held by the synchronisation record.
 
-This matters most for members, where ORIS has two identifiers per person (`userid` for the person, `clubuser` for the club membership) that would otherwise both have to be modelled on the aggregate.
+This matters most for entities whose external identity is composite — an ORIS person has both a person identifier and a club-membership identifier — which the record can hold without forcing either onto the aggregate.
 
 *Consequence:* `OrisEventImportService` currently sits in `events.application` and imports the ORIS client directly. Its synchronisation path moves out to the adapter; its first-time import path stays where it is for now, so this change does not turn into a rewrite of the import flow.
 
@@ -51,11 +51,19 @@ The adapter maps both sides into a **canonical projection**: one field set, the 
 - Because both sides share one shape, a divergence can be reported per field.
 - An adapter may additionally offer a cheap **external version token** (ORIS `getEventListVersions` returns id and version only). When the token is unchanged since the last check, the engine skips fetching the external payload entirely. Adapters without one fall back to a full read.
 
-*Rejected:* per-side raw snapshots in each side's natural shape. Simpler adapters, but diffing two different shapes is meaningless, so conflict reporting would degrade to "something differs". *Rejected:* deriving the projection reflectively from the aggregate. Least adapter code, but it drags integration-shaped mapping concerns into domain classes and copes badly with value objects such as `Money` or `RegistrationDeadlines`.
+**`SyncProjection` is an interface, implemented per entity type.** The engine handles projections only through that interface — serialise, deserialise, compare field by field — and never knows the concrete shape. Each integration contributes a concrete projection that is a plain data carrier with no behaviour, so that:
 
-### D4: Three-way comparison — hashes decide, snapshots explain
+- it serialises to and from JSON directly, with no bespoke mapping layer;
+- its hash is computed from that serialisation, over a canonicalised form (stable field order, normalised null and numeric representation) so that two equal projections always hash equally;
+- a divergence report is produced by comparing the deserialised field sets, without the engine knowing what the fields mean.
 
-Two current hashes can only say *that* the sides differ. To say *who moved*, the record keeps the baseline captured at the last successful synchronisation, and compares both current hashes against it:
+The ORIS event projection is the only implementation in this change.
+
+*Rejected:* a single generic map-based projection type. It would spare integrations a type, but loses compile-time shape, makes the "same shape both sides" property unenforceable, and turns every field access into an untyped lookup. *Rejected:* per-side raw snapshots in each side's natural shape — diffing two different shapes is meaningless, so conflict reporting would degrade to "something differs". *Rejected:* deriving the projection reflectively from the aggregate; it drags integration-shaped mapping concerns into domain classes and copes badly with value objects such as `Money` or `RegistrationDeadlines`.
+
+### D4: Three-way comparison — hashes decide, projections explain
+
+Two current hashes can only say *that* the sides differ. To say *who moved*, the record keeps the state captured at the last successful synchronisation, and compares both current hashes against it:
 
 | local vs baseline | external vs baseline | resolution |
 |---|---|---|
@@ -64,7 +72,9 @@ Two current hashes can only say *that* the sides differ. To say *who moved*, the
 | unchanged | changed | write inward |
 | changed | changed | conflict |
 
-The record stores the baseline, local and external **projections**, not only their hashes, so that a conflict can name the fields that diverged by comparing the three in memory.
+**A projection and its hash always travel together, as one value object: `SyncSnapshot`.** The record holds three of them — baseline, local and external — rather than six loosely related fields. A hash that does not belong to its projection is the one inconsistency that would silently corrupt every decision the engine makes, so the domain makes it unrepresentable: a snapshot is built from a projection, computes its own hash, and neither half can be replaced independently.
+
+Keeping the projections (not just their hashes) is what allows a conflict to name the fields that diverged, by comparing the three snapshots in memory.
 
 ### D5: The first encounter adopts the external side
 
@@ -90,19 +100,19 @@ Because a conflict can clear itself, resolution is two steps and the first is bo
 
 The workflow is: read the record, acknowledge the conflict, force a direction. Originally this was to be done by editing the record's JSON in the database directly; over REST it is authenticated, permission-checked, and available to a UI later without engine changes.
 
-There is deliberately no cross-entity conflict overview. Synchronisation resources are nested under their entity (D14), so a stuck record is discovered through the conflict-detected domain event, which nothing consumes yet.
+There is deliberately no cross-entity conflict overview. Synchronisation resources are addressed per entity (D14), so a stuck record is discovered through the conflict-detected domain event, which nothing consumes yet.
 
 *Accepted consequence:* until something consumes that event, a conflicted record is invisible unless someone looks at that specific entity. Recorded in Risks.
 
 ### D9: Three triggers, and a dirty marker that closes the mid-pass race
 
-A pass is started by the scheduler, by a local domain event, or by an explicit call. The domain-event trigger marks the record dirty rather than synchronising inline, so a burst of local edits collapses into one pass.
+A pass is started by the scheduler, by a local domain event, or by an explicit call. The domain-event trigger marks the record dirty rather than synchronising inline, so a burst of local edits collapses into one pass. For events this needs nothing new: `EventUpdatedEvent` already exists and is published by `Event.syncFromOris` and every other mutating command.
 
 That same marker solves the concurrency hazard. A pass reads the local projection, then calls the external system, then writes the baseline; a local edit landing between the read and the baseline write would otherwise be recorded as synchronised and never propagate — a silent lost update. The record therefore carries **dirty-since**: set when a local change is observed, checked before the baseline is written. If the entity became dirty after the projection was read, the baseline is not written and the record stays due for the next pass.
 
 This reuses the dirty marking that the domain-event trigger requires anyway, and needs neither an aggregate version check nor a second local read.
 
-*Note:* the members module publishes created, suspended and resumed events but has no member-updated event, so an ordinary profile edit is silent today. A member adapter will need one; it is listed in the proposal's impact.
+*Note for future integrations:* an entity whose module publishes no event on ordinary edits cannot use this trigger until one is added. That work belongs to the change that adds the integration, not here.
 
 ### D10: Retry — Resilience4j inside an attempt, a due date across passes, the count derived from history
 
@@ -115,7 +125,7 @@ The failure count is **derived from the attempt history** rather than denormalis
 
 This has a direct consequence: **a manual reset must itself be recorded as an attempt** with a `RESET` outcome. There is no counter column to zero, so without a reset row the derived count never drops and the record would terminate again on its next failure.
 
-The engine classifies failures by exception type — transport and server-side errors are retryable, everything else is terminal on the spot. When the retryable attempts since the last success exceed the configured limit, the record becomes terminally failed: skipped by the scheduler, emitting an event, waiting for a manager to reset it.
+The engine classifies failures by exception type — transport and server-side errors are retryable, everything else is terminal on the spot. When the retryable attempts since the last success reach the configured limit (D19), the record becomes terminally failed: skipped by the scheduler, emitting an event, waiting for a manager to reset it.
 
 ### D11: An outage of the external system ends the pass
 
@@ -127,34 +137,36 @@ An external write followed by a process death before the record is updated leave
 
 External calls are made outside any database transaction: read and snapshot in one short transaction, call the external system with no transaction open, persist the outcome in a second short transaction. Holding a connection across an HTTP call is what exhausts the pool.
 
-Overlap between a scheduled pass and a manual trigger is prevented per record: a record is **claimed** with a timestamp before work starts, and a second attempt skips a record whose claim is still fresh. A lease timeout releases a claim orphaned by a crash. A per-record claim, rather than a single global pass lock, keeps a manual synchronisation of one entity working while the scheduler processes others.
+Overlap between a scheduled pass and a manual trigger is prevented per record: a record is **claimed** with a timestamp before work starts, and a second attempt skips a record whose claim is still fresh. A lease timeout (D19) releases a claim orphaned by a crash. A per-record claim, rather than a single global pass lock, keeps a manual synchronisation of one entity working while the scheduler processes others.
 
-### D13: Snapshots are encrypted; hashes cover the whole projection only
+### D13: Projections are encrypted at rest; hashes cover the whole projection only
 
-A member projection contains personal data, including the birth number — which can legitimately be corrected upstream and therefore must be part of what is reconciled, not excluded from it. The three snapshot columns are consequently encrypted at rest, reusing `EncryptedString` and the converters already registered globally in `JdbcConfiguration`, so encryption is transparent to the aggregate. The columns are `TEXT`, not the `VARCHAR(255)` that suffices for a birth number.
+Projections will carry personal data as soon as an entity such as a member is synchronised, and adding encryption to a column that already holds data is materially harder than starting with it. The three projection columns are therefore encrypted from the outset, reusing `EncryptedString` and the converters already registered globally in `JdbcConfiguration`, so encryption is transparent to the aggregate. The columns are `TEXT`, not the `VARCHAR(255)` that suffices for a birth number.
 
 Two properties follow and must not be lost later:
 
-- **Hashes are computed over the whole projection and stored in plaintext.** A hash of a complete projection is not a lookup oracle. A *per-field* hash of a birth number would be — the keyspace is small enough to brute-force in seconds, and an encrypted column standing next to a crackable hash of the same value protects nothing. Field-level divergence is therefore computed by decrypting the projections and comparing in memory, never by storing per-field hashes.
-- **Snapshots are derived data.** Unlike the birth number on the member aggregate, a snapshot can be rebuilt by re-reading both sides. If the encryption key rotates or a snapshot fails to decrypt, the recovery is to clear snapshots and let the next pass rebuild them — no re-encryption migration is needed.
+- **Hashes are computed over the whole projection and stored in plaintext.** A hash of a complete projection is not a lookup oracle. A *per-field* hash of a value from a small keyspace — a birth number is the obvious example — would be brute-forceable in seconds, and an encrypted column standing next to a crackable hash of the same value protects nothing. Field-level divergence is therefore computed by decrypting the projections and comparing in memory, never by storing per-field hashes.
+- **Projections are derived data.** Unlike an authoritative field on an aggregate, a stored projection can be rebuilt by re-reading both sides. If the encryption key rotates or a projection fails to decrypt, the recovery is to clear the stored snapshots and let the next pass rebuild them — no re-encryption migration is needed.
 
 The encryption is randomly salted per call, so re-saving an identical projection produces different ciphertext. Nothing may treat the stored column as a change signal; comparison lives entirely in the hash columns.
 
-The attempt history stores hashes and never snapshots, keeping personal data in exactly one table. This is deliberate and should stay that way.
+The attempt history stores hashes and never projections, keeping payload data in exactly one table. This is deliberate and should stay that way.
 
-### D14: `SYNC:MANAGE` authority, plus an access event for sensitive snapshots
+### D14: The `sync` module owns the REST resources, addressed uniformly per entity type
 
-A new global `SYNC:MANAGE` authority gates the synchronisation operations.
+Synchronisation state is reached at `/api/{entityType}/{id}/sync…`, where `{entityType}` is a path parameter whose permitted values are the synchronisable entity types. One controller in the `sync` module serves every entity type; a new integration becomes reachable by adding an enum value and its adapter, with no new endpoints and no per-module duplication of the same four operations.
 
-Because a member snapshot contains data the members API protects field by field, and reading it through the synchronisation API would bypass both that check and the birth-number audit log, the engine emits a **sensitive-snapshot-accessed** event when serving a snapshot whose adapter declares it contains sensitive fields. The `members` module listens and writes its existing audit log, exactly as it does for reads through its own API.
+A new global `SYNC:MANAGE` authority gates them.
 
-*Accepted consequence:* a `SYNC:MANAGE` holder can read member contact data without holding `MEMBERS:READ`. Requiring the entity's own authority in addition would close this; it was considered and not taken. Recorded in Risks.
+*Rejected:* endpoints owned by each entity's module (`events` serving its own sync sub-resource). Discoverable from where the resource already lives, but it duplicates the identical four operations per module and puts synchronisation semantics in modules that should not know them. *Rejected:* a flat generic collection such as `/api/sync/records`. It would invite the cross-entity overview that D8 deliberately excludes.
+
+*Deferred:* sensitive-data handling on these endpoints. No adapter in this change declares sensitive data, so the engine emits no access event and no module listens for one. The adapter contract carries a `containsSensitiveData` flag so the obligation is visible; the change that adds the first sensitive adapter must add the corresponding access audit at the same time. Recorded in Risks.
 
 ### D15: Attempt history as the audit trail; domain events only for what strands work
 
 Every attempt appends a row: when, what triggered it, direction, outcome, the two hashes, and a failure reason. The record itself carries the last successful synchronisation time and direction, which is the audit requirement in its narrow form.
 
-Domain events are published only for **conflict detected** and **terminal failure** — the two states where work stops and nobody is told. Successful synchronisations are not published: they are the high-volume case and the history table already records them. Event payloads carry identifiers, direction, outcome and hashes only, never projections, so that no personal data reaches the retained `event_publication` table (`completion-mode: UPDATE` keeps completed publications).
+Domain events are published only for **conflict detected** and **terminal failure** — the two states where work stops and nobody is told. Successful synchronisations are not published: they are the high-volume case and the history table already records them. Event payloads carry identifiers, direction, outcome and hashes only, never projections, so that no payload data reaches the retained `event_publication` table (`completion-mode: UPDATE` keeps completed publications).
 
 The trigger kind is recorded; the acting user is not.
 
@@ -166,31 +178,55 @@ The engine drives one record at a time and the adapter only ever handles a singl
 
 ### D17: Integrations enrol explicitly; retired records are kept
 
-An integration enrols an entity when it becomes synchronisable — an event when it is imported from ORIS, a member when it is linked to an ORIS person. The engine never enumerates entities on its own and needs no way to do so.
+An integration enrols an entity when it becomes synchronisable — an event when it is imported from ORIS. The engine never enumerates entities on its own and needs no way to do so.
 
-When the entity reaches the end of its life — an event finished or cancelled, a member deactivated — the record is **retired**: no longer scanned, but kept with its history and last-synchronisation information intact.
+When the entity reaches the end of its life — an event finished or cancelled — the record is **retired**: no longer scanned, but kept with its history and last-synchronisation information intact.
 
 No backfill is needed. The database is in-memory and starts empty on every run, and there is no deployed environment.
 
 ### D18: Existing ORIS endpoints keep their paths, with the engine behind them
 
-`POST /api/events/{id}/sync-from-oris`, `POST /api/events/sync-from-oris/all-upcoming` and the `syncEventFromOris` affordance keep their operation identifiers and URLs; they delegate to the engine. The frontend needs no change for the unchanged-data path. The new behaviour — a conflict blocking a synchronisation — surfaces as a new error response on the existing endpoint plus the new nested resources.
+`POST /api/events/{id}/sync-from-oris`, `POST /api/events/sync-from-oris/all-upcoming` and the `syncEventFromOris` affordance keep their operation identifiers and URLs; they delegate to the engine. The frontend needs no change for the unchanged-data path. The new behaviour — a conflict blocking a synchronisation — surfaces as a new error response on the existing endpoint plus the new synchronisation resources.
+
+### D19: Operational limits are configuration with defaults, not constants
+
+| Property | Default | Meaning |
+|---|---|---|
+| `klabis.sync.max-attempts` | `5` | Retryable attempts since the last success or reset before the record becomes terminally failed. |
+| `klabis.sync.claim-lease` | `5m` | How long a claim holds a record before another pass may take it. Must comfortably exceed a slow external call. |
+| `klabis.sync.history-retention` | `30d` | How long attempt rows are kept. A scheduled cleanup removes older rows, in the style of the existing `TokenCleanupJob`. |
+| `klabis.sync.retry-delay.initial` | `15m` | Delay before the first retry of a failed record. |
+| `klabis.sync.retry-delay.multiplier` | `2` | Growth factor per consecutive failure. |
+| `klabis.sync.retry-delay.max` | `24h` | Ceiling for the delay. |
+| `klabis.sync.scan-cron` | `0 0 2 * * *` | When the scheduled pass runs, matching the existing nightly jobs. |
+
+Retention deletes history rows only; it never deletes a synchronisation record, so the last successful synchronisation of a long-lived record stays visible after its attempts have been pruned. A record whose history is pruned while it is failing keeps its derived count only for the retained window — acceptable, because a record failing for longer than the retention period has long since terminated.
+
+Resilience4j retry and circuit-breaker instances are configured under the existing `resilience4j` block.
 
 ## Target Domain Model
 
 ```mermaid
 classDiagram
+    class SynchronizationPort {
+        <<interface>>
+        enroll(target, externalReference)
+        synchronizeNow(target) SyncRecordView
+        state(target) SyncRecordView
+        acknowledgeConflict(target)
+        resolveConflict(target, direction)
+        reset(target)
+        retire(target)
+    }
+
     class SyncRecord {
         SyncRecordId id
         SyncTarget target
         ExternalReference externalReference
         SyncStatus status
-        SyncProjection baselineProjection
-        SyncProjection localProjection
-        SyncProjection externalProjection
-        SyncHash baselineHash
-        SyncHash localHash
-        SyncHash externalHash
+        SyncSnapshot baseline
+        SyncSnapshot local
+        SyncSnapshot external
         ExternalVersionToken externalVersion
         Instant dirtySince
         Instant claimedAt
@@ -200,11 +236,37 @@ classDiagram
         SyncDirection lastDirection
         Instant retiredAt
         markDirty()
-        claim()
-        recordSuccess()
-        recordConflict()
+        claim(lease)
+        recordSuccess(direction, snapshot)
+        recordConflict(local, external)
         acknowledgeConflict()
+        reset()
         retire()
+        divergedFields() List~String~
+    }
+
+    class SyncSnapshot {
+        SyncProjection projection
+        SyncHash hash
+        of(projection) SyncSnapshot
+        matches(SyncSnapshot) boolean
+    }
+
+    class SyncProjection {
+        <<interface>>
+        SyncEntityType entityType()
+    }
+
+    class OrisEventProjection {
+        String name
+        LocalDate eventDate
+        String location
+        String organizer
+        String websiteUrl
+        RegistrationDeadlines deadlines
+        EventRanking ranking
+        Money baseEntryFee
+        List~CategoryLine~ categories
     }
 
     class SyncAttempt {
@@ -233,10 +295,7 @@ classDiagram
         SyncHash acknowledgedLocalHash
         SyncHash acknowledgedExternalHash
         Instant acknowledgedAt
-    }
-
-    class SyncProjection {
-        Map~String,Object~ fields
+        isCurrentFor(SyncRecord) boolean
     }
 
     class SyncCapabilities {
@@ -250,6 +309,7 @@ classDiagram
     }
 
     class SynchronizationAdapter {
+        <<interface>>
         SyncEntityType entityType()
         ExternalSystem system()
         SyncCapabilities capabilities()
@@ -259,6 +319,8 @@ classDiagram
         applyToLocal(entityId, projection)
         applyToExternal(externalId, projection)
     }
+
+    class OrisEventSyncAdapter
 
     class SyncStatus {
         <<enumeration>>
@@ -291,35 +353,49 @@ classDiagram
         MANUAL
     }
 
+    class SyncEntityType {
+        <<enumeration>>
+        EVENT
+    }
+
+    SynchronizationPort ..> SyncRecord : orchestrates
+    SynchronizationPort ..> SynchronizationAdapter : resolves by entity type
     SyncRecord *-- SyncTarget
     SyncRecord *-- ExternalReference
+    SyncRecord *-- SyncSnapshot
     SyncRecord *-- ConflictAcknowledgement
-    SyncRecord *-- SyncProjection
     SyncRecord --> SyncStatus
     SyncRecord --> SyncDirection
+    SyncSnapshot *-- SyncProjection
+    SyncSnapshot *-- SyncHash
+    SyncProjection <|.. OrisEventProjection
     SyncAttempt --> SyncRecord : references
     SyncAttempt --> SyncOutcome
     SyncAttempt --> SyncTriggerKind
     SynchronizationAdapter --> SyncCapabilities
-    SynchronizationAdapter --> SyncProjection
+    SynchronizationAdapter ..> SyncProjection
+    SynchronizationAdapter <|.. OrisEventSyncAdapter
+    SyncTarget --> SyncEntityType
 ```
 
 | Element | Kind | Change | Description |
 |---|---|---|---|
+| `SynchronizationPort` | Primary port | Added | The engine's entry point: enrol, synchronise now, read state, acknowledge a conflict, resolve it in a direction, reset a failed record, retire. Consumed by the REST layer, the scheduler and integrations. |
 | `SyncRecord` | Aggregate root | Added | The synchronisation state of one entity against one external system. Owns direction resolution inputs, conflict state, retry scheduling and last-success information. |
-| `SyncAttempt` | Aggregate root (append-only) | Added | One recorded attempt. Separate from `SyncRecord` because the history is unbounded and must not be loaded with the record. Queried to derive the failure count. |
-| `SyncTarget` | Value object | Added | Which Klabis entity a record belongs to: entity type plus its identifier as an opaque string, so the engine depends on no module's identifier type. |
-| `ExternalReference` | Value object | Added | The counterpart identity in the external system. Holds the whole external identity, including composite cases such as the ORIS person and club-membership identifiers. |
-| `SyncProjection` | Value object | Added | The canonical field set of one side, in a shape shared by both sides. Hashed for comparison and diffed for conflict reporting. |
+| `SyncSnapshot` | Value object | Added | A projection together with its hash, as one indivisible value. The record holds exactly three: baseline, local, external. Prevents a hash from ever belonging to a different projection than the one stored beside it. |
+| `SyncProjection` | Interface | Added | The canonical field set of one side. The engine handles projections only through this interface; concrete implementations are plain data carriers, serialised to JSON for storage and canonicalised for hashing. |
+| `OrisEventProjection` | Value object | Added | The only implementation in this change: the ORIS-owned fields of an event, in the shape shared by both sides. |
 | `SyncHash` | Value object | Added | The digest of a whole projection. Never a per-field digest (D13). |
+| `SyncAttempt` | Aggregate root (append-only) | Added | One recorded attempt. Separate from `SyncRecord` because the history is unbounded and must not be loaded with the record. Queried to derive the failure count; pruned by retention. |
+| `SyncTarget` | Value object | Added | Which Klabis entity a record belongs to: entity type plus its identifier as an opaque string, so the engine depends on no module's identifier type. |
+| `ExternalReference` | Value object | Added | The counterpart identity in the external system, including composite identities. |
 | `ExternalVersionToken` | Value object | Added | An opaque cheap change indicator from the external system, when it offers one. |
 | `ConflictAcknowledgement` | Value object | Added | The hash pair a manager acknowledged, and when. Makes a forced direction valid only against the collision it was granted for. |
 | `SyncCapabilities` | Value object | Added | What an integration can do for an entity type, including whether its projections contain sensitive data. |
 | `SynchronizationAdapter` | Secondary port | Added | The contract an integration implements. Published by the `sync` module, implemented in the integration's module. |
-| `SyncStatus`, `SyncDirection`, `SyncOutcome`, `SyncTriggerKind`, `SyncEntityType`, `ExternalSystem` | Enumerations | Added | Record state, resolved direction, attempt result, what started a pass, and the two discriminators. |
-| `SyncConflictDetected`, `SyncTerminallyFailed`, `SensitiveSnapshotAccessed` | Domain events | Added | Published by the engine. The first two carry identifiers, direction and hashes; the third names the entity whose sensitive snapshot was served. |
-| `SynchronizationPort` | Primary port | Added | Enrol, synchronise now, read state, acknowledge a conflict, force a direction, reset a failed record, retire. |
-| `MemberUpdatedEvent` | Domain event | Added | In `members`. Does not exist today; needed so a local member change can mark a record dirty. |
+| `OrisEventSyncAdapter` | Secondary adapter | Added | In `com.klabis.oris.sync`. Declares inward-only capabilities, supplies the `getEventListVersions` token, and reuses the mapping in `OrisEventImportService`. |
+| `SyncStatus`, `SyncDirection`, `SyncOutcome`, `SyncTriggerKind`, `SyncEntityType`, `ExternalSystem` | Enumerations | Added | Record state, resolved direction, attempt result, what started a pass, and the two discriminators. `SyncEntityType` has one value (`EVENT`) in this change and doubles as the REST path parameter (D14). |
+| `SyncConflictDetected`, `SyncTerminallyFailed` | Domain events | Added | Published by the engine, carrying identifiers, direction and hashes only. |
 | `Event.syncFromOris` | Aggregate command | Changed | Becomes the inward write invoked by the adapter rather than the whole synchronisation. Its field-ownership merge behaviour for categories is unchanged. |
 | `Authority.SYNC_MANAGE` | Enumeration constant | Added | Global authority gating synchronisation operations. |
 
@@ -335,7 +411,7 @@ sequenceDiagram
 
     S->>E: run pass
     E->>R: find due, unclaimed, not retired
-    E->>R: claim
+    E->>R: claim (lease)
     E->>A: external version token
     A->>X: cheap version read
     X-->>A: token
@@ -344,13 +420,13 @@ sequenceDiagram
     else
         E->>A: read local projection
         E->>A: read external projection
-        E->>E: compare both against baseline
+        E->>E: build snapshots, compare both against baseline
         alt only one side changed and that write is possible
             E->>A: apply to the other side
             A->>X: write (idempotent)
             E->>R: dirty-since check, then baseline and last-success
         else both changed, or the needed write is unavailable
-            E->>R: conflict, keep projections
+            E->>R: conflict, keep both snapshots
             E-->>E: publish conflict detected
         end
         E->>E: append attempt to history
@@ -359,16 +435,15 @@ sequenceDiagram
 
 ## REST API
 
-New resources are nested under the entity, per D14. The events module hosts the event-facing ones; a later member adapter adds the equivalent under `/api/members/{id}`.
-
-All new operations require the `SYNC:MANAGE` authority. Specifications are hand-written in `docs/openapi/spec/events.yaml` following the spec-first workflow.
+All resources below are owned by the `sync` module and served by one controller. `{entityType}` is a path parameter constrained to the `SyncEntityType` values — `events` in this change — so a new integration is reachable without new endpoints. All operations require `SYNC:MANAGE`. Specifications are hand-written in a new `docs/openapi/spec/sync.yaml`, with a matching `sync` springdoc group.
 
 ### Read synchronisation state
 
-`GET /api/events/{id}/sync` → `200 OK`
+`GET /api/{entityType}/{id}/sync` — operation `getSyncState` → `200 OK`
 
 ```json
 {
+  "entityType": "events",
   "status": "CONFLICT",
   "externalSystem": "ORIS",
   "externalId": "8123",
@@ -376,37 +451,47 @@ All new operations require the `SYNC:MANAGE` authority. Specifications are hand-
   "lastDirection": "INWARD",
   "nextAttemptDueAt": null,
   "failedAttemptsSinceLastSuccess": 0,
-  "divergedFields": ["name", "registrationDeadlines.first"],
+  "divergedFields": ["name", "deadlines.first"],
   "local": { "name": "Krajský žebříček – sprint", "...": "..." },
   "external": { "name": "Krajský žebříček Morava – sprint", "...": "..." },
   "acknowledgement": null,
-  "_links": { "self": {...}, "event": {...} }
+  "_links": { "self": {...}, "entity": {...} }
 }
 ```
 
-`local` and `external` are the decrypted projections; serving them on a record whose adapter declares sensitive data emits the access event (D13, D14). `divergedFields` is present only in `CONFLICT`.
+`local` and `external` are the decrypted projections, serialised as the concrete projection type defines them. `divergedFields` is present only in `CONFLICT`.
 
 Affordances on `self`, rendered per state:
 
 | Affordance | Shown when | Operation |
 |---|---|---|
-| `synchronizeNow` | status `IN_SYNC` or `NEW` | `syncEventFromOris` (existing operation) |
+| `synchronizeNow` | status `NEW` or `IN_SYNC` | `synchronizeNow` |
 | `acknowledgeSyncConflict` | status `CONFLICT`, not yet acknowledged | `acknowledgeSyncConflict` |
 | `resolveSyncConflict` | status `CONFLICT`, acknowledged and still current | `resolveSyncConflict` |
 | `resetSyncRecord` | status `FAILED` | `resetSyncRecord` |
 
+### Synchronise now
+
+`POST /api/{entityType}/{id}/sync` — operation `synchronizeNow`
+
+Request body: none. Runs one pass for this record immediately.
+
+- `200 OK` — returns the resulting state resource.
+- `409 Conflict` — the record is in `CONFLICT` or `FAILED` and needs resolution or a reset first.
+- `404 Not Found` — the entity is not enrolled.
+
 ### Acknowledge a conflict
 
-`POST /api/events/{id}/sync/acknowledgement` — operation `acknowledgeSyncConflict`
+`POST /api/{entityType}/{id}/sync/acknowledgement` — operation `acknowledgeSyncConflict`
 
 Request body: none. The server binds the acknowledgement to the record's current hash pair.
 
 - `200 OK` — acknowledgement recorded, `resolveSyncConflict` affordance now present.
 - `409 Conflict` — the record is not in `CONFLICT`.
 
-### Force a direction
+### Resolve in a direction
 
-`POST /api/events/{id}/sync/resolution` — operation `resolveSyncConflict`
+`POST /api/{entityType}/{id}/sync/resolution` — operation `resolveSyncConflict`
 
 ```json
 { "direction": "INWARD" }
@@ -419,26 +504,26 @@ For an event, `OUTWARD` is always rejected: the ORIS integration declares no out
 
 ### Reset a terminally failed record
 
-`POST /api/events/{id}/sync/reset` — operation `resetSyncRecord`
+`POST /api/{entityType}/{id}/sync/reset` — operation `resetSyncRecord`
 
 Request body: none. Appends a `RESET` attempt so the derived failure count restarts (D10), clears the due date, and returns the record to `IN_SYNC`.
 
 - `200 OK`
 - `409 Conflict` — the record is not in `FAILED`.
 
-### Existing operations
+### Existing operations, unchanged in shape
 
-`POST /api/events/{id}/sync-from-oris` and `POST /api/events/sync-from-oris/all-upcoming` keep their paths, operation identifiers and the `syncEventFromOris` affordance. New failure mode: `409 Conflict` when the record is in `CONFLICT` or `FAILED`, with a problem detail pointing at the sync sub-resource.
+`POST /api/events/{id}/sync-from-oris` and `POST /api/events/sync-from-oris/all-upcoming` keep their paths, operation identifiers and the `syncEventFromOris` affordance, delegating to the engine. New failure mode: `409 Conflict` when the record is in `CONFLICT` or `FAILED`, with a problem detail pointing at the sync resource.
 
-`GET /api/events/{id}` gains a `sync` link when the event is enrolled, so a client reaches the state resource by navigation.
+`GET /api/events/{id}` gains a `sync` link when the event is enrolled, so a client reaches the state resource by navigation. The `events` module obtains it from `SynchronizationPort`, a primary port, per ADR-001.
 
 ## Persistence
 
 Two tables in `V001` (the project adds no new migration scripts).
 
-`sync_record` — one row per entity per external system, unique on `(entity_type, entity_id, external_system)` and on `(external_system, external_id, entity_type)`. Projection columns are `TEXT` and encrypted; hash columns are plaintext. Carries the claim timestamp, dirty-since, acknowledgement hash pair, next-attempt-due, last-success information, retired-at, and a version column for optimistic locking as every other memento has.
+`sync_record` — one row per entity per external system, unique on `(entity_type, entity_id, external_system)` and on `(external_system, external_id, entity_type)`. Each `SyncSnapshot` flattens to a projection column and a hash column: `baseline_projection` / `baseline_hash`, `local_projection` / `local_hash`, `external_projection` / `external_hash`. Projection columns are `TEXT` and encrypted; hash columns are plaintext. The row also carries the claim timestamp, dirty-since, the acknowledgement hash pair, next-attempt-due, last-success information, retired-at, and a version column for optimistic locking as every other memento has.
 
-`sync_attempt` — append-only, indexed on `(sync_record_id, started_at DESC)` for the "attempts since last success or reset" query. Holds no projections.
+`sync_attempt` — append-only, indexed on `(sync_record_id, started_at DESC)` for the "attempts since last success or reset" query and for retention pruning. Holds no projections.
 
 ## Frontend
 
@@ -450,14 +535,15 @@ No frontend work in this change. The existing "Synchronizovat" action keeps work
 |---|---|
 | **Synchronisation record** | The persistent state of one Klabis entity paired with its counterpart in one external system. |
 | **Canonical projection** | The field set exchanged for one entity, in one shape shared by both sides. The unit of comparison; fields outside it are invisible to synchronisation. |
-| **Baseline** | The projection and hash captured at the last successful synchronisation. The reference point that makes "which side changed" answerable. |
+| **Snapshot** | A projection together with its hash, held as a single value. A record has three: baseline, local, external. |
+| **Baseline** | The snapshot captured at the last successful synchronisation. The reference point that makes "which side changed" answerable. |
 | **Direction** | Inward (external system → Klabis) or outward (Klabis → external system). |
 | **Conflict** | Both sides changed since the baseline, or the local side changed and the integration cannot write outward. Never resolved by the system. |
 | **Acknowledgement** | A manager's confirmation that they have seen a specific collision, bound to the hash pair current at that moment. |
 | **Claim** | A short-lived hold on a record that stops two passes from working on it at once. |
 | **Dirty-since** | When the local entity was last observed to change. Marks a record due, and prevents a baseline being written over an edit that landed mid-pass. |
 | **Retired record** | A record whose entity has reached the end of its life. Kept for its history, never scanned again. |
-| **Terminal failure** | Retryable attempts since the last success exceeded the limit. The record stops attempting and waits for a manual reset. |
+| **Terminal failure** | Retryable attempts since the last success reached the configured limit. The record stops attempting and waits for a manual reset. |
 | **External version token** | An opaque value from the external system that changes when the entity changes, letting the engine skip a full read. |
 | **Synchronisation adapter** | An integration's implementation for one entity type and one external system: declared capabilities, projections for both sides, and the writes it supports. |
 
@@ -466,27 +552,27 @@ No frontend work in this change. The existing "Synchronizovat" action keeps work
 | Risk | Trade-off taken |
 |---|---|
 | A conflicted record is invisible until someone opens that entity — no cross-entity overview, and nothing consumes the conflict event yet. | Accepted (D8). The event exists so a consumer, or a `syncStatus` filter on entity lists, can be added without touching the engine. |
-| A `SYNC:MANAGE` holder reads member contact data without `MEMBERS:READ`, bypassing field-level authorisation. | Accepted (D14). The access event preserves the audit trail; requiring the entity's authority in addition remains available. |
 | A forced directional synchronisation discards data and is recorded without naming who did it. | Accepted (D15). Adding the acting user is additive to the attempt history. |
+| No access audit exists for projections containing personal data. | Deferred (D14). No adapter in this change declares sensitive data. The `containsSensitiveData` flag keeps the obligation visible, and the change adding the first sensitive adapter must add the audit with it — reading such a projection through `SYNC:MANAGE` would otherwise bypass the owning module's field-level authorisation. |
 | An interrupted pass can repeat an outward write. | Accepted (D12) by requiring outward writes to be idempotent, which the ORIS write operations are. An adapter with a non-idempotent write cannot be added without revisiting this. |
 | The behaviour change surprises managers: an edit that used to vanish now blocks synchronisation. | Intended (D6). The spec change makes it explicit, and the affordances put the resolution where the manager already is. |
 | Encrypted projections are decrypted on every comparison, three per record per pass. | Acceptable at club scale (hundreds of records, one pass a night). Worth measuring before any batch mode is added. |
-| Personal data now lives in `sync_record` as well as `members`. | Contained by keeping projections out of the attempt history and out of event payloads, and by encrypting the columns. Recorded in the non-functional spec. |
+| History retention prunes the evidence behind a derived failure count. | Accepted (D19). A record failing longer than the retention window has terminated long before, and the record itself keeps its last-success information regardless. |
 
 ## Migration Plan
 
-1. Build the `sync` module with a test-only adapter exercising every path — inward, outward, conflict, unavailable-write conflict, retry, terminal failure, reset, retirement — with no ORIS involvement.
+1. Build the `sync` module with a test-only adapter and test projection exercising every path — inward, outward, conflict, unavailable-write conflict, retry, terminal failure, reset, retirement — with no ORIS involvement.
 2. Add `SYNC:MANAGE` and the persistence, including the encrypted projection columns.
-3. Write the ORIS event adapter in `oris.sync`, reusing the mapping already in `OrisEventImportService`, declaring inward-only capabilities and the `getEventListVersions` token.
-4. Enrol events on ORIS import; retire on finish and cancel.
-5. Move `syncEventFromOris` behind the engine, keeping the endpoint. Replace the `OrisBulkSyncService` loop with a scheduled pass over due records.
-6. Add the nested sync resources and affordances.
+3. Write the ORIS event adapter and projection in `oris.sync`, reusing the mapping already in `OrisEventImportService`, declaring inward-only capabilities and the `getEventListVersions` token.
+4. Enrol events on ORIS import; retire on finish and cancel; mark dirty on `EventUpdatedEvent`.
+5. Move `syncEventFromOris` behind the engine, keeping the endpoint. Replace the `OrisBulkSyncService` loop with a scheduled pass over due records, and add the history retention job.
+6. Add the synchronisation REST resources and affordances, and the `sync` link on the event resource.
 
 No data migration: the database starts empty on every run, and there is no deployed environment. Steps 1–2 are independently committable and change no existing behaviour; the observable change lands at step 5.
 
 ## Open Questions
 
-1. **Retry limits.** The number of retryable attempts before terminal failure, the growth of the due-date delay, and the circuit-breaker thresholds are configuration; sensible defaults need choosing (proposal assumes a nightly pass).
-2. **Claim lease duration.** Long enough to outlast a slow external call, short enough that a crashed pass does not strand a record until the next day.
-3. **Attempt history retention.** Append-only with no pruning is fine for now; a retention rule belongs in the non-functional spec before any long-lived deployment.
-4. **Member projection contents.** The exact field set, and how the two ORIS identifiers are represented in one external reference, are settled when the member adapter is designed — not here.
+None blocking. Two items to revisit with operational experience rather than before implementation:
+
+1. **Retry delay curve.** The defaults in D19 (15 minutes, doubling, capped at 24 hours) are proposed against a nightly pass and have not been validated against real ORIS behaviour.
+2. **Batch reads.** D16 defers them; the external version token may make them unnecessary, which is only observable once the adapter runs against the real calendar.
