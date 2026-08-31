@@ -840,6 +840,73 @@ class EventTest {
     }
 
     @Nested
+    @DisplayName("Shared transport / accommodation count queries")
+    class SharedServiceCountQueries {
+
+        private Event activeEvent() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).location("Forest").organizer("Club")
+                    .sharedTransportEnabled(true)
+                    .sharedAccommodationEnabled(true)
+                    .build());
+            event.publish();
+            return event;
+        }
+
+        private void register(Event event, boolean wantsTransport, boolean wantsAccommodation) {
+            event.registerMember(new MemberId(UUID.randomUUID()), SiCardNumber.of("123456"), null,
+                    wantsTransport, wantsAccommodation);
+        }
+
+        @Test
+        @DisplayName("counts each choice independently over a mixed set of registrations")
+        void countsMixedRegistrations() {
+            Event event = activeEvent();
+            register(event, true, false);   // transport only
+            register(event, false, true);   // accommodation only
+            register(event, true, true);    // both
+            register(event, false, false);  // neither
+
+            assertThat(event.sharedTransportCount()).isEqualTo(2);
+            assertThat(event.sharedAccommodationCount()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("returns zero for each offer when no registration chose it")
+        void countsZeroWhenNobodyChose() {
+            Event event = activeEvent();
+            register(event, false, false);
+
+            assertThat(event.sharedTransportCount()).isEqualTo(0);
+            assertThat(event.sharedAccommodationCount()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("returns zero for an event with no registrations")
+        void countsZeroWithNoRegistrations() {
+            Event event = activeEvent();
+
+            assertThat(event.sharedTransportCount()).isEqualTo(0);
+            assertThat(event.sharedAccommodationCount()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("count is a plain tally and ignores whether the offer is currently enabled")
+        void countIgnoresOfferFlag() {
+            Event event = activeEvent();
+            register(event, true, true);
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedTransportEnabled(false)
+                    .sharedAccommodationEnabled(false)
+                    .build());
+
+            assertThat(event.sharedTransportCount()).isEqualTo(1);
+            assertThat(event.sharedAccommodationCount()).isEqualTo(1);
+        }
+    }
+
+    @Nested
     @DisplayName("Member Registration")
     class MemberRegistration {
 

@@ -37,9 +37,9 @@ interfaces and frontend types are refreshed, backend (Sections 2–5) and fronte
 
 ## 4. Backend — count summary on event detail (vertical slice: coordinator sees counts)
 
-- [ ] 4.1 Add `sharedTransportCount()` / `sharedAccommodationCount()` query methods to `Event` (plain filter over `registrations`); unit test with a mix of choices.
-- [ ] 4.2 In `EventController.getEvent`, assemble `sharedServicesSummary` at runtime: include a sub-object per **enabled** offer, only when the event is ACTIVE and `EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority` is true; omit the whole object otherwise. Deliver via `HalResponseContext` like the embedded registrations.
-- [ ] 4.3 Controller/API test matrix: (a) coordinator on ACTIVE event with both offers → both counts, including a `count: 0` case; (b) EVENTS:REGISTRATIONS user → same; (c) plain member → no summary; (d) DRAFT event → no summary; (e) offer disabled → its sub-object absent; (f) stored `wants*=true` on a since-disabled offer → excluded from the count.
+- [x] 4.1 Add `sharedTransportCount()` / `sharedAccommodationCount()` query methods to `Event` (plain filter over `registrations`, return `long`); unit test with a mix of choices.
+- [x] 4.2 In `EventController.getEvent`, after conversion set `EventDto.sharedServicesSummary` to non-null only when ACTIVE + coordinator/EVENTS:REGISTRATIONS + ≥1 offer enabled; each sub-object present only for its enabled offer; null otherwise (dropped by record-level `@JsonInclude(NON_NULL)`). `EventDtoConverter` gets `@Mapping(target="sharedServicesSummary", ignore=true)`. It is a plain DTO field, not `_embedded`.
+- [x] 4.3 Controller/API test matrix (a)–(f) in `EventControllerTest`.
 
 ## 5. Backend — accommodation list filter + gate (vertical slice: filtered list)
 

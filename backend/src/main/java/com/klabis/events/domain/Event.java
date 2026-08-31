@@ -963,6 +963,23 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     }
 
     /**
+     * Number of registered members who asked to use shared transport. A plain tally over the
+     * registrations — it does not consult {@link #isSharedTransportEnabled()}; callers that only
+     * want the count for an enabled offer gate on that flag themselves.
+     */
+    public long sharedTransportCount() {
+        return registrations.stream().filter(EventRegistration::wantsSharedTransport).count();
+    }
+
+    /**
+     * Number of registered members who asked to use shared accommodation. See
+     * {@link #sharedTransportCount()} for the gating note.
+     */
+    public long sharedAccommodationCount() {
+        return registrations.stream().filter(EventRegistration::wantsSharedAccommodation).count();
+    }
+
+    /**
      * Look up a category by id among this event's current categories.
      * <p>
      * Returns empty when {@code categoryId} is null or no longer present on the event — this is the

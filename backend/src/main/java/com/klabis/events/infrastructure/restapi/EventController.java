@@ -122,12 +122,43 @@ public class EventController implements EventsApi {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Event event = eventManagementService.getEvent(new EventId(id), EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE));
 
+        EventDto dto = conversionService.convert(event, EventDto.class);
+        dto = EventDtoBuilder.builder(dto)
+                .sharedServicesSummary(sharedServicesSummary(event, auth))
+                .build();
+
         // The registrations are declared here rather than in the postprocessor because building them
         // needs the registration port and Members, which @MvcComponent beans should not inject —
         // they are scanned by every @WebMvcTest, so unrelated slice tests would have to mock them.
         HalResponseContext.setDomain(event);
         HalResponseContext.embed(buildRegistrationDtos(event), RegistrationSummaryDto.class);
-        return ResponseEntity.ok(conversionService.convert(event, EventDto.class));
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * The per-offer count summary shown on the event detail page. Returned only for the event
+     * coordinator or callers with EVENTS:REGISTRATIONS, only on ACTIVE events, and only while at
+     * least one offer is enabled; {@code null} otherwise, which {@code @JsonInclude(NON_NULL)} on
+     * {@link EventDto} drops from the response. Each sub-object is present only when its offer is
+     * enabled — the count itself is a plain tally regardless of the flag.
+     */
+    @Nullable
+    private SharedServicesSummaryDto sharedServicesSummary(Event event, Authentication auth) {
+        boolean anyOfferEnabled = event.isSharedTransportEnabled() || event.isSharedAccommodationEnabled();
+        if (event.getStatus() != com.klabis.events.domain.EventStatus.ACTIVE
+                || !anyOfferEnabled
+                || !EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
+            return null;
+        }
+
+        return SharedServicesSummaryDtoBuilder.builder()
+                .sharedTransport(event.isSharedTransportEnabled()
+                        ? new SharedServiceCountDto((int) event.sharedTransportCount())
+                        : null)
+                .sharedAccommodation(event.isSharedAccommodationEnabled()
+                        ? new SharedServiceCountDto((int) event.sharedAccommodationCount())
+                        : null)
+                .build();
     }
 
     private List<RegistrationSummaryDto> buildRegistrationDtos(Event event) {

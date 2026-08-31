@@ -1557,6 +1557,148 @@ class EventControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/events/{id} — sharedServicesSummary count summary (Section 4)")
+    class SharedServicesSummaryTests {
+
+        private static final String COORDINATOR_ID = "00000000-0000-0000-0000-0000000000c0";
+
+        private EventRegistration registration(boolean wantsTransport, boolean wantsAccommodation) {
+            return EventRegistration.reconstruct(UUID.randomUUID(), new MemberId(UUID.randomUUID()),
+                    SiCardNumber.of("123456"), null, Instant.now(), wantsTransport, wantsAccommodation);
+        }
+
+        private EventTestDataBuilder activeEventWithBothOffers() {
+            return EventTestDataBuilder.anEvent()
+                    .withCoordinator(new MemberId(UUID.fromString(COORDINATOR_ID)))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withSharedTransportEnabled(true)
+                    .withSharedAccommodationEnabled(true);
+        }
+
+        @Test
+        @DisplayName("(a) coordinator on ACTIVE event with both offers sees both counts")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        void coordinatorSeesBothCounts() throws Exception {
+            Event event = activeEventWithBothOffers()
+                    .addRegistrations(List.of(
+                            registration(true, false),
+                            registration(false, true),
+                            registration(true, true),
+                            registration(false, false)))
+                    .buildPublished();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sharedServicesSummary.sharedTransport.count").value(2))
+                    .andExpect(jsonPath("$.sharedServicesSummary.sharedAccommodation.count").value(2));
+        }
+
+        @Test
+        @DisplayName("(a) an enabled offer nobody chose still yields a sub-object with count 0")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        void enabledOfferWithNoTakersHasCountZero() throws Exception {
+            Event event = activeEventWithBothOffers()
+                    .addRegistrations(List.of(registration(true, false)))
+                    .buildPublished();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sharedServicesSummary.sharedTransport.count").value(1))
+                    .andExpect(jsonPath("$.sharedServicesSummary.sharedAccommodation.count").value(0));
+        }
+
+        @Test
+        @DisplayName("(b) user with EVENTS:REGISTRATIONS (not coordinator) sees the summary")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_REGISTRATIONS})
+        void registrationsAuthoritySeesSummary() throws Exception {
+            Event event = activeEventWithBothOffers()
+                    .addRegistrations(List.of(registration(true, true)))
+                    .buildPublished();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sharedServicesSummary.sharedTransport.count").value(1))
+                    .andExpect(jsonPath("$.sharedServicesSummary.sharedAccommodation.count").value(1));
+        }
+
+        @Test
+        @DisplayName("(c) plain authenticated member gets no sharedServicesSummary")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-0000000000ff", authorities = {Authority.EVENTS_READ})
+        void plainMemberDoesNotSeeSummary() throws Exception {
+            Event event = activeEventWithBothOffers()
+                    .addRegistrations(List.of(registration(true, true)))
+                    .buildPublished();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sharedServicesSummary").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("(d) DRAFT event, coordinator, offers enabled → no sharedServicesSummary")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void draftEventHasNoSummary() throws Exception {
+            Event event = activeEventWithBothOffers()
+                    .addRegistrations(List.of(registration(true, true)))
+                    .build();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("DRAFT"))
+                    .andExpect(jsonPath("$.sharedServicesSummary").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("(e) only sharedTransportEnabled → sharedTransport present, sharedAccommodation absent")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        void onlyTransportEnabledShowsOnlyTransport() throws Exception {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(new MemberId(UUID.fromString(COORDINATOR_ID)))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withSharedTransportEnabled(true)
+                    .withSharedAccommodationEnabled(false)
+                    .addRegistrations(List.of(registration(true, false), registration(true, false)))
+                    .buildPublished();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sharedServicesSummary.sharedTransport.count").value(2))
+                    .andExpect(jsonPath("$.sharedServicesSummary.sharedAccommodation").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("(f) accommodation offer off but a stored wantsSharedAccommodation=true → no accommodation sub-object; whole summary absent when transport also off")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        void disabledOfferWithStoredChoiceIsHidden() throws Exception {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(new MemberId(UUID.fromString(COORDINATOR_ID)))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withSharedTransportEnabled(false)
+                    .withSharedAccommodationEnabled(false)
+                    .addRegistrations(List.of(registration(false, true)))
+                    .buildPublished();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sharedServicesSummary").doesNotExist());
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/events/{id}/publish")
     class PublishEventTests {
 
