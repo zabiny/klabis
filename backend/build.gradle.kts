@@ -28,6 +28,9 @@ java {
 
 repositories {
     mavenCentral()
+    flatDir {
+        dirs("lib")
+    }
     maven {
         url = uri("https://gitlab.polach.cloud/api/v4/groups/zbm/-/packages/maven")
         name = "gitlab-zbm"
@@ -47,6 +50,9 @@ val mapstructVersion = "1.6.3"
 val mapstructSpringExtensionsVersion = "2.0.0"
 val testcontainersVersion = "1.19.3"
 val springModulithVersion = "2.0.0"
+val h2Version = "2.5.250"
+
+extra["h2.version"] = h2Version
 
 dependencyManagement {
     imports {
