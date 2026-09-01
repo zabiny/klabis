@@ -1701,6 +1701,110 @@ class EventControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/events/{id} — registrationDtoList shared-service choices")
+    class RegistrationListSharedChoicesTests {
+
+        private static final String VIEWER_ID = "00000000-0000-0000-0000-0000000000d1";
+        private static final String REGISTERED_MEMBER_ID = "00000000-0000-0000-0000-0000000000d2";
+
+        private EventRegistration registration(boolean wantsTransport, boolean wantsAccommodation) {
+            return EventRegistration.reconstruct(UUID.randomUUID(),
+                    new MemberId(UUID.fromString(REGISTERED_MEMBER_ID)),
+                    SiCardNumber.of("123456"), null, Instant.now(), wantsTransport, wantsAccommodation);
+        }
+
+        private void mockRegisteredMember() {
+            MemberId memberId = new MemberId(UUID.fromString(REGISTERED_MEMBER_ID));
+            when(members.findByIds(any())).thenReturn(Map.of(memberId,
+                    new MemberDto(memberId.value(), "Petr", "Zeleny", null)));
+        }
+
+        @Test
+        @DisplayName("(a) both offers on → every row carries both choices with real values")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = VIEWER_ID, authorities = {Authority.EVENTS_READ})
+        void bothOffersCarryBothChoices() throws Exception {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(new MemberId(UUID.randomUUID()))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withSharedTransportEnabled(true)
+                    .withSharedAccommodationEnabled(true)
+                    .buildPublished();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of(
+                    registration(true, false),
+                    registration(false, true)));
+            mockRegisteredMember();
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].wantsSharedTransport").value(true))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].wantsSharedAccommodation").value(false))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1].wantsSharedTransport").value(false))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1].wantsSharedAccommodation").value(true));
+        }
+
+        @Test
+        @DisplayName("(b) transport offer only → transport shown, accommodation property absent")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = VIEWER_ID, authorities = {Authority.EVENTS_READ})
+        void transportOnlyOmitsAccommodation() throws Exception {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(new MemberId(UUID.randomUUID()))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withSharedTransportEnabled(true)
+                    .withSharedAccommodationEnabled(false)
+                    .buildPublished();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of(registration(false, false)));
+            mockRegisteredMember();
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].wantsSharedTransport").value(false))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].wantsSharedAccommodation").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("(c) accommodation offer only → accommodation shown, transport property absent")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = VIEWER_ID, authorities = {Authority.EVENTS_READ})
+        void accommodationOnlyOmitsTransport() throws Exception {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(new MemberId(UUID.randomUUID()))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withSharedTransportEnabled(false)
+                    .withSharedAccommodationEnabled(true)
+                    .buildPublished();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of(registration(false, true)));
+            mockRegisteredMember();
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].wantsSharedAccommodation").value(true))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].wantsSharedTransport").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("(d) no offers → neither property present even with stored choices")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = VIEWER_ID, authorities = {Authority.EVENTS_READ})
+        void noOffersHideBothChoices() throws Exception {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withCoordinator(new MemberId(UUID.randomUUID()))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withSharedTransportEnabled(false)
+                    .withSharedAccommodationEnabled(false)
+                    .buildPublished();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of(registration(true, true)));
+            mockRegisteredMember();
+
+            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].wantsSharedTransport").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].wantsSharedAccommodation").doesNotExist());
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/events/{id}/publish")
     class PublishEventTests {
 

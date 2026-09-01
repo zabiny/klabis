@@ -700,6 +700,60 @@ describe('EventDetailPage', () => {
             });
         });
 
+        describe('shared service choice columns (show-shared-services-in-registrations)', () => {
+            const rowWithChoices = (memberId: string, lastName: string, wantsTransport: boolean, wantsAccommodation: boolean) =>
+                buildRegistrationRow(memberId, {lastName, wantsSharedTransport: wantsTransport, wantsSharedAccommodation: wantsAccommodation});
+
+            it('shows both columns with Ano/Ne per registration when both offers are enabled', () => {
+                renderPageWithRegistrationRows(
+                    [
+                        rowWithChoices('member-1', 'Nováková', true, false),
+                        rowWithChoices('member-2', 'Dvořák', false, true),
+                    ],
+                    {sharedTransportEnabled: true, sharedAccommodationEnabled: true},
+                );
+
+                expect(screen.getByRole('columnheader', {name: 'Nabídnout společnou dopravu'})).toBeInTheDocument();
+                expect(screen.getByRole('columnheader', {name: 'Nabídnout společné ubytování'})).toBeInTheDocument();
+                const rowFor = (lastName: string) =>
+                    screen.getAllByRole('row').find((row) => row.textContent?.includes(lastName));
+                expect(rowFor('Nováková')?.textContent).toContain('Ano');
+                expect(rowFor('Nováková')?.textContent).toContain('Ne');
+                expect(rowFor('Dvořák')?.textContent).toContain('Ne');
+                expect(rowFor('Dvořák')?.textContent).toContain('Ano');
+            });
+
+            it('shows shared transport column only when only transport is enabled', () => {
+                renderPageWithRegistrationRows(
+                    [rowWithChoices('member-1', 'Nováková', true, false)],
+                    {sharedTransportEnabled: true, sharedAccommodationEnabled: false},
+                );
+
+                expect(screen.getByRole('columnheader', {name: 'Nabídnout společnou dopravu'})).toBeInTheDocument();
+                expect(screen.queryByRole('columnheader', {name: 'Nabídnout společné ubytování'})).not.toBeInTheDocument();
+            });
+
+            it('shows shared accommodation column only when only accommodation is enabled', () => {
+                renderPageWithRegistrationRows(
+                    [rowWithChoices('member-1', 'Nováková', false, true)],
+                    {sharedTransportEnabled: false, sharedAccommodationEnabled: true},
+                );
+
+                expect(screen.getByRole('columnheader', {name: 'Nabídnout společné ubytování'})).toBeInTheDocument();
+                expect(screen.queryByRole('columnheader', {name: 'Nabídnout společnou dopravu'})).not.toBeInTheDocument();
+            });
+
+            it('shows no shared service columns when neither offer is enabled', () => {
+                renderPageWithRegistrationRows(
+                    [rowWithChoices('member-1', 'Nováková', true, true)],
+                    {sharedTransportEnabled: false, sharedAccommodationEnabled: false},
+                );
+
+                expect(screen.queryByRole('columnheader', {name: 'Nabídnout společnou dopravu'})).not.toBeInTheDocument();
+                expect(screen.queryByRole('columnheader', {name: 'Nabídnout společné ubytování'})).not.toBeInTheDocument();
+            });
+        });
+
         const buildRegistrationRow = (memberId = 'member-1', overrides?: Record<string, unknown>) => ({
             firstName: 'Jana',
             lastName: 'Nováková',

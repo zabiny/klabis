@@ -187,8 +187,8 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .siCardNumber(registration.siCardNumber().value())
                 .category(RegistrationDtoMapper.toCategoryDto(registration, event))
                 .registeredAt(registration.registeredAt())
-                .wantsSharedTransport(event.isSharedTransportEnabled() ? registration.wantsSharedTransport() : null)
-                .wantsSharedAccommodation(event.isSharedAccommodationEnabled() ? registration.wantsSharedAccommodation() : null)
+                .wantsSharedTransport(RegistrationDtoMapper.wantsSharedTransport(registration, event))
+                .wantsSharedAccommodation(RegistrationDtoMapper.wantsSharedAccommodation(registration, event))
                 .build();
     }
 

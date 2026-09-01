@@ -24,6 +24,8 @@ class RegistrationDtoMapper {
                 .lastName(member.lastName())
                 .category(toCategoryDto(registration, event))
                 .registrationTime(registration.registeredAt())
+                .wantsSharedTransport(wantsSharedTransport(registration, event))
+                .wantsSharedAccommodation(wantsSharedAccommodation(registration, event))
                 .coordinators(toCoordinatorUuids(event.getCoordinators()))
                 .registeredMemberId(registration.memberId().uuid())
                 .build();
@@ -31,6 +33,14 @@ class RegistrationDtoMapper {
 
     private static List<UUID> toCoordinatorUuids(Set<MemberId> coordinators) {
         return coordinators.stream().map(MemberId::uuid).toList();
+    }
+
+    static Boolean wantsSharedTransport(EventRegistration registration, Event event) {
+        return event.isSharedTransportEnabled() ? registration.wantsSharedTransport() : null;
+    }
+
+    static Boolean wantsSharedAccommodation(EventRegistration registration, Event event) {
+        return event.isSharedAccommodationEnabled() ? registration.wantsSharedAccommodation() : null;
     }
 
     static EventCategoryDto toCategoryDto(EventRegistration registration, Event event) {

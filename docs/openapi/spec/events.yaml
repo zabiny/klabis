@@ -1844,6 +1844,15 @@ components:
           format: date-time
           x-klabis-authority: EVENTS_REGISTRATIONS
           x-klabis-owner-visible: true
+        wantsSharedTransport:
+          type: boolean
+          description: |
+            Member's shared-transport choice. Present only when the event offers shared transport.
+        wantsSharedAccommodation:
+          type: boolean
+          description: |
+            Member's shared-accommodation choice. Present only when the event offers shared
+            accommodation.
         # Kept off the wire (@JsonIgnore) but present in the generated Java: coordinators doubles
         # as the @OwnerId source OwnershipResolver needs to evaluate registrationTime's
         # @OwnerVisible. See design.md Decision 0 / x-field-extra-annotation for why plain omission

@@ -2896,6 +2896,13 @@ export interface components {
             registeredMemberId?: string;
             /** Format: date-time */
             registrationTime?: string;
+            /** @description Member's shared-accommodation choice. Present only when the event offers shared
+             *     accommodation.
+             *      */
+            wantsSharedAccommodation?: boolean;
+            /** @description Member's shared-transport choice. Present only when the event offers shared transport.
+             *      */
+            wantsSharedTransport?: boolean;
         };
         RenameGroupRequest: {
             name: string;

@@ -83,6 +83,8 @@ export const EventDetailPage = (): ReactElement => {
     return <EventDetailContent resourceData={resourceData}/>;
 };
 
+const renderYesNo = (value: unknown): string => (value ? labels.ui.yes : labels.ui.no);
+
 interface RegistrationsTableProps {
     event: EventDetail;
     onOpenEditModal: (state: RegistrationEditModalState) => void;
@@ -147,6 +149,18 @@ const RegistrationsTable = ({event, onOpenEditModal, onOpenTransactionDialog}: R
                         return category?.name ?? labels.ui.notProvided;
                     }}
                 >{labels.fields.categories}</TableCell>
+            )}
+            {event.sharedTransportEnabled && (
+                <TableCell
+                    column="wantsSharedTransport"
+                    dataRender={({value}) => renderYesNo(value)}
+                >{labels.fields.sharedTransportEnabled}</TableCell>
+            )}
+            {event.sharedAccommodationEnabled && (
+                <TableCell
+                    column="wantsSharedAccommodation"
+                    dataRender={({value}) => renderYesNo(value)}
+                >{labels.fields.sharedAccommodationEnabled}</TableCell>
             )}
             <TableCell column="registrationTime" sortable dataRender={({value}) => formatDateTime(value as string)}>{labels.tables.registeredAt}</TableCell>
             <TableCell column="_actions" dataRender={renderActionsCell} alwaysVisible>{labels.tables.actions}</TableCell>
@@ -299,12 +313,12 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                         )}
                         {!isEditing && event.sharedTransportEnabled != null && (
                             <DetailRow label={labels.fields.sharedTransportEnabled}>
-                                {event.sharedTransportEnabled ? labels.ui.yes : labels.ui.no}
+                                {renderYesNo(event.sharedTransportEnabled)}
                             </DetailRow>
                         )}
                         {!isEditing && event.sharedAccommodationEnabled != null && (
                             <DetailRow label={labels.fields.sharedAccommodationEnabled}>
-                                {event.sharedAccommodationEnabled ? labels.ui.yes : labels.ui.no}
+                                {renderYesNo(event.sharedAccommodationEnabled)}
                             </DetailRow>
                         )}
                         {(isEditing || (event.categories && event.categories.length > 0)) && (
