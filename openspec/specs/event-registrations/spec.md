@@ -3,9 +3,7 @@
 ## Purpose
 
 Covers how members register for and unregister from club events. Defines the registration workflow with SI card numbers, viewing registration lists, and the rules for when registrations are open or closed.
-
 ## Requirements
-
 ### Requirement: Register for Event
 
 The system SHALL allow authenticated members to register themselves for ACTIVE events with open registrations (future event date AND registration deadline not passed). Only users with an associated member profile can register. When the event has categories defined, the member MUST select a category. After a successful registration the member remains on the event detail page and the registration list refreshes to include their new registration.
@@ -111,6 +109,8 @@ The system SHALL display the list of members registered for an event. Each regis
 
 The registration timestamp SHALL be visible only to the event coordinator (the member assigned as the event's coordinator) and to users with the EVENTS:REGISTRATIONS authority. Other members do not see the registration timestamp column.
 
+When the event offers shared transport, each registration additionally shows whether the member asked to use shared transport. When the event offers shared accommodation, each registration additionally shows whether the member asked to use shared accommodation. These choices are displayed as "Ano"/"Ne" and SHALL be visible to every authenticated member who can view the registration list. When the event does not offer a service, the corresponding choice is not displayed for any registration; when the event offers neither service, no shared-service choice is displayed at all.
+
 The list SHALL be sorted by registration time ascending by default (first-come-first-served order). Users SHALL be able to sort the list by first name, last name, and category by clicking the corresponding column headers. The event coordinator and users with EVENTS:REGISTRATIONS authority SHALL additionally be able to sort by registration time.
 
 #### Scenario: Member views registration list for an event
@@ -151,6 +151,32 @@ The list SHALL be sorted by registration time ascending by default (first-come-f
 
 - **WHEN** authenticated user views the registration list for an event without categories
 - **THEN** no category column is displayed in the registration list
+
+#### Scenario: Member sees shared service choices for an event offering both services
+
+- **GIVEN** an event with both the shared transport offer and the shared accommodation offer turned on, where some registered members asked for the services and others did not
+- **WHEN** an authenticated club member views the registration list for the event
+- **THEN** every registration row shows "Ano" or "Ne" for shared transport according to that member's choice
+- **AND** every registration row shows "Ano" or "Ne" for shared accommodation according to that member's choice
+
+#### Scenario: Registration list shows shared transport choice only when the event offers shared transport
+
+- **GIVEN** an event with the shared transport offer turned on and the shared accommodation offer turned off
+- **WHEN** an authenticated club member views the registration list for the event
+- **THEN** each registration row shows the member's shared transport choice
+- **AND** no shared accommodation choice is displayed for any registration
+
+#### Scenario: Registration list shows no shared service choices when the event offers none
+
+- **GIVEN** an event with both the shared transport offer and the shared accommodation offer turned off
+- **WHEN** an authenticated club member views the registration list for the event
+- **THEN** no shared transport or shared accommodation choice is displayed for any registration
+
+#### Scenario: Shared service choices are visible regardless of authority
+
+- **GIVEN** an event with the shared accommodation offer turned on where some registered members asked for shared accommodation
+- **WHEN** an authenticated club member without EVENTS:REGISTRATIONS authority who is not the coordinator views the registration list
+- **THEN** the member sees for every registration whether that member asked for shared accommodation
 
 ### Requirement: Generate Accommodation List for Event Registrations
 
@@ -431,6 +457,7 @@ The system SHALL validate SI card numbers. A valid SI card number contains only 
 
 - **WHEN** member submits registration without entering an SI card number
 - **THEN** the form shows an error that the SI card number is required
+
 ### Requirement: Finance Manager Records Transaction From Registrations List
 
 The system SHALL allow a user with FINANCE:MANAGE authority to record a deposit or a charge on the financial account of any member listed in an event's registrations, directly from that registrations list, without navigating away from the event. The action SHALL open the same unified transaction dialog used elsewhere for recording deposits and charges on a member account, and SHALL prefill the transaction note with the event name so the resulting account history entry identifies the source event. After a successful submission, the user SHALL remain on the registrations list and the dialog SHALL close.
@@ -599,3 +626,4 @@ A member SHALL be able to change their shared transport and shared accommodation
 - **AND** an ACTIVE event with the shared transport offer turned on and open editing
 - **WHEN** the user edits another member's registration and changes the shared transport choice
 - **THEN** the other member's registration reflects the new choice
+
