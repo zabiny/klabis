@@ -1013,7 +1013,7 @@ describe('EventDetailPage', () => {
             renderPage(createMockPageData(mockEventDetailData({
                 sharedServicesSummary: {sharedTransport: {count: 3}},
             })));
-            expect(screen.getByText('Společná doprava: 3 členů')).toBeInTheDocument();
+            expect(screen.getByText('Společná doprava: 3 členové')).toBeInTheDocument();
             expect(screen.queryByText(/Společné ubytování/)).not.toBeInTheDocument();
         });
 
@@ -1022,6 +1022,17 @@ describe('EventDetailPage', () => {
                 sharedServicesSummary: {sharedAccommodation: {count: 0}},
             })));
             expect(screen.getByText('Společné ubytování: 0 členů')).toBeInTheDocument();
+        });
+
+        it('uses correct Czech plural for count 1 and 2', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                sharedServicesSummary: {
+                    sharedTransport: {count: 1},
+                    sharedAccommodation: {count: 2},
+                },
+            })));
+            expect(screen.getByText('Společná doprava: 1 člen')).toBeInTheDocument();
+            expect(screen.getByText('Společné ubytování: 2 členové')).toBeInTheDocument();
         });
 
         it('renders no summary section when sharedServicesSummary is absent', () => {

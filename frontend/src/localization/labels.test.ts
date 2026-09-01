@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {getEnumLabel, getFieldLabel, getNavLabel, getTemplateLabel, labels, t,} from './labels';
+import {czechPlural, getEnumLabel, getFieldLabel, getNavLabel, getTemplateLabel, labels, t,} from './labels';
 
 describe('labels', () => {
     it('has nav labels', () => {
@@ -181,5 +181,17 @@ describe('getEnumLabel()', () => {
 
     it('falls back to raw value when enum value is unknown within known type', () => {
         expect(getEnumLabel('eventStatus', 'UNKNOWN_STATUS')).toBe('UNKNOWN_STATUS');
+    });
+});
+
+describe('czechPlural()', () => {
+    it('returns the correct form on the 1/4/5 boundaries', () => {
+        const forms = (n: number) => czechPlural(n, 'člen', 'členové', 'členů');
+        expect(forms(0)).toBe('členů');
+        expect(forms(1)).toBe('člen');
+        expect(forms(2)).toBe('členové');
+        expect(forms(4)).toBe('členové');
+        expect(forms(5)).toBe('členů');
+        expect(forms(12)).toBe('členů');
     });
 });

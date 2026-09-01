@@ -1,3 +1,9 @@
+export function czechPlural(count: number, one: string, few: string, many: string): string {
+    if (count === 1) return one;
+    if (count >= 2 && count <= 4) return few;
+    return many;
+}
+
 export const labels = {
     nav: {
         home: 'Domů',
@@ -335,8 +341,8 @@ export const labels = {
         notProvided: 'neuvedeno',
         yes: 'Ano',
         no: 'Ne',
-        sharedTransportCount: (count: number) => `Společná doprava: ${count} členů`,
-        sharedAccommodationCount: (count: number) => `Společné ubytování: ${count} členů`,
+        sharedTransportCount: (count: number) => `Společná doprava: ${count} ${czechPlural(count, 'člen', 'členové', 'členů')}`,
+        sharedAccommodationCount: (count: number) => `Společné ubytování: ${count} ${czechPlural(count, 'člen', 'členové', 'členů')}`,
         form: 'Formulář',
         showRawJson: 'Zobrazit zdrojový JSON',
         completeJson: 'Úplná JSON data položky',
