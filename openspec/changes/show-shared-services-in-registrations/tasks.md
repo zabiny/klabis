@@ -14,4 +14,4 @@
 ## 3. End-to-end verification
 
 - [x] 3.1 QA on http://localhost:3000 with example data: event with both offers shows both columns with correct Ano/Ne per member; event without offers shows none; member (ZBM9500) and admin (ZBM9000) views both correct
-- [ ] 3.2 Run `npm run refresh-backend-server-resources` (frontend assets for the backend build) and final code review before commit
+- [x] 3.2 Run `npm run refresh-backend-server-resources` (frontend assets for the backend build) and final code review before commit
