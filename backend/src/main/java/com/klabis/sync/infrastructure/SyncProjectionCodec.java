@@ -53,6 +53,19 @@ public final class SyncProjectionCodec {
     }
 
     /**
+     * Breaks a projection into its named fields, for per-field divergence attribution
+     * (design.md D14 response shape) — computed on the decrypted projection already
+     * held in memory, never from anything stored (design.md D13). Numeric values are
+     * canonicalised the same way as for hashing, so a field-level comparison does not
+     * report a phantom change on differently-scaled amounts.
+     */
+    @SuppressWarnings("unchecked")
+    public static java.util.Map<String, Object> toFieldMap(SyncProjection projection) {
+        Object canonicalized = canonicalizeNumbers(MAPPER.convertValue(projection, Object.class));
+        return (java.util.Map<String, Object>) canonicalized;
+    }
+
+    /**
      * Hashes a projection over its whole canonical serialisation — never per field
      * (design.md D13): a per-field digest of a value from a small keyspace would be
      * brute-forceable.

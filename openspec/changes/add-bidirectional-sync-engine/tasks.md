@@ -46,18 +46,18 @@ Delivers: the remaining non-conflict outcomes, and the correctness rules that ke
 
 Delivers: the losslessness guarantee end-to-end, including the accepted divergence and its protection against later external changes.
 
-- [ ] 3.1 Domain tests (red): both sides changed to different values → conflict; local changed with no outward capability → conflict; external changed while the baseline pair is diverged → conflict [D4, D6]
-- [ ] 3.2 Domain: conflict detection including the inward guard that protects a standing accepted divergence [D4]
-- [ ] 3.3 Domain tests (red): per-field attribution from the three snapshots — a field only Klabis moved, a field only the external side moved, a field both moved [D14 response shape]
-- [ ] 3.4 Domain: `ChangedSide` and the diverged-fields computation, derived by comparing decrypted projections in memory — never from stored per-field hashes [D13]
-- [ ] 3.5 Domain: `ConflictAcknowledgement` bound to the hash pair current when it was made, plus the acting user [D7, D15]
-- [ ] 3.6 Application tests (red): resolution re-reads both sides first and proceeds only when the fresh hash pair equals the acknowledged one; a side that moved in between causes refusal, refreshes the record's snapshots and leaves the conflict standing [D7]
-- [ ] 3.7 Application: `acknowledgeConflict` and `resolveConflict` with `SyncResolution` — `INWARD`, `OUTWARD`, `ACCEPT_DIVERGENCE`; a direction the adapter cannot perform is refused [D6, D7]
-- [ ] 3.8 Application: `ACCEPT_DIVERGENCE` sets the baseline pair to the freshly read snapshots, writes nothing, clears the conflict [D6]
-- [ ] 3.9 Domain event: `SyncConflictDetected` carrying identifiers, direction and hashes only — no projections [D15]
-- [ ] 3.10 Integration tests: a conflict clears itself when a side reverts, and when both sides come to agree (the "fixed in the external system" path); after an accepted divergence a later external change raises a new conflict instead of overwriting; a conflicted record is written to by no pass
-- [ ] 3.11 Integration test: resolving without acknowledging is refused; acknowledging a conflict that no longer exists is refused
-- [ ] 3.12 Run tests, code review, commit
+- [x] 3.1 Domain tests (red): both sides changed to different values → conflict; local changed with no outward capability → conflict; external changed while the baseline pair is diverged → conflict [D4, D6]
+- [x] 3.2 Domain: conflict detection including the inward guard that protects a standing accepted divergence [D4]
+- [x] 3.3 Domain tests (red): per-field attribution from the three snapshots — a field only Klabis moved, a field only the external side moved, a field both moved [D14 response shape]
+- [x] 3.4 Domain: `ChangedSide` and the diverged-fields computation, derived by comparing decrypted projections in memory — never from stored per-field hashes [D13]
+- [x] 3.5 Domain: `ConflictAcknowledgement` bound to the hash pair current when it was made, plus the acting user [D7, D15]
+- [x] 3.6 Application tests (red): resolution re-reads both sides first and proceeds only when the fresh hash pair equals the acknowledged one; a side that moved in between causes refusal, refreshes the record's snapshots and leaves the conflict standing [D7]
+- [x] 3.7 Application: `acknowledgeConflict` and `resolveConflict` with `SyncResolution` — `INWARD`, `OUTWARD`, `ACCEPT_DIVERGENCE`; a direction the adapter cannot perform is refused [D6, D7]
+- [x] 3.8 Application: `ACCEPT_DIVERGENCE` sets the baseline pair to the freshly read snapshots, writes nothing, clears the conflict [D6]
+- [x] 3.9 Domain event: `SyncConflictDetected` carrying identifiers, direction and hashes only — no projections [D15]
+- [x] 3.10 Integration tests: a conflict clears itself when a side reverts, and when both sides come to agree (the "fixed in the external system" path); after an accepted divergence a later external change raises a new conflict instead of overwriting; a conflicted record is written to by no pass
+- [x] 3.11 Integration test: resolving without acknowledging is refused; acknowledging a conflict that no longer exists is refused
+- [x] 3.12 Run tests, code review, commit
 
 ## 4. Slice: Failure handling — retry, terminal state, outage
 

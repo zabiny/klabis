@@ -5,6 +5,7 @@ import com.klabis.sync.domain.*;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -26,17 +27,20 @@ class SynchronizationService implements SynchronizationPort {
     private final SyncAttemptRepository syncAttemptRepository;
     private final SynchronizationAdapterRegistry adapterRegistry;
     private final SyncProjectionHasher hasher;
+    private final ConflictSnapshotRefresher conflictSnapshotRefresher;
 
     SynchronizationService(
             SyncRecordRepository syncRecordRepository,
             SyncAttemptRepository syncAttemptRepository,
             SynchronizationAdapterRegistry adapterRegistry,
-            SyncProjectionHasher hasher
+            SyncProjectionHasher hasher,
+            ConflictSnapshotRefresher conflictSnapshotRefresher
     ) {
         this.syncRecordRepository = syncRecordRepository;
         this.syncAttemptRepository = syncAttemptRepository;
         this.adapterRegistry = adapterRegistry;
         this.hasher = hasher;
+        this.conflictSnapshotRefresher = conflictSnapshotRefresher;
     }
 
     @Transactional
@@ -71,6 +75,129 @@ class SynchronizationService implements SynchronizationPort {
         SyncRecord record = getOrThrow(id);
         record.retire();
         syncRecordRepository.save(record);
+    }
+
+    @Transactional
+    @Override
+    public SyncRecord acknowledgeConflict(SyncRecordId id, String actingUser) {
+        SyncRecord record = getOrThrow(id);
+        requireConflict(record);
+
+        ConflictAcknowledgement acknowledgement = new ConflictAcknowledgement(
+                record.getLocal().hash(), record.getExternal().hash(), Instant.now(), actingUser);
+        record.acknowledgeConflict(acknowledgement);
+
+        SyncRecord saved = syncRecordRepository.save(record);
+        appendAttempt(saved, SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS,
+                saved.getLocal().hash(), saved.getExternal().hash(), null, actingUser);
+        return saved;
+    }
+
+    /**
+     * Resolves a standing, acknowledged conflict (design.md D6, D7). A resolution
+     * never trusts stored snapshots: both sides are re-read through the adapter first,
+     * and the call proceeds only if the fresh hash pair still equals the acknowledged
+     * one. If a side moved in between, the record's snapshots are refreshed from the
+     * fresh reads via {@link ConflictSnapshotRefresher} — a separate bean whose
+     * {@code REQUIRES_NEW} transaction commits independently of this method's own, so
+     * the refresh survives the {@link ConflictNotAcknowledgedException} this method
+     * goes on to throw — the conflict is left standing (re-raised so a subsequent GET
+     * shows the new collision), and the call is rejected.
+     * <p>
+     * This method's own transaction still spans the external re-reads and the
+     * eventual write (design.md D12 is not honoured here — that full transaction-
+     * boundary revisit is Slice 4's job), so that the happy path's record save and
+     * attempt append commit atomically: D15 requires every attempt to appear in the
+     * history, and a crash between two separately-committed writes would leave a
+     * resolved record with no attempt row to show for it.
+     */
+    @Transactional
+    @Override
+    public SyncRecord resolveConflict(SyncRecordId id, SyncResolution resolution, String actingUser) {
+        SyncRecord record = getOrThrow(id);
+        requireConflict(record);
+
+        if (!record.isAcknowledgementCurrent()) {
+            throw new ConflictNotAcknowledgedException(id);
+        }
+
+        SynchronizationAdapter adapter = adapterRegistry.find(record.getTarget().entityType(), record.getExternalReference().system())
+                .orElseThrow(() -> new UnknownSyncEntityTypeException(record.getTarget().entityType(), record.getExternalReference().system()));
+
+        if (resolution == SyncResolution.OUTWARD && !adapter.capabilities().writesExternal()) {
+            throw new UnsupportedResolutionException(id, resolution);
+        }
+        if (resolution == SyncResolution.INWARD && !adapter.capabilities().writesLocal()) {
+            throw new UnsupportedResolutionException(id, resolution);
+        }
+
+        String entityId = record.getTarget().entityId();
+        String externalId = record.getExternalReference().externalId();
+        SyncSnapshot freshLocal = SyncSnapshot.of(adapter.readLocal(entityId), hasher);
+        SyncSnapshot freshExternal = SyncSnapshot.of(adapter.readExternal(externalId), hasher);
+
+        if (!record.getAcknowledgement().isCurrentFor(freshLocal.hash(), freshExternal.hash())) {
+            // A side moved since the acknowledgement (design.md D7): refresh the
+            // record's snapshots from the fresh reads so a subsequent GET shows the new
+            // collision, but write nothing and leave the conflict standing. Committed in
+            // its own REQUIRES_NEW transaction (see ConflictSnapshotRefresher) so this
+            // method's own rollback, about to be triggered by the throw below, does not
+            // undo it.
+            conflictSnapshotRefresher.refresh(id, freshLocal, freshExternal);
+            throw new ConflictNotAcknowledgedException(id);
+        }
+
+        SyncRecord resolved = applyResolution(record, adapter, resolution, freshLocal, freshExternal);
+
+        appendAttempt(resolved, SyncTriggerKind.MANUAL, resolutionDirection(resolution), SyncOutcome.SUCCESS,
+                freshLocal.hash(), freshExternal.hash(), null, actingUser);
+        return resolved;
+    }
+
+    private SyncRecord applyResolution(SyncRecord record, SynchronizationAdapter adapter, SyncResolution resolution, SyncSnapshot freshLocal, SyncSnapshot freshExternal) {
+        return switch (resolution) {
+            case INWARD -> resolveInward(record, adapter, freshExternal);
+            case OUTWARD -> resolveOutward(record, adapter, freshLocal);
+            case ACCEPT_DIVERGENCE -> {
+                record.acceptDivergence(freshLocal, freshExternal);
+                yield syncRecordRepository.save(record);
+            }
+        };
+    }
+
+    private static SyncDirection resolutionDirection(SyncResolution resolution) {
+        return switch (resolution) {
+            case INWARD -> SyncDirection.INWARD;
+            case OUTWARD -> SyncDirection.OUTWARD;
+            case ACCEPT_DIVERGENCE -> null;
+        };
+    }
+
+    /**
+     * A forced {@code INWARD} resolution follows the same post-write re-read rule as
+     * any other inward write (design.md D9): the fresh external projection is written
+     * to the local side, then the local side is re-read again, and that post-write
+     * state becomes both the local snapshot and the baseline.
+     */
+    private SyncRecord resolveInward(SyncRecord record, SynchronizationAdapter adapter, SyncSnapshot freshExternal) {
+        String entityId = record.getTarget().entityId();
+        adapter.applyToLocal(entityId, freshExternal.projection());
+        SyncSnapshot postWriteLocal = SyncSnapshot.of(adapter.readLocal(entityId), hasher);
+        record.resolveWithDirection(SyncDirection.INWARD, postWriteLocal, freshExternal);
+        return syncRecordRepository.save(record);
+    }
+
+    private SyncRecord resolveOutward(SyncRecord record, SynchronizationAdapter adapter, SyncSnapshot freshLocal) {
+        String externalId = record.getExternalReference().externalId();
+        adapter.applyToExternal(externalId, freshLocal.projection());
+        record.resolveWithDirection(SyncDirection.OUTWARD, freshLocal, freshLocal);
+        return syncRecordRepository.save(record);
+    }
+
+    private void requireConflict(SyncRecord record) {
+        if (record.getStatus() != SyncStatus.CONFLICT) {
+            throw new SyncRecordNotInConflictException(record.getId());
+        }
     }
 
     private SyncRecord getOrThrow(SyncRecordId id) {
@@ -121,6 +248,17 @@ class SynchronizationService implements SynchronizationPort {
                 SyncRecord savedConverged = syncRecordRepository.save(record);
                 appendAttempt(savedConverged, trigger, null, SyncOutcome.SUCCESS, localHashForAttempt, externalHashForAttempt, null, actingUser);
                 return savedConverged;
+            }
+            case CONFLICT -> {
+                // Neither side is written while a conflict stands (design.md D6, D7).
+                // decide() already resolved which direction (if any) was attempted —
+                // WRITE's direction when the only blocker was a missing outward write
+                // capability, otherwise none for a genuine two-sided or divergence-guard
+                // conflict.
+                record.recordConflict(currentLocal, currentExternal, decision.direction());
+                SyncRecord savedConflict = syncRecordRepository.save(record);
+                appendAttempt(savedConflict, trigger, decision.direction(), SyncOutcome.CONFLICT, localHashForAttempt, externalHashForAttempt, null, actingUser);
+                return savedConflict;
             }
             case ADOPT_EXTERNAL, WRITE -> {
                 boolean written = decision.direction() == SyncDirection.INWARD

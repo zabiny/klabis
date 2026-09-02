@@ -18,6 +18,7 @@ import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * End-to-end tests for the synchronisation engine's pass orchestration (tasks.md 1.15,
@@ -332,6 +333,257 @@ class SynchronizationServiceIntegrationTest {
 
             assertThat(afterFollowUpPass.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
             assertThat(afterFollowUpPass.getLocal().projection()).isEqualTo(new TestSyncProjection("Sprint", "Brno"));
+        }
+    }
+
+    @Nested
+    @DisplayName("conflicts: detection")
+    class ConflictDetection {
+
+        @Test
+        @DisplayName("both sides changed to different values → conflict, neither side written")
+        void bothSidesChangedDifferently_conflict() {
+            adapter.withExternalState("8109", new TestSyncProjection("Sprint", "Brno"));
+            adapter.withLocalState("event-109", new TestSyncProjection("Sprint", "Brno"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-109");
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8109");
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            adapter.withLocalState("event-109", new TestSyncProjection("Sprint Local Edit", "Brno"));
+            adapter.withExternalState("8109", new TestSyncProjection("Sprint External Edit", "Brno"));
+
+            SyncRecord afterConflictPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            assertThat(afterConflictPass.getStatus()).isEqualTo(SyncStatus.CONFLICT);
+            assertThat(afterConflictPass.getLocal().projection()).isEqualTo(new TestSyncProjection("Sprint Local Edit", "Brno"));
+            assertThat(afterConflictPass.getExternal().projection()).isEqualTo(new TestSyncProjection("Sprint External Edit", "Brno"));
+            // Neither side was written.
+            assertThat(adapter.readLocal("event-109")).isEqualTo(new TestSyncProjection("Sprint Local Edit", "Brno"));
+            assertThat(adapter.readExternal("8109")).isEqualTo(new TestSyncProjection("Sprint External Edit", "Brno"));
+        }
+
+        @Test
+        @DisplayName("a local change with no outward write capability → conflict, the local edit survives (design.md D6)")
+        void localChangeWithNoOutwardCapability_conflict() {
+            adapter.withCapabilities(new SyncCapabilities(true, true, true, false, false, false, false));
+            adapter.withExternalState("8110", new TestSyncProjection("Sprint", "Brno"));
+            adapter.withLocalState("event-110", new TestSyncProjection("Sprint", "Brno"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-110");
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8110");
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            adapter.withLocalState("event-110", new TestSyncProjection("Manager's Correction", "Brno"));
+            SyncRecord afterConflictPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            assertThat(afterConflictPass.getStatus()).isEqualTo(SyncStatus.CONFLICT);
+            assertThat(afterConflictPass.getLocal().projection()).isEqualTo(new TestSyncProjection("Manager's Correction", "Brno"));
+            // The edit was never overwritten.
+            assertThat(adapter.readLocal("event-110")).isEqualTo(new TestSyncProjection("Manager's Correction", "Brno"));
+        }
+
+        @Test
+        @DisplayName("a conflict clears itself when a side reverts")
+        void conflictClearsWhenSideReverts() {
+            adapter.withExternalState("8111", new TestSyncProjection("Sprint", "Brno"));
+            adapter.withLocalState("event-111", new TestSyncProjection("Sprint", "Brno"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-111");
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8111");
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            adapter.withLocalState("event-111", new TestSyncProjection("Sprint Local Edit", "Brno"));
+            adapter.withExternalState("8111", new TestSyncProjection("Sprint External Edit", "Brno"));
+            SyncRecord conflicted = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+            assertThat(conflicted.getStatus()).isEqualTo(SyncStatus.CONFLICT);
+
+            // The external side reverts to the agreed baseline value.
+            adapter.withExternalState("8111", new TestSyncProjection("Sprint", "Brno"));
+            SyncRecord afterRevert = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            assertThat(afterRevert.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+            assertThat(afterRevert.getLastDirection()).isEqualTo(SyncDirection.OUTWARD);
+        }
+
+        @Test
+        @DisplayName("a conflict clears itself when both sides come to agree (fixed in the external system)")
+        void conflictClearsWhenBothSidesAgree() {
+            adapter.withExternalState("8112", new TestSyncProjection("Sprint", "Brno"));
+            adapter.withLocalState("event-112", new TestSyncProjection("Sprint", "Brno"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-112");
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8112");
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            adapter.withLocalState("event-112", new TestSyncProjection("Sprint Corrected", "Brno"));
+            adapter.withExternalState("8112", new TestSyncProjection("Sprint External Edit", "Brno"));
+            SyncRecord conflicted = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+            assertThat(conflicted.getStatus()).isEqualTo(SyncStatus.CONFLICT);
+
+            // The manager corrects the external system directly to match Klabis (D6
+            // exit 2) — no engine operation involved.
+            adapter.withExternalState("8112", new TestSyncProjection("Sprint Corrected", "Brno"));
+            SyncRecord afterFix = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            assertThat(afterFix.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+        }
+
+        @Test
+        @DisplayName("a conflicted record is written to by no pass")
+        void conflictedRecordWrittenToByNoPass() {
+            adapter.withExternalState("8113", new TestSyncProjection("Sprint", "Brno"));
+            adapter.withLocalState("event-113", new TestSyncProjection("Sprint", "Brno"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-113");
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8113");
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            adapter.withLocalState("event-113", new TestSyncProjection("Sprint Local Edit", "Brno"));
+            adapter.withExternalState("8113", new TestSyncProjection("Sprint External Edit", "Brno"));
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            // A further pass while the conflict stands must still write nothing.
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            assertThat(adapter.readLocal("event-113")).isEqualTo(new TestSyncProjection("Sprint Local Edit", "Brno"));
+            assertThat(adapter.readExternal("8113")).isEqualTo(new TestSyncProjection("Sprint External Edit", "Brno"));
+        }
+    }
+
+    @Nested
+    @DisplayName("conflicts: resolution")
+    class ConflictResolution {
+
+        @Test
+        @DisplayName("resolving without acknowledging is refused")
+        void resolvingWithoutAcknowledgingIsRefused() {
+            SyncRecord enrolled = setUpConflictedRecord("event-114", "8114");
+
+            assertThatThrownBy(() -> synchronizationPort.resolveConflict(enrolled.getId(), SyncResolution.ACCEPT_DIVERGENCE, "manager"))
+                    .isInstanceOf(ConflictNotAcknowledgedException.class);
+        }
+
+        @Test
+        @DisplayName("acknowledging a conflict that no longer exists is refused")
+        void acknowledgingNonexistentConflictIsRefused() {
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-115");
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8115");
+            adapter.withExternalState("8115", new TestSyncProjection("Sprint", "Brno"));
+            adapter.withLocalState("event-115", new TestSyncProjection("Sprint", "Brno"));
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            assertThatThrownBy(() -> synchronizationPort.acknowledgeConflict(enrolled.getId(), "manager"))
+                    .isInstanceOf(SyncRecordNotInConflictException.class);
+        }
+
+        @Test
+        @DisplayName("forcing INWARD discards the local edit and pulls the external value")
+        void forceInwardDiscardsLocalEdit() {
+            SyncRecord conflicted = setUpConflictedRecord("event-116", "8116");
+            synchronizationPort.acknowledgeConflict(conflicted.getId(), "manager");
+
+            SyncRecord resolved = synchronizationPort.resolveConflict(conflicted.getId(), SyncResolution.INWARD, "manager");
+
+            assertThat(resolved.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+            assertThat(resolved.getLocal().projection()).isEqualTo(new TestSyncProjection("Sprint External Edit", "Brno"));
+            assertThat(adapter.readLocal("event-116")).isEqualTo(new TestSyncProjection("Sprint External Edit", "Brno"));
+        }
+
+        @Test
+        @DisplayName("ACCEPT_DIVERGENCE writes nothing, sets a diverged baseline, and clears the conflict")
+        void acceptDivergenceWritesNothingAndClearsConflict() {
+            SyncRecord conflicted = setUpConflictedRecord("event-117", "8117");
+            synchronizationPort.acknowledgeConflict(conflicted.getId(), "manager");
+
+            SyncRecord resolved = synchronizationPort.resolveConflict(conflicted.getId(), SyncResolution.ACCEPT_DIVERGENCE, "manager");
+
+            assertThat(resolved.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+            assertThat(resolved.getLocal().projection()).isEqualTo(new TestSyncProjection("Sprint Local Edit", "Brno"));
+            assertThat(resolved.getExternal().projection()).isEqualTo(new TestSyncProjection("Sprint External Edit", "Brno"));
+            assertThat(resolved.getBaseline().isDiverged()).isTrue();
+            // Nothing was written on either side.
+            assertThat(adapter.readLocal("event-117")).isEqualTo(new TestSyncProjection("Sprint Local Edit", "Brno"));
+            assertThat(adapter.readExternal("8117")).isEqualTo(new TestSyncProjection("Sprint External Edit", "Brno"));
+        }
+
+        @Test
+        @DisplayName("after an accepted divergence, a later external change raises a new conflict instead of overwriting")
+        void acceptedDivergenceProtectedFromLaterExternalChange() {
+            SyncRecord conflicted = setUpConflictedRecord("event-118", "8118");
+            synchronizationPort.acknowledgeConflict(conflicted.getId(), "manager");
+            synchronizationPort.resolveConflict(conflicted.getId(), SyncResolution.ACCEPT_DIVERGENCE, "manager");
+
+            adapter.withExternalState("8118", new TestSyncProjection("Sprint Yet Another External Change", "Brno"));
+            SyncRecord afterLaterExternalChange = synchronizationPort.synchronizeNow(conflicted.getId(), "test-user");
+
+            assertThat(afterLaterExternalChange.getStatus()).isEqualTo(SyncStatus.CONFLICT);
+            // The accepted local value was never overwritten.
+            assertThat(afterLaterExternalChange.getLocal().projection()).isEqualTo(new TestSyncProjection("Sprint Local Edit", "Brno"));
+            assertThat(adapter.readLocal("event-118")).isEqualTo(new TestSyncProjection("Sprint Local Edit", "Brno"));
+        }
+
+        @Test
+        @DisplayName("OUTWARD is refused for an integration that cannot write there")
+        void outwardRefusedWhenUnsupported() {
+            adapter.withCapabilities(new SyncCapabilities(true, true, true, false, false, false, false));
+            SyncRecord conflicted = setUpConflictedRecordWithLocalOnlyChange("event-119", "8119");
+            synchronizationPort.acknowledgeConflict(conflicted.getId(), "manager");
+
+            assertThatThrownBy(() -> synchronizationPort.resolveConflict(conflicted.getId(), SyncResolution.OUTWARD, "manager"))
+                    .isInstanceOf(UnsupportedResolutionException.class);
+        }
+
+        @Test
+        @DisplayName("a side moving after acknowledgement refuses the resolution, refreshes snapshots, leaves the conflict standing")
+        void sideMovingAfterAcknowledgementRefusesResolution() {
+            SyncRecord conflicted = setUpConflictedRecord("event-120", "8120");
+            synchronizationPort.acknowledgeConflict(conflicted.getId(), "manager");
+
+            // The external side moves again after acknowledgement but before resolution.
+            adapter.withExternalState("8120", new TestSyncProjection("Sprint Yet Another External Change", "Brno"));
+
+            assertThatThrownBy(() -> synchronizationPort.resolveConflict(conflicted.getId(), SyncResolution.INWARD, "manager"))
+                    .isInstanceOf(ConflictNotAcknowledgedException.class);
+
+            SyncRecord afterRefusedResolution = synchronizationPort.state(conflicted.getId());
+            assertThat(afterRefusedResolution.getStatus()).isEqualTo(SyncStatus.CONFLICT);
+            // The record's snapshots were refreshed to the new collision.
+            assertThat(afterRefusedResolution.getExternal().projection())
+                    .isEqualTo(new TestSyncProjection("Sprint Yet Another External Change", "Brno"));
+        }
+
+        private SyncRecord setUpConflictedRecord(String entityId, String externalId) {
+            adapter.withExternalState(externalId, new TestSyncProjection("Sprint", "Brno"));
+            adapter.withLocalState(entityId, new TestSyncProjection("Sprint", "Brno"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, entityId);
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, externalId);
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            adapter.withLocalState(entityId, new TestSyncProjection("Sprint Local Edit", "Brno"));
+            adapter.withExternalState(externalId, new TestSyncProjection("Sprint External Edit", "Brno"));
+            return synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+        }
+
+        private SyncRecord setUpConflictedRecordWithLocalOnlyChange(String entityId, String externalId) {
+            adapter.withExternalState(externalId, new TestSyncProjection("Sprint", "Brno"));
+            adapter.withLocalState(entityId, new TestSyncProjection("Sprint", "Brno"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, entityId);
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, externalId);
+
+            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+            adapter.withLocalState(entityId, new TestSyncProjection("Sprint Local Only Edit", "Brno"));
+            return synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
         }
     }
 }

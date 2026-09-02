@@ -1,12 +1,18 @@
 package com.klabis.sync.domain;
 
 import com.klabis.common.domain.KlabisAggregateRoot;
+import com.klabis.sync.SyncConflictDetected;
 import com.klabis.sync.SyncRecordId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * The synchronisation state of one Klabis entity against one external system
@@ -122,11 +128,14 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * Compares the current local/external snapshots against the baseline and decides
      * what, if anything, needs to happen (design.md D4's decision table).
      * <p>
-     * Covered so far: no baseline yet → adopt external (D5); neither side moved →
-     * nothing to do; only the external side moved → write inward; only the local side
-     * moved with an outward write available → write outward; both sides moved to the
-     * same value → converged. A local-only change with no outward write capability is
-     * a conflict (D6), added in Slice 3.
+     * No baseline yet → adopt external (D5). While a standing accepted divergence
+     * holds (the baseline pair itself is diverged, D6), any external movement is a
+     * conflict, not an inward write — the guard checked before the ordinary table so
+     * an accepted local value is never silently overwritten. Otherwise: neither side
+     * moved → nothing to do; only the external side moved → write inward; only the
+     * local side moved with an outward write available → write outward, or a conflict
+     * without that capability (D6); both sides moved to the same value → converged;
+     * both sides moved to different values → conflict.
      */
     public SyncDecision decide(SyncSnapshot currentLocal, SyncSnapshot currentExternal, SyncCapabilities capabilities) {
         Assert.notNull(currentLocal, "currentLocal is required");
@@ -140,6 +149,14 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         boolean localChanged = !currentLocal.matches(baseline.local());
         boolean externalChanged = !currentExternal.matches(baseline.external());
 
+        // The inward guard (design.md D4, D6): while an accepted divergence stands,
+        // any external movement stops and asks again rather than silently overwriting
+        // the accepted local value — even when, as here, only the external side moved
+        // relative to its own baseline half.
+        if (baseline.isDiverged() && externalChanged) {
+            return SyncDecision.conflict();
+        }
+
         if (!localChanged && !externalChanged) {
             return SyncDecision.nothingToDo();
         }
@@ -150,23 +167,17 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
             if (capabilities.writesExternal()) {
                 return SyncDecision.write(SyncDirection.OUTWARD);
             }
-            // A local change that cannot be sent onward is a conflict (design.md D6),
-            // added in Slice 3.
-            throw new UnsupportedOperationException(
-                    "Conflict handling for a local change with no outward write capability is added in a later slice");
+            // A local change that cannot be sent onward is a conflict, not a silent
+            // overwrite (design.md D6). OUTWARD is what was attempted and blocked.
+            return SyncDecision.conflict(SyncDirection.OUTWARD);
         }
 
-        // From here on, both sides changed since the baseline (design.md D4's last two
-        // rows). Equal current hashes is convergence; anything else is a genuine
-        // conflict, including the accepted-divergence guard (D6) that turns a further
-        // external change into a conflict even though only the external side moved
-        // this time — Slice 3 adds that guard as an earlier branch in this method.
+        // Both sides changed since the baseline (design.md D4's last two rows). Equal
+        // current hashes is convergence; anything else is a genuine conflict.
         if (currentLocal.matches(currentExternal)) {
             return SyncDecision.converged();
         }
-
-        throw new UnsupportedOperationException(
-                "Conflict handling for sides that changed to different values is added in a later slice");
+        return SyncDecision.conflict();
     }
 
     /**
@@ -232,6 +243,142 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         this.status = SyncStatus.IN_SYNC;
         this.dirtySince = null;
         this.nextAttemptDueAt = null;
+    }
+
+    /**
+     * Records a standing conflict (design.md D4, D6): the current local and external
+     * snapshots are kept (not the baseline, which stays as the last agreed state) so a
+     * divergence report can name the fields that differ by comparing the three
+     * snapshots later. Nothing is written in either direction. A prior acknowledgement
+     * is cleared — it was bound to a different collision (design.md D7).
+     * <p>
+     * Publishes {@link SyncConflictDetected} only when this is a genuinely new
+     * collision — the hash pair differs from what the record already held. A repeated
+     * call with the same pair (e.g. a resolution rejected twice against the same
+     * unmoved collision, or a due-scan re-evaluating a record already in conflict)
+     * must not re-announce work that is already stuck and already known about.
+     */
+    public void recordConflict(SyncSnapshot currentLocal, SyncSnapshot currentExternal, SyncDirection attemptedDirection) {
+        Assert.notNull(currentLocal, "currentLocal is required");
+        Assert.notNull(currentExternal, "currentExternal is required");
+
+        boolean sameCollisionAsBefore = status == SyncStatus.CONFLICT
+                && local != null && external != null
+                && currentLocal.matches(local) && currentExternal.matches(external);
+
+        this.local = currentLocal;
+        this.external = currentExternal;
+        this.status = SyncStatus.CONFLICT;
+        this.acknowledgement = null;
+        this.dirtySince = null;
+        this.nextAttemptDueAt = null;
+
+        if (!sameCollisionAsBefore) {
+            registerEvent(SyncConflictDetected.of(id, attemptedDirection, currentLocal.hash(), currentExternal.hash()));
+        }
+    }
+
+    /**
+     * A manager confirms they have seen the current collision (design.md D7). Bound to
+     * the hash pair current at that moment so a later resolution can detect whether
+     * the collision moved on before the manager acted.
+     */
+    public void acknowledgeConflict(ConflictAcknowledgement acknowledgement) {
+        Assert.notNull(acknowledgement, "acknowledgement is required");
+        Assert.state(status == SyncStatus.CONFLICT, "Only a conflicted record can be acknowledged");
+        this.acknowledgement = acknowledgement;
+    }
+
+    /**
+     * Whether an acknowledgement stands and is still current for this record's
+     * present hash pair — the guard a resolution must pass before acting
+     * (design.md D7).
+     */
+    public boolean isAcknowledgementCurrent() {
+        return acknowledgement != null && local != null && external != null
+                && acknowledgement.isCurrentFor(local.hash(), external.hash());
+    }
+
+    /**
+     * Resolves a conflict by forcing a direction: the freshly read chosen side is
+     * written (by the caller, through the adapter) and the baseline is reset from it,
+     * exactly like an ordinary successful pass (design.md D7 — a forced `INWARD`
+     * resolution follows the same post-write re-read rule as any other inward write).
+     * The acknowledgement is cleared and the conflict lifts.
+     */
+    public void resolveWithDirection(SyncDirection direction, SyncSnapshot local, SyncSnapshot external) {
+        recordSuccess(direction, local, external);
+        this.acknowledgement = null;
+    }
+
+    /**
+     * Resolves a conflict by accepting that the two sides deliberately differ
+     * (design.md D6): the baseline pair is set to the freshly read snapshots — which
+     * may themselves differ — nothing is written in either direction, and the
+     * conflict lifts. The inward guard in {@link #decide} then protects this accepted
+     * value: any later external movement raises a new conflict instead of silently
+     * overwriting it.
+     */
+    public void acceptDivergence(SyncSnapshot local, SyncSnapshot external) {
+        Assert.notNull(local, "local is required");
+        Assert.notNull(external, "external is required");
+
+        this.local = local;
+        this.external = external;
+        this.baseline = SyncBaseline.accepted(local, external);
+        this.status = SyncStatus.IN_SYNC;
+        this.acknowledgement = null;
+        this.dirtySince = null;
+        this.nextAttemptDueAt = null;
+    }
+
+    /**
+     * Per-field attribution of the current divergence, computed by comparing the
+     * baseline, local and current external snapshots' decrypted projections in memory
+     * — never from stored per-field hashes (design.md D13). Only meaningful while the
+     * record is in conflict; empty otherwise.
+     */
+    public Map<String, ChangedSide> changedSides(SyncProjectionFieldReader fieldReader) {
+        Assert.notNull(fieldReader, "fieldReader is required");
+        if (local == null || external == null || baseline == null) {
+            return Map.of();
+        }
+
+        Map<String, Object> baselineFields = fieldReader.fields(baseline.local().projection());
+        Map<String, Object> localFields = fieldReader.fields(local.projection());
+        Map<String, Object> externalFields = fieldReader.fields(external.projection());
+
+        Set<String> allFieldNames = new LinkedHashSet<>();
+        allFieldNames.addAll(baselineFields.keySet());
+        allFieldNames.addAll(localFields.keySet());
+        allFieldNames.addAll(externalFields.keySet());
+
+        Map<String, ChangedSide> result = new LinkedHashMap<>();
+        for (String fieldName : allFieldNames) {
+            Object baselineValue = baselineFields.get(fieldName);
+            Object localValue = localFields.get(fieldName);
+            Object externalValue = externalFields.get(fieldName);
+
+            boolean localMoved = !java.util.Objects.equals(baselineValue, localValue);
+            boolean externalMoved = !java.util.Objects.equals(baselineValue, externalValue);
+
+            if (localMoved && externalMoved) {
+                result.put(fieldName, ChangedSide.BOTH);
+            } else if (localMoved) {
+                result.put(fieldName, ChangedSide.LOCAL);
+            } else if (externalMoved) {
+                result.put(fieldName, ChangedSide.EXTERNAL);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * The names of the fields that diverged — the keys of {@link #changedSides}, in
+     * the same order.
+     */
+    public List<String> divergedFields(SyncProjectionFieldReader fieldReader) {
+        return List.copyOf(changedSides(fieldReader).keySet());
     }
 
     public SyncRecordId getId() {

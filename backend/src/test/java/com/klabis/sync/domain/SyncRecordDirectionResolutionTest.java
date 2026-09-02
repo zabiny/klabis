@@ -4,7 +4,6 @@ import com.klabis.sync.SyncRecordId;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SyncRecordDirectionResolutionTest {
 
@@ -97,18 +96,52 @@ class SyncRecordDirectionResolutionTest {
     }
 
     @Test
-    void decide_onlyLocalChangedButNoOutwardWriteCapability_isNotYetHandled() {
-        // A local change the integration cannot write outward is a conflict
-        // (design.md D6), which is Slice 3's job; this slice only asserts the
-        // remaining, not-yet-implemented row still fails loudly rather than silently
-        // mis-resolving.
+    void decide_onlyLocalChangedButNoOutwardWriteCapability_conflict() {
+        // A local change the integration cannot write outward is a conflict, not a
+        // silent overwrite (design.md D6).
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("agreed value"), HASHER);
         record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
 
         SyncSnapshot changedLocal = SyncSnapshot.of(new TestProjection("new local value"), HASHER);
 
-        assertThatThrownBy(() -> record.decide(changedLocal, agreed, INWARD_ONLY))
-                .isInstanceOf(UnsupportedOperationException.class);
+        SyncDecision decision = record.decide(changedLocal, agreed, INWARD_ONLY);
+
+        assertThat(decision.kind()).isEqualTo(SyncDecision.Kind.CONFLICT);
+        assertThat(decision.direction()).isEqualTo(SyncDirection.OUTWARD);
+    }
+
+    @Test
+    void decide_bothSidesChangedToDifferentValues_conflict() {
+        SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
+        SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("agreed value"), HASHER);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+
+        SyncSnapshot changedLocal = SyncSnapshot.of(new TestProjection("local edit"), HASHER);
+        SyncSnapshot changedExternal = SyncSnapshot.of(new TestProjection("external edit"), HASHER);
+
+        SyncDecision decision = record.decide(changedLocal, changedExternal, BOTH_WRITABLE);
+
+        assertThat(decision.kind()).isEqualTo(SyncDecision.Kind.CONFLICT);
+    }
+
+    @Test
+    void decide_externalChangedWhileBaselineIsDivergedByAcceptedDivergence_conflict() {
+        // A standing accepted divergence (design.md D6) is recorded as a baseline pair
+        // whose halves differ. Any further external movement must stop and ask again,
+        // rather than silently overwrite the accepted local value (the D4 inward guard).
+        SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
+        SyncSnapshot acceptedLocal = SyncSnapshot.of(new TestProjection("accepted local value"), HASHER);
+        SyncSnapshot acceptedExternal = SyncSnapshot.of(new TestProjection("accepted external value"), HASHER);
+        record.acceptDivergence(acceptedLocal, acceptedExternal);
+
+        SyncSnapshot newExternalChange = SyncSnapshot.of(new TestProjection("yet another external value"), HASHER);
+
+        // Local is unchanged relative to its own baseline half; only external moved —
+        // but because the baseline pair is diverged, this must be a conflict, not an
+        // ordinary inward write.
+        SyncDecision decision = record.decide(acceptedLocal, newExternalChange, BOTH_WRITABLE);
+
+        assertThat(decision.kind()).isEqualTo(SyncDecision.Kind.CONFLICT);
     }
 }
