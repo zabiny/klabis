@@ -4,8 +4,8 @@ import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {HalFormProvider} from '../../contexts/HalFormContext';
 import {HalFormsPageLayout} from '../../components/HalNavigator2/HalFormsPageLayout';
-import {useHalPageData} from '../../hooks/useHalPageData';
 import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {EventDetailPage} from './EventDetailPage';
@@ -26,6 +26,78 @@ vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
 }));
 
+const {dialogFixtures, resolveDialogQueryData} = vi.hoisted(() => {
+    const dialogCategoryOptions = {inline: [{value: 'cat-2', prompt: 'D21'}]};
+    const registrationWriteTemplate = (target: string) => ({
+        method: 'PUT',
+        target,
+        title: 'Upravit přihlášku',
+        properties: [
+            {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{4,8}'},
+            {name: 'categoryId', prompt: 'Kategorie', type: 'text', options: dialogCategoryOptions},
+        ],
+    });
+    const dialogFixtures = {
+        dialogEventData: {
+            name: 'Jarní závod 2025',
+            eventDate: '2025-04-15',
+            location: 'Brno - Bystrc',
+            deadlines: ['2025-01-15'],
+            sharedTransportEnabled: true,
+            sharedAccommodationEnabled: true,
+            _links: {self: {href: 'http://localhost:8443/api/events/1'}},
+        },
+        dialogEditRegistrationData: {
+            siCardNumber: '7654321',
+            firstName: 'Jana',
+            lastName: 'Nováková',
+            category: {id: 'cat-2', name: 'D21'},
+            wantsSharedTransport: true,
+            wantsSharedAccommodation: false,
+            _links: {
+                self: {href: 'http://localhost:8443/api/events/1/registrations/member-1'},
+                event: {href: 'http://localhost:8443/api/events/1'},
+            },
+            _templates: {
+                editRegistration: registrationWriteTemplate('http://localhost:8443/api/events/1/registrations/member-1'),
+            },
+        },
+        dialogPrefillRegistrationData: {
+            siCardNumber: '1234567',
+            firstName: 'Jana',
+            lastName: 'Nováková',
+            wantsSharedTransport: false,
+            wantsSharedAccommodation: false,
+            _links: {
+                self: {href: 'http://localhost:8443/api/events/1/registrations/M001?newRegistration=true'},
+                event: {href: 'http://localhost:8443/api/events/1'},
+            },
+            _templates: {
+                registerForEvent: {
+                    method: 'POST',
+                    target: 'http://localhost:8443/api/events/1/registrations',
+                    title: 'Přihlásit se',
+                    properties: [
+                        {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{4,8}'},
+                        {name: 'categoryId', prompt: 'Kategorie', type: 'text', required: true, options: dialogCategoryOptions},
+                    ],
+                },
+            },
+        },
+    };
+    const resolveDialogQueryData = (url: string): unknown => {
+        if (url.includes('newRegistration=true')) return dialogFixtures.dialogPrefillRegistrationData;
+        if (url.includes('/registrations/member-1')) return dialogFixtures.dialogEditRegistrationData;
+        if (url === 'http://localhost:8443/api/events/1') return dialogFixtures.dialogEventData;
+        return {
+            _embedded: {registrationDtoList: []},
+            page: {totalElements: 0, totalPages: 0, size: 10, number: 0},
+            _links: {self: {href: url}},
+        };
+    };
+    return {dialogFixtures, resolveDialogQueryData};
+});
+
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedMutation: vi.fn(() => ({
         mutate: vi.fn(),
@@ -33,12 +105,8 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
         isPending: false,
         error: null,
     })),
-    useAuthorizedQuery: vi.fn((_key: unknown, url: string) => ({
-        data: {
-            _embedded: {registrationDtoList: []},
-            page: {totalElements: 0, totalPages: 0, size: 10, number: 0},
-            _links: {self: {href: url}},
-        },
+    useAuthorizedQuery: vi.fn((url: string) => ({
+        data: resolveDialogQueryData(url),
         isLoading: false,
         error: null,
     })),
@@ -54,69 +122,12 @@ vi.mock('../../api/authorizedFetch', () => {
         clone() { return this; },
     } as unknown as Response);
 
-    const dialogCategoryOptions = {inline: [{value: 'cat-2', prompt: 'D21'}]};
-    const registrationWriteTemplate = (target: string) => ({
-        method: 'PUT',
-        target,
-        title: 'Upravit přihlášku',
-        properties: [
-            {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{4,8}'},
-            {name: 'categoryId', prompt: 'Kategorie', type: 'text', options: dialogCategoryOptions},
-        ],
-    });
-    const dialogEventData = {
-        name: 'Jarní závod 2025',
-        eventDate: '2025-04-15',
-        location: 'Brno - Bystrc',
-        deadlines: ['2025-01-15'],
-        sharedTransportEnabled: true,
-        sharedAccommodationEnabled: true,
-        _links: {self: {href: 'http://localhost:8443/api/events/1'}},
-    };
-    const dialogEditRegistrationData = {
-        siCardNumber: '7654321',
-        firstName: 'Jana',
-        lastName: 'Nováková',
-        category: {id: 'cat-2', name: 'D21'},
-        wantsSharedTransport: true,
-        wantsSharedAccommodation: false,
-        _links: {
-            self: {href: 'http://localhost:8443/api/events/1/registrations/member-1'},
-            event: {href: 'http://localhost:8443/api/events/1'},
-        },
-        _templates: {
-            editRegistration: registrationWriteTemplate('http://localhost:8443/api/events/1/registrations/member-1'),
-        },
-    };
-    const dialogPrefillRegistrationData = {
-        siCardNumber: '1234567',
-        firstName: 'Jana',
-        lastName: 'Nováková',
-        wantsSharedTransport: false,
-        wantsSharedAccommodation: false,
-        _links: {
-            self: {href: 'http://localhost:8443/api/events/1/registrations/M001?newRegistration=true'},
-            event: {href: 'http://localhost:8443/api/events/1'},
-        },
-        _templates: {
-            registerForEvent: {
-                method: 'POST',
-                target: 'http://localhost:8443/api/events/1/registrations',
-                title: 'Přihlásit se',
-                properties: [
-                    {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{4,8}'},
-                    {name: 'categoryId', prompt: 'Kategorie', type: 'text', required: true, options: dialogCategoryOptions},
-                ],
-            },
-        },
-    };
-
     return {
         authorizedFetch: vi.fn((url: string, options?: RequestInit) => {
             if (options?.method) return okJson({});
-            if (url.includes('newRegistration=true')) return okJson(dialogPrefillRegistrationData);
-            if (url.includes('/registrations/member-1')) return okJson(dialogEditRegistrationData);
-            if (url.includes('/api/events/1')) return okJson(dialogEventData);
+            if (url.includes('newRegistration=true')) return okJson(dialogFixtures.dialogPrefillRegistrationData);
+            if (url.includes('/registrations/member-1')) return okJson(dialogFixtures.dialogEditRegistrationData);
+            if (url.includes('/api/events/1')) return okJson(dialogFixtures.dialogEventData);
             return okJson({});
         }),
     };
@@ -277,6 +288,11 @@ describe('EventDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockNavigate.mockReset();
+        vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => ({
+            data: resolveDialogQueryData(url),
+            isLoading: false,
+            error: null,
+        }) as unknown as ReturnType<typeof useAuthorizedQuery>);
     });
 
     it('renders back link to events list', () => {
@@ -867,8 +883,13 @@ describe('EventDetailPage', () => {
                 _embedded: {registrationDtoList: rows},
                 page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
             };
-            vi.mocked(useAuthorizedQuery)
-                .mockReturnValue({data: registrationsListData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => ({
+                data: url.includes('newRegistration=true') || url.includes('/registrations/member-1')
+                    ? resolveDialogQueryData(url)
+                    : registrationsListData,
+                isLoading: false,
+                error: null,
+            }) as unknown as ReturnType<typeof useAuthorizedQuery>);
             return renderPage(createMockPageData(resourceData));
         };
 

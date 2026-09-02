@@ -3,8 +3,8 @@ import {fireEvent, render, screen, waitFor, within} from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {useHalPageData} from '../../hooks/useHalPageData';
 import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
+import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {createMockResponse} from '../../__mocks__/mockFetch';
@@ -466,6 +466,20 @@ describe('EventsPage', () => {
                 if (url === '/api/event-types') {
                     return {
                         data: {_embedded: {eventTypeDtoList: []}},
+                        isLoading: false,
+                        error: null,
+                    } as unknown as ReturnType<typeof useAuthorizedQuery>;
+                }
+                if (url.includes('newRegistration=true')) {
+                    return {
+                        data: prefillResponse,
+                        isLoading: false,
+                        error: null,
+                    } as unknown as ReturnType<typeof useAuthorizedQuery>;
+                }
+                if (url === '/api/events/evt-1') {
+                    return {
+                        data: dialogEventData,
                         isLoading: false,
                         error: null,
                     } as unknown as ReturnType<typeof useAuthorizedQuery>;

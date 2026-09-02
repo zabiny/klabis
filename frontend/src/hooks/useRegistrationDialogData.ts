@@ -1,7 +1,6 @@
-import {useQuery} from '@tanstack/react-query';
-import {authorizedFetch} from '../api/authorizedFetch';
 import {asLinkArray} from '../api/hateoas';
 import type {GetEventResource, GetRegistrationResource, HalFormsTemplate, Link} from '../api';
+import {useAuthorizedQuery} from './useAuthorizedFetch';
 
 export type RegistrationDialogMode = 'new' | 'edit';
 
@@ -32,29 +31,15 @@ export interface RegistrationDialogData {
 }
 
 export const useRegistrationDialogData = (registration: Link | null): RegistrationDialogData => {
-    const registrationQuery = useQuery<GetRegistrationResource>({
-        queryKey: ['event-registration-dialog', registration?.href],
-        queryFn: async () => {
-            const response = await authorizedFetch(registration!.href);
-            return response.json();
-        },
+    const registrationQuery = useAuthorizedQuery<GetRegistrationResource>(registration?.href ?? '', {
         enabled: !!registration,
-        staleTime: 0,
-        gcTime: 0,
         retry: false,
     });
 
     const eventHref = asLinkArray(registrationQuery.data?._links?.event)[0]?.href;
 
-    const eventQuery = useQuery<GetEventResource>({
-        queryKey: ['event-registration-dialog-event', eventHref],
-        queryFn: async () => {
-            const response = await authorizedFetch(eventHref!);
-            return response.json();
-        },
+    const eventQuery = useAuthorizedQuery<GetEventResource>(eventHref ?? '', {
         enabled: !!eventHref,
-        staleTime: 0,
-        gcTime: 0,
         retry: false,
     });
 

@@ -1,22 +1,12 @@
-import type {HalResponse, Link} from '../api';
-import {isLink, toHref} from '../api/hateoas';
-import type {HalResourceLinks} from '../api';
+import type {HalResourceLinks, HalResponse, Link} from '../api';
+import {asLinkArray, toHref} from '../api/hateoas';
 import type {components} from '../api/klabisApi';
 import {useAuthorizedQuery} from './useAuthorizedFetch';
 import {getTodayIso} from '../utils/dateUtils';
 
-function firstLink(links: HalResourceLinks | undefined): Link | undefined {
-    return Array.isArray(links) ? links[0] : links;
-}
-
 function linkHref(links: HalResourceLinks | undefined): string | undefined {
-    const link = firstLink(links);
-    return isLink(link) ? toHref(link) : undefined;
-}
-
-function newRegistrationLink(event: components['schemas']['EntityModelEventSummaryDto']): Link | undefined {
-    const link = firstLink(event._links?.newRegistration);
-    return isLink(link) ? link : undefined;
+    const link = asLinkArray(links)[0];
+    return link ? toHref(link) : undefined;
 }
 
 export interface UpcomingDeadlineItem {
@@ -48,13 +38,13 @@ function toUpcomingDeadlinesData(response: HalResponse): UpcomingDeadlinesData {
 
     const rawItems = embedded?.eventSummaryDtoList ?? [];
     const items: UpcomingDeadlineItem[] = rawItems
-        .filter(e => isLink(firstLink(e._links?.self)))
+        .filter(e => asLinkArray(e._links?.self)[0])
         .map(e => ({
             selfHref: linkHref(e._links?.self)!,
             name: e.name ?? '',
             eventDate: e.eventDate ?? '',
             deadline: pickNextRelevantDeadline(e.deadlines),
-            newRegistration: newRegistrationLink(e),
+            newRegistration: asLinkArray(e._links?.newRegistration)[0],
         }));
 
     return {items, totalElements};
