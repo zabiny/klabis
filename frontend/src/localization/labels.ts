@@ -487,6 +487,26 @@ export const labels = {
         familyGroup: 'Rodina',
     },
 
+    events: {
+        registrationModal: {
+            siChip: 'SI čip',
+            siChipHelperPrefilled: 'Předvyplněno z vašeho profilu · 4–8 číslic',
+            siChipHelper: '4–8 číslic',
+            siChipRequired: 'Zadejte SI čip',
+            siChipInvalidFormat: 'Zadejte 4–8 číslic',
+            category: 'Kategorie',
+            categoryRequired: 'Vyberte kategorii',
+            savedWithTemplate: (what: string) => `${what} — úspěšně uloženo`,
+            selectCategoryPlaceholder: 'Vyberte možnost',
+            deadlinePrefix: (date: string) => `Přihlášky do ${date}`,
+            editingCaption: 'upravovaná přihláška',
+            editFooterNote: 'Úpravou neztrácíte své místo v pořadí přihlášek',
+            confirmNew: 'Potvrdit přihlášku',
+            confirmEdit: 'Uložit změny',
+            prefillLoadError: 'Nepodařilo se načíst výchozí údaje přihlášky.',
+        },
+    },
+
     eventsFilter: {
         search: 'Hledat',
         searchPlaceholder: 'Hledat podle názvu nebo místa...',

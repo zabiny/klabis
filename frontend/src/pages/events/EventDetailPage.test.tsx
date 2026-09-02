@@ -9,6 +9,7 @@ import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {EventDetailPage} from './EventDetailPage';
+import {labels} from '../../localization';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 
@@ -87,11 +88,20 @@ vi.mock('../../api/hateoas', () => ({
 }));
 
 vi.mock('../../components/UI/Modal.tsx', () => ({
-    Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
+    Modal: ({isOpen, children, onClose, title, footer, footerNote}: {
+        isOpen: boolean;
+        children: React.ReactNode;
+        onClose: () => void;
+        title?: string;
+        footer?: React.ReactNode;
+        footerNote?: React.ReactNode;
+    }) => (
         isOpen ? (
             <div data-testid="modal-overlay" role="dialog">
                 {title && <h4>{title}</h4>}
                 {children}
+                {footerNote}
+                {footer}
                 <button onClick={onClose}>Close</button>
             </div>
         ) : null
@@ -799,7 +809,7 @@ describe('EventDetailPage', () => {
                 expect(screen.queryByRole('button', {name: /upravit přihlášku/i})).not.toBeInTheDocument();
             });
 
-            it('opens modal with HalFormDisplay when row edit button is clicked', () => {
+            it('opens EventRegistrationDialog with prefilled values when row edit button is clicked', async () => {
                 const row = buildRegistrationRow('member-1', {
                     _templates: {editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'})},
                 });
@@ -808,7 +818,8 @@ describe('EventDetailPage', () => {
                 fireEvent.click(screen.getByRole('button', {name: /upravit přihlášku/i}));
 
                 expect(screen.getByRole('dialog')).toBeInTheDocument();
-                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+                expect(await screen.findByLabelText(/SI čip/)).toBeInTheDocument();
+                expect(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit})).toBeInTheDocument();
             });
         });
 
@@ -944,32 +955,14 @@ describe('EventDetailPage', () => {
     });
 
     describe('edit own registration button (Group 6)', () => {
-        it('shows editRegistration button when editRegistration template exists on root resource', () => {
+        it('no longer renders a toolbar editRegistration button (editing moved to registration rows)', () => {
             const data = mockEventDetailData({
                 _templates: {
                     editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'}),
                 },
             });
             renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: /upravit přihlášku/i})).toBeInTheDocument();
-        });
-
-        it('does not show editRegistration button when editRegistration template is absent', () => {
-            renderPage(createMockPageData(mockEventDetailData()));
             expect(screen.queryByRole('button', {name: /upravit přihlášku/i})).not.toBeInTheDocument();
-        });
-
-        it('opens modal with HalFormDisplay when editRegistration button is clicked', () => {
-            const data = mockEventDetailData({
-                _templates: {
-                    editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'}),
-                },
-            });
-            renderPage(createMockPageData(data));
-
-            fireEvent.click(screen.getByRole('button', {name: /upravit přihlášku/i}));
-
-            expect(screen.getByRole('dialog')).toBeInTheDocument();
         });
     });
 

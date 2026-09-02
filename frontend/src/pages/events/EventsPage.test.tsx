@@ -7,6 +7,8 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {createMockResponse} from '../../__mocks__/mockFetch';
+import {authorizedFetch} from '../../api/authorizedFetch';
 import {EventsPage} from './EventsPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
@@ -415,37 +417,26 @@ describe('EventsPage', () => {
                     title: 'Přihlásit se',
                     properties: [
                         {name: 'siCardNumber', prompt: 'SI číslo', type: 'text'},
-                        {name: 'category', prompt: 'Kategorie', type: 'text'},
                     ],
                 }),
             },
             ...overrides,
         });
 
-        const buildNewRegistrationResponse = (siCardNumber?: string) => ({
-            siCardNumber: siCardNumber ?? '',
-            category: '',
-            _links: {self: {href: newRegistrationUrl}},
-            _templates: {
-                editRegistration: mockHalFormsTemplate({
-                    method: 'PUT',
-                    target: '/api/events/evt-1/registrations/M001',
-                    title: 'Přihlásit se',
-                    properties: [
-                        {name: 'siCardNumber', prompt: 'SI číslo', type: 'text', value: siCardNumber ?? ''},
-                        {name: 'category', prompt: 'Kategorie', type: 'text'},
-                    ],
-                }),
-            },
-        });
-
-        const renderWithEventHavingNewRegistrationLink = (siCardNumber?: string) => {
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string, options?: {enabled?: boolean}) => {
-                if (options?.enabled === false) {
-                    return {data: undefined, isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
-                }
+        const renderWithEventHavingNewRegistrationLink = (prefill: Record<string, unknown> = {siCardNumber: ''}) => {
+            vi.mocked(authorizedFetch).mockImplementation(((url: string) => {
                 if (url.includes('newRegistration=true')) {
-                    return {data: buildNewRegistrationResponse(siCardNumber), isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
+                    return Promise.resolve(createMockResponse(prefill));
+                }
+                return Promise.resolve(createMockResponse({}));
+            }) as typeof authorizedFetch);
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => {
+                if (url === '/api/event-types') {
+                    return {
+                        data: {_embedded: {eventTypeDtoList: []}},
+                        isLoading: false,
+                        error: null,
+                    } as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 return {
                     data: {
@@ -456,77 +447,62 @@ describe('EventsPage', () => {
                     isLoading: false,
                     error: null,
                 } as unknown as ReturnType<typeof useAuthorizedQuery>;
-            });
+            }) as typeof useAuthorizedQuery);
             return renderPage(createMockPageData({
                 _links: {self: {href: '/api/events'}},
             }));
         };
 
-        it('shows "Přihlásit se" button when event has new-registration link', async () => {
-            renderWithEventHavingNewRegistrationLink('12345');
-            expect(await screen.findByTitle(labels.templates.registerForEvent)).toBeInTheDocument();
-        });
-
-        it('opens registration form prefilled with siCardNumber when button clicked', async () => {
-            const user = userEvent.setup();
-            renderWithEventHavingNewRegistrationLink('12345');
-
-            const registerBtn = await screen.findByTitle(labels.templates.registerForEvent);
-            await user.click(registerBtn);
-
-            const siInput = await screen.findByDisplayValue('12345');
-            expect(siInput).toBeInTheDocument();
-        });
-
-        it('opens registration form with empty SI field when member has no chip number', async () => {
-            const user = userEvent.setup();
-            renderWithEventHavingNewRegistrationLink('');
-
-            const registerBtn = await screen.findByTitle(labels.templates.registerForEvent);
-            await user.click(registerBtn);
-
-            await screen.findByTestId('hal-forms-display');
-            const siInput = document.querySelector('input[name="siCardNumber"]') as HTMLInputElement | null;
-            expect(siInput).toBeInTheDocument();
-            expect(siInput).toHaveValue('');
-        });
-
-        it('submits overwritten siCardNumber value', async () => {
-            const user = userEvent.setup();
-            const mutateMock = vi.fn();
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string, options?: {enabled?: boolean}) => {
-                if (options?.enabled === false) {
-                    return {data: undefined, isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
-                }
-                if (url.includes('newRegistration=true')) {
-                    return {data: buildNewRegistrationResponse('12345'), isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
-                }
-                return {
-                    data: {
-                        _links: {self: {href: '/api/events'}},
-                        _embedded: {eventSummaryDtoList: [buildEventWithNewRegistrationLink()]},
-                        page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
-                    },
-                    isLoading: false,
-                    error: null,
-                } as unknown as ReturnType<typeof useAuthorizedQuery>;
-            });
+        const withMutateMock = (mutateMock = vi.fn()) => {
             vi.mocked(useAuthorizedMutation).mockReturnValue({
                 mutate: mutateMock,
                 isPending: false,
                 error: null,
             } as unknown as ReturnType<typeof useAuthorizedMutation>);
+            return mutateMock;
+        };
 
-            renderPage(createMockPageData({_links: {self: {href: '/api/events'}}}));
+        it('shows "Přihlásit se" button when event has new-registration link', async () => {
+            renderWithEventHavingNewRegistrationLink({siCardNumber: '12345'});
+            expect(await screen.findByTitle(labels.templates.registerForEvent)).toBeInTheDocument();
+        });
+
+        it('opens registration dialog prefilled with siCardNumber from member defaults when button clicked', async () => {
+            const user = userEvent.setup();
+            renderWithEventHavingNewRegistrationLink({siCardNumber: '12345'});
 
             const registerBtn = await screen.findByTitle(labels.templates.registerForEvent);
             await user.click(registerBtn);
 
-            const siInput = await screen.findByDisplayValue('12345');
+            const siInput = await screen.findByLabelText(/SI čip/);
+            expect(siInput).toHaveValue('12345');
+            expect(screen.getByTestId('modal-context')).toHaveTextContent('Jarní závod');
+        });
+
+        it('opens registration dialog with empty SI field when member has no chip number', async () => {
+            const user = userEvent.setup();
+            renderWithEventHavingNewRegistrationLink({siCardNumber: ''});
+
+            const registerBtn = await screen.findByTitle(labels.templates.registerForEvent);
+            await user.click(registerBtn);
+
+            const siInput = await screen.findByLabelText(/SI čip/);
+            expect(siInput).toHaveValue('');
+        });
+
+        it('submits overwritten siCardNumber value to the mutation', async () => {
+            const user = userEvent.setup();
+            const mutateMock = withMutateMock();
+            renderWithEventHavingNewRegistrationLink({siCardNumber: '12345'});
+
+            const registerBtn = await screen.findByTitle(labels.templates.registerForEvent);
+            await user.click(registerBtn);
+
+            const siInput = await screen.findByLabelText(/SI čip/);
             await user.clear(siInput);
             await user.type(siInput, '99999');
 
-            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+            await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmNew}));
 
             await waitFor(() => {
                 expect(mutateMock).toHaveBeenCalledWith(
@@ -538,49 +514,25 @@ describe('EventsPage', () => {
             });
         });
 
-        it('submits new registration via POST to registerForEvent URL, not PUT to editRegistration', async () => {
+        it('submits new registration to the normalized registerForEvent target, not the prefill URL', async () => {
             const user = userEvent.setup();
-            const mutateMock = vi.fn();
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string, options?: {enabled?: boolean}) => {
-                if (options?.enabled === false) {
-                    return {data: undefined, isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
-                }
-                if (url.includes('newRegistration=true')) {
-                    return {data: buildNewRegistrationResponse('12345'), isLoading: false, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
-                }
-                return {
-                    data: {
-                        _links: {self: {href: '/api/events'}},
-                        _embedded: {eventSummaryDtoList: [buildEventWithNewRegistrationLink()]},
-                        page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
-                    },
-                    isLoading: false,
-                    error: null,
-                } as unknown as ReturnType<typeof useAuthorizedQuery>;
-            });
-            vi.mocked(useAuthorizedMutation).mockReturnValue({
-                mutate: mutateMock,
-                isPending: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedMutation>);
-
-            renderPage(createMockPageData({_links: {self: {href: '/api/events'}}}));
+            const mutateMock = withMutateMock();
+            renderWithEventHavingNewRegistrationLink({siCardNumber: '12345'});
 
             const registerBtn = await screen.findByTitle(labels.templates.registerForEvent);
             await user.click(registerBtn);
 
-            await screen.findByTestId('hal-forms-display');
-            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+            await screen.findByLabelText(/SI čip/);
+            await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmNew}));
 
             await waitFor(() => {
                 expect(mutateMock).toHaveBeenCalledWith(
-                    expect.objectContaining({url: registerForEventTarget}),
+                    expect.objectContaining({url: '/events/evt-1/registrations'}),
                     expect.anything(),
                 );
             });
-            // Must NOT submit to the editRegistration PUT URL
             expect(mutateMock).not.toHaveBeenCalledWith(
-                expect.objectContaining({url: '/api/events/evt-1/registrations/M001'}),
+                expect.objectContaining({url: newRegistrationUrl}),
                 expect.anything(),
             );
         });

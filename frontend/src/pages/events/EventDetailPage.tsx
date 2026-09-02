@@ -1,7 +1,8 @@
 import {type ReactElement, type ReactNode, useState} from 'react';
 import {Link, useLocation} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Badge, Button, Card, DetailRow, Modal, Skeleton} from '../../components/UI';
+import {Badge, Button, Card, DetailRow, Skeleton} from '../../components/UI';
+import {EventRegistrationDialog} from '../../components/events/EventRegistrationDialog.tsx';
 import {ErrorPage} from '../ErrorPage.tsx';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
@@ -15,6 +16,7 @@ import type {EntityModel, GetEventResource, Link as HalLink} from '../../api';
 import type {components} from '../../api/klabisApi';
 import type {HalFormsTemplate} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
+import {getActionVariant} from '../../utils/actionVariants.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
@@ -179,9 +181,14 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     const initialEditing = !!(location.state as { editing?: boolean })?.editing;
     const [registrationEditModal, setRegistrationEditModal] = useState<RegistrationEditModalState | null>(null);
     const [transactionDialogAccount, setTransactionDialogAccount] = useState<HalLink | null>(null);
+    const [isNewRegistrationOpen, setIsNewRegistrationOpen] = useState(false);
 
     const event = resourceData;
     const statusVariant = event.status ? (STATUS_VARIANT[event.status] ?? 'default') : 'default';
+
+    const registerForEventTemplate = resourceData._templates?.registerForEvent ?? null;
+    const newRegistrationLink = asLinkArray(resourceData._links?.newRegistration)[0];
+    const newRegistrationHref = newRegistrationLink ? toHref(newRegistrationLink) : undefined;
 
     const template: HalFormsTemplate | null = resourceData?._templates?.updateEvent ?? null;
     const hasEditTemplate = template !== null;
@@ -231,9 +238,16 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                             <HalFormButton name="publishEvent" modal={true} icon={<Globe className="w-4 h-4"/>}/>
                             <HalFormButton name="cancelEvent" modal={true} icon={<XCircle className="w-4 h-4"/>}/>
                             <HalFormButton name="syncEventFromOris" modal={true} icon={<RefreshCw className="w-4 h-4"/>}/>
-                            <HalFormButton name="registerForEvent" modal={true} navigateOnSuccess={false} icon={<UserPlus className="w-4 h-4"/>}/>
+                            {registerForEventTemplate && (
+                                <Button
+                                    variant={getActionVariant('registerForEvent')}
+                                    onClick={() => setIsNewRegistrationOpen(true)}
+                                    startIcon={<UserPlus className="w-4 h-4"/>}
+                                >
+                                    {labels.templates.registerForEvent}
+                                </Button>
+                            )}
                             <HalFormButton name="unregisterFromEvent" modal={true} icon={<UserMinus className="w-4 h-4"/>}/>
-                            <HalFormButton name="editRegistration" modal={true} icon={<Pencil className="w-4 h-4"/>}/>
                             {resourceData._links?.['accommodation-list'] && (
                                 <Link
                                     to={`${route.pathname}/accommodation-list`}
@@ -446,22 +460,28 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     );
 
     const registrationEditModalJsx = registrationEditModal && (
-        <Modal
+        <EventRegistrationDialog
             isOpen={true}
+            mode="edit"
+            template={registrationEditModal.template}
+            event={event}
+            initialValuesHref={registrationEditModal.item._links?.self
+                ? toHref(registrationEditModal.item._links.self)
+                : undefined}
             onClose={handleRegistrationEditClose}
-            title={labels.dialogTitles.editRegistration}
-            size="md"
-        >
-            <HalFormDisplay
-                template={registrationEditModal.template}
-                templateName="edit"
-                resourceData={registrationEditModal.item as unknown as Record<string, unknown>}
-                pathname={route.pathname}
-                resourceUrl={registrationEditModal.item._links?.self ? toHref(registrationEditModal.item._links.self) : undefined}
-                onClose={handleRegistrationEditClose}
-                navigateOnSuccess={false}
-            />
-        </Modal>
+        />
+    );
+
+    const newRegistrationDialogJsx = isNewRegistrationOpen && registerForEventTemplate && (
+        <EventRegistrationDialog
+            isOpen={true}
+            mode="new"
+            template={registerForEventTemplate}
+            event={event}
+            prefillHref={newRegistrationHref}
+            onClose={() => setIsNewRegistrationOpen(false)}
+            onRegistered={route.refetch}
+        />
     );
 
     if (isEditing && enrichedTemplate) {
@@ -481,6 +501,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                     fieldsFactory={eventFormFieldsFactory}
                 />
                 {registrationEditModalJsx}
+                {newRegistrationDialogJsx}
                 {financeTransactionDialogJsx}
             </>
         );
@@ -490,6 +511,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
         <>
             {renderContent() as ReactElement}
             {registrationEditModalJsx}
+            {newRegistrationDialogJsx}
             {financeTransactionDialogJsx}
         </>
     );
