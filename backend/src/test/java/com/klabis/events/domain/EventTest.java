@@ -791,6 +791,46 @@ class EventTest {
         }
 
         @Test
+        @DisplayName("editRegistration() retains stored choices when the event stopped offering shared services")
+        void editRegistrationRetainsStoredChoicesWhenOffersDisabled() {
+            Event event = activeEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true);
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).organizer("Club")
+                    .build());
+
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .build());
+
+            EventRegistration updated = event.findRegistration(memberId).orElseThrow();
+            assertThat(updated.wantsSharedTransport()).isTrue();
+            assertThat(updated.wantsSharedAccommodation()).isTrue();
+        }
+
+        @Test
+        @DisplayName("editRegistration() retains the stored choice only for the offer that was turned off")
+        void editRegistrationRetainsChoiceOnlyForDisabledOffer() {
+            Event event = activeEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true);
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).organizer("Club")
+                    .sharedAccommodationEnabled(true)
+                    .build());
+
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .wantsSharedAccommodation(false)
+                    .build());
+
+            EventRegistration updated = event.findRegistration(memberId).orElseThrow();
+            assertThat(updated.wantsSharedTransport()).isTrue();
+            assertThat(updated.wantsSharedAccommodation()).isFalse();
+        }
+
+        @Test
         @DisplayName("editRegistration() is refused after the registration deadline")
         void editRegistrationRefusedAfterDeadline() {
             MemberId memberId = new MemberId(UUID.randomUUID());

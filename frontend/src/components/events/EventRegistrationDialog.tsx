@@ -26,6 +26,8 @@ export interface EventRegistrationDialogProps {
         eventDate?: string;
         location?: string | null;
         deadlines?: string[];
+        sharedTransportEnabled?: boolean;
+        sharedAccommodationEnabled?: boolean;
     };
     prefillHref?: string;
     initialValuesHref?: string;
@@ -89,6 +91,10 @@ export const EventRegistrationDialog = ({
     const categoryProp = template.properties.find(prop => prop.name === 'categoryId');
     const transportProp = template.properties.find(prop => prop.name === 'wantsSharedTransport');
     const accommodationProp = template.properties.find(prop => prop.name === 'wantsSharedAccommodation');
+    const transportOffered = event.sharedTransportEnabled === true;
+    const accommodationOffered = event.sharedAccommodationEnabled === true;
+    const showTransportCheckbox = transportProp !== undefined && transportOffered;
+    const showAccommodationCheckbox = accommodationProp !== undefined && accommodationOffered;
 
     const {options: categoryOptions, isLoading: areCategoryOptionsLoading} = useHalFormOptions(categoryProp?.options);
 
@@ -138,8 +144,8 @@ export const EventRegistrationDialog = ({
 
         const payload: Record<string, unknown> = {siCardNumber: siCardNumber.trim()};
         if (categoryProp && categoryId) payload.categoryId = categoryId;
-        if (transportProp) payload.wantsSharedTransport = wantsSharedTransport;
-        if (accommodationProp) payload.wantsSharedAccommodation = wantsSharedAccommodation;
+        if (showTransportCheckbox) payload.wantsSharedTransport = wantsSharedTransport;
+        if (showAccommodationCheckbox) payload.wantsSharedAccommodation = wantsSharedAccommodation;
 
         submitRegistration(
             {url: normalizeKlabisApiPath(template.target), data: payload},
@@ -251,9 +257,9 @@ export const EventRegistrationDialog = ({
                             }}
                         />
                     )}
-                    {(transportProp || accommodationProp) && (
+                    {(showTransportCheckbox || showAccommodationCheckbox) && (
                         <div className="flex flex-col gap-3">
-                            {transportProp && (
+                            {showTransportCheckbox && (
                                 <SharedServiceCheckbox
                                     name="wantsSharedTransport"
                                     label={labels.fields.wantsSharedTransport}
@@ -263,7 +269,7 @@ export const EventRegistrationDialog = ({
                                     onChange={setWantsSharedTransport}
                                 />
                             )}
-                            {accommodationProp && (
+                            {showAccommodationCheckbox && (
                                 <SharedServiceCheckbox
                                     name="wantsSharedAccommodation"
                                     label={labels.fields.wantsSharedAccommodation}

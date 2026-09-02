@@ -912,8 +912,12 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 .orElseThrow(() -> new RegistrationNotFoundException(memberId, this.id));
 
         EventCategoryId resolvedCategoryId = resolveCategoryId(command.categoryId());
+        boolean wantsSharedTransport = sharedTransportEnabled ? command.wantsSharedTransport()
+                : current.wantsSharedTransport();
+        boolean wantsSharedAccommodation = sharedAccommodationEnabled ? command.wantsSharedAccommodation()
+                : current.wantsSharedAccommodation();
         EventRegistration updated = current.withChanges(command.siCardNumber(), resolvedCategoryId,
-                command.wantsSharedTransport(), command.wantsSharedAccommodation());
+                wantsSharedTransport, wantsSharedAccommodation);
 
         registrations.remove(current);
         registrations.add(updated);

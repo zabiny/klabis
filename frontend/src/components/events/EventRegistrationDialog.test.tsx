@@ -30,6 +30,8 @@ const MOCK_EVENT = {
     eventDate: '2026-04-15',
     location: 'Brno - Bystrc',
     deadlines: ['2026-01-15', '2026-03-15'],
+    sharedTransportEnabled: true,
+    sharedAccommodationEnabled: true,
 };
 
 const CATEGORY_OPTIONS = {inline: [{value: 'cat-1', prompt: 'H21'}, {value: 'cat-2', prompt: 'D21'}]};
@@ -184,6 +186,79 @@ describe('EventRegistrationDialog', () => {
         expect(screen.queryByLabelText(/Kategorie/)).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox', {name: labels.fields.wantsSharedTransport})).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox', {name: labels.fields.wantsSharedAccommodation})).not.toBeInTheDocument();
+    });
+
+    it('hides shared-service checkboxes the event does not offer even when the template has the properties', async () => {
+        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse(prefillData));
+        renderDialog({event: {...MOCK_EVENT, sharedTransportEnabled: false, sharedAccommodationEnabled: false}});
+
+        await screen.findByLabelText(/SI čip/);
+        expect(screen.queryByRole('checkbox', {name: labels.fields.wantsSharedTransport})).not.toBeInTheDocument();
+        expect(screen.queryByRole('checkbox', {name: labels.fields.wantsSharedAccommodation})).not.toBeInTheDocument();
+    });
+
+    it('omits shared-service fields from the POST body when the event offers neither service', async () => {
+        const user = userEvent.setup();
+        vi.mocked(authorizedFetch as Mock).mockImplementation(((_url: string, options?: RequestInit) => {
+            if (options?.method === 'POST') {
+                return Promise.resolve(createMockResponse({}, 200));
+            }
+            return Promise.resolve(createMockResponse(prefillData));
+        }) as typeof authorizedFetch);
+        renderDialog({event: {...MOCK_EVENT, sharedTransportEnabled: false, sharedAccommodationEnabled: false}});
+
+        await screen.findByLabelText(/SI čip/);
+        await user.selectOptions(screen.getByLabelText(/Kategorie/), 'cat-1');
+        await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmNew}));
+
+        await waitFor(() => {
+            const postCall = vi.mocked(authorizedFetch).mock.calls.find(([, options]) =>
+                (options as RequestInit | undefined)?.method === 'POST');
+            expect(postCall).toBeDefined();
+            expect(JSON.parse((postCall?.[1] as RequestInit).body as string)).toEqual({
+                siCardNumber: '1234567',
+                categoryId: 'cat-1',
+            });
+        });
+    });
+
+    it('hides only the shared-service checkbox whose offer is disabled', async () => {
+        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse(prefillData));
+        renderDialog({event: {...MOCK_EVENT, sharedAccommodationEnabled: false}});
+
+        await screen.findByLabelText(/SI čip/);
+        expect(screen.getByRole('checkbox', {name: labels.fields.wantsSharedTransport})).toBeInTheDocument();
+        expect(screen.queryByRole('checkbox', {name: labels.fields.wantsSharedAccommodation})).not.toBeInTheDocument();
+    });
+
+    it('edit mode omits hidden shared-service fields from the PUT body', async () => {
+        const user = userEvent.setup();
+        vi.mocked(authorizedFetch as Mock).mockImplementation(((_url: string, options?: RequestInit) => {
+            if (options?.method === 'PUT') {
+                return Promise.resolve(createMockResponse({}, 200));
+            }
+            return Promise.resolve(createMockResponse(editInitialData));
+        }) as typeof authorizedFetch);
+        renderDialog({
+            mode: 'edit',
+            template: editRegistrationTemplate(),
+            event: {...MOCK_EVENT, sharedTransportEnabled: false, sharedAccommodationEnabled: false},
+            prefillHref: undefined,
+            initialValuesHref: '/api/events/evt-1/registrations/member-1',
+        });
+
+        await screen.findByLabelText(/SI čip/);
+        await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit}));
+
+        await waitFor(() => {
+            const putCall = vi.mocked(authorizedFetch).mock.calls.find(([, options]) =>
+                (options as RequestInit | undefined)?.method === 'PUT');
+            expect(putCall).toBeDefined();
+            expect(JSON.parse((putCall?.[1] as RequestInit).body as string)).toEqual({
+                siCardNumber: '7654321',
+                categoryId: 'cat-2',
+            });
+        });
     });
 
     it('shows validation error and skips submit when SI chip is empty', async () => {
