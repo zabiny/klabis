@@ -499,8 +499,6 @@ export const labels = {
             savedWithTemplate: (what: string) => `${what} — úspěšně uloženo`,
             selectCategoryPlaceholder: 'Vyberte možnost',
             deadlinePrefix: (date: string) => `Přihlášky do ${date}`,
-            editingCaption: 'upravovaná přihláška',
-            editFooterNote: 'Úpravou neztrácíte své místo v pořadí přihlášek',
             confirmNew: 'Potvrdit přihlášku',
             confirmEdit: 'Uložit změny',
             prefillLoadError: 'Nepodařilo se načíst výchozí údaje přihlášky.',

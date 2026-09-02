@@ -1,5 +1,5 @@
 import {type ReactElement, useEffect, useMemo, useState} from 'react';
-import {Calendar, Check, Hourglass, Info, MapPin, Pencil, UserPlus} from 'lucide-react';
+import {Calendar, Check, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
 import {labels} from '../../localization';
 import {Alert, Modal, Skeleton} from '../UI';
 import {type RegistrationDialogData, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
@@ -16,9 +16,6 @@ export interface EventRegistrationDialogProps {
     onClose: () => void;
     onRegistered?: () => void;
 }
-
-const initialsOf = (name: string): string =>
-    name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('');
 
 export const EventRegistrationDialog = ({
     registration,
@@ -52,6 +49,10 @@ export const EventRegistrationDialog = ({
         : undefined;
 
     const missingAffordance = !isLoading && !error && mode === undefined;
+    const baseTitle = mode === 'new'
+        ? labels.dialogTitles.registerForEvent
+        : labels.dialogTitles.editRegistration;
+    const dialogTitle = memberName ? `${baseTitle} - ${memberName}` : baseTitle;
     const confirmLabel = mode === 'new'
         ? labels.events.registrationModal.confirmNew
         : labels.events.registrationModal.confirmEdit;
@@ -109,19 +110,13 @@ export const EventRegistrationDialog = ({
             onClose={handleClose}
             closeOnBackdropClick={true}
             size="lg"
-            title={mode === 'new' ? labels.dialogTitles.registerForEvent : labels.dialogTitles.editRegistration}
+            title={dialogTitle}
             headerIcon={mode === 'new'
                 ? <UserPlus className="h-5 w-5 text-primary"/>
                 : <Pencil className="h-5 w-5 text-primary"/>}
             context={!isLoading && eventContext
-                ? <RegistrationContext event={eventContext} memberName={mode === 'edit' ? memberName : undefined}/>
+                ? <RegistrationContext event={eventContext}/>
                 : undefined}
-            footerNote={mode === 'edit' && !isLoading ? (
-                <span className="flex items-center gap-2">
-                    <Info className="h-3.5 w-3.5 text-primary"/>
-                    <span className="text-xs text-gray-500">{labels.events.registrationModal.editFooterNote}</span>
-                </span>
-            ) : undefined}
         >
             {isLoading ? (
                 <DialogSkeleton/>
@@ -166,10 +161,8 @@ function DialogSkeleton() {
 
 function RegistrationContext({
     event,
-    memberName,
 }: {
     event: RegistrationDialogData['eventContext'];
-    memberName?: string;
 }) {
     const relevantDeadline = event?.deadlines && event.deadlines.length > 0
         ? event.deadlines[getRelevantDeadlineIndex(event.deadlines, getTodayIso())]
@@ -177,20 +170,6 @@ function RegistrationContext({
 
     return (
         <div className="flex flex-col gap-2.5">
-            {memberName && (
-                <div
-                    data-testid="registration-member-chip"
-                    className="flex items-center gap-2.5 rounded-md border border-border bg-surface px-3 py-2.5"
-                >
-                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary-subtle text-xs font-semibold text-primary">
-                        {initialsOf(memberName)}
-                    </span>
-                    <span className="text-[13px] font-medium text-text-primary">{memberName}</span>
-                    <span className="ml-auto text-[11px] font-semibold text-text-secondary">
-                        {labels.events.registrationModal.editingCaption}
-                    </span>
-                </div>
-            )}
             {event?.name && (
                 <p className="text-base font-bold text-text-primary">{event.name}</p>
             )}

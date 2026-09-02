@@ -152,11 +152,12 @@ describe('EventRegistrationDialog', () => {
         expect(screen.getByTestId('modal-context')).toHaveTextContent('Brno - Bystrc');
     });
 
-    it('does not show member chip in new mode even when the representation carries member names', async () => {
+    it('puts the member name into the header title in new mode', async () => {
         mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData()) : jsonOk(eventData()));
         renderDialog();
 
         await screen.findByLabelText(/SI čip/);
+        expect(screen.getByTestId('modal-title')).toHaveTextContent('Jana Nováková');
         expect(screen.queryByTestId('registration-member-chip')).not.toBeInTheDocument();
     });
 
@@ -175,16 +176,15 @@ describe('EventRegistrationDialog', () => {
         }
     });
 
-    it('edit mode shows member chip, prefilled SI chip and category, and footer note', async () => {
+    it('edit mode shows member name in the header, prefilled SI chip and category', async () => {
         mockRoutes((url) => url === EDIT_URL ? jsonOk(editInitialData()) : jsonOk(eventData()));
         renderDialog({registration: {href: EDIT_URL}});
 
         const siInput = await screen.findByLabelText(/SI čip/);
         expect(siInput).toHaveValue('7654321');
-        expect(screen.getByTestId('registration-member-chip')).toHaveTextContent('Jana Nováková');
-        expect(screen.getByTestId('registration-member-chip')).toHaveTextContent(labels.events.registrationModal.editingCaption);
+        expect(screen.getByTestId('modal-title')).toHaveTextContent('Jana Nováková');
         expect(screen.getByLabelText(/Kategorie/)).toHaveValue('cat-2');
-        expect(screen.getByTestId('modal-footer-note')).toHaveTextContent(labels.events.registrationModal.editFooterNote);
+        expect(screen.queryByTestId('modal-footer-note')).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit})).toBeInTheDocument();
     });
 
@@ -220,7 +220,7 @@ describe('EventRegistrationDialog', () => {
         await screen.findByLabelText(/SI čip/);
         expect(screen.getByLabelText(/SI čip/)).toHaveValue('1112223');
         expect(screen.getByLabelText(/Kategorie/)).toHaveValue('cat-1');
-        expect(screen.getByTestId('registration-member-chip')).toHaveTextContent('Jana Skládaná');
+        expect(screen.getByTestId('modal-title')).toHaveTextContent('Jana Skládaná');
     });
 
     it('renders category select and shared-service checkboxes only when template has the properties', async () => {
