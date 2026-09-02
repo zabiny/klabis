@@ -1040,15 +1040,24 @@ paths:
               operation: getEvent
               description: The event this registration belongs to
           x-hal-templates:
+            registerForEvent:
+              operation: registerForEvent
+              description: |
+                Present only on the newRegistration=true prefill response, when registrations are
+                open and the member is not blocked from registering. The wantsSharedTransport /
+                wantsSharedAccommodation properties are included only for the offers the event
+                has enabled.
             editRegistration:
               operation: editRegistration
               description: |
-                Present when registrations are open. The wantsSharedTransport /
-                wantsSharedAccommodation properties are included only for the offers the event
-                has enabled.
+                Present only on the existing-registration (newRegistration=false) response, when
+                registrations are open. The wantsSharedTransport / wantsSharedAccommodation
+                properties are included only for the offers the event has enabled.
             unregisterFromEvent:
               operation: unregisterFromEvent
-              description: Present when registrations are open and the caller is the registered member
+              description: |
+                Present only on the existing-registration (newRegistration=false) response, when
+                registrations are open and the caller is the registered member
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':

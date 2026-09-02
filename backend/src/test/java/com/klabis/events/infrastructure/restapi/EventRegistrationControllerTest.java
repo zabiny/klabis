@@ -13,6 +13,7 @@ import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventRegistrationPort;
+import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
@@ -74,6 +75,9 @@ class EventRegistrationControllerTest {
 
     @MockitoBean
     private Members membersMock;
+
+    @Autowired
+    private MemberRegistrationSanctionPort memberRegistrationSanctionPortMock;
 
     static EntityLinks entityLinksMock() {
         return HateoasTestingSupport.createModuleEntityLinks(EventRegistrationController.class);
@@ -1138,7 +1142,10 @@ class EventRegistrationControllerTest {
                     .andExpect(jsonPath("$.lastName").value("Doe"))
                     .andExpect(jsonPath("$.siCardNumber").value("123456"))
                     .andExpect(jsonPath("$._links.self.href", containsString(MEMBER_1_ID)))
-                    .andExpect(jsonPath("$._links.self.href", not(containsString("/me"))));
+                    .andExpect(jsonPath("$._links.self.href", not(containsString("/me"))))
+                    .andExpect(jsonPath("$._templates.editRegistration.method").value("PUT"))
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent.method").value("DELETE"))
+                    .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
         }
 
         @Test
@@ -1283,9 +1290,74 @@ class EventRegistrationControllerTest {
     class NewRegistrationDefaultsTests {
 
         @Test
-        @DisplayName("new=true for memberId == principal returns 200 with siCardNumber prefilled from profile")
-        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        @DisplayName("new=true for memberId == principal returns 200 with prefill from profile and registerForEvent affordance")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID, authorities = {Authority.EVENTS_READ})
         void shouldReturn200WithPrefillWhenPrincipalMatchesMemberId() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withCategoryNames("M21", "W21")
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, null, "123456")));
+
+            List<EventCategory> categories = activeEvent.getCategories();
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .param("newRegistration", "true")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.siCardNumber").value("123456"))
+                    .andExpect(jsonPath("$.firstName").value("John"))
+                    .andExpect(jsonPath("$._templates.registerForEvent.method").value("POST"))
+                    .andExpect(jsonPath("$._templates.registerForEvent.target", containsString("/registrations")))
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='categoryId')].options.inline").isArray())
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='categoryId')].options.inline[0].value")
+                            .value(categories.get(0).id().toString()))
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='categoryId')].options.inline[0].prompt")
+                            .value("M21"))
+                    .andExpect(jsonPath("$._templates.editRegistration").doesNotExist())
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent").doesNotExist())
+                    .andExpect(jsonPath("$._links.event.href").exists());
+        }
+
+        @Test
+        @DisplayName("new=true on event with closed registrations returns 200 without any registration affordance")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldNotOfferRegisterForEventWhenRegistrationsClosed() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            Event closedEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withRegistrationDeadline(LocalDate.now().minusDays(1))
+                    .build();
+            closedEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(closedEvent);
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, null, "123456")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .param("newRegistration", "true")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("new=true for member blocked by sanction returns 200 without registerForEvent affordance")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void shouldNotOfferRegisterForEventWhenMemberIsBlocked() throws Exception {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
@@ -1297,6 +1369,7 @@ class EventRegistrationControllerTest {
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
                     new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, null, "123456")));
+            when(memberRegistrationSanctionPortMock.isMemberBlocked(memberId)).thenReturn(true);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -1304,8 +1377,7 @@ class EventRegistrationControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.siCardNumber").value("123456"))
-                    .andExpect(jsonPath("$.firstName").value("John"));
+                    .andExpect(jsonPath("$._templates").doesNotExist());
         }
 
         @Test

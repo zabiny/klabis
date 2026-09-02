@@ -8,6 +8,7 @@ import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventRegistrationPort;
+import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.RegistrationNotFoundException;
@@ -19,6 +20,7 @@ import com.klabis.members.Members;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -132,7 +134,7 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .map(registration -> RegistrationDtoMapper.toDto(registration, memberIndex, members, event))
                 .toList();
         List<RegistrationView> domainList = sorted.stream()
-                .map(registration -> new RegistrationView(event, registration.memberId()))
+                .map(registration -> new RegistrationView(event, registration.memberId(), false))
                 .toList();
 
         HalResponseContext.setDomainList(domainList);
@@ -164,7 +166,7 @@ class EventRegistrationController implements EventRegistrationsApi {
                     .registeredAt(null)
                     .build();
             Event event = eventManagementService.getEvent(new EventId(eventId), false);
-            HalResponseContext.setDomain(new RegistrationView(event, targetMember));
+            HalResponseContext.setDomain(new RegistrationView(event, targetMember, true));
             return ResponseEntity.ok(defaults);
         }
 
@@ -174,7 +176,7 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .orElseThrow(() -> new RegistrationNotFoundException(targetMember, new EventId(eventId)));
 
         RegistrationDto payload = toRegistrationDto(registration, event);
-        HalResponseContext.setDomain(new RegistrationView(event, targetMember));
+        HalResponseContext.setDomain(new RegistrationView(event, targetMember, false));
         return ResponseEntity.ok(payload);
     }
 
@@ -195,9 +197,11 @@ class EventRegistrationController implements EventRegistrationsApi {
     /**
      * Pairs the event with the target member for {@link RegistrationDetailsPostprocessor} — the
      * event alone is not enough to build the self/edit/unregister links, which depend on which
-     * member the registration (or the "new" defaults) belongs to.
+     * member the registration (or the "new" defaults) belongs to. The {@code prefill} flag marks
+     * the new-registration defaults response, whose affordances differ from an existing
+     * registration's (registerForEvent instead of edit/unregister).
      */
-    record RegistrationView(Event event, MemberId memberId) {
+    record RegistrationView(Event event, MemberId memberId, boolean prefill) {
     }
 
 }
@@ -265,36 +269,64 @@ class RegistrationListPostprocessor
 class RegistrationDetailsPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationDto, EventRegistrationController.RegistrationView> {
 
+    private final MemberRegistrationSanctionPort sanctionPort;
+
+    RegistrationDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort) {
+        this.sanctionPort = sanctionPort;
+    }
+
     @Override
     public void process(EntityModel<RegistrationDto> dtoModel, EventRegistrationController.RegistrationView view) {
         Event event = view.event();
         MemberId memberId = view.memberId();
         UUID eventId = event.getId().value();
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
-
         klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(memberId.value(), eventId, false))
                 .ifPresent(selfLinkBuilder -> {
                     var selfLink = selfLinkBuilder.withSelfRel();
-                    if (event.areRegistrationsOpen()) {
-                        selfLink = selfLink
-                                .andAffordances(klabisAffordWithPromptedOptions(
-                                        methodOn(EventRegistrationsApi.class).editRegistration(eventId,
-                                                memberId.value(),
-                                                null),
-                                        Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))));
-                        if (memberId.equals(actingMember)) {
-                            selfLink = selfLink
-                                    .andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(
-                                            eventId,
-                                            null)));
-                        }
+                    if (view.prefill()) {
+                        selfLink = withRegisterAffordance(selfLink, event, memberId);
+                    } else {
+                        selfLink = withEditAndUnregisterAffordances(selfLink, event, memberId);
                     }
                     dtoModel.add(selfLink);
                 });
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
                 .map(l -> l.withRel("event"))
                 .ifPresent(dtoModel::add);
+    }
+
+    /**
+     * The prefill response belongs to a registration that does not exist yet — the only action it
+     * can offer is registering. The controller already guarantees that the acting member is the
+     * target member, so the sanction is checked against the target.
+     */
+    private Link withRegisterAffordance(Link selfLink, Event event, MemberId memberId) {
+        if (EventAffordanceSupport.shouldOfferRegistration(event) && !sanctionPort.isMemberBlocked(memberId)) {
+            return selfLink.andAffordances(klabisAffordWithPromptedOptions(
+                    methodOn(EventRegistrationsApi.class).registerForEvent(event.getId().value(), null, null),
+                    Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))));
+        }
+        return selfLink;
+    }
+
+    private Link withEditAndUnregisterAffordances(Link selfLink, Event event, MemberId memberId) {
+        if (event.areRegistrationsOpen()) {
+            selfLink = selfLink
+                    .andAffordances(klabisAffordWithPromptedOptions(
+                            methodOn(EventRegistrationsApi.class).editRegistration(event.getId().value(),
+                                    memberId.value(),
+                                    null),
+                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))));
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
+            if (memberId.equals(actingMember)) {
+                selfLink = selfLink
+                        .andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(
+                                event.getId().value(),
+                                null)));
+            }
+        }
+        return selfLink;
     }
 }
