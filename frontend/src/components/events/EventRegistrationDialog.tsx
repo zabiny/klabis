@@ -1,25 +1,21 @@
-import {type ReactElement, useEffect, useState} from 'react';
-import {BedDouble, Bus, Calendar, Check, ChevronDown, CreditCard, Hourglass, Info, MapPin, Pencil, UserPlus} from 'lucide-react';
+import {type ReactElement, useEffect, useMemo, useState} from 'react';
+import {Calendar, Check, Hourglass, Info, MapPin, Pencil, UserPlus} from 'lucide-react';
 import {labels} from '../../localization';
-import {Alert, Button, Modal, Skeleton} from '../UI';
-import type {SelectOption} from '../UI/forms';
-import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
-import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';
-import {useHalFormOptions} from '../../hooks/useHalFormOptions';
-import {useRegistrationDialogData, type RegistrationDialogData} from '../../hooks/useRegistrationDialogData';
-import {useToast} from '../../contexts/toastContext';
+import {Alert, Modal, Skeleton} from '../UI';
+import {type RegistrationDialogData, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas';
-import type {HalFormsProperty, Link} from '../../api/types';
+import type {Link} from '../../api/types';
 import {formatDate, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils';
 import {normalizeKlabisApiPath} from '../../utils/halFormsUtils';
+import {HalFormDisplay} from '../HalNavigator2/HalFormDisplay';
+import type {FormRenderHelpers, RenderFormCallback} from '../HalNavigator2/halforms';
+import {createRegistrationFieldsFactory} from './registrationFieldsFactory.tsx';
 
 export interface EventRegistrationDialogProps {
     registration: Link | null;
     onClose: () => void;
     onRegistered?: () => void;
 }
-
-const SI_FALLBACK_REGEX = /^\d{4,8}$/;
 
 const initialsOf = (name: string): string =>
     name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('');
@@ -29,150 +25,89 @@ export const EventRegistrationDialog = ({
     onClose,
     onRegistered,
 }: EventRegistrationDialogProps): ReactElement | null => {
-    const {mode, template, memberName, initialValues, eventContext, isLoading, error} = useRegistrationDialogData(registration);
-    const {invalidateAllCaches} = useFormCacheInvalidation();
-    const {addToast} = useToast();
+    const {mode, template, memberName, prefillData, eventContext, isLoading, error} = useRegistrationDialogData(registration);
 
-    const [siCardNumber, setSiCardNumber] = useState('');
-    const [categoryId, setCategoryId] = useState('');
-    const [wantsSharedTransport, setWantsSharedTransport] = useState(false);
-    const [wantsSharedAccommodation, setWantsSharedAccommodation] = useState(false);
-    const [siError, setSiError] = useState<string | null>(null);
-    const [categoryError, setCategoryError] = useState<string | null>(null);
-    const [submitError, setSubmitError] = useState<string | null>(null);
-
-    const {siCardNumber: prefillSi, categoryId: prefillCategory, wantsSharedTransport: prefillTransport, wantsSharedAccommodation: prefillAccommodation} = initialValues;
+    const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string>>({});
     useEffect(() => {
-        setSiCardNumber(prefillSi);
-        setCategoryId(prefillCategory);
-        setWantsSharedTransport(prefillTransport);
-        setWantsSharedAccommodation(prefillAccommodation);
-    }, [registration?.href, prefillSi, prefillCategory, prefillTransport, prefillAccommodation]);
-
-    useEffect(() => {
-        setSiError(null);
-        setCategoryError(null);
-        setSubmitError(null);
+        setServerFieldErrors({});
     }, [registration?.href]);
 
-    const siProp = template?.properties.find(prop => prop.name === 'siCardNumber');
-    const categoryProp = template?.properties.find(prop => prop.name === 'categoryId');
     const transportProp = template?.properties.find(prop => prop.name === 'wantsSharedTransport');
     const accommodationProp = template?.properties.find(prop => prop.name === 'wantsSharedAccommodation');
-    const transportOffered = eventContext?.sharedTransportEnabled === true;
-    const accommodationOffered = eventContext?.sharedAccommodationEnabled === true;
-    const showTransportCheckbox = transportProp !== undefined && transportOffered;
-    const showAccommodationCheckbox = accommodationProp !== undefined && accommodationOffered;
+    const categoryProp = template?.properties.find(prop => prop.name === 'categoryId');
+    const showTransportCheckbox = transportProp !== undefined && eventContext?.sharedTransportEnabled === true;
+    const showAccommodationCheckbox = accommodationProp !== undefined && eventContext?.sharedAccommodationEnabled === true;
 
-    const {options: categoryOptions, isLoading: areCategoryOptionsLoading} = useHalFormOptions(categoryProp?.options);
-
-    const {mutate: submitRegistration, isPending: isSubmitting} = useAuthorizedMutation({
-        method: template?.method ?? 'POST',
-    });
-
-    const validateSiChip = (value: string): string | null => {
-        const trimmed = value.trim();
-        if (!trimmed) return labels.events.registrationModal.siChipRequired;
-        let regex = SI_FALLBACK_REGEX;
-        if (siProp?.regex) {
-            try {
-                regex = new RegExp(siProp.regex);
-            } catch {
-                regex = SI_FALLBACK_REGEX;
-            }
-        }
-        if (!regex.test(trimmed)) return labels.events.registrationModal.siChipInvalidFormat;
-        return null;
-    };
-
-    const handleClose = () => {
-        setSiCardNumber('');
-        setCategoryId('');
-        setWantsSharedTransport(false);
-        setWantsSharedAccommodation(false);
-        setSiError(null);
-        setCategoryError(null);
-        setSubmitError(null);
-        onClose();
-    };
-
-    const handleSubmit = () => {
-        if (!template?.target) return;
-
-        const siValidationError = validateSiChip(siCardNumber);
-        const categoryValidationError = categoryProp?.required && !categoryId
-            ? labels.events.registrationModal.categoryRequired
-            : null;
-        setSiError(siValidationError);
-        setCategoryError(categoryValidationError);
-        setSubmitError(null);
-        if (siValidationError || categoryValidationError) return;
-
-        const payload: Record<string, unknown> = {siCardNumber: siCardNumber.trim()};
-        if (categoryProp && categoryId) payload.categoryId = categoryId;
-        if (showTransportCheckbox) payload.wantsSharedTransport = wantsSharedTransport;
-        if (showAccommodationCheckbox) payload.wantsSharedAccommodation = wantsSharedAccommodation;
-
-        submitRegistration(
-            {url: normalizeKlabisApiPath(template.target), data: payload},
-            {
-                onSuccess: async () => {
-                    await invalidateAllCaches();
-                    addToast(template.title
-                        ? labels.events.registrationModal.savedWithTemplate(template.title)
-                        : labels.ui.savedSuccessfully, 'success');
-                    handleClose();
-                    onRegistered?.();
-                },
-                onError: (error: unknown) => {
-                    const validationError = toFormValidationError(error);
-                    if (isFormValidationError(validationError)) {
-                        const fieldErrors = validationError.validationErrors;
-                        const siMessage = fieldErrors['siCardNumber'];
-                        const categoryMessage = fieldErrors['categoryId'];
-                        setSiError(siMessage ?? null);
-                        setCategoryError(categoryMessage ?? null);
-                        const fallback = Object.values(fieldErrors)[0];
-                        setSubmitError(siMessage || categoryMessage ? null : (fallback ?? labels.errors.requestFailed));
-                    } else {
-                        setSubmitError(validationError.message || labels.errors.requestFailed);
-                    }
-                },
-            }
-        );
-    };
+    const fieldsFactory = useMemo(
+        () => createRegistrationFieldsFactory({mode: mode ?? 'new', serverFieldErrors}),
+        [mode, serverFieldErrors],
+    );
 
     if (!registration) {
         return null;
     }
+
+    const normalizedTemplate = template
+        ? {...template, target: normalizeKlabisApiPath(template.target ?? '')}
+        : undefined;
 
     const missingAffordance = !isLoading && !error && mode === undefined;
     const confirmLabel = mode === 'new'
         ? labels.events.registrationModal.confirmNew
         : labels.events.registrationModal.confirmEdit;
 
-    const footer = (
-        <>
-            <Button variant="secondary" onClick={handleClose} disabled={isSubmitting}>
-                {labels.buttons.cancel}
-            </Button>
-            <Button
-                variant="primary"
-                startIcon={<Check className="w-4 h-4"/>}
-                loading={isSubmitting}
-                disabled={isSubmitting}
-                onClick={handleSubmit}
-            >
-                {isSubmitting ? labels.buttons.submitting : confirmLabel}
-            </Button>
-        </>
+    const handleClose = () => {
+        setServerFieldErrors({});
+        onClose();
+    };
+
+    const resolvedResource: Record<string, unknown> = (() => {
+        if (!prefillData) return {};
+        const base = prefillData as unknown as Record<string, unknown>;
+        const categoryId = (prefillData as {category?: {id?: string}}).category?.id;
+        return categoryId !== undefined ? {...base, categoryId} : {...base};
+    })();
+
+    const stripHiddenSharedServices = (payload: Record<string, unknown>): Record<string, unknown> => {
+        const next = {...payload};
+        if (!showTransportCheckbox) delete next.wantsSharedTransport;
+        if (!showAccommodationCheckbox) delete next.wantsSharedAccommodation;
+        return next;
+    };
+
+    const handleSubmitError = (submitError: unknown): boolean => {
+        const validationError = toFormValidationError(submitError);
+        if (isFormValidationError(validationError)) {
+            setServerFieldErrors(validationError.validationErrors);
+        }
+        return false;
+    };
+
+    const renderForm: RenderFormCallback = (helpers: FormRenderHelpers) => (
+        <div
+            data-testid="event-registration-form"
+            className="flex flex-col gap-4"
+        >
+            {helpers.renderField('siCardNumber')}
+            {categoryProp && helpers.renderField('categoryId')}
+            {(showTransportCheckbox || showAccommodationCheckbox) && (
+                <div className="flex flex-col gap-3">
+                    {showTransportCheckbox && helpers.renderField('wantsSharedTransport')}
+                    {showAccommodationCheckbox && helpers.renderField('wantsSharedAccommodation')}
+                </div>
+            )}
+            <div className="mt-2 flex items-center justify-end gap-3 border-t border-border pt-4">
+                {helpers.renderField('cancel')}
+                {helpers.renderField('submit')}
+            </div>
+        </div>
     );
 
     return (
         <Modal
             isOpen={true}
             onClose={handleClose}
-            closeOnBackdropClick={!isSubmitting}
+            closeOnBackdropClick={true}
             size="lg"
             title={mode === 'new' ? labels.dialogTitles.registerForEvent : labels.dialogTitles.editRegistration}
             headerIcon={mode === 'new'
@@ -181,7 +116,6 @@ export const EventRegistrationDialog = ({
             context={!isLoading && eventContext
                 ? <RegistrationContext event={eventContext} memberName={mode === 'edit' ? memberName : undefined}/>
                 : undefined}
-            footer={!isLoading && mode ? footer : undefined}
             footerNote={mode === 'edit' && !isLoading ? (
                 <span className="flex items-center gap-2">
                     <Info className="h-3.5 w-3.5 text-primary"/>
@@ -191,75 +125,29 @@ export const EventRegistrationDialog = ({
         >
             {isLoading ? (
                 <DialogSkeleton/>
+            ) : error ? (
+                <Alert severity="error">{labels.events.registrationModal.prefillLoadError}</Alert>
+            ) : missingAffordance || !normalizedTemplate ? (
+                <Alert severity="error">{labels.events.registrationModal.noRegistrationAffordance}</Alert>
             ) : (
-                <div
-                    data-testid="event-registration-form"
-                    className={`flex flex-col gap-4 ${isSubmitting ? 'pointer-events-none opacity-60' : ''}`}
-                >
-                    {error ? (
-                        <Alert severity="error">{labels.events.registrationModal.prefillLoadError}</Alert>
-                    ) : null}
-                    {missingAffordance && (
-                        <Alert severity="error">{labels.events.registrationModal.noRegistrationAffordance}</Alert>
-                    )}
-                    {submitError && (
-                        <Alert severity="error">{submitError}</Alert>
-                    )}
-                    {!missingAffordance && (
-                        <>
-                            <SiChipField
-                                value={siCardNumber}
-                                error={siError}
-                                helperText={mode === 'new'
-                                    ? labels.events.registrationModal.siChipHelperPrefilled
-                                    : labels.events.registrationModal.siChipHelper}
-                                disabled={isSubmitting}
-                                onChange={(value) => {
-                                    setSiCardNumber(value);
-                                    if (siError) setSiError(null);
-                                }}
-                            />
-                            {categoryProp && (
-                                <CategoryField
-                                    prop={categoryProp}
-                                    value={categoryId}
-                                    error={categoryError}
-                                    options={categoryOptions}
-                                    isLoadingOptions={areCategoryOptionsLoading}
-                                    disabled={isSubmitting}
-                                    onChange={(value) => {
-                                        setCategoryId(value);
-                                        if (categoryError) setCategoryError(null);
-                                    }}
-                                />
-                            )}
-                            {(showTransportCheckbox || showAccommodationCheckbox) && (
-                                <div className="flex flex-col gap-3">
-                                    {showTransportCheckbox && (
-                                        <SharedServiceCheckbox
-                                            name="wantsSharedTransport"
-                                            label={labels.fields.wantsSharedTransport}
-                                            icon={<Bus className="h-[18px] w-[18px]"/>}
-                                            checked={wantsSharedTransport}
-                                            disabled={isSubmitting}
-                                            onChange={setWantsSharedTransport}
-                                        />
-                                    )}
-                                    {showAccommodationCheckbox && (
-                                        <SharedServiceCheckbox
-                                            name="wantsSharedAccommodation"
-                                            label={labels.fields.wantsSharedAccommodation}
-                                            icon={<BedDouble className="h-[18px] w-[18px]"/>}
-                                            checked={wantsSharedAccommodation}
-                                            disabled={isSubmitting}
-                                            onChange={setWantsSharedAccommodation}
-                                        />
-                                    )}
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
+                <HalFormDisplay
+                    template={normalizedTemplate}
+                    templateName={mode === 'new' ? 'registerForEvent' : 'editRegistration'}
+                    resourceData={resolvedResource}
+                    pathname={normalizedTemplate.target}
+                    onClose={handleClose}
+                    onSubmitSuccess={() => onRegistered?.()}
+                    onSubmitError={handleSubmitError}
+                    postprocessPayload={stripHiddenSharedServices}
+                    navigateOnSuccess={false}
+                    successMessage={normalizedTemplate.title
+                        ? labels.events.registrationModal.savedWithTemplate(normalizedTemplate.title)
+                        : labels.ui.savedSuccessfully}
+                    submitButtonLabel={confirmLabel}
+                    submitIcon={<Check className="h-4 w-4"/>}
+                    fieldsFactory={fieldsFactory}
+                    customLayout={renderForm}
+                />
             )}
         </Modal>
     );
@@ -334,125 +222,5 @@ function RegistrationContext({
                 </span>
             )}
         </div>
-    );
-}
-
-function SiChipField({
-    value,
-    error,
-    helperText,
-    disabled,
-    onChange,
-}: {
-    value: string;
-    error: string | null;
-    helperText: string;
-    disabled: boolean;
-    onChange: (value: string) => void;
-}) {
-    return (
-        <div className="flex flex-col gap-1.5">
-            <label htmlFor="event-registration-si-chip" className="flex items-center gap-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {labels.events.registrationModal.siChip}
-                <span className="text-sm font-bold text-red-600">*</span>
-            </label>
-            <div className="relative">
-                <CreditCard className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"/>
-                <input
-                    id="event-registration-si-chip"
-                    type="text"
-                    inputMode="numeric"
-                    value={value}
-                    disabled={disabled}
-                    onChange={(e) => onChange(e.target.value)}
-                    className={`h-11 w-full rounded-md border bg-surface py-2.5 pl-9 pr-3 text-[15px] text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60 ${error ? 'border-error' : 'border-border'}`}
-                />
-            </div>
-            {error ? (
-                <p className="text-xs text-error">{error}</p>
-            ) : (
-                <p className="text-xs text-text-tertiary">{helperText}</p>
-            )}
-        </div>
-    );
-}
-
-function CategoryField({
-    value,
-    error,
-    options,
-    isLoadingOptions,
-    disabled,
-    onChange,
-}: {
-    prop: HalFormsProperty;
-    value: string;
-    error: string | null;
-    options: SelectOption[];
-    isLoadingOptions: boolean;
-    disabled: boolean;
-    onChange: (value: string) => void;
-}) {
-    return (
-        <div className="flex flex-col gap-1.5">
-            <label htmlFor="event-registration-category" className="flex items-center gap-1 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {labels.events.registrationModal.category}
-                <span className="text-sm font-bold text-red-600">*</span>
-            </label>
-            <div className="relative">
-                <select
-                    id="event-registration-category"
-                    value={value}
-                    disabled={disabled || isLoadingOptions}
-                    onChange={(e) => onChange(e.target.value)}
-                    className={`h-11 w-full appearance-none rounded-md border bg-surface py-2.5 pl-3 pr-10 text-[15px] text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60 ${error ? 'border-error' : 'border-border'}`}
-                >
-                    <option value="">{labels.events.registrationModal.selectCategoryPlaceholder}</option>
-                    {options.map(option => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"/>
-            </div>
-            {error && (
-                <p className="text-xs text-error">{error}</p>
-            )}
-        </div>
-    );
-}
-
-function SharedServiceCheckbox({
-    name,
-    label,
-    icon,
-    checked,
-    disabled,
-    onChange,
-}: {
-    name: string;
-    label: string;
-    icon: ReactElement;
-    checked: boolean;
-    disabled: boolean;
-    onChange: (checked: boolean) => void;
-}) {
-    return (
-        <label htmlFor={`event-registration-${name}`} className="flex cursor-pointer items-center gap-2.5">
-            <input
-                id={`event-registration-${name}`}
-                type="checkbox"
-                className="peer sr-only"
-                checked={checked}
-                disabled={disabled}
-                onChange={(e) => onChange(e.target.checked)}
-            />
-            <span
-                className={`flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-0 ${checked ? 'border-primary bg-primary' : 'border-border bg-surface'}`}
-            >
-                {checked && <Check className="h-3 w-3 text-white"/>}
-            </span>
-            <span className="text-sm text-text-primary">{label}</span>
-            <span className="ml-auto text-zinc-400">{icon}</span>
-        </label>
     );
 }

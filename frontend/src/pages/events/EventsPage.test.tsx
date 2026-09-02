@@ -103,6 +103,19 @@ vi.mock('../../api/authorizedFetch', () => ({
     },
 }));
 
+// HalFormDisplay pulls prefill data via useHalFormData (OPTIONS probe + a query
+// keyed on the template target). The blanket useAuthorizedQuery mock above would
+// answer that query with the events list, so pin useHalFormData to the resource
+// data the dialog already handed it.
+vi.mock('../../hooks/useHalFormData', () => ({
+    useHalFormData: (_template: unknown, resourceData: Record<string, unknown>) => ({
+        formData: resourceData ?? {},
+        isLoadingTargetData: false,
+        targetFetchError: null,
+        refetchTargetData: vi.fn(),
+    }),
+}));
+
 const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>) => ({
     resourceData,
     isLoading: false,

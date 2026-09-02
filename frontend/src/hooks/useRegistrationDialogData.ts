@@ -4,13 +4,6 @@ import {useAuthorizedQuery} from './useAuthorizedFetch';
 
 export type RegistrationDialogMode = 'new' | 'edit';
 
-export interface RegistrationDialogInitialValues {
-    siCardNumber: string;
-    categoryId: string;
-    wantsSharedTransport: boolean;
-    wantsSharedAccommodation: boolean;
-}
-
 export interface RegistrationDialogEventContext {
     name?: string;
     eventDate?: string;
@@ -24,7 +17,7 @@ export interface RegistrationDialogData {
     mode: RegistrationDialogMode | undefined;
     template: HalFormsTemplate | undefined;
     memberName: string;
-    initialValues: RegistrationDialogInitialValues;
+    prefillData: GetRegistrationResource | undefined;
     eventContext: RegistrationDialogEventContext | undefined;
     isLoading: boolean;
     error: unknown;
@@ -65,12 +58,7 @@ export const useRegistrationDialogData = (registration: Link | null): Registrati
         mode,
         template,
         memberName: [registrationData?.firstName, registrationData?.lastName].filter(Boolean).join(' ').trim(),
-        initialValues: {
-            siCardNumber: registrationData?.siCardNumber ?? '',
-            categoryId: mode === 'edit' ? (registrationData?.category?.id ?? '') : '',
-            wantsSharedTransport: registrationData?.wantsSharedTransport ?? false,
-            wantsSharedAccommodation: registrationData?.wantsSharedAccommodation ?? false,
-        },
+        prefillData: registrationData,
         eventContext,
         isLoading: registrationQuery.isLoading || (!!eventHref && eventQuery.isLoading),
         error: registrationQuery.error ?? eventQuery.error,

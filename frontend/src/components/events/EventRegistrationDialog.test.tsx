@@ -2,8 +2,10 @@ import '@testing-library/jest-dom';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {MemoryRouter} from 'react-router-dom';
+import {HalRouteProvider} from '../../contexts/HalRouteContext';
 import {EventRegistrationDialog, type EventRegistrationDialogProps} from './EventRegistrationDialog.tsx';
-import {createMockResponse, createDelayedMockResponse} from '../../__mocks__/mockFetch.ts';
+import {createDelayedMockResponse, createMockResponse} from '../../__mocks__/mockFetch.ts';
 import {authorizedFetch, FetchError} from '../../api/authorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {type Mock, vi} from 'vitest';
@@ -115,7 +117,11 @@ describe('EventRegistrationDialog', () => {
         };
         return render(
             <QueryClientProvider client={queryClient}>
-                <EventRegistrationDialog {...defaultProps} {...props}/>
+                <MemoryRouter>
+                    <HalRouteProvider>
+                        <EventRegistrationDialog {...defaultProps} {...props}/>
+                    </HalRouteProvider>
+                </MemoryRouter>
             </QueryClientProvider>,
         );
     };
@@ -203,7 +209,11 @@ describe('EventRegistrationDialog', () => {
 
         view.rerender(
             <QueryClientProvider client={queryClient}>
-                <EventRegistrationDialog registration={{href: EDIT_URL_2}} onClose={vi.fn()}/>
+                <MemoryRouter>
+                    <HalRouteProvider>
+                        <EventRegistrationDialog registration={{href: EDIT_URL_2}} onClose={vi.fn()}/>
+                    </HalRouteProvider>
+                </MemoryRouter>
             </QueryClientProvider>,
         );
 
@@ -466,13 +476,13 @@ describe('EventRegistrationDialog', () => {
         );
     });
 
-    it('shows prefill load error alert and renders empty form when the registration fetch fails', async () => {
+    it('shows prefill load error alert and no form when the registration fetch fails', async () => {
         mockRoutes(() => Promise.reject(new FetchError('HTTP 500', 500, 'Internal Server Error', new Headers())));
         renderDialog();
 
-        const siInput = await screen.findByLabelText(/SI čip/);
-        expect(siInput).toHaveValue('');
         expect(await screen.findByText(labels.events.registrationModal.prefillLoadError)).toBeInTheDocument();
+        expect(screen.queryByLabelText(/SI čip/)).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: labels.events.registrationModal.confirmNew})).not.toBeInTheDocument();
     });
 
     it('shows error alert without submit when the representation carries no registration affordance', async () => {
@@ -501,6 +511,9 @@ describe('EventRegistrationDialog', () => {
         renderDialog({registration: null});
 
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-        expect(authorizedFetch).not.toHaveBeenCalled();
+        const fetchedUrls = vi.mocked(authorizedFetch as Mock).mock.calls.map(([url]) => url);
+        expect(fetchedUrls).not.toContain(PREFILL_URL);
+        expect(fetchedUrls).not.toContain(EDIT_URL);
+        expect(fetchedUrls).not.toContain(EVENT_URL);
     });
 });

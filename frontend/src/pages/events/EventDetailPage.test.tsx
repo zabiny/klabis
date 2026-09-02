@@ -139,6 +139,19 @@ vi.mock('../../hooks/useFormCacheInvalidation', () => ({
     })),
 }));
 
+// HalFormDisplay pulls prefill data via useHalFormData (OPTIONS probe + a query
+// keyed on the template target). The blanket useAuthorizedQuery mock would answer
+// that query with an empty registrations list, so pin useHalFormData to the
+// resource data the dialog already handed it.
+vi.mock('../../hooks/useHalFormData', () => ({
+    useHalFormData: (_template: unknown, resourceData: Record<string, unknown>) => ({
+        formData: resourceData ?? {},
+        isLoadingTargetData: false,
+        targetFetchError: null,
+        refetchTargetData: vi.fn(),
+    }),
+}));
+
 vi.mock('../../contexts/ToastContext', () => ({
     ToastProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
 }));

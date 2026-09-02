@@ -134,10 +134,10 @@ describe('useRegistrationDialogData', () => {
         expect(result.current.template?.target).toBe('/api/events/evt-1/registrations');
         expect(result.current.template?.method).toBe('POST');
         expect(result.current.memberName).toBe('Jana Nováková');
-        expect(result.current.initialValues.siCardNumber).toBe('1234567');
-        expect(result.current.initialValues.categoryId).toBe('');
-        expect(result.current.initialValues.wantsSharedTransport).toBe(false);
-        expect(result.current.initialValues.wantsSharedAccommodation).toBe(false);
+        expect(result.current.prefillData?.siCardNumber).toBe('1234567');
+        expect((result.current.prefillData as {category?: unknown})?.category).toBeUndefined();
+        expect(result.current.prefillData?.wantsSharedTransport).toBe(false);
+        expect(result.current.prefillData?.wantsSharedAccommodation).toBe(false);
     });
 
     it('derives edit mode and prefilled category from editRegistration affordance', async () => {
@@ -151,9 +151,9 @@ describe('useRegistrationDialogData', () => {
 
         expect(result.current.template?.method).toBe('PUT');
         expect(result.current.memberName).toBe('Jana Nováková');
-        expect(result.current.initialValues.siCardNumber).toBe('7654321');
-        expect(result.current.initialValues.categoryId).toBe('cat-2');
-        expect(result.current.initialValues.wantsSharedTransport).toBe(true);
+        expect(result.current.prefillData?.siCardNumber).toBe('7654321');
+        expect((result.current.prefillData as {category?: {id?: string}})?.category?.id).toBe('cat-2');
+        expect(result.current.prefillData?.wantsSharedTransport).toBe(true);
     });
 
     it('builds event context from the event representation', async () => {
