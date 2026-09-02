@@ -144,7 +144,9 @@ export type GetCalendarItemTemplateRel = typeof GetCalendarItemRels.templates[nu
 
 export interface GetEventHal {
   _links?: {
-    /** Present only for the event coordinator or callers with EVENTS:REGISTRATIONS */
+    /** Present only when the event offers shared accommodation and the caller is the
+event coordinator or has EVENTS:REGISTRATIONS
+ */
     'accommodation-list'?: HalResourceLinks;
     /** Back to the event list */
     'collection'?: HalResourceLinks;
@@ -164,17 +166,25 @@ being offered
   _templates?: {
     /** Present for DRAFT/ACTIVE events and callers with EVENTS:MANAGE */
     'cancelEvent'?: HalFormsTemplate;
-    /** Present when registrations are open and the caller is registered */
+    /** Present when registrations are open and the caller is registered. The
+wantsSharedTransport / wantsSharedAccommodation properties are included only for
+the offers the event has enabled.
+ */
     'editRegistration'?: HalFormsTemplate;
     /** Present for DRAFT events and callers with EVENTS:MANAGE */
     'publishEvent'?: HalFormsTemplate;
-    /** Present when registrations are open and the caller is not yet registered */
+    /** Present when registrations are open and the caller is not yet registered. The
+wantsSharedTransport / wantsSharedAccommodation properties are included only for
+the offers the event has enabled.
+ */
     'registerForEvent'?: HalFormsTemplate;
     /** Present when ORIS integration is active and the event has an orisId */
     'syncEventFromOris'?: HalFormsTemplate;
     /** Present when registrations are open and the caller is registered */
     'unregisterFromEvent'?: HalFormsTemplate;
-    /** Present for the event coordinator or callers with EVENTS:MANAGE */
+    /** Present for the event coordinator or callers with EVENTS:MANAGE. Includes the
+sharedTransportEnabled / sharedAccommodationEnabled properties.
+ */
     'updateEvent'?: HalFormsTemplate;
   };
 }
@@ -514,9 +524,20 @@ export interface GetRegistrationHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
-    /** Present when registrations are open */
+    /** Present only on the existing-registration (newRegistration=false) response, when
+registrations are open. The wantsSharedTransport / wantsSharedAccommodation
+properties are included only for the offers the event has enabled.
+ */
     'editRegistration'?: HalFormsTemplate;
-    /** Present when registrations are open and the caller is the registered member */
+    /** Present only on the newRegistration=true prefill response, when registrations are
+open and the member is not blocked from registering. The wantsSharedTransport /
+wantsSharedAccommodation properties are included only for the offers the event
+has enabled.
+ */
+    'registerForEvent'?: HalFormsTemplate;
+    /** Present only on the existing-registration (newRegistration=false) response, when
+registrations are open and the caller is the registered member
+ */
     'unregisterFromEvent'?: HalFormsTemplate;
   };
 }
@@ -526,7 +547,7 @@ export type GetRegistrationResource =
 
 export const GetRegistrationRels = {
   links: ['event', 'self'] as const,
-  templates: ['editRegistration', 'unregisterFromEvent'] as const,
+  templates: ['editRegistration', 'registerForEvent', 'unregisterFromEvent'] as const,
 } as const;
 
 export type GetRegistrationLinkRel = typeof GetRegistrationRels.links[number];

@@ -122,12 +122,43 @@ public class EventController implements EventsApi {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Event event = eventManagementService.getEvent(new EventId(id), EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE));
 
+        EventDto dto = conversionService.convert(event, EventDto.class);
+        dto = EventDtoBuilder.builder(dto)
+                .sharedServicesSummary(sharedServicesSummary(event, auth))
+                .build();
+
         // The registrations are declared here rather than in the postprocessor because building them
         // needs the registration port and Members, which @MvcComponent beans should not inject —
         // they are scanned by every @WebMvcTest, so unrelated slice tests would have to mock them.
         HalResponseContext.setDomain(event);
         HalResponseContext.embed(buildRegistrationDtos(event), RegistrationSummaryDto.class);
-        return ResponseEntity.ok(conversionService.convert(event, EventDto.class));
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * The per-offer count summary shown on the event detail page. Returned only for the event
+     * coordinator or callers with EVENTS:REGISTRATIONS, only on ACTIVE events, and only while at
+     * least one offer is enabled; {@code null} otherwise, which {@code @JsonInclude(NON_NULL)} on
+     * {@link EventDto} drops from the response. Each sub-object is present only when its offer is
+     * enabled — the count itself is a plain tally regardless of the flag.
+     */
+    @Nullable
+    private SharedServicesSummaryDto sharedServicesSummary(Event event, Authentication auth) {
+        boolean anyOfferEnabled = event.isSharedTransportEnabled() || event.isSharedAccommodationEnabled();
+        if (event.getStatus() != com.klabis.events.domain.EventStatus.ACTIVE
+                || !anyOfferEnabled
+                || !EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
+            return null;
+        }
+
+        return SharedServicesSummaryDtoBuilder.builder()
+                .sharedTransport(event.isSharedTransportEnabled()
+                        ? new SharedServiceCountDto((int) event.sharedTransportCount())
+                        : null)
+                .sharedAccommodation(event.isSharedAccommodationEnabled()
+                        ? new SharedServiceCountDto((int) event.sharedAccommodationCount())
+                        : null)
+                .build();
     }
 
     private List<RegistrationSummaryDto> buildRegistrationDtos(Event event) {
@@ -300,9 +331,10 @@ public class EventController implements EventsApi {
             @PathVariable UUID eventId) {
 
         Event event = loadAuthorizedEventForAccommodation(eventId);
-        List<AccommodationListItemDto> items = assembleAccommodationItems(event);
+        List<EventRegistration> accommodationRegistrations = registrationsWantingSharedAccommodation(event);
+        List<AccommodationListItemDto> items = assembleAccommodationItems(accommodationRegistrations);
 
-        HalResponseContext.setDomainList(event.getRegistrations());
+        HalResponseContext.setDomainList(accommodationRegistrations);
         return ResponseEntity.ok(items);
     }
 
@@ -311,7 +343,7 @@ public class EventController implements EventsApi {
             @PathVariable UUID eventId) {
 
         Event event = loadAuthorizedEventForAccommodation(eventId);
-        List<AccommodationListItemDto> items = assembleAccommodationItems(event);
+        List<AccommodationListItemDto> items = assembleAccommodationItems(registrationsWantingSharedAccommodation(event));
         byte[] csv = csvRenderer.renderToBytes(items);
 
         String filename = "ubytovani-" + EventNameSlugifier.slugify(event.getName()) + ".csv";
@@ -328,11 +360,19 @@ public class EventController implements EventsApi {
         if (!EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
             throw new AccessDeniedException("Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator");
         }
+        if (!event.isSharedAccommodationEnabled()) {
+            throw new AccessDeniedException("Accommodation list is available only when the event offers shared accommodation");
+        }
         return event;
     }
 
-    private List<AccommodationListItemDto> assembleAccommodationItems(Event event) {
-        List<EventRegistration> registrations = event.getRegistrations();
+    private static List<EventRegistration> registrationsWantingSharedAccommodation(Event event) {
+        return event.getRegistrations().stream()
+                .filter(EventRegistration::wantsSharedAccommodation)
+                .toList();
+    }
+
+    private List<AccommodationListItemDto> assembleAccommodationItems(List<EventRegistration> registrations) {
         List<MemberId> memberIds = registrations.stream().map(EventRegistration::memberId).toList();
         Map<MemberId, MemberAccommodationDto> accommodationIndex = members.findAccommodationDataByIds(memberIds);
         return registrations.stream()
@@ -504,7 +544,8 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                 klabisLinkTo(methodOn(EventTypesApi.class).getEventType(eventTypeId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
 
-        if (EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
+        if (event.isSharedAccommodationEnabled()
+                && EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
             klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }

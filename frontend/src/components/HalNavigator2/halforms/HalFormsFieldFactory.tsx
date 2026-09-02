@@ -1,5 +1,4 @@
 import {
-    HalFormsBoolean,
     HalFormsCheckbox,
     HalFormsCheckboxGroup,
     HalFormsCollectionField,
@@ -53,17 +52,19 @@ export const halFormsFieldsFactory = (
         return <HalFormsSelect {...conf} />
     }
 
+    // The backend renders java.lang.Boolean HAL-FORMS properties with type "Boolean"
+    // (Spring HATEOAS has no HtmlInputType for it); "boolean" covers the primitive.
     switch (fieldType) {
         case 'checkboxGroup':
             return <HalFormsCheckboxGroup {...conf} />
         case 'checkbox':
+        case 'Boolean':
+        case 'boolean':
             return <HalFormsCheckbox {...conf} />
         case 'radioGroup':
             return <HalFormsRadio {...conf} />
         case 'select':
             return <HalFormsSelect {...conf} />
-        case 'boolean':
-            return <HalFormsBoolean {...conf} />
         case 'textarea':
             return <HalFormsTextArea {...conf} />
         case 'datetime':

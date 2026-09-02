@@ -21,7 +21,7 @@ type HalFormFieldFactory = (fieldType: string, conf: HalFormsInputProps) => Reac
 const SIMPLE_FIELD_TYPES = new Set([
     'text', 'email', 'number', 'date', 'url', 'tel',
     'textarea', 'select', 'radioGroup', 'checkbox', 'checkboxGroup',
-    'boolean', 'datetime'
+    'boolean', 'Boolean', 'datetime'
 ]);
 
 export {type HalFormsInputProps, type HalFormFieldFactory, type SubElementConfiguration, type RenderMode, SIMPLE_FIELD_TYPES};

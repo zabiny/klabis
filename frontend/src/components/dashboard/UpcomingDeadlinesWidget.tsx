@@ -1,70 +1,23 @@
 import {type ReactElement, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {Calendar, UserPlus} from 'lucide-react';
-import {Button, Card, Modal} from '../UI';
-import {HalFormDisplay} from '../HalNavigator2/HalFormDisplay';
+import {Button, Card} from '../UI';
+import {EventRegistrationDialog} from '../events/EventRegistrationDialog';
 import {useUpcomingDeadlines} from '../../hooks/useUpcomingDeadlines';
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {formatDate} from '../../utils/dateUtils';
-import {normalizeKlabisApiPath} from '../../utils/halFormsUtils';
 import {extractNavigationPath} from '../../utils/navigationPath';
 import {labels} from '../../localization/labels';
-import type {HalFormsTemplate} from '../../api';
+import type {Link} from '../../api';
 
 const SHOW_ALL_DEADLINES_PATH = '/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me';
-
-interface RegistrationModalState {
-    newRegistrationHref: string;
-    eventName: string;
-    registerForEventTemplate: HalFormsTemplate;
-}
-
-interface NewRegistrationPrefillData {
-    _templates?: Record<string, HalFormsTemplate>;
-    [key: string]: unknown;
-}
-
-const RegistrationModal = ({
-    state,
-    onClose,
-}: {
-    state: RegistrationModalState;
-    onClose: () => void;
-}): ReactElement => {
-    const {data: prefillData} = useAuthorizedQuery<NewRegistrationPrefillData>(state.newRegistrationHref, {
-        staleTime: 0,
-        gcTime: 0,
-        retry: false,
-    });
-
-    const registerTemplate = prefillData?._templates?.registerForEvent ?? state.registerForEventTemplate;
-    const registerTemplatePath = registerTemplate.target
-        ? normalizeKlabisApiPath(registerTemplate.target)
-        : state.newRegistrationHref;
-
-    return (
-        <Modal isOpen={true} onClose={onClose} title={labels.templates.registerForEvent} size="2xl">
-            {prefillData && (
-                <HalFormDisplay
-                    template={registerTemplate}
-                    templateName="registerForEvent"
-                    resourceData={prefillData as unknown as Record<string, unknown>}
-                    pathname={registerTemplatePath}
-                    onClose={onClose}
-                    navigateOnSuccess={false}
-                />
-            )}
-        </Modal>
-    );
-};
 
 export interface UpcomingDeadlinesWidgetProps {
     upcomingDeadlinesHref: string | undefined;
 }
 
 export const UpcomingDeadlinesWidget = ({upcomingDeadlinesHref}: UpcomingDeadlinesWidgetProps): ReactElement | null => {
-    const [registrationModal, setRegistrationModal] = useState<RegistrationModalState | null>(null);
-    const {data} = useUpcomingDeadlines(upcomingDeadlinesHref);
+    const [registrationTarget, setRegistrationTarget] = useState<Link | null>(null);
+    const {data, refetch} = useUpcomingDeadlines(upcomingDeadlinesHref);
 
     const items = data?.items ?? [];
     const totalElements = data?.totalElements ?? 0;
@@ -104,18 +57,14 @@ export const UpcomingDeadlinesWidget = ({upcomingDeadlinesHref}: UpcomingDeadlin
                                         </p>
                                     </div>
                                 </div>
-                                {item.newRegistrationHref && item.registerForEventTemplate && (
+                                {item.newRegistration && (
                                     <Button
                                         variant="primary"
                                         size="sm"
                                         className="ml-3 shrink-0"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            setRegistrationModal({
-                                                newRegistrationHref: item.newRegistrationHref!,
-                                                eventName: item.name,
-                                                registerForEventTemplate: item.registerForEventTemplate!,
-                                            });
+                                            setRegistrationTarget(item.newRegistration ?? null);
                                         }}
                                     >
                                         <UserPlus className="w-4 h-4 mr-1"/>
@@ -138,12 +87,11 @@ export const UpcomingDeadlinesWidget = ({upcomingDeadlinesHref}: UpcomingDeadlin
                 </Card>
             </div>
 
-            {registrationModal && (
-                <RegistrationModal
-                    state={registrationModal}
-                    onClose={() => setRegistrationModal(null)}
-                />
-            )}
+            <EventRegistrationDialog
+                registration={registrationTarget}
+                onClose={() => setRegistrationTarget(null)}
+                onRegistered={refetch}
+            />
         </>
     );
 };

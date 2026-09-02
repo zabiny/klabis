@@ -39,6 +39,12 @@ class EventRegistrationMemento {
     @Column("registered_at")
     private Instant registeredAt;
 
+    @Column("wants_shared_transport")
+    private boolean wantsSharedTransport;
+
+    @Column("wants_shared_accommodation")
+    private boolean wantsSharedAccommodation;
+
     /**
      * Default constructor required by Spring Data JDBC.
      */
@@ -60,6 +66,8 @@ class EventRegistrationMemento {
         memento.siCardNumber = registration.siCardNumber().value();
         memento.categoryId = registration.categoryId() != null ? registration.categoryId().value() : null;
         memento.registeredAt = registration.registeredAt();
+        memento.wantsSharedTransport = registration.wantsSharedTransport();
+        memento.wantsSharedAccommodation = registration.wantsSharedAccommodation();
 
         return memento;
     }
@@ -75,7 +83,9 @@ class EventRegistrationMemento {
                 new MemberId(this.memberId),
                 new SiCardNumber(this.siCardNumber),
                 this.categoryId != null ? new EventCategoryId(this.categoryId) : null,
-                this.registeredAt
+                this.registeredAt,
+                this.wantsSharedTransport,
+                this.wantsSharedAccommodation
         );
     }
 
@@ -98,5 +108,13 @@ class EventRegistrationMemento {
 
     Instant getRegisteredAt() {
         return registeredAt;
+    }
+
+    boolean isWantsSharedTransport() {
+        return wantsSharedTransport;
+    }
+
+    boolean isWantsSharedAccommodation() {
+        return wantsSharedAccommodation;
     }
 }

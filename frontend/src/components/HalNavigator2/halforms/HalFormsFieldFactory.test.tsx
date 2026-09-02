@@ -90,6 +90,25 @@ describe('halFormsFieldsFactory', () => {
         });
     });
 
+    describe('boolean / checkbox dispatch', () => {
+        // The backend emits boolean HAL-FORMS properties with type "Boolean"
+        // (Spring HATEOAS has no HtmlInputType for java.lang.Boolean, so Klabis'
+        // KlabisHalFormsPropertyMetadataWrapper falls back to the class simple name).
+        it.each(['Boolean', 'boolean', 'checkbox'])('renders a checkbox when type is "%s"', (type) => {
+            const prop: HalFormsProperty = {name: 'testField', type};
+            const element = halFormsFieldsFactory(type, makeProps(prop));
+            renderInFormik(element);
+            expect(screen.getByRole('checkbox')).toBeInTheDocument();
+        });
+
+        it('renders the checkbox unchecked when the form value is falsy', () => {
+            const prop: HalFormsProperty = {name: 'testField', type: 'Boolean'};
+            const element = halFormsFieldsFactory('Boolean', makeProps(prop));
+            renderInFormik(element, '');
+            expect(screen.getByRole('checkbox')).not.toBeChecked();
+        });
+    });
+
     describe('multi-select with inline options', () => {
         it('renders checkbox group when multi=true and options.inline has items', () => {
             const prop: HalFormsProperty = {

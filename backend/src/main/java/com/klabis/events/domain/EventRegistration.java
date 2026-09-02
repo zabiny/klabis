@@ -29,7 +29,9 @@ public class EventRegistration {
     public record CreateEventRegistration(
             MemberId memberId,
             SiCardNumber siCardNumber,
-            EventCategoryId categoryId
+            EventCategoryId categoryId,
+            boolean wantsSharedTransport,
+            boolean wantsSharedAccommodation
     ) {}
 
     private final UUID id;
@@ -38,6 +40,8 @@ public class EventRegistration {
     private final SiCardNumber siCardNumber;
     private final EventCategoryId categoryId;
     private final Instant registeredAt;
+    private final boolean wantsSharedTransport;
+    private final boolean wantsSharedAccommodation;
 
     /**
      * Private constructor for creating EventRegistration instances.
@@ -49,12 +53,15 @@ public class EventRegistration {
      *                     when the category was later removed from the event)
      * @param registeredAt timestamp when registration was created
      */
-    private EventRegistration(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId, Instant registeredAt) {
+    private EventRegistration(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId,
+                              Instant registeredAt, boolean wantsSharedTransport, boolean wantsSharedAccommodation) {
         this.id = id;
         this.memberId = memberId;
         this.siCardNumber = siCardNumber;
         this.categoryId = categoryId;
         this.registeredAt = registeredAt;
+        this.wantsSharedTransport = wantsSharedTransport;
+        this.wantsSharedAccommodation = wantsSharedAccommodation;
     }
 
     /**
@@ -79,7 +86,9 @@ public class EventRegistration {
                 command.memberId(),
                 command.siCardNumber(),
                 command.categoryId(),
-                Instant.now()
+                Instant.now(),
+                command.wantsSharedTransport(),
+                command.wantsSharedAccommodation()
         );
     }
 
@@ -94,12 +103,25 @@ public class EventRegistration {
      * @param registeredAt registration timestamp
      * @return reconstructed EventRegistration instance
      */
-    public static EventRegistration reconstruct(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId, Instant registeredAt) {
-        return new EventRegistration(id, memberId, siCardNumber, categoryId, registeredAt);
+    public static EventRegistration reconstruct(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId,
+                                               Instant registeredAt) {
+        return reconstruct(id, memberId, siCardNumber, categoryId, registeredAt, false, false);
+    }
+
+    public static EventRegistration reconstruct(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId,
+                                               Instant registeredAt, boolean wantsSharedTransport, boolean wantsSharedAccommodation) {
+        return new EventRegistration(id, memberId, siCardNumber, categoryId, registeredAt,
+                wantsSharedTransport, wantsSharedAccommodation);
     }
 
     public EventRegistration withChanges(SiCardNumber newSiCard, EventCategoryId newCategoryId) {
-        return new EventRegistration(this.id, this.memberId, newSiCard, newCategoryId, this.registeredAt);
+        return withChanges(newSiCard, newCategoryId, this.wantsSharedTransport, this.wantsSharedAccommodation);
+    }
+
+    public EventRegistration withChanges(SiCardNumber newSiCard, EventCategoryId newCategoryId,
+                                         boolean newWantsSharedTransport, boolean newWantsSharedAccommodation) {
+        return new EventRegistration(this.id, this.memberId, newSiCard, newCategoryId, this.registeredAt,
+                newWantsSharedTransport, newWantsSharedAccommodation);
     }
 
     // ========== Getters ==========
@@ -122,6 +144,14 @@ public class EventRegistration {
 
     public Instant registeredAt() {
         return registeredAt;
+    }
+
+    public boolean wantsSharedTransport() {
+        return wantsSharedTransport;
+    }
+
+    public boolean wantsSharedAccommodation() {
+        return wantsSharedAccommodation;
     }
 
     // ========== Object Methods ==========
@@ -147,6 +177,8 @@ public class EventRegistration {
                ", siCardNumber=" + siCardNumber +
                ", categoryId=" + categoryId +
                ", registeredAt=" + registeredAt +
+               ", wantsSharedTransport=" + wantsSharedTransport +
+               ", wantsSharedAccommodation=" + wantsSharedAccommodation +
                '}';
     }
 }

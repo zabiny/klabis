@@ -126,7 +126,16 @@ If no events match the criteria, the widget SHALL NOT be rendered at all (no emp
 - **WHEN** a member clicks one of the listed events in the widget
 - **THEN** the event detail page for that event opens
 
-#### Scenario: Clicking the "Přihlásit se" action opens the event detail
+#### Scenario: Clicking the "Přihlásit se" action opens the customized in-place registration dialog
 
-- **WHEN** a member clicks the "Přihlásit se" action on a row in the widget
-- **THEN** the event detail page for that event opens with the registration form prepared
+- **GIVEN** the widget lists an event that offers registration
+- **WHEN** a member clicks the "Přihlásit se" action on that row
+- **THEN** the customized registration dialog opens in place over the dashboard (the same dialog as on the events list, with the member's SI card number prefilled and the event and deadline context shown)
+- **AND** the dashboard page does not navigate away
+- **AND** the shared-service choices are shown exactly when the event offers them, as required by the event-registrations specification
+
+#### Scenario: Registering from the widget refreshes the widget list
+
+- **GIVEN** the member submits a registration from the dialog opened from the widget
+- **WHEN** the registration is accepted
+- **THEN** the widget list is refreshed so the newly registered event no longer appears among the closing registrations

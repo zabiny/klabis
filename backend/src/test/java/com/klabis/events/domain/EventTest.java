@@ -566,6 +566,387 @@ class EventTest {
     }
 
     @Nested
+    @DisplayName("Shared transport / accommodation offer flags")
+    class SharedServiceOfferFlags {
+
+        @Test
+        @DisplayName("create() persists both flags when set")
+        void createPersistsBothFlagsWhenSet() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .sharedTransportEnabled(true)
+                    .sharedAccommodationEnabled(true)
+                    .build());
+
+            assertThat(event.isSharedTransportEnabled()).isTrue();
+            assertThat(event.isSharedAccommodationEnabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("create() defaults both flags to false when the command omits them")
+        void createDefaultsBothFlagsToFalseWhenOmitted() {
+            Event event = Event.create(defaultCreateEvent());
+
+            assertThat(event.isSharedTransportEnabled()).isFalse();
+            assertThat(event.isSharedAccommodationEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("create() sets only the flag that is ticked, leaving the other off")
+        void createSetsOnlyTheTickedFlag() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .sharedTransportEnabled(true)
+                    .build());
+
+            assertThat(event.isSharedTransportEnabled()).isTrue();
+            assertThat(event.isSharedAccommodationEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("updateEvent() toggles a flag on a DRAFT event")
+        void updateTogglesFlagOnDraftEvent() {
+            Event event = Event.create(defaultCreateEvent());
+            EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedAccommodationEnabled(true)
+                    .build());
+
+            assertThat(event.isSharedAccommodationEnabled()).isTrue();
+            assertThat(event.isSharedTransportEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("updateEvent() toggles a flag on an ACTIVE event")
+        void updateTogglesFlagOnActiveEvent() {
+            Event event = Event.create(defaultCreateEvent());
+            event.publish();
+            EventAssert.assertThat(event).hasStatus(EventStatus.ACTIVE);
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedTransportEnabled(true)
+                    .build());
+
+            assertThat(event.isSharedTransportEnabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("updateEvent() can turn a flag back off")
+        void updateCanTurnFlagOff() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(DEFAULT_DATE).location("Forest").organizer("Club")
+                    .sharedAccommodationEnabled(true)
+                    .build());
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedAccommodationEnabled(false)
+                    .build());
+
+            assertThat(event.isSharedAccommodationEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("updateEvent() raises the existing 'cannot be modified' rule on a FINISHED event")
+        void updateRejectedOnFinishedEvent() {
+            Event event = Event.create(defaultCreateEvent());
+            event.publish();
+            event.finish();
+
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedTransportEnabled(true)
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Cannot update event in FINISHED status");
+        }
+
+        @Test
+        @DisplayName("updateEvent() raises the existing 'cannot be modified' rule on a CANCELLED event")
+        void updateRejectedOnCancelledEvent() {
+            Event event = Event.create(defaultCreateEvent());
+            event.cancel();
+
+            assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedAccommodationEnabled(true)
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Cannot update event in CANCELLED status");
+        }
+
+        @Test
+        @DisplayName("turning sharedAccommodationEnabled off does not mutate registrations that chose it; turning it back on leaves the choices intact")
+        void turningAccommodationOffKeepsRegistrationChoices() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).location("Forest").organizer("Club")
+                    .sharedAccommodationEnabled(true)
+                    .build());
+            event.publish();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, true);
+            assertThat(event.findRegistration(memberId).orElseThrow().wantsSharedAccommodation()).isTrue();
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedAccommodationEnabled(false)
+                    .build());
+
+            assertThat(event.isSharedAccommodationEnabled()).isFalse();
+            assertThat(event.findRegistration(memberId).orElseThrow().wantsSharedAccommodation()).isTrue();
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedAccommodationEnabled(true)
+                    .build());
+
+            assertThat(event.isSharedAccommodationEnabled()).isTrue();
+            assertThat(event.findRegistration(memberId).orElseThrow().wantsSharedAccommodation()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Registration shared transport / accommodation choices")
+    class RegistrationSharedServiceChoices {
+
+        private Event activeEvent() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).location("Forest").organizer("Club")
+                    .sharedTransportEnabled(true)
+                    .sharedAccommodationEnabled(true)
+                    .build());
+            event.publish();
+            return event;
+        }
+
+        @Test
+        @DisplayName("registerMember() records both choice flags when the member picks them")
+        void registerMemberRecordsBothChoiceFlags() {
+            Event event = activeEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true);
+
+            EventRegistration registration = event.findRegistration(memberId).orElseThrow();
+            assertThat(registration.wantsSharedTransport()).isTrue();
+            assertThat(registration.wantsSharedAccommodation()).isTrue();
+        }
+
+        @Test
+        @DisplayName("registerMember() records exactly the flags passed, mixed on/off")
+        void registerMemberRecordsMixedChoiceFlags() {
+            Event event = activeEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, false);
+
+            EventRegistration registration = event.findRegistration(memberId).orElseThrow();
+            assertThat(registration.wantsSharedTransport()).isTrue();
+            assertThat(registration.wantsSharedAccommodation()).isFalse();
+        }
+
+        @Test
+        @DisplayName("registerMember() defaults both choice flags to false when the 3-arg overload is used")
+        void registerMemberDefaultsBothChoiceFlagsToFalse() {
+            Event event = activeEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            event.registerMember(memberId, SiCardNumber.of("123456"), null);
+
+            EventRegistration registration = event.findRegistration(memberId).orElseThrow();
+            assertThat(registration.wantsSharedTransport()).isFalse();
+            assertThat(registration.wantsSharedAccommodation()).isFalse();
+        }
+
+        @Test
+        @DisplayName("editRegistration() updates both choice flags under the open-registration window")
+        void editRegistrationUpdatesBothChoiceFlags() {
+            Event event = activeEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false);
+
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .wantsSharedTransport(true)
+                    .wantsSharedAccommodation(true)
+                    .build());
+
+            EventRegistration updated = event.findRegistration(memberId).orElseThrow();
+            assertThat(updated.wantsSharedTransport()).isTrue();
+            assertThat(updated.wantsSharedAccommodation()).isTrue();
+        }
+
+        @Test
+        @DisplayName("editRegistration() can turn a previously-set choice back off")
+        void editRegistrationTurnsChoiceOff() {
+            Event event = activeEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true);
+
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .wantsSharedTransport(false)
+                    .wantsSharedAccommodation(true)
+                    .build());
+
+            EventRegistration updated = event.findRegistration(memberId).orElseThrow();
+            assertThat(updated.wantsSharedTransport()).isFalse();
+            assertThat(updated.wantsSharedAccommodation()).isTrue();
+        }
+
+        @Test
+        @DisplayName("editRegistration() retains stored choices when the event stopped offering shared services")
+        void editRegistrationRetainsStoredChoicesWhenOffersDisabled() {
+            Event event = activeEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true);
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).organizer("Club")
+                    .build());
+
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .build());
+
+            EventRegistration updated = event.findRegistration(memberId).orElseThrow();
+            assertThat(updated.wantsSharedTransport()).isTrue();
+            assertThat(updated.wantsSharedAccommodation()).isTrue();
+        }
+
+        @Test
+        @DisplayName("editRegistration() retains the stored choice only for the offer that was turned off")
+        void editRegistrationRetainsChoiceOnlyForDisabledOffer() {
+            Event event = activeEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true);
+            event.update(EventUpdateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).organizer("Club")
+                    .sharedAccommodationEnabled(true)
+                    .build());
+
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .wantsSharedAccommodation(false)
+                    .build());
+
+            EventRegistration updated = event.findRegistration(memberId).orElseThrow();
+            assertThat(updated.wantsSharedTransport()).isTrue();
+            assertThat(updated.wantsSharedAccommodation()).isFalse();
+        }
+
+        @Test
+        @DisplayName("editRegistration() is refused after the registration deadline")
+        void editRegistrationRefusedAfterDeadline() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            Event event = Event.reconstruct(
+                    EventId.generate(), "Test Event", LocalDate.now().plusDays(10),
+                    "Location", "Organizer",
+                    null, null, null,
+                    RegistrationDeadlines.single(LocalDate.now().minusDays(1)),
+                    EventStatus.ACTIVE, null, null,
+                    List.of(),
+                    null, null,
+                    List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
+                    null
+            );
+
+            assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .wantsSharedTransport(true)
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("deadline");
+        }
+
+        @Test
+        @DisplayName("editRegistration() is refused on or after the event date")
+        void editRegistrationRefusedOnEventDate() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            Event event = Event.reconstruct(
+                    EventId.generate(), "Test Event", LocalDate.now(),
+                    "Location", "Organizer",
+                    null, null, null, null, EventStatus.ACTIVE, null, null,
+                    List.of(),
+                    null, null,
+                    List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).siCardNumber(SiCardNumber.of("123456")).build())),
+                    null
+            );
+
+            assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .wantsSharedAccommodation(true)
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("on or after event date");
+        }
+    }
+
+    @Nested
+    @DisplayName("Shared transport / accommodation count queries")
+    class SharedServiceCountQueries {
+
+        private Event activeEvent() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).location("Forest").organizer("Club")
+                    .sharedTransportEnabled(true)
+                    .sharedAccommodationEnabled(true)
+                    .build());
+            event.publish();
+            return event;
+        }
+
+        private void register(Event event, boolean wantsTransport, boolean wantsAccommodation) {
+            event.registerMember(new MemberId(UUID.randomUUID()), SiCardNumber.of("123456"), null,
+                    wantsTransport, wantsAccommodation);
+        }
+
+        @Test
+        @DisplayName("counts each choice independently over a mixed set of registrations")
+        void countsMixedRegistrations() {
+            Event event = activeEvent();
+            register(event, true, false);   // transport only
+            register(event, false, true);   // accommodation only
+            register(event, true, true);    // both
+            register(event, false, false);  // neither
+
+            assertThat(event.sharedTransportCount()).isEqualTo(2);
+            assertThat(event.sharedAccommodationCount()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("returns zero for each offer when no registration chose it")
+        void countsZeroWhenNobodyChose() {
+            Event event = activeEvent();
+            register(event, false, false);
+
+            assertThat(event.sharedTransportCount()).isEqualTo(0);
+            assertThat(event.sharedAccommodationCount()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("returns zero for an event with no registrations")
+        void countsZeroWithNoRegistrations() {
+            Event event = activeEvent();
+
+            assertThat(event.sharedTransportCount()).isEqualTo(0);
+            assertThat(event.sharedAccommodationCount()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("count is a plain tally and ignores whether the offer is currently enabled")
+        void countIgnoresOfferFlag() {
+            Event event = activeEvent();
+            register(event, true, true);
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .sharedTransportEnabled(false)
+                    .sharedAccommodationEnabled(false)
+                    .build());
+
+            assertThat(event.sharedTransportCount()).isEqualTo(1);
+            assertThat(event.sharedAccommodationCount()).isEqualTo(1);
+        }
+    }
+
+    @Nested
     @DisplayName("Member Registration")
     class MemberRegistration {
 

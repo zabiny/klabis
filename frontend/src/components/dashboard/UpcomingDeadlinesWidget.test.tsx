@@ -3,45 +3,29 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider, type UseQueryResult} from '@tanstack/react-query';
 import {vi} from 'vitest';
-import React from 'react';
+import React, {type ComponentProps} from 'react';
 import {UpcomingDeadlinesWidget} from './UpcomingDeadlinesWidget';
 import * as UseUpcomingDeadlinesModule from '../../hooks/useUpcomingDeadlines';
-import type {UpcomingDeadlineItem, UpcomingDeadlinesData} from '../../hooks/useUpcomingDeadlines';
-import * as UseAuthorizedFetchModule from '../../hooks/useAuthorizedFetch';
+import {type UpcomingDeadlineItem, type UpcomingDeadlinesData} from '../../hooks/useUpcomingDeadlines';
+import type {EventRegistrationDialog as EventRegistrationDialogComponent} from '../events/EventRegistrationDialog';
+
+type EventRegistrationDialogProps = ComponentProps<typeof EventRegistrationDialogComponent>;
 
 vi.mock('../../hooks/useUpcomingDeadlines', () => ({
     useUpcomingDeadlines: vi.fn(),
 }));
 
-vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn(),
-    useAuthorizedMutation: vi.fn(),
+vi.mock('../events/EventRegistrationDialog', () => ({
+    EventRegistrationDialog: (props: EventRegistrationDialogProps) => props.registration ? React.createElement('div', {
+        'data-testid': 'event-registration-dialog',
+        'data-registration-href': props.registration?.href ?? '',
+    }, [
+        React.createElement('button', {key: 'close', onClick: props.onClose}, 'dialog-close'),
+        React.createElement('button', {key: 'register', onClick: props.onRegistered}, 'dialog-registered'),
+    ]) : null,
 }));
-
-vi.mock('../../api/klabisUserManager', () => ({
-    klabisAuthUserManager: {
-        getUser: vi.fn().mockReturnValue({
-            access_token: 'test-token',
-            token_type: 'Bearer',
-        }),
-    },
-}));
-
-vi.mock('../../components/HalNavigator2/HalFormDisplay', () => ({
-    HalFormDisplay: () => React.createElement('div', {'data-testid': 'hal-form-display'}, 'Form'),
-}));
-
-vi.mock('../../components/UI', async () => {
-    const actual = await vi.importActual('../../components/UI');
-    return {
-        ...actual,
-        Modal: ({isOpen, children, title}: {isOpen: boolean; children: React.ReactNode; title: string; onClose: () => void}) =>
-            isOpen ? React.createElement('div', {'data-testid': 'modal', 'aria-label': title}, children) : null,
-    };
-});
 
 const useUpcomingDeadlines = vi.mocked(UseUpcomingDeadlinesModule.useUpcomingDeadlines);
-const useAuthorizedQuery = vi.mocked(UseAuthorizedFetchModule.useAuthorizedQuery);
 
 function createMockQueryResult(data?: UpcomingDeadlinesData | null): UseQueryResult<UpcomingDeadlinesData | undefined>;
 function createMockQueryResult<T>(data?: T | null): UseQueryResult<T | undefined>;
@@ -81,27 +65,30 @@ const renderWidget = (href: string | undefined = '/api/events?status=ACTIVE&dead
     );
 };
 
+const makeItem = (overrides: Partial<UpcomingDeadlineItem> = {}): UpcomingDeadlineItem => ({
+    selfHref: '/api/events/evt-1',
+    name: 'Test akce',
+    eventDate: '2026-06-01',
+    deadline: '2026-05-14',
+    newRegistration: {href: '/api/events/evt-1/registrations/new'},
+    ...overrides,
+});
+
 const makeItems = (count: number): UpcomingDeadlineItem[] =>
-    Array.from({length: count}, (_, i) => ({
+    Array.from({length: count}, (_, i) => makeItem({
         selfHref: `/api/events/evt-${i + 1}`,
         name: `Závod ${i + 1}`,
         eventDate: `2026-05-${String(20 + i).padStart(2, '0')}`,
         deadline: `2026-05-${String(14 + i).padStart(2, '0')}`,
-        newRegistrationHref: `/api/events/evt-${i + 1}/registrations/new`,
-        registerForEventTemplate: {
-            target: `/api/events/evt-${i + 1}/registrations`,
-            method: 'POST',
-            properties: [],
-        },
+        newRegistration: {href: `/api/events/evt-${i + 1}/registrations/new`},
     }));
 
-const makeMockResult = (items: ReturnType<typeof makeItems>, totalElements?: number) =>
+const makeMockResult = (items: UpcomingDeadlineItem[], totalElements?: number) =>
     createMockQueryResult({items, totalElements: totalElements ?? items.length});
 
 describe('UpcomingDeadlinesWidget', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        useAuthorizedQuery.mockReturnValue(createMockQueryResult(null));
     });
 
     describe('with 5 events (totalElements = 5, no footer link expected)', () => {
@@ -132,7 +119,7 @@ describe('UpcomingDeadlinesWidget', () => {
             expect(deadlineTexts.length).toBeGreaterThanOrEqual(1);
         });
 
-        it('renders "Přihlásit se" buttons for each event', () => {
+        it('renders "Přihlásit se" buttons for each event with a new-registration link', () => {
             renderWidget();
             const buttons = screen.getAllByRole('button', {name: /Přihlásit se/i});
             expect(buttons).toHaveLength(5);
@@ -205,14 +192,7 @@ describe('UpcomingDeadlinesWidget', () => {
     describe('a11y: row navigation', () => {
         beforeEach(() => {
             useUpcomingDeadlines.mockReturnValue(makeMockResult([
-                {
-                    selfHref: '/api/events/evt-1',
-                    name: 'Test akce',
-                    eventDate: '2026-06-01',
-                    deadline: '2026-05-14',
-                    newRegistrationHref: undefined,
-                    registerForEventTemplate: undefined,
-                },
+                makeItem({newRegistration: undefined}),
             ], 1));
         });
 
@@ -222,19 +202,17 @@ describe('UpcomingDeadlinesWidget', () => {
             const eventLink = links.find(l => l.getAttribute('href')?.includes('/events/evt-1'));
             expect(eventLink).toBeDefined();
         });
+
+        it('row without a new-registration link shows no register button', () => {
+            renderWidget();
+            expect(screen.queryByRole('button', {name: /Přihlásit se/i})).not.toBeInTheDocument();
+        });
     });
 
     describe('deadline format', () => {
         it('formats deadline as "DD. MM." with Uzávěrka: prefix', () => {
             useUpcomingDeadlines.mockReturnValue(createMockQueryResult({
-                items: [{
-                    selfHref: '/api/events/evt-1',
-                    name: 'Test akce',
-                    eventDate: '2026-06-01',
-                    deadline: '2026-05-14',
-                    newRegistrationHref: '/api/events/evt-1/registrations/new',
-                    registerForEventTemplate: undefined,
-                }],
+                items: [makeItem({deadline: '2026-05-14'})],
                 totalElements: 1,
             }));
             renderWidget();
@@ -243,41 +221,54 @@ describe('UpcomingDeadlinesWidget', () => {
         });
     });
 
-    describe('"Přihlásit se" button interaction', () => {
-        it('opens registration modal when "Přihlásit se" clicked and newRegistrationHref is present', async () => {
+    describe('"Přihlásit se" opens the customized registration dialog', () => {
+        it('opens EventRegistrationDialog with the row new-registration link', () => {
             useUpcomingDeadlines.mockReturnValue(createMockQueryResult({
-                items: [{
-                    selfHref: '/api/events/evt-1',
+                items: [makeItem({
                     name: 'Test akce',
-                    eventDate: '2026-06-01',
-                    deadline: '2026-05-14',
-                    newRegistrationHref: '/api/events/evt-1/registrations/new',
-                    registerForEventTemplate: {
-                        target: '/api/events/evt-1/registrations',
-                        method: 'POST' as const,
-                        properties: [],
-                    },
-                }],
+                    newRegistration: {href: '/api/events/evt-1/registrations/new'},
+                })],
                 totalElements: 1,
             }));
-
-            useAuthorizedQuery.mockReturnValue(createMockQueryResult({
-                _links: {},
-                _templates: {
-                    registerForEvent: {
-                        target: '/api/events/evt-1/registrations',
-                        method: 'POST',
-                        properties: [],
-                    },
-                },
-            }));
-
             renderWidget();
 
-            const button = screen.getByRole('button', {name: /Přihlásit se/i});
-            fireEvent.click(button);
+            fireEvent.click(screen.getByRole('button', {name: /Přihlásit se/i}));
 
-            expect(screen.getByTestId('modal')).toBeInTheDocument();
+            const dialog = screen.getByTestId('event-registration-dialog');
+            expect(dialog).toBeInTheDocument();
+            expect(dialog).toHaveAttribute('data-registration-href', '/api/events/evt-1/registrations/new');
+        });
+
+        it('does not navigate away from the dashboard when the dialog opens', () => {
+            useUpcomingDeadlines.mockReturnValue(makeMockResult(makeItems(1), 1));
+            renderWidget();
+
+            fireEvent.click(screen.getByRole('button', {name: /Přihlásit se/i}));
+
+            expect(screen.getByTestId('event-registration-dialog')).toBeInTheDocument();
+            expect(screen.getByText('Končící přihlášky tento týden')).toBeInTheDocument();
+        });
+
+        it('closes the dialog on close', () => {
+            useUpcomingDeadlines.mockReturnValue(makeMockResult(makeItems(1), 1));
+            renderWidget();
+
+            fireEvent.click(screen.getByRole('button', {name: /Přihlásit se/i}));
+            expect(screen.getByTestId('event-registration-dialog')).toBeInTheDocument();
+
+            fireEvent.click(screen.getByRole('button', {name: 'dialog-close'}));
+            expect(screen.queryByTestId('event-registration-dialog')).not.toBeInTheDocument();
+        });
+
+        it('refetches the deadlines query after a successful registration', () => {
+            const refetch = vi.fn();
+            useUpcomingDeadlines.mockReturnValue({...makeMockResult(makeItems(1), 1), refetch});
+            renderWidget();
+
+            fireEvent.click(screen.getByRole('button', {name: /Přihlásit se/i}));
+            fireEvent.click(screen.getByRole('button', {name: 'dialog-registered'}));
+
+            expect(refetch).toHaveBeenCalled();
         });
     });
 });
