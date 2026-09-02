@@ -46,7 +46,6 @@ const buildEventsResponse = (events: {
     sharedTransportEnabled?: boolean;
     sharedAccommodationEnabled?: boolean;
     newRegistrationHref?: string;
-    registerForEventTarget?: string;
 }[]) => ({
     _embedded: {
         eventSummaryDtoList: events.map(e => ({
@@ -61,9 +60,6 @@ const buildEventsResponse = (events: {
                 self: {href: `/api/events/${e.id}`},
                 ...(e.newRegistrationHref ? {newRegistration: {href: e.newRegistrationHref}} : {}),
             },
-            _templates: e.registerForEventTarget
-                ? {registerForEvent: {target: e.registerForEventTarget, method: 'POST', properties: []}}
-                : undefined,
         })),
     },
     _links: {self: {href: '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc'}},
@@ -83,14 +79,12 @@ describe('useUpcomingDeadlines', () => {
                 sharedTransportEnabled: true,
                 sharedAccommodationEnabled: false,
                 newRegistrationHref: '/api/events/evt-1/registrations/new',
-                registerForEventTarget: '/api/events/evt-1/registrations',
             },
             {
                 id: 'evt-2',
                 name: 'Letní kemp',
                 eventDate: '2026-06-10',
                 deadlines: ['2026-05-15'],
-                newRegistrationHref: '/api/events/evt-2/registrations/new',
             },
         ]));
 
@@ -104,13 +98,8 @@ describe('useUpcomingDeadlines', () => {
         expect(items[0].eventDate).toBe('2026-05-20');
         expect(items[0].selfHref).toBe('/api/events/evt-1');
         expect(items[0].deadline).toBe('2026-05-14');
-        expect(items[0].newRegistrationHref).toBe('/api/events/evt-1/registrations/new');
-        expect(items[0].location).toBe('Brno');
-        expect(items[0].deadlines).toEqual(['2026-05-14']);
-        expect(items[0].sharedTransportEnabled).toBe(true);
-        expect(items[0].sharedAccommodationEnabled).toBe(false);
-        expect(items[1].location).toBeUndefined();
-        expect(items[1].sharedTransportEnabled).toBeUndefined();
+        expect(items[0].newRegistration).toEqual({href: '/api/events/evt-1/registrations/new'});
+        expect(items[1].newRegistration).toBeUndefined();
     });
 
     it('does not fetch when href is undefined (query is disabled)', () => {

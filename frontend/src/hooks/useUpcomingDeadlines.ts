@@ -1,6 +1,6 @@
-import type {HalResponse} from '../api';
-import type {HalFormsTemplate, HalResourceLinks, Link} from '../api';
+import type {HalResponse, Link} from '../api';
 import {isLink, toHref} from '../api/hateoas';
+import type {HalResourceLinks} from '../api';
 import type {components} from '../api/klabisApi';
 import {useAuthorizedQuery} from './useAuthorizedFetch';
 import {getTodayIso} from '../utils/dateUtils';
@@ -14,17 +14,17 @@ function linkHref(links: HalResourceLinks | undefined): string | undefined {
     return isLink(link) ? toHref(link) : undefined;
 }
 
+function newRegistrationLink(event: components['schemas']['EntityModelEventSummaryDto']): Link | undefined {
+    const link = firstLink(event._links?.newRegistration);
+    return isLink(link) ? link : undefined;
+}
+
 export interface UpcomingDeadlineItem {
     selfHref: string;
     name: string;
     eventDate: string;
-    location: string | undefined;
-    deadlines: string[];
     deadline: string;
-    sharedTransportEnabled: boolean | undefined;
-    sharedAccommodationEnabled: boolean | undefined;
-    newRegistrationHref: string | undefined;
-    registerForEventTemplate: HalFormsTemplate | undefined;
+    newRegistration: Link | undefined;
 }
 
 export interface UpcomingDeadlinesData {
@@ -40,9 +40,7 @@ function pickNextRelevantDeadline(deadlines: string[] | undefined): string {
 
 function toUpcomingDeadlinesData(response: HalResponse): UpcomingDeadlinesData {
     const embedded = response._embedded as {
-        eventSummaryDtoList?: Array<components['schemas']['EntityModelEventSummaryDto'] & {
-            _templates?: Record<string, HalFormsTemplate>;
-        }>;
+        eventSummaryDtoList?: Array<components['schemas']['EntityModelEventSummaryDto']>;
     } | undefined;
 
     const page = (response as {page?: {totalElements?: number}}).page;
@@ -55,13 +53,8 @@ function toUpcomingDeadlinesData(response: HalResponse): UpcomingDeadlinesData {
             selfHref: linkHref(e._links?.self)!,
             name: e.name ?? '',
             eventDate: e.eventDate ?? '',
-            location: e.location,
-            deadlines: e.deadlines ?? [],
             deadline: pickNextRelevantDeadline(e.deadlines),
-            sharedTransportEnabled: e.sharedTransportEnabled,
-            sharedAccommodationEnabled: e.sharedAccommodationEnabled,
-            newRegistrationHref: linkHref(e._links?.newRegistration),
-            registerForEventTemplate: e._templates?.registerForEvent,
+            newRegistration: newRegistrationLink(e),
         }));
 
     return {items, totalElements};

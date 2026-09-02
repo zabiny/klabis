@@ -16,16 +16,9 @@ vi.mock('../../hooks/useUpcomingDeadlines', () => ({
 }));
 
 vi.mock('../events/EventRegistrationDialog', () => ({
-    EventRegistrationDialog: (props: EventRegistrationDialogProps) => props.isOpen ? React.createElement('div', {
+    EventRegistrationDialog: (props: EventRegistrationDialogProps) => props.registration ? React.createElement('div', {
         'data-testid': 'event-registration-dialog',
-        'data-mode': props.mode,
-        'data-template-target': props.template?.target ?? '',
-        'data-event-name': props.event?.name ?? '',
-        'data-prefill-href': props.prefillHref ?? '',
-        'data-location': props.event?.location ?? '',
-        'data-deadlines': (props.event?.deadlines ?? []).join(','),
-        'data-shared-transport-enabled': String(props.event?.sharedTransportEnabled),
-        'data-shared-accommodation-enabled': String(props.event?.sharedAccommodationEnabled),
+        'data-registration-href': props.registration?.href ?? '',
     }, [
         React.createElement('button', {key: 'close', onClick: props.onClose}, 'dialog-close'),
         React.createElement('button', {key: 'register', onClick: props.onRegistered}, 'dialog-registered'),
@@ -76,17 +69,8 @@ const makeItem = (overrides: Partial<UpcomingDeadlineItem> = {}): UpcomingDeadli
     selfHref: '/api/events/evt-1',
     name: 'Test akce',
     eventDate: '2026-06-01',
-    location: undefined,
-    deadlines: ['2026-05-14'],
     deadline: '2026-05-14',
-    sharedTransportEnabled: undefined,
-    sharedAccommodationEnabled: undefined,
-    newRegistrationHref: '/api/events/evt-1/registrations/new',
-    registerForEventTemplate: {
-        target: '/api/events/evt-1/registrations',
-        method: 'POST',
-        properties: [],
-    },
+    newRegistration: {href: '/api/events/evt-1/registrations/new'},
     ...overrides,
 });
 
@@ -95,14 +79,8 @@ const makeItems = (count: number): UpcomingDeadlineItem[] =>
         selfHref: `/api/events/evt-${i + 1}`,
         name: `Závod ${i + 1}`,
         eventDate: `2026-05-${String(20 + i).padStart(2, '0')}`,
-        deadlines: [`2026-05-${String(14 + i).padStart(2, '0')}`],
         deadline: `2026-05-${String(14 + i).padStart(2, '0')}`,
-        newRegistrationHref: `/api/events/evt-${i + 1}/registrations/new`,
-        registerForEventTemplate: {
-            target: `/api/events/evt-${i + 1}/registrations`,
-            method: 'POST',
-            properties: [],
-        },
+        newRegistration: {href: `/api/events/evt-${i + 1}/registrations/new`},
     }));
 
 const makeMockResult = (items: UpcomingDeadlineItem[], totalElements?: number) =>
@@ -141,7 +119,7 @@ describe('UpcomingDeadlinesWidget', () => {
             expect(deadlineTexts.length).toBeGreaterThanOrEqual(1);
         });
 
-        it('renders "Přihlásit se" buttons for each event', () => {
+        it('renders "Přihlásit se" buttons for each event with a new-registration link', () => {
             renderWidget();
             const buttons = screen.getAllByRole('button', {name: /Přihlásit se/i});
             expect(buttons).toHaveLength(5);
@@ -214,7 +192,7 @@ describe('UpcomingDeadlinesWidget', () => {
     describe('a11y: row navigation', () => {
         beforeEach(() => {
             useUpcomingDeadlines.mockReturnValue(makeMockResult([
-                makeItem({newRegistrationHref: undefined, registerForEventTemplate: undefined}),
+                makeItem({newRegistration: undefined}),
             ], 1));
         });
 
@@ -223,6 +201,11 @@ describe('UpcomingDeadlinesWidget', () => {
             const links = screen.getAllByRole('link');
             const eventLink = links.find(l => l.getAttribute('href')?.includes('/events/evt-1'));
             expect(eventLink).toBeDefined();
+        });
+
+        it('row without a new-registration link shows no register button', () => {
+            renderWidget();
+            expect(screen.queryByRole('button', {name: /Přihlásit se/i})).not.toBeInTheDocument();
         });
     });
 
@@ -239,16 +222,11 @@ describe('UpcomingDeadlinesWidget', () => {
     });
 
     describe('"Přihlásit se" opens the customized registration dialog', () => {
-        it('opens EventRegistrationDialog in new mode with row template, prefill href and event context', () => {
+        it('opens EventRegistrationDialog with the row new-registration link', () => {
             useUpcomingDeadlines.mockReturnValue(createMockQueryResult({
                 items: [makeItem({
                     name: 'Test akce',
-                    newRegistrationHref: '/api/events/evt-1/registrations/new',
-                    registerForEventTemplate: {
-                        target: '/api/events/evt-1/registrations',
-                        method: 'POST' as const,
-                        properties: [],
-                    },
+                    newRegistration: {href: '/api/events/evt-1/registrations/new'},
                 })],
                 totalElements: 1,
             }));
@@ -258,10 +236,7 @@ describe('UpcomingDeadlinesWidget', () => {
 
             const dialog = screen.getByTestId('event-registration-dialog');
             expect(dialog).toBeInTheDocument();
-            expect(dialog).toHaveAttribute('data-mode', 'new');
-            expect(dialog).toHaveAttribute('data-template-target', '/api/events/evt-1/registrations');
-            expect(dialog).toHaveAttribute('data-prefill-href', '/api/events/evt-1/registrations/new');
-            expect(dialog).toHaveAttribute('data-event-name', 'Test akce');
+            expect(dialog).toHaveAttribute('data-registration-href', '/api/events/evt-1/registrations/new');
         });
 
         it('does not navigate away from the dashboard when the dialog opens', () => {
@@ -272,27 +247,6 @@ describe('UpcomingDeadlinesWidget', () => {
 
             expect(screen.getByTestId('event-registration-dialog')).toBeInTheDocument();
             expect(screen.getByText('Končící přihlášky tento týden')).toBeInTheDocument();
-        });
-
-        it('passes shared-offer flags and event context from the row to the dialog', () => {
-            useUpcomingDeadlines.mockReturnValue(createMockQueryResult({
-                items: [makeItem({
-                    location: 'Třebíč',
-                    deadlines: ['2026-05-14', '2026-05-20'],
-                    sharedTransportEnabled: true,
-                    sharedAccommodationEnabled: false,
-                })],
-                totalElements: 1,
-            }));
-            renderWidget();
-
-            fireEvent.click(screen.getByRole('button', {name: /Přihlásit se/i}));
-
-            const dialog = screen.getByTestId('event-registration-dialog');
-            expect(dialog).toHaveAttribute('data-shared-transport-enabled', 'true');
-            expect(dialog).toHaveAttribute('data-shared-accommodation-enabled', 'false');
-            expect(dialog).toHaveAttribute('data-location', 'Třebíč');
-            expect(dialog).toHaveAttribute('data-deadlines', '2026-05-14,2026-05-20');
         });
 
         it('closes the dialog on close', () => {

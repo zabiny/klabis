@@ -25,16 +25,22 @@ vi.mock('../../api/authorizedFetch', () => ({
     },
 }));
 
-const MOCK_EVENT = {
+const PREFILL_URL = '/api/events/evt-1/registrations/M001?newRegistration=true';
+const EVENT_URL = '/api/events/evt-1';
+const EDIT_URL = '/api/events/evt-1/registrations/member-1';
+
+const CATEGORY_OPTIONS = {inline: [{value: 'cat-1', prompt: 'H21'}, {value: 'cat-2', prompt: 'D21'}]};
+
+const eventData = (overrides: Record<string, unknown> = {}) => ({
     name: 'Jarní závod',
     eventDate: '2026-04-15',
     location: 'Brno - Bystrc',
     deadlines: ['2026-01-15', '2026-03-15'],
     sharedTransportEnabled: true,
     sharedAccommodationEnabled: true,
-};
-
-const CATEGORY_OPTIONS = {inline: [{value: 'cat-1', prompt: 'H21'}, {value: 'cat-2', prompt: 'D21'}]};
+    _links: {self: {href: EVENT_URL}},
+    ...overrides,
+});
 
 const newRegistrationTemplate = (): HalFormsTemplate => mockHalFormsTemplate({
     method: 'POST',
@@ -50,7 +56,7 @@ const newRegistrationTemplate = (): HalFormsTemplate => mockHalFormsTemplate({
 
 const editRegistrationTemplate = (): HalFormsTemplate => mockHalFormsTemplate({
     method: 'PUT',
-    target: '/api/events/evt-1/registrations/member-1',
+    target: EDIT_URL,
     title: 'Upravit přihlášku',
     properties: [
         {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{6,7}'},
@@ -60,23 +66,36 @@ const editRegistrationTemplate = (): HalFormsTemplate => mockHalFormsTemplate({
     ],
 });
 
-const prefillData = {
+const prefillData = (overrides: Record<string, unknown> = {}) => ({
     siCardNumber: '1234567',
     firstName: 'Jana',
     lastName: 'Nováková',
     wantsSharedTransport: false,
     wantsSharedAccommodation: false,
-    _links: {self: {href: '/api/events/evt-1/registrations/M001?newRegistration=true'}},
-};
+    _links: {self: {href: PREFILL_URL}, event: {href: EVENT_URL}},
+    _templates: {registerForEvent: newRegistrationTemplate()},
+    ...overrides,
+});
 
-const editInitialData = {
+const editInitialData = (overrides: Record<string, unknown> = {}) => ({
     siCardNumber: '7654321',
     firstName: 'Jana',
     lastName: 'Nováková',
     category: {id: 'cat-2', name: 'D21'},
     wantsSharedTransport: true,
     wantsSharedAccommodation: false,
-    _links: {self: {href: '/api/events/evt-1/registrations/member-1'}},
+    _links: {self: {href: EDIT_URL}, event: {href: EVENT_URL}},
+    _templates: {editRegistration: editRegistrationTemplate()},
+    ...overrides,
+});
+
+const jsonOk = (data: unknown) => Promise.resolve(createMockResponse(data));
+const writeOk = () => Promise.resolve(createMockResponse({}, 200));
+
+type RouteHandler = (url: string, options?: RequestInit) => Promise<Response> | Response;
+
+const mockRoutes = (handler: RouteHandler) => {
+    vi.mocked(authorizedFetch as Mock).mockImplementation(handler as typeof authorizedFetch);
 };
 
 describe('EventRegistrationDialog', () => {
@@ -86,17 +105,13 @@ describe('EventRegistrationDialog', () => {
         queryClient = new QueryClient({
             defaultOptions: {queries: {retry: false, gcTime: 0}},
         });
-        vi.mocked(authorizedFetch).mockReset();
+        vi.mocked(authorizedFetch as Mock).mockReset();
     });
 
     const renderDialog = (props: Partial<EventRegistrationDialogProps> = {}) => {
         const defaultProps: EventRegistrationDialogProps = {
-            isOpen: true,
+            registration: {href: PREFILL_URL},
             onClose: vi.fn(),
-            mode: 'new',
-            template: newRegistrationTemplate(),
-            event: MOCK_EVENT,
-            prefillHref: '/api/events/evt-1/registrations/M001?newRegistration=true',
         };
         return render(
             <QueryClientProvider client={queryClient}>
@@ -105,15 +120,15 @@ describe('EventRegistrationDialog', () => {
         );
     };
 
-    it('shows skeleton while prefill data is loading', () => {
-        vi.mocked(authorizedFetch as Mock).mockReturnValue(createDelayedMockResponse(prefillData, 200));
+    it('shows skeleton while the registration data is loading', () => {
+        mockRoutes(() => createDelayedMockResponse(prefillData(), 200));
         renderDialog();
 
         expect(screen.getByTestId('event-registration-dialog-skeleton')).toBeInTheDocument();
     });
 
     it('renders new-registration form prefilled with SI chip from member profile', async () => {
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse(prefillData));
+        mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData()) : jsonOk(eventData()));
         renderDialog();
 
         const siInput = await screen.findByLabelText(/SI čip/);
@@ -121,8 +136,8 @@ describe('EventRegistrationDialog', () => {
         expect(screen.getByText(labels.events.registrationModal.siChipHelperPrefilled)).toBeInTheDocument();
     });
 
-    it('renders context strip with event name, date and location', async () => {
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse(prefillData));
+    it('renders context strip with event name, date and location fetched from the event link', async () => {
+        mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData()) : jsonOk(eventData()));
         renderDialog();
 
         await screen.findByLabelText(/SI čip/);
@@ -131,8 +146,8 @@ describe('EventRegistrationDialog', () => {
         expect(screen.getByTestId('modal-context')).toHaveTextContent('Brno - Bystrc');
     });
 
-    it('does not show member chip in new mode even when prefill carries member names', async () => {
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse(prefillData));
+    it('does not show member chip in new mode even when the representation carries member names', async () => {
+        mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData()) : jsonOk(eventData()));
         renderDialog();
 
         await screen.findByLabelText(/SI čip/);
@@ -143,7 +158,7 @@ describe('EventRegistrationDialog', () => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date('2026-02-01'));
         try {
-            vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse(prefillData));
+            mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData()) : jsonOk(eventData()));
             renderDialog();
 
             await vi.waitFor(() => {
@@ -155,13 +170,8 @@ describe('EventRegistrationDialog', () => {
     });
 
     it('edit mode shows member chip, prefilled SI chip and category, and footer note', async () => {
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse(editInitialData));
-        renderDialog({
-            mode: 'edit',
-            template: editRegistrationTemplate(),
-            prefillHref: undefined,
-            initialValuesHref: '/api/events/evt-1/registrations/member-1',
-        });
+        mockRoutes((url) => url === EDIT_URL ? jsonOk(editInitialData()) : jsonOk(eventData()));
+        renderDialog({registration: {href: EDIT_URL}});
 
         const siInput = await screen.findByLabelText(/SI čip/);
         expect(siInput).toHaveValue('7654321');
@@ -172,6 +182,37 @@ describe('EventRegistrationDialog', () => {
         expect(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit})).toBeInTheDocument();
     });
 
+    it('resets the form when the registration link switches to another registration', async () => {
+        const EDIT_URL_2 = '/api/events/evt-1/registrations/member-2';
+        mockRoutes((url) => {
+            if (url === EDIT_URL) return jsonOk(editInitialData());
+            if (url === EDIT_URL_2) {
+                return jsonOk(editInitialData({
+                    siCardNumber: '1112223',
+                    category: {id: 'cat-1', name: 'H21'},
+                    lastName: 'Skládaná',
+                    _links: {self: {href: EDIT_URL_2}, event: {href: EVENT_URL}},
+                }));
+            }
+            return jsonOk(eventData());
+        });
+        const view = renderDialog({registration: {href: EDIT_URL}});
+
+        await screen.findByLabelText(/SI čip/);
+        expect(screen.getByLabelText(/SI čip/)).toHaveValue('7654321');
+
+        view.rerender(
+            <QueryClientProvider client={queryClient}>
+                <EventRegistrationDialog registration={{href: EDIT_URL_2}} onClose={vi.fn()}/>
+            </QueryClientProvider>,
+        );
+
+        await screen.findByLabelText(/SI čip/);
+        expect(screen.getByLabelText(/SI čip/)).toHaveValue('1112223');
+        expect(screen.getByLabelText(/Kategorie/)).toHaveValue('cat-1');
+        expect(screen.getByTestId('registration-member-chip')).toHaveTextContent('Jana Skládaná');
+    });
+
     it('renders category select and shared-service checkboxes only when template has the properties', async () => {
         const siOnlyTemplate = mockHalFormsTemplate({
             method: 'POST',
@@ -179,8 +220,10 @@ describe('EventRegistrationDialog', () => {
             title: 'Přihlásit se',
             properties: [{name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true}],
         });
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse({siCardNumber: ''}));
-        renderDialog({template: siOnlyTemplate});
+        mockRoutes((url) => url === PREFILL_URL
+            ? jsonOk(prefillData({_templates: {registerForEvent: siOnlyTemplate}}))
+            : jsonOk(eventData()));
+        renderDialog();
 
         await screen.findByLabelText(/SI čip/);
         expect(screen.queryByLabelText(/Kategorie/)).not.toBeInTheDocument();
@@ -189,23 +232,37 @@ describe('EventRegistrationDialog', () => {
     });
 
     it('hides shared-service checkboxes the event does not offer even when the template has the properties', async () => {
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse(prefillData));
-        renderDialog({event: {...MOCK_EVENT, sharedTransportEnabled: false, sharedAccommodationEnabled: false}});
+        mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData()) : jsonOk(eventData({
+            sharedTransportEnabled: false,
+            sharedAccommodationEnabled: false,
+        })));
+        renderDialog();
 
         await screen.findByLabelText(/SI čip/);
         expect(screen.queryByRole('checkbox', {name: labels.fields.wantsSharedTransport})).not.toBeInTheDocument();
         expect(screen.queryByRole('checkbox', {name: labels.fields.wantsSharedAccommodation})).not.toBeInTheDocument();
     });
 
+    it('hides only the shared-service checkbox whose offer is disabled', async () => {
+        mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData()) : jsonOk(eventData({
+            sharedAccommodationEnabled: false,
+        })));
+        renderDialog();
+
+        await screen.findByLabelText(/SI čip/);
+        expect(screen.getByRole('checkbox', {name: labels.fields.wantsSharedTransport})).toBeInTheDocument();
+        expect(screen.queryByRole('checkbox', {name: labels.fields.wantsSharedAccommodation})).not.toBeInTheDocument();
+    });
+
     it('omits shared-service fields from the POST body when the event offers neither service', async () => {
         const user = userEvent.setup();
-        vi.mocked(authorizedFetch as Mock).mockImplementation(((_url: string, options?: RequestInit) => {
-            if (options?.method === 'POST') {
-                return Promise.resolve(createMockResponse({}, 200));
-            }
-            return Promise.resolve(createMockResponse(prefillData));
-        }) as typeof authorizedFetch);
-        renderDialog({event: {...MOCK_EVENT, sharedTransportEnabled: false, sharedAccommodationEnabled: false}});
+        mockRoutes((url, options) => {
+            if (options?.method) return writeOk();
+            if (url === EVENT_URL) return jsonOk(eventData({sharedTransportEnabled: false, sharedAccommodationEnabled: false}));
+            if (url === PREFILL_URL) return jsonOk(prefillData());
+            return jsonOk({});
+        });
+        renderDialog();
 
         await screen.findByLabelText(/SI čip/);
         await user.selectOptions(screen.getByLabelText(/Kategorie/), 'cat-1');
@@ -222,30 +279,15 @@ describe('EventRegistrationDialog', () => {
         });
     });
 
-    it('hides only the shared-service checkbox whose offer is disabled', async () => {
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse(prefillData));
-        renderDialog({event: {...MOCK_EVENT, sharedAccommodationEnabled: false}});
-
-        await screen.findByLabelText(/SI čip/);
-        expect(screen.getByRole('checkbox', {name: labels.fields.wantsSharedTransport})).toBeInTheDocument();
-        expect(screen.queryByRole('checkbox', {name: labels.fields.wantsSharedAccommodation})).not.toBeInTheDocument();
-    });
-
     it('edit mode omits hidden shared-service fields from the PUT body', async () => {
         const user = userEvent.setup();
-        vi.mocked(authorizedFetch as Mock).mockImplementation(((_url: string, options?: RequestInit) => {
-            if (options?.method === 'PUT') {
-                return Promise.resolve(createMockResponse({}, 200));
-            }
-            return Promise.resolve(createMockResponse(editInitialData));
-        }) as typeof authorizedFetch);
-        renderDialog({
-            mode: 'edit',
-            template: editRegistrationTemplate(),
-            event: {...MOCK_EVENT, sharedTransportEnabled: false, sharedAccommodationEnabled: false},
-            prefillHref: undefined,
-            initialValuesHref: '/api/events/evt-1/registrations/member-1',
+        mockRoutes((url, options) => {
+            if (options?.method) return writeOk();
+            if (url === EDIT_URL) return jsonOk(editInitialData());
+            if (url === EVENT_URL) return jsonOk(eventData({sharedTransportEnabled: false, sharedAccommodationEnabled: false}));
+            return jsonOk({});
         });
+        renderDialog({registration: {href: EDIT_URL}});
 
         await screen.findByLabelText(/SI čip/);
         await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit}));
@@ -264,7 +306,7 @@ describe('EventRegistrationDialog', () => {
     it('shows validation error and skips submit when SI chip is empty', async () => {
         const user = userEvent.setup();
         const onRegistered = vi.fn();
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse({siCardNumber: ''}));
+        mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData({siCardNumber: ''})) : jsonOk(eventData()));
         renderDialog({onRegistered});
 
         await screen.findByLabelText(/SI čip/);
@@ -281,7 +323,7 @@ describe('EventRegistrationDialog', () => {
 
     it('shows validation error when SI chip does not match the template regex', async () => {
         const user = userEvent.setup();
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse({siCardNumber: ''}));
+        mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData({siCardNumber: ''})) : jsonOk(eventData()));
         renderDialog();
 
         const siInput = await screen.findByLabelText(/SI čip/);
@@ -295,12 +337,13 @@ describe('EventRegistrationDialog', () => {
         const user = userEvent.setup();
         const onClose = vi.fn();
         const onRegistered = vi.fn();
-        vi.mocked(authorizedFetch as Mock).mockImplementation(((_url: string, options?: RequestInit) => {
-            if (options?.method === 'POST') {
-                return Promise.resolve(createMockResponse({}, 200));
-            }
-            return Promise.resolve(createMockResponse(prefillData));
-        }) as typeof authorizedFetch);
+        mockRoutes((url, options) => {
+            if (options?.method === 'POST') return writeOk();
+            if (options?.method) return writeOk();
+            if (url === EVENT_URL) return jsonOk(eventData());
+            if (url === PREFILL_URL) return jsonOk(prefillData());
+            return jsonOk({});
+        });
         renderDialog({onClose, onRegistered});
 
         const siInput = await screen.findByLabelText(/SI čip/);
@@ -330,19 +373,14 @@ describe('EventRegistrationDialog', () => {
     it('edit mode submits PUT with values from fetched registration', async () => {
         const user = userEvent.setup();
         const onClose = vi.fn();
-        vi.mocked(authorizedFetch as Mock).mockImplementation(((_url: string, options?: RequestInit) => {
-            if (options?.method === 'PUT') {
-                return Promise.resolve(createMockResponse({}, 200));
-            }
-            return Promise.resolve(createMockResponse(editInitialData));
-        }) as typeof authorizedFetch);
-        renderDialog({
-            mode: 'edit',
-            template: editRegistrationTemplate(),
-            prefillHref: undefined,
-            initialValuesHref: '/api/events/evt-1/registrations/member-1',
-            onClose,
+        mockRoutes((url, options) => {
+            if (options?.method === 'PUT') return writeOk();
+            if (options?.method) return writeOk();
+            if (url === EVENT_URL) return jsonOk(eventData());
+            if (url === EDIT_URL) return jsonOk(editInitialData());
+            return jsonOk({});
         });
+        renderDialog({registration: {href: EDIT_URL}, onClose});
 
         await screen.findByLabelText(/SI čip/);
         await user.click(screen.getByRole('checkbox', {name: labels.fields.wantsSharedAccommodation}));
@@ -365,7 +403,7 @@ describe('EventRegistrationDialog', () => {
 
     it('maps server-side field validation error onto the SI chip field', async () => {
         const user = userEvent.setup();
-        vi.mocked(authorizedFetch as Mock).mockImplementation(((_url: string, options?: RequestInit) => {
+        mockRoutes((url, options) => {
             if (options?.method === 'PUT') {
                 return Promise.reject(new FetchError(
                     'HTTP 400 (Bad Request)',
@@ -375,14 +413,12 @@ describe('EventRegistrationDialog', () => {
                     JSON.stringify({fieldErrors: {siCardNumber: 'SI čip je již zaregistrovaný'}}),
                 ));
             }
-            return Promise.resolve(createMockResponse(editInitialData));
-        }) as typeof authorizedFetch);
-        renderDialog({
-            mode: 'edit',
-            template: editRegistrationTemplate(),
-            prefillHref: undefined,
-            initialValuesHref: '/api/events/evt-1/registrations/member-1',
+            if (options?.method) return writeOk();
+            if (url === EVENT_URL) return jsonOk(eventData());
+            if (url === EDIT_URL) return jsonOk(editInitialData());
+            return jsonOk({});
         });
+        renderDialog({registration: {href: EDIT_URL}});
 
         await screen.findByLabelText(/SI čip/);
         await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit}));
@@ -393,12 +429,15 @@ describe('EventRegistrationDialog', () => {
 
     it('shows alert with server message for non-validation errors and keeps entered data', async () => {
         const user = userEvent.setup();
-        vi.mocked(authorizedFetch as Mock).mockImplementation(((_url: string, options?: RequestInit) => {
+        mockRoutes((url, options) => {
             if (options?.method === 'POST') {
                 return Promise.reject(new FetchError('HTTP 500 (Internal Server Error)', 500, 'Internal Server Error', new Headers()));
             }
-            return Promise.resolve(createMockResponse({siCardNumber: ''}));
-        }) as typeof authorizedFetch);
+            if (options?.method) return writeOk();
+            if (url === EVENT_URL) return jsonOk(eventData());
+            if (url === PREFILL_URL) return jsonOk(prefillData({siCardNumber: ''}));
+            return jsonOk({});
+        });
         renderDialog();
 
         const siInput = await screen.findByLabelText(/SI čip/);
@@ -412,7 +451,7 @@ describe('EventRegistrationDialog', () => {
 
     it('blocks submit with client-side error when a required category is not selected', async () => {
         const user = userEvent.setup();
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse({siCardNumber: ''}));
+        mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData({siCardNumber: ''})) : jsonOk(eventData()));
         renderDialog();
 
         const siInput = await screen.findByLabelText(/SI čip/);
@@ -427,8 +466,8 @@ describe('EventRegistrationDialog', () => {
         );
     });
 
-    it('shows prefill load error alert and renders empty form when prefill fetch fails', async () => {
-        vi.mocked(authorizedFetch as Mock).mockRejectedValue(new FetchError('HTTP 500', 500, 'Internal Server Error', new Headers()));
+    it('shows prefill load error alert and renders empty form when the registration fetch fails', async () => {
+        mockRoutes(() => Promise.reject(new FetchError('HTTP 500', 500, 'Internal Server Error', new Headers())));
         renderDialog();
 
         const siInput = await screen.findByLabelText(/SI čip/);
@@ -436,10 +475,20 @@ describe('EventRegistrationDialog', () => {
         expect(await screen.findByText(labels.events.registrationModal.prefillLoadError)).toBeInTheDocument();
     });
 
+    it('shows error alert without submit when the representation carries no registration affordance', async () => {
+        const withoutTemplates = {...prefillData(), _templates: undefined};
+        mockRoutes((url) => url === PREFILL_URL ? jsonOk(withoutTemplates) : jsonOk(eventData()));
+        renderDialog();
+
+        expect(await screen.findByText(labels.events.registrationModal.noRegistrationAffordance)).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: labels.events.registrationModal.confirmNew})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: labels.events.registrationModal.confirmEdit})).not.toBeInTheDocument();
+    });
+
     it('cancel button invokes onClose', async () => {
         const user = userEvent.setup();
         const onClose = vi.fn();
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse(prefillData));
+        mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData()) : jsonOk(eventData()));
         renderDialog({onClose});
 
         await screen.findByLabelText(/SI čip/);
@@ -448,10 +497,10 @@ describe('EventRegistrationDialog', () => {
         expect(onClose).toHaveBeenCalled();
     });
 
-    it('does not render anything when isOpen is false', () => {
-        vi.mocked(authorizedFetch as Mock).mockResolvedValue(createMockResponse(prefillData));
-        renderDialog({isOpen: false});
+    it('does not render anything and does not fetch when registration link is null', () => {
+        renderDialog({registration: null});
 
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(authorizedFetch).not.toHaveBeenCalled();
     });
 });

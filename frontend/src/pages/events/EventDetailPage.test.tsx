@@ -44,6 +44,84 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     })),
 }));
 
+vi.mock('../../api/authorizedFetch', () => {
+    const okJson = (data: unknown) => Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: new Headers(),
+        json: async () => data,
+        clone() { return this; },
+    } as unknown as Response);
+
+    const dialogCategoryOptions = {inline: [{value: 'cat-2', prompt: 'D21'}]};
+    const registrationWriteTemplate = (target: string) => ({
+        method: 'PUT',
+        target,
+        title: 'Upravit přihlášku',
+        properties: [
+            {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{4,8}'},
+            {name: 'categoryId', prompt: 'Kategorie', type: 'text', options: dialogCategoryOptions},
+        ],
+    });
+    const dialogEventData = {
+        name: 'Jarní závod 2025',
+        eventDate: '2025-04-15',
+        location: 'Brno - Bystrc',
+        deadlines: ['2025-01-15'],
+        sharedTransportEnabled: true,
+        sharedAccommodationEnabled: true,
+        _links: {self: {href: 'http://localhost:8443/api/events/1'}},
+    };
+    const dialogEditRegistrationData = {
+        siCardNumber: '7654321',
+        firstName: 'Jana',
+        lastName: 'Nováková',
+        category: {id: 'cat-2', name: 'D21'},
+        wantsSharedTransport: true,
+        wantsSharedAccommodation: false,
+        _links: {
+            self: {href: 'http://localhost:8443/api/events/1/registrations/member-1'},
+            event: {href: 'http://localhost:8443/api/events/1'},
+        },
+        _templates: {
+            editRegistration: registrationWriteTemplate('http://localhost:8443/api/events/1/registrations/member-1'),
+        },
+    };
+    const dialogPrefillRegistrationData = {
+        siCardNumber: '1234567',
+        firstName: 'Jana',
+        lastName: 'Nováková',
+        wantsSharedTransport: false,
+        wantsSharedAccommodation: false,
+        _links: {
+            self: {href: 'http://localhost:8443/api/events/1/registrations/M001?newRegistration=true'},
+            event: {href: 'http://localhost:8443/api/events/1'},
+        },
+        _templates: {
+            registerForEvent: {
+                method: 'POST',
+                target: 'http://localhost:8443/api/events/1/registrations',
+                title: 'Přihlásit se',
+                properties: [
+                    {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{4,8}'},
+                    {name: 'categoryId', prompt: 'Kategorie', type: 'text', required: true, options: dialogCategoryOptions},
+                ],
+            },
+        },
+    };
+
+    return {
+        authorizedFetch: vi.fn((url: string, options?: RequestInit) => {
+            if (options?.method) return okJson({});
+            if (url.includes('newRegistration=true')) return okJson(dialogPrefillRegistrationData);
+            if (url.includes('/registrations/member-1')) return okJson(dialogEditRegistrationData);
+            if (url.includes('/api/events/1')) return okJson(dialogEventData);
+            return okJson({});
+        }),
+    };
+});
+
 vi.mock('../../hooks/useFormCacheInvalidation', () => ({
     useFormCacheInvalidation: vi.fn(() => ({
         invalidateAllCaches: vi.fn().mockResolvedValue(undefined),
@@ -321,10 +399,14 @@ describe('EventDetailPage', () => {
             expect(screen.queryByRole('button', {name: /ukončit akci/i})).not.toBeInTheDocument();
         });
 
-        it('shows registerForEvent button when template exists', () => {
+        it('shows registerForEvent button when newRegistration link exists', () => {
             const data = mockEventDetailData({
                 _templates: {
                     registerForEvent: mockHalFormsTemplate({title: 'Přihlásit se'}),
+                },
+                _links: {
+                    ...mockEventDetailData()._links,
+                    newRegistration: {href: '/api/events/evt-1/registrations/member-1?newRegistration=true'},
                 },
             });
             renderPage(createMockPageData(data));
@@ -1194,11 +1276,12 @@ describe('EventDetailPage', () => {
     });
 
     describe('registerForEvent — stay on page after registration (Group 8)', () => {
-        it('clicking registerForEvent opens modal but does NOT navigate away', () => {
+        it('clicking registerForEvent opens modal but does NOT navigate away', async () => {
             const data = mockEventDetailData({
                 _links: {
                     self: {href: 'http://localhost:8443/api/events/1'},
                     registrations: {href: 'http://localhost:8443/api/events/1/registrations'},
+                    newRegistration: {href: 'http://localhost:8443/api/events/1/registrations/M001?newRegistration=true'},
                 },
                 _templates: {
                     registerForEvent: mockHalFormsTemplate({method: 'POST', title: 'Přihlásit se'}),
@@ -1212,6 +1295,7 @@ describe('EventDetailPage', () => {
             expect(mockNavigate).not.toHaveBeenCalled();
             expect(screen.getByRole('heading', {level: 1, name: 'Jarní závod 2025'})).toBeInTheDocument();
             expect(screen.getByRole('heading', {name: /přihlášky/i})).toBeInTheDocument();
+            expect(await screen.findByLabelText(/SI čip/)).toHaveValue('1234567');
         });
     });
 

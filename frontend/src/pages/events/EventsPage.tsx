@@ -103,7 +103,7 @@ export const EventsPage = (): ReactElement => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isBulkSyncModalOpen, setIsBulkSyncModalOpen] = useState(false);
     const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
-    const [newRegistrationState, setNewRegistrationState] = useState<{url: string; event: EventListData} | null>(null);
+    const [newRegistrationTarget, setNewRegistrationTarget] = useState<Link | null>(null);
     const {filterValue, extraParams, defaultSort, handleFilterChange} = useEventsFilterState();
 
     const importBatchTemplate = resourceData?._templates?.importEventsBatch;
@@ -135,7 +135,7 @@ export const EventsPage = (): ReactElement => {
                 {newRegLink && (
                     <Button key="newRegistration" variant={getActionVariant('newRegistration')} size="sm" title={labels.templates.registerForEvent} onClick={(e) => {
                         e.stopPropagation();
-                        setNewRegistrationState({url: newRegLink.href, event});
+                        setNewRegistrationTarget(newRegLink);
                     }}>
                         <UserPlus className="w-4 h-4"/>
                     </Button>
@@ -372,21 +372,10 @@ export const EventsPage = (): ReactElement => {
             </Modal>
         )}
 
-        {(() => {
-            if (!newRegistrationState) return null;
-            const registerTemplate = newRegistrationState.event._templates?.registerForEvent;
-            if (!registerTemplate) return null;
-            return (
-                <EventRegistrationDialog
-                    isOpen={true}
-                    mode="new"
-                    template={registerTemplate}
-                    event={newRegistrationState.event}
-                    prefillHref={newRegistrationState.url}
-                    onClose={() => setNewRegistrationState(null)}
-                    onRegistered={route.refetch}
-                />
-            );
-        })()}
+        <EventRegistrationDialog
+            registration={newRegistrationTarget}
+            onClose={() => setNewRegistrationTarget(null)}
+            onRegistered={route.refetch}
+        />
     </div>;
 }

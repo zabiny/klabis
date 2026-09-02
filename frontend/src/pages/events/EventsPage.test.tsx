@@ -401,6 +401,16 @@ describe('EventsPage', () => {
 
         const registerForEventTarget = '/api/events/evt-1/registrations';
 
+        const dialogEventData = {
+            name: 'Jarní závod',
+            eventDate: '2025-06-15',
+            location: 'Brno',
+            deadlines: ['2025-05-15'],
+            sharedTransportEnabled: false,
+            sharedAccommodationEnabled: false,
+            _links: {self: {href: '/api/events/evt-1'}},
+        };
+
         const buildEventWithNewRegistrationLink = (overrides: Record<string, unknown> = {}) => ({
             id: 'evt-1',
             name: 'Jarní závod',
@@ -424,9 +434,31 @@ describe('EventsPage', () => {
         });
 
         const renderWithEventHavingNewRegistrationLink = (prefill: Record<string, unknown> = {siCardNumber: ''}) => {
+            const prefillResponse = {
+                firstName: 'Jana',
+                lastName: 'Nováková',
+                _links: {
+                    self: {href: newRegistrationUrl},
+                    event: {href: '/api/events/evt-1'},
+                },
+                _templates: {
+                    registerForEvent: mockHalFormsTemplate({
+                        method: 'POST',
+                        target: registerForEventTarget,
+                        title: 'Přihlásit se',
+                        properties: [
+                            {name: 'siCardNumber', prompt: 'SI číslo', type: 'text'},
+                        ],
+                    }),
+                },
+                ...prefill,
+            };
             vi.mocked(authorizedFetch).mockImplementation(((url: string) => {
                 if (url.includes('newRegistration=true')) {
-                    return Promise.resolve(createMockResponse(prefill));
+                    return Promise.resolve(createMockResponse(prefillResponse));
+                }
+                if (url === '/api/events/evt-1') {
+                    return Promise.resolve(createMockResponse(dialogEventData));
                 }
                 return Promise.resolve(createMockResponse({}));
             }) as typeof authorizedFetch);

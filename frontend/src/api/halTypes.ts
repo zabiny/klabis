@@ -524,12 +524,20 @@ export interface GetRegistrationHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
-    /** Present when registrations are open. The wantsSharedTransport /
+    /** Present only on the existing-registration (newRegistration=false) response, when
+registrations are open. The wantsSharedTransport / wantsSharedAccommodation
+properties are included only for the offers the event has enabled.
+ */
+    'editRegistration'?: HalFormsTemplate;
+    /** Present only on the newRegistration=true prefill response, when registrations are
+open and the member is not blocked from registering. The wantsSharedTransport /
 wantsSharedAccommodation properties are included only for the offers the event
 has enabled.
  */
-    'editRegistration'?: HalFormsTemplate;
-    /** Present when registrations are open and the caller is the registered member */
+    'registerForEvent'?: HalFormsTemplate;
+    /** Present only on the existing-registration (newRegistration=false) response, when
+registrations are open and the caller is the registered member
+ */
     'unregisterFromEvent'?: HalFormsTemplate;
   };
 }
@@ -539,7 +547,7 @@ export type GetRegistrationResource =
 
 export const GetRegistrationRels = {
   links: ['event', 'self'] as const,
-  templates: ['editRegistration', 'unregisterFromEvent'] as const,
+  templates: ['editRegistration', 'registerForEvent', 'unregisterFromEvent'] as const,
 } as const;
 
 export type GetRegistrationLinkRel = typeof GetRegistrationRels.links[number];

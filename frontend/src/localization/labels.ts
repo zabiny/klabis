@@ -504,6 +504,7 @@ export const labels = {
             confirmNew: 'Potvrdit přihlášku',
             confirmEdit: 'Uložit změny',
             prefillLoadError: 'Nepodařilo se načíst výchozí údaje přihlášky.',
+            noRegistrationAffordance: 'Formulář se nepodařilo načíst – přihlášky pravděpodobně nejsou otevřené.',
         },
     },
 

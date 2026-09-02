@@ -3,10 +3,11 @@ import {Link as RouterLink} from 'react-router-dom';
 import {Calendar, UserPlus} from 'lucide-react';
 import {Button, Card} from '../UI';
 import {EventRegistrationDialog} from '../events/EventRegistrationDialog';
-import {useUpcomingDeadlines, type UpcomingDeadlineItem} from '../../hooks/useUpcomingDeadlines';
+import {useUpcomingDeadlines} from '../../hooks/useUpcomingDeadlines';
 import {formatDate} from '../../utils/dateUtils';
 import {extractNavigationPath} from '../../utils/navigationPath';
 import {labels} from '../../localization/labels';
+import type {Link} from '../../api';
 
 const SHOW_ALL_DEADLINES_PATH = '/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me';
 
@@ -15,7 +16,7 @@ export interface UpcomingDeadlinesWidgetProps {
 }
 
 export const UpcomingDeadlinesWidget = ({upcomingDeadlinesHref}: UpcomingDeadlinesWidgetProps): ReactElement | null => {
-    const [registrationTarget, setRegistrationTarget] = useState<UpcomingDeadlineItem | null>(null);
+    const [registrationTarget, setRegistrationTarget] = useState<Link | null>(null);
     const {data, refetch} = useUpcomingDeadlines(upcomingDeadlinesHref);
 
     const items = data?.items ?? [];
@@ -56,14 +57,14 @@ export const UpcomingDeadlinesWidget = ({upcomingDeadlinesHref}: UpcomingDeadlin
                                         </p>
                                     </div>
                                 </div>
-                                {item.newRegistrationHref && item.registerForEventTemplate && (
+                                {item.newRegistration && (
                                     <Button
                                         variant="primary"
                                         size="sm"
                                         className="ml-3 shrink-0"
                                         onClick={(e) => {
                                             e.preventDefault();
-                                            setRegistrationTarget(item);
+                                            setRegistrationTarget(item.newRegistration ?? null);
                                         }}
                                     >
                                         <UserPlus className="w-4 h-4 mr-1"/>
@@ -86,17 +87,11 @@ export const UpcomingDeadlinesWidget = ({upcomingDeadlinesHref}: UpcomingDeadlin
                 </Card>
             </div>
 
-            {registrationTarget?.registerForEventTemplate && (
-                <EventRegistrationDialog
-                    isOpen={true}
-                    mode="new"
-                    template={registrationTarget.registerForEventTemplate}
-                    event={registrationTarget}
-                    prefillHref={registrationTarget.newRegistrationHref}
-                    onClose={() => setRegistrationTarget(null)}
-                    onRegistered={refetch}
-                />
-            )}
+            <EventRegistrationDialog
+                registration={registrationTarget}
+                onClose={() => setRegistrationTarget(null)}
+                onRegistered={refetch}
+            />
         </>
     );
 };
