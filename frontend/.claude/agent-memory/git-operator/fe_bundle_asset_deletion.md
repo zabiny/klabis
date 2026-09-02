@@ -11,4 +11,6 @@ When committing a refreshed frontend bundle (after `npm run refresh-backend-serv
 
 **How to apply:** Before committing anything under `backend/src/main/resources/static/`, read `git status --short` and explicitly `git add` the deleted old asset path too — then commit; git records it as a rename. Also confirm `index.html` and `sw.js` reference the new hash so the pair is consistent.
 
+**Multiple refreshes before one commit:** a later refresh can delete an asset that an earlier refresh already staged (staged `A` + unstaged ` D` for the same path). `git add -A` reconciles this correctly — the staged-then-deleted file vanishes from the commit and the survivor pairs as a rename with the oldest tracked hash. Verify against `grep -o 'assets/index-[^"]*' index.html sw.js` vs `ls assets/` when unsure.
+
 Related: [[git-operator-new-files]]
