@@ -1,13 +1,28 @@
 import type {HalResponse} from '../api';
-import type {HalFormsTemplate} from '../api';
-import {toHref} from '../api/hateoas';
+import type {HalFormsTemplate, HalResourceLinks, Link} from '../api';
+import {isLink, toHref} from '../api/hateoas';
+import type {components} from '../api/klabisApi';
 import {useAuthorizedQuery} from './useAuthorizedFetch';
+import {getTodayIso} from '../utils/dateUtils';
+
+function firstLink(links: HalResourceLinks | undefined): Link | undefined {
+    return Array.isArray(links) ? links[0] : links;
+}
+
+function linkHref(links: HalResourceLinks | undefined): string | undefined {
+    const link = firstLink(links);
+    return isLink(link) ? toHref(link) : undefined;
+}
 
 export interface UpcomingDeadlineItem {
     selfHref: string;
     name: string;
     eventDate: string;
+    location: string | undefined;
+    deadlines: string[];
     deadline: string;
+    sharedTransportEnabled: boolean | undefined;
+    sharedAccommodationEnabled: boolean | undefined;
     newRegistrationHref: string | undefined;
     registerForEventTemplate: HalFormsTemplate | undefined;
 }
@@ -19,21 +34,13 @@ export interface UpcomingDeadlinesData {
 
 function pickNextRelevantDeadline(deadlines: string[] | undefined): string {
     if (!deadlines || deadlines.length === 0) return '';
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getTodayIso();
     return deadlines.find(d => d >= today) ?? deadlines[deadlines.length - 1];
 }
 
 function toUpcomingDeadlinesData(response: HalResponse): UpcomingDeadlinesData {
     const embedded = response._embedded as {
-        eventSummaryDtoList?: Array<{
-            id?: {value?: string};
-            name?: string;
-            eventDate?: string;
-            deadlines?: string[];
-            _links?: {
-                self?: {href: string};
-                newRegistration?: {href: string};
-            };
+        eventSummaryDtoList?: Array<components['schemas']['EntityModelEventSummaryDto'] & {
             _templates?: Record<string, HalFormsTemplate>;
         }>;
     } | undefined;
@@ -43,13 +50,17 @@ function toUpcomingDeadlinesData(response: HalResponse): UpcomingDeadlinesData {
 
     const rawItems = embedded?.eventSummaryDtoList ?? [];
     const items: UpcomingDeadlineItem[] = rawItems
-        .filter(e => e._links?.self?.href)
+        .filter(e => isLink(firstLink(e._links?.self)))
         .map(e => ({
-            selfHref: toHref(e._links!.self!),
+            selfHref: linkHref(e._links?.self)!,
             name: e.name ?? '',
             eventDate: e.eventDate ?? '',
+            location: e.location,
+            deadlines: e.deadlines ?? [],
             deadline: pickNextRelevantDeadline(e.deadlines),
-            newRegistrationHref: e._links?.newRegistration ? toHref(e._links.newRegistration) : undefined,
+            sharedTransportEnabled: e.sharedTransportEnabled,
+            sharedAccommodationEnabled: e.sharedAccommodationEnabled,
+            newRegistrationHref: linkHref(e._links?.newRegistration),
             registerForEventTemplate: e._templates?.registerForEvent,
         }));
 

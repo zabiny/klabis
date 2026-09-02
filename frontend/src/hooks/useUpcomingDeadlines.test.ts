@@ -42,6 +42,9 @@ const buildEventsResponse = (events: {
     name: string;
     eventDate: string;
     deadlines: string[];
+    location?: string;
+    sharedTransportEnabled?: boolean;
+    sharedAccommodationEnabled?: boolean;
     newRegistrationHref?: string;
     registerForEventTarget?: string;
 }[]) => ({
@@ -50,7 +53,10 @@ const buildEventsResponse = (events: {
             id: {value: e.id},
             name: e.name,
             eventDate: e.eventDate,
+            ...(e.location !== undefined ? {location: e.location} : {}),
             deadlines: e.deadlines,
+            ...(e.sharedTransportEnabled !== undefined ? {sharedTransportEnabled: e.sharedTransportEnabled} : {}),
+            ...(e.sharedAccommodationEnabled !== undefined ? {sharedAccommodationEnabled: e.sharedAccommodationEnabled} : {}),
             _links: {
                 self: {href: `/api/events/${e.id}`},
                 ...(e.newRegistrationHref ? {newRegistration: {href: e.newRegistrationHref}} : {}),
@@ -72,7 +78,10 @@ describe('useUpcomingDeadlines', () => {
                 id: 'evt-1',
                 name: 'Jarní závod',
                 eventDate: '2026-05-20',
+                location: 'Brno',
                 deadlines: ['2026-05-14'],
+                sharedTransportEnabled: true,
+                sharedAccommodationEnabled: false,
                 newRegistrationHref: '/api/events/evt-1/registrations/new',
                 registerForEventTarget: '/api/events/evt-1/registrations',
             },
@@ -96,6 +105,12 @@ describe('useUpcomingDeadlines', () => {
         expect(items[0].selfHref).toBe('/api/events/evt-1');
         expect(items[0].deadline).toBe('2026-05-14');
         expect(items[0].newRegistrationHref).toBe('/api/events/evt-1/registrations/new');
+        expect(items[0].location).toBe('Brno');
+        expect(items[0].deadlines).toEqual(['2026-05-14']);
+        expect(items[0].sharedTransportEnabled).toBe(true);
+        expect(items[0].sharedAccommodationEnabled).toBe(false);
+        expect(items[1].location).toBeUndefined();
+        expect(items[1].sharedTransportEnabled).toBeUndefined();
     });
 
     it('does not fetch when href is undefined (query is disabled)', () => {

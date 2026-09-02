@@ -2285,6 +2285,10 @@ export interface components {
             location?: string;
             name?: string;
             organizer?: string;
+            /** @description Whether the event offers shared accommodation members can opt into at registration. */
+            sharedAccommodationEnabled?: boolean;
+            /** @description Whether the event offers shared transport members can opt into at registration. */
+            sharedTransportEnabled?: boolean;
             status?: components["schemas"]["EventStatus"];
             websiteUrl?: string;
         };

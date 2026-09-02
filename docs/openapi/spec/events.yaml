@@ -1387,6 +1387,12 @@ components:
             type: string
             format: date
           x-klabis-halforms-access: READ_ONLY
+        sharedTransportEnabled:
+          type: boolean
+          description: Whether the event offers shared transport members can opt into at registration.
+        sharedAccommodationEnabled:
+          type: boolean
+          description: Whether the event offers shared accommodation members can opt into at registration.
 
     EventCategoryDto:
       type: object
