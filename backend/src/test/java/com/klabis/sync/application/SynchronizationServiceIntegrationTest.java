@@ -44,6 +44,9 @@ class SynchronizationServiceIntegrationTest {
     private SynchronizationPort synchronizationPort;
 
     @Autowired
+    private SynchronizationService synchronizationService;
+
+    @Autowired
     private SynchronizationAdapter synchronizationAdapter;
 
     @Autowired
@@ -401,9 +404,12 @@ class SynchronizationServiceIntegrationTest {
             SyncRecord conflicted = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
             assertThat(conflicted.getStatus()).isEqualTo(SyncStatus.CONFLICT);
 
-            // The external side reverts to the agreed baseline value.
+            // The external side reverts to the agreed baseline value. A conflict is
+            // re-evaluated on every pass and can clear itself (design.md D7) — that is
+            // the scheduled cadence's job, not the manual trigger's (synchronizeNow
+            // refuses a CONFLICT record outright), so this drives the pass directly.
             adapter.withExternalState("8111", new TestSyncProjection("Sprint", "Brno"));
-            SyncRecord afterRevert = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+            SyncRecord afterRevert = synchronizationService.runScheduledPass(enrolled.getId());
 
             assertThat(afterRevert.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
             assertThat(afterRevert.getLastDirection()).isEqualTo(SyncDirection.OUTWARD);
@@ -426,9 +432,11 @@ class SynchronizationServiceIntegrationTest {
             assertThat(conflicted.getStatus()).isEqualTo(SyncStatus.CONFLICT);
 
             // The manager corrects the external system directly to match Klabis (D6
-            // exit 2) — no engine operation involved.
+            // exit 2) — no engine operation involved. The record clears its own
+            // conflict on the next pass (design.md D7), driven here as a scheduled
+            // pass since synchronizeNow refuses a CONFLICT record outright.
             adapter.withExternalState("8112", new TestSyncProjection("Sprint Corrected", "Brno"));
-            SyncRecord afterFix = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+            SyncRecord afterFix = synchronizationService.runScheduledPass(enrolled.getId());
 
             assertThat(afterFix.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
         }
@@ -448,8 +456,10 @@ class SynchronizationServiceIntegrationTest {
             adapter.withExternalState("8113", new TestSyncProjection("Sprint External Edit", "Brno"));
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
-            // A further pass while the conflict stands must still write nothing.
-            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+            // A further pass while the conflict stands must still write nothing —
+            // driven as a scheduled pass, since a manual synchronizeNow now refuses a
+            // CONFLICT record outright rather than silently doing nothing.
+            synchronizationService.runScheduledPass(enrolled.getId());
 
             assertThat(adapter.readLocal("event-113")).isEqualTo(new TestSyncProjection("Sprint Local Edit", "Brno"));
             assertThat(adapter.readExternal("8113")).isEqualTo(new TestSyncProjection("Sprint External Edit", "Brno"));

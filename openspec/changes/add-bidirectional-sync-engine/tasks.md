@@ -63,16 +63,16 @@ Delivers: the losslessness guarantee end-to-end, including the accepted divergen
 
 Delivers: a failing record that is retried with growing delay, becomes visibly stopped, and can be restarted; an outage that strands nobody.
 
-- [ ] 4.1 Domain tests (red): failure classification — outage-shaped (breaker open, connection failure, timeout) counts for nothing, other transport and server errors are retryable, everything else is terminal immediately [D10, D11]
-- [ ] 4.2 Domain: failure classification and the `RETRYING` status, entered from `NEW` and `IN_SYNC` alike; a retrying record is still compared and synchronised on every due pass [D10]
-- [ ] 4.3 Application tests (red): "attempts since the most recent success or reset" derived from the history, ignoring `OUTAGE` rows [D10, D11]
-- [ ] 4.4 Application: derived failure count, `nextAttemptDueAt` computed from it (initial delay, multiplier, ceiling), and the `RESET` attempt row that restarts the count [D10, D19]
-- [ ] 4.5 Application: terminal `FAILED` on reaching `max-attempts`, `reset` returning the record to service, and `SyncTerminallyFailed` [D10, D15]
-- [ ] 4.6 Infrastructure: Resilience4j retry instance for in-attempt transport blips, and the circuit breaker around the external client, both configured under the existing `resilience4j` block [D10, D11]
-- [ ] 4.7 Application: an open breaker ends the pass leaving the remaining records untouched; outage failures reschedule at the initial delay [D11]
-- [ ] 4.8 Application: per-record claim with lease expiry; a second pass skips a freshly claimed record and proceeds with others [D12]
-- [ ] 4.9 Integration tests: a record fails repeatedly → `RETRYING` with a growing due date → `FAILED` at the limit → reset → synchronises again; a multi-day outage terminates nobody; an expired claim is picked up by the next pass
-- [ ] 4.10 Run tests, code review, commit
+- [x] 4.1 Domain tests (red): failure classification — outage-shaped (breaker open, connection failure, timeout) counts for nothing, other transport and server errors are retryable, everything else is terminal immediately [D10, D11]
+- [x] 4.2 Domain: failure classification and the `RETRYING` status, entered from `NEW` and `IN_SYNC` alike; a retrying record is still compared and synchronised on every due pass [D10]
+- [x] 4.3 Application tests (red): "attempts since the most recent success or reset" derived from the history, ignoring `OUTAGE` rows [D10, D11]
+- [x] 4.4 Application: derived failure count, `nextAttemptDueAt` computed from it (initial delay, multiplier, ceiling), and the `RESET` attempt row that restarts the count [D10, D19]
+- [x] 4.5 Application: terminal `FAILED` on reaching `max-attempts`, `reset` returning the record to service, and `SyncTerminallyFailed` [D10, D15]
+- [x] 4.6 Infrastructure: Resilience4j retry instance for in-attempt transport blips, and the circuit breaker around the external client, both configured under the existing `resilience4j` block [D10, D11]
+- [x] 4.7 Application: an open breaker ends the pass leaving the remaining records untouched; outage failures reschedule at the initial delay [D11] — *breaker state and outage rescheduling done; the "end the pass" loop lands with the scheduler in slice 5, which consults `ResilientAdapterExecutor.isOpen()`*
+- [x] 4.8 Application: per-record claim with lease expiry; a second pass skips a freshly claimed record and proceeds with others [D12]
+- [x] 4.9 Integration tests: a record fails repeatedly → `RETRYING` with a growing due date → `FAILED` at the limit → reset → synchronises again; a multi-day outage terminates nobody; an expired claim is picked up by the next pass
+- [x] 4.10 Run tests, code review, commit
 
 ## 5. Slice: Scheduling, retention and configuration
 

@@ -24,6 +24,7 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
     private int localReadCount = 0;
     private int fireHookOnLocalReadNumber = -1;
     private Runnable countedHook;
+    private final java.util.Deque<RuntimeException> readExternalFailures = new java.util.ArrayDeque<>();
 
     public TestSynchronizationAdapter(SyncEntityType entityType, ExternalSystem system) {
         this.entityType = entityType;
@@ -65,6 +66,36 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
     }
 
     /**
+     * Queues an exception to be thrown by the next call(s) to {@link #readExternal},
+     * one per call, in the order queued — lets a test simulate a failing external
+     * system for a controlled number of passes without the exception ever leaking
+     * into unrelated tests once the queue is drained.
+     * <p>
+     * A production call to the adapter goes through {@code ResilientAdapterExecutor},
+     * which retries a retryable failure in-attempt (the {@code sync-adapter}
+     * Resilience4j retry, up to 3 attempts by default — design.md D10). To simulate
+     * one genuinely failed pass-level attempt, queue the failure enough times to
+     * exhaust that in-attempt retry budget, e.g. {@link #failNextReadExternalWith(int, RuntimeException)}.
+     */
+    public TestSynchronizationAdapter failNextReadExternalWith(RuntimeException failure) {
+        this.readExternalFailures.addLast(failure);
+        return this;
+    }
+
+    /**
+     * Queues the same exception {@code times} times — the usual way to simulate one
+     * failed pass-level attempt when the failure is itself retryable and would
+     * otherwise be absorbed by the in-attempt Resilience4j retry (see
+     * {@link #failNextReadExternalWith(RuntimeException)}).
+     */
+    public TestSynchronizationAdapter failNextReadExternalWith(int times, RuntimeException failure) {
+        for (int i = 0; i < times; i++) {
+            this.readExternalFailures.addLast(failure);
+        }
+        return this;
+    }
+
+    /**
      * Clears the version token and read counters. This adapter is typically wired as
      * a Spring singleton bean shared across every test in a class, so a test that sets
      * a version token or relies on read counts should reset it in {@code @BeforeEach}
@@ -76,6 +107,7 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
         this.localReadCount = 0;
         this.fireHookOnLocalReadNumber = -1;
         this.countedHook = null;
+        this.readExternalFailures.clear();
     }
 
     public int externalReadCount() {
@@ -134,6 +166,9 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
     @Override
     public SyncProjection readExternal(String externalId) {
         externalReadCount++;
+        if (!readExternalFailures.isEmpty()) {
+            throw readExternalFailures.pollFirst();
+        }
         TestSyncProjection projection = externalState.get(externalId);
         if (projection == null) {
             throw new IllegalStateException("No external test state configured for externalId " + externalId);

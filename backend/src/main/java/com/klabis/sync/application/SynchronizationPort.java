@@ -13,8 +13,8 @@ import org.jmolecules.architecture.hexagonal.PrimaryPort;
  * <p>
  * {@link #enroll}, {@link #synchronizeNow}, {@link #state} and {@link #retire} cover
  * ordinary passes; {@link #acknowledgeConflict} and {@link #resolveConflict} cover the
- * two-step conflict resolution workflow (design.md D6, D7). Reset is added by a later
- * slice on this same port.
+ * two-step conflict resolution workflow (design.md D6, D7); {@link #reset} restarts a
+ * terminally failed record (design.md D10).
  */
 @PrimaryPort
 public interface SynchronizationPort {
@@ -79,4 +79,15 @@ public interface SynchronizationPort {
      * @throws UnsupportedResolutionException     if the requested direction is not supported by the integration
      */
     SyncRecord resolveConflict(SyncRecordId id, SyncResolution resolution, String actingUser);
+
+    /**
+     * A manager restarts a terminally failed record (design.md D10): appends a
+     * {@code RESET} attempt so the derived failure count restarts, clears the due
+     * date, and returns the record to service.
+     *
+     * @param actingUser opaque identifier of the resetting user (design.md D15)
+     * @throws SyncRecordNotFoundException   if the entity is not enrolled
+     * @throws SyncRecordNotFailedException  if the record is not currently terminally failed
+     */
+    SyncRecord reset(SyncRecordId id, String actingUser);
 }

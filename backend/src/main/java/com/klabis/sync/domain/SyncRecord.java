@@ -3,6 +3,7 @@ package com.klabis.sync.domain;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.sync.SyncConflictDetected;
 import com.klabis.sync.SyncRecordId;
+import com.klabis.sync.SyncTerminallyFailed;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
@@ -329,6 +330,93 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         this.status = SyncStatus.IN_SYNC;
         this.acknowledgement = null;
         this.dirtySince = null;
+        this.nextAttemptDueAt = null;
+    }
+
+    /**
+     * Records an outage: the external system was unavailable for this attempt
+     * (design.md D11). The record is rescheduled at the initial retry delay — not the
+     * grown one — since an outage failure counts toward neither the derived failure
+     * count nor the backoff delay; which records were attempted during an outage stops
+     * mattering. If the record was {@code IN_SYNC} or {@code NEW}, it moves to
+     * {@code RETRYING} so a manager sees it as failing rather than settled — the
+     * outage itself does not terminate the record, only makes it visibly stuck for
+     * now.
+     *
+     * @throws IllegalStateException if the record is not currently being attempted
+     *                                ({@code CONFLICT}, {@code FAILED} or {@code RETIRED}
+     *                                records are never passed to this method — the
+     *                                caller must have filtered them out before
+     *                                attempting the record at all)
+     */
+    public void recordOutage(Instant nextAttemptDueAt) {
+        Assert.notNull(nextAttemptDueAt, "nextAttemptDueAt is required");
+        assertBeingAttempted();
+        if (status == SyncStatus.NEW || status == SyncStatus.IN_SYNC) {
+            this.status = SyncStatus.RETRYING;
+        }
+        this.nextAttemptDueAt = nextAttemptDueAt;
+    }
+
+    /**
+     * Records a retryable failure (design.md D10): a transport or server-side error
+     * that may pass on its own. Moves the record to {@code RETRYING} — entered from
+     * {@code NEW} and {@code IN_SYNC} alike — and schedules the next attempt at the
+     * caller-computed backoff delay (design.md D19: initial delay, multiplier,
+     * ceiling, derived from the failure count in the attempt history).
+     *
+     * @throws IllegalStateException if the record is not currently being attempted
+     *                                (see {@link #recordOutage})
+     */
+    public void recordRetryableFailure(Instant nextAttemptDueAt) {
+        Assert.notNull(nextAttemptDueAt, "nextAttemptDueAt is required");
+        assertBeingAttempted();
+        this.status = SyncStatus.RETRYING;
+        this.nextAttemptDueAt = nextAttemptDueAt;
+    }
+
+    /**
+     * Records terminal failure (design.md D10): retryable attempts since the last
+     * success or reset reached the configured limit, or a single failure was
+     * classified terminal on the spot. The record stops being attempted — no further
+     * {@code nextAttemptDueAt} is set, since the scheduler skips a {@code FAILED}
+     * record outright — and waits for a manual {@link #reset}. Publishes
+     * {@link SyncTerminallyFailed}.
+     *
+     * @throws IllegalStateException if the record is not currently being attempted
+     *                                (see {@link #recordOutage})
+     */
+    public void recordTerminalFailure(int failedAttempts, String failureReason) {
+        assertBeingAttempted();
+        this.status = SyncStatus.FAILED;
+        this.nextAttemptDueAt = null;
+        registerEvent(SyncTerminallyFailed.of(id, failedAttempts, failureReason));
+    }
+
+    /**
+     * A record must not already be {@code CONFLICT}, {@code FAILED} or
+     * {@code RETIRED} when a pass records a failure against it — those states need a
+     * manager's decision (resolve, reset) or are permanently out of scope, and a pass
+     * must never have been started against them in the first place. This is a
+     * programming-error guard, not a normal-flow check: the caller (design.md, the
+     * application layer orchestrating a pass) is responsible for never attempting such
+     * a record.
+     */
+    private void assertBeingAttempted() {
+        Assert.state(status != SyncStatus.CONFLICT && status != SyncStatus.FAILED && status != SyncStatus.RETIRED,
+                () -> "Cannot record a failure against a record in status " + status + " — it must not have been attempted");
+    }
+
+    /**
+     * A manager restarts a terminally failed record (design.md D10): it returns to
+     * service, synchronised again from the next run onwards. There is no counter
+     * column to zero — the caller appends a {@code RESET} attempt row so the derived
+     * failure count restarts (design.md D10) — this method only clears the record's
+     * own stuck state.
+     */
+    public void reset() {
+        Assert.state(status == SyncStatus.FAILED, "Only a terminally failed record can be reset");
+        this.status = SyncStatus.IN_SYNC;
         this.nextAttemptDueAt = null;
     }
 

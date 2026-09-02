@@ -65,6 +65,35 @@ resilience4j:
         limit-for-period: 3
         limit-refresh-period: 1h
         timeout-duration: 0s
+  retry:
+    instances:
+      # Absorbs transient transport blips within one synchronisation attempt
+      # (openspec/changes/add-bidirectional-sync-engine/design.md D10). Retries only
+      # exceptions the engine itself would classify as retryable or outage-shaped —
+      # never a terminal failure, which must surface immediately.
+      sync-adapter:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          # An adapter's own explicit "this is retryable" signal (e.g. an HTTP client
+          # exception for a 5xx response) — same design.md D10 RETRYABLE category as
+          # the two above, so it gets the same in-attempt retry, not just the
+          # across-pass backoff.
+          - com.klabis.sync.domain.RetryableSyncFailureException
+  circuitbreaker:
+    instances:
+      # Opens after repeated external-system failures so the rest of a pass's records
+      # are left untouched rather than each consuming its retry budget in turn
+      # (design.md D11).
+      sync-adapter:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
 
 springdoc:
   swagger-ui:
