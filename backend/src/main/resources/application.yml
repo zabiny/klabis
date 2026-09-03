@@ -177,6 +177,10 @@ klabis:
       username: ${KLABIS_ADMIN_USERNAME:admin}
       password: ${KLABIS_ADMIN_PASSWORD:}
 
+  sync:
+    scan-cron: ${KLABIS_SYNC_SCAN_CRON:0 0 2 * * *}
+    due-scan-interval: ${KLABIS_SYNC_DUE_SCAN_INTERVAL:15m}
+
   oauth2:
     # Profile 'local-dev': activates a second confidential OAuth2 client 'klabis-web-local'
     # with CLIENT_SECRET_POST + PKCE + REFRESH_TOKEN grant. Enables silent token renewal

@@ -16,6 +16,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static com.klabis.sync.infrastructure.jdbc.SyncProjectionTypeTestConfiguration.TestProjection;
@@ -147,6 +150,139 @@ class SyncRecordJdbcRepositoryTest {
                     new SyncTarget(SyncEntityType.EVENT, "unknown-event"), ExternalSystem.ORIS);
 
             assertThat(found).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findAllActive() — backs the nightly full pass (design.md D10, D17)")
+    class FindAllActive {
+
+        @Test
+        @DisplayName("returns records in every non-retired status, excludes RETIRED")
+        void returnsEveryNonRetiredRecord() {
+            SyncRecord inSync = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "active-1"),
+                    new ExternalReference(ExternalSystem.ORIS, "8501"));
+            SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno"), hasher);
+            inSync.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+            syncRecordRepository.save(inSync);
+
+            SyncRecord retired = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "active-2"),
+                    new ExternalReference(ExternalSystem.ORIS, "8502"));
+            retired.retire();
+            SyncRecord savedRetired = syncRecordRepository.save(retired);
+
+            List<SyncRecord> active = syncRecordRepository.findAllActive();
+
+            assertThat(active).extracting(SyncRecord::getId).contains(inSync.getId());
+            assertThat(active).extracting(SyncRecord::getId).doesNotContain(savedRetired.getId());
+        }
+    }
+
+    @Nested
+    @DisplayName("findDueForScan() — backs the frequent due scan (design.md D10)")
+    class FindDueForScan {
+
+        @Test
+        @DisplayName("picks up a dirty record")
+        void picksUpDirtyRecord() {
+            SyncRecord dirty = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-1"), EXTERNAL_REF);
+            SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno"), hasher);
+            dirty.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+            dirty.markDirty();
+            syncRecordRepository.save(dirty);
+
+            List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
+
+            assertThat(due).extracting(SyncRecord::getId).contains(dirty.getId());
+        }
+
+        @Test
+        @DisplayName("picks up a record whose retry is due")
+        void picksUpRetryDueRecord() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-2"), EXTERNAL_REF);
+            SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno"), hasher);
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+            record.recordRetryableFailure(Instant.now().minus(Duration.ofMinutes(1)));
+            syncRecordRepository.save(record);
+
+            List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
+
+            assertThat(due).extracting(SyncRecord::getId).contains(record.getId());
+        }
+
+        @Test
+        @DisplayName("skips a record that is neither dirty nor due")
+        void skipsRecordNotDueYet() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-3"), EXTERNAL_REF);
+            SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno"), hasher);
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+            record.recordRetryableFailure(Instant.now().plus(Duration.ofHours(1)));
+            syncRecordRepository.save(record);
+
+            List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
+
+            assertThat(due).extracting(SyncRecord::getId).doesNotContain(record.getId());
+        }
+
+        @Test
+        @DisplayName("skips a retired record even if dirty")
+        void skipsRetiredRecord() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-4"), EXTERNAL_REF);
+            SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno"), hasher);
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+            record.markDirty();
+            record.retire();
+            syncRecordRepository.save(record);
+
+            List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
+
+            assertThat(due).extracting(SyncRecord::getId).doesNotContain(record.getId());
+        }
+
+        @Test
+        @DisplayName("skips a conflicted record — a standing conflict clears dirtySince/nextAttemptDueAt (design.md D7)")
+        void skipsConflictedRecord() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-5"), EXTERNAL_REF);
+            SyncSnapshot local = SyncSnapshot.of(new TestProjection("Local", "Brno"), hasher);
+            SyncSnapshot external = SyncSnapshot.of(new TestProjection("External", "Brno"), hasher);
+            record.recordSuccess(SyncDirection.INWARD, local, local);
+            record.recordConflict(local, external, null);
+            syncRecordRepository.save(record);
+
+            List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
+
+            assertThat(due).extracting(SyncRecord::getId).doesNotContain(record.getId());
+        }
+
+        @Test
+        @DisplayName("skips a terminally failed record")
+        void skipsTerminallyFailedRecord() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-6"), EXTERNAL_REF);
+            SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno"), hasher);
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+            record.recordTerminalFailure(5, "boom");
+            syncRecordRepository.save(record);
+
+            List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
+
+            assertThat(due).extracting(SyncRecord::getId).doesNotContain(record.getId());
+        }
+
+        @Test
+        @DisplayName("skips a record with a fresh claim, picks it up once the claim lease expires")
+        void skipsFreshlyClaimedRecord() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-7"), EXTERNAL_REF);
+            SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno"), hasher);
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+            record.markDirty();
+            record.claim(Instant.now());
+            syncRecordRepository.save(record);
+
+            List<SyncRecord> stillClaimed = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
+            assertThat(stillClaimed).extracting(SyncRecord::getId).doesNotContain(record.getId());
+
+            List<SyncRecord> afterLeaseExpired = syncRecordRepository.findDueForScan(Instant.now().plus(Duration.ofMinutes(10)), Duration.ofMinutes(5));
+            assertThat(afterLeaseExpired).extracting(SyncRecord::getId).contains(record.getId());
         }
     }
 }

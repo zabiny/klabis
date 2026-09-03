@@ -1030,6 +1030,11 @@ COMMENT ON COLUMN sync.sync_record.baseline_local_projection IS 'Encrypted at re
 COMMENT ON COLUMN sync.sync_record.baseline_external_projection IS 'Populated only while an accepted divergence stands (D6); null otherwise';
 COMMENT ON COLUMN sync.sync_record.local_hash IS 'Plaintext digest of the whole local projection — never a per-field digest (D13)';
 
+-- Backs the due scan (design.md D10): one indexed lookup for dirty/retry-due records.
+CREATE INDEX idx_sync_record_due_scan ON sync.sync_record (dirty_since, next_attempt_due_at);
+-- Backs the nightly full pass (design.md D10, D17): every non-retired record.
+CREATE INDEX idx_sync_record_status ON sync.sync_record (status);
+
 -- ============================================================================
 -- 38. SYNC_ATTEMPT TABLE
 -- Append-only audit trail (design.md D15). Holds hashes only, never projections, so

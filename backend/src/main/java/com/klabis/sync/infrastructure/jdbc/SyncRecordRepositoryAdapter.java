@@ -10,6 +10,9 @@ import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.beans.factory.ObjectProvider;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -46,6 +49,20 @@ class SyncRecordRepositoryAdapter implements SyncRecordRepository {
         return jdbcRepository.findByEntityTypeAndEntityIdAndExternalSystem(
                         target.entityType().name(), target.entityId(), system.name())
                 .map(memento -> memento.toSyncRecord(resolveProjectionType()));
+    }
+
+    @Override
+    public List<SyncRecord> findAllActive() {
+        return jdbcRepository.findAllActive().stream()
+                .map(memento -> memento.toSyncRecord(resolveProjectionType()))
+                .toList();
+    }
+
+    @Override
+    public List<SyncRecord> findDueForScan(Instant now, Duration claimLease) {
+        return jdbcRepository.findDueForScan(now, now.minus(claimLease)).stream()
+                .map(memento -> memento.toSyncRecord(resolveProjectionType()))
+                .toList();
     }
 
     private SyncProjectionType resolveProjectionType() {

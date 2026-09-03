@@ -7,10 +7,6 @@ import java.time.Duration;
 /**
  * Operational limits for the synchronisation engine, as configuration rather than
  * constants (design.md D19). Defaults match the D19 table.
- * <p>
- * Slice 4 introduces {@code max-attempts}, {@code claim-lease} and {@code retry-delay};
- * {@code scan-cron}, {@code due-scan-interval} and {@code history-retention} are added
- * by Slice 5 alongside the scheduler that consumes them.
  */
 @ConfigurationProperties(prefix = "klabis.sync")
 class SyncProperties {
@@ -25,6 +21,21 @@ class SyncProperties {
      * How long a claim holds a record before another pass may take it.
      */
     private Duration claimLease = Duration.ofMinutes(5);
+
+    /**
+     * Cron expression for the nightly full pass, re-comparing every active record.
+     */
+    private String scanCron = "0 0 2 * * *";
+
+    /**
+     * Cadence of the frequent due scan, picking up dirty or retry-due records.
+     */
+    private Duration dueScanInterval = Duration.ofMinutes(15);
+
+    /**
+     * How long a {@code sync_attempt} row is kept before the retention job deletes it.
+     */
+    private Duration historyRetention = Duration.ofDays(30);
 
     private final RetryDelay retryDelay = new RetryDelay();
 
@@ -42,6 +53,30 @@ class SyncProperties {
 
     public void setClaimLease(Duration claimLease) {
         this.claimLease = claimLease;
+    }
+
+    public String getScanCron() {
+        return scanCron;
+    }
+
+    public void setScanCron(String scanCron) {
+        this.scanCron = scanCron;
+    }
+
+    public Duration getDueScanInterval() {
+        return dueScanInterval;
+    }
+
+    public void setDueScanInterval(Duration dueScanInterval) {
+        this.dueScanInterval = dueScanInterval;
+    }
+
+    public Duration getHistoryRetention() {
+        return historyRetention;
+    }
+
+    public void setHistoryRetention(Duration historyRetention) {
+        this.historyRetention = historyRetention;
     }
 
     public RetryDelay getRetryDelay() {

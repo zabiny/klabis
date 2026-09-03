@@ -6,6 +6,7 @@ import com.klabis.sync.domain.SyncAttemptRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 
+import java.time.Instant;
 import java.util.List;
 
 @SecondaryAdapter
@@ -29,5 +30,10 @@ class SyncAttemptRepositoryAdapter implements SyncAttemptRepository {
                 .stream()
                 .map(SyncAttemptMemento::toSyncAttempt)
                 .toList();
+    }
+
+    @Override
+    public int deleteAttemptsStartedBefore(Instant olderThan) {
+        return jdbcRepository.deleteByStartedAtBefore(olderThan);
     }
 }

@@ -78,13 +78,13 @@ Delivers: a failing record that is retried with growing delay, becomes visibly s
 
 Delivers: the engine running on its own, and history that does not grow without bound.
 
-- [ ] 5.1 Configuration properties record with the documented defaults — `max-attempts`, `claim-lease`, `history-retention`, `retry-delay.initial/multiplier/max`, `scan-cron`, `due-scan-interval` [D19]
-- [ ] 5.2 Scheduler: nightly full pass re-comparing every active record [D10, D19]
-- [ ] 5.3 Scheduler: due scan on `due-scan-interval` running one indexed query for dirty or retry-due records, costing one query when nothing is due [D10]
-- [ ] 5.4 Scheduler: history retention cleanup removing attempt rows older than the retention period and never removing a record, in the style of `TokenCleanupJob` [D19]
-- [ ] 5.5 Tests: the due scan picks up exactly the dirty and due records and skips retired, conflicted, terminally failed and claimed ones; the full pass re-compares everything active; retention removes only expired attempt rows and leaves last-success information intact
-- [ ] 5.6 Tests: defaults apply when nothing is configured, and overridden values take effect
-- [ ] 5.7 Run tests, code review, commit
+- [x] 5.1 Configuration properties record with the documented defaults — `max-attempts`, `claim-lease`, `history-retention`, `retry-delay.initial/multiplier/max`, `scan-cron`, `due-scan-interval` [D19]
+- [x] 5.2 Scheduler: nightly full pass re-comparing every active record [D10, D19]
+- [x] 5.3 Scheduler: due scan on `due-scan-interval` running one indexed query for dirty or retry-due records, costing one query when nothing is due [D10]
+- [x] 5.4 Scheduler: history retention cleanup removing attempt rows older than the retention period and never removing a record, in the style of `TokenCleanupJob` [D19]
+- [x] 5.5 Tests: the due scan picks up exactly the dirty and due records and skips retired, conflicted, terminally failed and claimed ones; the full pass re-compares everything active; retention removes only expired attempt rows and leaves last-success information intact — *"active" for the full pass means neither retired nor terminally failed, per D10; conflicted records stay included so the pass re-evaluates them, per D7*
+- [x] 5.6 Tests: defaults apply when nothing is configured, and overridden values take effect
+- [x] 5.7 Run tests, code review, commit
 
 ## 6. Slice: REST resources and the SYNC:MANAGE authority
 
