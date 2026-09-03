@@ -2,7 +2,7 @@
 name: klabis-api-spec
 description: Authoring the hand-written OpenAPI spec in docs/openapi/spec/ — x-klabis-* field-security and x-hal-* hypermedia extensions, module layout, and the spec-first workflow. Use whenever adding, changing or removing a REST endpoint, request/response field, HAL link or HAL+FORMS template; when writing the API chapter of an OpenSpec design.md; or when migrating a module from code-first to spec-first.
 user-invocable: false
-version: 0.8.0
+version: 0.8.1
 ---
 
 # Klabis API Spec
@@ -154,6 +154,21 @@ The exceptions are the 7 files with no generated counterpart, which legitimately
 annotations: `OpenApiConfig` (global info + security scheme), `MvcExceptionHandler` and
 `GroupsExceptionHandler`, the hand-written `MemberOptionResponse`/`MemberSummaryResponse`, and
 `@Hidden` on `ActingUser`/`ActingMember`.
+
+## Injecting the acting user into a controller method
+
+An endpoint that needs the authenticated caller declares the parameter via `x-spring-provide-args`
+on the operation — a verbatim Java parameter declaration, so annotation and type must be
+fully-qualified (the template adds no imports):
+
+```yaml
+x-spring-provide-args:
+  - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+```
+
+Two flavours: `@ActingUser` + `CurrentUserData`
+for any authenticated user, `@ActingMember` + `MemberId` to require a member profile
+(fails with `MemberProfileRequiredException` otherwise).
 
 ## Anti-patterns
 
