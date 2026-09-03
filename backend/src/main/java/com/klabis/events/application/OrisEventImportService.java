@@ -3,15 +3,10 @@ package com.klabis.events.application;
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.Discipline;
-import com.dpolach.api.orisclient.dto.EventClass;
 import com.dpolach.api.orisclient.dto.EventDetails;
-import com.dpolach.api.orisclient.dto.Level;
-import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventCategory;
-import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.*;
 import com.klabis.oris.OrisIntegrationComponent;
 import org.slf4j.Logger;
@@ -20,9 +15,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Currency;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,8 +26,6 @@ import java.util.stream.Collectors;
 class OrisEventImportService implements OrisEventImportPort {
 
     private static final Logger log = LoggerFactory.getLogger(OrisEventImportService.class);
-
-    private static final String UNKNOWN_ORGANIZER = "---";
 
     private final EventRepository eventRepository;
     private final OrisApiClient orisApiClient;
@@ -55,27 +45,20 @@ class OrisEventImportService implements OrisEventImportPort {
     @Transactional
     @Override
     public Event importEventFromOris(int orisId) {
-        EventDetails details = orisApiClient.getEventDetails(orisId).payload()
-                .orElseThrow(() -> new EventNotFoundException(orisId));
-
-        String organizer = resolveOrganizer(details);
-        WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.eventUrl(orisId));
-        RegistrationDeadlines registrationDeadlines = buildRegistrationDeadlines(details, orisId);
-        List<EventCategory> categories = extractCategories(details);
-        EventRanking ranking = resolveRanking(details.level());
-        Money baseEntryFee = deriveBaseEntryFee(details);
+        EventDetails details = fetchEventDetails(orisId);
+        OrisEventFields fields = OrisEventDetailsMapper.map(details, orisId, orisWebUrls);
 
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                 .orisId(orisId)
-                .name(details.name())
-                .eventDate(details.date())
-                .location(details.place())
-                .organizer(organizer)
-                .websiteUrl(websiteUrl)
-                .registrationDeadlines(registrationDeadlines)
-                .categories(categories)
-                .ranking(ranking)
-                .baseEntryFee(baseEntryFee)
+                .name(fields.name())
+                .eventDate(fields.eventDate())
+                .location(fields.location())
+                .organizer(fields.organizer())
+                .websiteUrl(fields.websiteUrl())
+                .registrationDeadlines(fields.registrationDeadlines())
+                .categories(fields.categories())
+                .ranking(fields.ranking())
+                .baseEntryFee(fields.baseEntryFee())
                 .build());
 
         event.applyAutoMappedEventType(resolveEventTypeFromOrisDiscipline(details.discipline()));
@@ -93,68 +76,53 @@ class OrisEventImportService implements OrisEventImportPort {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
-        int orisId = event.getOrisId();
-        EventDetails details = orisApiClient.getEventDetails(orisId).payload()
-                .orElseThrow(() -> new EventNotFoundException(orisId));
+        OrisEventFields fields = readOrisFields(event.getOrisId());
+        warnIfSyncRemovesCategoriesWithRegistrations(event, fields.categories());
+        applyOrisSync(event, fields);
+    }
 
-        String organizer = resolveOrganizer(details);
-        WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.eventUrl(orisId));
-        RegistrationDeadlines registrationDeadlines = buildRegistrationDeadlines(details, orisId);
-        List<EventCategory> categories = extractCategories(details);
-        EventRanking ranking = resolveRanking(details.level());
-        Money baseEntryFee = deriveBaseEntryFee(details);
+    @Override
+    @Transactional(readOnly = true)
+    public OrisEventFields readOrisFields(int orisId) {
+        EventDetails details = fetchEventDetails(orisId);
+        OrisEventFields fields = OrisEventDetailsMapper.map(details, orisId, orisWebUrls);
+        EventTypeId resolvedEventTypeId = resolveEventTypeFromOrisDiscipline(details.discipline());
+        return new OrisEventFields(
+                fields.name(), fields.eventDate(), fields.location(), fields.organizer(),
+                fields.websiteUrl(), fields.registrationDeadlines(), fields.categories(),
+                fields.ranking(), fields.baseEntryFee(), resolvedEventTypeId
+        );
+    }
 
-        warnIfSyncRemovesCategoriesWithRegistrations(event, categories);
+    @Transactional
+    @Override
+    public Event applyOrisSync(EventId eventId, OrisEventFields fields) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+        return applyOrisSync(event, fields);
+    }
 
+    private Event applyOrisSync(Event event, OrisEventFields fields) {
         event.syncFromOris(EventSyncFromOrisBuilder.builder()
-                .name(details.name())
-                .eventDate(details.date())
-                .location(details.place())
-                .organizer(organizer)
-                .websiteUrl(websiteUrl)
-                .registrationDeadlines(registrationDeadlines)
-                .categories(categories)
-                .ranking(ranking)
-                .baseEntryFee(baseEntryFee)
+                .name(fields.name())
+                .eventDate(fields.eventDate())
+                .location(fields.location())
+                .organizer(fields.organizer())
+                .websiteUrl(fields.websiteUrl())
+                .registrationDeadlines(fields.registrationDeadlines())
+                .categories(fields.categories())
+                .ranking(fields.ranking())
+                .baseEntryFee(fields.baseEntryFee())
                 .build());
 
-        event.applyAutoMappedEventType(resolveEventTypeFromOrisDiscipline(details.discipline()));
+        event.applyAutoMappedEventType(fields.resolvedEventTypeId());
 
-        eventRepository.save(event);
+        return eventRepository.save(event);
     }
 
-    private RegistrationDeadlines buildRegistrationDeadlines(EventDetails details, int orisId) {
-        LocalDate d1 = details.entryDate1() != null ? details.entryDate1().toLocalDate() : null;
-        LocalDate d2 = details.entryDate2() != null ? details.entryDate2().toLocalDate() : null;
-        LocalDate d3 = details.entryDate3() != null ? details.entryDate3().toLocalDate() : null;
-        try {
-            return RegistrationDeadlines.of(d1, d2, d3);
-        } catch (IllegalArgumentException e) {
-            log.error("ORIS event {} contains out-of-order or invalid registration deadlines (d1={}, d2={}, d3={}): {}",
-                    orisId, d1, d2, d3, e.getMessage());
-            throw new BusinessRuleViolationException(
-                    "ORIS event %d has invalid registration deadlines: %s".formatted(orisId, e.getMessage())) {};
-        }
-    }
-
-    private String resolveOrganizer(EventDetails details) {
-        if (details.org1() != null && details.org1().abbreviation() != null && !details.org1().abbreviation().isBlank()) {
-            return details.org1().abbreviation();
-        }
-        if (details.org2() != null && details.org2().abbreviation() != null && !details.org2().abbreviation().isBlank()) {
-            return details.org2().abbreviation();
-        }
-        return UNKNOWN_ORGANIZER;
-    }
-
-    private List<EventCategory> extractCategories(EventDetails details) {
-        if (details.classes() == null || details.classes().isEmpty()) {
-            return List.of();
-        }
-        return details.classes().values().stream()
-                .filter(c -> c.name() != null && !c.name().isBlank())
-                .map(c -> EventCategory.createFromOris(c.id(), c.name()))
-                .toList();
+    private EventDetails fetchEventDetails(int orisId) {
+        return orisApiClient.getEventDetails(orisId).payload()
+                .orElseThrow(() -> new EventNotFoundException(orisId));
     }
 
     private EventTypeId resolveEventTypeFromOrisDiscipline(Discipline discipline) {
@@ -164,34 +132,6 @@ class OrisEventImportService implements OrisEventImportPort {
         }
         return eventTypeRepository.findByOrisDisciplineId(discipline.id())
                 .map(EventType::getId)
-                .orElse(null);
-    }
-
-    private EventRanking resolveRanking(Level level) {
-        if (level == null) {
-            return null;
-        }
-        return EventRanking.of(level.id(), level.shortName(), level.nameCZ());
-    }
-
-    private Money deriveBaseEntryFee(EventDetails details) {
-        if (details.classes() == null || details.classes().isEmpty()) {
-            return null;
-        }
-        Currency currency = Money.parseCurrency(details.currency());
-        return details.classes().values().stream()
-                .map(EventClass::fee)
-                .filter(fee -> fee != null && !fee.isBlank())
-                .map(fee -> {
-                    try {
-                        return new BigDecimal(fee.trim());
-                    } catch (NumberFormatException e) {
-                        return (BigDecimal) null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .max(BigDecimal::compareTo)
-                .map(maxFee -> Money.of(maxFee, currency))
                 .orElse(null);
     }
 

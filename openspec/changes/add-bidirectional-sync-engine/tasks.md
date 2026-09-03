@@ -102,13 +102,19 @@ Delivers: the synchronisation state and the resolution workflow over the API, fo
 
 Delivers: the first real adapter, still without changing how events behave.
 
-- [ ] 7.1 `OrisEventProjection` in `com.klabis.oris.sync` — the ORIS-owned event fields (name, date, location, organiser, website, registration deadlines, ranking, base entry fee, ORIS-origin categories) as a plain data carrier; Klabis-owned fields deliberately absent [D3]
-- [ ] 7.2 Projection tests: mapping an `Event` and an ORIS `EventDetails` to the same shape; two sides holding equal data hash equally, including monetary amounts of differing scale [D3]
-- [ ] 7.3 `OrisEventSyncAdapter` declaring inward-only capabilities (no outward write, no create, no sensitive data), reusing the mapping in `OrisEventImportService` [D2, D3]
-- [ ] 7.4 Adapter: external version token from `getEventListVersions`, and the fallback when it is unavailable [D3]
-- [ ] 7.5 Adapter: `applyToLocal` invoking `Event.syncFromOris`, preserving its existing category merge and event-type behaviour [D2]
-- [ ] 7.6 Adapter tests against a stubbed ORIS client: inward write, unchanged token short-circuit, a local edit to an ORIS-owned field producing a conflict rather than an overwrite
-- [ ] 7.7 Run tests, code review, commit
+- [x] 7.1 `OrisEventProjection` in `com.klabis.oris.eventsync` — the ORIS-owned event fields (name, date, location, organiser, website, registration deadlines, ranking, base entry fee, ORIS-origin categories) as a plain data carrier; Klabis-owned fields deliberately absent [D3]
+- [x] 7.2 Projection tests: mapping an `Event` and an ORIS `EventDetails` to the same shape; two sides holding equal data hash equally, including monetary amounts of differing scale [D3]
+- [x] 7.3 `OrisEventSyncAdapter` declaring inward-only capabilities (no outward write, no create, no sensitive data), reusing the mapping in `OrisEventImportService` [D2, D3]
+- [x] 7.4 Adapter: external version token, and the fallback when it is unavailable [D3]
+- [x] 7.5 Adapter: `applyToLocal` invoking `Event.syncFromOris`, preserving its existing category merge and event-type behaviour [D2]
+- [x] 7.6 Adapter tests against a stubbed ORIS client: inward write, no version token available, a local edit to an ORIS-owned field producing a conflict rather than an overwrite
+- [x] 7.7 Run tests, code review, commit
+
+Notes on deviations from the task text above, all deliberate:
+
+- **7.1 package.** `com.klabis.oris.eventsync`, not `com.klabis.oris.sync`: the latter reads confusingly next to the `com.klabis.sync` module itself. No Modulith boundary is involved — `com.klabis.oris` declares no `@ApplicationModule` — so this is a naming choice only.
+- **7.4 no version token exists.** D3 refers to `getEventListVersions`, but no such method exists in `oris-client`; `getEventList` returns no version field, and `EventDetails.version()` is only reachable after the very full read the token would exist to avoid. `externalVersion` therefore returns `Optional.empty()` with the rationale recorded in its Javadoc, and the engine falls back to a full read on every pass. D3's reference to that method needs correcting in Slice 9.
+- **7.6 short-circuit not testable here.** With no token ever produced, the unchanged-token short-circuit cannot be exercised through this adapter; it belongs to the generic engine tests with a token-bearing test adapter. The test asserts the fallback instead.
 
 ## 8. Slice: Events move onto the engine (observable behaviour change)
 
@@ -123,7 +129,9 @@ Delivers: the change managers actually see — automatic synchronisation, and ed
 - [ ] 8.7 Integration tests: importing an event enrols it; a manager's edit to the name raises a conflict on the next synchronisation and the name survives; resolving inward restores the ORIS values; accepting the divergence keeps the edit and re-asks on the next ORIS change; editing a fee override or adding a category raises no conflict
 - [ ] 8.8 Integration tests: bulk synchronisation skips and reports conflicted and terminally failed events; a finished event is retired and no longer synchronised
 - [ ] 8.9 Regression: existing ORIS import and synchronisation tests still pass unchanged where behaviour is unchanged; update those that assert silent overwriting of ORIS-owned fields
-- [ ] 8.10 Run the full backend suite (`test-runner`), code review, commit
+- [ ] 8.10 Carry over from Slice 7 review: `OrisEventSyncAdapter.withResolvedEventType` costs a second ORIS call and a second local read on every inward write, purely to re-derive the Klabis-owned event type that D3 keeps out of the projection. Harmless at Slice 7's scale; this slice is what puts it in the nightly pass over every active record [D10], so remove the second external read — e.g. reuse the `OrisEventFields` already read in `readExternal` within the same pass
+- [ ] 8.11 Carry over from Slice 7 review: `warnIfSyncRemovesCategoriesWithRegistrations` is invoked only from the legacy `syncEventFromOris` path, not from `applyOrisSync`, which is what the adapter calls. Once 8.3 moves `syncEventFromOris` behind the engine, the warning stops firing unless it is added to the inward-write path
+- [ ] 8.12 Run the full backend suite (`test-runner`), code review, commit
 
 ## 9. Slice: Architecture record and documentation
 
