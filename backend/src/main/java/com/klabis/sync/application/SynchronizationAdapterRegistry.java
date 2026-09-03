@@ -38,6 +38,20 @@ class SynchronizationAdapterRegistry implements SyncProjectionType {
         return Optional.ofNullable(adaptersByKey.get(new Key(entityType, system)));
     }
 
+    /**
+     * Every external system with a registered adapter for {@code entityType} — used to
+     * resolve a REST call addressed by entity type alone (no external system in the
+     * URL, design.md D14) down to the one record it can mean. Ordinarily exactly one;
+     * see {@link SynchronizationPort#findByTarget} for how the caller handles zero or
+     * more than one.
+     */
+    List<ExternalSystem> systemsFor(SyncEntityType entityType) {
+        return adaptersByKey.keySet().stream()
+                .filter(key -> key.entityType() == entityType)
+                .map(Key::system)
+                .toList();
+    }
+
     @Override
     public Class<? extends SyncProjection> classFor(SyncEntityType entityType) {
         return adaptersByKey.values().stream()

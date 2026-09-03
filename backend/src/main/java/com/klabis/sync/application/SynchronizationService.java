@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -67,6 +68,26 @@ class SynchronizationService implements SynchronizationPort {
 
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), target, externalReference);
         return syncRecordRepository.save(record);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public int failedAttemptsSinceLastSuccess(SyncRecordId id) {
+        getOrThrow(id);
+        return retryScheduler.failedAttemptsSince(syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(id));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Optional<SyncRecord> findByTarget(SyncTarget target) {
+        List<ExternalSystem> systems = adapterRegistry.systemsFor(target.entityType());
+        if (systems.isEmpty()) {
+            return Optional.empty();
+        }
+        if (systems.size() > 1) {
+            throw new AmbiguousSyncTargetException(target.entityType(), systems.size());
+        }
+        return syncRecordRepository.findByTargetAndSystem(target, systems.get(0));
     }
 
     @Override

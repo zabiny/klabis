@@ -560,6 +560,36 @@ export const GetRuleRels = {
 export type GetRuleLinkRel = typeof GetRuleRels.links[number];
 export type GetRuleTemplateRel = typeof GetRuleRels.templates[number];
 
+// --- GET /api/{entityType}/{id}/sync (200) ---
+
+export interface GetSyncStateHal {
+  _links?: {
+    /** This synchronisation resource */
+    'self'?: HalResourceLinks;
+  };
+  _templates?: {
+    /** Present only while status is CONFLICT and not yet acknowledged */
+    'acknowledgeSyncConflict'?: HalFormsTemplate;
+    /** Present only while status is FAILED */
+    'resetSyncRecord'?: HalFormsTemplate;
+    /** Present only while status is CONFLICT, acknowledged and still current */
+    'resolveSyncConflict'?: HalFormsTemplate;
+    /** Present only while status is NEW, IN_SYNC or RETRYING */
+    'synchronizeNow'?: HalFormsTemplate;
+  };
+}
+
+export type GetSyncStateResource =
+  components['schemas']['EntityModelSyncStateResponse'] & GetSyncStateHal;
+
+export const GetSyncStateRels = {
+  links: ['self'] as const,
+  templates: ['acknowledgeSyncConflict', 'resetSyncRecord', 'resolveSyncConflict', 'synchronizeNow'] as const,
+} as const;
+
+export type GetSyncStateLinkRel = typeof GetSyncStateRels.links[number];
+export type GetSyncStateTemplateRel = typeof GetSyncStateRels.templates[number];
+
 // --- GET /api/membership-fee-tiers/{id} (200) ---
 
 export interface GetTierHal {

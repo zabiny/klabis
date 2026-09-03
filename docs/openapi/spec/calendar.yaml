@@ -414,6 +414,7 @@ components:
             profile: display user profile information
             MEMBERS: Members
             EVENTS: Events
+            SYNC: Synchronisation
 
   parameters:
     CalendarItemIdParam:

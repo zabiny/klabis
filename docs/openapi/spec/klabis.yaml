@@ -183,6 +183,14 @@ paths:
     $ref: './common.yaml#/paths/~1api~1users~1{id}~1permissions'
   /api/oris/events:
     $ref: './oris.yaml#/paths/~1api~1oris~1events'
+  /api/{entityType}/{id}/sync:
+    $ref: './sync.yaml#/paths/~1api~1{entityType}~1{id}~1sync'
+  /api/{entityType}/{id}/sync/acknowledgement:
+    $ref: './sync.yaml#/paths/~1api~1{entityType}~1{id}~1sync~1acknowledgement'
+  /api/{entityType}/{id}/sync/resolution:
+    $ref: './sync.yaml#/paths/~1api~1{entityType}~1{id}~1sync~1resolution'
+  /api/{entityType}/{id}/sync/reset:
+    $ref: './sync.yaml#/paths/~1api~1{entityType}~1{id}~1sync~1reset'
 
 components:
   # Inlined rather than $ref'd to _shared/security.yaml: a root component that only $refs another
@@ -202,5 +210,6 @@ components:
             profile: display user profile information
             MEMBERS: Members
             EVENTS: Events
+            SYNC: Synchronisation
 
   schemas: {}

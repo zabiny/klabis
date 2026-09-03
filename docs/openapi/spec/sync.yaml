@@ -1,0 +1,353 @@
+# Sync module — the API surface of SynchronizationController (sync module).
+#
+# One controller serves every synchronisable entity type, addressed uniformly at
+# /api/{entityType}/{id}/sync… (design.md D14, openspec/changes/add-bidirectional-sync-engine).
+# {entityType} is an enumerated string (SyncEntityType path segments); the controller
+# translates it to SyncEntityType via SyncEntityTypeResolver right at the start of each
+# handler and answers 404 for an unknown segment. This is not a routing-level
+# constraint — see SyncEntityTypeResolver's javadoc for why D14's literal "before any
+# handler runs" was not implemented as one: no existing Klabis path wildcards its first
+# /api/ segment, and Spring's own pattern-specificity ordering already prefers a
+# literal path over this one, so the shadowing D14 guards against does not arise in
+# practice.
+
+# Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
+# from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
+# klabis.yaml rather than shared, because $ref cannot target a document's own info; the
+# bundler ignores both keys (modules are pulled in by #/paths/... pointer, never whole-file)
+# and validate.mjs pins version to the root's so the two cannot drift.
+openapi: 3.1.0
+
+info:
+  title: Klabis API — Synchronisation module
+  description: The synchronisation engine slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
+paths:
+
+  /api/{entityType}/{id}/sync:
+    get:
+      operationId: getSyncState
+      tags: [Sync]
+      summary: Read synchronisation state
+      description: |
+        Returns the current synchronisation state of one linked entity, without running
+        a pass. `divergedFields`/`changedSides` are present only while the record is in
+        CONFLICT. `local`/`external`/`baseline` are the decrypted projections, shaped
+        per entity type; `baselineExternal` appears only while an accepted divergence
+        stands (design.md D6).
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/EntityTypeParam'
+        - $ref: '#/components/parameters/SyncEntityIdParam'
+      responses:
+        '200':
+          description: Synchronisation state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStateResponse'
+          x-hal-links:
+            self:
+              description: This synchronisation resource
+          x-hal-templates:
+            synchronizeNow:
+              operation: synchronizeNow
+              description: Present only while status is NEW, IN_SYNC or RETRYING
+            acknowledgeSyncConflict:
+              operation: acknowledgeSyncConflict
+              description: Present only while status is CONFLICT and not yet acknowledged
+            resolveSyncConflict:
+              operation: resolveSyncConflict
+              description: Present only while status is CONFLICT, acknowledged and still current
+            resetSyncRecord:
+              operation: resetSyncRecord
+              description: Present only while status is FAILED
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+
+    post:
+      operationId: synchronizeNow
+      tags: [Sync]
+      summary: Synchronise now
+      description: Runs one synchronisation pass for this record immediately, rather than waiting for the next scheduled run.
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/EntityTypeParam'
+        - $ref: '#/components/parameters/SyncEntityIdParam'
+      responses:
+        '200':
+          description: The resulting synchronisation state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStateResponse'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/NeedsDecision'
+
+  /api/{entityType}/{id}/sync/acknowledgement:
+    post:
+      operationId: acknowledgeSyncConflict
+      tags: [Sync]
+      summary: Acknowledge a conflict
+      description: |
+        Confirms that a manager has seen the current collision. The server binds the
+        acknowledgement to the record's present hash pair (design.md D7); only once
+        acknowledged does resolveSyncConflict accept a call for this specific collision.
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/EntityTypeParam'
+        - $ref: '#/components/parameters/SyncEntityIdParam'
+      responses:
+        '200':
+          description: Acknowledgement recorded; the resolveSyncConflict affordance now appears
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStateResponse'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          description: Conflict - the record is not currently in CONFLICT
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+
+  /api/{entityType}/{id}/sync/resolution:
+    post:
+      operationId: resolveSyncConflict
+      tags: [Sync]
+      summary: Resolve a conflict
+      description: |
+        Resolves a standing, acknowledged conflict (design.md D6, D7): re-reads both
+        sides through the adapter first and proceeds only if the fresh hash pair still
+        equals the one acknowledged. For an entity whose integration declares no
+        outward write, OUTWARD is always rejected; ACCEPT_DIVERGENCE needs no write
+        capability and is always available.
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/EntityTypeParam'
+        - $ref: '#/components/parameters/SyncEntityIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveSyncConflictRequest'
+      responses:
+        '200':
+          description: |
+            The conflict is cleared: for a direction, the freshly read chosen side was
+            written and the baseline pair reset; for ACCEPT_DIVERGENCE, nothing was
+            written and the baseline pair was set to the freshly read snapshots.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStateResponse'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          description: |
+            Conflict - no acknowledgement, the fresh re-read no longer matches the
+            acknowledged hash pair (the record's snapshots are refreshed so a
+            subsequent GET shows the new collision), or the requested direction is
+            not supported by the integration.
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+
+  /api/{entityType}/{id}/sync/reset:
+    post:
+      operationId: resetSyncRecord
+      tags: [Sync]
+      summary: Reset a terminally failed record
+      description: |
+        Appends a RESET attempt so the derived failure count restarts (design.md D10),
+        clears the due date, and returns the record to service.
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/EntityTypeParam'
+        - $ref: '#/components/parameters/SyncEntityIdParam'
+      responses:
+        '200':
+          description: The record is back in service
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncStateResponse'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          description: Conflict - the record is not currently FAILED
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+
+components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
+            SYNC: Synchronisation
+
+  parameters:
+    EntityTypeParam:
+      name: entityType
+      in: path
+      required: true
+      description: Which kind of Klabis entity this synchronisation resource addresses.
+      schema:
+        $ref: '#/components/schemas/SyncEntityTypeParam'
+    SyncEntityIdParam:
+      name: id
+      in: path
+      required: true
+      description: The entity's own identifier, in the id space of its own module.
+      schema:
+        type: string
+
+  responses:
+    NeedsDecision:
+      description: Conflict - the record is in CONFLICT or FAILED and needs a decision (resolve or reset) before it can be synchronised again
+      content:
+        application/problem+json:
+          schema:
+            $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+
+  schemas:
+
+    # Named explicitly rather than left inline: an inline enum on a path parameter or
+    # response property is otherwise named after whichever operation happens to
+    # reference it first (e.g. GetSyncStateEntityTypeParameter) — fine for a type
+    # nothing else names, but this one is referenced by all five operations plus
+    # SyncStateResponse, and a silent rename on generator reordering would break every
+    # one of them.
+    SyncEntityTypeParam:
+      type: string
+      enum: [events]
+
+    SyncStateResponse:
+      type: object
+      description: The synchronisation state of one linked entity against one external system.
+      required: [entityType, status, externalSystem, externalId, failedAttemptsSinceLastSuccess, acceptedDivergence]
+      properties:
+        entityType:
+          $ref: '#/components/schemas/SyncEntityTypeParam'
+        status:
+          type: string
+          enum: [NEW, IN_SYNC, RETRYING, CONFLICT, FAILED, RETIRED]
+        externalSystem:
+          type: string
+          enum: [ORIS]
+        externalId:
+          type: string
+          description: The entity's identifier in the external system.
+        lastSuccessfulSyncAt:
+          type: [string, 'null']
+          format: date-time
+        lastDirection:
+          type: [string, 'null']
+          enum: [INWARD, OUTWARD, null]
+        nextAttemptDueAt:
+          type: [string, 'null']
+          format: date-time
+        failedAttemptsSinceLastSuccess:
+          type: integer
+          format: int32
+        acceptedDivergence:
+          type: boolean
+          description: Whether the baseline pair is currently diverged (design.md D6) — visible in any status, since an accepted divergence persists into IN_SYNC.
+        divergedFields:
+          type: array
+          description: Present only while status is CONFLICT — the names of the fields that differ.
+          items:
+            type: string
+        changedSides:
+          type: object
+          description: Present only while status is CONFLICT — per diverged field, which side moved away from the baseline.
+          additionalProperties:
+            type: string
+            enum: [LOCAL, EXTERNAL, BOTH]
+        local:
+          type: [object, 'null']
+          description: The local projection, shaped per entity type. Null before the first synchronisation pass.
+          additionalProperties: true
+        external:
+          type: [object, 'null']
+          description: The external projection, shaped per entity type. Null before the first synchronisation pass.
+          additionalProperties: true
+        baseline:
+          type: [object, 'null']
+          description: The local half of the baseline pair. Null before the first synchronisation pass.
+          additionalProperties: true
+        baselineExternal:
+          type: object
+          description: The external half of the baseline pair — present only while an accepted divergence stands (design.md D6); the common case has identical baseline halves and omits this field.
+          additionalProperties: true
+
+    ResolveSyncConflictRequest:
+      type: object
+      required: [resolution]
+      properties:
+        resolution:
+          type: string
+          enum: [INWARD, OUTWARD, ACCEPT_DIVERGENCE]

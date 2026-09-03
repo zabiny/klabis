@@ -7,6 +7,8 @@ import com.klabis.sync.domain.SyncResolution;
 import com.klabis.sync.domain.SyncTarget;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
+import java.util.Optional;
+
 /**
  * The engine's entry point (design.md, Target Domain Model). Consumed by the REST
  * layer, the scheduler and integrations.
@@ -25,6 +27,39 @@ public interface SynchronizationPort {
      * @throws UnknownSyncEntityTypeException if no adapter is registered for the target's entity type
      */
     SyncRecord enroll(SyncTarget target, ExternalReference externalReference);
+
+    /**
+     * Looks up the synchronisation record for a Klabis entity by target alone — no
+     * external system in the call, unlike {@link #enroll} (design.md D14's REST
+     * resources are addressed by entity type and id only, since a caller reading or
+     * acting on a record does not choose which external system it is paired with).
+     * <p>
+     * Resolves the external system via every registered adapter for the target's
+     * entity type. Ordinarily exactly one; this change's API does not yet handle an
+     * entity type paired against more than one external system at once (the
+     * {@code sync_record} unique constraint allows it, but no caller needs it yet).
+     *
+     * @return empty if the entity is not enrolled for synchronisation against any
+     * registered adapter
+     * @throws AmbiguousSyncTargetException if more than one adapter is registered for
+     *                                       the target's entity type — a configuration
+     *                                       error, not a normal empty result
+     */
+    Optional<SyncRecord> findByTarget(SyncTarget target);
+
+    /**
+     * The number of retryable/terminal attempts already recorded in the record's
+     * history since its most recent {@code SUCCESS} or {@code RESET} (design.md D10) —
+     * the read-state figure a caller sees on {@code getSyncState} (design.md D14).
+     * <p>
+     * This does <b>not</b> include an attempt currently in progress: {@code
+     * handleFailure}'s own {@code + 1} accounts for the failure being classified right
+     * now, before it is appended to history — a distinction this method does not make,
+     * since by the time a caller reads state there is no in-flight attempt to count.
+     *
+     * @throws SyncRecordNotFoundException if the entity is not enrolled
+     */
+    int failedAttemptsSinceLastSuccess(SyncRecordId id);
 
     /**
      * Runs one synchronisation pass for this record immediately (design.md D9, "How a

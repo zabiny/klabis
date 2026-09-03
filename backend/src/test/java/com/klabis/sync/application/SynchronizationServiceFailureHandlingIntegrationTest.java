@@ -233,6 +233,37 @@ class SynchronizationServiceFailureHandlingIntegrationTest {
     }
 
     @Nested
+    @DisplayName("failedAttemptsSinceLastSuccess (tasks.md 6.6, backs getSyncState's response)")
+    class FailedAttemptsSinceLastSuccess {
+
+        @Test
+        @DisplayName("is zero right after enrolment succeeds")
+        void zeroAfterSuccess() {
+            SyncRecord record = enrollAndSync("event-210", "8210");
+
+            assertThat(synchronizationPort.failedAttemptsSinceLastSuccess(record.getId())).isZero();
+        }
+
+        @Test
+        @DisplayName("counts retryable failures since the last success, and resets to zero after the next success")
+        void countsFailuresThenResetsOnSuccess() {
+            SyncRecord record = enrollAndSync("event-211", "8211");
+
+            resetCircuitBreaker();
+            adapter.failNextReadExternalWith(3, new RetryableSyncFailureException("HTTP 503"));
+            synchronizationPort.synchronizeNow(record.getId(), "test-user");
+
+            assertThat(synchronizationPort.failedAttemptsSinceLastSuccess(record.getId())).isEqualTo(1);
+
+            resetCircuitBreaker();
+            adapter.withExternalState("8211", new TestSyncProjection("Sprint Updated", "Brno"));
+            synchronizationPort.synchronizeNow(record.getId(), "test-user");
+
+            assertThat(synchronizationPort.failedAttemptsSinceLastSuccess(record.getId())).isZero();
+        }
+    }
+
+    @Nested
     @DisplayName("synchronizeNow rejects records needing a decision")
     class SynchronizeNowRejectsStuckRecords {
 

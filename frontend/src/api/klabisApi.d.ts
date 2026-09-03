@@ -1757,6 +1757,105 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/{entityType}/{id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read synchronisation state
+         * @description Returns the current synchronisation state of one linked entity, without running
+         *     a pass. `divergedFields`/`changedSides` are present only while the record is in
+         *     CONFLICT. `local`/`external`/`baseline` are the decrypted projections, shaped
+         *     per entity type; `baselineExternal` appears only while an accepted divergence
+         *     stands (design.md D6).
+         *
+         */
+        get: operations["getSyncState"];
+        put?: never;
+        /**
+         * Synchronise now
+         * @description Runs one synchronisation pass for this record immediately, rather than waiting for the next scheduled run.
+         */
+        post: operations["synchronizeNow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/{entityType}/{id}/sync/acknowledgement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Acknowledge a conflict
+         * @description Confirms that a manager has seen the current collision. The server binds the
+         *     acknowledgement to the record's present hash pair (design.md D7); only once
+         *     acknowledged does resolveSyncConflict accept a call for this specific collision.
+         *
+         */
+        post: operations["acknowledgeSyncConflict"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/{entityType}/{id}/sync/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset a terminally failed record
+         * @description Appends a RESET attempt so the derived failure count restarts (design.md D10),
+         *     clears the due date, and returns the record to service.
+         *
+         */
+        post: operations["resetSyncRecord"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/{entityType}/{id}/sync/resolution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve a conflict
+         * @description Resolves a standing, acknowledged conflict (design.md D6, D7): re-reads both
+         *     sides through the adapter first and proceeds only if the fresh hash pair still
+         *     equals the one acknowledged. For an entity whose integration declares no
+         *     outward write, OUTWARD is always rejected; ACCEPT_DIVERGENCE needs no write
+         *     capability and is always available.
+         *
+         */
+        post: operations["resolveSyncConflict"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ical/my-schedule.ics": {
         parameters: {
             query?: never;
@@ -1868,7 +1967,7 @@ export interface components {
             minAge?: number;
         };
         /** @enum {string} */
-        Authority: "CALENDAR:MANAGE" | "MEMBERS:MANAGE" | "MEMBERS:READ" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE" | "EVENTS:REGISTRATIONS" | "GROUPS:TRAINING" | "FINANCE:MANAGE";
+        Authority: "CALENDAR:MANAGE" | "MEMBERS:MANAGE" | "MEMBERS:READ" | "MEMBERS:PERMISSIONS" | "EVENTS:READ" | "EVENTS:MANAGE" | "EVENTS:REGISTRATIONS" | "GROUPS:TRAINING" | "FINANCE:MANAGE" | "SYNC:MANAGE";
         BulkImportResult: {
             /** Format: int32 */
             failureCount?: number;
@@ -2189,6 +2288,7 @@ export interface components {
         EntityModelRootModel: {
             _links?: components["schemas"]["Links"];
         };
+        EntityModelSyncStateResponse: components["schemas"]["SyncStateResponse"] & components["schemas"]["EntityModel"];
         EntityModelTrainerResponse: components["schemas"]["TrainerResponse"] & components["schemas"]["EntityModel"];
         EntityModelTrainingGroupResponse: components["schemas"]["TrainingGroupResponse"] & components["schemas"]["EntityModel"];
         EntityModelTrainingGroupSummaryResponse: components["schemas"]["TrainingGroupSummaryResponse"] & components["schemas"]["EntityModel"];
@@ -2850,6 +2950,10 @@ export interface components {
         RenameGroupRequest: {
             name: string;
         };
+        ResolveSyncConflictRequest: {
+            /** @enum {string} */
+            resolution: "INWARD" | "OUTWARD" | "ACCEPT_DIVERGENCE";
+        };
         /** @description Reversal data */
         ReverseRequest: {
             note?: string;
@@ -2876,6 +2980,50 @@ export interface components {
         SuspensionBlockedWarning: {
             debt?: components["schemas"]["OutstandingDebtWarning"];
             groups?: components["schemas"]["LastOwnerWarning"];
+        };
+        /** @enum {string} */
+        SyncEntityTypeParam: "events";
+        /** @description The synchronisation state of one linked entity against one external system. */
+        SyncStateResponse: {
+            /** @description Whether the baseline pair is currently diverged (design.md D6) — visible in any status, since an accepted divergence persists into IN_SYNC. */
+            acceptedDivergence: boolean;
+            /** @description The local half of the baseline pair. Null before the first synchronisation pass. */
+            baseline?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description The external half of the baseline pair — present only while an accepted divergence stands (design.md D6); the common case has identical baseline halves and omits this field. */
+            baselineExternal?: {
+                [key: string]: unknown;
+            };
+            /** @description Present only while status is CONFLICT — per diverged field, which side moved away from the baseline. */
+            changedSides?: {
+                [key: string]: "LOCAL" | "EXTERNAL" | "BOTH";
+            };
+            /** @description Present only while status is CONFLICT — the names of the fields that differ. */
+            divergedFields?: string[];
+            entityType: components["schemas"]["SyncEntityTypeParam"];
+            /** @description The external projection, shaped per entity type. Null before the first synchronisation pass. */
+            external?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description The entity's identifier in the external system. */
+            externalId: string;
+            /** @enum {string} */
+            externalSystem: "ORIS";
+            /** Format: int32 */
+            failedAttemptsSinceLastSuccess: number;
+            /** @enum {string|null} */
+            lastDirection?: "INWARD" | "OUTWARD" | null;
+            /** Format: date-time */
+            lastSuccessfulSyncAt?: string | null;
+            /** @description The local projection, shaped per entity type. Null before the first synchronisation pass. */
+            local?: {
+                [key: string]: unknown;
+            } | null;
+            /** Format: date-time */
+            nextAttemptDueAt?: string | null;
+            /** @enum {string} */
+            status: "NEW" | "IN_SYNC" | "RETRYING" | "CONFLICT" | "FAILED" | "RETIRED";
         };
         TokenRequestRequest: {
             /** Format: email */
@@ -3077,6 +3225,15 @@ export interface components {
                 "application/problem+json": components["schemas"]["ProblemDetail"];
             };
         };
+        /** @description Conflict - the record is in CONFLICT or FAILED and needs a decision (resolve or reset) before it can be synchronised again */
+        NeedsDecision: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ProblemDetail"];
+            };
+        };
         /** @description Resource not found */
         NotFound: {
             headers: {
@@ -3116,6 +3273,8 @@ export interface components {
         CampaignYearParam: number;
         /** @description Category preset UUID */
         CategoryPresetIdParam: string;
+        /** @description Which kind of Klabis entity this synchronisation resource addresses. */
+        EntityTypeParam: components["schemas"]["SyncEntityTypeParam"];
         /** @description Event UUID */
         EventIdParam: string;
         /** @description Sorting criteria in the format: property,(asc|desc). Allowed fields: id, name, eventDate,
@@ -3160,6 +3319,8 @@ export interface components {
          *     registrationNumber.
          *      */
         SortParam: string[];
+        /** @description The entity's own identifier, in the id space of its own module. */
+        SyncEntityIdParam: string;
         /** @description Membership fee tier UUID */
         TierIdParam: string;
         /** @description Training group UUID */
@@ -6782,6 +6943,190 @@ export interface operations {
                 };
             };
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    getSyncState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Which kind of Klabis entity this synchronisation resource addresses. */
+                entityType: components["parameters"]["EntityTypeParam"];
+                /** @description The entity's own identifier, in the id space of its own module. */
+                id: components["parameters"]["SyncEntityIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Synchronisation state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncStateResponse"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelSyncStateResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    synchronizeNow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Which kind of Klabis entity this synchronisation resource addresses. */
+                entityType: components["parameters"]["EntityTypeParam"];
+                /** @description The entity's own identifier, in the id space of its own module. */
+                id: components["parameters"]["SyncEntityIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The resulting synchronisation state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncStateResponse"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelSyncStateResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["NeedsDecision"];
+        };
+    };
+    acknowledgeSyncConflict: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Which kind of Klabis entity this synchronisation resource addresses. */
+                entityType: components["parameters"]["EntityTypeParam"];
+                /** @description The entity's own identifier, in the id space of its own module. */
+                id: components["parameters"]["SyncEntityIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Acknowledgement recorded; the resolveSyncConflict affordance now appears */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncStateResponse"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelSyncStateResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Conflict - the record is not currently in CONFLICT */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    resetSyncRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Which kind of Klabis entity this synchronisation resource addresses. */
+                entityType: components["parameters"]["EntityTypeParam"];
+                /** @description The entity's own identifier, in the id space of its own module. */
+                id: components["parameters"]["SyncEntityIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The record is back in service */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncStateResponse"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelSyncStateResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Conflict - the record is not currently FAILED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
+        };
+    };
+    resolveSyncConflict: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Which kind of Klabis entity this synchronisation resource addresses. */
+                entityType: components["parameters"]["EntityTypeParam"];
+                /** @description The entity's own identifier, in the id space of its own module. */
+                id: components["parameters"]["SyncEntityIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveSyncConflictRequest"];
+            };
+        };
+        responses: {
+            /** @description The conflict is cleared: for a direction, the freshly read chosen side was
+             *     written and the baseline pair reset; for ACCEPT_DIVERGENCE, nothing was
+             *     written and the baseline pair was set to the freshly read snapshots.
+             *      */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncStateResponse"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelSyncStateResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description Conflict - no acknowledgement, the fresh re-read no longer matches the
+             *     acknowledged hash pair (the record's snapshots are refreshed so a
+             *     subsequent GET shows the new collision), or the requested direction is
+             *     not supported by the integration.
+             *      */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetail"];
+                };
+            };
         };
     };
     getMySchedule: {

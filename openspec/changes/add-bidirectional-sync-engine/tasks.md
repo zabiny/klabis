@@ -90,13 +90,13 @@ Delivers: the engine running on its own, and history that does not grow without 
 
 Delivers: the synchronisation state and the resolution workflow over the API, for any entity type.
 
-- [ ] 6.1 `Authority.SYNC_MANAGE` as a global authority [D14]
-- [ ] 6.2 OpenAPI: new `docs/openapi/spec/sync.yaml` describing `getSyncState`, `synchronizeNow`, `acknowledgeSyncConflict`, `resolveSyncConflict`, `resetSyncRecord` under `/api/{entityType}/{id}/sync…`, with `entityType` enumerated rather than free-form; add the `sync` springdoc group in `application.yml` [D14]
-- [ ] 6.3 Controller implementing the generated API: one controller for every entity type, with a converter binding `{entityType}` that rejects unknown segments before any handler runs [D14]
-- [ ] 6.4 Response model: status, external system and identifier, last successful synchronisation and direction, next attempt due, failed attempts since last success, accepted-divergence marker, the projections, and — in conflict — diverged fields with their changed side [D14]
-- [ ] 6.5 HAL affordances rendered per state: `synchronizeNow` for `NEW`/`IN_SYNC`/`RETRYING`, `acknowledgeSyncConflict` and `resolveSyncConflict` for `CONFLICT`, `resetSyncRecord` for `FAILED` [D14]
-- [ ] 6.6 Controller tests: each operation's success and refusal paths; affordances appear only in the states that allow them; every operation requires `SYNC:MANAGE`; an unenrolled entity and an unknown entity type are not found
-- [ ] 6.7 Run tests, code review, commit
+- [x] 6.1 `Authority.SYNC_MANAGE` as a global authority [D14]
+- [x] 6.2 OpenAPI: new `docs/openapi/spec/sync.yaml` describing `getSyncState`, `synchronizeNow`, `acknowledgeSyncConflict`, `resolveSyncConflict`, `resetSyncRecord` under `/api/{entityType}/{id}/sync…`, with `entityType` enumerated rather than free-form; add the `sync` springdoc group in `application.yml` [D14]
+- [x] 6.3 Controller implementing the generated API: one controller for every entity type, with a converter binding `{entityType}` that rejects unknown segments before any handler runs [D14]
+- [x] 6.4 Response model: status, external system and identifier, last successful synchronisation and direction, next attempt due, failed attempts since last success, accepted-divergence marker, the projections, and — in conflict — diverged fields with their changed side [D14]
+- [x] 6.5 HAL affordances rendered per state: `synchronizeNow` for `NEW`/`IN_SYNC`/`RETRYING`, `acknowledgeSyncConflict` and `resolveSyncConflict` for `CONFLICT`, `resetSyncRecord` for `FAILED` [D14]
+- [x] 6.6 Controller tests: each operation's success and refusal paths; affordances appear only in the states that allow them; every operation requires `SYNC:MANAGE`; an unenrolled entity and an unknown entity type are not found
+- [x] 6.7 Run tests, code review, commit
 
 ## 7. Slice: ORIS event adapter
 

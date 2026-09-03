@@ -136,6 +136,10 @@ springdoc:
       display-name: ORIS proxy API
       packages-to-scan:
         - com.klabis.oris
+    - group: sync
+      display-name: Synchronisation API
+      packages-to-scan:
+        - com.klabis.sync
     - group: all
       display-name: X All endpoints
       paths-to-match:
