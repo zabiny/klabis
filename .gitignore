@@ -37,3 +37,4 @@ backend/local.env
 /docs/openapi/generated/
 /docs/openapi/build/
 /tools/openapi-bundle/node_modules/
+/http-client.private.env.json

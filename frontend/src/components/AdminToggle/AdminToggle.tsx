@@ -1,5 +1,4 @@
 import {useAdminMode} from '../../contexts/adminModeContext'
-import {useIsAdmin} from '../../hooks/useIsAdmin'
 
 interface AdminToggleProps {
     className?: string
@@ -13,12 +12,12 @@ interface AdminToggleProps {
  */
 export const AdminToggle = ({className = ''}: AdminToggleProps) => {
     const {isAdminMode, toggleAdminMode} = useAdminMode()
-    const {isAdmin} = useIsAdmin()
-
-    // Don't render for non-admin users
-    if (!isAdmin) {
-        return null
-    }
+    // const {isAdmin} = useIsAdmin()
+    //
+    // // Don't render for non-admin users
+    // if (!isAdmin) {
+    //     return null
+    // }
 
     // Get the icon to display based on current mode
     const getIcon = () => {
