@@ -1,5 +1,23 @@
 # Test Runner Agent Memory
 
+## Full Backend Test Suite Run (2026-09-04)
+
+### Context
+After cleanup changes in modules `sync`, `oris.eventsync`, and `events` (removal of duplicates, shared test fixtures).
+
+### Results
+**ALL 3399 BACKEND TESTS PASSED** ✓
+
+- Total tests: 3399
+- Passed: 3399 (100%)
+- Failed: 0
+- Skipped: 0
+- Compilation: ✓ Success
+
+The cleanup changes (duplicate removal, shared testing fixtures) had NO functional impact on test behavior.
+
+---
+
 ## PermissionController HATEOAS Links Fix (2026-03-03)
 
 ### Issue
