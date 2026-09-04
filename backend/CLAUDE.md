@@ -71,6 +71,12 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 - Build without `clean` is faster: `./gradlew build -x test` (vs `clean build -x test`)
 - Gradle writes to `build/` directory during execution — may block concurrent builds
 
+## Modules
+
+Spring Modulith application modules under `com.klabis.*`: `members`, `events`, `calendar`, `finance`, `oris` (ORIS integration), `authorizationserver`, `common` (shared kernel), and:
+
+- **`sync`** — generic bidirectional synchronisation engine (`com.klabis.sync`). Owns change detection, conflict handling, retry and audit for any entity paired against any external system; entirely unaware of ORIS or any other integration. The only adapter today is `OrisEventSyncAdapter` (`com.klabis.oris.eventsync`), which moves the existing ORIS event synchronisation behind the engine. See `docs/design-decisions.md` ADR-005 and the `backend-patterns` skill (`references/synchronization-adapter.md`) for how to add another one.
+
 ## Documentation Index
 
 - **Backend conventions** (aggregates, controllers, HATEOAS affordances, JDBC mementos, field-level authorization, testing) → load **`backend-patterns`** skill — single source of truth
@@ -117,6 +123,14 @@ These are the Klabis-specific hooks on top of Spring Security / Spring Authoriza
 - **Field-level authorization** — `@OwnerVisible`, `@HasAuthority`, `JsonNullable<T>` on record components. See `backend-patterns` skill.
 - **`KlabisUserDetailsService`** (`com.klabis.authorizationserver`) — bridges `users` aggregate + `Authority` enum into Spring Security `UserDetails`.
 - **Custom `AuthenticationEntryPoint`** — validates the OAuth2 `redirect_uri` against `RegisteredClientRepository` before redirecting (prevents open-redirector).
+- **`Authority.SYNC_MANAGE`** (`SYNC:MANAGE`, global scope) — gates every `sync` module operation (`/api/{entityType}/{id}/sync…`): reading state, triggering a pass, acknowledging/resolving a conflict, resetting a terminally failed record.
+
+### Synchronisation Engine Configuration (`sync` module)
+
+`SyncProperties` (`com.klabis.sync.application`, `@ConfigurationProperties(prefix = "klabis.sync")`) — operational limits, all with coded defaults per `docs/design-decisions.md` ADR-005 / D19:
+
+- `max-attempts` (default `5`), `claim-lease` (`5m`), `history-retention` (`30d`), `retry-delay.initial`/`multiplier`/`max` (`15m` / `2` / `24h`) — configurable but not wired to env vars in `application.yml`; override via `klabis.sync.*` properties directly if needed.
+- `scan-cron` (nightly full pass, default `0 0 2 * * *`) and `due-scan-interval` (frequent due scan, default `15m`) — externalized via `KLABIS_SYNC_SCAN_CRON` / `KLABIS_SYNC_DUE_SCAN_INTERVAL` env vars in `application.yml`.
 
 ## Application Profiles
 

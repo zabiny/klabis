@@ -2,7 +2,7 @@
 name: backend-patterns
 description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), spec-first REST controllers implementing generated *Api interfaces, HAL/HATEOAS wiring (HalResponseContext, ModelWithDomainPostprocessor, klabisLinkTo/klabisAfford), DTO↔domain mapping via ConversionService Converters, JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, JsonNullable), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
 user-invocable: false
-version: 0.8.0
+version: 0.9.0
 ---
 
 # Klabis Backend Patterns
@@ -23,6 +23,7 @@ The layer you are touching decides what to load. Read the matching file **before
 | Publishing or consuming domain events, cross-module listeners | `references/domain-events.md` |
 | Hiding/masking response fields, authorizing PATCH request fields | `references/field-security.md` |
 | Adding a whole new aggregate end-to-end | `references/aggregate-checklist.md` (walks every layer in order) |
+| Plugging a new entity into the `sync` engine (`SynchronizationAdapter`, projections) | `references/synchronization-adapter.md` |
 | Writing tests for any of the above | `references/testing-guide.md` |
 
 Adding a REST endpoint also means editing the OpenAPI spec — the `klabis-api-spec` skill covers that side.

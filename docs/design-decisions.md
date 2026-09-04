@@ -154,3 +154,42 @@ Two hand-written envelopes remain, both in `common.yaml`: `EntityModelRootModel`
 - `_templates` is emitted on every derived envelope, uniformly. The property is an `additionalProperties` map with no named members, so it only declares that a template map may appear — true of every HAL-FORMS resource. The contract that says *which* templates is `x-hal-templates`, which `haltypes.mjs` turns into the named union in `halTypes.ts`.
 
 **References:** OpenSpec change `derive-hal-envelopes-in-bundler`, ADR-002 (why the backend needs no envelope types at all), `klabis-api-spec` skill.
+
+## ADR-005: A generic `sync` module with integration-owned adapters and a record-held identity mapping
+
+**Status:** Accepted
+
+**Context:**
+
+ORIS event synchronisation existed as one concrete pull path inside the `events` module: `OrisEventImportService.syncEventFromOris` fetched the upstream event and overwrote every ORIS-owned field, protected only by field ownership (`orisId == null` categories survive, an empty event type gets filled) rather than by change detection. A manager's correction to an ORIS-owned field was silently discarded on the next sync — no conflict, no record of the loss.
+
+The ORIS API is also structurally asymmetric: events are pull-only (no `updateEvent`), while persons, club memberships and entries have write operations. A synchronisation mechanism could not assume symmetry between the two sides, and a second integration was expected to need genuinely two-way behaviour that a one-off event-only fix would not generalise to.
+
+**Decision:**
+
+1. **A new top-level `sync` module** (`com.klabis.sync`, `application`/`domain`/`infrastructure` packages, primary port via `@NamedInterface("application")` per ADR-001) owns change detection, conflict handling, retry and audit generically. No type in the module names ORIS or any other external system; a `SyncTarget` addresses the local entity by entity-type enum plus an opaque id string, and an `ExternalReference` addresses the external counterpart by an `ExternalSystem` discriminator plus an opaque id string.
+
+2. **Adapters live in the integration's own module** and implement the `sync` module's `SynchronizationAdapter` secondary port. `OrisEventSyncAdapter` (`com.klabis.oris.eventsync`) reaches `events` only through its `events.application` primary ports (`EventManagementPort`, `OrisEventImportPort`) — the same direction `OrisController` already took — so `events` gains no new knowledge of ORIS internals.
+
+3. **The identity mapping between a Klabis entity and its external counterpart is held only by the synchronisation record** (`SyncRecord`, via its `SyncTarget` and `ExternalReference`), never by either aggregate. `Event` carries no new external-identifier field beyond the `orisId` it already had. This matters most for an external identity that is composite (an ORIS person has both a person id and a club-membership id): the record can hold that pair without forcing either half onto the local aggregate.
+
+4. **Synchronisation resources are addressed uniformly**, at `/api/{entityType}/{id}/sync…`, with `{entityType}` a path parameter constrained to the declared `SyncEntityType` values. One controller in the `sync` module serves every entity type; a new integration becomes reachable by adding an enum value and its adapter, with no new endpoints and no per-module duplication of the same four operations (state, synchronise now, acknowledge conflict, resolve conflict, reset).
+
+An adapter declares what it can actually do — read/write each side, create on either side, whether its projections carry sensitive data — via `SyncCapabilities`, and maps both sides into one shared-shape **canonical projection** (`SyncProjection`) that the engine hashes and diffs without ever looking at the entities themselves. A field only Klabis owns is simply absent from the projection, so editing it is invisible to synchronisation by construction — see `design.md` D3 for the full reasoning, and the `backend-patterns` skill for the adapter/projection authoring contract.
+
+**Three boundary decisions made during implementation, not anticipated in `design.md`:**
+
+- **`@NamedInterface("sync.domain")` deliberately exports the whole `sync.domain` package**, not a narrowed subset. `SynchronizationPort`'s own method signatures already return and accept `SyncRecord`, `SyncTarget`, `SyncEntityType`, `ExternalReference` and `SyncResolution` — types that live in `domain`. Narrowing the named interface without also narrowing the port's signatures would not reduce what a caller depends on; it would just move the compile error from "cannot import the type" to "cannot call the port at all". This was reviewed and deliberately accepted, not an oversight left for later tightening.
+
+- **`OrisEventSyncAdapter` is annotated jMolecules `@Application`, not `@SecondaryAdapter`.** The class holds two hexagonal roles at once: a driven adapter implementing `sync`'s `SynchronizationAdapter` port (called by the engine), and a driving adapter calling `events`' `@PrimaryPort` interfaces (`EventManagementPort`, `OrisEventImportPort`). jMolecules cannot express both on one class — `@PrimaryAdapter` and `@SecondaryAdapter` are mutually exclusive in the library's own layer predicates, and a `@SecondaryAdapter` may never reach a primary port. `@Application` is the classification that permits the primary-port access the module boundary (point 2 above) requires, while the dependency direction itself is unchanged and still correct.
+
+- **`@Lazy` on the adapter's `orisEventImportPort` dependency** breaks a bean-construction cycle: `OrisEventImportService` (implementing `OrisEventImportPort`) needs `SynchronizationPort`, which needs the adapter registry, which needs `OrisEventSyncAdapter`, which needs `OrisEventImportPort` back. This cycle was implied by the module boundary from the start but only became real once `syncEventFromOris` was moved behind the engine. The cost is explicit: a broken `OrisEventImportPort` bean now surfaces on the first synchronisation attempt rather than at application startup, trading fail-fast for the ability to wire the cycle at all. `eventManagementPort`, which does not participate in the cycle, stays eager.
+
+**Consequences:**
+
+- A future integration (member synchronisation, entries) follows the same shape: an adapter in its own module, a projection type, capabilities declared honestly rather than implemented as throwing methods — and reaches the `sync` module and its own module only through primary ports, per ADR-001.
+- `Event.syncFromOris` became the inward write the adapter's `applyToLocal` invokes, rather than the whole synchronisation path; its field-ownership merge behaviour for categories is unchanged.
+- A conflict — a local edit to an ORIS-owned field that cannot be written outward — now blocks synchronisation and asks a human, instead of being silently overwritten. This is the one user-visible behaviour change (`design.md` D6).
+- The three boundary decisions above are precedents: the next adapter that needs to call a primary port on its own module should also be `@Application`, not forced into `@SecondaryAdapter`; the next module exporting a named interface should check whether its primary port's own signatures already force the interface wide before trying to narrow it.
+
+**References:** OpenSpec change `add-bidirectional-sync-engine` (`proposal.md`, `design.md` — D1–D19 — `tasks.md`), ADR-001 (primary-port-only cross-module dependency rule), `backend-patterns` skill.

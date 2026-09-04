@@ -35,7 +35,7 @@ The engine lives in `com.klabis.sync` with `application`, `domain` and `infrastr
 
 ### D2: Adapters live in the integration's own module; the mapping between the two identities lives only in the synchronisation record
 
-The ORIS event adapter lives in `com.klabis.oris.sync`, implements the adapter contract published by the `sync` module, and reaches domain data through `events.application` — the direction `OrisController` already takes. The `events` module therefore gains no knowledge of ORIS internals it does not already have, and `Event` gains no external identifier fields beyond the `orisId` it already carries: the pairing between a Klabis entity and its external counterpart is held by the synchronisation record.
+The ORIS event adapter lives in `com.klabis.oris.eventsync`, implements the adapter contract published by the `sync` module, and reaches domain data through `events.application` — the direction `OrisController` already takes. The `events` module therefore gains no knowledge of ORIS internals it does not already have, and `Event` gains no external identifier fields beyond the `orisId` it already carries: the pairing between a Klabis entity and its external counterpart is held by the synchronisation record.
 
 This matters most for entities whose external identity is composite — an ORIS person has both a person identifier and a club-membership identifier — which the record can hold without forcing either onto the aggregate.
 
@@ -49,7 +49,7 @@ The adapter maps both sides into a **canonical projection**: one field set, the 
 
 - Fields Klabis owns exclusively — a category fee override, a manually added category, the event type — are simply absent from the projection, so editing them is not a change as far as synchronisation is concerned. The field-ownership protection that exists today is preserved by construction rather than by special-casing.
 - Because both sides share one shape, a divergence can be reported per field.
-- An adapter may additionally offer a cheap **external version token** (ORIS `getEventListVersions` returns id and version only). When the token is unchanged since the last check, the engine skips fetching the external payload entirely. Adapters without one fall back to a full read.
+- An adapter may additionally offer a cheap **external version token**. When the token is unchanged since the last check, the engine skips fetching the external payload entirely. Adapters without one fall back to a full read — the ORIS event adapter is one: `oris-client` offers no cheap per-event or per-list version signal (`getEventList` returns no version field, and `EventDetails.version()` is only reachable after the full read the token would exist to avoid), so it returns no token and every pass falls back to a full read.
 
 **`SyncProjection` is an interface, implemented per entity type.** The engine handles projections only through that interface — serialise, deserialise, compare field by field — and never knows the concrete shape. Each integration contributes a concrete projection that is a plain data carrier with no behaviour, so that:
 
@@ -446,7 +446,7 @@ classDiagram
 | `ConflictAcknowledgement` | Value object | Added | The hash pair a manager acknowledged, and when. Makes a forced direction valid only against the collision it was granted for. |
 | `SyncCapabilities` | Value object | Added | What an integration can do for an entity type, including whether its projections contain sensitive data. |
 | `SynchronizationAdapter` | Secondary port | Added | The contract an integration implements. Published by the `sync` module, implemented in the integration's module. |
-| `OrisEventSyncAdapter` | Secondary adapter | Added | In `com.klabis.oris.sync`. Declares inward-only capabilities, supplies the `getEventListVersions` token, and reuses the mapping in `OrisEventImportService`. |
+| `OrisEventSyncAdapter` | Secondary adapter | Added | In `com.klabis.oris.eventsync`. Declares inward-only capabilities, offers no external version token — `oris-client` has no cheap version signal for events, so every pass falls back to a full read — and reuses the mapping in `OrisEventImportService`. |
 | `SyncStatus`, `SyncDirection`, `SyncResolution`, `SyncOutcome`, `SyncTriggerKind`, `SyncEntityType`, `ExternalSystem`, `ChangedSide` | Enumerations | Added | Record state, resolved direction, a manager's conflict resolution (a direction or `ACCEPT_DIVERGENCE`), attempt result, what started a pass, the two discriminators, and per-field conflict attribution (`LOCAL`, `EXTERNAL`, `BOTH`). `SyncEntityType` has one value (`EVENT`) in this change and doubles as the REST path parameter (D14). |
 | `SyncConflictDetected`, `SyncTerminallyFailed` | Domain events | Added | Published by the engine, carrying identifiers, direction and hashes only. |
 | `Event.syncFromOris` | Aggregate command | Changed | Becomes the inward write invoked by the adapter rather than the whole synchronisation. Its field-ownership merge behaviour for categories is unchanged. |
@@ -638,7 +638,7 @@ No frontend work in this change. The existing "Synchronizovat" action keeps work
 
 1. Build the `sync` module with a test-only adapter and test projection exercising every path — inward, outward, convergence, conflict, unavailable-write conflict, accepted divergence (including the re-conflict on a later external change), retry, terminal failure, reset, retirement — with no ORIS involvement.
 2. Add `SYNC:MANAGE` and the persistence, including the encrypted projection columns.
-3. Write the ORIS event adapter and projection in `oris.sync`, reusing the mapping already in `OrisEventImportService`, declaring inward-only capabilities and the `getEventListVersions` token.
+3. Write the ORIS event adapter and projection in `oris.eventsync`, reusing the mapping already in `OrisEventImportService`, declaring inward-only capabilities and no external version token — `oris-client` offers no cheap version signal for events, so the adapter falls back to a full read on every pass.
 4. Enrol events on ORIS import; retire on finish and cancel; mark dirty on `EventUpdatedEvent`.
 5. Move `syncEventFromOris` behind the engine, keeping the endpoint. Replace the `OrisBulkSyncService` loop with the nightly full pass and the due scan (D10), and add the history retention job.
 6. Add the synchronisation REST resources and affordances, and the `sync` link on the event resource.
