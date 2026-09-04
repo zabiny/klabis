@@ -4,7 +4,7 @@
 
 ### Requirement: ORIS-Imported Events Are Kept In Step Automatically
 
-An event imported from ORIS is kept in step with ORIS from then on, without a manager having to ask for it. Changes published in ORIS reach the event on their own. An event stops being kept in step once it is finished or cancelled, and the record of its past synchronisations remains available.
+The system SHALL keep an event imported from ORIS in step with ORIS from then on, without a manager having to ask for it. Changes published in ORIS SHALL reach the event on their own. The system SHALL stop keeping an event in step once it is finished or cancelled, and SHALL keep the record of its past synchronisations available.
 
 #### Scenario: An event imported from ORIS starts being kept in step
 
@@ -26,7 +26,7 @@ An event imported from ORIS is kept in step with ORIS from then on, without a ma
 
 ### Requirement: A Manager's Edit To An ORIS Field Is Never Silently Overwritten
 
-ORIS does not accept changes to an event from Klabis, so an edit made in Klabis to a field that ORIS owns — the name, date, location, organiser, website, registration deadlines, ranking or base entry fee — cannot be sent to ORIS. Such an edit is no longer discarded by the next synchronisation. Instead the event stops being synchronised and asks the manager to decide, showing what differs from ORIS.
+ORIS does not accept changes to an event from Klabis, so an edit made in Klabis to a field that ORIS owns — the name, date, location, organiser, website, registration deadlines, ranking or base entry fee — SHALL NOT be sent to ORIS. The next synchronisation SHALL NOT discard such an edit. Instead the event SHALL stop being synchronised and SHALL ask the manager to decide, showing what differs from ORIS.
 
 #### Scenario: A manager's edit survives the next synchronisation
 
@@ -87,7 +87,7 @@ ORIS does not accept changes to an event from Klabis, so an edit made in Klabis 
 
 ### Requirement: An Event Stopped By Repeated Synchronisation Failures Can Be Restarted
 
-When synchronising an event with ORIS keeps failing, the event stops being attempted and waits for a manager, rather than failing silently every night. A manager can restart it once the cause is gone.
+When synchronising an event with ORIS keeps failing, the system SHALL stop attempting the event and SHALL let it wait for a manager, rather than failing silently every night. The system SHALL allow a manager to restart it once the cause is gone.
 
 #### Scenario: A repeatedly failing event stops and says so
 
@@ -103,7 +103,7 @@ When synchronising an event with ORIS keeps failing, the event stops being attem
 
 ### Requirement: Synchronisation State Is Reachable From The Event
 
-An ORIS-imported event exposes its synchronisation state to users allowed to manage synchronisation: whether it is in step, failing, waiting for a decision or stopped, when it was last successfully synchronised, and what differs when a decision is needed.
+An ORIS-imported event SHALL expose its synchronisation state to users allowed to manage synchronisation: whether it is in step, failing, waiting for a decision or stopped, when it was last successfully synchronised, and what differs when a decision is needed.
 
 #### Scenario: The manager opens an event's synchronisation state
 

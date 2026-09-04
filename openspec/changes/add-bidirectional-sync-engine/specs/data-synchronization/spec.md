@@ -4,7 +4,7 @@
 
 ### Requirement: Records Are Kept In Step Automatically
 
-Once an entity in Klabis is linked to its counterpart in an external system, the system keeps the two in step on its own. It works out on its own which side was changed since they last agreed and updates the other side accordingly. Nothing is written when neither side has changed.
+Once an entity in Klabis is linked to its counterpart in an external system, the system SHALL keep the two in step on its own. The system SHALL determine which side was changed since they last agreed and SHALL update the other side accordingly. The system SHALL NOT write anything when neither side has changed.
 
 #### Scenario: A change in the external system reaches Klabis
 
@@ -32,7 +32,7 @@ Once an entity in Klabis is linked to its counterpart in an external system, the
 
 ### Requirement: A Local Change Is Never Silently Overwritten
 
-When someone changes a field in Klabis that the external system also owns, that change is never discarded on the next synchronisation. If the change cannot be sent onward — because the external system offers no way to change that entity — the record stops and asks for a decision instead.
+When someone changes a field in Klabis that the external system also owns, the system SHALL NOT discard that change on the next synchronisation. If the change cannot be sent onward — because the external system offers no way to change that entity — the record SHALL stop being synchronised and SHALL ask for a decision instead.
 
 #### Scenario: A local change that cannot be sent onward stops for a decision
 
@@ -57,7 +57,7 @@ When someone changes a field in Klabis that the external system also owns, that 
 
 ### Requirement: Conflicting Changes Are Reported, Never Merged
 
-When both sides changed to different values since they last agreed, the system does not choose between them and does not combine them. It reports which fields differ and, for each of them, which side moved away from the last agreed state.
+When both sides changed to different values since they last agreed, the system SHALL NOT choose between them and SHALL NOT combine them. The system SHALL report which fields differ and, for each of them, which side moved away from the last agreed state.
 
 #### Scenario: Both sides changed differently
 
@@ -80,7 +80,7 @@ When both sides changed to different values since they last agreed, the system d
 
 ### Requirement: Resolving A Conflict Takes Two Deliberate Steps
 
-Because resolving a conflict can discard someone's work, the user first confirms they have seen the specific difference, and only then chooses what to do about it. The choice is: take the external system's values, send the Klabis values onward, or record that the two sides are deliberately allowed to differ.
+Because resolving a conflict can discard someone's work, the system SHALL require the user to first confirm they have seen the specific difference, and SHALL only then offer the choice of what to do about it. The offered choice SHALL be: take the external system's values, send the Klabis values onward, or record that the two sides are deliberately allowed to differ.
 
 #### Scenario: The resolution choice is only offered after confirming the difference
 
@@ -125,7 +125,7 @@ Because resolving a conflict can discard someone's work, the user first confirms
 
 ### Requirement: Failed Synchronisation Is Retried, Then Stops And Waits
 
-A synchronisation that fails is tried again later, with a growing delay between attempts. Once a record has failed as many times in a row as the configured limit allows, it stops trying and waits for someone to look at it. A failure caused by the external system being unavailable does not count towards that limit.
+A synchronisation that fails SHALL be tried again later, with a growing delay between attempts. Once a record has failed as many times in a row as the configured limit allows, the system SHALL stop attempting it and SHALL wait for someone to look at it. A failure caused by the external system being unavailable SHALL NOT count towards that limit.
 
 #### Scenario: A temporary failure is retried
 
@@ -160,7 +160,7 @@ A synchronisation that fails is tried again later, with a growing delay between 
 
 ### Requirement: Synchronisation State Is Visible Per Entity
 
-For every linked entity, a user with the synchronisation permission can see how it stands: whether it is in step, failing, waiting for a decision or stopped; when it was last successfully synchronised and in which direction; and, where a decision is needed, what differs.
+For every linked entity, the system SHALL show a user with the synchronisation permission how it stands: whether it is in step, failing, waiting for a decision or stopped; when it was last successfully synchronised and in which direction; and, where a decision is needed, what differs.
 
 #### Scenario: The user reads the state of one entity
 
@@ -186,7 +186,7 @@ For every linked entity, a user with the synchronisation permission can see how 
 
 ### Requirement: Finished Entities Stop Being Synchronised
 
-When an entity reaches the end of its life in Klabis, it stops being synchronised, while everything recorded about its past synchronisations is kept.
+When an entity reaches the end of its life in Klabis, the system SHALL stop synchronising it, and SHALL keep everything recorded about its past synchronisations.
 
 #### Scenario: A finished entity is no longer synchronised
 
@@ -196,7 +196,7 @@ When an entity reaches the end of its life in Klabis, it stops being synchronise
 
 ### Requirement: Every Synchronisation Attempt Is Recorded
 
-The system keeps a history of what it did for each linked entity: when each attempt ran, what triggered it, which direction it went, how it ended and why it failed. Actions a user performed themselves also record who performed them.
+The system SHALL keep a history of what it did for each linked entity: when each attempt ran, what triggered it, which direction it went, how it ended and why it failed. For actions a user performed themselves, the history SHALL also record who performed them.
 
 #### Scenario: Automatic attempts are recorded
 
