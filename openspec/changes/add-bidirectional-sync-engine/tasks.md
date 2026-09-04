@@ -142,8 +142,8 @@ Notes on Slice 8, all deliberate:
 
 ## 9. Slice: Architecture record and documentation
 
-- [ ] 9.1 `docs/design-decisions.md`: new ADR for the synchronisation engine — the generic module with integration-owned adapters, the identity mapping held only by the record, and the uniformly addressed REST resources. Also record the two module-boundary decisions Slice 8 made: why `sync.domain` is exported whole (the port's own signatures already expose those types) and why `OrisEventSyncAdapter` is `@Application` rather than `@SecondaryAdapter` (it holds two hexagonal roles at once, and a secondary adapter may never reach a primary port)
-- [ ] 9.2 `backend/CLAUDE.md`: add the `sync` module to the module overview and note the new `SYNC:MANAGE` authority and the synchronisation configuration block
-- [ ] 9.3 `backend-patterns` skill: document the adapter contract and the projection convention, so a future integration follows the same shape
-- [ ] 9.4 Verify the module structure test passes with the new module and its named interface, and that no module reaches past a primary port
-- [ ] 9.5 Run tests, code review, commit
+- [x] 9.1 `docs/design-decisions.md`: new ADR for the synchronisation engine — the generic module with integration-owned adapters, the identity mapping held only by the record, and the uniformly addressed REST resources. Also record the two module-boundary decisions Slice 8 made: why `sync.domain` is exported whole (the port's own signatures already expose those types) and why `OrisEventSyncAdapter` is `@Application` rather than `@SecondaryAdapter` (it holds two hexagonal roles at once, and a secondary adapter may never reach a primary port)
+- [x] 9.2 `backend/CLAUDE.md`: add the `sync` module to the module overview and note the new `SYNC:MANAGE` authority and the synchronisation configuration block
+- [x] 9.3 `backend-patterns` skill: document the adapter contract and the projection convention, so a future integration follows the same shape
+- [x] 9.4 Verify the module structure test passes with the new module and its named interface, and that no module reaches past a primary port
+- [x] 9.5 Run tests, code review, commit
