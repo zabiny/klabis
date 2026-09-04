@@ -32,6 +32,19 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
     List<SyncRecordMemento> findAllActive();
 
     /**
+     * Backs the manual {@code all-upcoming} bulk pass (design.md, "Existing operations,
+     * unchanged in shape"): every non-retired record, {@code FAILED} included, so a
+     * terminally failed record can be counted and reported rather than silently
+     * dropped. Unlike {@link #findAllActive}, which the scheduler needs
+     * {@code FAILED}-free.
+     */
+    @Query("""
+            SELECT * FROM sync.sync_record
+            WHERE retired_at IS NULL
+            """)
+    List<SyncRecordMemento> findAllNonRetired();
+
+    /**
      * Backs the due scan (design.md D10): dirty or retry-due, excluding a record
      * whose claim is still fresh. {@code RETIRED} is excluded via
      * {@code retired_at IS NULL}; {@code CONFLICT} and {@code FAILED} exclude

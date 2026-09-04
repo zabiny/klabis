@@ -13,8 +13,6 @@ import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventUpdateEventBuilder;
 import com.klabis.sync.application.SynchronizationPort;
-import com.klabis.sync.domain.ExternalReference;
-import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncStatus;
 import com.klabis.sync.domain.SyncTarget;
@@ -65,6 +63,7 @@ class OrisEventSyncAdapterIntegrationTest {
 
     private int orisId;
     private EventId eventId;
+    private SyncRecord enrolled;
 
     @BeforeEach
     void setUp() {
@@ -74,14 +73,18 @@ class OrisEventSyncAdapterIntegrationTest {
 
         Event imported = orisEventImportPort.importEventFromOris(orisId);
         eventId = imported.getId();
+
+        // importEventFromOris already enrols the event with the engine (task 8.1) —
+        // look up that enrolment rather than enrolling a second time, which collides
+        // on the sync_record unique constraint.
+        enrolled = synchronizationPort.findByTarget(
+                        new SyncTarget(SyncEntityType.EVENT, eventId.value().toString()))
+                .orElseThrow();
     }
 
     @Test
     @DisplayName("an external change is written inward when nothing changed locally")
     void inwardWriteOnExternalChange() {
-        SyncRecord enrolled = synchronizationPort.enroll(
-                new SyncTarget(SyncEntityType.EVENT, eventId.value().toString()),
-                new ExternalReference(ExternalSystem.ORIS, String.valueOf(orisId)));
         synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
         stubOrisEventDetails("Spring Sprint Renamed");
@@ -95,9 +98,6 @@ class OrisEventSyncAdapterIntegrationTest {
     @Test
     @DisplayName("a local edit to an ORIS-owned field raises a conflict instead of being overwritten")
     void localEditToOrisOwnedFieldRaisesConflict() {
-        SyncRecord enrolled = synchronizationPort.enroll(
-                new SyncTarget(SyncEntityType.EVENT, eventId.value().toString()),
-                new ExternalReference(ExternalSystem.ORIS, String.valueOf(orisId)));
         synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
         // Simulate a manager's local edit to an ORIS-owned field (the name) by
@@ -120,9 +120,6 @@ class OrisEventSyncAdapterIntegrationTest {
     @Test
     @DisplayName("externalVersion() never yields a token, so every pass performs a full external read")
     void everyPassFallsBackToFullRead() {
-        SyncRecord enrolled = synchronizationPort.enroll(
-                new SyncTarget(SyncEntityType.EVENT, eventId.value().toString()),
-                new ExternalReference(ExternalSystem.ORIS, String.valueOf(orisId)));
         synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
         Mockito.clearInvocations(orisApiClient);

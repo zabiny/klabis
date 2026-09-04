@@ -454,6 +454,11 @@ paths:
               description: |
                 Present for the caller's own not-yet-existing registration when registration is
                 being offered
+            sync:
+              operation: getSyncState
+              description: |
+                Present when the event is enrolled in synchronisation and the caller has SYNC:MANAGE
+                (task 8.6) — the same authority getSyncState itself requires.
           x-hal-templates:
             updateEvent:
               operation: updateEvent
@@ -709,8 +714,11 @@ paths:
       tags: [OrisEvents]
       summary: Sync event from ORIS
       description: |
-        Re-fetches event data from ORIS and overwrites all local fields. Only allowed for DRAFT and
-        ACTIVE events with an orisId.
+        Runs one synchronisation pass for this event through the synchronisation engine (design.md
+        D18). ORIS-owned fields are written inward when only the external side changed; a local edit
+        to one of them is no longer silently overwritten and instead surfaces as a conflict on the
+        event's synchronisation resource (design.md D6). Only allowed for DRAFT and ACTIVE events
+        with an orisId.
       security:
         - KlabisAuth: [EVENTS]
       x-klabis-authority: EVENTS_MANAGE
@@ -730,7 +738,7 @@ paths:
         '404':
           $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+          $ref: './sync.yaml#/components/responses/NeedsDecision'
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
@@ -740,9 +748,13 @@ paths:
       tags: [OrisEvents]
       summary: Bulk sync all upcoming ORIS events
       description: |
-        Synchronises all DRAFT/ACTIVE events with eventDate >= today that have an ORIS ID.
-        Processes each event sequentially; partial failures are collected and returned in the
-        summary. Always returns 200 — check failureCount in the response body.
+        Runs a manual synchronisation pass over every active synchronisation record for events
+        (design.md D18) — ignoring next-attempt-due and the dirty flag, since a manager explicitly
+        asking for freshness wants every record attempted now. Records already in CONFLICT or FAILED
+        are not attempted; they are counted and listed separately (awaitingDecisionCount / results, and
+        stoppedByFailureCount / results) rather than lumped into failureCount, since only a decision on
+        the synchronisation resource — not a retry — can move them again. Always returns 200 — inspect
+        the counts in the response body.
       security:
         - KlabisAuth: [EVENTS]
       x-klabis-authority: EVENTS_MANAGE
@@ -1650,6 +1662,12 @@ components:
 
     BulkSyncResult:
       type: object
+      description: |
+        Summary of a manual pass over every active event synchronisation record (task 8.4, 8.5).
+        totalProcessed counts every active record considered, including the ones awaiting a decision
+        or stopped by failure — successCount and failureCount cover only records that were actually
+        attempted this pass (design.md D18: the two new categories are reported separately, not lumped
+        into failureCount).
       properties:
         totalProcessed:
           type: integer
@@ -1660,7 +1678,23 @@ components:
         failureCount:
           type: integer
           format: int32
+        awaitingDecisionCount:
+          type: integer
+          format: int32
+          description: Records already in CONFLICT — not attempted this pass; see awaitingDecision for the per-event list.
+        stoppedByFailureCount:
+          type: integer
+          format: int32
+          description: Records already terminally FAILED — not attempted this pass; see stoppedByFailure for the per-event list.
         results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventSyncEntry'
+        awaitingDecision:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventSyncEntry'
+        stoppedByFailure:
           type: array
           items:
             $ref: '#/components/schemas/EventSyncEntry'

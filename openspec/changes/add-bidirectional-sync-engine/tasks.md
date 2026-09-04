@@ -120,22 +120,29 @@ Notes on deviations from the task text above, all deliberate:
 
 Delivers: the change managers actually see — automatic synchronisation, and edits that are no longer silently overwritten.
 
-- [ ] 8.1 `events`: enrol an event with the engine on ORIS import; retire the record when the event becomes finished or cancelled [D17]
-- [ ] 8.2 `events`: mark the record dirty on `EventUpdatedEvent` [D9]
-- [ ] 8.3 `syncEventFromOris` delegates to the engine, keeping its path, operation identifier and affordance; refuses with a problem detail pointing at the sync resource when the record is in conflict or terminally failed [D18]
-- [ ] 8.4 `sync-from-oris/all-upcoming` becomes a manual pass over all active records — ignoring due-ness and the dirty flag, honouring claims and the breaker — reporting records awaiting a decision and records stopped by failures separately from failures [D18]
-- [ ] 8.5 Remove the per-event loop from `OrisBulkSyncService`, keeping its result summary shape extended with the two new categories
-- [ ] 8.6 `events`: `sync` link on the event resource when enrolled, obtained through `SynchronizationPort` [D18]
-- [ ] 8.7 Integration tests: importing an event enrols it; a manager's edit to the name raises a conflict on the next synchronisation and the name survives; resolving inward restores the ORIS values; accepting the divergence keeps the edit and re-asks on the next ORIS change; editing a fee override or adding a category raises no conflict
-- [ ] 8.8 Integration tests: bulk synchronisation skips and reports conflicted and terminally failed events; a finished event is retired and no longer synchronised
-- [ ] 8.9 Regression: existing ORIS import and synchronisation tests still pass unchanged where behaviour is unchanged; update those that assert silent overwriting of ORIS-owned fields
-- [ ] 8.10 Carry over from Slice 7 review: `OrisEventSyncAdapter.withResolvedEventType` costs a second ORIS call and a second local read on every inward write, purely to re-derive the Klabis-owned event type that D3 keeps out of the projection. Harmless at Slice 7's scale; this slice is what puts it in the nightly pass over every active record [D10], so remove the second external read — e.g. reuse the `OrisEventFields` already read in `readExternal` within the same pass
-- [ ] 8.11 Carry over from Slice 7 review: `warnIfSyncRemovesCategoriesWithRegistrations` is invoked only from the legacy `syncEventFromOris` path, not from `applyOrisSync`, which is what the adapter calls. Once 8.3 moves `syncEventFromOris` behind the engine, the warning stops firing unless it is added to the inward-write path
-- [ ] 8.12 Run the full backend suite (`test-runner`), code review, commit
+- [x] 8.1 `events`: enrol an event with the engine on ORIS import; retire the record when the event becomes finished or cancelled [D17]
+- [x] 8.2 `events`: mark the record dirty on `EventUpdatedEvent` [D9]
+- [x] 8.3 `syncEventFromOris` delegates to the engine, keeping its path, operation identifier and affordance; refuses with a problem detail pointing at the sync resource when the record is in conflict or terminally failed [D18]
+- [x] 8.4 `sync-from-oris/all-upcoming` becomes a manual pass over all active records — ignoring due-ness and the dirty flag, honouring claims and the breaker — reporting records awaiting a decision and records stopped by failures separately from failures [D18]
+- [x] 8.5 Remove the per-event loop from `OrisBulkSyncService`, keeping its result summary shape extended with the two new categories
+- [x] 8.6 `events`: `sync` link on the event resource when enrolled, obtained through `SynchronizationPort` [D18]
+- [x] 8.7 Integration tests: importing an event enrols it; a manager's edit to the name raises a conflict on the next synchronisation and the name survives; resolving inward restores the ORIS values; accepting the divergence keeps the edit and re-asks on the next ORIS change; editing a fee override or adding a category raises no conflict
+- [x] 8.8 Integration tests: bulk synchronisation skips and reports conflicted and terminally failed events; a finished event is retired and no longer synchronised
+- [x] 8.9 Regression: existing ORIS import and synchronisation tests still pass unchanged where behaviour is unchanged; update those that assert silent overwriting of ORIS-owned fields
+- [x] 8.10 Carry over from Slice 7 review: `OrisEventSyncAdapter.withResolvedEventType` costs a second ORIS call and a second local read on every inward write, purely to re-derive the Klabis-owned event type that D3 keeps out of the projection. Harmless at Slice 7's scale; this slice is what puts it in the nightly pass over every active record [D10], so remove the second external read — e.g. reuse the `OrisEventFields` already read in `readExternal` within the same pass
+- [x] 8.11 Carry over from Slice 7 review: `warnIfSyncRemovesCategoriesWithRegistrations` is invoked only from the legacy `syncEventFromOris` path, not from `applyOrisSync`, which is what the adapter calls. Once 8.3 moves `syncEventFromOris` behind the engine, the warning stops firing unless it is added to the inward-write path
+- [x] 8.12 Run the full backend suite (`test-runner`), code review, commit
+
+Notes on Slice 8, all deliberate:
+
+- **Task 8.10 solved by carrying the resolved event type on the projection.** `OrisEventProjection` gained a `@JsonIgnore`d `resolvedEventTypeId` component, so `SyncProjectionCodec` never serialises it and it stays out of hashing, persistence and field-level divergence, as D3 requires of a Klabis-owned field. An earlier attempt used a `ThreadLocal` on the adapter, which worked only because of call-order discipline across two modules; it was replaced.
+- **`@NamedInterface("sync.domain")` deliberately exports the whole domain package.** `SynchronizationPort` already returns and accepts `SyncRecord`, `SyncTarget`, `SyncEntityType`, `ExternalReference` and `SyncResolution`, so callers need those types regardless of what the domain package itself exports; narrowing the named interface without also narrowing the port would move the problem rather than solve it. Accepted as-is — record the reasoning in the Slice 9 ADR (9.1).
+- **`@Lazy` on `OrisEventSyncAdapter`'s `orisEventImportPort`** breaks a bean-construction cycle that D2's dependency direction always implied and task 8.3 finally closed: `OrisEventImportService` → `SynchronizationPort` → the adapter registry → back to `OrisEventImportPort`. It costs fail-fast: a broken `OrisEventImportPort` bean would now surface on the first synchronisation rather than at startup.
+- **`cleanup.sql` never cleared the sync tables**, so records survived between test classes and `runFullPass` — which by design iterates every active record — met other classes' data. Fixed here rather than in Slice 1 because this slice is what first made it fail.
 
 ## 9. Slice: Architecture record and documentation
 
-- [ ] 9.1 `docs/design-decisions.md`: new ADR for the synchronisation engine — the generic module with integration-owned adapters, the identity mapping held only by the record, and the uniformly addressed REST resources
+- [ ] 9.1 `docs/design-decisions.md`: new ADR for the synchronisation engine — the generic module with integration-owned adapters, the identity mapping held only by the record, and the uniformly addressed REST resources. Also record the two module-boundary decisions Slice 8 made: why `sync.domain` is exported whole (the port's own signatures already expose those types) and why `OrisEventSyncAdapter` is `@Application` rather than `@SecondaryAdapter` (it holds two hexagonal roles at once, and a secondary adapter may never reach a primary port)
 - [ ] 9.2 `backend/CLAUDE.md`: add the `sync` module to the module overview and note the new `SYNC:MANAGE` authority and the synchronisation configuration block
 - [ ] 9.3 `backend-patterns` skill: document the adapter contract and the projection convention, so a future integration follows the same shape
 - [ ] 9.4 Verify the module structure test passes with the new module and its named interface, and that no module reaches past a primary port

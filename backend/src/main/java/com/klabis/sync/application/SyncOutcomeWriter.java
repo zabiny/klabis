@@ -1,7 +1,11 @@
 package com.klabis.sync.application;
 
+import com.klabis.common.domain.AuditMetadata;
 import com.klabis.sync.domain.*;
 import org.jmolecules.ddd.annotation.Service;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -21,18 +25,41 @@ class SyncOutcomeWriter {
 
     private final SyncRecordRepository syncRecordRepository;
     private final SyncAttemptRepository syncAttemptRepository;
+    private final SyncOutcomeWriter self;
 
-    SyncOutcomeWriter(SyncRecordRepository syncRecordRepository, SyncAttemptRepository syncAttemptRepository) {
+    /**
+     * {@code self} is this bean's own Spring proxy, injected lazily to sidestep the
+     * construction cycle a self-reference would otherwise create. {@link #persist} is
+     * deliberately not {@code @Transactional} itself — the version-conflict retry needs
+     * its two attempts to run as two separate transactions, and only a call through the
+     * proxy (never a plain {@code this.doPersist(...)}) makes {@code @Transactional}
+     * apply at all.
+     */
+    SyncOutcomeWriter(SyncRecordRepository syncRecordRepository, SyncAttemptRepository syncAttemptRepository,
+                       @Lazy SyncOutcomeWriter self) {
         this.syncRecordRepository = syncRecordRepository;
         this.syncAttemptRepository = syncAttemptRepository;
+        this.self = self;
     }
 
     /**
      * Persists the record and appends an attempt row (design.md D15), releasing the
      * record's claim in the same transaction — a persisted outcome, of whatever kind,
      * is the natural end of that record's claim window (design.md D12).
+     * <p>
+     * An inward write raises {@code EventUpdatedEvent} on the very entity the pass just
+     * wrote (design.md D9 — "an inward write is itself a local change"), and the
+     * self-listener's {@code markDirty} call runs asynchronously against the same
+     * {@code sync_record} row this method is about to save — so this save can lose an
+     * optimistic-locking race it did nothing wrong to lose. One retry against the
+     * current stored version is safe: {@code record}'s pass-computed state (status,
+     * snapshots, attempt) is unaffected by a concurrent dirty-marker, only the version
+     * stamp is stale. The retry runs in a brand-new transaction ({@code REQUIRES_NEW})
+     * rather than inside the failed one — Spring marks a transaction rollback-only the
+     * moment an exception crosses its boundary, so retrying within it would only trade
+     * {@link OptimisticLockingFailureException} for
+     * {@link org.springframework.transaction.UnexpectedRollbackException} on commit.
      */
-    @Transactional
     SyncRecord persist(
             SyncRecord record,
             SyncTriggerKind trigger,
@@ -44,6 +71,31 @@ class SyncOutcomeWriter {
             String actingUser
     ) {
         record.releaseClaim();
+        try {
+            return self.doPersist(record, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser);
+        } catch (OptimisticLockingFailureException raced) {
+            Long currentVersion = syncRecordRepository.findById(record.getId())
+                    .map(SyncRecord::getVersion)
+                    .orElseThrow(() -> raced);
+            record.updateAuditMetadata(new AuditMetadata(
+                    record.getCreatedAt(), record.getCreatedBy(),
+                    record.getLastModifiedAt(), record.getLastModifiedBy(),
+                    currentVersion));
+            return self.doPersist(record, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser);
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    SyncRecord doPersist(
+            SyncRecord record,
+            SyncTriggerKind trigger,
+            SyncDirection direction,
+            SyncOutcome outcome,
+            SyncHash localHash,
+            SyncHash externalHash,
+            String failureReason,
+            String actingUser
+    ) {
         SyncRecord saved = syncRecordRepository.save(record);
         appendAttempt(saved, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser);
         return saved;
@@ -54,9 +106,28 @@ class SyncOutcomeWriter {
      * claim to release — conflict resolution does not go through the claim mechanism
      * (D12's claim guards scheduled/manual pass overlap; a resolution is always an
      * explicit, single manager action against an already-standing conflict).
+     * <p>
+     * Subject to the same {@code markDirty} race {@link #persist} guards against — an
+     * {@code INWARD} resolution writes the local side just as an ordinary inward pass
+     * does — so it gets the same version-conflict retry in a fresh transaction.
      */
-    @Transactional
     SyncRecord persistResolution(SyncRecord record, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
+        try {
+            return self.doPersistResolution(record, direction, localHash, externalHash, actingUser);
+        } catch (OptimisticLockingFailureException raced) {
+            Long currentVersion = syncRecordRepository.findById(record.getId())
+                    .map(SyncRecord::getVersion)
+                    .orElseThrow(() -> raced);
+            record.updateAuditMetadata(new AuditMetadata(
+                    record.getCreatedAt(), record.getCreatedBy(),
+                    record.getLastModifiedAt(), record.getLastModifiedBy(),
+                    currentVersion));
+            return self.doPersistResolution(record, direction, localHash, externalHash, actingUser);
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    SyncRecord doPersistResolution(SyncRecord record, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
         SyncRecord saved = syncRecordRepository.save(record);
         appendAttempt(saved, SyncTriggerKind.MANUAL, direction, SyncOutcome.SUCCESS, localHash, externalHash, null, actingUser);
         return saved;

@@ -9,6 +9,13 @@ import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.*;
 import com.klabis.oris.OrisIntegrationComponent;
+import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.domain.ExternalReference;
+import com.klabis.sync.domain.ExternalSystem;
+import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncRecord;
+import com.klabis.sync.domain.SyncStatus;
+import com.klabis.sync.domain.SyncTarget;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -31,15 +38,18 @@ class OrisEventImportService implements OrisEventImportPort {
     private final OrisApiClient orisApiClient;
     private final OrisWebUrls orisWebUrls;
     private final EventTypeRepository eventTypeRepository;
+    private final SynchronizationPort synchronizationPort;
 
     OrisEventImportService(EventRepository eventRepository,
                            OrisApiClient orisApiClient,
                            OrisWebUrls orisWebUrls,
-                           EventTypeRepository eventTypeRepository) {
+                           EventTypeRepository eventTypeRepository,
+                           SynchronizationPort synchronizationPort) {
         this.eventRepository = eventRepository;
         this.orisApiClient = orisApiClient;
         this.orisWebUrls = orisWebUrls;
         this.eventTypeRepository = eventTypeRepository;
+        this.synchronizationPort = synchronizationPort;
     }
 
     @Transactional
@@ -63,22 +73,51 @@ class OrisEventImportService implements OrisEventImportPort {
 
         event.applyAutoMappedEventType(resolveEventTypeFromOrisDiscipline(details.discipline()));
 
+        Event saved;
         try {
-            return eventRepository.save(event);
+            saved = eventRepository.save(event);
         } catch (DataIntegrityViolationException e) {
             throw new DuplicateOrisImportException(orisId);
         }
+
+        // Enrolment happens synchronously here, colocated with the ORIS-specific import
+        // path, rather than via a listener on EventCreatedEvent — that event fires for
+        // every event, manually created ones included, so a listener would need an
+        // orisId != null filter this path never needs (design.md D17, task 8.1).
+        synchronizationPort.enroll(
+                new SyncTarget(SyncEntityType.EVENT, saved.getId().value().toString()),
+                new ExternalReference(ExternalSystem.ORIS, String.valueOf(orisId)));
+
+        return saved;
     }
 
-    @Transactional
+    /**
+     * Delegates to the synchronisation engine (design.md D18, task 8.3) instead of
+     * overwriting the event's ORIS-owned fields itself: a local edit to one of them
+     * now surfaces as a conflict rather than being silently discarded (design.md D6 —
+     * the behaviour change task 8.9 covers in the pre-existing tests that assumed the
+     * old silent-overwrite semantics).
+     * <p>
+     * Refuses up front, without claiming or attempting the record, when it is already
+     * {@code CONFLICT} or {@code FAILED} — the same guard
+     * {@link SynchronizationPort#synchronizeNow} applies, surfaced here as
+     * {@link EventSyncNeedsResolutionException} instead of the sync module's own
+     * exception type so this module's REST layer needs no knowledge of sync's
+     * internal exception vocabulary.
+     */
     @Override
     public void syncEventFromOris(EventId eventId) {
-        Event event = eventRepository.findById(eventId)
+        eventRepository.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
+
+        SyncTarget target = new SyncTarget(SyncEntityType.EVENT, eventId.value().toString());
+        SyncRecord record = synchronizationPort.findByTarget(target)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
-        OrisEventFields fields = readOrisFields(event.getOrisId());
-        warnIfSyncRemovesCategoriesWithRegistrations(event, fields.categories());
-        applyOrisSync(event, fields);
+        if (record.getStatus() == SyncStatus.CONFLICT || record.getStatus() == SyncStatus.FAILED) {
+            throw new EventSyncNeedsResolutionException(eventId);
+        }
+
+        synchronizationPort.synchronizeNow(record.getId(), null);
     }
 
     @Override
@@ -103,6 +142,8 @@ class OrisEventImportService implements OrisEventImportPort {
     }
 
     private Event applyOrisSync(Event event, OrisEventFields fields) {
+        warnIfSyncRemovesCategoriesWithRegistrations(event, fields.categories());
+
         event.syncFromOris(EventSyncFromOrisBuilder.builder()
                 .name(fields.name())
                 .eventDate(fields.eventDate())

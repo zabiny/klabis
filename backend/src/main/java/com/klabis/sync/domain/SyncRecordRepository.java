@@ -32,6 +32,17 @@ public interface SyncRecordRepository {
     List<SyncRecord> findAllActive();
 
     /**
+     * Every non-retired record, {@code FAILED} included — backs the manual
+     * {@code all-upcoming} bulk pass (design.md, "Existing operations, unchanged in
+     * shape": "still honouring the... {@code CONFLICT}/{@code FAILED} skip (those
+     * records are counted and reported, not attempted)"). Unlike {@link #findAllActive},
+     * which the scheduler needs {@code FAILED}-free to keep {@code runScheduledPass}'s
+     * own assertion from tripping, the manual pass must see a terminally failed record
+     * so it can report it rather than silently omitting it.
+     */
+    List<SyncRecord> findAllNonRetired();
+
+    /**
      * Records due for the frequent due scan (design.md D10): dirty (a local change
      * was observed) or whose {@code nextAttemptDueAt} has passed. One indexed query;
      * costs nothing when no record is due.

@@ -3,6 +3,7 @@ package com.klabis.sync.application;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.*;
 import org.jmolecules.ddd.annotation.Service;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
@@ -88,6 +89,41 @@ class SynchronizationService implements SynchronizationPort {
             throw new AmbiguousSyncTargetException(target.entityType(), systems.size());
         }
         return syncRecordRepository.findByTargetAndSystem(target, systems.get(0));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<SyncRecord> findActiveByEntityType(SyncEntityType entityType) {
+        return syncRecordRepository.findAllNonRetired().stream()
+                .filter(record -> record.getTarget().entityType() == entityType)
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public void markDirty(SyncTarget target) {
+        List<ExternalSystem> systems = adapterRegistry.systemsFor(target.entityType());
+        if (systems.isEmpty()) {
+            return;
+        }
+        if (systems.size() > 1) {
+            throw new AmbiguousSyncTargetException(target.entityType(), systems.size());
+        }
+        syncRecordRepository.findByTargetAndSystem(target, systems.get(0)).ifPresent(record -> {
+            record.markDirty();
+            // An inward write raises EventUpdatedEvent on the very entity the pass is
+            // writing (design.md D9 — "an inward write is itself a local change"), so
+            // this listener call can race the same pass's own trailing
+            // SyncOutcomeWriter#persist on the same sync_record row. Dirty-since is
+            // scheduling, never correctness (design.md D9, D11's "Dirty-since" row): if
+            // the concurrent pass's save wins, its own write already raises the flag it
+            // needs, so losing this one is a safe no-op, not a lost update.
+            try {
+                syncRecordRepository.save(record);
+            } catch (OptimisticLockingFailureException ignored) {
+                // Best effort only — see above.
+            }
+        });
     }
 
     @Override

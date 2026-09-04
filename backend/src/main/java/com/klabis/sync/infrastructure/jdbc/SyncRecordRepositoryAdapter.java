@@ -59,6 +59,13 @@ class SyncRecordRepositoryAdapter implements SyncRecordRepository {
     }
 
     @Override
+    public List<SyncRecord> findAllNonRetired() {
+        return jdbcRepository.findAllNonRetired().stream()
+                .map(memento -> memento.toSyncRecord(resolveProjectionType()))
+                .toList();
+    }
+
+    @Override
     public List<SyncRecord> findDueForScan(Instant now, Duration claimLease) {
         return jdbcRepository.findDueForScan(now, now.minus(claimLease)).stream()
                 .map(memento -> memento.toSyncRecord(resolveProjectionType()))

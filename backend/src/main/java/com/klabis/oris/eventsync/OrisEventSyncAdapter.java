@@ -2,12 +2,12 @@ package com.klabis.oris.eventsync;
 
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementPort;
-import com.klabis.events.application.OrisEventFields;
 import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.oris.OrisIntegrationComponent;
 import com.klabis.sync.domain.*;
 import org.jmolecules.architecture.hexagonal.Application;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -28,6 +28,12 @@ import java.util.UUID;
  * A local edit to an ORIS-owned field therefore always surfaces as a conflict rather
  * than being silently overwritten or silently sent onward (design.md D6).
  * <p>
+ * {@link #readExternal} resolves the ORIS discipline mapping once and carries it on
+ * the returned {@link OrisEventProjection#resolvedEventTypeId()} itself, so
+ * {@link #applyToLocal} reads it straight off the projection it was given rather than
+ * from separate call-order-dependent state — no second ORIS read (task 8.10), and no
+ * risk of one record's resolution leaking onto another's write.
+ * <p>
  * Classified as {@link Application}, not as a hexagonal adapter: this class holds two
  * hexagonal roles at once — a driven adapter implementing {@code sync}'s
  * {@link SynchronizationAdapter} secondary port, and a driving adapter calling
@@ -37,6 +43,14 @@ import java.util.UUID;
  * {@code @SecondaryAdapter} may never reach a primary port. {@code Application} is the
  * classification that permits the primary-port access D2 prescribes. The D2 dependency
  * direction is unchanged and still correct.
+ * <p>
+ * {@code orisEventImportPort} is {@link Lazy} because task 8.3 (delegating
+ * {@code syncEventFromOris} to the engine) closes a bean-construction cycle that D2's
+ * dependency direction always implied but never triggered until now:
+ * {@code OrisEventImportService} (implements {@link OrisEventImportPort}) now needs
+ * {@code SynchronizationPort}, which needs {@link SynchronizationAdapterRegistry},
+ * which needs this adapter, which needs {@code OrisEventImportPort} back.
+ * {@code eventManagementPort} does not participate in the cycle and stays eager.
  */
 @OrisIntegrationComponent
 @Application
@@ -48,7 +62,7 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
     private final EventManagementPort eventManagementPort;
     private final OrisEventImportPort orisEventImportPort;
 
-    OrisEventSyncAdapter(EventManagementPort eventManagementPort, OrisEventImportPort orisEventImportPort) {
+    OrisEventSyncAdapter(EventManagementPort eventManagementPort, @Lazy OrisEventImportPort orisEventImportPort) {
         this.eventManagementPort = eventManagementPort;
         this.orisEventImportPort = orisEventImportPort;
     }
@@ -81,8 +95,8 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
 
     @Override
     public SyncProjection readExternal(String externalId) {
-        OrisEventFields fields = orisEventImportPort.readOrisFields(toOrisId(externalId));
-        return OrisEventFieldsToProjectionMapper.fromOrisFields(fields);
+        return OrisEventFieldsToProjectionMapper.fromOrisFields(
+                orisEventImportPort.readOrisFields(toOrisId(externalId)));
     }
 
     /**
@@ -102,36 +116,13 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
     public void applyToLocal(String entityId, SyncProjection projection) {
         EventId eventId = toEventId(entityId);
         OrisEventProjection orisProjection = (OrisEventProjection) projection;
-        OrisEventFields fields = withResolvedEventType(eventId, OrisEventProjectionToFieldsMapper.toOrisEventFields(orisProjection));
-        orisEventImportPort.applyOrisSync(eventId, fields);
+        orisEventImportPort.applyOrisSync(eventId, OrisEventProjectionToFieldsMapper.toOrisEventFields(orisProjection));
     }
 
     @Override
     public void applyToExternal(String externalId, SyncProjection projection) {
         throw new UnsupportedOperationException(
                 "The ORIS event adapter declares no outward write capability");
-    }
-
-    /**
-     * The event type is Klabis-owned (design.md D3) and therefore absent from the
-     * projection, but {@code Event.applyAutoMappedEventType} still needs the ORIS
-     * discipline resolution to preserve today's auto-mapping behaviour on a write
-     * that came through the engine (task 7.5). Re-resolved from the event's own
-     * {@code orisId} rather than threaded through the projection, so the projection
-     * stays a plain carrier of comparable fields only.
-     */
-    private OrisEventFields withResolvedEventType(EventId eventId, OrisEventFields fields) {
-        Event event = eventManagementPort.getEvent(eventId, true);
-        Integer orisId = event.getOrisId();
-        if (orisId == null) {
-            return fields;
-        }
-        var resolvedEventTypeId = orisEventImportPort.readOrisFields(orisId).resolvedEventTypeId();
-        return new OrisEventFields(
-                fields.name(), fields.eventDate(), fields.location(), fields.organizer(),
-                fields.websiteUrl(), fields.registrationDeadlines(), fields.categories(),
-                fields.ranking(), fields.baseEntryFee(), resolvedEventTypeId
-        );
     }
 
     private static EventId toEventId(String entityId) {

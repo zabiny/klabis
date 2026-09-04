@@ -5,26 +5,45 @@ import com.klabis.events.EventId;
 import java.util.List;
 
 /**
- * Result of a bulk ORIS sync operation.
+ * Result of a manual pass over every active event synchronisation record (design.md
+ * D18, tasks 8.4/8.5). {@code totalProcessed} counts every active record considered,
+ * including the ones awaiting a decision or stopped by failure; {@code successCount}
+ * and {@code failureCount} cover only records actually attempted this pass — a record
+ * already {@code CONFLICT} or {@code FAILED} is reported separately, never lumped into
+ * {@code failureCount}, since only a decision on its synchronisation resource can move
+ * it again.
  *
- * @param totalProcessed total number of events that matched the selection criteria
- * @param successCount   number of events successfully synced
- * @param failureCount   number of events that failed to sync
- * @param results        per-event sync results
+ * @param totalProcessed        total number of active records considered
+ * @param successCount          number of records synchronised without incident this pass
+ * @param failureCount          number of records that failed this pass (transient or newly terminal)
+ * @param awaitingDecisionCount number of records already in {@code CONFLICT} — not attempted
+ * @param stoppedByFailureCount number of records already terminally {@code FAILED} — not attempted
+ * @param results               per-event results for records actually attempted this pass
+ * @param awaitingDecision      per-event entries for records already in {@code CONFLICT}
+ * @param stoppedByFailure      per-event entries for records already terminally {@code FAILED}
  */
 public record BulkSyncResult(
         int totalProcessed,
         int successCount,
         int failureCount,
-        List<EventSyncEntry> results
+        int awaitingDecisionCount,
+        int stoppedByFailureCount,
+        List<EventSyncEntry> results,
+        List<EventSyncEntry> awaitingDecision,
+        List<EventSyncEntry> stoppedByFailure
 ) {
 
     /**
      * Per-event result entry in a bulk sync operation.
+     * <p>
+     * Also used, with {@code status} unset, for entries in {@link #awaitingDecision}
+     * and {@link #stoppedByFailure} — those records were not attempted this pass, so
+     * neither {@link SyncStatus#SYNCED} nor {@link SyncStatus#FAILED} describes them;
+     * which list an entry appears in already says which of the two it is.
      *
      * @param eventId event identifier
      * @param name    event name (snapshot at the time of sync attempt)
-     * @param status  sync outcome
+     * @param status  sync outcome; null for an entry in {@link #awaitingDecision} or {@link #stoppedByFailure}
      * @param error   error message when status is {@link SyncStatus#FAILED}, null otherwise
      */
     public record EventSyncEntry(
@@ -40,6 +59,10 @@ public record BulkSyncResult(
 
         static EventSyncEntry failed(EventId eventId, String name, String error) {
             return new EventSyncEntry(eventId, name, SyncStatus.FAILED, error);
+        }
+
+        static EventSyncEntry notAttempted(EventId eventId, String name) {
+            return new EventSyncEntry(eventId, name, null, null);
         }
     }
 

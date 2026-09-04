@@ -1,6 +1,7 @@
 package com.klabis.oris.eventsync;
 
 import com.klabis.events.EventId;
+import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.OrisEventFields;
@@ -134,24 +135,15 @@ class OrisEventSyncAdapterTest {
         @Test
         @DisplayName("writes the projection inward via OrisEventImportPort.applyOrisSync")
         void writesInwardViaApplyOrisSync() {
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(ORIS_ID)
-                    .name("Old name")
-                    .eventDate(LocalDate.of(2026, 5, 1))
-                    .location("Brno Park")
-                    .organizer("OOB")
-                    .websiteUrl(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"))
-                    .build());
-            when(eventManagementPort.getEvent(EVENT_ID, true)).thenReturn(event);
             when(orisEventImportPort.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
                     "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
                     WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"),
                     RegistrationDeadlines.none(), List.of(), null, null, null));
-
-            OrisEventProjection incoming = new OrisEventProjection(
-                    "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
-                    "https://oris.ceskyorientak.cz/Zavod?id=4242",
-                    null, null, null, List.of(), null, null, null, null, null);
+            // The engine always calls readExternal before applyToLocal within one pass
+            // (design.md "How a pass runs") and passes the very projection readExternal
+            // returned — that is what now carries the resolved event type across
+            // without a second ORIS read (task 8.10).
+            SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             adapter.applyToLocal(EVENT_UUID.toString(), incoming);
 
@@ -160,6 +152,55 @@ class OrisEventSyncAdapterTest {
             assertThat(captor.getValue().name()).isEqualTo("New name");
         }
 
+        @Test
+        @DisplayName("carries the event type resolved by readExternal, without reading ORIS a second time (task 8.10)")
+        void carriesResolvedEventTypeWithoutSecondOrisRead() {
+            EventTypeId resolvedType = EventTypeId.generate();
+            when(orisEventImportPort.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
+                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"),
+                    RegistrationDeadlines.none(), List.of(), null, null, resolvedType));
+            SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
+
+            adapter.applyToLocal(EVENT_UUID.toString(), incoming);
+
+            ArgumentCaptor<OrisEventFields> captor = ArgumentCaptor.forClass(OrisEventFields.class);
+            verify(orisEventImportPort).applyOrisSync(eq(EVENT_ID), captor.capture());
+            assertThat(captor.getValue().resolvedEventTypeId()).isEqualTo(resolvedType);
+            // readOrisFields must have been called exactly once — by readExternal — not
+            // again inside applyToLocal.
+            verify(orisEventImportPort, org.mockito.Mockito.times(1)).readOrisFields(ORIS_ID);
+        }
+
+        @Test
+        @DisplayName("never leaks one record's resolved event type onto a different record's write (regression for the removed ThreadLocal)")
+        void doesNotLeakResolvedEventTypeBetweenRecords() {
+            int otherOrisId = ORIS_ID + 1;
+            EventId otherEventId = new EventId(UUID.randomUUID());
+            EventTypeId firstResolvedType = EventTypeId.generate();
+
+            when(orisEventImportPort.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "First event", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
+                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=" + ORIS_ID),
+                    RegistrationDeadlines.none(), List.of(), null, null, firstResolvedType));
+            when(orisEventImportPort.readOrisFields(otherOrisId)).thenReturn(new OrisEventFields(
+                    "Second event", LocalDate.of(2026, 6, 1), "Praha Park", "POB",
+                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=" + otherOrisId),
+                    RegistrationDeadlines.none(), List.of(), null, null, null));
+
+            // Two records processed in sequence on the same thread, exactly as the
+            // engine does (D16 — one record at a time): reading the second record's
+            // external side must not carry the first record's resolved event type
+            // forward to the second record's inward write.
+            adapter.readExternal(String.valueOf(ORIS_ID));
+            SyncProjection secondIncoming = adapter.readExternal(String.valueOf(otherOrisId));
+
+            adapter.applyToLocal(otherEventId.value().toString(), secondIncoming);
+
+            ArgumentCaptor<OrisEventFields> captor = ArgumentCaptor.forClass(OrisEventFields.class);
+            verify(orisEventImportPort).applyOrisSync(eq(otherEventId), captor.capture());
+            assertThat(captor.getValue().resolvedEventTypeId()).isNull();
+        }
     }
 
     @Nested
@@ -171,7 +212,7 @@ class OrisEventSyncAdapterTest {
         void throwsUnsupported() {
             OrisEventProjection projection = new OrisEventProjection(
                     "Name", LocalDate.now(), "Loc", "Org", null,
-                    null, null, null, List.of(), null, null, null, null, null);
+                    null, null, null, List.of(), null, null, null, null, null, null);
 
             assertThatThrownBy(() -> adapter.applyToExternal("4242", projection))
                     .isInstanceOf(UnsupportedOperationException.class);

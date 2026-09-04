@@ -20,6 +20,8 @@ import com.klabis.members.MemberAccommodationDto;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
+import com.klabis.sync.application.SynchronizationPort;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,7 @@ import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
@@ -74,8 +77,16 @@ class EventControllerTest {
     @MockitoBean
     private AccommodationListCsvRenderer csvRenderer;
 
+    @MockitoBean
+    private SynchronizationPort synchronizationPort;
+
     @Autowired
     private MemberRegistrationSanctionPort memberRegistrationSanctionPort;
+
+    @BeforeEach
+    void stubSynchronizationPortAbsentByDefault() {
+        when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
+    }
 
     @Nested
     @DisplayName("POST /api/events")
@@ -813,6 +824,45 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._templates.updateEvent.method").value("PATCH"))  // EDIT
                     .andExpect(jsonPath("$._templates.publishEvent.target").exists())   // PUBLISH
                     .andExpect(jsonPath("$._templates.cancelEvent.target").exists());   // CANCEL
+        }
+
+        @Test
+        @DisplayName("should include sync link when the event is enrolled in synchronisation (task 8.6)")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE, Authority.SYNC_MANAGE})
+        void shouldIncludeSyncLinkWhenEnrolled() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent().build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            com.klabis.sync.domain.SyncRecord record = com.klabis.sync.domain.SyncRecord.enroll(
+                    com.klabis.sync.SyncRecordId.newId(),
+                    new com.klabis.sync.domain.SyncTarget(com.klabis.sync.domain.SyncEntityType.EVENT, event.getId().value().toString()),
+                    new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, "101"));
+            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.of(record));
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.sync.href").exists());
+        }
+
+        @Test
+        @DisplayName("should omit sync link when the event is not enrolled in synchronisation")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldOmitSyncLinkWhenNotEnrolled() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = EventTestDataBuilder.anEvent().build();
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.sync").doesNotExist());
         }
 
         @Test

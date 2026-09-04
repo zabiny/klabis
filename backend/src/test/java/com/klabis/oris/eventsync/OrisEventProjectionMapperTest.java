@@ -140,4 +140,23 @@ class OrisEventProjectionMapperTest {
 
         assertThat(SyncProjectionCodec.hash(fromEventSide)).isNotEqualTo(SyncProjectionCodec.hash(fromOrisSide));
     }
+
+    @Test
+    @DisplayName("resolvedEventTypeId is Klabis-owned (design.md D3) and never affects the hash")
+    void resolvedEventTypeId_isExcludedFromHash() {
+        OrisEventFields fieldsWithoutResolvedType = new OrisEventFields(
+                "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
+                WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"),
+                RegistrationDeadlines.none(), List.of(), null, null, null);
+        OrisEventFields fieldsWithResolvedType = new OrisEventFields(
+                "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
+                WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"),
+                RegistrationDeadlines.none(), List.of(), null, null,
+                new com.klabis.events.EventTypeId(java.util.UUID.randomUUID()));
+
+        OrisEventProjection withoutResolvedType = OrisEventFieldsToProjectionMapper.fromOrisFields(fieldsWithoutResolvedType);
+        OrisEventProjection withResolvedType = OrisEventFieldsToProjectionMapper.fromOrisFields(fieldsWithResolvedType);
+
+        assertThat(SyncProjectionCodec.hash(withoutResolvedType)).isEqualTo(SyncProjectionCodec.hash(withResolvedType));
+    }
 }

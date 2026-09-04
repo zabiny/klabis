@@ -19,6 +19,11 @@ import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.*;
 import com.klabis.members.infrastructure.restapi.MembersApi;
+import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncTarget;
+import com.klabis.sync.infrastructure.restapi.SyncApi;
+import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
 import jakarta.annotation.Nullable;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
@@ -63,11 +68,14 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @ExposesResourceFor(Event.class)
 public class EventController implements EventsApi {
 
+    static final String EVENT_SYNC_ENROLLED_ATTR = EventController.class.getName() + ".eventSyncEnrolled";
+
     private final EventManagementPort eventManagementService;
     private final EventRegistrationPort eventRegistrationService;
     private final Members members;
     private final AccommodationListCsvRenderer csvRenderer;
     private final ConversionService conversionService;
+    private final SynchronizationPort synchronizationPort;
 
     public EventController(
             EventManagementPort eventManagementService,
@@ -75,12 +83,14 @@ public class EventController implements EventsApi {
             Members members,
             java.util.Optional<OrisEventImportPort> orisEventImportPort,
             AccommodationListCsvRenderer csvRenderer,
-            ConversionService conversionService) {
+            ConversionService conversionService,
+            SynchronizationPort synchronizationPort) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
         this.csvRenderer = csvRenderer;
         this.conversionService = conversionService;
+        this.synchronizationPort = synchronizationPort;
     }
 
     @Override
@@ -127,6 +137,14 @@ public class EventController implements EventsApi {
         // they are scanned by every @WebMvcTest, so unrelated slice tests would have to mock them.
         HalResponseContext.setDomain(event);
         HalResponseContext.embed(buildRegistrationDtos(event), RegistrationSummaryDto.class);
+
+        // Same reasoning for SynchronizationPort (task 8.6): the postprocessor reads this request
+        // attribute instead of holding the port itself, so unrelated @WebMvcTest slices need not mock it.
+        boolean isEnrolled = synchronizationPort.findByTarget(
+                new SyncTarget(SyncEntityType.EVENT, event.getId().value().toString())).isPresent();
+        RequestContextHolder.currentRequestAttributes()
+                .setAttribute(EVENT_SYNC_ENROLLED_ATTR, isEnrolled, RequestAttributes.SCOPE_REQUEST);
+
         return ResponseEntity.ok(conversionService.convert(event, EventDto.class));
     }
 
@@ -508,6 +526,20 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
             klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
+
+        if (isEventSyncEnrolled()) {
+            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENTS, eventId.toString()))
+                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
+        }
+    }
+
+    private static boolean isEventSyncEnrolled() {
+        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return false;
+        }
+        Object value = attrs.getAttribute(EventController.EVENT_SYNC_ENROLLED_ATTR, RequestAttributes.SCOPE_REQUEST);
+        return Boolean.TRUE.equals(value);
     }
 }
 

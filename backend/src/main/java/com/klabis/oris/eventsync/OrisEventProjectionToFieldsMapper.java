@@ -17,7 +17,9 @@ import java.util.Currency;
  * The projection is what the engine decided to write inward — it may be the freshly
  * read external side, or (after a resolved conflict) a snapshot the engine already
  * holds — so this mapper never talks to ORIS itself; it only reshapes data the engine
- * already has.
+ * already has, including {@link OrisEventProjection#resolvedEventTypeId()}, which
+ * travels on the projection itself rather than through separate thread-local state
+ * (see the field's javadoc on {@link OrisEventProjection}).
  */
 final class OrisEventProjectionToFieldsMapper {
 
@@ -50,7 +52,7 @@ final class OrisEventProjectionToFieldsMapper {
                         .toList(),
                 ranking,
                 baseEntryFee,
-                null
+                projection.resolvedEventTypeId()
         );
     }
 }

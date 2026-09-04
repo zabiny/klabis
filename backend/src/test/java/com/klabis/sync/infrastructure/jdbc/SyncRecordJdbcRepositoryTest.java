@@ -176,6 +176,54 @@ class SyncRecordJdbcRepositoryTest {
             assertThat(active).extracting(SyncRecord::getId).contains(inSync.getId());
             assertThat(active).extracting(SyncRecord::getId).doesNotContain(savedRetired.getId());
         }
+
+        @Test
+        @DisplayName("excludes a terminally failed record — runScheduledPass must never see one (design.md D10)")
+        void excludesTerminallyFailedRecord() {
+            SyncRecord failed = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "active-3"),
+                    new ExternalReference(ExternalSystem.ORIS, "8503"));
+            SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno"), hasher);
+            failed.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+            failed.recordTerminalFailure(5, "boom");
+            SyncRecord savedFailed = syncRecordRepository.save(failed);
+
+            List<SyncRecord> active = syncRecordRepository.findAllActive();
+
+            assertThat(active).extracting(SyncRecord::getId).doesNotContain(savedFailed.getId());
+        }
+    }
+
+    @Nested
+    @DisplayName("findAllNonRetired() — backs the manual all-upcoming bulk pass (design.md D18)")
+    class FindAllNonRetired {
+
+        @Test
+        @DisplayName("includes a terminally failed record, so it can be reported rather than silently dropped")
+        void includesTerminallyFailedRecord() {
+            SyncRecord failed = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "nonretired-1"),
+                    new ExternalReference(ExternalSystem.ORIS, "8511"));
+            SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno"), hasher);
+            failed.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+            failed.recordTerminalFailure(5, "boom");
+            SyncRecord savedFailed = syncRecordRepository.save(failed);
+
+            List<SyncRecord> nonRetired = syncRecordRepository.findAllNonRetired();
+
+            assertThat(nonRetired).extracting(SyncRecord::getId).contains(savedFailed.getId());
+        }
+
+        @Test
+        @DisplayName("excludes a retired record")
+        void excludesRetiredRecord() {
+            SyncRecord retired = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "nonretired-2"),
+                    new ExternalReference(ExternalSystem.ORIS, "8512"));
+            retired.retire();
+            SyncRecord savedRetired = syncRecordRepository.save(retired);
+
+            List<SyncRecord> nonRetired = syncRecordRepository.findAllNonRetired();
+
+            assertThat(nonRetired).extracting(SyncRecord::getId).doesNotContain(savedRetired.getId());
+        }
     }
 
     @Nested

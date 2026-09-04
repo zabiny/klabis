@@ -49,6 +49,10 @@ DELETE FROM finance.finance_transaction;
 -- Member financial accounts (owned by finance module, no FK to members table by design)
 DELETE FROM finance.member_account;
 
+-- Sync engine (attempt history references sync_record, so it goes first)
+DELETE FROM sync.sync_attempt;
+DELETE FROM sync.sync_record;
+
 -- Membership fees (fee group memberships → groups → levels, rules, publications)
 DELETE FROM membershipfees.membership_fee_group_members;
 DELETE FROM membershipfees.membership_fee_group_rule_snapshot;

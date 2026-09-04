@@ -2,11 +2,13 @@ package com.klabis.sync.application;
 
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.ExternalReference;
+import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncResolution;
 import com.klabis.sync.domain.SyncTarget;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -46,6 +48,26 @@ public interface SynchronizationPort {
      *                                       error, not a normal empty result
      */
     Optional<SyncRecord> findByTarget(SyncTarget target);
+
+    /**
+     * Every non-retired synchronisation record for the given entity type — {@code
+     * FAILED} included — across every external system it is enrolled against, unlike
+     * {@link #findByTarget} which resolves one entity to at most one record. Backs the
+     * manual {@code all-upcoming} bulk pass, which must see a {@code CONFLICT} or
+     * {@code FAILED} record in order to count and report it as skipped, not just the
+     * records it can actually attempt (design.md D18's {@code all-upcoming} semantics —
+     * "still honouring... the {@code CONFLICT}/{@code FAILED} skip").
+     */
+    List<SyncRecord> findActiveByEntityType(SyncEntityType entityType);
+
+    /**
+     * Marks the record for this target dirty (design.md D9) — a scheduling signal
+     * only, collapsing a burst of local edits into one due pass; never consulted to
+     * decide whether a write is safe. Does nothing if the target is not enrolled: a
+     * module publishing this signal does not know, and should not need to know,
+     * whether synchronisation is active for the entity that changed.
+     */
+    void markDirty(SyncTarget target);
 
     /**
      * The number of retryable/terminal attempts already recorded in the record's

@@ -42,7 +42,8 @@ final class OrisEventFieldsToProjectionMapper {
                 ranking != null ? ranking.shortName() : null,
                 ranking != null ? ranking.name() : null,
                 baseEntryFee != null ? baseEntryFee.amount() : null,
-                baseEntryFee != null ? baseEntryFee.currency().getCurrencyCode() : null
+                baseEntryFee != null ? baseEntryFee.currency().getCurrencyCode() : null,
+                fields.resolvedEventTypeId()
         );
     }
 }

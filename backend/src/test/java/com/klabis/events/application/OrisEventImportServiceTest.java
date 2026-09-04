@@ -10,6 +10,7 @@ import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
 import com.klabis.members.MemberId;
+import com.klabis.sync.application.SynchronizationPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -49,11 +50,14 @@ class OrisEventImportServiceTest {
     @Mock
     private OrisWebUrls orisWebUrls;
 
+    @Mock
+    private SynchronizationPort synchronizationPort;
+
     private OrisEventImportService service;
 
     @BeforeEach
     void setUp() {
-        service = new OrisEventImportService(eventRepository, orisApiClient, orisWebUrls, eventTypeRepository);
+        service = new OrisEventImportService(eventRepository, orisApiClient, orisWebUrls, eventTypeRepository, synchronizationPort);
     }
 
     @Nested
@@ -78,6 +82,25 @@ class OrisEventImportServiceTest {
             assertThat(result.getName()).isEqualTo("Spring Sprint");
             assertThat(result.getOrganizer()).isEqualTo("OOB");
             assertThat(result.getWebsiteUrl().value()).isEqualTo("https://oris.ceskyorientak.cz/Zavod?id=9876");
+        }
+
+        @Test
+        @DisplayName("should enrol the imported event with the synchronisation engine (task 8.1)")
+        void shouldEnrolImportedEventWithSynchronizationEngine() {
+            int orisId = 9877;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            EventDetails details = buildEventDetails(orisId, "Spring Sprint", LocalDate.of(2026, 8, 15), "Brno Park", org1, null);
+
+            when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Event result = service.importEventFromOris(orisId);
+
+            verify(synchronizationPort).enroll(
+                    new com.klabis.sync.domain.SyncTarget(com.klabis.sync.domain.SyncEntityType.EVENT, result.getId().value().toString()),
+                    new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, String.valueOf(orisId)));
         }
 
         @Test
@@ -170,8 +193,77 @@ class OrisEventImportServiceTest {
     class SyncEventFromOrisMethod {
 
         @Test
-        @DisplayName("should fetch event from ORIS and sync all fields")
-        void shouldSyncEventFromOris() {
+        @DisplayName("should throw EventNotFoundException when event does not exist")
+        void shouldThrowWhenEventNotFound() {
+            EventId eventId = EventId.generate();
+            when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.syncEventFromOris(eventId))
+                    .isInstanceOf(EventNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("should throw EventNotFoundException when event is not enrolled for synchronisation")
+        void shouldThrowWhenEventNotEnrolled() {
+            EventId eventId = EventId.generate();
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(9876).name("Race").eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Forest").organizer("OOB").build());
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.syncEventFromOris(eventId))
+                    .isInstanceOf(EventNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("should delegate to the synchronisation engine when the record is enrolled and not stuck (task 8.3)")
+        void shouldDelegateToSynchronizationEngine() {
+            EventId eventId = EventId.generate();
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(9876).name("Race").eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Forest").organizer("OOB").build());
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+
+            com.klabis.sync.domain.SyncTarget target = new com.klabis.sync.domain.SyncTarget(
+                    com.klabis.sync.domain.SyncEntityType.EVENT, eventId.value().toString());
+            com.klabis.sync.domain.SyncRecord record = com.klabis.sync.domain.SyncRecord.enroll(
+                    com.klabis.sync.SyncRecordId.newId(), target,
+                    new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, "9876"));
+            when(synchronizationPort.findByTarget(target)).thenReturn(Optional.of(record));
+
+            service.syncEventFromOris(eventId);
+
+            verify(synchronizationPort).synchronizeNow(record.getId(), null);
+        }
+
+        @Test
+        @DisplayName("should refuse with EventSyncNeedsResolutionException when the record is in conflict")
+        void shouldRefuseWhenRecordInConflict() {
+            EventId eventId = EventId.generate();
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(9876).name("Race").eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Forest").organizer("OOB").build());
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+
+            com.klabis.sync.domain.SyncTarget target = new com.klabis.sync.domain.SyncTarget(
+                    com.klabis.sync.domain.SyncEntityType.EVENT, eventId.value().toString());
+            com.klabis.sync.domain.SyncRecord record = Mockito.mock(com.klabis.sync.domain.SyncRecord.class);
+            when(record.getStatus()).thenReturn(com.klabis.sync.domain.SyncStatus.CONFLICT);
+            when(synchronizationPort.findByTarget(target)).thenReturn(Optional.of(record));
+
+            assertThatThrownBy(() -> service.syncEventFromOris(eventId))
+                    .isInstanceOf(EventSyncNeedsResolutionException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("applyOrisSync() — the engine's inward write (task 8.9: rewired from the old direct-write syncEventFromOris path)")
+    class ApplyOrisSyncMethod {
+
+        @Test
+        @DisplayName("should apply all fields fetched from ORIS")
+        void shouldApplyAllFieldsFromOris() {
             EventId eventId = EventId.generate();
             int orisId = 9876;
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
@@ -191,7 +283,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            service.syncEventFromOris(eventId);
+            OrisEventFields fields = service.readOrisFields(orisId);
+            service.applyOrisSync(eventId, fields);
 
             assertThat(event.getName()).isEqualTo("New Name from ORIS");
             assertThat(event.getLocation()).isEqualTo("New Location");
@@ -205,12 +298,16 @@ class OrisEventImportServiceTest {
             EventId eventId = EventId.generate();
             when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.syncEventFromOris(eventId))
+            OrisEventFields fields = new OrisEventFields(
+                    "Name", LocalDate.of(2026, 8, 1), "Location", "Org", null, null,
+                    java.util.List.of(), null, null, null);
+
+            assertThatThrownBy(() -> service.applyOrisSync(eventId, fields))
                     .isInstanceOf(EventNotFoundException.class);
         }
 
         @Test
-        @DisplayName("should log warning when sync removes categories that have existing registrations")
+        @DisplayName("should log warning when sync removes categories that have existing registrations (task 8.11)")
         void shouldLogWarningWhenSyncRemovesCategoriesWithRegistrations() {
             EventId eventId = EventId.generate();
             int orisId = 9876;
@@ -244,7 +341,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            service.syncEventFromOris(eventId);
+            OrisEventFields fields = service.readOrisFields(orisId);
+            service.applyOrisSync(eventId, fields);
 
             verify(eventRepository).save(event);
             assertThat(event.getCategories()).extracting(EventCategory::name)
@@ -276,7 +374,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            service.syncEventFromOris(eventId);
+            OrisEventFields fields = service.readOrisFields(orisId);
+            service.applyOrisSync(eventId, fields);
 
             assertThat(event.getCategories()).hasSize(1);
             assertThat(event.getCategories().get(0).orisId()).isEqualTo("100");
@@ -443,7 +542,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            service.syncEventFromOris(eventId);
+            OrisEventFields fields = service.readOrisFields(orisId);
+            service.applyOrisSync(eventId, fields);
 
             assertThat(event.getRanking()).isNotNull();
             assertThat(event.getRanking().levelId()).isEqualTo(5);
@@ -468,7 +568,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            service.syncEventFromOris(eventId);
+            OrisEventFields fields = service.readOrisFields(orisId);
+            service.applyOrisSync(eventId, fields);
 
             assertThat(event.getRanking()).isNull();
         }
@@ -633,7 +734,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            service.syncEventFromOris(eventId);
+            OrisEventFields fields = service.readOrisFields(orisId);
+            service.applyOrisSync(eventId, fields);
 
             assertThat(event.getBaseEntryFee()).isNotNull();
             assertThat(event.getBaseEntryFee().amount()).isEqualByComparingTo(new BigDecimal("400"));
