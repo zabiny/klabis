@@ -45,8 +45,6 @@ class OrisBulkSyncService implements OrisBulkSyncPort {
         List<BulkSyncResult.EventSyncEntry> results = new ArrayList<>();
         List<BulkSyncResult.EventSyncEntry> awaitingDecision = new ArrayList<>();
         List<BulkSyncResult.EventSyncEntry> stoppedByFailure = new ArrayList<>();
-        int successCount = 0;
-        int failureCount = 0;
 
         for (SyncRecord record : activeRecords) {
             EventId eventId = toEventId(record);
@@ -64,18 +62,13 @@ class OrisBulkSyncService implements OrisBulkSyncPort {
             try {
                 synchronizationPort.synchronizeNow(record.getId(), null);
                 results.add(BulkSyncResult.EventSyncEntry.synced(eventId, eventName));
-                successCount++;
             } catch (Exception e) {
                 log.warn("Bulk ORIS sync failed for event {} ({}): {}", eventId, eventName, e.getMessage());
                 results.add(BulkSyncResult.EventSyncEntry.failed(eventId, eventName, e.getMessage()));
-                failureCount++;
             }
         }
 
-        return new BulkSyncResult(
-                activeRecords.size(), successCount, failureCount,
-                awaitingDecision.size(), stoppedByFailure.size(),
-                results, awaitingDecision, stoppedByFailure);
+        return new BulkSyncResult(activeRecords.size(), results, awaitingDecision, stoppedByFailure);
     }
 
     private EventId toEventId(SyncRecord record) {

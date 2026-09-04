@@ -20,7 +20,17 @@ import org.springframework.core.convert.converter.Converter;
 @Mapper(config = MapstructSpringMapperConfig.class)
 interface BulkSyncResultConverter extends Converter<com.klabis.events.application.BulkSyncResult, BulkSyncResult> {
 
+    /**
+     * The four count fields are derived accessors on the domain record, not record
+     * components, so MapStruct's record-component-based auto-mapping does not see
+     * them as mapping sources — they must be wired explicitly via
+     * {@code expression}.
+     */
     @Override
+    @Mapping(target = "successCount", expression = "java(source.successCount())")
+    @Mapping(target = "failureCount", expression = "java(source.failureCount())")
+    @Mapping(target = "awaitingDecisionCount", expression = "java(source.awaitingDecisionCount())")
+    @Mapping(target = "stoppedByFailureCount", expression = "java(source.stoppedByFailureCount())")
     BulkSyncResult convert(com.klabis.events.application.BulkSyncResult source);
 
     @Mapping(target = "eventId", source = "eventId.value")

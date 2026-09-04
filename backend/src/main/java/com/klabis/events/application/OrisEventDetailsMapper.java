@@ -6,6 +6,7 @@ import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Level;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventCategory;
+import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.EventRanking;
 import com.klabis.events.domain.Money;
@@ -37,7 +38,7 @@ final class OrisEventDetailsMapper {
     private OrisEventDetailsMapper() {
     }
 
-    static OrisEventFields map(EventDetails details, int orisId, OrisWebUrls orisWebUrls) {
+    static OrisEventFields map(EventDetails details, int orisId, OrisWebUrls orisWebUrls, EventTypeId resolvedEventTypeId) {
         String organizer = resolveOrganizer(details);
         WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.eventUrl(orisId));
         RegistrationDeadlines registrationDeadlines = buildRegistrationDeadlines(details, orisId);
@@ -55,7 +56,7 @@ final class OrisEventDetailsMapper {
                 categories,
                 ranking,
                 baseEntryFee,
-                null
+                resolvedEventTypeId
         );
     }
 

@@ -71,18 +71,8 @@ class SyncOutcomeWriter {
             String actingUser
     ) {
         record.releaseClaim();
-        try {
-            return self.doPersist(record, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser);
-        } catch (OptimisticLockingFailureException raced) {
-            Long currentVersion = syncRecordRepository.findById(record.getId())
-                    .map(SyncRecord::getVersion)
-                    .orElseThrow(() -> raced);
-            record.updateAuditMetadata(new AuditMetadata(
-                    record.getCreatedAt(), record.getCreatedBy(),
-                    record.getLastModifiedAt(), record.getLastModifiedBy(),
-                    currentVersion));
-            return self.doPersist(record, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser);
-        }
+        return withOptimisticLockRetry(record,
+                () -> self.doPersist(record, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -112,8 +102,21 @@ class SyncOutcomeWriter {
      * does — so it gets the same version-conflict retry in a fresh transaction.
      */
     SyncRecord persistResolution(SyncRecord record, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
+        return withOptimisticLockRetry(record,
+                () -> self.doPersistResolution(record, direction, localHash, externalHash, actingUser));
+    }
+
+    /**
+     * Runs {@code write} once, and — on the {@code markDirty} race both {@link
+     * #persist} and {@link #persistResolution} are exposed to (see their own
+     * javadoc) — refreshes {@code record}'s version stamp from the currently stored
+     * row and retries exactly once. The retried call still goes through the {@code
+     * self} proxy inside {@code write}, so it still runs in its own fresh {@code
+     * REQUIRES_NEW} transaction.
+     */
+    private SyncRecord withOptimisticLockRetry(SyncRecord record, java.util.function.Supplier<SyncRecord> write) {
         try {
-            return self.doPersistResolution(record, direction, localHash, externalHash, actingUser);
+            return write.get();
         } catch (OptimisticLockingFailureException raced) {
             Long currentVersion = syncRecordRepository.findById(record.getId())
                     .map(SyncRecord::getVersion)
@@ -122,7 +125,7 @@ class SyncOutcomeWriter {
                     record.getCreatedAt(), record.getCreatedBy(),
                     record.getLastModifiedAt(), record.getLastModifiedBy(),
                     currentVersion));
-            return self.doPersistResolution(record, direction, localHash, externalHash, actingUser);
+            return write.get();
         }
     }
 

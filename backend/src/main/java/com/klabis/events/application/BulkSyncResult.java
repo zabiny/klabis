@@ -12,26 +12,42 @@ import java.util.List;
  * already {@code CONFLICT} or {@code FAILED} is reported separately, never lumped into
  * {@code failureCount}, since only a decision on its synchronisation resource can move
  * it again.
+ * <p>
+ * The four counts are derived from the four lists rather than stored independently,
+ * so there is exactly one place — the list a caller adds an entry to — that decides
+ * what gets counted.
  *
- * @param totalProcessed        total number of active records considered
- * @param successCount          number of records synchronised without incident this pass
- * @param failureCount          number of records that failed this pass (transient or newly terminal)
- * @param awaitingDecisionCount number of records already in {@code CONFLICT} — not attempted
- * @param stoppedByFailureCount number of records already terminally {@code FAILED} — not attempted
- * @param results               per-event results for records actually attempted this pass
- * @param awaitingDecision      per-event entries for records already in {@code CONFLICT}
- * @param stoppedByFailure      per-event entries for records already terminally {@code FAILED}
+ * @param totalProcessed   total number of active records considered
+ * @param results          per-event results for records actually attempted this pass
+ * @param awaitingDecision per-event entries for records already in {@code CONFLICT}
+ * @param stoppedByFailure per-event entries for records already terminally {@code FAILED}
  */
 public record BulkSyncResult(
         int totalProcessed,
-        int successCount,
-        int failureCount,
-        int awaitingDecisionCount,
-        int stoppedByFailureCount,
         List<EventSyncEntry> results,
         List<EventSyncEntry> awaitingDecision,
         List<EventSyncEntry> stoppedByFailure
 ) {
+
+    /** Number of records synchronised without incident this pass. */
+    public int successCount() {
+        return (int) results.stream().filter(entry -> entry.status() == SyncStatus.SYNCED).count();
+    }
+
+    /** Number of records that failed this pass (transient or newly terminal). */
+    public int failureCount() {
+        return (int) results.stream().filter(entry -> entry.status() == SyncStatus.FAILED).count();
+    }
+
+    /** Number of records already in {@code CONFLICT} — not attempted. */
+    public int awaitingDecisionCount() {
+        return awaitingDecision.size();
+    }
+
+    /** Number of records already terminally {@code FAILED} — not attempted. */
+    public int stoppedByFailureCount() {
+        return stoppedByFailure.size();
+    }
 
     /**
      * Per-event result entry in a bulk sync operation.

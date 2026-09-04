@@ -81,14 +81,8 @@ class SynchronizationService implements SynchronizationPort {
     @Transactional(readOnly = true)
     @Override
     public Optional<SyncRecord> findByTarget(SyncTarget target) {
-        List<ExternalSystem> systems = adapterRegistry.systemsFor(target.entityType());
-        if (systems.isEmpty()) {
-            return Optional.empty();
-        }
-        if (systems.size() > 1) {
-            throw new AmbiguousSyncTargetException(target.entityType(), systems.size());
-        }
-        return syncRecordRepository.findByTargetAndSystem(target, systems.get(0));
+        return resolveSoleSystem(target.entityType())
+                .flatMap(system -> syncRecordRepository.findByTargetAndSystem(target, system));
     }
 
     @Transactional(readOnly = true)
@@ -102,14 +96,11 @@ class SynchronizationService implements SynchronizationPort {
     @Transactional
     @Override
     public void markDirty(SyncTarget target) {
-        List<ExternalSystem> systems = adapterRegistry.systemsFor(target.entityType());
-        if (systems.isEmpty()) {
-            return;
-        }
-        if (systems.size() > 1) {
-            throw new AmbiguousSyncTargetException(target.entityType(), systems.size());
-        }
-        syncRecordRepository.findByTargetAndSystem(target, systems.get(0)).ifPresent(record -> {
+        resolveSoleSystem(target.entityType()).ifPresent(system -> markDirty(target, system));
+    }
+
+    private void markDirty(SyncTarget target, ExternalSystem system) {
+        syncRecordRepository.findByTargetAndSystem(target, system).ifPresent(record -> {
             record.markDirty();
             // An inward write raises EventUpdatedEvent on the very entity the pass is
             // writing (design.md D9 — "an inward write is itself a local change"), so
@@ -303,6 +294,23 @@ class SynchronizationService implements SynchronizationPort {
     }
 
     /**
+     * Resolves the single external system registered for an entity type (design.md
+     * D14 — one adapter per entity type in this change). Empty when nothing is
+     * registered; throws when more than one adapter claims the same entity type,
+     * since callers have no way to pick between them.
+     */
+    private Optional<ExternalSystem> resolveSoleSystem(SyncEntityType entityType) {
+        List<ExternalSystem> systems = adapterRegistry.systemsFor(entityType);
+        if (systems.isEmpty()) {
+            return Optional.empty();
+        }
+        if (systems.size() > 1) {
+            throw new AmbiguousSyncTargetException(entityType, systems.size());
+        }
+        return Optional.of(systems.get(0));
+    }
+
+    /**
      * Runs one pass (design.md D9, D3, D10, D11): the version-token short-circuit,
      * reads, comparison, write, failure classification, and appending the attempt to
      * history. The external calls happen with no transaction open; only the final
@@ -320,7 +328,6 @@ class SynchronizationService implements SynchronizationPort {
                     // Cheap change indicator unchanged and no local edit observed: skip
                     // the full read entirely (design.md D3). Still recorded as an
                     // attempt — D15 requires every attempt to appends a row.
-                    record.releaseClaim();
                     return outcomeWriter.persist(record, trigger, null, SyncOutcome.SKIPPED,
                             record.getLocal() != null ? record.getLocal().hash() : null,
                             record.getExternal() != null ? record.getExternal().hash() : null,
@@ -337,8 +344,6 @@ class SynchronizationService implements SynchronizationPort {
 
             SyncHash localHashForAttempt = currentLocal.hash();
             SyncHash externalHashForAttempt = currentExternal.hash();
-
-            record.releaseClaim();
 
             return switch (decision.kind()) {
                 case NOTHING_TO_DO -> outcomeWriter.persist(record, trigger, null, SyncOutcome.SUCCESS, localHashForAttempt, externalHashForAttempt, null, actingUser);
@@ -383,7 +388,6 @@ class SynchronizationService implements SynchronizationPort {
      * record on the spot.
      */
     private SyncRecord handleFailure(SyncRecord record, SyncTriggerKind trigger, String actingUser, RuntimeException failure) {
-        record.releaseClaim();
         FailureCategory category = FailureClassifier.classify(failure);
         String reason = failure.getMessage();
         Instant now = Instant.now();

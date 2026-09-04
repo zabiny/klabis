@@ -56,7 +56,7 @@ class OrisEventImportService implements OrisEventImportPort {
     @Override
     public Event importEventFromOris(int orisId) {
         EventDetails details = fetchEventDetails(orisId);
-        OrisEventFields fields = OrisEventDetailsMapper.map(details, orisId, orisWebUrls);
+        OrisEventFields fields = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
 
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                 .orisId(orisId)
@@ -124,13 +124,8 @@ class OrisEventImportService implements OrisEventImportPort {
     @Transactional(readOnly = true)
     public OrisEventFields readOrisFields(int orisId) {
         EventDetails details = fetchEventDetails(orisId);
-        OrisEventFields fields = OrisEventDetailsMapper.map(details, orisId, orisWebUrls);
         EventTypeId resolvedEventTypeId = resolveEventTypeFromOrisDiscipline(details.discipline());
-        return new OrisEventFields(
-                fields.name(), fields.eventDate(), fields.location(), fields.organizer(),
-                fields.websiteUrl(), fields.registrationDeadlines(), fields.categories(),
-                fields.ranking(), fields.baseEntryFee(), resolvedEventTypeId
-        );
+        return OrisEventDetailsMapper.map(details, orisId, orisWebUrls, resolvedEventTypeId);
     }
 
     @Transactional

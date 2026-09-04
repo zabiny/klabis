@@ -371,7 +371,7 @@ class OrisEventControllerTest {
         @DisplayName("should return 200 with successCount=3 and failureCount=0 when all events sync")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReturnSuccessSummaryWhenAllSync() throws Exception {
-            BulkSyncResult result = new BulkSyncResult(3, 3, 0, 0, 0, List.of(
+            BulkSyncResult result = new BulkSyncResult(3, List.of(
                     new BulkSyncResult.EventSyncEntry(EventId.generate(), "Race A", BulkSyncResult.SyncStatus.SYNCED, null),
                     new BulkSyncResult.EventSyncEntry(EventId.generate(), "Race B", BulkSyncResult.SyncStatus.SYNCED, null),
                     new BulkSyncResult.EventSyncEntry(EventId.generate(), "Race C", BulkSyncResult.SyncStatus.SYNCED, null)
@@ -391,7 +391,7 @@ class OrisEventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReturnPartialFailureSummary() throws Exception {
             EventId failedId = EventId.generate();
-            BulkSyncResult result = new BulkSyncResult(2, 1, 1, 0, 0, List.of(
+            BulkSyncResult result = new BulkSyncResult(2, List.of(
                     new BulkSyncResult.EventSyncEntry(EventId.generate(), "Race A", BulkSyncResult.SyncStatus.SYNCED, null),
                     new BulkSyncResult.EventSyncEntry(failedId, "Race B", BulkSyncResult.SyncStatus.FAILED, "ORIS endpoint returned 404")
             ), List.of(), List.of());
@@ -413,7 +413,7 @@ class OrisEventControllerTest {
         void shouldReportAwaitingDecisionAndStoppedByFailureSeparately() throws Exception {
             EventId conflictedId = EventId.generate();
             EventId failedId = EventId.generate();
-            BulkSyncResult result = new BulkSyncResult(2, 0, 0, 1, 1,
+            BulkSyncResult result = new BulkSyncResult(2,
                     List.of(),
                     List.of(new BulkSyncResult.EventSyncEntry(conflictedId, "Race A", null, null)),
                     List.of(new BulkSyncResult.EventSyncEntry(failedId, "Race B", null, null)));

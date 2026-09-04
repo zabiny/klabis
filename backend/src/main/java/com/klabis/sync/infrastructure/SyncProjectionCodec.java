@@ -41,8 +41,7 @@ public final class SyncProjectionCodec {
      * Serialises a projection to its canonical JSON form.
      */
     public static String toCanonicalJson(SyncProjection projection) {
-        Object canonicalized = canonicalizeNumbers(MAPPER.convertValue(projection, Object.class));
-        return MAPPER.writeValueAsString(canonicalized);
+        return MAPPER.writeValueAsString(canonicalizedFields(projection));
     }
 
     /**
@@ -59,10 +58,8 @@ public final class SyncProjectionCodec {
      * canonicalised the same way as for hashing, so a field-level comparison does not
      * report a phantom change on differently-scaled amounts.
      */
-    @SuppressWarnings("unchecked")
     public static java.util.Map<String, Object> toFieldMap(SyncProjection projection) {
-        Object canonicalized = canonicalizeNumbers(MAPPER.convertValue(projection, Object.class));
-        return (java.util.Map<String, Object>) canonicalized;
+        return canonicalizedFields(projection);
     }
 
     /**
@@ -73,6 +70,19 @@ public final class SyncProjectionCodec {
     public static SyncHash hash(SyncProjection projection) {
         String canonicalJson = toCanonicalJson(projection);
         return SyncHash.of(sha256Hex(canonicalJson));
+    }
+
+    /**
+     * Converts a projection to its canonicalised field map once, so that JSON
+     * serialisation, field-map extraction and hashing all work from the same
+     * conversion instead of each independently calling {@code MAPPER.convertValue}
+     * plus {@link #canonicalizeNumbers} (design.md D3, D13) — the result must stay
+     * bit-identical to what each caller produced before, since the hash is persisted
+     * and a divergent result here would cause false-positive conflicts.
+     */
+    @SuppressWarnings("unchecked")
+    private static java.util.Map<String, Object> canonicalizedFields(SyncProjection projection) {
+        return (java.util.Map<String, Object>) canonicalizeNumbers(MAPPER.convertValue(projection, Object.class));
     }
 
     private static String sha256Hex(String input) {

@@ -54,13 +54,14 @@ class SyncStateResponseConverter {
                 ? fieldReader.fields(baseline.external().projection())
                 : null;
 
-        List<String> divergedFields = inConflict ? record.divergedFields(fieldReader) : List.of();
-        Map<String, SyncStateResponseChangedSidesValue> changedSides = inConflict
-                ? record.changedSides(fieldReader).entrySet().stream()
-                    .collect(java.util.stream.Collectors.toMap(
-                            Map.Entry::getKey,
-                            e -> SyncStateResponseChangedSidesValue.fromValue(e.getValue().name())))
+        Map<String, com.klabis.sync.domain.ChangedSide> changedSidesByField = inConflict
+                ? record.changedSides(fieldReader)
                 : Map.of();
+        List<String> divergedFields = List.copyOf(changedSidesByField.keySet());
+        Map<String, SyncStateResponseChangedSidesValue> changedSides = changedSidesByField.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> SyncStateResponseChangedSidesValue.fromValue(e.getValue().name())));
 
         SyncStateResponseLastDirection lastDirection = record.getLastDirection() != null
                 ? SyncStateResponseLastDirection.fromValue(record.getLastDirection().name())
