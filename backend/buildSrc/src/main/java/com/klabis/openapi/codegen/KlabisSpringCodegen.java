@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.servers.Server;
+import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenProperty;
 import org.openapitools.codegen.CodegenResponse;
@@ -20,8 +21,8 @@ import java.util.Map;
  * Klabis-specific fork of the stock {@code spring} OpenAPI generator.
  *
  * <p>Vendor fork, diff on upgrade: this class overrides specific protected/public extension points
- * of {@link SpringCodegen} to teach the generator two Klabis conventions the stock generator has no
- * concept of. Both are read from explicit declarations in the hand-written module spec — the
+ * of {@link SpringCodegen} to teach the generator three Klabis conventions the stock generator has no
+ * concept of. The first two are read from explicit declarations in the hand-written module spec — the
  * generator never sees a HAL envelope schema at all, because {@code tools/openapi-bundle} reconstructs
  * those into {@code klabis-full.json} for the frontend and Swagger UI only. See
  * {@code openspec/changes/derive-hal-envelopes-in-bundler/design.md}.
@@ -37,6 +38,12 @@ import java.util.Map;
  *     resolved the payload type; {@link #fromResponse} suppresses the springdoc {@code @Schema}
  *     doc block for the response, since a generic {@code Page<T>} is not a legal class literal.
  *     Design Decision 2.</li>
+ *     <li><b>{@code x-klabis-halforms-access} + {@code x-hal-input-type}</b> on a property — the
+ *     single {@code @HalForms(...)} annotation both attributes spell is assembled by
+ *     {@link #postProcessModelProperty} into one vendor extension that {@code pojo.mustache} renders
+ *     verbatim; two separate annotations would not compile ({@code @HalForms} is not {@code
+ *     @Repeatable}). See {@code openspec/changes/add-nullable-hal-input-type-extensions/design.md}
+ *     Decision 1.</li>
  * </ul>
  *
  * <p>{@link #fromOperation} additionally re-adds {@value #HAL_FORMS_MEDIA_TYPE} to a HAL response's
@@ -50,6 +57,11 @@ import java.util.Map;
 public class KlabisSpringCodegen extends SpringCodegen {
 
     private static final String HAL_FORMS_MEDIA_TYPE = "application/prs.hal-forms+json";
+
+    private static final String HALFORMS_ACCESS_EXTENSION = "x-klabis-halforms-access";
+    private static final String HAL_INPUT_TYPE_EXTENSION = "x-hal-input-type";
+    private static final String HALFORMS_ANNOTATION_EXTENSION = "x-klabis-halforms-annotation";
+    private static final String HAL_FORMS_FQN = "com.klabis.common.ui.HalForms";
 
     /**
      * Set by {@link #fromOperation} before delegating to {@code super}, cleared in a
@@ -339,6 +351,59 @@ public class KlabisSpringCodegen extends SpringCodegen {
      */
     private static String syntheticEntityModelName(String itemName) {
         return "EntityModel" + itemName;
+    }
+
+    /**
+     * Assembles the ONE {@code @com.klabis.common.ui.HalForms(...)} annotation a record component
+     * carries, from the two vendor extensions feeding its attributes — {@code
+     * x-klabis-halforms-access} → {@code access}, {@code x-hal-input-type} (free-form string) →
+     * {@code formInputType} — and stores it in {@code vendorExtensions.x-klabis-halforms-annotation}
+     * for {@code pojo.mustache} to render verbatim. With neither extension present, no extension key
+     * is emitted and the property is left as {@code super} built it.
+     *
+     * <p>Assembly lives here and not in the template because {@code @HalForms} is not {@code
+     * @Repeatable}: per-attribute rendering in mustache — or a hand-written {@code
+     * HalForms(formInputType = ...)} stamped through {@code x-field-extra-annotation} alongside the
+     * access-rendered one — puts two {@code @HalForms} on one component, a compile error. Mustache
+     * has no value-aware conditionals for the attribute matrix either.
+     *
+     * <p>Idempotent by construction: {@code fromModel()} runs this hook over {@code vars} and again
+     * over {@code allVars}, twice per property — the assembly only reads the two source extensions,
+     * so the second pass recomputes the identical string.
+     */
+    @Override
+    public void postProcessModelProperty(CodegenModel model, CodegenProperty property) {
+        super.postProcessModelProperty(model, property);
+        String annotation = halFormsAnnotation(property.getVendorExtensions());
+        if (annotation != null) {
+            property.getVendorExtensions().put(HALFORMS_ANNOTATION_EXTENSION, annotation);
+        }
+    }
+
+    /**
+     * The assembled {@code @HalForms(...)} string for a property's vendor extensions, or {@code
+     * null} when neither attribute extension is present. Package-visible so the unit test drives the
+     * same assembly the hook renders. {@code access} precedes {@code formInputType}, and the values
+     * appear exactly as {@code pojo.mustache} used to render the access-only form, so generation
+     * output for existing specs is byte-identical.
+     */
+    static String halFormsAnnotation(Map<String, Object> extensions) {
+        Object access = extensions == null ? null : extensions.get(HALFORMS_ACCESS_EXTENSION);
+        Object inputType = extensions == null ? null : extensions.get(HAL_INPUT_TYPE_EXTENSION);
+        if (access == null && inputType == null) {
+            return null;
+        }
+        StringBuilder annotation = new StringBuilder("@").append(HAL_FORMS_FQN).append('(');
+        if (access != null) {
+            annotation.append("access = ").append(HAL_FORMS_FQN).append(".Access.").append(access);
+        }
+        if (inputType != null) {
+            if (access != null) {
+                annotation.append(", ");
+            }
+            annotation.append("formInputType = \"").append(inputType).append('"');
+        }
+        return annotation.append(')').toString();
     }
 
     /**

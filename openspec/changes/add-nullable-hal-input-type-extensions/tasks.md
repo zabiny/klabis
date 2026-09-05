@@ -5,10 +5,10 @@
 
 ## 2. Assembled @HalForms annotation (x-hal-input-type)
 
-- [ ] 2.1 In `KlabisSpringCodegen.postProcessModelProperty`: assemble a single `@HalForms(...)` string from `x-klabis-halforms-access` (access) + `x-hal-input-type` (formInputType) into `vendorExtensions.x-klabis-halforms-annotation`; both absent → no extension emitted
-- [ ] 2.2 Update `pojo.mustache`: replace the direct `x-klabis-halforms-access` rendering with the assembled `x-klabis-halforms-annotation`; output must stay byte-equal for access-only properties (`@HalForms(access = com.klabis.common.ui.HalForms.Access.X)`)
-- [ ] 2.3 Regenerate all modules and diff against the 1.1 snapshot — expect zero changes
-- [ ] 2.4 Add a codegen-level test: property with only `x-hal-input-type`, only `x-klabis-halforms-access`, and both — one `@HalForms` each time, no duplicate annotation
+- [x] 2.1 In `KlabisSpringCodegen.postProcessModelProperty`: assemble a single `@HalForms(...)` string from `x-klabis-halforms-access` (access) + `x-hal-input-type` (formInputType) into `vendorExtensions.x-klabis-halforms-annotation`; both absent → no extension emitted
+- [x] 2.2 Update `pojo.mustache`: replace the direct `x-klabis-halforms-access` rendering with the assembled `x-klabis-halforms-annotation`; output must stay byte-equal for access-only properties (`@HalForms(access = com.klabis.common.ui.HalForms.Access.X)`)
+- [x] 2.3 Regenerate all modules and diff against the 1.1 snapshot — expect zero changes
+- [x] 2.4 Add a codegen-level test: property with only `x-hal-input-type`, only `x-klabis-halforms-access`, and both — one `@HalForms` each time, no duplicate annotation
 
 ## 3. x-klabis-nullable in codegen
 
