@@ -47,16 +47,23 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
     /**
      * Backs the due scan (design.md D10): dirty or retry-due, excluding a record
      * whose claim is still fresh. {@code RETIRED} is excluded via
-     * {@code retired_at IS NULL}; {@code CONFLICT} and {@code FAILED} exclude
-     * themselves naturally, since both clear {@code dirty_since} and
-     * {@code next_attempt_due_at} when entered (see
-     * {@link com.klabis.sync.domain.SyncRecordRepository#findDueForScan}). One
-     * indexed query, matching the index on {@code (dirty_since, next_attempt_due_at)}
-     * declared in the schema.
+     * {@code retired_at IS NULL}. {@code CONFLICT} self-excludes: {@code recordConflict}
+     * clears both {@code dirty_since} and {@code next_attempt_due_at}, so a conflicted
+     * record matches neither dirty nor retry-due. {@code FAILED} does <strong>not</strong>
+     * self-exclude — {@code recordTerminalFailure} clears only {@code next_attempt_due_at}
+     * and leaves {@code dirty_since} untouched, so a terminally failed record that a
+     * later edit marked dirty would otherwise be selected here and then rejected by
+     * {@code SyncRecord.assertBeingAttempted} once {@code runScheduledPass} tried it. The
+     * {@code status <> 'FAILED'} predicate keeps that exclusion local to the query,
+     * matching what {@link #findAllActive} already does for the nightly full pass (see
+     * {@link com.klabis.sync.domain.SyncRecordRepository#findDueForScan}). One indexed
+     * query, matching the index on {@code (dirty_since, next_attempt_due_at)} declared
+     * in the schema.
      */
     @Query("""
             SELECT * FROM sync.sync_record
             WHERE retired_at IS NULL
+              AND status <> 'FAILED'
               AND (dirty_since IS NOT NULL OR next_attempt_due_at <= :now)
               AND (claimed_at IS NULL OR claimed_at <= :claimStaleBefore)
             """)

@@ -19,6 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 
@@ -310,6 +311,26 @@ class SyncRecordJdbcRepositoryTest {
             record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
             record.recordTerminalFailure(5, "boom");
             syncRecordRepository.save(record);
+
+            List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
+
+            assertThat(due).extracting(SyncRecord::getId).doesNotContain(record.getId());
+        }
+
+        @Test
+        @DisplayName("skips a terminally failed record even when it was marked dirty by a later edit — recordTerminalFailure leaves dirtySince set")
+        void skipsTerminallyFailedRecordThatWasMarkedDirty() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-8"), EXTERNAL_REF);
+            SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+            record.recordTerminalFailure(5, "boom");
+            record.markDirty();
+            syncRecordRepository.save(record);
+
+            Map<String, Object> persisted = jdbcTemplate.queryForMap(
+                    "SELECT status, dirty_since FROM sync.sync_record WHERE id = ?", record.getId().value());
+            assertThat(persisted.get("status")).isEqualTo("FAILED");
+            assertThat(persisted.get("dirty_since")).as("fixture must actually reproduce the gap: a FAILED record with dirty_since set").isNotNull();
 
             List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
 
