@@ -222,6 +222,55 @@ function deriveEntityItems(node, schemas, collisions) {
 }
 
 /**
+ * Consumes the two codegen-only property directives, `x-klabis-nullable` and `x-hal-input-type`.
+ *
+ * The backend codegen reads both from `docs/openapi/spec/<module>.yaml` directly, so the bundle has
+ * no consumer for them — but unlike the descriptive extensions (`x-klabis-authority` etc.) that
+ * survive into the bundle, they must not stay in it: `x-hal-input-type` would be dead weight, and a
+ * leftover `x-klabis-nullable` would contradict the `oneOf` it just derived. Where the deriver can
+ * act on the directive it consumes it:
+ *  - `x-klabis-nullable: true` on a `$ref` property becomes the `oneOf: [<ref>, {type: 'null'}]`
+ *    shape a hand-written nullable `$ref` carries (frontend types byte-identical), and the `$ref`
+ *    — which cannot sit beside the `oneOf` — is folded into it, keeping any sibling keywords;
+ *  - `x-klabis-nullable: false` drops `'null'` from a nullable type array, narrowing the frontend
+ *    type while the codegen emits a plain Java type;
+ *  - a non-empty `x-hal-input-type` is simply deleted.
+ *
+ * A directive the deriver cannot act on — either key beside an `oneOf`/`allOf` composition, a
+ * non-boolean `x-klabis-nullable`, an empty `x-hal-input-type` — is left in place on purpose:
+ * validation runs after derivation, so what survives to it is exactly the authoring mistake, which
+ * it reports as a build failure (nothing silent) rather than stripping a no-op in passing.
+ */
+function consumePropertyDirectives(node) {
+    if (Array.isArray(node)) {
+        for (const item of node) consumePropertyDirectives(item);
+        return;
+    }
+    if (!isPlainObject(node)) return;
+
+    const composed = node.oneOf !== undefined || node.allOf !== undefined;
+
+    if (Object.hasOwn(node, 'x-klabis-nullable') && !composed) {
+        const nullable = node['x-klabis-nullable'];
+        if (nullable === true && typeof node.$ref === 'string') {
+            node.oneOf = [{$ref: node.$ref}, {type: 'null'}];
+            delete node.$ref;
+            delete node['x-klabis-nullable'];
+        } else if (nullable === false && Array.isArray(node.type) && node.type.includes('null')) {
+            node.type = node.type.filter((t) => t !== 'null');
+            delete node['x-klabis-nullable'];
+        }
+    }
+
+    const inputType = node['x-hal-input-type'];
+    if (!composed && typeof inputType === 'string' && inputType !== '') {
+        delete node['x-hal-input-type'];
+    }
+
+    for (const value of Object.values(node)) consumePropertyDirectives(value);
+}
+
+/**
  * Adds the hal-forms content entry to every response of every HAL operation, and rewrites
  * `x-hal-entity-items` array properties.
  *
@@ -303,6 +352,7 @@ export function deriveHalEnvelopes(document) {
     });
 
     deriveEntityItems(schemas, schemas, collisions);
+    consumePropertyDirectives(document);
 
     return {document, collisions};
 }

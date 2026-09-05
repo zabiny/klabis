@@ -12,16 +12,16 @@
 
 ## 3. x-klabis-nullable in codegen
 
-- [ ] 3.1 In `KlabisSpringCodegen.postProcessModelProperty`: read `x-klabis-nullable` (boolean) and set `CodegenProperty.isNullable` accordingly; absent → stock behavior
-- [ ] 3.2 Regenerate all modules and diff against the snapshot — expect zero changes (no spec uses it yet)
-- [ ] 3.3 Codegen-level tests: `x-klabis-nullable: true` on a `$ref` property yields `JsonNullable<T>` (with correct `@Valid`), including an enum-typed and a nested-class-typed property; `false` on `type: [x, 'null']` yields plain `T`
+- [x] 3.1 In `KlabisSpringCodegen.postProcessModelProperty`: read `x-klabis-nullable` (boolean) and set `CodegenProperty.isNullable` accordingly; absent → stock behavior
+- [x] 3.2 Regenerate all modules and diff against the snapshot — expect zero changes (no spec uses it yet)
+- [x] 3.3 Codegen-level tests: `x-klabis-nullable: true` on a `$ref` property yields `JsonNullable<T>` (with correct `@Valid`), including an enum-typed and a nested-class-typed property; `false` on `type: [x, 'null']` yields plain `T`
 
 ## 4. Bundler consumption (derive.mjs) + validation (validate.mjs)
 
-- [ ] 4.1 `derive.mjs`: `x-klabis-nullable: true` on a `$ref` property → bundle emits `oneOf: [$ref, 'null']`; `false` → drop `'null'` from the type array; delete the directive from the bundle output
-- [ ] 4.2 `derive.mjs`: strip `x-hal-input-type` from bundle output (same as `x-hal-entity-items`)
-- [ ] 4.3 `validate.mjs`: allowlist `x-hal-input-type` (x-hal family) and cover `x-klabis-nullable` in the `x-klabis-*` rules; error on either key combined with `oneOf`/`allOf` on the same property; error on `x-klabis-nullable: true` where `type` already contains `'null'`; error on `@HalForms(...)` inside `x-field-extra-annotation`
-- [ ] 4.4 Unit-test the bundler transformations and the new validation errors (existing validate tests keep passing)
+- [x] 4.1 `derive.mjs`: `x-klabis-nullable: true` on a `$ref` property → bundle emits `oneOf: [$ref, 'null']`; `false` → drop `'null'` from the type array; delete the directive from the bundle output
+- [x] 4.2 `derive.mjs`: strip `x-hal-input-type` from bundle output (same as `x-hal-entity-items`)
+- [x] 4.3 `validate.mjs`: allowlist `x-hal-input-type` (x-hal family) and cover `x-klabis-nullable` in the `x-klabis-*` rules; error on either key combined with `oneOf`/`allOf` on the same property; error on `x-klabis-nullable: true` where `type` already contains `'null'`; error on `@HalForms(...)` inside `x-field-extra-annotation`
+- [x] 4.4 Unit-test the bundler transformations and the new validation errors (existing validate tests keep passing)
 
 ## 5. Apply to the ranking case (acceptance)
 
@@ -32,7 +32,7 @@
 ## 6. Mass refactor to the new syntax
 
 - [ ] 6.1 Script-driven rewrite across module specs: every request-body property spelled `oneOf: [$ref, 'null']` → `$ref` + `x-klabis-nullable: true` (list occurrences first: `grep -rn "oneOf:" docs/openapi/spec/`)
-- [ ] 6.2 Migrate `CancelEventRequest.cancellationReason` from `x-field-extra-annotation` `@HalForms(formInputType = "textarea")` to `x-hal-input-type: textarea`
+- [x] 6.2 Migrate `CancelEventRequest.cancellationReason` from `x-field-extra-annotation` `@HalForms(formInputType = "textarea")` to `x-hal-input-type: textarea`
 - [ ] 6.3 Regenerate all modules; diff against the 1.1 snapshot must show zero changes
 - [ ] 6.4 Run the full backend test suite (test-runner agent, sequential) — no test modification beyond the 5.3 assertion change
 
