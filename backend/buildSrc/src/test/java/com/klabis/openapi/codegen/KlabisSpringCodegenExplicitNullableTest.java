@@ -114,6 +114,8 @@ class KlabisSpringCodegenExplicitNullableTest {
 
     @Test
     void trueOnInlineEnumProperty() {
+        // stock-consistency only; validate forbids authoring this (inline enum must stay inside
+        // its holder schema, the directive belongs on the $ref property).
         Schema<?> inlineEnum = new StringSchema().addEnumItem("A").addEnumItem("B");
         inlineEnum.addExtension("x-klabis-nullable", Boolean.TRUE);
 
@@ -153,9 +155,11 @@ class KlabisSpringCodegenExplicitNullableTest {
 
     @Test
     void refTargetExtensionFallsThroughLikeEveryPropertyExtension() {
-        // fromProperty copies the $ref TARGET's extensions when the property node carries none —
-        // x-klabis-nullable inherits that stock rule instead of special-casing it. The ranking case
-        // (iteration 5) always carries the extension on the property node itself.
+        // stock-consistency only; validate forbids authoring this (the directive belongs on the
+        // property node, never inside the shared target). fromProperty copies the $ref TARGET's
+        // extensions when the property node carries none — x-klabis-nullable inherits that stock
+        // rule instead of special-casing it. The ranking case (iteration 5) always carries the
+        // extension on the property node itself.
         Schema<?> shared = new Schema<>().type("object")
             .addProperty("points", new Schema<>().type("integer"));
         shared.addExtension("x-klabis-nullable", Boolean.TRUE);
@@ -170,6 +174,9 @@ class KlabisSpringCodegenExplicitNullableTest {
 
     @Test
     void propertyExtensionWinsOverRefTarget() {
+        // stock-consistency only; validate forbids authoring this (false on a $ref property is a
+        // request-body shape validate rejects, and a target carrying the directive alongside is
+        // doubly so).
         Schema<?> shared = new Schema<>().type("object")
             .addProperty("points", new Schema<>().type("integer"));
         shared.addExtension("x-klabis-nullable", Boolean.TRUE);
@@ -182,6 +189,28 @@ class KlabisSpringCodegenExplicitNullableTest {
                 .addProperty("ranking", property))), "Holder");
 
         assertThat(var(model, "ranking").isNullable).isFalse();
+    }
+
+    @Test
+    void trueOnRequiredPropertyAnchorsTheStockMissingImportHole() {
+        // Anchor of the current state, not an endorsement: super collects the JsonNullable import
+        // only for a non-required property, while the template wraps on isNullable alone — so a
+        // required nullable property generates a JsonNullable wrapper without the import (a
+        // compile error). validate.mjs forbids authoring this; the test pins the codegen as
+        // stock-consistent while that rule is the only guard.
+        Schema<?> holder = new Schema<>().type("object")
+            .addProperty("ranking", markedRefProperty("Ranking", true));
+        holder.addRequiredItem("ranking");
+
+        CodegenModel model = buildModel(new LinkedHashMap<>(Map.of(
+            "Ranking", new Schema<>().type("object")
+                .addProperty("points", new Schema<>().type("integer")),
+            "Holder", holder)), "Holder");
+
+        CodegenProperty ranking = var(model, "ranking");
+        assertThat(ranking.isNullable).isTrue();
+        assertThat(ranking.datatypeWithEnum).isEqualTo("Ranking");
+        assertThat(model.imports).doesNotContain("JsonNullable");
     }
 
     @Test

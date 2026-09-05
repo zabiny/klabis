@@ -119,7 +119,7 @@ bundle by `derive.mjs`, so frontend types never see them):
 |---|---|
 | `x-hal-input-type: RankingRequest` | `@HalForms(formInputType = "RankingRequest")`, assembled into a single `@HalForms` with `x-klabis-halforms-access` (`@HalForms` is not `@Repeatable`) |
 | `x-klabis-nullable: true` | `JsonNullable<T>` without any `oneOf` composition (the bundle keeps the legacy `oneOf: [{$ref}, {type: 'null'}]` shape) |
-| `x-klabis-nullable: false` | plain `T` despite a nullable wire type |
+| `x-klabis-nullable: false` | plain `T` despite a nullable wire type — request bodies want `true`; `false` narrows the frontend type while the wire stays nullable, so it belongs on response fields only |
 
 Hypermedia, on **response objects** (not on schemas — links belong to the representation):
 
