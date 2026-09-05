@@ -883,6 +883,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._templates.updateEvent.method").value("PATCH"))  // EDIT
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name == 'ranking')].type").value("RankingRequest"))
                     .andExpect(jsonPath("$._templates.publishEvent.target").exists())   // PUBLISH
                     .andExpect(jsonPath("$._templates.cancelEvent.target").exists());   // CANCEL
         }
