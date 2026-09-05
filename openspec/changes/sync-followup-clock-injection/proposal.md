@@ -30,6 +30,13 @@ engine's time axis is not cleanup and carries its own risk.
   depend on a Spring bean, so the seam belongs at the application boundary.
 - Rewrite `SyncSchedulerTest` and `SyncHistoryRetentionJobTest` to advance a fixed
   `Clock` instead of rewriting rows through `JdbcTemplate`.
+- Give `SyncCapabilities` named factory methods and construct every instance through
+  them. The record takes seven positional `boolean` arguments, so `new
+  SyncCapabilities(true, true, true, false, false, false, false)` compiles and type-checks
+  no matter how the flags are ordered — transposing `writesExternal` and `createsExternal`
+  would silently turn a refused write into an attempted one, and only the design document
+  says which position is which. Ten call sites construct it today (one adapter, nine
+  tests), each an unlabelled boolean sequence.
 
 ## No Behavior Change Justification
 
@@ -55,14 +62,23 @@ call site resolves to the same instant it does today. This is a dependency-injec
 seam, not a change in scheduling, ordering, or duration. The only observable difference
 is in tests, which gain the ability to control time.
 
+The `SyncCapabilities` factories are a naming change at the construction site. Each
+factory produces exactly the flag combination its call site passes positionally today —
+the record's components, its shape and every read of it are untouched, so the engine
+resolves direction from identical values. Verified against the same
+`data-synchronization` requirements above: capability declaration is how the engine
+decides which operations exist, and the declared set does not move.
+
 ## Impact
 
-- **Modules:** `sync` (application and domain layers), no other module.
+- **Modules:** `sync` (application and domain layers) plus the one adapter that declares
+  capabilities (`com.klabis.oris.eventsync.OrisEventSyncAdapter`).
 - **Code:** 13 call sites across 8 files; constructor signatures of four application
-  components and several domain factory methods gain a parameter.
+  components and several domain factory methods gain a parameter. Separately,
+  `SyncCapabilities` gains factory methods and ten construction sites move onto them.
 - **Tests:** `SyncSchedulerTest` and `SyncHistoryRetentionJobTest` lose their
   `JdbcTemplate` time manipulation. Other sync tests may need a `Clock` in their
-  configuration.
+  configuration. Nine test call sites construct `SyncCapabilities`.
 - **Developer workflow:** future time-dependent sync tests become writable without
   touching storage.
 - **Risk:** touching the engine's time axis is the reason this was not folded into the
