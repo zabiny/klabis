@@ -1651,9 +1651,8 @@ components:
           x-klabis-nullable: true
           x-hal-input-type: RankingRequest
         baseEntryFee:
-          oneOf:
-            - $ref: '#/components/schemas/EntryFeeRequest'
-            - type: 'null'
+          $ref: '#/components/schemas/EntryFeeRequest'
+          x-klabis-nullable: true
         sharedTransportEnabled:
           type: [boolean, 'null']
           description: |

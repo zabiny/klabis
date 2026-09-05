@@ -639,9 +639,8 @@ components:
           type: ['string', 'null']
           maxLength: 50
         address:
-          oneOf:
-            - $ref: '#/components/schemas/AddressRequest'
-            - type: 'null'
+          $ref: '#/components/schemas/AddressRequest'
+          x-klabis-nullable: true
         firstName:
           type: ['string', 'null']
           maxLength: 100
@@ -677,25 +676,20 @@ components:
           minLength: 2
           maxLength: 2
         identityCard:
-          oneOf:
-            - $ref: '#/components/schemas/IdentityCardDto'
-            - type: 'null'
+          $ref: '#/components/schemas/IdentityCardDto'
+          x-klabis-nullable: true
         medicalCourse:
-          oneOf:
-            - $ref: '#/components/schemas/MedicalCourseDto'
-            - type: 'null'
+          $ref: '#/components/schemas/MedicalCourseDto'
+          x-klabis-nullable: true
         trainerLicense:
-          oneOf:
-            - $ref: '#/components/schemas/TrainerLicenseDto'
-            - type: 'null'
+          $ref: '#/components/schemas/TrainerLicenseDto'
+          x-klabis-nullable: true
         refereeLicense:
-          oneOf:
-            - $ref: '#/components/schemas/RefereeLicenseDto'
-            - type: 'null'
+          $ref: '#/components/schemas/RefereeLicenseDto'
+          x-klabis-nullable: true
         drivingLicenseGroup:
-          oneOf:
-            - $ref: '#/components/schemas/DrivingLicenseGroup'
-            - type: 'null'
+          $ref: '#/components/schemas/DrivingLicenseGroup'
+          x-klabis-nullable: true
         dietaryRestrictions:
           type: ['string', 'null']
           maxLength: 500
@@ -706,9 +700,8 @@ components:
           type: ['string', 'null']
           maxLength: 50
         guardian:
-          oneOf:
-            - $ref: '#/components/schemas/GuardianDTO'
-            - type: 'null'
+          $ref: '#/components/schemas/GuardianDTO'
+          x-klabis-nullable: true
 
     SuspendMembershipRequest:
       type: object
