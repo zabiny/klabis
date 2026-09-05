@@ -25,18 +25,18 @@
 
 ## 5. Apply to the ranking case (acceptance)
 
-- [ ] 5.1 `events.yaml`: `UpdateEventRequest.ranking` → `$ref: UpdateEventRankingRequest` + `x-klabis-nullable: true` + `x-hal-input-type: RankingRequest` (standalone schema stays; inlined-type experiment discarded)
-- [ ] 5.2 Regenerate; diff shows only `UpdateEventRequest.java` gaining the annotation with `JsonNullable<UpdateEventRankingRequest>` intact; bundle/FE types unchanged
-- [ ] 5.3 MockMvc HAL-FORMS test: update template's `ranking` property carries `type: "RankingRequest"` (replaces the before-picture from 1.2); run existing event controller tests
+- [x] 5.1 `events.yaml`: `UpdateEventRequest.ranking` → `$ref: UpdateEventRankingRequest` + `x-klabis-nullable: true` + `x-hal-input-type: RankingRequest` (standalone schema stays; inlined-type experiment discarded)
+- [x] 5.2 Regenerate; diff shows only `UpdateEventRequest.java` gaining the annotation with `JsonNullable<UpdateEventRankingRequest>` intact; bundle/FE types unchanged
+- [x] 5.3 MockMvc HAL-FORMS test: update template's `ranking` property carries `type: "RankingRequest"` (replaces the before-picture from 1.2); run existing event controller tests
 
 ## 6. Mass refactor to the new syntax
 
-- [ ] 6.1 Script-driven rewrite across module specs: every request-body property spelled `oneOf: [$ref, 'null']` → `$ref` + `x-klabis-nullable: true` (list occurrences first: `grep -rn "oneOf:" docs/openapi/spec/`)
+- [x] 6.1 Script-driven rewrite across module specs: every request-body property spelled `oneOf: [$ref, 'null']` → `$ref` + `x-klabis-nullable: true` (list occurrences first: `grep -rn "oneOf:" docs/openapi/spec/`)
 - [x] 6.2 Migrate `CancelEventRequest.cancellationReason` from `x-field-extra-annotation` `@HalForms(formInputType = "textarea")` to `x-hal-input-type: textarea`
-- [ ] 6.3 Regenerate all modules; diff against the 1.1 snapshot must show zero changes
-- [ ] 6.4 Run the full backend test suite (test-runner agent, sequential) — no test modification beyond the 5.3 assertion change
+- [x] 6.3 Regenerate all modules; diff against the 1.1 snapshot must show zero changes
+- [x] 6.4 Run the full backend test suite (test-runner agent, sequential) — no test modification beyond the 5.3 assertion change
 
 ## 7. Documentation
 
-- [ ] 7.1 Update `klabis-api-spec` skill: extension reference table (family, emitting stage, consumption point), patch-bodies and validation references, anti-pattern entries (`@HalForms` via `x-field-extra-annotation`; nullable `$ref` via `oneOf`)
-- [ ] 7.2 Update `docs/openapi/spec/README.md` pipeline description; verify `openspec validate --strict` passes for this change
+- [x] 7.1 Update `klabis-api-spec` skill: extension reference table (family, emitting stage, consumption point), patch-bodies and validation references, anti-pattern entries (`@HalForms` via `x-field-extra-annotation`; nullable `$ref` via `oneOf`)
+- [x] 7.2 Update `docs/openapi/spec/README.md` pipeline description; verify `openspec validate --strict` passes for this change (fails on missing spec deltas — known spec-free tool artifact, identical on `add-example-data-profile`)

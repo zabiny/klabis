@@ -1512,9 +1512,8 @@ components:
         name:
           type: ['string', 'null']
         ageRange:
-          oneOf:
-            - $ref: '#/components/schemas/AgeRangeRequest'
-            - type: 'null'
+          $ref: '#/components/schemas/AgeRangeRequest'
+          x-klabis-nullable: true
         trainers:
           type: ['array', 'null']
           items:
