@@ -391,6 +391,18 @@ export function validateSpec(document, {authorities}) {
             }
         }
 
+        // `x-hal-input-type` names the HAL-FORMS input type the property's single @HalForms
+        // annotation carries (assembled by KlabisSpringCodegen.postProcessModelProperty, rendered
+        // by pojo.mustache). A codegen directive, meaningless to the frontend — the authoring rules
+        // (oneOf/allOf conflict, @HalForms inside x-field-extra-annotation) arrive together with
+        // derive.mjs consuming and stripping it like x-hal-entity-items.
+        if (Object.hasOwn(node, 'x-hal-input-type')) {
+            const value = node['x-hal-input-type'];
+            if (typeof value !== 'string' || value === '') {
+                errors.push({path: `${path}/x-hal-input-type`, message: 'must be a non-empty string'});
+            }
+        }
+
         // `x-hal-embedded` declares a nested collection the controller assembles at runtime
         // (HalResponseContext.embed), which the deriver cannot infer from the application/json
         // payload alone. `items` names the row payload — its `x-klabis-relation` supplies the
