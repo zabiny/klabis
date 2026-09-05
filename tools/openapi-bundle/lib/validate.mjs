@@ -21,6 +21,7 @@ export const KNOWN_KLABIS_EXTENSIONS = new Set([
     'x-klabis-url',
     'x-klabis-class-constraint',
     'x-klabis-relation',
+    'x-klabis-nullable',
     'x-klabis-hal',
 ]);
 
@@ -44,6 +45,15 @@ const PROPERTY_ONLY_CONSTRAINT_EXTENSIONS = new Set([
 ]);
 
 const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * A hand-written HalForms annotation inside `x-field-extra-annotation`. The specs write the value
+ * without the leading `@` (it is rendered after one by pojo.mustache), so the qualified
+ * `com.klabis.common.ui.HalForms(...)` spelling is the one that occurs in practice; the `@`-prefixed
+ * and unqualified spellings are accepted too. The leading character class keeps this from matching
+ * an annotation whose simple name merely contains "HalForms".
+ */
+const HALFORMS_EXTRA_ANNOTATION = /(^|[^A-Za-z0-9_$])@?([\w$]+\.)*HalForms\s*\(/;
 
 /**
  * Extracts authority enum constant names from Authority.java.
@@ -291,6 +301,55 @@ export function validateSpec(document, {authorities}) {
                 }
             }
 
+            // Everything that reaches validation is an authoring mistake: the deriver consumes the
+            // directive exactly where it can act on it (a $ref property for `true`, a nullable type
+            // array for `false` — see consumePropertyDirectives) and leaves the rest for this
+            // check, the same split that makes the x-hal-entity-items rules fire on misplaced
+            // markers only. A correctly-placed directive never arrives here at all.
+            if (key === 'x-klabis-nullable') {
+                // The extensions *replace* composition (design.md D5): beside oneOf/allOf the
+                // deriver cannot act, and the composition would either strip the directive or
+                // double-declare nullability.
+                if (node.oneOf !== undefined || node.allOf !== undefined) {
+                    errors.push({
+                        path: `${path}/${key}`,
+                        message: 'cannot be combined with oneOf/allOf — the directive replaces '
+                            + 'the composition; name the ref and let x-klabis-nullable '
+                            + 'declare the nullability',
+                    });
+                    continue;
+                }
+
+                if (value !== true && value !== false) {
+                    errors.push({path: `${path}/${key}`, message: 'must be a boolean'});
+                    continue;
+                }
+
+                if (value === true && Array.isArray(node.type) && node.type.includes('null')) {
+                    errors.push({
+                        path: `${path}/${key}`,
+                        message: "redundant: the type array already declares 'null' — "
+                            + 'declare nullability once',
+                    });
+                    continue;
+                }
+
+                if (value === true && typeof node.$ref !== 'string') {
+                    errors.push({
+                        path: `${path}/${key}`,
+                        message: 'true is only defined on a $ref property — the derived bundle '
+                            + 'shape for it is oneOf: [<ref>, null]',
+                    });
+                } else if (value === false
+                    && !(Array.isArray(node.type) && node.type.includes('null'))) {
+                    errors.push({
+                        path: `${path}/${key}`,
+                        message: "false narrows a type array containing 'null', "
+                            + "but this property's type does not contain 'null'",
+                    });
+                }
+            }
+
             if (PROPERTY_ONLY_CONSTRAINT_EXTENSIONS.has(key)) {
                 if (value !== true) {
                     errors.push({path: `${path}/${key}`, message: 'must be true when present'});
@@ -400,6 +459,32 @@ export function validateSpec(document, {authorities}) {
             const value = node['x-hal-input-type'];
             if (typeof value !== 'string' || value === '') {
                 errors.push({path: `${path}/x-hal-input-type`, message: 'must be a non-empty string'});
+            }
+            // Same replacement rule as x-klabis-nullable: beside a composition the deriver leaves
+            // the marker in place (see consumePropertyDirectives), because oneOf/allOf would strip
+            // the extension and the input type would be silently lost.
+            if (node.oneOf !== undefined || node.allOf !== undefined) {
+                errors.push({
+                    path: `${path}/x-hal-input-type`,
+                    message: 'cannot be combined with oneOf/allOf — the composition strips the '
+                        + 'extension, so the input type would be silently lost',
+                });
+            }
+        }
+
+        // The single @HalForms annotation is assembled by KlabisSpringCodegen from
+        // x-klabis-halforms-access / x-hal-input-type. @HalForms is not @Repeatable, so a
+        // hand-written one alongside it would not compile — the input type belongs in
+        // x-hal-input-type, not here.
+        if (Object.hasOwn(node, 'x-field-extra-annotation')) {
+            const value = node['x-field-extra-annotation'];
+            if (typeof value === 'string' && HALFORMS_EXTRA_ANNOTATION.test(value)) {
+                errors.push({
+                    path: `${path}/x-field-extra-annotation`,
+                    message: 'carries a @HalForms annotation — declare the input type with '
+                        + 'x-hal-input-type (and access with x-klabis-halforms-access); a second '
+                        + '@HalForms on the property does not compile',
+                });
             }
         }
 

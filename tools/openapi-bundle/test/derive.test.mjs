@@ -366,6 +366,152 @@ describe('deriveHalEnvelopes', () => {
         });
     });
 
+    describe('x-klabis-nullable', () => {
+        it('derives the exact oneOf shape a hand-written nullable $ref carries today', () => {
+            const document = docWith(ref('UpdateEventRequest'), {
+                UpdateEventRequest: {
+                    type: 'object',
+                    properties: {
+                        ranking: {
+                            $ref: ref('UpdateEventRankingRequest').$ref,
+                            'x-klabis-nullable': true,
+                        },
+                    },
+                },
+                UpdateEventRankingRequest: {type: 'object', properties: {}},
+            });
+
+            deriveHalEnvelopes(document);
+
+            const ranking = document.components.schemas.UpdateEventRequest.properties.ranking;
+            expect(ranking).toEqual({
+                oneOf: [ref('UpdateEventRankingRequest'), {type: 'null'}],
+            });
+        });
+
+        it('keeps sibling schema keywords beside the derived oneOf', () => {
+            const document = docWith(ref('UpdateEventRequest'), {
+                UpdateEventRequest: {
+                    type: 'object',
+                    properties: {
+                        ranking: {
+                            description: 'the ranking',
+                            $ref: ref('UpdateEventRankingRequest').$ref,
+                            'x-klabis-nullable': true,
+                        },
+                    },
+                },
+                UpdateEventRankingRequest: {type: 'object', properties: {}},
+            });
+
+            deriveHalEnvelopes(document);
+
+            const ranking = document.components.schemas.UpdateEventRequest.properties.ranking;
+            expect(ranking).toEqual({
+                description: 'the ranking',
+                oneOf: [ref('UpdateEventRankingRequest'), {type: 'null'}],
+            });
+        });
+
+        it('drops null from the type array for false', () => {
+            const document = docWith(ref('EventResponse'), {
+                EventResponse: {
+                    type: 'object',
+                    properties: {
+                        startsAt: {type: ['string', 'null'], format: 'date-time', 'x-klabis-nullable': false},
+                    },
+                },
+            });
+
+            deriveHalEnvelopes(document);
+
+            expect(document.components.schemas.EventResponse.properties.startsAt)
+                .toEqual({type: ['string'], format: 'date-time'});
+        });
+
+        it('leaves a directive beside a composition for validate.mjs to report', () => {
+            const document = docWith(ref('UpdateThingRequest'), {
+                UpdateThingRequest: {
+                    type: 'object',
+                    properties: {
+                        name: {
+                            oneOf: [{type: 'string'}, {type: 'null'}],
+                            'x-klabis-nullable': true,
+                        },
+                    },
+                },
+            });
+            const before = JSON.stringify(document.components.schemas.UpdateThingRequest);
+
+            deriveHalEnvelopes(document);
+
+            expect(JSON.stringify(document.components.schemas.UpdateThingRequest)).toBe(before);
+        });
+
+        it('consumes the directive on a schema nested in a path item, not only under components', () => {
+            const document = docWith(ref('ThingResponse'), {
+                ThingResponse: {type: 'object', properties: {}},
+            });
+            document.paths['/api/things'].post = {
+                operationId: 'createThing',
+                requestBody: {
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                properties: {
+                                    name: {
+                                        $ref: ref('ThingName').$ref,
+                                        'x-klabis-nullable': true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                responses: {'200': {content: {'application/json': {schema: ref('ThingResponse')}}}},
+            };
+
+            deriveHalEnvelopes(document);
+
+            const name = document.paths['/api/things'].post.requestBody.content['application/json']
+                .schema.properties.name;
+            expect(name).toEqual({oneOf: [ref('ThingName'), {type: 'null'}]});
+        });
+    });
+
+    describe('x-hal-input-type stripping', () => {
+        it('strips the directive from a property', () => {
+            const document = docWith(ref('UpdateEventRequest'), {
+                UpdateEventRequest: {
+                    type: 'object',
+                    properties: {
+                        cancellationReason: {type: 'string', 'x-hal-input-type': 'textarea'},
+                    },
+                },
+            });
+
+            deriveHalEnvelopes(document);
+
+            expect(document.components.schemas.UpdateEventRequest.properties.cancellationReason)
+                .toEqual({type: 'string'});
+        });
+
+        it('leaves a non-string value for validate.mjs to report', () => {
+            const document = docWith(ref('UpdateThingRequest'), {
+                UpdateThingRequest: {
+                    type: 'object',
+                    properties: {name: {type: 'string', 'x-hal-input-type': 42}},
+                },
+            });
+
+            deriveHalEnvelopes(document);
+
+            expect(document.components.schemas.UpdateThingRequest.properties.name['x-hal-input-type'])
+                .toBe(42);
+        });
+    });
+
     describe('no-op on already-enveloped input', () => {
         it('skips a response that already has a hal-forms entry', () => {
             const document = docWith(ref('MemberSummaryResponseList'), {

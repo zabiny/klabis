@@ -1700,7 +1700,7 @@ components:
         cancellationReason:
           type: string
           maxLength: 500
-          x-field-extra-annotation: com.klabis.common.ui.HalForms(formInputType = "textarea")
+          x-hal-input-type: textarea
 
     ImportCommand:
       type: object

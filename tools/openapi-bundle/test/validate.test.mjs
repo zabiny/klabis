@@ -643,6 +643,170 @@ describe('validateSpec — x-hal-entity-items', () => {
     });
 });
 
+describe('validateSpec — x-klabis-nullable', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const docWithProperty = (property) => ({
+        paths: {},
+        components: {
+            schemas: {
+                UpdateThingRequest: {type: 'object', properties: {name: property}},
+                ThingName: {type: 'object', properties: {}},
+            },
+        },
+    });
+    const validate = (doc) => validateSpec(doc, {authorities});
+
+    it('accepts true on a $ref property — the deriver consumes it before validation', () => {
+        expect(validate(docWithProperty({
+            $ref: '#/components/schemas/ThingName',
+            'x-klabis-nullable': true,
+        }))).toEqual([]);
+    });
+
+    it('accepts false beside a nullable type array', () => {
+        expect(validate(docWithProperty({
+            type: ['string', 'null'],
+            'x-klabis-nullable': false,
+        }))).toEqual([]);
+    });
+
+    it('rejects a non-boolean value', () => {
+        const errors = validate(docWithProperty({'x-klabis-nullable': 'true'}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('must be a boolean');
+    });
+
+    it('rejects the directive beside oneOf — composition would strip it or double-declare', () => {
+        const errors = validate(docWithProperty({
+            oneOf: [{$ref: '#/components/schemas/ThingName'}, {type: 'null'}],
+            'x-klabis-nullable': true,
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('oneOf');
+    });
+
+    it('rejects the directive beside allOf for the same reason', () => {
+        const errors = validate(docWithProperty({
+            allOf: [{$ref: '#/components/schemas/ThingName'}],
+            'x-klabis-nullable': false,
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('allOf');
+    });
+
+    it('rejects true where the type array already declares null — redundant dual declaration', () => {
+        const errors = validate(docWithProperty({
+            type: ['string', 'null'],
+            'x-klabis-nullable': true,
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('already declares');
+    });
+
+    it('rejects true on a property that is not a $ref', () => {
+        const errors = validate(docWithProperty({type: 'string', 'x-klabis-nullable': true}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('$ref');
+    });
+
+    it('rejects false when the type does not contain null — there is nothing to narrow', () => {
+        const errors = validate(docWithProperty({type: 'string', 'x-klabis-nullable': false}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain("'null'");
+    });
+
+    it('rejects the directive on an operation, where the codegen never reads it', () => {
+        const errors = validate({
+            paths: {
+                '/api/things': {
+                    patch: {operationId: 'updateThing', responses: {}, 'x-klabis-nullable': true},
+                },
+            },
+        });
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('not valid on an operation');
+    });
+});
+
+describe('validateSpec — x-hal-input-type', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const docWithProperty = (property) => ({
+        paths: {},
+        components: {
+            schemas: {
+                UpdateThingRequest: {type: 'object', properties: {name: property}},
+                ThingName: {type: 'object', properties: {}},
+            },
+        },
+    });
+    const validate = (doc) => validateSpec(doc, {authorities});
+
+    it('accepts a non-empty string input type', () => {
+        expect(validate(docWithProperty({type: 'string', 'x-hal-input-type': 'textarea'})))
+            .toEqual([]);
+    });
+
+    it('rejects an empty string', () => {
+        const errors = validate(docWithProperty({type: 'string', 'x-hal-input-type': ''}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('must be a non-empty string');
+    });
+
+    it('rejects a non-string value', () => {
+        const errors = validate(docWithProperty({type: 'string', 'x-hal-input-type': 42}));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('must be a non-empty string');
+    });
+
+    it('rejects the marker beside oneOf, where composition would silently lose it', () => {
+        const errors = validate(docWithProperty({
+            oneOf: [{$ref: '#/components/schemas/ThingName'}, {type: 'null'}],
+            'x-hal-input-type': 'RankingRequest',
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('oneOf');
+    });
+});
+
+describe('validateSpec — x-field-extra-annotation', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const docWithProperty = (value) => ({
+        paths: {},
+        components: {
+            schemas: {
+                CancelThingRequest: {
+                    type: 'object',
+                    properties: {reason: {type: 'string', 'x-field-extra-annotation': value}},
+                },
+            },
+        },
+    });
+    const validate = (doc) => validateSpec(doc, {authorities});
+
+    it('rejects a hand-written HalForms annotation spelled the way the specs write it', () => {
+        const errors = validate(docWithProperty('com.klabis.common.ui.HalForms(formInputType = "textarea")'));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('@HalForms');
+        expect(errors[0].message).toContain('x-hal-input-type');
+    });
+
+    it('rejects the @-prefixed spelling too', () => {
+        const errors = validate(docWithProperty('@HalForms(formInputType = "textarea")'));
+        expect(errors).toHaveLength(1);
+    });
+
+    it('accepts extra annotations that are not HalForms', () => {
+        expect(validate(docWithProperty(
+            'com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)',
+        ))).toEqual([]);
+        expect(validate(docWithProperty('com.fasterxml.jackson.annotation.JsonIgnore'))).toEqual([]);
+    });
+
+    it('does not mistake an annotation whose name merely contains HalForms for the real one', () => {
+        expect(validate(docWithProperty('com.example.UseHalFormsAround(msg = "x")'))).toEqual([]);
+    });
+});
+
 describe('validateSpec — payload schema mistaken for an envelope', () => {
     const authorities = parseAuthorities(AUTHORITY_JAVA);
     const LINKS = {$ref: '#/components/schemas/Links'};
