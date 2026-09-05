@@ -1,7 +1,7 @@
 ## 1. Preparation
 
-- [ ] 1.1 Snapshot generated output for zero-diff verification: `./gradlew openapiBundle openApiGenerateEvents openApiGenerateMembers openApiGenerateCommon openApiGenerateFinance openApiGenerateGroups openApiGenerateMembershipfees openApiGenerateCalendar openApiGenerateOris`, copy `build/generated/openapi/**` and `docs/openapi/klabis-full.json` to a scratch location (`/mnt/ramdisk/klabis`)
-- [ ] 1.2 Record today's HAL-FORMS template for `GET /api/events/{id}` update affordance (MockMvc test output or manual curl) as the before-picture for the ranking case
+- [x] 1.1 Snapshot generated output for zero-diff verification: `./gradlew openapiBundle openApiGenerateEvents openApiGenerateMembers openApiGenerateCommon openApiGenerateFinance openApiGenerateGroups openApiGenerateMembershipfees openApiGenerateCalendar openApiGenerateOris`, copy `build/generated/openapi/**` and `docs/openapi/klabis-full.json` to a scratch location (`/mnt/ramdisk/klabis`)
+- [x] 1.2 Record today's HAL-FORMS template for `GET /api/events/{id}` update affordance (MockMvc test output or manual curl) as the before-picture for the ranking case
 
 ## 2. Assembled @HalForms annotation (x-hal-input-type)
 
