@@ -1660,9 +1660,9 @@ components:
           items:
             $ref: '#/components/schemas/UpdateEventCategoryRequest'
         ranking:
-          oneOf:
-            - $ref: '#/components/schemas/UpdateEventRankingRequest'
-            - type: 'null'
+          $ref: '#/components/schemas/UpdateEventRankingRequest'
+          x-klabis-nullable: true
+          x-hal-input-type: RankingRequest
         baseEntryFee:
           oneOf:
             - $ref: '#/components/schemas/EntryFeeRequest'
