@@ -21,7 +21,7 @@ import java.util.Map;
  * Klabis-specific fork of the stock {@code spring} OpenAPI generator.
  *
  * <p>Vendor fork, diff on upgrade: this class overrides specific protected/public extension points
- * of {@link SpringCodegen} to teach the generator three Klabis conventions the stock generator has no
+ * of {@link SpringCodegen} to teach the generator four Klabis conventions the stock generator has no
  * concept of. The first two are read from explicit declarations in the hand-written module spec — the
  * generator never sees a HAL envelope schema at all, because {@code tools/openapi-bundle} reconstructs
  * those into {@code klabis-full.json} for the frontend and Swagger UI only. See
@@ -44,6 +44,10 @@ import java.util.Map;
  *     verbatim; two separate annotations would not compile ({@code @HalForms} is not {@code
  *     @Repeatable}). See {@code openspec/changes/add-nullable-hal-input-type-extensions/design.md}
  *     Decision 1.</li>
+ *     <li><b>{@code x-klabis-nullable}</b> on a property — explicit control of the Java
+ *     {@code JsonNullable<T>} wrapper independent of spec composition; {@link
+ *     #postProcessModelProperty} flips {@code isNullable} so the stock machinery wraps as usual.
+ *     Same design doc, Decision 2.</li>
  * </ul>
  *
  * <p>{@link #fromOperation} additionally re-adds {@value #HAL_FORMS_MEDIA_TYPE} to a HAL response's
@@ -61,6 +65,7 @@ public class KlabisSpringCodegen extends SpringCodegen {
     private static final String HALFORMS_ACCESS_EXTENSION = "x-klabis-halforms-access";
     private static final String HAL_INPUT_TYPE_EXTENSION = "x-hal-input-type";
     private static final String HALFORMS_ANNOTATION_EXTENSION = "x-klabis-halforms-annotation";
+    private static final String KLABIS_NULLABLE_EXTENSION = "x-klabis-nullable";
     private static final String HAL_FORMS_FQN = "com.klabis.common.ui.HalForms";
 
     /**
@@ -354,30 +359,68 @@ public class KlabisSpringCodegen extends SpringCodegen {
     }
 
     /**
-     * Assembles the ONE {@code @com.klabis.common.ui.HalForms(...)} annotation a record component
-     * carries, from the two vendor extensions feeding its attributes — {@code
-     * x-klabis-halforms-access} → {@code access}, {@code x-hal-input-type} (free-form string) →
-     * {@code formInputType} — and stores it in {@code vendorExtensions.x-klabis-halforms-annotation}
-     * for {@code pojo.mustache} to render verbatim. With neither extension present, no extension key
-     * is emitted and the property is left as {@code super} built it.
+     * Applies the two Klabis property directives on top of the property {@code super} built.
      *
-     * <p>Assembly lives here and not in the template because {@code @HalForms} is not {@code
-     * @Repeatable}: per-attribute rendering in mustache — or a hand-written {@code
-     * HalForms(formInputType = ...)} stamped through {@code x-field-extra-annotation} alongside the
-     * access-rendered one — puts two {@code @HalForms} on one component, a compile error. Mustache
-     * has no value-aware conditionals for the attribute matrix either.
+     * <p><b>{@code x-klabis-halforms-access} + {@code x-hal-input-type} → the ONE {@code @HalForms}
+     * annotation.</b> Assembled from the two attribute extensions into {@code
+     * vendorExtensions.x-klabis-halforms-annotation} for {@code pojo.mustache} to render verbatim;
+     * with neither present, no extension key is emitted. Assembly lives here and not in the template
+     * because {@code @HalForms} is not {@code @Repeatable}: per-attribute rendering in mustache — or
+     * a hand-written {@code HalForms(formInputType = ...)} stamped through {@code
+     * x-field-extra-annotation} alongside the access-rendered one — puts two {@code @HalForms} on
+     * one component, a compile error. Mustache has no value-aware conditionals for the attribute
+     * matrix either.
+     *
+     * <p><b>{@code x-klabis-nullable} → {@link CodegenProperty#isNullable}.</b> {@code true} lets
+     * the stock {@code openApiNullable} machinery wrap the record component as {@code JsonNullable<T>}
+     * (pojo.mustache adds the single wrapper, so {@code datatypeWithEnum} stays the plain type);
+     * {@code false} forces the plain {@code T} despite a nullable wire type; absent → stock
+     * nullability. The flip runs BEFORE {@code super}: AbstractJavaCodegen collects the
+     * {@code JsonNullable} import and skips set-container deserialization handling from
+     * {@code isNullable} — a flip after {@code super} would produce the wrapper type without the
+     * matching import, while the whole point of the extension is that {@code $ref} +
+     * {@code x-klabis-nullable: true} generates exactly what {@code type: [x, "null"]} generates
+     * today (design Decision 6 zero-diff).
+     *
+     * <p>Placement follows the stock {@code fromProperty} rule this hook reads through: the
+     * property's OWN schema node wins, and a node without extensions falls back to the {@code $ref}
+     * TARGET's extensions. {@code x-klabis-nullable} therefore sits on the PROPERTY beside the
+     * {@code $ref} (iteration 5's ranking shape); a value on a shared $ref target would flow into
+     * every referencing property exactly as it already does for {@code x-field-extra-annotation} —
+     * stock-consistent, not special-cased here. Strictly boolean; anything else is ignored here and
+     * left for {@code validate.mjs} to reject.
      *
      * <p>Idempotent by construction: {@code fromModel()} runs this hook over {@code vars} and again
-     * over {@code allVars}, twice per property — the assembly only reads the two source extensions,
-     * so the second pass recomputes the identical string.
+     * over {@code allVars}, twice per property — the flip rewrites the same boolean and the assembly
+     * recomputes the identical string.
      */
     @Override
     public void postProcessModelProperty(CodegenModel model, CodegenProperty property) {
+        Boolean explicitNullable = explicitNullable(property.getVendorExtensions());
+        if (explicitNullable != null) {
+            property.isNullable = explicitNullable;
+        }
         super.postProcessModelProperty(model, property);
         String annotation = halFormsAnnotation(property.getVendorExtensions());
         if (annotation != null) {
             property.getVendorExtensions().put(HALFORMS_ANNOTATION_EXTENSION, annotation);
         }
+    }
+
+    /**
+     * The {@code x-klabis-nullable} value of a property's vendor extensions — {@link Boolean#TRUE},
+     * {@link Boolean#FALSE}, or {@code null} when the key is absent or not a boolean. Package-visible
+     * so the unit test drives the same read the hook applies.
+     */
+    static Boolean explicitNullable(Map<String, Object> extensions) {
+        if (extensions == null) {
+            return null;
+        }
+        Object value = extensions.get(KLABIS_NULLABLE_EXTENSION);
+        if (Boolean.TRUE.equals(value)) {
+            return Boolean.TRUE;
+        }
+        return Boolean.FALSE.equals(value) ? Boolean.FALSE : null;
     }
 
     /**
