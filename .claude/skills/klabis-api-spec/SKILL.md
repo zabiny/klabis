@@ -248,7 +248,11 @@ for any authenticated user, `@ActingMember` + `MemberId` to require a member pro
 - Reaching for a raw `x-field-extra-annotation` on a schema property to inject an annotation. The
   generator only honours it on *parameters*; on a model property the overridden `pojo.mustache`
   decides, and an unlisted extension is silently dropped — so the annotation never appears and any
-  standard keyword you removed to "replace" is lost too.
+  standard keyword you removed to "replace" is lost too. For a HAL-FORMS input type there is a
+  dedicated key now: `x-hal-input-type` (assembled into the single `@HalForms` together with
+  `x-klabis-halforms-access`). A `@HalForms(...)` inside `x-field-extra-annotation` is a
+  `validate.mjs` error — it would duplicate the assembled annotation, and `@HalForms` is not
+  `@Repeatable`.
 - Naming a fresh top-level `enum:` schema and listing it in `models` — the generator writes a
   well-formed Java file with no constants and no body, and every reference fails to compile. An
   enum only works when `schemaMappings` points it at an existing domain enum. With no such enum,
@@ -290,12 +294,19 @@ for any authenticated user, `@ActingMember` + `MemberId` to require a member pro
   No hand-written controller hits this, so it first appears when a module goes spec-first.
 - Writing `nullable: true` on a PATCH property. It is the OpenAPI 3.0 keyword and these specs are
   3.1, so it is silently ignored: no `JsonNullable`, no warning, and the endpoint quietly loses the
-  ability to distinguish "absent" from "clear this field". Use `type: [x, 'null']`.
+  ability to distinguish "absent" from "clear this field". Use `type: [x, 'null']`, or — on a `$ref`
+  property — `$ref` + `x-klabis-nullable: true`.
+- Writing a nullable `$ref` PATCH property as `oneOf: [{$ref}, {type: 'null'}]`. That was the only
+  spelling before `x-klabis-nullable` existed and every such property was migrated off it: the
+  composition strips sibling vendor extensions, so the property can carry neither
+  `x-klabis-authority` nor `x-hal-input-type`. `$ref` + `x-klabis-nullable: true` generates the same
+  wrapper with no composition, and the bundle emits the identical `oneOf` shape either way.
 - Writing a PATCH property with `oneOf` or `allOf` when it also carries `x-klabis-authority` or
   `x-klabis-owner-visible`. `oneOf` strips the extension (scalar ones included); `allOf` keeps it
   but generates a bare type, and `RequestBodyFieldAuthorizationAdvice` skips every component that is
   not `JsonNullable`, so the annotation is never evaluated. Either way the check silently stops
-  running for the one caller it exists for — the owner. Inline the type and map
+  running for the one caller it exists for — the owner. On a nullable `$ref` property the way out is
+  `$ref` + `x-klabis-nullable: true` (no composition at all); otherwise inline the type and map
   `<Parent>_<property>` in `schemaMappings`; see the `gender` section above.
 - Marking a response property or a POST/PUT body property nullable. There is no tri-state to express
   and the `JsonNullable` wrapper leaks into code that only ever wants a value.

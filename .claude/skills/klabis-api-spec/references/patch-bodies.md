@@ -18,11 +18,18 @@ name:
   type: ['string', 'null']          # -> JsonNullable<String>
   maxLength: 100
 
-ageRange:                            # a $ref property needs the oneOf form
-  oneOf:
-    - $ref: '#/components/schemas/AgeRangeRequest'
-    - type: 'null'                   # -> JsonNullable<AgeRangeRequest>
+ageRange:                            # a $ref property — no composition needed
+  $ref: '#/components/schemas/AgeRangeRequest'
+  x-klabis-nullable: true            # -> JsonNullable<AgeRangeRequest>
 ```
+
+Both spellings generate the same wrapper. Prefer `x-klabis-nullable` on `$ref` properties: the
+legacy `oneOf: [{$ref}, {type: 'null'}]` spelling still works, but composition strips sibling
+vendor extensions (below), so the property can carry no `x-klabis-*` / `x-hal-*` keys. The bundle
+emits the identical legacy `oneOf` shape either way — `derive.mjs` translates — so frontend types
+never notice which spelling the property uses. `x-klabis-nullable: false` is the reverse lever: a
+plain `T` despite a nullable wire type, for a nullable response property where the wrapper would
+leak into code that only wants a value (unused today).
 
 `nullable: true` and `allOf` + `nullable` both generate the bare type. This is driven by
 `openApiNullable = "true"` in `openApiModule(...)` plus the `isNullable` branch in the overridden
@@ -41,9 +48,9 @@ of the composition keyword itself, not of what it contains — a scalar
 `oneOf: [{type: string}, {type: 'null'}]` loses them just as a `$ref` branch does, even though the
 union spelling `type: ['string', 'null']` keeps them.
 
-That is only a dilemma for `$ref` properties, since a scalar can always use the union spelling
-instead. **Neither composition keyword is a way out**, and `allOf` is a trap worth naming, because
-it looks like one:
+For a `$ref` property the dilemma is gone — spell it `$ref` + `x-klabis-nullable: true` and there is
+no composition to strip anything. What follows is why the legacy `oneOf` spelling was migrated away
+(and why `allOf` is a trap worth naming, because it looks like one):
 
 ```yaml
 gender:

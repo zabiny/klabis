@@ -20,6 +20,7 @@ alongside the types:
 | `format: email` | `@Email` |
 | `minimum` / `maximum` | `@Min` / `@Max` |
 | `type: [x, 'null']` | `JsonNullable<X>` — PATCH tri-state, see below |
+| `x-klabis-nullable: true` on a `$ref` property | `JsonNullable<X>` without composition — same wrapper, see patch-bodies |
 
 A schema that omits them produces a DTO that accepts anything — the failure shows up as a controller
 test expecting `400` and getting `200`, or as missing entries under `fieldErrors`. When migrating a

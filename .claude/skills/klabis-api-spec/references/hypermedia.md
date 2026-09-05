@@ -340,6 +340,27 @@ match that: **the key equals the `operation:` value** for the primary affordance
 other. If a `_templates.<name>` read on the frontend has no matching key in the generated `*Hal`,
 that is the spec being wrong, not the read.
 
+### The template property `type` for composite fields — `x-hal-input-type`
+
+The backend types every HAL-FORMS template property with the Java class simple name
+(`HalFormsSupport.getTypeFromClass`), and the frontend field factory switches on that name — so a
+composite field whose component schema carries a different name than the factory knows renders an
+unknown-type warning instead of the field. `x-hal-input-type` (property-level, free-form string)
+overrides it:
+
+```yaml
+ranking:
+  $ref: '#/components/schemas/UpdateEventRankingRequest'
+  x-klabis-nullable: true
+  x-hal-input-type: RankingRequest     # template property carries type: "RankingRequest"
+```
+
+The codegen assembles it with `x-klabis-halforms-access` into a **single** `@HalForms(...)` on the
+record component — `@HalForms` is not `@Repeatable`, so two separate annotations would not compile.
+The deriver strips the key from the bundle like every codegen directive. Never spell it as
+`@HalForms(formInputType = ...)` inside `x-field-extra-annotation`: `validate.mjs` rejects that,
+and inside a composition it would be stripped anyway.
+
 ### What the frontend gets from them
 
 `npm run openapi` generates `frontend/src/api/halTypes.ts` from these declarations — per operation a
