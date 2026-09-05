@@ -112,6 +112,15 @@ is also `@OwnerVisible` — but an operation declaring `x-klabis-owner-visible` 
 which `validate.mjs` enforces during bundling: `@OwnerVisible` without `@OwnerId` denies instead of
 resolving ownership.
 
+Codegen directives, on schema properties (consumed by `KlabisSpringCodegen` and stripped from the
+bundle by `derive.mjs`, so frontend types never see them):
+
+| extension | generates |
+|---|---|
+| `x-hal-input-type: RankingRequest` | `@HalForms(formInputType = "RankingRequest")`, assembled into a single `@HalForms` with `x-klabis-halforms-access` (`@HalForms` is not `@Repeatable`) |
+| `x-klabis-nullable: true` | `JsonNullable<T>` without any `oneOf` composition (the bundle keeps the legacy `oneOf: [{$ref}, {type: 'null'}]` shape) |
+| `x-klabis-nullable: false` | plain `T` despite a nullable wire type |
+
 Hypermedia, on **response objects** (not on schemas — links belong to the representation):
 
 - `x-hal-links` — link relations the response may carry
@@ -169,7 +178,11 @@ is nothing but `_links`, so there is no payload to derive from, and a `schemaMap
 each from being emitted as a Java class.
 
 Extension values are validated during bundling: `x-klabis-authority` must be a constant of
-`Authority.java`, and `operation:` inside `x-hal-*` must match an existing `operationId`.
+`Authority.java`, and `operation:` inside `x-hal-*` must match an existing `operationId`. The
+codegen directives are validated too — `x-hal-input-type` must be a non-empty string, and
+`x-klabis-nullable` must be a plain boolean, must not sit next to `oneOf`/`allOf` on the same
+property, and must not declare a nullability the type already states. A `@HalForms(...)`
+inside `x-field-extra-annotation` is rejected outright (use `x-hal-input-type`).
 
 `x-klabis-*` keys are consumed by the overridden templates in `backend/src/main/openapi-templates/`
 — `pojo.mustache` for schema properties, `api.mustache` for operations, `pathParams.mustache` for
@@ -204,7 +217,8 @@ Klabis branch across. Each file opens with a note saying so.
 - **Nullable properties use the OpenAPI 3.1 union spelling**, `type: [string, 'null']`, never the
   3.0 `nullable: true`. These documents declare `openapi: 3.1.0`; `nullable: true` is a 3.0 keyword
   that a 3.1-aware tool (Redocly, `openApiNullable`) does not recognize as nullable at all. For a
-  `$ref` that needs to be nullable, `allOf: [{$ref: ...}, nullable: true]` doesn't compose the way
-  it looks like it should — use `oneOf: [{$ref: ...}, {type: 'null'}]` instead (see
-  `MemberFeeSummaryResponse.currentGroup` in `membershipfees.yaml`), and re-read the `oneOf`/`allOf`
-  warning above first if the property carries a field-authorization extension.
+  `$ref` property use `$ref` + `x-klabis-nullable: true` — no composition, sibling vendor extensions
+  survive, and the bundle emits the same `oneOf: [{$ref}, {type: 'null'}]` shape frontend types were
+  built on. The legacy `oneOf: [{$ref: ...}, {type: 'null'}]` spelling still generates the same
+  wrapper but strips sibling vendor extensions; every property was migrated off it, so don't write
+  new ones.
