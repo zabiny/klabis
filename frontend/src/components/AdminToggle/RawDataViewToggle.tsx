@@ -10,7 +10,7 @@ interface AdminToggleProps {
  * Only visible to admin users.
  * When enabled, restricts access to only: HomePage, SandplacePage, and GenericHalPage
  */
-export const AdminToggle = ({className = ''}: AdminToggleProps) => {
+export const RawDataViewToggle = ({className = ''}: AdminToggleProps) => {
     const {isAdminMode, toggleAdminMode} = useAdminMode()
     // const {isAdmin} = useIsAdmin()
     //
@@ -95,4 +95,4 @@ export const AdminToggle = ({className = ''}: AdminToggleProps) => {
     )
 }
 
-AdminToggle.displayName = 'AdminToggle'
+RawDataViewToggle.displayName = 'RawDataViewToggle'
