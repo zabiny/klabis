@@ -38,13 +38,14 @@ paths:
       summary: Read synchronisation state
       description: |
         Returns the current synchronisation state of one linked entity, without running
-        a pass. `divergedFields`/`changedSides` are present only while the record is in
+        a pass. Which fields are present depends on the caller: fields marked with
+        x-klabis-authority are omitted unless the caller holds SYNC:MANAGE.
+        `divergedFields`/`changedSides` are present only while the record is in
         CONFLICT. `local`/`external`/`baseline` are the decrypted projections, shaped
         per entity type; `baselineExternal` appears only while an accepted divergence
         stands (design.md D6).
       security:
         - KlabisAuth: [SYNC]
-      x-klabis-authority: SYNC_MANAGE
       parameters:
         - $ref: '#/components/parameters/EntityTypeParam'
         - $ref: '#/components/parameters/SyncEntityIdParam'
@@ -287,8 +288,12 @@ components:
 
     SyncStateResponse:
       type: object
-      description: The synchronisation state of one linked entity against one external system.
-      required: [entityType, status, externalSystem, externalId, failedAttemptsSinceLastSuccess, acceptedDivergence]
+      description: |
+        The synchronisation state of one linked entity against one external system.
+        Fields carrying x-klabis-authority are omitted for callers without SYNC:MANAGE;
+        entityType, status, externalSystem and lastSuccessfulSyncAt are always visible
+        to any authenticated caller.
+      required: [entityType, status, externalSystem]
       properties:
         entityType:
           $ref: '#/components/schemas/SyncEntityTypeParam'
@@ -301,48 +306,59 @@ components:
         externalId:
           type: string
           description: The entity's identifier in the external system.
+          x-klabis-authority: SYNC_MANAGE
         lastSuccessfulSyncAt:
           type: [string, 'null']
           format: date-time
         lastDirection:
           type: [string, 'null']
           enum: [INWARD, OUTWARD, null]
+          x-klabis-authority: SYNC_MANAGE
         nextAttemptDueAt:
           type: [string, 'null']
           format: date-time
+          x-klabis-authority: SYNC_MANAGE
         failedAttemptsSinceLastSuccess:
           type: integer
           format: int32
+          x-klabis-authority: SYNC_MANAGE
         acceptedDivergence:
           type: boolean
           description: Whether the baseline pair is currently diverged (design.md D6) — visible in any status, since an accepted divergence persists into IN_SYNC.
+          x-klabis-authority: SYNC_MANAGE
         divergedFields:
           type: array
           description: Present only while status is CONFLICT — the names of the fields that differ.
           items:
             type: string
+          x-klabis-authority: SYNC_MANAGE
         changedSides:
           type: object
           description: Present only while status is CONFLICT — per diverged field, which side moved away from the baseline.
           additionalProperties:
             type: string
             enum: [LOCAL, EXTERNAL, BOTH]
+          x-klabis-authority: SYNC_MANAGE
         local:
           type: [object, 'null']
           description: The local projection, shaped per entity type. Null before the first synchronisation pass.
           additionalProperties: true
+          x-klabis-authority: SYNC_MANAGE
         external:
           type: [object, 'null']
           description: The external projection, shaped per entity type. Null before the first synchronisation pass.
           additionalProperties: true
+          x-klabis-authority: SYNC_MANAGE
         baseline:
           type: [object, 'null']
           description: The local half of the baseline pair. Null before the first synchronisation pass.
           additionalProperties: true
+          x-klabis-authority: SYNC_MANAGE
         baselineExternal:
           type: object
           description: The external half of the baseline pair — present only while an accepted divergence stands (design.md D6); the common case has identical baseline halves and omits this field.
           additionalProperties: true
+          x-klabis-authority: SYNC_MANAGE
 
     ResolveSyncConflictRequest:
       type: object

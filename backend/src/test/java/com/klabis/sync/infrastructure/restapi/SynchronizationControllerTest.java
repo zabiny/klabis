@@ -29,9 +29,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Controller tests for {@link SynchronizationController} (tasks.md 6.6): success and
- * refusal paths for each operation, per-state affordances, {@code SYNC:MANAGE} on every
- * operation, and the 404 cases (unenrolled entity, unknown entity type).
+ * Controller tests for {@link SynchronizationController} (tasks.md 6.6, restrict-sync-state-visibility):
+ * success and refusal paths for each operation, per-state affordances, the field-level
+ * visibility split on {@code getSyncState} (open to any authenticated caller, with the
+ * managed fields gated on {@code SYNC:MANAGE}), {@code SYNC:MANAGE} on the four
+ * state-changing operations, and the 404 cases (unenrolled entity, unknown entity type).
  */
 @DisplayName("SynchronizationController")
 @WebMvcTest(controllers = {SynchronizationController.class, SyncExceptionHandler.class})
@@ -163,11 +165,84 @@ class SynchronizationControllerTest {
         }
 
         @Test
-        @DisplayName("requires SYNC:MANAGE")
+        @DisplayName("is open to any authenticated caller, without SYNC:MANAGE")
         @WithKlabisMockUser(authorities = {})
-        void requiresAuthority() throws Exception {
+        void isOpenToAnyAuthenticatedCaller() throws Exception {
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(inSyncRecord()));
+
             mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("without SYNC:MANAGE shows only the headline fields, omitting the managed ones")
+        @WithKlabisMockUser(authorities = {})
+        void showsOnlyHeadlineFieldsWithoutAuthority() throws Exception {
+            // Same fixture and stubs as showsEveryFieldWithAuthority (conflictedRecord, both
+            // fieldReader.fields and failedAttemptsSinceLastSuccess stubbed) so every field
+            // the converter would otherwise populate is genuinely present before serialization —
+            // the doesNotExist() assertions below are then attributable to the missing
+            // authority alone, not to an unstubbed mock or a non-CONFLICT status.
+            when(fieldReader.fields(any())).thenReturn(java.util.Map.of("name", "Local"));
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(conflictedRecord()));
+            when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
+
+            mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.entityType").exists())
+                    .andExpect(jsonPath("$.status").exists())
+                    .andExpect(jsonPath("$.externalSystem").exists())
+                    .andExpect(jsonPath("$.lastSuccessfulSyncAt").exists())
+                    .andExpect(jsonPath("$.externalId").doesNotExist())
+                    .andExpect(jsonPath("$.lastDirection").doesNotExist())
+                    .andExpect(jsonPath("$.nextAttemptDueAt").doesNotExist())
+                    .andExpect(jsonPath("$.failedAttemptsSinceLastSuccess").doesNotExist())
+                    .andExpect(jsonPath("$.acceptedDivergence").doesNotExist())
+                    .andExpect(jsonPath("$.divergedFields").doesNotExist())
+                    .andExpect(jsonPath("$.changedSides").doesNotExist())
+                    .andExpect(jsonPath("$.local").doesNotExist())
+                    .andExpect(jsonPath("$.external").doesNotExist())
+                    .andExpect(jsonPath("$.baseline").doesNotExist())
+                    .andExpect(jsonPath("$.baselineExternal").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("with SYNC:MANAGE shows every field, including the conflict diagnosis")
+        @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+        void showsEveryFieldWithAuthority() throws Exception {
+            when(fieldReader.fields(any())).thenReturn(java.util.Map.of("name", "Local"));
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(conflictedRecord()));
+            when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
+
+            // nextAttemptDueAt and baselineExternal are deliberately not asserted here:
+            // conflictedRecord() has no next attempt scheduled (null) and no accepted
+            // divergence (baselineExternal appears only once one is accepted, design.md D6),
+            // so .exists() would fail for both regardless of authority — not an oversight.
+            mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.entityType").exists())
+                    .andExpect(jsonPath("$.status").exists())
+                    .andExpect(jsonPath("$.externalSystem").exists())
+                    .andExpect(jsonPath("$.lastSuccessfulSyncAt").exists())
+                    .andExpect(jsonPath("$.externalId").exists())
+                    .andExpect(jsonPath("$.lastDirection").exists())
+                    .andExpect(jsonPath("$.failedAttemptsSinceLastSuccess").exists())
+                    .andExpect(jsonPath("$.acceptedDivergence").exists())
+                    .andExpect(jsonPath("$.divergedFields").exists())
+                    .andExpect(jsonPath("$.changedSides").exists())
+                    .andExpect(jsonPath("$.local").exists())
+                    .andExpect(jsonPath("$.external").exists())
+                    .andExpect(jsonPath("$.baseline").exists());
+        }
+
+        @Test
+        @DisplayName("returns 404 for a non-enrolled entity even without SYNC:MANAGE")
+        @WithKlabisMockUser(authorities = {})
+        void returns404WhenNotEnrolledWithoutAuthority() throws Exception {
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.empty());
+
+            mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isNotFound());
         }
     }
 
