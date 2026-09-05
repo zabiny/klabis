@@ -227,8 +227,8 @@ function deriveEntityItems(node, schemas, collisions) {
  * The backend codegen reads both from `docs/openapi/spec/<module>.yaml` directly, so the bundle has
  * no consumer for them — but unlike the descriptive extensions (`x-klabis-authority` etc.) that
  * survive into the bundle, they must not stay in it: `x-hal-input-type` would be dead weight, and a
- * leftover `x-klabis-nullable` would contradict the `oneOf` it just derived. Where the deriver can
- * act on the directive it consumes it:
+ * leftover `x-klabis-nullable` would contradict the `oneOf` it just derived. Both are honoured by
+ * the codegen on schema *properties* only, so consumption is gated the same way:
  *  - `x-klabis-nullable: true` on a `$ref` property becomes the `oneOf: [<ref>, {type: 'null'}]`
  *    shape a hand-written nullable `$ref` carries (frontend types byte-identical), and the `$ref`
  *    — which cannot sit beside the `oneOf` — is folded into it, keeping any sibling keywords;
@@ -236,38 +236,69 @@ function deriveEntityItems(node, schemas, collisions) {
  *    type while the codegen emits a plain Java type;
  *  - a non-empty `x-hal-input-type` is simply deleted.
  *
- * A directive the deriver cannot act on — either key beside an `oneOf`/`allOf` composition, a
- * non-boolean `x-klabis-nullable`, an empty `x-hal-input-type` — is left in place on purpose:
- * validation runs after derivation, so what survives to it is exactly the authoring mistake, which
- * it reports as a build failure (nothing silent) rather than stripping a no-op in passing.
+ * Two placements are exempt and the directive is left in place for `validate.mjs` (which runs after
+ * derivation) to report as a build failure — nothing silent:
+ *  - anywhere inside or beside an `oneOf`/`allOf` composition: the codegen does not see extensions
+ *    there, so acting on the directive would change the frontend type while the generated Java
+ *    stays bare — the exact mismatch the composition rules in validate.mjs exist to prevent;
+ *  - `x-klabis-nullable: true` on a member the parent schema lists in `required` — validate.mjs
+ *    has a dedicated rule for that combination (the generated `JsonNullable<T>` would miss its
+ *    import), so the directive must still be there when it runs. `false` on a required member is
+ *    consumed as usual: it removes a wrapper rather than adding one.
+ *
+ * A directive the deriver cannot act on for shape reasons — a non-boolean `x-klabis-nullable`, an
+ * empty `x-hal-input-type` — is left in place under the same principle.
  */
-function consumePropertyDirectives(node) {
+function consumePropertyDirectives(node, {inComposition = false, isProperty = false, isRequired = false} = {}) {
     if (Array.isArray(node)) {
-        for (const item of node) consumePropertyDirectives(item);
+        for (const item of node) {
+            consumePropertyDirectives(item, {inComposition, isProperty, isRequired});
+        }
         return;
     }
     if (!isPlainObject(node)) return;
 
-    const composed = node.oneOf !== undefined || node.allOf !== undefined;
+    const composed = inComposition || node.oneOf !== undefined || node.allOf !== undefined;
 
-    if (Object.hasOwn(node, 'x-klabis-nullable') && !composed) {
+    if (isProperty && !composed) {
         const nullable = node['x-klabis-nullable'];
-        if (nullable === true && typeof node.$ref === 'string') {
-            node.oneOf = [{$ref: node.$ref}, {type: 'null'}];
-            delete node.$ref;
-            delete node['x-klabis-nullable'];
-        } else if (nullable === false && Array.isArray(node.type) && node.type.includes('null')) {
-            node.type = node.type.filter((t) => t !== 'null');
-            delete node['x-klabis-nullable'];
+        if (Object.hasOwn(node, 'x-klabis-nullable') && !(nullable === true && isRequired)) {
+            if (nullable === true && typeof node.$ref === 'string') {
+                node.oneOf = [{$ref: node.$ref}, {type: 'null'}];
+                delete node.$ref;
+                delete node['x-klabis-nullable'];
+            } else if (nullable === false && Array.isArray(node.type) && node.type.includes('null')) {
+                node.type = node.type.filter((t) => t !== 'null');
+                delete node['x-klabis-nullable'];
+            }
+        }
+
+        const inputType = node['x-hal-input-type'];
+        if (typeof inputType === 'string' && inputType !== '') {
+            delete node['x-hal-input-type'];
         }
     }
 
-    const inputType = node['x-hal-input-type'];
-    if (!composed && typeof inputType === 'string' && inputType !== '') {
-        delete node['x-hal-input-type'];
+    for (const [key, value] of Object.entries(node)) {
+        if (key === 'oneOf' || key === 'allOf') {
+            // Nothing inside a composition is consumed, at any depth.
+            consumePropertyDirectives(value, {inComposition: true});
+        } else if (key === 'properties' && isPlainObject(value)) {
+            // Each property learns whether its parent schema requires it.
+            const requiredNames = new Set(
+                Array.isArray(node.required) ? node.required.filter((n) => typeof n === 'string') : [],
+            );
+            for (const [propertyName, propertySchema] of Object.entries(value)) {
+                consumePropertyDirectives(propertySchema, {
+                    inComposition,
+                    isProperty: true,
+                    isRequired: requiredNames.has(propertyName),
+                });
+            }
+        } else {
+            consumePropertyDirectives(value, {});
+        }
     }
-
-    for (const value of Object.values(node)) consumePropertyDirectives(value);
 }
 
 /**

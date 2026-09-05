@@ -448,6 +448,64 @@ describe('deriveHalEnvelopes', () => {
             expect(JSON.stringify(document.components.schemas.UpdateThingRequest)).toBe(before);
         });
 
+        it('leaves a directive inside a composition subtree untouched for validate.mjs', () => {
+            const document = docWith(ref('ThingResponse'), {
+                ThingResponse: {type: 'object', properties: {}},
+                ComposedThing: {
+                    allOf: [
+                        {
+                            $ref: ref('ThingName').$ref,
+                            'x-klabis-nullable': true,
+                        },
+                        {
+                            type: 'object',
+                            oneOf: [{type: 'string', 'x-hal-input-type': 'textarea'}],
+                        },
+                    ],
+                },
+            });
+            const before = JSON.stringify(document.components.schemas.ComposedThing);
+
+            deriveHalEnvelopes(document);
+
+            expect(JSON.stringify(document.components.schemas.ComposedThing)).toBe(before);
+        });
+
+        it('leaves x-klabis-nullable: true on a required member for validate.mjs', () => {
+            const document = docWith(ref('CreateThingRequest'), {
+                CreateThingRequest: {
+                    type: 'object',
+                    required: ['name'],
+                    properties: {
+                        name: {$ref: ref('ThingName').$ref, 'x-klabis-nullable': true},
+                    },
+                },
+                ThingName: {type: 'object', properties: {}},
+            });
+
+            deriveHalEnvelopes(document);
+
+            expect(document.components.schemas.CreateThingRequest.properties.name)
+                .toEqual({$ref: ref('ThingName').$ref, 'x-klabis-nullable': true});
+        });
+
+        it('still consumes x-klabis-nullable: false on a required member — it removes a wrapper', () => {
+            const document = docWith(ref('CreateThingRequest'), {
+                CreateThingRequest: {
+                    type: 'object',
+                    required: ['name'],
+                    properties: {
+                        name: {type: ['string', 'null'], 'x-klabis-nullable': false},
+                    },
+                },
+            });
+
+            deriveHalEnvelopes(document);
+
+            expect(document.components.schemas.CreateThingRequest.properties.name)
+                .toEqual({type: ['string']});
+        });
+
         it('consumes the directive on a schema nested in a path item, not only under components', () => {
             const document = docWith(ref('ThingResponse'), {
                 ThingResponse: {type: 'object', properties: {}},

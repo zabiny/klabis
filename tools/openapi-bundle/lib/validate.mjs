@@ -25,6 +25,20 @@ export const KNOWN_KLABIS_EXTENSIONS = new Set([
     'x-klabis-hal',
 ]);
 
+/**
+ * The `x-hal-*` directive family the deriver consumes or validates. The `x-klabis-*` loop rejects
+ * unknown keys by prefix; without the mirror-image set here, a typo like `x-hal-inputtype` would be
+ * silently ignored by every consumer — the deriver reads its directives by exact name — and ship as
+ * a no-op. Value and placement rules for the known keys live in their own blocks below.
+ */
+export const KNOWN_HAL_EXTENSIONS = new Set([
+    'x-hal-entity-items',
+    'x-hal-embedded',
+    'x-hal-input-type',
+    'x-hal-links',
+    'x-hal-templates',
+]);
+
 export const HALFORMS_ACCESS_VALUES = new Set(['READ_ONLY', 'NONE', 'READ_WRITE', 'DEFAULT']);
 
 /** Extensions that belong on the HTTP-method node rather than on a schema property. */
@@ -54,6 +68,12 @@ const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArr
  * an annotation whose simple name merely contains "HalForms".
  */
 const HALFORMS_EXTRA_ANNOTATION = /(^|[^A-Za-z0-9_$])@?([\w$]+\.)*HalForms\s*\(/;
+
+/**
+ * Whether a node sits anywhere inside an `oneOf`/`allOf` composition. The walk appends array
+ * indices in brackets (`allOf[0]`), so both separators after the keyword count.
+ */
+const IN_COMPOSITION_PATH = /\/(oneOf|allOf)(\/|\[)/;
 
 /**
  * Extracts authority enum constant names from Authority.java.
@@ -301,13 +321,13 @@ export function validateSpec(document, {authorities}) {
                 }
             }
 
-            // Everything that reaches validation is an authoring mistake: the deriver consumes the
-            // directive exactly where it can act on it (a $ref property for `true`, a nullable type
-            // array for `false` — see consumePropertyDirectives) and leaves the rest for this
-            // check, the same split that makes the x-hal-entity-items rules fire on misplaced
-            // markers only. A correctly-placed directive never arrives here at all.
+            // A directive reaching validation is an authoring mistake: consumePropertyDirectives
+            // consumes it exactly where the codegen honours it — a $ref property for `true`, a
+            // nullable type array for `false`, never beside or inside a composition, never on a
+            // required member, nowhere but a property — and leaves the rest for these checks, the
+            // same split that makes the x-hal-entity-items rules fire on misplaced markers only.
             if (key === 'x-klabis-nullable') {
-                // The extensions *replace* composition (design.md D5): beside oneOf/allOf the
+                // The directive *replaces* composition (design.md D5): beside oneOf/allOf the
                 // deriver cannot act, and the composition would either strip the directive or
                 // double-declare nullability.
                 if (node.oneOf !== undefined || node.allOf !== undefined) {
@@ -330,6 +350,27 @@ export function validateSpec(document, {authorities}) {
                         path: `${path}/${key}`,
                         message: "redundant: the type array already declares 'null' — "
                             + 'declare nullability once',
+                    });
+                    continue;
+                }
+
+                // A survivor from inside a composition subtree (e.g. on an allOf member): the
+                // codegen does not honour extensions there, so acting on the directive would
+                // change the frontend type while the generated Java stays bare.
+                if (IN_COMPOSITION_PATH.test(path)) {
+                    errors.push({
+                        path: `${path}/${key}`,
+                        message: 'inside a oneOf/allOf composition — the codegen does not honour '
+                            + 'extensions there, so the directive would change only the '
+                            + 'frontend type; move the property out of the composition',
+                    });
+                    continue;
+                }
+
+                if (!path.includes('/properties/')) {
+                    errors.push({
+                        path: `${path}/${key}`,
+                        message: 'is only honoured on a schema property',
                     });
                     continue;
                 }
@@ -410,6 +451,16 @@ export function validateSpec(document, {authorities}) {
             }
         }
 
+        // The x-hal-* mirror of the x-klabis-* allowlist above (see KNOWN_HAL_EXTENSIONS).
+        for (const key of Object.keys(node)) {
+            if (!key.startsWith('x-hal-') || KNOWN_HAL_EXTENSIONS.has(key)) continue;
+            errors.push({
+                path: `${path}/${key}`,
+                message: `Unknown extension "${key}". Known x-hal extensions: `
+                    + `${[...KNOWN_HAL_EXTENSIONS].sort().join(', ')}`,
+            });
+        }
+
         // Restricted to `type: array` with a `$ref` items schema (Decision 3). A singular
         // HAL-wrapped property would need the marker beside the `$ref`, where OpenAPI 3.0 ignores
         // siblings outright and 3.1 tooling honours them inconsistently — refused until a real
@@ -460,14 +511,24 @@ export function validateSpec(document, {authorities}) {
             if (typeof value !== 'string' || value === '') {
                 errors.push({path: `${path}/x-hal-input-type`, message: 'must be a non-empty string'});
             }
-            // Same replacement rule as x-klabis-nullable: beside a composition the deriver leaves
-            // the marker in place (see consumePropertyDirectives), because oneOf/allOf would strip
-            // the extension and the input type would be silently lost.
-            if (node.oneOf !== undefined || node.allOf !== undefined) {
+            // Same replacement rule as x-klabis-nullable: the assembled annotation is a property
+            // concern, and oneOf/allOf would strip the extension — beside or inside a composition
+            // the input type would be silently lost. consumePropertyDirectives leaves the marker
+            // in place in exactly those spots for this check.
+            if (node.oneOf !== undefined || node.allOf !== undefined
+                || IN_COMPOSITION_PATH.test(path)) {
                 errors.push({
                     path: `${path}/x-hal-input-type`,
                     message: 'cannot be combined with oneOf/allOf — the composition strips the '
                         + 'extension, so the input type would be silently lost',
+                });
+            }
+            // pojo.mustache renders schema properties only: on a bare schema, a parameter or an
+            // operation the generator never assembles the annotation.
+            if (!path.includes('/properties/')) {
+                errors.push({
+                    path: `${path}/x-hal-input-type`,
+                    message: 'is only honoured on a schema property',
                 });
             }
         }
@@ -485,6 +546,25 @@ export function validateSpec(document, {authorities}) {
                         + 'x-hal-input-type (and access with x-klabis-halforms-access); a second '
                         + '@HalForms on the property does not compile',
                 });
+            }
+        }
+
+        // A required member has no "absent" state, so the tri-state wrapper contradicts required —
+        // and the stock AbstractJavaCodegen adds the JsonNullable import only for a non-required
+        // property, making required + x-klabis-nullable: true a compile error far from the spec.
+        // The deriver leaves the directive on a required member unconsumed so this check can see
+        // it (see consumePropertyDirectives); false is fine there, it removes a wrapper.
+        if (Array.isArray(node.required) && isPlainObject(node.properties)) {
+            for (const name of node.required) {
+                if (typeof name !== 'string') continue;
+                if (node.properties[name]?.['x-klabis-nullable'] === true) {
+                    errors.push({
+                        path: `${path}/properties/${name}/x-klabis-nullable`,
+                        message: 'on a required property — the generated JsonNullable<T> would '
+                            + 'miss its import, and required contradicts the tri-state; drop the '
+                            + 'directive or the required entry',
+                    });
+                }
             }
         }
 

@@ -48,7 +48,7 @@ The extensions must never appear in `klabis-full.json` — bundling is their con
 ## Risks / Trade-offs
 
 - [Stock generator surprises around `isNullable` edge cases — enums, nested classes, `@Valid` rendering] → D6-style snapshot diff per module right after the extension lands, before any spec refactor; exercise one enum and one nested-class nullable property explicitly.
-- [`x-klabis-nullable: false` narrows frontend types while wire stays nullable] → documented capability; validate warns when used on a request body (tri-state intent mismatch); today unused.
+- [`x-klabis-nullable: false` narrows frontend types while wire stays nullable] → documented capability; on a request body it is an intent mismatch the author must avoid — not machine-checked, since validate.mjs has no warning channel (amended during code review; the original "validate warns" plan is dropped); today unused.
 - [Mass refactor touches every module spec at once] → it is the *last* phase, gated by working extensions + zero-diff snapshots; rollback is git revert of a single phase.
 - [Removing `x-klabis-halforms-access` from mustache changes existing output] → the assembled annotation must be byte-equal to what mustache emits today for access-only properties (`@HalForms(access = com.klabis.common.ui.HalForms.Access.X)`); covered by the same snapshot diff (D1/D6).
 - [Two families of extensions confuse spec authors] → `klabis-api-spec` skill and `docs/openapi/spec/README.md` get one table: which family, which stage consumes it, what it emits.

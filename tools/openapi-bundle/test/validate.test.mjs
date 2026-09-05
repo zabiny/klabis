@@ -715,6 +715,70 @@ describe('validateSpec — x-klabis-nullable', () => {
         expect(errors[0].message).toContain("'null'");
     });
 
+    it('rejects a survivor inside a composition subtree — the codegen would not match the bundle', () => {
+        const errors = validate({
+            paths: {},
+            components: {
+                schemas: {
+                    ComposedThing: {
+                        allOf: [
+                            {$ref: '#/components/schemas/ThingName', 'x-klabis-nullable': true},
+                        ],
+                    },
+                    ThingName: {type: 'object', properties: {}},
+                },
+            },
+        });
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('composition');
+    });
+
+    it('rejects the directive on a bare schema, where the codegen never reads it', () => {
+        const errors = validate({
+            paths: {},
+            components: {
+                schemas: {Thing: {$ref: '#/components/schemas/ThingName', 'x-klabis-nullable': true}},
+            },
+        });
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('only honoured on a schema property');
+    });
+
+    it('rejects x-klabis-nullable: true on a required member — JsonNullable would miss its import', () => {
+        const errors = validate({
+            paths: {},
+            components: {
+                schemas: {
+                    CreateThingRequest: {
+                        type: 'object',
+                        required: ['name'],
+                        properties: {
+                            name: {$ref: '#/components/schemas/ThingName', 'x-klabis-nullable': true},
+                        },
+                    },
+                    ThingName: {type: 'object', properties: {}},
+                },
+            },
+        });
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('required property');
+    });
+
+    it('accepts x-klabis-nullable: false on a required member — it removes a wrapper, not adds one', () => {
+        expect(validate({
+            paths: {},
+            components: {
+                schemas: {
+                    CreateThingRequest: {
+                        type: 'object',
+                        required: ['name'],
+                        properties: {name: {type: ['string', 'null'], 'x-klabis-nullable': false}},
+                    },
+                },
+            },
+        })).toEqual([]);
+    });
+
     it('rejects the directive on an operation, where the codegen never reads it', () => {
         const errors = validate({
             paths: {
@@ -765,6 +829,93 @@ describe('validateSpec — x-hal-input-type', () => {
         }));
         expect(errors).toHaveLength(1);
         expect(errors[0].message).toContain('oneOf');
+    });
+
+    it('rejects a survivor inside a composition subtree for the same reason', () => {
+        const errors = validate({
+            paths: {},
+            components: {
+                schemas: {
+                    ComposedThing: {
+                        allOf: [
+                            {type: 'object', properties: {name: {type: 'string', 'x-hal-input-type': 'textarea'}}},
+                        ],
+                    },
+                },
+            },
+        });
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('oneOf/allOf');
+    });
+
+    it('rejects the marker on a bare schema, where the generator never assembles the annotation', () => {
+        const errors = validate({
+            paths: {},
+            components: {
+                schemas: {Thing: {type: 'object', 'x-hal-input-type': 'textarea'}},
+            },
+        });
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('only honoured on a schema property');
+    });
+});
+
+describe('validateSpec — unknown x-hal extensions', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const validate = (doc) => validateSpec(doc, {authorities});
+
+    it('rejects a typo in the family the way the x-klabis-* loop rejects its own', () => {
+        const errors = validate({
+            paths: {},
+            components: {
+                schemas: {
+                    Thing: {type: 'object', properties: {name: {type: 'string', 'x-hal-inputtype': 'textarea'}}},
+                },
+            },
+        });
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('Unknown extension "x-hal-inputtype"');
+        expect(errors[0].message).toContain('x-hal-input-type');
+    });
+
+    it('accepts every known x-hal key in the shapes the other suites already pin', () => {
+        expect(validate({
+            paths: {
+                '/api/things': {
+                    get: {
+                        operationId: 'listThings',
+                        responses: {
+                            '200': {
+                                description: 'ok',
+                                'x-hal-links': {self: {operation: 'listThings'}},
+                                'x-hal-templates': {default: {operation: 'createThing'}},
+                                'x-hal-embedded': {items: 'ThingItem', suffix: 'WithItems'},
+                                content: {
+                                    'application/json': {schema: {$ref: '#/components/schemas/ThingResponse'}},
+                                },
+                            },
+                        },
+                    },
+                    post: {operationId: 'createThing', responses: {}},
+                },
+            },
+            components: {
+                schemas: {
+                    ThingResponse: {
+                        type: 'object',
+                        properties: {
+                            rows: {
+                                type: 'array',
+                                'x-hal-entity-items': true,
+                                items: {$ref: '#/components/schemas/ThingItem'},
+                            },
+                            name: {type: 'string', 'x-hal-input-type': 'textarea'},
+                        },
+                    },
+                    ThingItem: {type: 'object', properties: {}},
+                },
+            },
+        })).toEqual([]);
     });
 });
 
