@@ -51,11 +51,11 @@
 
 ## 6. Cleanup and verification
 
-- [ ] 6.1 Remove `RequestContextHolder`, `RequestAttributes` and `HandlerMapping` imports that become unused in both controllers. Verify per file rather than globally — check nothing else in each file still uses them.
-- [ ] 6.2 Confirm no postprocessor in `events` reads `HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE` any more.
-- [ ] 6.3 Confirm the event detail response is unchanged: the `sync` link appears for the same events and users. Check an enrolled event, a non-enrolled event, and a response from a different endpoint whose postprocessor runs with no context set.
-- [ ] 6.4 Confirm the accommodation list response is unchanged: the collection-level `event` relation and a `self` link on every row.
-- [ ] 6.5 Confirm the registrations collection response is unchanged: the `event` relation still present.
-- [ ] 6.6 Run the full backend test suite; all tests compile and pass.
-- [ ] 6.7 Code review, with attention to `HalResponseContext` being shared across modules — the three existing slots and `clear()` semantics must be verified unchanged for their other callers, not just for the new ones. Review the non-consuming read specifically; it is the one property whose violation is silent.
-- [ ] 6.8 Commit.
+- [x] 6.1 Remove `RequestContextHolder`, `RequestAttributes` and `HandlerMapping` imports that become unused in both controllers. Verify per file rather than globally — check nothing else in each file still uses them.
+- [x] 6.2 Confirm no postprocessor in `events` reads `HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE` any more.
+- [x] 6.3 Confirm the event detail response is unchanged: the `sync` link appears for the same events and users. Check an enrolled event, a non-enrolled event, and a response from a different endpoint whose postprocessor runs with no context set.
+- [x] 6.4 Confirm the accommodation list response is unchanged: the collection-level `event` relation and a `self` link on every row.
+- [x] 6.5 Confirm the registrations collection response is unchanged: the `event` relation still present.
+- [x] 6.6 Run the full backend test suite; all tests compile and pass.
+- [x] 6.7 Code review, with attention to `HalResponseContext` being shared across modules — the three existing slots and `clear()` semantics must be verified unchanged for their other callers, not just for the new ones. Review the non-consuming read specifically; it is the one property whose violation is silent.
+- [x] 6.8 Commit.
