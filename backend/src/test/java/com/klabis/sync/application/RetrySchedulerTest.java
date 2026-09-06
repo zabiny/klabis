@@ -19,7 +19,7 @@ class RetrySchedulerTest {
     private static final SyncRecordId RECORD_ID = SyncRecordId.newId();
 
     private static SyncAttempt attempt(SyncOutcome outcome) {
-        return SyncAttempt.record(RECORD_ID, SyncTriggerKind.SCHEDULED, null, outcome, null, null, null, null);
+        return SyncAttempt.record(RECORD_ID, java.time.Instant.now(), SyncTriggerKind.SCHEDULED, null, outcome, null, null, null, null);
     }
 
     @Test

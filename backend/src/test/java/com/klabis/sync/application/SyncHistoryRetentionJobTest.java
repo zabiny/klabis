@@ -54,7 +54,7 @@ class SyncHistoryRetentionJobTest {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(),
                 new SyncTarget(SyncEntityType.EVENT, "retention-1"), new ExternalReference(ExternalSystem.ORIS, "8900"));
         SyncSnapshot agreed = SyncSnapshot.of(new com.klabis.sync.fixtures.TestSyncProjection("Sprint", "Brno"), hasher);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
         SyncRecord saved = syncRecordRepository.save(record);
         Instant lastSuccess = saved.getLastSuccessfulSyncAt();
 

@@ -104,8 +104,8 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * Marks the record due because a local change was observed (design.md D9).
      * Purely a scheduling signal — never consulted to decide whether a write is safe.
      */
-    public void markDirty() {
-        this.dirtySince = Instant.now();
+    public void markDirty(Instant now) {
+        this.dirtySince = now;
     }
 
     /**
@@ -185,7 +185,7 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * Records a successful pass: the post-write state becomes both the current
      * snapshot for the written side and the new baseline (design.md D9).
      */
-    public void recordSuccess(SyncDirection direction, SyncSnapshot local, SyncSnapshot external) {
+    public void recordSuccess(SyncDirection direction, SyncSnapshot local, SyncSnapshot external, Instant now) {
         Assert.notNull(direction, "direction is required");
         Assert.notNull(local, "local is required");
         Assert.notNull(external, "external is required");
@@ -194,7 +194,7 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         this.external = external;
         this.baseline = SyncBaseline.reconciled(direction == SyncDirection.INWARD ? local : external);
         this.lastDirection = direction;
-        this.lastSuccessfulSyncAt = Instant.now();
+        this.lastSuccessfulSyncAt = now;
         this.status = SyncStatus.IN_SYNC;
         this.dirtySince = null;
         this.nextAttemptDueAt = null;
@@ -221,11 +221,11 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * already marks the record for re-evaluation. The next pass then correctly sees
      * only the local side as changed and pushes the newer value outward.
      */
-    public void recordOutwardWriteWithSkippedAdvance(SyncSnapshot pushedSnapshot) {
+    public void recordOutwardWriteWithSkippedAdvance(SyncSnapshot pushedSnapshot, Instant now) {
         Assert.notNull(pushedSnapshot, "pushedSnapshot is required");
         this.external = pushedSnapshot;
         this.baseline = SyncBaseline.reconciled(pushedSnapshot);
-        this.dirtySince = Instant.now();
+        this.dirtySince = now;
     }
 
     /**
@@ -234,13 +234,13 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * the shared state, same as an ordinary reconciliation, but with no direction to
      * report — a convergence is not a write.
      */
-    public void recordConverged(SyncSnapshot agreedSnapshot) {
+    public void recordConverged(SyncSnapshot agreedSnapshot, Instant now) {
         Assert.notNull(agreedSnapshot, "agreedSnapshot is required");
 
         this.local = agreedSnapshot;
         this.external = agreedSnapshot;
         this.baseline = SyncBaseline.reconciled(agreedSnapshot);
-        this.lastSuccessfulSyncAt = Instant.now();
+        this.lastSuccessfulSyncAt = now;
         this.status = SyncStatus.IN_SYNC;
         this.dirtySince = null;
         this.nextAttemptDueAt = null;
@@ -259,7 +259,7 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * unmoved collision, or a due-scan re-evaluating a record already in conflict)
      * must not re-announce work that is already stuck and already known about.
      */
-    public void recordConflict(SyncSnapshot currentLocal, SyncSnapshot currentExternal, SyncDirection attemptedDirection) {
+    public void recordConflict(SyncSnapshot currentLocal, SyncSnapshot currentExternal, SyncDirection attemptedDirection, Instant now) {
         Assert.notNull(currentLocal, "currentLocal is required");
         Assert.notNull(currentExternal, "currentExternal is required");
 
@@ -275,7 +275,7 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         this.nextAttemptDueAt = null;
 
         if (!sameCollisionAsBefore) {
-            registerEvent(SyncConflictDetected.of(id, attemptedDirection, currentLocal.hash(), currentExternal.hash()));
+            registerEvent(SyncConflictDetected.of(id, attemptedDirection, currentLocal.hash(), currentExternal.hash(), now));
         }
     }
 
@@ -307,8 +307,8 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * resolution follows the same post-write re-read rule as any other inward write).
      * The acknowledgement is cleared and the conflict lifts.
      */
-    public void resolveWithDirection(SyncDirection direction, SyncSnapshot local, SyncSnapshot external) {
-        recordSuccess(direction, local, external);
+    public void resolveWithDirection(SyncDirection direction, SyncSnapshot local, SyncSnapshot external, Instant now) {
+        recordSuccess(direction, local, external, now);
         this.acknowledgement = null;
     }
 
@@ -386,11 +386,11 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * @throws IllegalStateException if the record is not currently being attempted
      *                                (see {@link #recordOutage})
      */
-    public void recordTerminalFailure(int failedAttempts, String failureReason) {
+    public void recordTerminalFailure(int failedAttempts, String failureReason, Instant now) {
         assertBeingAttempted();
         this.status = SyncStatus.FAILED;
         this.nextAttemptDueAt = null;
-        registerEvent(SyncTerminallyFailed.of(id, failedAttempts, failureReason));
+        registerEvent(SyncTerminallyFailed.of(id, failedAttempts, failureReason, now));
     }
 
     /**
@@ -537,8 +537,8 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * Retires the record: no longer scanned, but kept with its history and
      * last-synchronisation information intact (design.md D17).
      */
-    public void retire() {
+    public void retire(Instant now) {
         this.status = SyncStatus.RETIRED;
-        this.retiredAt = Instant.now();
+        this.retiredAt = now;
     }
 }

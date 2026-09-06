@@ -63,6 +63,7 @@ public final class SyncAttempt {
 
     public static SyncAttempt record(
             SyncRecordId recordId,
+            Instant startedAt,
             SyncTriggerKind trigger,
             SyncDirection direction,
             SyncOutcome outcome,
@@ -74,7 +75,7 @@ public final class SyncAttempt {
         return new SyncAttempt(
                 SyncAttemptId.newId(),
                 recordId,
-                Instant.now(),
+                startedAt,
                 trigger,
                 direction,
                 outcome,

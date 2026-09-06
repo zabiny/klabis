@@ -56,7 +56,7 @@ class SynchronizationControllerTest {
     private SyncRecord inSyncRecord() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot snapshot = SyncSnapshot.reconstruct(new TestSyncProjection("Sprint", "Brno"), SyncHash.of("h1"));
-        record.recordSuccess(SyncDirection.INWARD, snapshot, snapshot);
+        record.recordSuccess(SyncDirection.INWARD, snapshot, snapshot, java.time.Instant.now());
         return record;
     }
 
@@ -64,7 +64,7 @@ class SynchronizationControllerTest {
         SyncRecord record = inSyncRecord();
         SyncSnapshot local = SyncSnapshot.reconstruct(new TestSyncProjection("Local", "Brno"), SyncHash.of("hl"));
         SyncSnapshot external = SyncSnapshot.reconstruct(new TestSyncProjection("External", "Brno"), SyncHash.of("he"));
-        record.recordConflict(local, external, null);
+        record.recordConflict(local, external, null, java.time.Instant.now());
         return record;
     }
 
@@ -77,7 +77,7 @@ class SynchronizationControllerTest {
 
     private SyncRecord failedRecord() {
         SyncRecord record = inSyncRecord();
-        record.recordTerminalFailure(5, "boom");
+        record.recordTerminalFailure(5, "boom", java.time.Instant.now());
         return record;
     }
 

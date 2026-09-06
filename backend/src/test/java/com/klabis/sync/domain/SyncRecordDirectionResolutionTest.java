@@ -46,7 +46,7 @@ class SyncRecordDirectionResolutionTest {
     void decide_neitherSideChangedSinceBaseline_nothingToDo() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("agreed value"), HASHER);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
 
         SyncDecision decision = record.decide(agreed, agreed, BOTH_WRITABLE);
 
@@ -57,7 +57,7 @@ class SyncRecordDirectionResolutionTest {
     void decide_onlyExternalChangedSinceBaseline_writesInward() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("agreed value"), HASHER);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
 
         SyncSnapshot changedExternal = SyncSnapshot.of(new TestProjection("new external value"), HASHER);
 
@@ -71,7 +71,7 @@ class SyncRecordDirectionResolutionTest {
     void decide_onlyLocalChangedAndOutwardWriteAvailable_writesOutward() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("agreed value"), HASHER);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
 
         SyncSnapshot changedLocal = SyncSnapshot.of(new TestProjection("new local value"), HASHER);
 
@@ -85,7 +85,7 @@ class SyncRecordDirectionResolutionTest {
     void decide_bothSidesChangedToTheSameValue_converges() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("agreed value"), HASHER);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
 
         SyncSnapshot bothNowAgreeOnThis = SyncSnapshot.of(new TestProjection("independently corrected value"), HASHER);
 
@@ -101,7 +101,7 @@ class SyncRecordDirectionResolutionTest {
         // silent overwrite (design.md D6).
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("agreed value"), HASHER);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
 
         SyncSnapshot changedLocal = SyncSnapshot.of(new TestProjection("new local value"), HASHER);
 
@@ -115,7 +115,7 @@ class SyncRecordDirectionResolutionTest {
     void decide_bothSidesChangedToDifferentValues_conflict() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("agreed value"), HASHER);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
 
         SyncSnapshot changedLocal = SyncSnapshot.of(new TestProjection("local edit"), HASHER);
         SyncSnapshot changedExternal = SyncSnapshot.of(new TestProjection("external edit"), HASHER);

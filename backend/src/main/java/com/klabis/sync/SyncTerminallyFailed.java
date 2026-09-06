@@ -30,7 +30,7 @@ public record SyncTerminallyFailed(
         Assert.notNull(occurredAt, "occurredAt is required");
     }
 
-    public static SyncTerminallyFailed of(SyncRecordId recordId, int failedAttempts, String failureReason) {
-        return new SyncTerminallyFailed(UUID.randomUUID(), recordId, failedAttempts, failureReason, Instant.now());
+    public static SyncTerminallyFailed of(SyncRecordId recordId, int failedAttempts, String failureReason, Instant occurredAt) {
+        return new SyncTerminallyFailed(UUID.randomUUID(), recordId, failedAttempts, failureReason, occurredAt);
     }
 }

@@ -150,6 +150,6 @@ class SyncOutcomeWriter {
         // only manually triggered work does, and it is passed in by the caller.
         String recordedActingUser = trigger == SyncTriggerKind.MANUAL ? actingUser : null;
         syncAttemptRepository.save(SyncAttempt.record(
-                record.getId(), trigger, direction, outcome, localHash, externalHash, failureReason, recordedActingUser));
+                record.getId(), java.time.Instant.now(), trigger, direction, outcome, localHash, externalHash, failureReason, recordedActingUser));
     }
 }

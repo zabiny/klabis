@@ -35,11 +35,11 @@ class SyncRecordFieldAttributionTest {
     void changedSides_fieldOnlyKlabisMoved_attributedToLocal() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno", "SK Brno"), HASHER);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
 
         SyncSnapshot changedLocal = SyncSnapshot.of(new TestProjection("Sprint Corrected", "Brno", "SK Brno"), HASHER);
         SyncSnapshot changedExternal = SyncSnapshot.of(new TestProjection("Sprint", "Ostrava", "SK Brno"), HASHER);
-        record.recordConflict(changedLocal, changedExternal, null);
+        record.recordConflict(changedLocal, changedExternal, null, java.time.Instant.now());
 
         Map<String, ChangedSide> changedSides = record.changedSides(FIELD_READER);
 
@@ -50,11 +50,11 @@ class SyncRecordFieldAttributionTest {
     void changedSides_fieldOnlyExternalMoved_attributedToExternal() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno", "SK Brno"), HASHER);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
 
         SyncSnapshot changedLocal = SyncSnapshot.of(new TestProjection("Sprint Corrected", "Brno", "SK Brno"), HASHER);
         SyncSnapshot changedExternal = SyncSnapshot.of(new TestProjection("Sprint", "Ostrava", "SK Brno"), HASHER);
-        record.recordConflict(changedLocal, changedExternal, null);
+        record.recordConflict(changedLocal, changedExternal, null, java.time.Instant.now());
 
         Map<String, ChangedSide> changedSides = record.changedSides(FIELD_READER);
 
@@ -65,11 +65,11 @@ class SyncRecordFieldAttributionTest {
     void changedSides_fieldBothMoved_attributedToBoth() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno", "SK Brno"), HASHER);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
 
         SyncSnapshot changedLocal = SyncSnapshot.of(new TestProjection("Sprint", "Brno", "TJ Sokol"), HASHER);
         SyncSnapshot changedExternal = SyncSnapshot.of(new TestProjection("Sprint", "Brno", "SK Znojmo"), HASHER);
-        record.recordConflict(changedLocal, changedExternal, null);
+        record.recordConflict(changedLocal, changedExternal, null, java.time.Instant.now());
 
         Map<String, ChangedSide> changedSides = record.changedSides(FIELD_READER);
 
@@ -80,11 +80,11 @@ class SyncRecordFieldAttributionTest {
     void changedSides_unchangedField_notInResult() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno", "SK Brno"), HASHER);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
 
         SyncSnapshot changedLocal = SyncSnapshot.of(new TestProjection("Sprint Corrected", "Brno", "SK Brno"), HASHER);
         SyncSnapshot changedExternal = SyncSnapshot.of(new TestProjection("Sprint", "Ostrava", "SK Brno"), HASHER);
-        record.recordConflict(changedLocal, changedExternal, null);
+        record.recordConflict(changedLocal, changedExternal, null, java.time.Instant.now());
 
         Map<String, ChangedSide> changedSides = record.changedSides(FIELD_READER);
 
@@ -95,11 +95,11 @@ class SyncRecordFieldAttributionTest {
     void divergedFields_namesAllChangedFields() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("Sprint", "Brno", "SK Brno"), HASHER);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
 
         SyncSnapshot changedLocal = SyncSnapshot.of(new TestProjection("Sprint Corrected", "Brno", "TJ Sokol"), HASHER);
         SyncSnapshot changedExternal = SyncSnapshot.of(new TestProjection("Sprint", "Ostrava", "SK Znojmo"), HASHER);
-        record.recordConflict(changedLocal, changedExternal, null);
+        record.recordConflict(changedLocal, changedExternal, null, java.time.Instant.now());
 
         assertThat(record.divergedFields(FIELD_READER)).containsExactlyInAnyOrder("name", "location", "organizer");
     }

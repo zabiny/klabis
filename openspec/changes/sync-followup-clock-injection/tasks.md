@@ -1,9 +1,9 @@
 ## 1. Domain layer takes the instant as an argument
 
-- [ ] 1.1 Change `SyncAttempt` factory methods to accept the `Instant` instead of calling `Instant.now()`.
-- [ ] 1.2 Change `SyncRecord` methods that stamp a time (claim, release, dirty marking, `nextAttemptDueAt`, failure handling) to accept the `Instant` from their caller.
-- [ ] 1.3 Change `SyncConflictDetected` and `SyncTerminallyFailed` to carry the instant passed by the publisher.
-- [ ] 1.4 Verify no `Instant.now()` remains under `sync/domain/` or `sync/*.java`.
+- [x] 1.1 Change `SyncAttempt` factory methods to accept the `Instant` instead of calling `Instant.now()`.
+- [x] 1.2 Change `SyncRecord` methods that stamp a time (claim, release, dirty marking, `nextAttemptDueAt`, failure handling) to accept the `Instant` from their caller.
+- [x] 1.3 Change `SyncConflictDetected` and `SyncTerminallyFailed` to carry the instant passed by the publisher.
+- [x] 1.4 Verify no `Instant.now()` remains under `sync/domain/` or `sync/*.java`.
 
 ## 2. Application layer injects the Clock
 

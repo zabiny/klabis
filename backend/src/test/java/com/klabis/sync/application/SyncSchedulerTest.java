@@ -142,7 +142,7 @@ class SyncSchedulerTest {
         void picksUpDirtyRecord() {
             SyncRecord record = enrollAndSync("sched-due-1", "8302");
             SyncRecord marked = syncRecordRepository.findById(record.getId()).orElseThrow();
-            marked.markDirty();
+            marked.markDirty(java.time.Instant.now());
             syncRecordRepository.save(marked);
             adapter.withExternalState("8302", new TestSyncProjection("Sprint Updated", "Brno"));
 
@@ -169,7 +169,7 @@ class SyncSchedulerTest {
         void skipsFreshlyClaimedRecord() {
             SyncRecord record = enrollAndSync("sched-due-3", "8304");
             SyncRecord claimed = syncRecordRepository.findById(record.getId()).orElseThrow();
-            claimed.markDirty();
+            claimed.markDirty(java.time.Instant.now());
             claimed.claim(Instant.now());
             syncRecordRepository.save(claimed);
             adapter.withExternalState("8304", new TestSyncProjection("Sprint Updated", "Brno"));
@@ -185,7 +185,7 @@ class SyncSchedulerTest {
         void stopsOnOpenCircuitBreaker() {
             SyncRecord record = enrollAndSync("sched-due-4", "8305");
             SyncRecord marked = syncRecordRepository.findById(record.getId()).orElseThrow();
-            marked.markDirty();
+            marked.markDirty(java.time.Instant.now());
             syncRecordRepository.save(marked);
 
             circuitBreakerRegistry.circuitBreaker(ResilientAdapterExecutor.INSTANCE_NAME)

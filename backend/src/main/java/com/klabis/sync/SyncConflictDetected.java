@@ -38,7 +38,7 @@ public record SyncConflictDetected(
         Assert.notNull(occurredAt, "occurredAt is required");
     }
 
-    public static SyncConflictDetected of(SyncRecordId recordId, SyncDirection attemptedDirection, SyncHash localHash, SyncHash externalHash) {
-        return new SyncConflictDetected(UUID.randomUUID(), recordId, attemptedDirection, localHash, externalHash, Instant.now());
+    public static SyncConflictDetected of(SyncRecordId recordId, SyncDirection attemptedDirection, SyncHash localHash, SyncHash externalHash, Instant occurredAt) {
+        return new SyncConflictDetected(UUID.randomUUID(), recordId, attemptedDirection, localHash, externalHash, occurredAt);
     }
 }

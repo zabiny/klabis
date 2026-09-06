@@ -30,7 +30,7 @@ class SyncRecordFailureHandlingTest {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncProjectionHasher hasher = projection -> SyncHash.of(String.valueOf(projection.hashCode()));
         SyncSnapshot agreed = SyncSnapshot.of(new TestProjection("agreed"), hasher);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed);
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
         assertThat(record.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
 
         record.recordRetryableFailure(Instant.now().plus(15, ChronoUnit.MINUTES));
@@ -54,7 +54,7 @@ class SyncRecordFailureHandlingTest {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         record.recordRetryableFailure(Instant.now());
 
-        record.recordTerminalFailure(5, "persistent failure");
+        record.recordTerminalFailure(5, "persistent failure", java.time.Instant.now());
 
         assertThat(record.getStatus()).isEqualTo(SyncStatus.FAILED);
         assertThat(record.getNextAttemptDueAt()).isNull();
@@ -66,7 +66,7 @@ class SyncRecordFailureHandlingTest {
     void reset_fromFailed_returnsToInSync() {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         record.recordRetryableFailure(Instant.now());
-        record.recordTerminalFailure(5, "persistent failure");
+        record.recordTerminalFailure(5, "persistent failure", java.time.Instant.now());
 
         record.reset();
 
