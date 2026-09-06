@@ -193,3 +193,36 @@ An adapter declares what it can actually do — read/write each side, create on 
 - The three boundary decisions above are precedents: the next adapter that needs to call a primary port on its own module should also be `@Application`, not forced into `@SecondaryAdapter`; the next module exporting a named interface should check whether its primary port's own signatures already force the interface wide before trying to narrow it.
 
 **References:** OpenSpec change `add-bidirectional-sync-engine` (`proposal.md`, `design.md` — D1–D19 — `tasks.md`), ADR-001 (primary-port-only cross-module dependency rule), `backend-patterns` skill.
+
+## ADR-006: Tests substitute the `Clock` bean via `@TestBean`, not a `@Configuration` override
+
+**Status:** Accepted
+
+**Context:**
+
+The `Clock` dependency-injection seam (`com.klabis.common.ClockConfiguration`) exists so application components read the current instant from an injected `Clock` rather than `Instant.now()`, letting tests control time. The `sync` engine's scheduled-scan and history-retention tests need a fixed, advanceable clock in a full Spring context.
+
+Two approaches were tried and rejected. Registering a test `@Bean Clock clock()` under the production bean's name plus `spring.main.allow-bean-definition-overriding=true` works only by registration-order luck — the flag is also context-wide, silencing every accidental duplicate-bean definition, not just the clock — and moving the test config from a nested class to a shared `@Import` target already flipped the order once, letting the real `Clock.systemDefaultZone()` win silently. Marking the production bean `@ConditionalOnMissingBean` is order-safe only on `@AutoConfiguration` classes; `ClockConfiguration` is a plain component-scanned `@Configuration`, so the condition is evaluated in the same `ConfigurationClassPostProcessor` pass as an `@Import`ed test configuration and Spring's reference documentation explicitly states these conditions cannot be used reliably in a regular `@Configuration` class.
+
+**Decision:**
+
+`ClockConfiguration.clock()` stays a plain, unconditional `@Bean`. A test that needs to control time replaces it with Spring's bean-override infrastructure — `@TestBean` (the non-mock sibling of `@MockitoBean`, already used across the test suite):
+
+```java
+@TestBean(enforceOverride = true)
+private Clock clock;
+
+static Clock clock() {                       // factory name matches the field name
+    return FixedClockTestSupport.fixedClock();
+}
+```
+
+`@TestBean` replaces the target bean in the `BeanFactory` regardless of configuration registration order, needs no global override flag, and `enforceOverride = true` turns a missing production bean into a hard failure. The field is typed `Clock` because `@TestBean` matches the bean to replace by the field's type (and name), and the production bean is declared `Clock`; a test that needs the mutable API narrows the injected instance back to `MutableClock` (the factory returns one). `com.klabis.sync.fixtures.FixedClockTestSupport` holds only the shared `FIXED_NOW` constant and the `fixedClock()` factory body — it is not a Spring configuration.
+
+**Consequences:**
+
+- Clock substitution is deterministic and local to the test that does it; no context-wide flag, no reliance on evaluation order.
+- The production configuration is untouched — no auto-configuration idiom retrofitted onto a hand-written `@Configuration`.
+- A test opts in explicitly with a `@TestBean` field plus its static factory method; being on the classpath does nothing.
+
+**References:** OpenSpec change `sync-followup-clock-injection`, ADR-005 (the `sync` module this seam serves).
