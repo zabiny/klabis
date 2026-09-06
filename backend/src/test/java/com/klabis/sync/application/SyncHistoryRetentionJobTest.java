@@ -4,20 +4,23 @@ import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.*;
+import com.klabis.sync.fixtures.MutableClock;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
-import java.sql.Timestamp;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,9 +32,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
-@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
+@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class, SyncHistoryRetentionJobTest.FixedClockConfiguration.class})
+@TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 @DisplayName("SyncHistoryRetentionJob")
 class SyncHistoryRetentionJobTest {
+
+    private static final Instant NOW = Instant.parse("2026-06-01T00:00:00Z");
+
+    @TestConfiguration
+    static class FixedClockConfiguration {
+        @Bean
+        Clock clock() {
+            return new MutableClock(NOW, ZoneId.of("UTC"));
+        }
+    }
 
     @Autowired
     private SyncHistoryRetentionJob job;
@@ -43,9 +57,6 @@ class SyncHistoryRetentionJobTest {
     private SyncAttemptRepository syncAttemptRepository;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
-
-    @Autowired
     private SyncProjectionHasher hasher;
 
     @Test
@@ -54,12 +65,12 @@ class SyncHistoryRetentionJobTest {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(),
                 new SyncTarget(SyncEntityType.EVENT, "retention-1"), new ExternalReference(ExternalSystem.ORIS, "8900"));
         SyncSnapshot agreed = SyncSnapshot.of(new com.klabis.sync.fixtures.TestSyncProjection("Sprint", "Brno"), hasher);
-        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
+        record.recordSuccess(SyncDirection.INWARD, agreed, agreed, NOW);
         SyncRecord saved = syncRecordRepository.save(record);
         Instant lastSuccess = saved.getLastSuccessfulSyncAt();
 
-        insertAttemptStartedAt(saved.getId(), Instant.now().minus(40, ChronoUnit.DAYS));
-        insertAttemptStartedAt(saved.getId(), Instant.now().minus(1, ChronoUnit.DAYS));
+        appendAttemptStartedAt(saved.getId(), NOW.minus(40, ChronoUnit.DAYS));
+        appendAttemptStartedAt(saved.getId(), NOW.minus(1, ChronoUnit.DAYS));
 
         int deleted = job.cleanupExpiredAttempts();
 
@@ -77,10 +88,9 @@ class SyncHistoryRetentionJobTest {
                 .isEqualTo(lastSuccess.truncatedTo(ChronoUnit.MILLIS));
     }
 
-    private void insertAttemptStartedAt(SyncRecordId recordId, Instant startedAt) {
-        jdbcTemplate.update(
-                "INSERT INTO sync.sync_attempt (id, sync_record_id, started_at, trigger, outcome, local_hash, external_hash) " +
-                        "VALUES (?, ?, ?, 'SCHEDULED', 'SUCCESS', 'h', 'h')",
-                UUID.randomUUID(), recordId.value(), Timestamp.from(startedAt));
+    private void appendAttemptStartedAt(SyncRecordId recordId, Instant startedAt) {
+        syncAttemptRepository.save(SyncAttempt.record(
+                recordId, startedAt, SyncTriggerKind.SCHEDULED, null, SyncOutcome.SUCCESS,
+                SyncHash.of("h"), SyncHash.of("h"), null, null));
     }
 }

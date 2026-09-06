@@ -2,8 +2,8 @@ package com.klabis.sync.application;
 
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
-import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.*;
+import com.klabis.sync.fixtures.MutableClock;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
 import com.klabis.sync.fixtures.TestSyncProjection;
 import com.klabis.sync.fixtures.TestSynchronizationAdapter;
@@ -13,11 +13,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,9 +40,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
-@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
+@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class, SyncSchedulerTest.FixedClockConfiguration.class})
+@TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 @DisplayName("SyncScheduler")
 class SyncSchedulerTest {
+
+    private static final Instant START = Instant.parse("2026-06-01T00:00:00Z");
+
+    @TestConfiguration
+    static class FixedClockConfiguration {
+        @Bean
+        Clock clock() {
+            return new MutableClock(START, ZoneId.of("UTC"));
+        }
+    }
 
     @Autowired
     private SyncScheduler scheduler;
@@ -53,7 +70,11 @@ class SyncSchedulerTest {
     @Autowired
     private CircuitBreakerRegistry circuitBreakerRegistry;
 
+    @Autowired
+    private Clock clock;
+
     private TestSynchronizationAdapter adapter;
+    private MutableClock mutableClock;
 
     @BeforeEach
     void setUp() {
@@ -61,6 +82,8 @@ class SyncSchedulerTest {
         adapter.reset();
         adapter.withCapabilities(new SyncCapabilities(true, true, true, true, false, false, false));
         circuitBreakerRegistry.circuitBreaker(ResilientAdapterExecutor.INSTANCE_NAME).reset();
+        mutableClock = (MutableClock) clock;
+        mutableClock.setInstant(START);
     }
 
     private SyncRecord enrollAndSync(String entityId, String externalId) {
@@ -114,10 +137,20 @@ class SyncSchedulerTest {
         @DisplayName("skips a terminally failed record (design.md D10 — skipped by the scheduler until reset)")
         void skipsTerminallyFailedRecord() {
             SyncRecord record = enrollAndSync("sched-full-3", "8306");
+            // Step off the initial SUCCESS row's instant so every failure that follows
+            // sorts strictly after it: the derived failure count is read newest-first
+            // and stops at the last SUCCESS/RESET row, so a failure sharing that
+            // instant would be tie-ordered behind the boundary and never counted.
+            mutableClock.advanceBy(Duration.ofDays(1));
             for (int i = 0; i < 5; i++) {
                 circuitBreakerRegistry.circuitBreaker(ResilientAdapterExecutor.INSTANCE_NAME).reset();
                 adapter.failNextReadExternalWith(3, new RetryableSyncFailureException("HTTP 503"));
                 record = synchronizationPort.synchronizeNow(record.getId(), "test-user");
+                // Each retryable failure reschedules with a growing backoff; advance
+                // past it (a day clears even the 24h cap) so the next pass is genuinely
+                // due and every attempt row lands at a distinct, increasing started_at —
+                // the derived failure count is read from that ordering.
+                mutableClock.advanceBy(Duration.ofDays(1));
             }
             assertThat(record.getStatus()).isEqualTo(SyncStatus.FAILED);
             circuitBreakerRegistry.circuitBreaker(ResilientAdapterExecutor.INSTANCE_NAME).reset();
@@ -142,7 +175,7 @@ class SyncSchedulerTest {
         void picksUpDirtyRecord() {
             SyncRecord record = enrollAndSync("sched-due-1", "8302");
             SyncRecord marked = syncRecordRepository.findById(record.getId()).orElseThrow();
-            marked.markDirty(java.time.Instant.now());
+            marked.markDirty(clock.instant());
             syncRecordRepository.save(marked);
             adapter.withExternalState("8302", new TestSyncProjection("Sprint Updated", "Brno"));
 
@@ -169,10 +202,14 @@ class SyncSchedulerTest {
         void skipsFreshlyClaimedRecord() {
             SyncRecord record = enrollAndSync("sched-due-3", "8304");
             SyncRecord claimed = syncRecordRepository.findById(record.getId()).orElseThrow();
-            claimed.markDirty(java.time.Instant.now());
-            claimed.claim(Instant.now());
+            claimed.markDirty(clock.instant());
+            claimed.claim(clock.instant());
             syncRecordRepository.save(claimed);
             adapter.withExternalState("8304", new TestSyncProjection("Sprint Updated", "Brno"));
+
+            // Advance the clock, but stay inside the claim lease — the claim is still
+            // fresh, so the due scan must skip this record.
+            mutableClock.advanceBy(Duration.ofMinutes(1));
 
             scheduler.runDueScan();
 
@@ -185,7 +222,7 @@ class SyncSchedulerTest {
         void stopsOnOpenCircuitBreaker() {
             SyncRecord record = enrollAndSync("sched-due-4", "8305");
             SyncRecord marked = syncRecordRepository.findById(record.getId()).orElseThrow();
-            marked.markDirty(java.time.Instant.now());
+            marked.markDirty(clock.instant());
             syncRecordRepository.save(marked);
 
             circuitBreakerRegistry.circuitBreaker(ResilientAdapterExecutor.INSTANCE_NAME)

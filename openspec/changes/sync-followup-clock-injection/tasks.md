@@ -15,10 +15,10 @@
 
 ## 3. Tests control time instead of storage
 
-- [ ] 3.1 Rewrite `SyncHistoryRetentionJobTest` to advance a fixed `Clock` rather than rewriting `started_at` through `JdbcTemplate`.
-- [ ] 3.2 Rewrite `SyncSchedulerTest` to advance a fixed `Clock` rather than rewriting `next_attempt_due_at` through `JdbcTemplate`.
-- [ ] 3.3 Confirm each rewritten test still asserts the same behaviour as before — the assertions must not weaken when the mechanism changes.
-- [ ] 3.4 Supply a `Clock` bean to any sync test configuration that now needs one.
+- [x] 3.1 Rewrite `SyncHistoryRetentionJobTest` to advance a fixed `Clock` rather than rewriting `started_at` through `JdbcTemplate`.
+- [x] 3.2 Rewrite `SyncSchedulerTest` to advance a fixed `Clock` rather than rewriting `next_attempt_due_at` through `JdbcTemplate`.
+- [x] 3.3 Confirm each rewritten test still asserts the same behaviour as before — the assertions must not weaken when the mechanism changes.
+- [x] 3.4 Supply a `Clock` bean to any sync test configuration that now needs one.
 
 ## 4. SyncCapabilities named factories
 
