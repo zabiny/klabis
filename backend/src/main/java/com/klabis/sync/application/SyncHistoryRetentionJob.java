@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 
 /**
@@ -23,10 +24,12 @@ class SyncHistoryRetentionJob {
 
     private final SyncAttemptRepository syncAttemptRepository;
     private final SyncProperties properties;
+    private final Clock clock;
 
-    SyncHistoryRetentionJob(SyncAttemptRepository syncAttemptRepository, SyncProperties properties) {
+    SyncHistoryRetentionJob(SyncAttemptRepository syncAttemptRepository, SyncProperties properties, Clock clock) {
         this.syncAttemptRepository = syncAttemptRepository;
         this.properties = properties;
+        this.clock = clock;
     }
 
     @Scheduled(cron = "0 0 3 * * *")
@@ -34,7 +37,7 @@ class SyncHistoryRetentionJob {
     int cleanupExpiredAttempts() {
         log.info("Starting sync attempt history retention cleanup");
         try {
-            Instant olderThan = Instant.now().minus(properties.getHistoryRetention());
+            Instant olderThan = clock.instant().minus(properties.getHistoryRetention());
             int deletedCount = syncAttemptRepository.deleteAttemptsStartedBefore(olderThan);
             if (deletedCount > 0) {
                 log.info("Sync attempt history cleanup completed: {} attempt(s) deleted", deletedCount);

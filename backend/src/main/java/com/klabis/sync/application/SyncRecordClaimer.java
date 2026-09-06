@@ -6,6 +6,7 @@ import com.klabis.sync.domain.SyncRecordRepository;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 
 /**
@@ -24,16 +25,18 @@ class SyncRecordClaimer {
 
     private final SyncRecordRepository syncRecordRepository;
     private final SyncProperties properties;
+    private final Clock clock;
 
-    SyncRecordClaimer(SyncRecordRepository syncRecordRepository, SyncProperties properties) {
+    SyncRecordClaimer(SyncRecordRepository syncRecordRepository, SyncProperties properties, Clock clock) {
         this.syncRecordRepository = syncRecordRepository;
         this.properties = properties;
+        this.clock = clock;
     }
 
     @Transactional
     SyncRecord claim(SyncRecordId id) {
         SyncRecord record = syncRecordRepository.findById(id).orElseThrow(() -> new SyncRecordNotFoundException(id));
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         if (!record.isClaimAvailable(now, properties.getClaimLease())) {
             throw new SyncRecordClaimedException(id);
         }

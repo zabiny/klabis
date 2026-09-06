@@ -7,6 +7,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +41,7 @@ class SynchronizationService implements SynchronizationPort {
     private final RetryScheduler retryScheduler;
     private final SyncRecordClaimer claimer;
     private final SyncOutcomeWriter outcomeWriter;
+    private final Clock clock;
 
     SynchronizationService(
             SyncRecordRepository syncRecordRepository,
@@ -49,7 +51,8 @@ class SynchronizationService implements SynchronizationPort {
             ResilientAdapterExecutor resilientAdapterExecutor,
             SyncProperties properties,
             SyncRecordClaimer claimer,
-            SyncOutcomeWriter outcomeWriter
+            SyncOutcomeWriter outcomeWriter,
+            Clock clock
     ) {
         this.syncRecordRepository = syncRecordRepository;
         this.syncAttemptRepository = syncAttemptRepository;
@@ -59,6 +62,7 @@ class SynchronizationService implements SynchronizationPort {
         this.retryScheduler = new RetryScheduler(properties);
         this.claimer = claimer;
         this.outcomeWriter = outcomeWriter;
+        this.clock = clock;
     }
 
     @Transactional
@@ -101,7 +105,7 @@ class SynchronizationService implements SynchronizationPort {
 
     private void markDirty(SyncTarget target, ExternalSystem system) {
         syncRecordRepository.findByTargetAndSystem(target, system).ifPresent(record -> {
-            record.markDirty(Instant.now());
+            record.markDirty(clock.instant());
             // An inward write raises EventUpdatedEvent on the very entity the pass is
             // writing (design.md D9 — "an inward write is itself a local change"), so
             // this listener call can race the same pass's own trailing
@@ -175,7 +179,7 @@ class SynchronizationService implements SynchronizationPort {
     @Override
     public void retire(SyncRecordId id) {
         SyncRecord record = getOrThrow(id);
-        record.retire(Instant.now());
+        record.retire(clock.instant());
         syncRecordRepository.save(record);
     }
 
@@ -186,11 +190,11 @@ class SynchronizationService implements SynchronizationPort {
         requireConflict(record);
 
         ConflictAcknowledgement acknowledgement = new ConflictAcknowledgement(
-                record.getLocal().hash(), record.getExternal().hash(), Instant.now(), actingUser);
+                record.getLocal().hash(), record.getExternal().hash(), clock.instant(), actingUser);
         record.acknowledgeConflict(acknowledgement);
 
         SyncRecord saved = syncRecordRepository.save(record);
-        syncAttemptRepository.save(SyncAttempt.record(saved.getId(), Instant.now(), SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS,
+        syncAttemptRepository.save(SyncAttempt.record(saved.getId(), clock.instant(), SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS,
                 saved.getLocal().hash(), saved.getExternal().hash(), null, actingUser));
         return saved;
     }
@@ -239,7 +243,7 @@ class SynchronizationService implements SynchronizationPort {
             // collision, but write nothing and leave the conflict standing. This method
             // has no ambient transaction to roll back, so the save below commits on its
             // own even though the throw that follows ends the call in failure.
-            record.recordConflict(freshLocal, freshExternal, null, Instant.now());
+            record.recordConflict(freshLocal, freshExternal, null, clock.instant());
             syncRecordRepository.save(record);
             throw new ConflictNotAcknowledgedException(id);
         }
@@ -248,12 +252,12 @@ class SynchronizationService implements SynchronizationPort {
             case INWARD -> {
                 resilientAdapterExecutor.run(() -> adapter.applyToLocal(entityId, freshExternal.projection()));
                 SyncSnapshot postWriteLocal = SyncSnapshot.of(resilientAdapterExecutor.call(() -> adapter.readLocal(entityId)), hasher);
-                record.resolveWithDirection(SyncDirection.INWARD, postWriteLocal, freshExternal, Instant.now());
+                record.resolveWithDirection(SyncDirection.INWARD, postWriteLocal, freshExternal, clock.instant());
                 yield record;
             }
             case OUTWARD -> {
                 resilientAdapterExecutor.run(() -> adapter.applyToExternal(externalId, freshLocal.projection()));
-                record.resolveWithDirection(SyncDirection.OUTWARD, freshLocal, freshLocal, Instant.now());
+                record.resolveWithDirection(SyncDirection.OUTWARD, freshLocal, freshLocal, clock.instant());
                 yield record;
             }
             case ACCEPT_DIVERGENCE -> {
@@ -350,12 +354,12 @@ class SynchronizationService implements SynchronizationPort {
                 case CONVERGED -> {
                     // Both sides changed independently to the same value: rebase both
                     // baselines, write nothing (design.md D4).
-                    record.recordConverged(currentLocal, Instant.now());
+                    record.recordConverged(currentLocal, clock.instant());
                     yield outcomeWriter.persist(record, trigger, null, SyncOutcome.SUCCESS, localHashForAttempt, externalHashForAttempt, null, actingUser);
                 }
                 case CONFLICT -> {
                     // Neither side is written while a conflict stands (design.md D6, D7).
-                    record.recordConflict(currentLocal, currentExternal, decision.direction(), Instant.now());
+                    record.recordConflict(currentLocal, currentExternal, decision.direction(), clock.instant());
                     yield outcomeWriter.persist(record, trigger, decision.direction(), SyncOutcome.CONFLICT, localHashForAttempt, externalHashForAttempt, null, actingUser);
                 }
                 case ADOPT_EXTERNAL, WRITE -> {
@@ -390,7 +394,7 @@ class SynchronizationService implements SynchronizationPort {
     private SyncRecord handleFailure(SyncRecord record, SyncTriggerKind trigger, String actingUser, RuntimeException failure) {
         FailureCategory category = FailureClassifier.classify(failure);
         String reason = failure.getMessage();
-        Instant now = Instant.now();
+        Instant now = clock.instant();
 
         return switch (category) {
             case OUTAGE -> {
@@ -442,7 +446,7 @@ class SynchronizationService implements SynchronizationPort {
         SyncProjection postWriteLocal = resilientAdapterExecutor.call(() -> adapter.readLocal(entityId));
         SyncSnapshot postWriteSnapshot = SyncSnapshot.of(postWriteLocal, hasher);
 
-        record.recordSuccess(SyncDirection.INWARD, postWriteSnapshot, currentExternal, Instant.now());
+        record.recordSuccess(SyncDirection.INWARD, postWriteSnapshot, currentExternal, clock.instant());
         return true;
     }
 
@@ -471,11 +475,11 @@ class SynchronizationService implements SynchronizationPort {
 
         SyncSnapshot freshLocal = SyncSnapshot.of(resilientAdapterExecutor.call(() -> adapter.readLocal(entityId)), hasher);
         if (!freshLocal.matches(currentLocal)) {
-            record.recordOutwardWriteWithSkippedAdvance(currentLocal, Instant.now());
+            record.recordOutwardWriteWithSkippedAdvance(currentLocal, clock.instant());
             return false;
         }
 
-        record.recordSuccess(SyncDirection.OUTWARD, currentLocal, currentLocal, Instant.now());
+        record.recordSuccess(SyncDirection.OUTWARD, currentLocal, currentLocal, clock.instant());
         return true;
     }
 }

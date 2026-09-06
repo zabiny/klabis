@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
+import java.time.Clock;
 import java.util.List;
 
 /**
@@ -35,17 +35,20 @@ class SyncScheduler {
     private final SynchronizationService synchronizationService;
     private final ResilientAdapterExecutor resilientAdapterExecutor;
     private final SyncProperties properties;
+    private final Clock clock;
 
     SyncScheduler(
             SyncRecordRepository syncRecordRepository,
             SynchronizationService synchronizationService,
             ResilientAdapterExecutor resilientAdapterExecutor,
-            SyncProperties properties
+            SyncProperties properties,
+            Clock clock
     ) {
         this.syncRecordRepository = syncRecordRepository;
         this.synchronizationService = synchronizationService;
         this.resilientAdapterExecutor = resilientAdapterExecutor;
         this.properties = properties;
+        this.clock = clock;
     }
 
     @Scheduled(cron = "${klabis.sync.scan-cron}")
@@ -57,7 +60,7 @@ class SyncScheduler {
     @Scheduled(fixedRateString = "${klabis.sync.due-scan-interval}")
     void runDueScan() {
         log.info("Starting sync due scan");
-        runScanOver(syncRecordRepository.findDueForScan(Instant.now(), properties.getClaimLease()));
+        runScanOver(syncRecordRepository.findDueForScan(clock.instant(), properties.getClaimLease()));
     }
 
     private void runScanOver(List<SyncRecord> candidates) {

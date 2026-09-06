@@ -7,11 +7,11 @@
 
 ## 2. Application layer injects the Clock
 
-- [ ] 2.1 Inject `Clock` into `SyncRecordClaimer` and pass `clock.instant()` into the claim/lease calls.
-- [ ] 2.2 Inject `Clock` into `SyncScheduler`; use it for due-record selection and pass it onward.
-- [ ] 2.3 Inject `Clock` into `SyncHistoryRetentionJob`; compute the retention cut-off from it.
-- [ ] 2.4 Inject `Clock` into `SynchronizationService`; pass the instant into every domain call that now expects one.
-- [ ] 2.5 Verify no `Instant.now()` remains under `sync/application/`.
+- [x] 2.1 Inject `Clock` into `SyncRecordClaimer` and pass `clock.instant()` into the claim/lease calls.
+- [x] 2.2 Inject `Clock` into `SyncScheduler`; use it for due-record selection and pass it onward.
+- [x] 2.3 Inject `Clock` into `SyncHistoryRetentionJob`; compute the retention cut-off from it.
+- [x] 2.4 Inject `Clock` into `SynchronizationService`; pass the instant into every domain call that now expects one.
+- [x] 2.5 Verify no `Instant.now()` remains under `sync/application/`.
 
 ## 3. Tests control time instead of storage
 

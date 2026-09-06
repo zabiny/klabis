@@ -8,6 +8,8 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+
 /**
  * Persists the outcome of one pass — the record and its attempt row — atomically
  * (design.md D15: every attempt must appear in the history, so a crash between two
@@ -26,6 +28,7 @@ class SyncOutcomeWriter {
     private final SyncRecordRepository syncRecordRepository;
     private final SyncAttemptRepository syncAttemptRepository;
     private final SyncOutcomeWriter self;
+    private final Clock clock;
 
     /**
      * {@code self} is this bean's own Spring proxy, injected lazily to sidestep the
@@ -36,10 +39,11 @@ class SyncOutcomeWriter {
      * apply at all.
      */
     SyncOutcomeWriter(SyncRecordRepository syncRecordRepository, SyncAttemptRepository syncAttemptRepository,
-                       @Lazy SyncOutcomeWriter self) {
+                       @Lazy SyncOutcomeWriter self, Clock clock) {
         this.syncRecordRepository = syncRecordRepository;
         this.syncAttemptRepository = syncAttemptRepository;
         this.self = self;
+        this.clock = clock;
     }
 
     /**
@@ -150,6 +154,6 @@ class SyncOutcomeWriter {
         // only manually triggered work does, and it is passed in by the caller.
         String recordedActingUser = trigger == SyncTriggerKind.MANUAL ? actingUser : null;
         syncAttemptRepository.save(SyncAttempt.record(
-                record.getId(), java.time.Instant.now(), trigger, direction, outcome, localHash, externalHash, failureReason, recordedActingUser));
+                record.getId(), clock.instant(), trigger, direction, outcome, localHash, externalHash, failureReason, recordedActingUser));
     }
 }
