@@ -44,9 +44,7 @@ import java.util.UUID;
  * direction is unchanged and still correct.
  * <p>
  * Depends only on {@link OrisEventFieldsGateway}, which has no dependency on the sync
- * engine — the flow orchestration that does ({@code OrisEventImportPort}) is a different
- * bean this adapter never sees — so the wiring here is eager and acyclic, with no
- * {@code @Lazy} needed to construct the context.
+ * engine, so the wiring here is eager and acyclic.
  */
 @OrisIntegrationComponent
 @Application

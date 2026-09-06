@@ -51,13 +51,10 @@ class OrisEventFieldsGatewayService implements OrisEventFieldsGateway {
 
     @Override
     @Transactional
-    public Event applyOrisSync(EventId eventId, OrisEventFields fields) {
+    public void applyOrisSync(EventId eventId, OrisEventFields fields) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
-        return applyOrisSync(event, fields);
-    }
 
-    private Event applyOrisSync(Event event, OrisEventFields fields) {
         warnIfSyncRemovesCategoriesWithRegistrations(event, fields.categories());
 
         event.syncFromOris(EventSyncFromOrisBuilder.builder()
@@ -74,7 +71,7 @@ class OrisEventFieldsGatewayService implements OrisEventFieldsGateway {
 
         event.applyAutoMappedEventType(fields.resolvedEventTypeId());
 
-        return eventRepository.save(event);
+        eventRepository.save(event);
     }
 
     private EventDetails fetchEventDetails(int orisId) {

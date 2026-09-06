@@ -1,7 +1,6 @@
 package com.klabis.events.application;
 
 import com.klabis.events.EventId;
-import com.klabis.events.domain.Event;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
 /**
@@ -30,5 +29,5 @@ public interface OrisEventFieldsGateway {
      * caller supplies the fields, so the same value obtained from {@link #readOrisFields}
      * elsewhere in a synchronisation pass is written verbatim rather than re-fetched.
      */
-    Event applyOrisSync(EventId eventId, OrisEventFields fields);
+    void applyOrisSync(EventId eventId, OrisEventFields fields);
 }

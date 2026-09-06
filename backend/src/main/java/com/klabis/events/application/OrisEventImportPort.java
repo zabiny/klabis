@@ -5,10 +5,8 @@ import com.klabis.events.domain.Event;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
 /**
- * Orchestrates the ORIS import and sync flows. The ORIS field primitives the
- * synchronisation engine consumes live on {@link OrisEventFieldsGateway}, which —
- * unlike this port — does not depend on the sync engine, keeping the engine's
- * bean wiring acyclic.
+ * Orchestrates the ORIS import and sync flows; the ORIS field primitives live on
+ * {@link OrisEventFieldsGateway}.
  */
 @PrimaryPort
 public interface OrisEventImportPort {
