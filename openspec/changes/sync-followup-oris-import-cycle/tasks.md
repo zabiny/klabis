@@ -13,9 +13,10 @@
 
 ## 3. Architecture and boundaries
 
-- [ ] 3.1 Run `ModuleStructureVerificationTest`, `LayerArchitectureTest`, `SecurityArchitectureTest` and `JMoleculesArchitectureTest` explicitly by name — a package-filtered run misses `com.klabis.JMoleculesArchitectureTest`.
-- [ ] 3.2 Confirm `OrisEventSyncAdapter` keeps its `@Application` classification and that the split does not reintroduce the `@PrimaryAdapter`/`@SecondaryAdapter` conflict.
-- [ ] 3.3 Decide whether `OrisEventFields` and `OrisEventDetailsMapper` move to `oris.eventsync`; record the decision either way.
+- [x] 3.1 Run `ModuleStructureVerificationTest`, `LayerArchitectureTest`, `SecurityArchitectureTest` and `JMoleculesArchitectureTest` explicitly by name — a package-filtered run misses `com.klabis.JMoleculesArchitectureTest`.
+- [x] 3.2 Confirm `OrisEventSyncAdapter` keeps its `@Application` classification and that the split does not reintroduce the `@PrimaryAdapter`/`@SecondaryAdapter` conflict.
+- [x] 3.3 Decide whether `OrisEventFields` and `OrisEventDetailsMapper` move to `oris.eventsync`; record the decision either way.
+  - Decision: both stay in `events.application`. `OrisEventFields` is part of the gateway port signature, and moving either type would force `events.application → oris.eventsync` — the reverse of the one-way direction (D2) this change restores. (13/13 arch tests pass; adapter keeps `@Application`.)
 
 ## 4. Verification
 
