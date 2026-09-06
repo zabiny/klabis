@@ -22,13 +22,13 @@
 
 ## 4. SyncCapabilities named factories
 
-- [ ] 4.1 Read `docs/design-decisions.md` ADR-005 / design D3 and confirm which flag combinations are actually in use before naming anything — the factory names must describe real integration shapes, not invented ones. Today there are two distinct combinations across ten call sites.
-- [ ] 4.2 Add static factory methods to `SyncCapabilities` covering those combinations. Name them for what the integration *is* (e.g. what it may read, write and create), not for the flag positions.
-- [ ] 4.3 Keep the canonical constructor usable for a combination no factory covers; do not add a factory per hypothetical shape.
-- [ ] 4.4 Move `OrisEventSyncAdapter` (line ~60) onto a factory.
-- [ ] 4.5 Move the nine test call sites onto factories: `TestSynchronizationAdapter`, `SyncSchedulerTest`, `SyncRecordDirectionResolutionTest` (2), `SynchronizationServiceIntegrationTest` (3), `SynchronizationServiceMarkDirtyIntegrationTest`, `SynchronizationServiceFailureHandlingIntegrationTest`.
-- [ ] 4.6 Verify each replacement produces the identical flag combination it replaced — compare component by component, not by eye. A transposition here is exactly the defect this task exists to prevent, and it would compile.
-- [ ] 4.7 Confirm no `new SyncCapabilities(` with a positional boolean list remains outside the factories themselves.
+- [x] 4.1 Read `docs/design-decisions.md` ADR-005 / design D3 and confirm which flag combinations are actually in use before naming anything — the factory names must describe real integration shapes, not invented ones. Today there are two distinct combinations across ten call sites.
+- [x] 4.2 Add static factory methods to `SyncCapabilities` covering those combinations. Name them for what the integration *is* (e.g. what it may read, write and create), not for the flag positions.
+- [x] 4.3 Keep the canonical constructor usable for a combination no factory covers; do not add a factory per hypothetical shape.
+- [x] 4.4 Move `OrisEventSyncAdapter` (line ~60) onto a factory.
+- [x] 4.5 Move the nine test call sites onto factories: `TestSynchronizationAdapter`, `SyncSchedulerTest`, `SyncRecordDirectionResolutionTest` (2), `SynchronizationServiceIntegrationTest` (3), `SynchronizationServiceMarkDirtyIntegrationTest`, `SynchronizationServiceFailureHandlingIntegrationTest`.
+- [x] 4.6 Verify each replacement produces the identical flag combination it replaced — compare component by component, not by eye. A transposition here is exactly the defect this task exists to prevent, and it would compile.
+- [x] 4.7 Confirm no `new SyncCapabilities(` with a positional boolean list remains outside the factories themselves.
 
 ## 5. Verification
 

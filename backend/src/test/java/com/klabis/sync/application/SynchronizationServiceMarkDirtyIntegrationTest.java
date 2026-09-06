@@ -42,7 +42,7 @@ class SynchronizationServiceMarkDirtyIntegrationTest {
     void setUp() {
         adapter = (TestSynchronizationAdapter) synchronizationAdapter;
         adapter.reset();
-        adapter.withCapabilities(new SyncCapabilities(true, true, true, true, false, false, false));
+        adapter.withCapabilities(SyncCapabilities.bidirectional());
     }
 
     @Test

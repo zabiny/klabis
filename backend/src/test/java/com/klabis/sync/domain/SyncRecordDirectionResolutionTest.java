@@ -25,9 +25,9 @@ class SyncRecordDirectionResolutionTest {
     private static final ExternalReference EXTERNAL_REF = new ExternalReference(ExternalSystem.ORIS, "8123");
 
     private static final SyncCapabilities BOTH_WRITABLE =
-            new SyncCapabilities(true, true, true, true, false, false, false);
+            SyncCapabilities.bidirectional();
     private static final SyncCapabilities INWARD_ONLY =
-            new SyncCapabilities(true, true, true, false, false, false, false);
+            SyncCapabilities.pullOnly();
 
     @Test
     void decide_newlyEnrolledRecordWithNoBaseline_adoptsExternal() {

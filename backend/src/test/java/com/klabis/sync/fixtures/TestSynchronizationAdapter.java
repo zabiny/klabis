@@ -29,7 +29,7 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
     public TestSynchronizationAdapter(SyncEntityType entityType, ExternalSystem system) {
         this.entityType = entityType;
         this.system = system;
-        this.capabilities = new SyncCapabilities(true, true, true, false, false, false, false);
+        this.capabilities = SyncCapabilities.pullOnly();
     }
 
     public TestSynchronizationAdapter withCapabilities(SyncCapabilities capabilities) {

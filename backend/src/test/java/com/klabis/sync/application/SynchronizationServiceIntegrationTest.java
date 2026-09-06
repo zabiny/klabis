@@ -56,7 +56,7 @@ class SynchronizationServiceIntegrationTest {
         // capabilities to inward+outward writable, so one test's state cannot leak
         // into another. Tests that need pull-only capabilities set them explicitly.
         adapter.reset();
-        adapter.withCapabilities(new SyncCapabilities(true, true, true, true, false, false, false));
+        adapter.withCapabilities(SyncCapabilities.bidirectional());
     }
 
     @Nested
@@ -361,7 +361,7 @@ class SynchronizationServiceIntegrationTest {
         @Test
         @DisplayName("a local change with no outward write capability → conflict, the local edit survives (design.md D6)")
         void localChangeWithNoOutwardCapability_conflict() {
-            adapter.withCapabilities(new SyncCapabilities(true, true, true, false, false, false, false));
+            adapter.withCapabilities(SyncCapabilities.pullOnly());
             adapter.withExternalState("8110", new TestSyncProjection("Sprint", "Brno"));
             adapter.withLocalState("event-110", new TestSyncProjection("Sprint", "Brno"));
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-110");
@@ -533,7 +533,7 @@ class SynchronizationServiceIntegrationTest {
         @Test
         @DisplayName("OUTWARD is refused for an integration that cannot write there")
         void outwardRefusedWhenUnsupported() {
-            adapter.withCapabilities(new SyncCapabilities(true, true, true, false, false, false, false));
+            adapter.withCapabilities(SyncCapabilities.pullOnly());
             SyncRecord conflicted = setUpConflictedRecordWithLocalOnlyChange("event-119", "8119");
             synchronizationPort.acknowledgeConflict(conflicted.getId(), "manager");
 

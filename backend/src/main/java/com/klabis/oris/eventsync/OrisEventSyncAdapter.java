@@ -57,7 +57,7 @@ import java.util.UUID;
 class OrisEventSyncAdapter implements SynchronizationAdapter {
 
     private static final SyncCapabilities CAPABILITIES =
-            new SyncCapabilities(true, true, true, false, false, false, false);
+            SyncCapabilities.pullOnly();
 
     private final EventManagementPort eventManagementPort;
     private final OrisEventImportPort orisEventImportPort;

@@ -80,7 +80,7 @@ class SyncSchedulerTest {
     void setUp() {
         adapter = (TestSynchronizationAdapter) synchronizationAdapter;
         adapter.reset();
-        adapter.withCapabilities(new SyncCapabilities(true, true, true, true, false, false, false));
+        adapter.withCapabilities(SyncCapabilities.bidirectional());
         circuitBreakerRegistry.circuitBreaker(ResilientAdapterExecutor.INSTANCE_NAME).reset();
         mutableClock = (MutableClock) clock;
         mutableClock.setInstant(START);

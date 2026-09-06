@@ -55,7 +55,7 @@ class SynchronizationServiceFailureHandlingIntegrationTest {
     void setUp() {
         adapter = (TestSynchronizationAdapter) synchronizationAdapter;
         adapter.reset();
-        adapter.withCapabilities(new SyncCapabilities(true, true, true, true, false, false, false));
+        adapter.withCapabilities(SyncCapabilities.bidirectional());
         // The sync-adapter circuit breaker is a Spring singleton shared across every
         // test method in this class (they reuse one Spring context) — reset it via the
         // ordinary Resilience4j API so one test's induced failures never leave the

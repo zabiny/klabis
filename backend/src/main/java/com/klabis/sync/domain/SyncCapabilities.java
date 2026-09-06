@@ -18,4 +18,26 @@ public record SyncCapabilities(
         boolean createsExternal,
         boolean containsSensitiveData
 ) {
+
+    /**
+     * A pull-only integration (design.md D3, ADR-005): both sides are read, only the
+     * local side is written — the external system offers no write for this entity
+     * type (ORIS events have no {@code updateEvent}), so an external change is
+     * mirrored inward and a local change that cannot be pushed becomes a conflict.
+     * Neither side is created by the engine, and the projection carries no sensitive
+     * data.
+     */
+    public static SyncCapabilities pullOnly() {
+        return new SyncCapabilities(true, true, true, false, false, false, false);
+    }
+
+    /**
+     * A genuinely two-way integration (design.md D3, ADR-005): both sides are read
+     * and both sides are written, so the engine resolves direction from whichever
+     * side changed. Neither side is created by the engine, and the projection carries
+     * no sensitive data.
+     */
+    public static SyncCapabilities bidirectional() {
+        return new SyncCapabilities(true, true, true, true, false, false, false);
+    }
 }
