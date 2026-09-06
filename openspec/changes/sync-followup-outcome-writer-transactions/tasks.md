@@ -7,12 +7,12 @@
 
 ## 2. Introduce the schedule as its own concept
 
-- [ ] 2.1 Add `SyncSchedule` (value object: `dirtySince`, `nextAttemptDueAt`) and `ScheduleEffect` (`clear()`, `clearDueAt()`, `dueAt(Instant)`, `dirtySince(Instant)`, and a no-change variant) to `com.klabis.sync.domain`.
-- [ ] 2.2 Add the `SyncScheduleRepository` secondary port: load a schedule for a record, and apply a `ScheduleEffect` to it.
-- [ ] 2.3 Add the `sync.sync_schedule` table to `V001__initial_schema.sql` (`sync_record_id` PK/FK, `dirty_since`, `next_attempt_due_at`). Deliberately **no** version column — a scheduling write must never contend for one. Per the project rule, update `V001` rather than adding a new migration.
-- [ ] 2.4 Move `idx_sync_record_due_scan` onto the new table, indexing `(dirty_since, next_attempt_due_at)`.
-- [ ] 2.5 Add the JDBC memento and adapter for the schedule, following the existing `SyncRecordMemento` / `SyncRecordRepositoryAdapter` shape.
-- [ ] 2.6 Ensure a record always has a schedule row — created at enrolment — so no read path has to handle a missing one. Decide and document what happens for a record enrolled before this change (no production data exists, so a coded default is acceptable; state it).
+- [x] 2.1 Add `SyncSchedule` (value object: `dirtySince`, `nextAttemptDueAt`) and `ScheduleEffect` (`clear()`, `clearDueAt()`, `dueAt(Instant)`, `dirtySince(Instant)`, and a no-change variant) to `com.klabis.sync.domain`.
+- [x] 2.2 Add the `SyncScheduleRepository` secondary port: load a schedule for a record, and apply a `ScheduleEffect` to it.
+- [x] 2.3 Add the `sync.sync_schedule` table to `V001__initial_schema.sql` (`sync_record_id` PK/FK, `dirty_since`, `next_attempt_due_at`). Deliberately **no** version column — a scheduling write must never contend for one. Per the project rule, update `V001` rather than adding a new migration.
+- [x] 2.4 Move `idx_sync_record_due_scan` onto the new table, indexing `(dirty_since, next_attempt_due_at)`. **Half done deliberately:** `idx_sync_schedule_due_scan` is added, but `idx_sync_record_due_scan` is left in place because `findDueForScan` still queries `sync_record` this iteration — dropping it now would silently deoptimise a live query. Dropping it moves to task 4.5, where the query actually switches tables.
+- [x] 2.5 Add the JDBC memento and adapter for the schedule, following the existing `SyncRecordMemento` / `SyncRecordRepositoryAdapter` shape.
+- [x] 2.6 Ensure a record always has a schedule row — created at enrolment — so no read path has to handle a missing one. Decide and document what happens for a record enrolled before this change (no production data exists, so a coded default is acceptable; state it).
 
 ## 3. Move scheduling out of the aggregate
 
@@ -31,6 +31,8 @@
 - [ ] 4.3 Rewrite `SynchronizationService.markDirty` to write only through the schedule repository — no aggregate load, no aggregate save.
 - [ ] 4.4 Verify the version-token short-circuit at `SynchronizationService.java:338` still reads a populated `dirtySince`. This is the change's quietest failure mode: a null schedule makes the condition true when it should be false, the short-circuit stops firing, and the engine silently does a full read on every pass with no test failing.
 - [ ] 4.5 Update `findDueForScan` and `findAllActive` to join `sync_schedule` instead of filtering columns on `sync_record`, preserving the exact predicates (including the `status NOT IN ('FAILED', 'CONFLICT')` and claim-staleness clauses).
+- [ ] 4.6 Once 4.5 has moved the query, drop `idx_sync_record_due_scan` and the now-unused `dirty_since` / `next_attempt_due_at` columns from `sync_record` in `V001`. Deferred here from task 2.4 so the live query is never left without its index.
+- [ ] 4.7 Call `SyncScheduleRepository.createFor` from `SynchronizationService.enroll`, in the same transaction as the record save, so task 2.6's "every record has a schedule row" invariant actually holds. The method exists but has no caller yet.
 
 ## 5. Remove the layers the race forced
 

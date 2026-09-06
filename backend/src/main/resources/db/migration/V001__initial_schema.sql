@@ -1065,6 +1065,37 @@ COMMENT ON TABLE sync.sync_attempt IS 'Append-only history of synchronisation at
 COMMENT ON COLUMN sync.sync_attempt.acting_user IS 'Opaque acting-user identifier for manually triggered attempts only (D15)';
 
 -- ============================================================================
+-- 39. SYNC_SCHEDULE TABLE
+-- Scheduling state for one sync_record, split out from it (proposal.md
+-- sync-followup-outcome-writer-transactions, task 2.3): dirty_since and
+-- next_attempt_due_at are a scheduling hint only, never domain state, and must never
+-- contend for the aggregate's optimistic lock. Deliberately no version column — a
+-- concurrent markDirty write and an outcome-writer save must both be able to succeed
+-- without racing each other.
+--
+-- Every sync_record gets its sync_schedule row at enrolment, so no read path has to
+-- handle a missing one (see SyncScheduleRepositoryAdapter for the coded default used
+-- when one is nonetheless absent).
+-- ============================================================================
+
+CREATE TABLE sync.sync_schedule
+(
+    sync_record_id      UUID      NOT NULL PRIMARY KEY,
+    dirty_since          TIMESTAMP NULL,
+    next_attempt_due_at  TIMESTAMP NULL,
+
+    CONSTRAINT fk_sync_schedule_record FOREIGN KEY (sync_record_id) REFERENCES sync.sync_record (id)
+);
+
+COMMENT ON TABLE sync.sync_schedule IS 'Scheduling hint for one sync_record — never domain state, never versioned (design.md D9)';
+
+-- Backs the due scan (design.md D10): one indexed lookup for dirty/retry-due records.
+-- Duplicates idx_sync_record_due_scan on sync_record for now (proposal.md iteration 2
+-- is purely additive — findDueForScan still queries sync_record directly); the
+-- sync_record index is dropped once the due-scan query moves onto this table.
+CREATE INDEX idx_sync_schedule_due_scan ON sync.sync_schedule (dirty_since, next_attempt_due_at);
+
+-- ============================================================================
 -- BOOTSTRAP DATA NOTE
 -- Bootstrap data (admin user and OAuth2 client) is managed by
 -- BootstrapDataLoader component which reads credentials from environment variables.
