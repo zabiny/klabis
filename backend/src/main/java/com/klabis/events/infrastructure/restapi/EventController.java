@@ -68,8 +68,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @ExposesResourceFor(Event.class)
 public class EventController implements EventsApi {
 
-    static final String EVENT_SYNC_ENROLLED_ATTR = EventController.class.getName() + ".eventSyncEnrolled";
-
     private final EventManagementPort eventManagementService;
     private final EventRegistrationPort eventRegistrationService;
     private final Members members;
@@ -138,12 +136,11 @@ public class EventController implements EventsApi {
         HalResponseContext.setDomain(event);
         HalResponseContext.embed(buildRegistrationDtos(event), RegistrationSummaryDto.class);
 
-        // Same reasoning for SynchronizationPort (task 8.6): the postprocessor reads this request
-        // attribute instead of holding the port itself, so unrelated @WebMvcTest slices need not mock it.
+        // Same reasoning for SynchronizationPort (task 8.6): the postprocessor reads this from
+        // HalResponseContext instead of holding the port itself, so unrelated @WebMvcTest slices need not mock it.
         boolean isEnrolled = synchronizationPort.findByTarget(
                 new SyncTarget(SyncEntityType.EVENT, event.getId().value().toString())).isPresent();
-        RequestContextHolder.currentRequestAttributes()
-                .setAttribute(EVENT_SYNC_ENROLLED_ATTR, isEnrolled, RequestAttributes.SCOPE_REQUEST);
+        HalResponseContext.setContext(new EventSyncEnrolment(isEnrolled));
 
         return ResponseEntity.ok(conversionService.convert(event, EventDto.class));
     }
@@ -378,6 +375,14 @@ public class EventController implements EventsApi {
 
 }
 
+/**
+ * Carries whether the event being rendered is enrolled for synchronisation, from
+ * {@code EventController#getEvent} to {@code EventDetailsPostprocessor}. A record rather than a bare
+ * boolean so a later field costs no API change.
+ */
+record EventSyncEnrolment(boolean enrolled) {
+}
+
 class EventAffordanceSupport {
 
     static boolean hasAuthority(Authentication auth, Authority authority) {
@@ -527,19 +532,10 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
 
-        if (isEventSyncEnrolled()) {
+        if (HalResponseContext.findContext(EventSyncEnrolment.class).map(EventSyncEnrolment::enrolled).orElse(false)) {
             klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENTS, eventId.toString()))
                     .ifPresent(link -> dtoModel.add(link.withRel("sync")));
         }
-    }
-
-    private static boolean isEventSyncEnrolled() {
-        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
-        if (attrs == null) {
-            return false;
-        }
-        Object value = attrs.getAttribute(EventController.EVENT_SYNC_ENROLLED_ATTR, RequestAttributes.SCOPE_REQUEST);
-        return Boolean.TRUE.equals(value);
     }
 }
 

@@ -25,12 +25,12 @@
 
 ## 3. Move the event enrolment flag
 
-- [ ] 3.1 Introduce a record carrying the enrolment state rather than publishing a bare `boolean`, so a later field costs no API change. Place it where both `EventController` and its nested postprocessor can see it.
-- [ ] 3.2 Publish it from `EventController#getEvent` via `setContext`, replacing the `RequestContextHolder.currentRequestAttributes().setAttribute(...)` call.
-- [ ] 3.3 Read it in `EventDetailsPostprocessor` via `findContext` — **not** `getContext`. That postprocessor runs on responses `getEvent` did not produce, where absence means "not enrolled". `getContext` here turns a normal path into an exception.
-- [ ] 3.4 Confirm the absent-value branch still yields "no sync link", identical to today's `Boolean.TRUE.equals(null)`.
-- [ ] 3.5 Delete `EVENT_SYNC_ENROLLED_ATTR` and the private `isEventSyncEnrolled()` helper.
-- [ ] 3.6 Confirm `EventDetailsPostprocessor` still does not depend on `SynchronizationPort`, so `@WebMvcTest` slices need not mock it. This is the whole reason the indirection exists.
+- [x] 3.1 Introduce a record carrying the enrolment state rather than publishing a bare `boolean`, so a later field costs no API change. Place it where both `EventController` and its nested postprocessor can see it.
+- [x] 3.2 Publish it from `EventController#getEvent` via `setContext`, replacing the `RequestContextHolder.currentRequestAttributes().setAttribute(...)` call.
+- [x] 3.3 Read it in `EventDetailsPostprocessor` via `findContext` — **not** `getContext`. That postprocessor runs on responses `getEvent` did not produce, where absence means "not enrolled". `getContext` here turns a normal path into an exception.
+- [x] 3.4 Confirm the absent-value branch still yields "no sync link", identical to today's `Boolean.TRUE.equals(null)`.
+- [x] 3.5 Delete `EVENT_SYNC_ENROLLED_ATTR` and the private `isEventSyncEnrolled()` helper.
+- [x] 3.6 Confirm `EventDetailsPostprocessor` still does not depend on `SynchronizationPort`, so `@WebMvcTest` slices need not mock it. This is the whole reason the indirection exists.
 
 ## 4. Move the accommodation-list eventId
 
