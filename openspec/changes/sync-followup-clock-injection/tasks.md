@@ -32,6 +32,6 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Run the full backend test suite; all tests compile and pass.
-- [ ] 5.2 Code review, focused on whether any timing assertion silently became weaker, and on task 4.6 — that every factory call yields the flags its call site previously passed.
-- [ ] 5.3 Commit.
+- [x] 5.1 Run the full backend test suite; all tests compile and pass.
+- [x] 5.2 Code review, focused on whether any timing assertion silently became weaker, and on task 4.6 — that every factory call yields the flags its call site previously passed.
+- [x] 5.3 Commit.
