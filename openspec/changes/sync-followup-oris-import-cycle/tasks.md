@@ -1,15 +1,15 @@
 ## 1. Split the port
 
-- [ ] 1.1 Introduce a gateway interface in `events.application` carrying `readOrisFields` and `applyOrisSync`.
-- [ ] 1.2 Leave `importEventFromOris` and `syncEventFromOris` on the orchestration port.
-- [ ] 1.3 Wire the implementation so the gateway bean does not depend on `SynchronizationPort`.
-- [ ] 1.4 Expose the gateway through the module's named interface so `oris.eventsync` may reach it.
+- [x] 1.1 Introduce a gateway interface in `events.application` carrying `readOrisFields` and `applyOrisSync`.
+- [x] 1.2 Leave `importEventFromOris` and `syncEventFromOris` on the orchestration port.
+- [x] 1.3 Wire the implementation so the gateway bean does not depend on `SynchronizationPort`.
+- [x] 1.4 Expose the gateway through the module's named interface so `oris.eventsync` may reach it.
 
 ## 2. Remove the cycle
 
-- [ ] 2.1 Point `OrisEventSyncAdapter` at the gateway instead of `OrisEventImportPort`.
-- [ ] 2.2 Drop `@Lazy` from the adapter constructor and update the javadoc that explains why it was there.
-- [ ] 2.3 Start the application context and confirm it wires eagerly, with no cycle and no `@Lazy` needed.
+- [x] 2.1 Point `OrisEventSyncAdapter` at the gateway instead of `OrisEventImportPort`.
+- [x] 2.2 Drop `@Lazy` from the adapter constructor and update the javadoc that explains why it was there.
+- [x] 2.3 Start the application context and confirm it wires eagerly, with no cycle and no `@Lazy` needed.
 
 ## 3. Architecture and boundaries
 

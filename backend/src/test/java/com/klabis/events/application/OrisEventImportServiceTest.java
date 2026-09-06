@@ -53,11 +53,15 @@ class OrisEventImportServiceTest {
     @Mock
     private SynchronizationPort synchronizationPort;
 
+    private OrisEventFieldsGatewayService gateway;
     private OrisEventImportService service;
 
     @BeforeEach
     void setUp() {
-        service = new OrisEventImportService(eventRepository, orisApiClient, orisWebUrls, eventTypeRepository, synchronizationPort);
+        // The real gateway stays wired in: importEventFromOris reads the ORIS fields
+        // through it, so the import tests exercise the whole pipeline as production does.
+        gateway = new OrisEventFieldsGatewayService(eventRepository, orisApiClient, orisWebUrls, eventTypeRepository);
+        service = new OrisEventImportService(eventRepository, gateway, synchronizationPort);
     }
 
     @Nested
@@ -283,8 +287,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            OrisEventFields fields = service.readOrisFields(orisId);
-            service.applyOrisSync(eventId, fields);
+            OrisEventFields fields = gateway.readOrisFields(orisId);
+            gateway.applyOrisSync(eventId, fields);
 
             assertThat(event.getName()).isEqualTo("New Name from ORIS");
             assertThat(event.getLocation()).isEqualTo("New Location");
@@ -302,7 +306,7 @@ class OrisEventImportServiceTest {
                     "Name", LocalDate.of(2026, 8, 1), "Location", "Org", null, null,
                     java.util.List.of(), null, null, null);
 
-            assertThatThrownBy(() -> service.applyOrisSync(eventId, fields))
+            assertThatThrownBy(() -> gateway.applyOrisSync(eventId, fields))
                     .isInstanceOf(EventNotFoundException.class);
         }
 
@@ -341,8 +345,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            OrisEventFields fields = service.readOrisFields(orisId);
-            service.applyOrisSync(eventId, fields);
+            OrisEventFields fields = gateway.readOrisFields(orisId);
+            gateway.applyOrisSync(eventId, fields);
 
             verify(eventRepository).save(event);
             assertThat(event.getCategories()).extracting(EventCategory::name)
@@ -374,8 +378,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            OrisEventFields fields = service.readOrisFields(orisId);
-            service.applyOrisSync(eventId, fields);
+            OrisEventFields fields = gateway.readOrisFields(orisId);
+            gateway.applyOrisSync(eventId, fields);
 
             assertThat(event.getCategories()).hasSize(1);
             assertThat(event.getCategories().get(0).orisId()).isEqualTo("100");
@@ -542,8 +546,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            OrisEventFields fields = service.readOrisFields(orisId);
-            service.applyOrisSync(eventId, fields);
+            OrisEventFields fields = gateway.readOrisFields(orisId);
+            gateway.applyOrisSync(eventId, fields);
 
             assertThat(event.getRanking()).isNotNull();
             assertThat(event.getRanking().levelId()).isEqualTo(5);
@@ -568,8 +572,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            OrisEventFields fields = service.readOrisFields(orisId);
-            service.applyOrisSync(eventId, fields);
+            OrisEventFields fields = gateway.readOrisFields(orisId);
+            gateway.applyOrisSync(eventId, fields);
 
             assertThat(event.getRanking()).isNull();
         }
@@ -734,8 +738,8 @@ class OrisEventImportServiceTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            OrisEventFields fields = service.readOrisFields(orisId);
-            service.applyOrisSync(eventId, fields);
+            OrisEventFields fields = gateway.readOrisFields(orisId);
+            gateway.applyOrisSync(eventId, fields);
 
             assertThat(event.getBaseEntryFee()).isNotNull();
             assertThat(event.getBaseEntryFee().amount()).isEqualByComparingTo(new BigDecimal("400"));

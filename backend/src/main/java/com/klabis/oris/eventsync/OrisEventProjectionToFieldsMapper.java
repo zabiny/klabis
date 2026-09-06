@@ -11,7 +11,7 @@ import java.util.Currency;
 
 /**
  * Maps a synchronised {@link OrisEventProjection} back into {@link OrisEventFields},
- * the shape {@link com.klabis.events.application.OrisEventImportPort#applyOrisSync}
+ * the shape {@link com.klabis.events.application.OrisEventFieldsGateway#applyOrisSync}
  * writes via {@code Event.syncFromOris} (design.md D2).
  * <p>
  * The projection is what the engine decided to write inward — it may be the freshly

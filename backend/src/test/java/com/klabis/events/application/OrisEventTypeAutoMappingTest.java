@@ -47,11 +47,15 @@ class OrisEventTypeAutoMappingTest {
     @Mock
     private SynchronizationPort synchronizationPort;
 
+    private OrisEventFieldsGatewayService gateway;
     private OrisEventImportService service;
 
     @BeforeEach
     void setUp() {
-        service = new OrisEventImportService(eventRepository, orisApiClient, orisWebUrls, eventTypeRepository, synchronizationPort);
+        // The real gateway stays wired in: importEventFromOris resolves the event type
+        // through it, so the import tests exercise the whole pipeline as production does.
+        gateway = new OrisEventFieldsGatewayService(eventRepository, orisApiClient, orisWebUrls, eventTypeRepository);
+        service = new OrisEventImportService(eventRepository, gateway, synchronizationPort);
     }
 
     @Nested
@@ -158,8 +162,8 @@ class OrisEventTypeAutoMappingTest {
             when(eventTypeRepository.findByOrisDisciplineId(1)).thenReturn(Optional.of(matchedType));
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            OrisEventFields fields = service.readOrisFields(orisId);
-            service.applyOrisSync(eventId, fields);
+            OrisEventFields fields = gateway.readOrisFields(orisId);
+            gateway.applyOrisSync(eventId, fields);
 
             assertThat(event.getEventTypeId()).isPresent();
             assertThat(event.getEventTypeId().get()).isEqualTo(matchedType.getId());
@@ -189,8 +193,8 @@ class OrisEventTypeAutoMappingTest {
             when(eventTypeRepository.findByOrisDisciplineId(2)).thenReturn(Optional.of(differentType));
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            OrisEventFields fields = service.readOrisFields(orisId);
-            service.applyOrisSync(eventId, fields);
+            OrisEventFields fields = gateway.readOrisFields(orisId);
+            gateway.applyOrisSync(eventId, fields);
 
             assertThat(event.getEventTypeId()).contains(existingTypeId);
         }
@@ -216,8 +220,8 @@ class OrisEventTypeAutoMappingTest {
             when(eventTypeRepository.findByOrisDisciplineId(99)).thenReturn(Optional.empty());
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            OrisEventFields fields = service.readOrisFields(orisId);
-            service.applyOrisSync(eventId, fields);
+            OrisEventFields fields = gateway.readOrisFields(orisId);
+            gateway.applyOrisSync(eventId, fields);
 
             assertThat(event.getEventTypeId()).contains(existingTypeId);
         }
@@ -241,8 +245,8 @@ class OrisEventTypeAutoMappingTest {
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            OrisEventFields fields = service.readOrisFields(orisId);
-            service.applyOrisSync(eventId, fields);
+            OrisEventFields fields = gateway.readOrisFields(orisId);
+            gateway.applyOrisSync(eventId, fields);
 
             assertThat(event.getEventTypeId()).contains(existingTypeId);
             Mockito.verify(eventTypeRepository, Mockito.never()).findByOrisDisciplineId(any(Integer.class));

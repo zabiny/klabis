@@ -2,24 +2,23 @@ package com.klabis.oris.eventsync;
 
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementPort;
-import com.klabis.events.application.OrisEventImportPort;
+import com.klabis.events.application.OrisEventFieldsGateway;
 import com.klabis.events.domain.Event;
 import com.klabis.oris.OrisIntegrationComponent;
 import com.klabis.sync.domain.*;
 import org.jmolecules.architecture.hexagonal.Application;
-import org.springframework.context.annotation.Lazy;
 
 import java.util.Optional;
 import java.util.UUID;
 
 /**
  * The ORIS event {@link SynchronizationAdapter} (design.md D2, D3): inward-only,
- * reusing the ORIS field mapping already used for manual import and sync
- * ({@link OrisEventImportPort}).
+ * reusing the ORIS field mapping of the events module's ORIS integration
+ * ({@link OrisEventFieldsGateway}).
  * <p>
  * Reaches the {@code events} module only through its {@code events.application}
  * primary ports — {@link EventManagementPort} to read the local side,
- * {@link OrisEventImportPort} to read the external side and to write inward via
+ * {@link OrisEventFieldsGateway} to read the external side and to write inward via
  * {@code Event.syncFromOris} — so this module gains no knowledge of {@code events}
  * internals beyond what {@code OrisController} already has (design.md D2).
  * <p>
@@ -44,13 +43,10 @@ import java.util.UUID;
  * classification that permits the primary-port access D2 prescribes. The D2 dependency
  * direction is unchanged and still correct.
  * <p>
- * {@code orisEventImportPort} is {@link Lazy} because task 8.3 (delegating
- * {@code syncEventFromOris} to the engine) closes a bean-construction cycle that D2's
- * dependency direction always implied but never triggered until now:
- * {@code OrisEventImportService} (implements {@link OrisEventImportPort}) now needs
- * {@code SynchronizationPort}, which needs {@link SynchronizationAdapterRegistry},
- * which needs this adapter, which needs {@code OrisEventImportPort} back.
- * {@code eventManagementPort} does not participate in the cycle and stays eager.
+ * Depends only on {@link OrisEventFieldsGateway}, which has no dependency on the sync
+ * engine — the flow orchestration that does ({@code OrisEventImportPort}) is a different
+ * bean this adapter never sees — so the wiring here is eager and acyclic, with no
+ * {@code @Lazy} needed to construct the context.
  */
 @OrisIntegrationComponent
 @Application
@@ -60,11 +56,11 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
             SyncCapabilities.pullOnly();
 
     private final EventManagementPort eventManagementPort;
-    private final OrisEventImportPort orisEventImportPort;
+    private final OrisEventFieldsGateway orisEventFieldsGateway;
 
-    OrisEventSyncAdapter(EventManagementPort eventManagementPort, @Lazy OrisEventImportPort orisEventImportPort) {
+    OrisEventSyncAdapter(EventManagementPort eventManagementPort, OrisEventFieldsGateway orisEventFieldsGateway) {
         this.eventManagementPort = eventManagementPort;
-        this.orisEventImportPort = orisEventImportPort;
+        this.orisEventFieldsGateway = orisEventFieldsGateway;
     }
 
     @Override
@@ -96,7 +92,7 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
     @Override
     public SyncProjection readExternal(String externalId) {
         return OrisEventFieldsToProjectionMapper.fromOrisFields(
-                orisEventImportPort.readOrisFields(toOrisId(externalId)));
+                orisEventFieldsGateway.readOrisFields(toOrisId(externalId)));
     }
 
     /**
@@ -116,7 +112,7 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
     public void applyToLocal(String entityId, SyncProjection projection) {
         EventId eventId = toEventId(entityId);
         OrisEventProjection orisProjection = (OrisEventProjection) projection;
-        orisEventImportPort.applyOrisSync(eventId, OrisEventProjectionToFieldsMapper.toOrisEventFields(orisProjection));
+        orisEventFieldsGateway.applyOrisSync(eventId, OrisEventProjectionToFieldsMapper.toOrisEventFields(orisProjection));
     }
 
     @Override

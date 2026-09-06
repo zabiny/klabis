@@ -5,7 +5,7 @@ import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.OrisEventFields;
-import com.klabis.events.application.OrisEventImportPort;
+import com.klabis.events.application.OrisEventFieldsGateway;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
 import com.klabis.events.domain.RegistrationDeadlines;
@@ -39,7 +39,7 @@ class OrisEventSyncAdapterTest {
     private EventManagementPort eventManagementPort;
 
     @Mock
-    private OrisEventImportPort orisEventImportPort;
+    private OrisEventFieldsGateway orisEventFieldsGateway;
 
     private OrisEventSyncAdapter adapter;
 
@@ -49,7 +49,7 @@ class OrisEventSyncAdapterTest {
 
     @BeforeEach
     void setUp() {
-        adapter = new OrisEventSyncAdapter(eventManagementPort, orisEventImportPort);
+        adapter = new OrisEventSyncAdapter(eventManagementPort, orisEventFieldsGateway);
     }
 
     @Test
@@ -89,13 +89,13 @@ class OrisEventSyncAdapterTest {
     class ReadExternalMethod {
 
         @Test
-        @DisplayName("maps the ORIS fields read through OrisEventImportPort into the canonical projection")
+        @DisplayName("maps the ORIS fields read through OrisEventFieldsGateway into the canonical projection")
         void mapsOrisFieldsIntoProjection() {
             OrisEventFields fields = new OrisEventFields(
                     "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
                     WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"),
                     RegistrationDeadlines.none(), List.of(), null, null, null);
-            when(orisEventImportPort.readOrisFields(ORIS_ID)).thenReturn(fields);
+            when(orisEventFieldsGateway.readOrisFields(ORIS_ID)).thenReturn(fields);
 
             SyncProjection projection = adapter.readExternal(String.valueOf(ORIS_ID));
 
@@ -133,9 +133,9 @@ class OrisEventSyncAdapterTest {
     class ApplyToLocalMethod {
 
         @Test
-        @DisplayName("writes the projection inward via OrisEventImportPort.applyOrisSync")
+        @DisplayName("writes the projection inward via OrisEventFieldsGateway.applyOrisSync")
         void writesInwardViaApplyOrisSync() {
-            when(orisEventImportPort.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+            when(orisEventFieldsGateway.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
                     "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
                     WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"),
                     RegistrationDeadlines.none(), List.of(), null, null, null));
@@ -148,7 +148,7 @@ class OrisEventSyncAdapterTest {
             adapter.applyToLocal(EVENT_UUID.toString(), incoming);
 
             ArgumentCaptor<OrisEventFields> captor = ArgumentCaptor.forClass(OrisEventFields.class);
-            verify(orisEventImportPort).applyOrisSync(eq(EVENT_ID), captor.capture());
+            verify(orisEventFieldsGateway).applyOrisSync(eq(EVENT_ID), captor.capture());
             assertThat(captor.getValue().name()).isEqualTo("New name");
         }
 
@@ -156,7 +156,7 @@ class OrisEventSyncAdapterTest {
         @DisplayName("carries the event type resolved by readExternal, without reading ORIS a second time (task 8.10)")
         void carriesResolvedEventTypeWithoutSecondOrisRead() {
             EventTypeId resolvedType = EventTypeId.generate();
-            when(orisEventImportPort.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+            when(orisEventFieldsGateway.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
                     "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
                     WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"),
                     RegistrationDeadlines.none(), List.of(), null, null, resolvedType));
@@ -165,11 +165,11 @@ class OrisEventSyncAdapterTest {
             adapter.applyToLocal(EVENT_UUID.toString(), incoming);
 
             ArgumentCaptor<OrisEventFields> captor = ArgumentCaptor.forClass(OrisEventFields.class);
-            verify(orisEventImportPort).applyOrisSync(eq(EVENT_ID), captor.capture());
+            verify(orisEventFieldsGateway).applyOrisSync(eq(EVENT_ID), captor.capture());
             assertThat(captor.getValue().resolvedEventTypeId()).isEqualTo(resolvedType);
             // readOrisFields must have been called exactly once — by readExternal — not
             // again inside applyToLocal.
-            verify(orisEventImportPort, org.mockito.Mockito.times(1)).readOrisFields(ORIS_ID);
+            verify(orisEventFieldsGateway, org.mockito.Mockito.times(1)).readOrisFields(ORIS_ID);
         }
 
         @Test
@@ -179,11 +179,11 @@ class OrisEventSyncAdapterTest {
             EventId otherEventId = new EventId(UUID.randomUUID());
             EventTypeId firstResolvedType = EventTypeId.generate();
 
-            when(orisEventImportPort.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+            when(orisEventFieldsGateway.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
                     "First event", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
                     WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=" + ORIS_ID),
                     RegistrationDeadlines.none(), List.of(), null, null, firstResolvedType));
-            when(orisEventImportPort.readOrisFields(otherOrisId)).thenReturn(new OrisEventFields(
+            when(orisEventFieldsGateway.readOrisFields(otherOrisId)).thenReturn(new OrisEventFields(
                     "Second event", LocalDate.of(2026, 6, 1), "Praha Park", "POB",
                     WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=" + otherOrisId),
                     RegistrationDeadlines.none(), List.of(), null, null, null));
@@ -198,7 +198,7 @@ class OrisEventSyncAdapterTest {
             adapter.applyToLocal(otherEventId.value().toString(), secondIncoming);
 
             ArgumentCaptor<OrisEventFields> captor = ArgumentCaptor.forClass(OrisEventFields.class);
-            verify(orisEventImportPort).applyOrisSync(eq(otherEventId), captor.capture());
+            verify(orisEventFieldsGateway).applyOrisSync(eq(otherEventId), captor.capture());
             assertThat(captor.getValue().resolvedEventTypeId()).isNull();
         }
     }
