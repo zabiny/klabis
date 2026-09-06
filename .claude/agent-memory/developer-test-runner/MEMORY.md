@@ -65,3 +65,6 @@ Added missing imports to three files:
 
 ### Test Results
 All 1392 backend tests pass: 1382 passed, 10 skipped, 0 failed
+
+## Index
+- [buildSrc test runner quirk](buildsrc_test_runner_quirk.md) — `--module :buildSrc` may report "No fresh JUnit XML" despite a green run; check XML mtimes, re-parse with --skip-run
