@@ -20,7 +20,10 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Confirm ORIS import and ORIS sync still behave identically end to end.
-- [ ] 4.2 Run the full backend test suite; all tests compile and pass.
-- [ ] 4.3 Code review.
-- [ ] 4.4 Commit.
+- [x] 4.1 Confirm ORIS import and ORIS sync still behave identically end to end.
+  - Evidence: `OrisEventSyncScenarioIntegrationTest` (9/9) and `OrisEventSyncAdapterIntegrationTest` (3/3, full `@SpringBootTest` context) plus the import-path tests (`OrisEventImportServiceTest`, `OrisEventTypeAutoMappingTest`, `OrisEventControllerTest`) ran green on the refactored code; code review found no behavioral drift.
+- [x] 4.2 Run the full backend test suite; all tests compile and pass.
+  - 3418/3418 passed, 0 failed/skipped, exit 0 — identical to same-day clean-main baseline.
+- [x] 4.3 Code review.
+  - No high findings, no behavioral drift. Two medium doc-drift findings (stale ADR-005 notes, `backend-patterns` skill still teaching the `@Lazy` pattern) fixed in the follow-up commit.
+- [x] 4.4 Commit.

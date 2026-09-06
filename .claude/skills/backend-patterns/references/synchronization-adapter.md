@@ -123,15 +123,25 @@ An adapter that both implements `sync`'s `SynchronizationAdapter` (a driven/seco
 
 ### Trap: the bean-construction cycle
 
-If the owning module's own service needs `SynchronizationPort` — for example, a `MemberOrisImportService.syncMemberFromOris` delegating to the engine, the same move `OrisEventImportService` made — you get a cycle: `MemberOrisImportService` → `SynchronizationPort` → `SynchronizationAdapterRegistry` → `MemberOrisSyncAdapter` → the owning module's import port, back to `MemberOrisImportService`. Break it with `@Lazy` on the adapter's dependency on that import port, exactly as `OrisEventSyncAdapter.orisEventImportPort` does:
+If the owning module's own service needs `SynchronizationPort` — for example, a `MemberOrisImportService.syncMemberFromOris` delegating to the engine, the same move `OrisEventImportService` made — you get a cycle: `MemberOrisImportService` → `SynchronizationPort` → `SynchronizationAdapterRegistry` → `MemberOrisSyncAdapter` → the owning module's import port, back to `MemberOrisImportService`.
+
+Do **not** break it with `@Lazy` on the adapter's dependency — an earlier iteration of `OrisEventSyncAdapter` did exactly that, and it only trades fail-fast startup for a failure surfacing on the first synchronisation attempt. Split the port along its two roles instead, the way `sync-followup-oris-import-cycle` split the ORIS one: the field primitives the adapter calls go on a gateway port implemented with **no** dependency on `SynchronizationPort`; the orchestration that needs the engine keeps its own port:
 
 ```java
-MemberOrisSyncAdapter(MemberManagementPort memberManagementPort, @Lazy MemberOrisImportPort memberOrisImportPort) {
-    // memberManagementPort does not participate in the cycle — stays eager
+@PrimaryPort
+interface MemberOrisFieldsGateway {              // what the adapter calls — closes no loop
+    MemberOrisFields readMemberFields(int orisId);
+    Member applyMemberSync(MemberId memberId, MemberOrisFields fields);
+}
+
+@PrimaryPort
+interface MemberOrisImportPort {                 // orchestration — may need SynchronizationPort
+    Member importMemberFromOris(int orisId);
+    void syncMemberFromOris(MemberId memberId);
 }
 ```
 
-The cost is explicit: a broken import-port bean now surfaces on the first synchronisation attempt rather than at application startup. Accept that trade — it is the price of the module boundary in ADR-001, not a workaround to design away.
+The adapter injects the gateway only (`MemberOrisSyncAdapter(MemberManagementPort, MemberOrisFieldsGateway)`, no `@Lazy`); the gateway bean never sees `SynchronizationPort`, so the wiring is eager and acyclic while the module boundary in ADR-001 stays intact.
 
 ## 4. Enrol and retire
 

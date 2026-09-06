@@ -17,7 +17,7 @@ public interface OrisEventFieldsGateway {
     /**
      * Reads and maps an ORIS event's ORIS-owned fields, without writing anything —
      * the synchronisation engine's external-side read (design.md D2, D3). Resolves
-     * the same way {@link OrisEventImportPort#syncEventFromOris} does, including
+     * the same way {@link OrisEventImportPort#importEventFromOris} does, including
      * event-type auto-mapping from the ORIS discipline.
      */
     OrisEventFields readOrisFields(int orisId);
