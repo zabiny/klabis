@@ -1,27 +1,27 @@
 ## 1. Add the typed context map to HalResponseContext
 
-- [ ] 1.1 Store the context as a map keyed by the value's runtime class, under a single new request attribute. Follow the scoping the existing three slots use.
-- [ ] 1.2 Add `setContext(Object)` — stores under `value.getClass()`. A second value of the *same* type replaces the first; values of different types coexist.
-- [ ] 1.3 Add `<T> Optional<T> findContext(Class<T> type)` resolving by assignability, so a value can be read through an interface or supertype it implements.
-- [ ] 1.4 Add `<T> T getContext(Class<T> type)` — same lookup, throws when nothing matches.
-- [ ] 1.5 Throw on an ambiguous lookup: two stored values both assignable to the requested type. Picking one silently makes the result depend on map iteration order. Name both matched types in the message.
-- [ ] 1.6 **Reads must not consume.** `getContext` and `findContext` leave the value in the map, unlike the existing `take*` methods. Javadoc this explicitly and say why: `AccommodationListItemPostprocessor` reads once per item.
-- [ ] 1.7 Distinct exception messages for "nothing stored for this type" and "ambiguous match", naming the requested type in both. A message that cannot tell them apart makes this harder to debug than the string key it replaces.
-- [ ] 1.8 Extend `clear()` to drop the context attribute. Omitting this leaks values into the next request served by the same thread; it compiles and passes every single-request test.
-- [ ] 1.9 Keep the addition purely additive — `setDomain`, `setDomainList`, `embed` and their `take*` counterparts behave exactly as before.
+- [x] 1.1 Store the context as a map keyed by the value's runtime class, under a single new request attribute. Follow the scoping the existing three slots use.
+- [x] 1.2 Add `setContext(Object)` — stores under `value.getClass()`. A second value of the *same* type replaces the first; values of different types coexist.
+- [x] 1.3 Add `<T> Optional<T> findContext(Class<T> type)` resolving by assignability, so a value can be read through an interface or supertype it implements.
+- [x] 1.4 Add `<T> T getContext(Class<T> type)` — same lookup, throws when nothing matches.
+- [x] 1.5 Throw on an ambiguous lookup: two stored values both assignable to the requested type. Picking one silently makes the result depend on map iteration order. Name both matched types in the message.
+- [x] 1.6 **Reads must not consume.** `getContext` and `findContext` leave the value in the map, unlike the existing `take*` methods. Javadoc this explicitly and say why: `AccommodationListItemPostprocessor` reads once per item.
+- [x] 1.7 Distinct exception messages for "nothing stored for this type" and "ambiguous match", naming the requested type in both. A message that cannot tell them apart makes this harder to debug than the string key it replaces.
+- [x] 1.8 Extend `clear()` to drop the context attribute. Omitting this leaks values into the next request served by the same thread; it compiles and passes every single-request test.
+- [x] 1.9 Keep the addition purely additive — `setDomain`, `setDomainList`, `embed` and their `take*` counterparts behave exactly as before.
 
 ## 2. Test the new API
 
-- [ ] 2.1 `getContext` returns the stored value for an exact type match.
-- [ ] 2.2 `getContext` returns the value when requested through an interface or supertype it is assignable to.
-- [ ] 2.3 `getContext` throws when nothing is stored for that type, while a value of an unrelated type *is* stored — proving the lookup discriminates rather than returning whatever is present.
-- [ ] 2.4 `findContext` returns empty in the same situation.
-- [ ] 2.5 Two values of different types coexist and each is retrievable. Verify this test fails against a single-slot implementation — it is the assertion that pins the map behaviour.
-- [ ] 2.6 A second `setContext` of the same type replaces the first.
-- [ ] 2.7 An ambiguous lookup throws. Construct it with two stored types sharing a supertype, then request the supertype.
-- [ ] 2.8 **Repeated reads return the value every time.** Read the same type twice and assert both succeed. Verify this test fails if the read is made consuming — without that check the test proves nothing about the property it exists for.
-- [ ] 2.9 The no-request-attributes-bound case (no `RequestContextHolder` binding) behaves as absence, matching how the existing slots treat it.
-- [ ] 2.10 `clear()` drops the context — a subsequent read finds nothing.
+- [x] 2.1 `getContext` returns the stored value for an exact type match.
+- [x] 2.2 `getContext` returns the value when requested through an interface or supertype it is assignable to.
+- [x] 2.3 `getContext` throws when nothing is stored for that type, while a value of an unrelated type *is* stored — proving the lookup discriminates rather than returning whatever is present.
+- [x] 2.4 `findContext` returns empty in the same situation.
+- [x] 2.5 Two values of different types coexist and each is retrievable. Verify this test fails against a single-slot implementation — it is the assertion that pins the map behaviour.
+- [x] 2.6 A second `setContext` of the same type replaces the first.
+- [x] 2.7 An ambiguous lookup throws. Construct it with two stored types sharing a supertype, then request the supertype.
+- [x] 2.8 **Repeated reads return the value every time.** Read the same type twice and assert both succeed. Verify this test fails if the read is made consuming — without that check the test proves nothing about the property it exists for.
+- [x] 2.9 The no-request-attributes-bound case (no `RequestContextHolder` binding) behaves as absence, matching how the existing slots treat it.
+- [x] 2.10 `clear()` drops the context — a subsequent read finds nothing.
 
 ## 3. Move the event enrolment flag
 
