@@ -47,23 +47,27 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
     /**
      * Backs the due scan (design.md D10): dirty or retry-due, excluding a record
      * whose claim is still fresh. {@code RETIRED} is excluded via
-     * {@code retired_at IS NULL}. {@code CONFLICT} self-excludes: {@code recordConflict}
-     * clears both {@code dirty_since} and {@code next_attempt_due_at}, so a conflicted
-     * record matches neither dirty nor retry-due. {@code FAILED} does <strong>not</strong>
-     * self-exclude — {@code recordTerminalFailure} clears only {@code next_attempt_due_at}
-     * and leaves {@code dirty_since} untouched, so a terminally failed record that a
-     * later edit marked dirty would otherwise be selected here and then rejected by
-     * {@code SyncRecord.assertBeingAttempted} once {@code runScheduledPass} tried it. The
-     * {@code status <> 'FAILED'} predicate keeps that exclusion local to the query,
-     * matching what {@link #findAllActive} already does for the nightly full pass (see
-     * {@link com.klabis.sync.domain.SyncRecordRepository#findDueForScan}). One indexed
-     * query, matching the index on {@code (dirty_since, next_attempt_due_at)} declared
-     * in the schema.
+     * {@code retired_at IS NULL}. Neither {@code FAILED} nor {@code CONFLICT} is
+     * excluded by construction: {@code recordConflict} and {@code recordTerminalFailure}
+     * do clear the scheduling fields, but {@code SyncRecord.markDirty} has no status
+     * guard, so an ordinary local edit to an entity whose record is already
+     * {@code CONFLICT} or {@code FAILED} re-sets {@code dirty_since} and the record then
+     * matches the dirty predicate. Handed to a pass in that state it is rejected by
+     * {@code SyncRecord.assertBeingAttempted} once {@code runScheduledPass} tries it, an
+     * exception the scheduler's per-record handler catches and logs at ERROR. The
+     * {@code status NOT IN ('FAILED', 'CONFLICT')} predicate keeps that exclusion local
+     * to the query; {@code FAILED} matches what {@link #findAllActive} does for the
+     * nightly full pass (see
+     * {@link com.klabis.sync.domain.SyncRecordRepository#findDueForScan}). A standing
+     * conflict still waits for a manager to resolve it — a resolution re-enrolls the
+     * record and clears {@code CONFLICT}, at which point it is eligible again. One
+     * indexed query, matching the index on {@code (dirty_since, next_attempt_due_at)}
+     * declared in the schema.
      */
     @Query("""
             SELECT * FROM sync.sync_record
             WHERE retired_at IS NULL
-              AND status <> 'FAILED'
+              AND status NOT IN ('FAILED', 'CONFLICT')
               AND (dirty_since IS NOT NULL OR next_attempt_due_at <= :now)
               AND (claimed_at IS NULL OR claimed_at <= :claimStaleBefore)
             """)

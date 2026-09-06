@@ -304,6 +304,27 @@ class SyncRecordJdbcRepositoryTest {
         }
 
         @Test
+        @DisplayName("skips a conflicted record even when a later edit marked it dirty — markDirty has no status guard and re-sets dirtySince")
+        void skipsConflictedRecordThatWasMarkedDirty() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-9"), EXTERNAL_REF);
+            SyncSnapshot local = SyncSnapshot.of(new TestSyncProjection("Local", "Brno"), hasher);
+            SyncSnapshot external = SyncSnapshot.of(new TestSyncProjection("External", "Brno"), hasher);
+            record.recordSuccess(SyncDirection.INWARD, local, local);
+            record.recordConflict(local, external, null);
+            record.markDirty();
+            syncRecordRepository.save(record);
+
+            Map<String, Object> persisted = jdbcTemplate.queryForMap(
+                    "SELECT status, dirty_since FROM sync.sync_record WHERE id = ?", record.getId().value());
+            assertThat(persisted.get("status")).isEqualTo("CONFLICT");
+            assertThat(persisted.get("dirty_since")).as("fixture must actually reproduce the gap: a CONFLICT record with dirty_since set").isNotNull();
+
+            List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
+
+            assertThat(due).extracting(SyncRecord::getId).doesNotContain(record.getId());
+        }
+
+        @Test
         @DisplayName("skips a terminally failed record")
         void skipsTerminallyFailedRecord() {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-6"), EXTERNAL_REF);
