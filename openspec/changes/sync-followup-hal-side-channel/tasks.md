@@ -44,10 +44,10 @@
 
 ## 5. Move the registrations-collection eventId
 
-- [ ] 5.1 Introduce a record carrying the registrations-collection `eventId`, published from `EventRegistrationController#listRegistrations`.
-- [ ] 5.2 Read it in `RegistrationsCollectionPostprocessor` via `findContext`, keeping the absence-means-no-link branch.
-- [ ] 5.3 Delete `EventRegistrationController.currentEventId()`.
-- [ ] 5.4 Check whether `EventController#getEvent` also produces `RegistrationSummaryDto` content through `HalResponseContext.embed(...)` and whether that path reaches this postprocessor. If it does, decide deliberately whether the `event` relation should appear there — today it does not, because no URI variable named `eventId` is bound on that request. Do not change that behaviour by accident.
+- [x] 5.1 Introduce a record carrying the registrations-collection `eventId`, published from `EventRegistrationController#listRegistrations`.
+- [x] 5.2 Read it in `RegistrationsCollectionPostprocessor` via `findContext`, keeping the absence-means-no-link branch.
+- [x] 5.3 Delete `EventRegistrationController.currentEventId()`.
+- [x] 5.4 Check whether `EventController#getEvent` also produces `RegistrationSummaryDto` content through `HalResponseContext.embed(...)` and whether that path reaches this postprocessor. If it does, decide deliberately whether the `event` relation should appear there — today it does not, because no URI variable named `eventId` is bound on that request. Do not change that behaviour by accident.
 
 ## 6. Cleanup and verification
 
