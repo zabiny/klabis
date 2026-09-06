@@ -4,6 +4,8 @@ import com.klabis.sync.SyncConflictDetected;
 import com.klabis.sync.SyncRecordId;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SyncRecordConflictEventTest {
@@ -25,7 +27,7 @@ class SyncRecordConflictEventTest {
         SyncSnapshot local = SyncSnapshot.of(new TestProjection("local edit"), HASHER);
         SyncSnapshot external = SyncSnapshot.of(new TestProjection("external edit"), HASHER);
 
-        record.recordConflict(local, external, null, java.time.Instant.now());
+        record.recordConflict(local, external, null, Instant.now());
 
         assertThat(record.getDomainEvents()).hasSize(1);
         assertThat(record.getDomainEvents().get(0)).isInstanceOf(SyncConflictDetected.class);
@@ -42,10 +44,10 @@ class SyncRecordConflictEventTest {
         SyncSnapshot local = SyncSnapshot.of(new TestProjection("local edit"), HASHER);
         SyncSnapshot external = SyncSnapshot.of(new TestProjection("external edit"), HASHER);
 
-        record.recordConflict(local, external, null, java.time.Instant.now());
+        record.recordConflict(local, external, null, Instant.now());
         record.clearDomainEvents();
 
-        record.recordConflict(local, external, null, java.time.Instant.now());
+        record.recordConflict(local, external, null, Instant.now());
 
         assertThat(record.getDomainEvents()).isEmpty();
     }
@@ -55,11 +57,11 @@ class SyncRecordConflictEventTest {
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
         SyncSnapshot local = SyncSnapshot.of(new TestProjection("local edit"), HASHER);
         SyncSnapshot external = SyncSnapshot.of(new TestProjection("external edit"), HASHER);
-        record.recordConflict(local, external, null, java.time.Instant.now());
+        record.recordConflict(local, external, null, Instant.now());
         record.clearDomainEvents();
 
         SyncSnapshot newExternal = SyncSnapshot.of(new TestProjection("yet another external edit"), HASHER);
-        record.recordConflict(local, newExternal, null, java.time.Instant.now());
+        record.recordConflict(local, newExternal, null, Instant.now());
 
         assertThat(record.getDomainEvents()).hasSize(1);
     }

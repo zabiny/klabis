@@ -4,21 +4,17 @@ import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.*;
-import com.klabis.sync.fixtures.MutableClock;
+import com.klabis.sync.fixtures.FixedClockConfiguration;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -32,20 +28,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
-@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class, SyncHistoryRetentionJobTest.FixedClockConfiguration.class})
+@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class, FixedClockConfiguration.class})
 @TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 @DisplayName("SyncHistoryRetentionJob")
 class SyncHistoryRetentionJobTest {
 
-    private static final Instant NOW = Instant.parse("2026-06-01T00:00:00Z");
-
-    @TestConfiguration
-    static class FixedClockConfiguration {
-        @Bean
-        Clock clock() {
-            return new MutableClock(NOW, ZoneId.of("UTC"));
-        }
-    }
+    private static final Instant NOW = FixedClockConfiguration.FIXED_NOW;
 
     @Autowired
     private SyncHistoryRetentionJob job;

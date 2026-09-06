@@ -57,11 +57,11 @@ class SyncAttemptJdbcRepositoryTest {
                         new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, "999"))
         ).getId();
 
-        SyncAttempt first = SyncAttempt.record(recordId, java.time.Instant.now(), SyncTriggerKind.SCHEDULED, null, SyncOutcome.SUCCESS,
+        SyncAttempt first = SyncAttempt.record(recordId, Instant.now(), SyncTriggerKind.SCHEDULED, null, SyncOutcome.SUCCESS,
                 SyncHash.of("hash-a"), SyncHash.of("hash-a"), null, null);
         syncAttemptRepository.save(first);
 
-        SyncAttempt second = SyncAttempt.record(recordId, java.time.Instant.now(), SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS,
+        SyncAttempt second = SyncAttempt.record(recordId, Instant.now(), SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS,
                 SyncHash.of("hash-b"), SyncHash.of("hash-b"), null, "admin");
         syncAttemptRepository.save(second);
 
@@ -81,7 +81,7 @@ class SyncAttemptJdbcRepositoryTest {
                         new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, "998"))
         ).getId();
 
-        SyncAttempt attempt = SyncAttempt.record(recordId, java.time.Instant.now(), SyncTriggerKind.SCHEDULED, null, SyncOutcome.SUCCESS,
+        SyncAttempt attempt = SyncAttempt.record(recordId, Instant.now(), SyncTriggerKind.SCHEDULED, null, SyncOutcome.SUCCESS,
                 SyncHash.of("hash-only"), SyncHash.of("hash-only"), null, null);
         SyncAttempt saved = syncAttemptRepository.save(attempt);
 

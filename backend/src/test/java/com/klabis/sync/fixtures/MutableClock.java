@@ -21,10 +21,6 @@ public final class MutableClock extends Clock {
         this.zone = zone;
     }
 
-    public MutableClock(Instant instant) {
-        this(instant, ZoneId.systemDefault());
-    }
-
     @Override
     public ZoneId getZone() {
         return zone;
@@ -32,7 +28,7 @@ public final class MutableClock extends Clock {
 
     @Override
     public Clock withZone(ZoneId zone) {
-        return new MutableClock(instant, zone);
+        throw new UnsupportedOperationException("MutableClock has a fixed zone");
     }
 
     @Override

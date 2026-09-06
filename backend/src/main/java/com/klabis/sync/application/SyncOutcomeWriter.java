@@ -8,7 +8,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
+import java.time.Instant;
 
 /**
  * Persists the outcome of one pass — the record and its attempt row — atomically
@@ -21,6 +21,11 @@ import java.time.Clock;
  * cross-bean call goes through the Spring AOP proxy that applies
  * {@code @Transactional} — a self-invoked method on the same bean would silently skip
  * the transaction boundary.
+ * <p>
+ * The instant that stamps the attempt row is passed in by the caller, not read here:
+ * {@link SynchronizationService} captures {@code clock.instant()} once per logical
+ * operation and threads the same value into the record's own timestamps and this
+ * attempt row, so the two never drift onto different instants.
  */
 @Service
 class SyncOutcomeWriter {
@@ -28,7 +33,6 @@ class SyncOutcomeWriter {
     private final SyncRecordRepository syncRecordRepository;
     private final SyncAttemptRepository syncAttemptRepository;
     private final SyncOutcomeWriter self;
-    private final Clock clock;
 
     /**
      * {@code self} is this bean's own Spring proxy, injected lazily to sidestep the
@@ -39,11 +43,10 @@ class SyncOutcomeWriter {
      * apply at all.
      */
     SyncOutcomeWriter(SyncRecordRepository syncRecordRepository, SyncAttemptRepository syncAttemptRepository,
-                       @Lazy SyncOutcomeWriter self, Clock clock) {
+                       @Lazy SyncOutcomeWriter self) {
         this.syncRecordRepository = syncRecordRepository;
         this.syncAttemptRepository = syncAttemptRepository;
         this.self = self;
-        this.clock = clock;
     }
 
     /**
@@ -66,6 +69,7 @@ class SyncOutcomeWriter {
      */
     SyncRecord persist(
             SyncRecord record,
+            Instant startedAt,
             SyncTriggerKind trigger,
             SyncDirection direction,
             SyncOutcome outcome,
@@ -76,12 +80,13 @@ class SyncOutcomeWriter {
     ) {
         record.releaseClaim();
         return withOptimisticLockRetry(record,
-                () -> self.doPersist(record, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser));
+                () -> self.doPersist(record, startedAt, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     SyncRecord doPersist(
             SyncRecord record,
+            Instant startedAt,
             SyncTriggerKind trigger,
             SyncDirection direction,
             SyncOutcome outcome,
@@ -91,7 +96,7 @@ class SyncOutcomeWriter {
             String actingUser
     ) {
         SyncRecord saved = syncRecordRepository.save(record);
-        appendAttempt(saved, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser);
+        appendAttempt(saved, startedAt, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser);
         return saved;
     }
 
@@ -105,9 +110,9 @@ class SyncOutcomeWriter {
      * {@code INWARD} resolution writes the local side just as an ordinary inward pass
      * does — so it gets the same version-conflict retry in a fresh transaction.
      */
-    SyncRecord persistResolution(SyncRecord record, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
+    SyncRecord persistResolution(SyncRecord record, Instant startedAt, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
         return withOptimisticLockRetry(record,
-                () -> self.doPersistResolution(record, direction, localHash, externalHash, actingUser));
+                () -> self.doPersistResolution(record, startedAt, direction, localHash, externalHash, actingUser));
     }
 
     /**
@@ -134,14 +139,15 @@ class SyncOutcomeWriter {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    SyncRecord doPersistResolution(SyncRecord record, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
+    SyncRecord doPersistResolution(SyncRecord record, Instant startedAt, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
         SyncRecord saved = syncRecordRepository.save(record);
-        appendAttempt(saved, SyncTriggerKind.MANUAL, direction, SyncOutcome.SUCCESS, localHash, externalHash, null, actingUser);
+        appendAttempt(saved, startedAt, SyncTriggerKind.MANUAL, direction, SyncOutcome.SUCCESS, localHash, externalHash, null, actingUser);
         return saved;
     }
 
     private void appendAttempt(
             SyncRecord record,
+            Instant startedAt,
             SyncTriggerKind trigger,
             SyncDirection direction,
             SyncOutcome outcome,
@@ -154,6 +160,6 @@ class SyncOutcomeWriter {
         // only manually triggered work does, and it is passed in by the caller.
         String recordedActingUser = trigger == SyncTriggerKind.MANUAL ? actingUser : null;
         syncAttemptRepository.save(SyncAttempt.record(
-                record.getId(), clock.instant(), trigger, direction, outcome, localHash, externalHash, failureReason, recordedActingUser));
+                record.getId(), startedAt, trigger, direction, outcome, localHash, externalHash, failureReason, recordedActingUser));
     }
 }

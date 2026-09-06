@@ -56,7 +56,7 @@ class SyncRecordJdbcRepositoryTest {
         void shouldPersistAndLoadFullRecord() {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
-            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
 
             SyncRecord saved = syncRecordRepository.save(record);
             Optional<SyncRecord> loaded = syncRecordRepository.findById(saved.getId());
@@ -89,7 +89,7 @@ class SyncRecordJdbcRepositoryTest {
         void projectionColumnIsNotPlaintext() {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Secret Event Name", "Location X"), hasher);
-            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
 
             SyncRecord saved = syncRecordRepository.save(record);
 
@@ -106,13 +106,13 @@ class SyncRecordJdbcRepositoryTest {
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Same Name", "Same Location"), hasher);
 
             SyncRecord recordA = SyncRecord.enroll(SyncRecordId.newId(), TARGET, EXTERNAL_REF);
-            recordA.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
+            recordA.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
             SyncRecord savedA = syncRecordRepository.save(recordA);
 
             SyncRecord recordB = SyncRecord.enroll(SyncRecordId.newId(),
                     new SyncTarget(SyncEntityType.EVENT, "event-2"),
                     new ExternalReference(ExternalSystem.ORIS, "8124"));
-            recordB.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
+            recordB.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
             SyncRecord savedB = syncRecordRepository.save(recordB);
 
             String ciphertextA = jdbcTemplate.queryForObject(
@@ -164,12 +164,12 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord inSync = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "active-1"),
                     new ExternalReference(ExternalSystem.ORIS, "8501"));
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
-            inSync.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
+            inSync.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
             syncRecordRepository.save(inSync);
 
             SyncRecord retired = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "active-2"),
                     new ExternalReference(ExternalSystem.ORIS, "8502"));
-            retired.retire(java.time.Instant.now());
+            retired.retire(Instant.now());
             SyncRecord savedRetired = syncRecordRepository.save(retired);
 
             List<SyncRecord> active = syncRecordRepository.findAllActive();
@@ -184,8 +184,8 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord failed = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "active-3"),
                     new ExternalReference(ExternalSystem.ORIS, "8503"));
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
-            failed.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
-            failed.recordTerminalFailure(5, "boom", java.time.Instant.now());
+            failed.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
+            failed.recordTerminalFailure(5, "boom", Instant.now());
             SyncRecord savedFailed = syncRecordRepository.save(failed);
 
             List<SyncRecord> active = syncRecordRepository.findAllActive();
@@ -204,8 +204,8 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord failed = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "nonretired-1"),
                     new ExternalReference(ExternalSystem.ORIS, "8511"));
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
-            failed.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
-            failed.recordTerminalFailure(5, "boom", java.time.Instant.now());
+            failed.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
+            failed.recordTerminalFailure(5, "boom", Instant.now());
             SyncRecord savedFailed = syncRecordRepository.save(failed);
 
             List<SyncRecord> nonRetired = syncRecordRepository.findAllNonRetired();
@@ -218,7 +218,7 @@ class SyncRecordJdbcRepositoryTest {
         void excludesRetiredRecord() {
             SyncRecord retired = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "nonretired-2"),
                     new ExternalReference(ExternalSystem.ORIS, "8512"));
-            retired.retire(java.time.Instant.now());
+            retired.retire(Instant.now());
             SyncRecord savedRetired = syncRecordRepository.save(retired);
 
             List<SyncRecord> nonRetired = syncRecordRepository.findAllNonRetired();
@@ -236,8 +236,8 @@ class SyncRecordJdbcRepositoryTest {
         void picksUpDirtyRecord() {
             SyncRecord dirty = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-1"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
-            dirty.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
-            dirty.markDirty(java.time.Instant.now());
+            dirty.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
+            dirty.markDirty(Instant.now());
             syncRecordRepository.save(dirty);
 
             List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
@@ -250,7 +250,7 @@ class SyncRecordJdbcRepositoryTest {
         void picksUpRetryDueRecord() {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-2"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
-            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
             record.recordRetryableFailure(Instant.now().minus(Duration.ofMinutes(1)));
             syncRecordRepository.save(record);
 
@@ -264,7 +264,7 @@ class SyncRecordJdbcRepositoryTest {
         void skipsRecordNotDueYet() {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-3"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
-            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
             record.recordRetryableFailure(Instant.now().plus(Duration.ofHours(1)));
             syncRecordRepository.save(record);
 
@@ -278,9 +278,9 @@ class SyncRecordJdbcRepositoryTest {
         void skipsRetiredRecord() {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-4"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
-            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
-            record.markDirty(java.time.Instant.now());
-            record.retire(java.time.Instant.now());
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
+            record.markDirty(Instant.now());
+            record.retire(Instant.now());
             syncRecordRepository.save(record);
 
             List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
@@ -294,8 +294,8 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-5"), EXTERNAL_REF);
             SyncSnapshot local = SyncSnapshot.of(new TestSyncProjection("Local", "Brno"), hasher);
             SyncSnapshot external = SyncSnapshot.of(new TestSyncProjection("External", "Brno"), hasher);
-            record.recordSuccess(SyncDirection.INWARD, local, local, java.time.Instant.now());
-            record.recordConflict(local, external, null, java.time.Instant.now());
+            record.recordSuccess(SyncDirection.INWARD, local, local, Instant.now());
+            record.recordConflict(local, external, null, Instant.now());
             syncRecordRepository.save(record);
 
             List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
@@ -309,9 +309,9 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-9"), EXTERNAL_REF);
             SyncSnapshot local = SyncSnapshot.of(new TestSyncProjection("Local", "Brno"), hasher);
             SyncSnapshot external = SyncSnapshot.of(new TestSyncProjection("External", "Brno"), hasher);
-            record.recordSuccess(SyncDirection.INWARD, local, local, java.time.Instant.now());
-            record.recordConflict(local, external, null, java.time.Instant.now());
-            record.markDirty(java.time.Instant.now());
+            record.recordSuccess(SyncDirection.INWARD, local, local, Instant.now());
+            record.recordConflict(local, external, null, Instant.now());
+            record.markDirty(Instant.now());
             syncRecordRepository.save(record);
 
             Map<String, Object> persisted = jdbcTemplate.queryForMap(
@@ -329,8 +329,8 @@ class SyncRecordJdbcRepositoryTest {
         void skipsTerminallyFailedRecord() {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-6"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
-            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
-            record.recordTerminalFailure(5, "boom", java.time.Instant.now());
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
+            record.recordTerminalFailure(5, "boom", Instant.now());
             syncRecordRepository.save(record);
 
             List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
@@ -343,9 +343,9 @@ class SyncRecordJdbcRepositoryTest {
         void skipsTerminallyFailedRecordThatWasMarkedDirty() {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-8"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
-            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
-            record.recordTerminalFailure(5, "boom", java.time.Instant.now());
-            record.markDirty(java.time.Instant.now());
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
+            record.recordTerminalFailure(5, "boom", Instant.now());
+            record.markDirty(Instant.now());
             syncRecordRepository.save(record);
 
             Map<String, Object> persisted = jdbcTemplate.queryForMap(
@@ -363,8 +363,8 @@ class SyncRecordJdbcRepositoryTest {
         void skipsFreshlyClaimedRecord() {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-7"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
-            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, java.time.Instant.now());
-            record.markDirty(java.time.Instant.now());
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
+            record.markDirty(Instant.now());
             record.claim(Instant.now());
             syncRecordRepository.save(record);
 

@@ -3,6 +3,7 @@ package com.klabis.sync.application;
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.domain.*;
+import com.klabis.sync.fixtures.FixedClockConfiguration;
 import com.klabis.sync.fixtures.MutableClock;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
 import com.klabis.sync.fixtures.TestSyncProjection;
@@ -13,17 +14,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
-import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,20 +36,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
-@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class, SyncSchedulerTest.FixedClockConfiguration.class})
+@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class, FixedClockConfiguration.class})
 @TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 @DisplayName("SyncScheduler")
 class SyncSchedulerTest {
-
-    private static final Instant START = Instant.parse("2026-06-01T00:00:00Z");
-
-    @TestConfiguration
-    static class FixedClockConfiguration {
-        @Bean
-        Clock clock() {
-            return new MutableClock(START, ZoneId.of("UTC"));
-        }
-    }
 
     @Autowired
     private SyncScheduler scheduler;
@@ -71,10 +57,9 @@ class SyncSchedulerTest {
     private CircuitBreakerRegistry circuitBreakerRegistry;
 
     @Autowired
-    private Clock clock;
+    private MutableClock clock;
 
     private TestSynchronizationAdapter adapter;
-    private MutableClock mutableClock;
 
     @BeforeEach
     void setUp() {
@@ -82,8 +67,7 @@ class SyncSchedulerTest {
         adapter.reset();
         adapter.withCapabilities(SyncCapabilities.bidirectional());
         circuitBreakerRegistry.circuitBreaker(ResilientAdapterExecutor.INSTANCE_NAME).reset();
-        mutableClock = (MutableClock) clock;
-        mutableClock.setInstant(START);
+        clock.setInstant(FixedClockConfiguration.FIXED_NOW);
     }
 
     private SyncRecord enrollAndSync(String entityId, String externalId) {
@@ -141,7 +125,7 @@ class SyncSchedulerTest {
             // sorts strictly after it: the derived failure count is read newest-first
             // and stops at the last SUCCESS/RESET row, so a failure sharing that
             // instant would be tie-ordered behind the boundary and never counted.
-            mutableClock.advanceBy(Duration.ofDays(1));
+            clock.advanceBy(Duration.ofDays(1));
             for (int i = 0; i < 5; i++) {
                 circuitBreakerRegistry.circuitBreaker(ResilientAdapterExecutor.INSTANCE_NAME).reset();
                 adapter.failNextReadExternalWith(3, new RetryableSyncFailureException("HTTP 503"));
@@ -150,7 +134,7 @@ class SyncSchedulerTest {
                 // past it (a day clears even the 24h cap) so the next pass is genuinely
                 // due and every attempt row lands at a distinct, increasing started_at —
                 // the derived failure count is read from that ordering.
-                mutableClock.advanceBy(Duration.ofDays(1));
+                clock.advanceBy(Duration.ofDays(1));
             }
             assertThat(record.getStatus()).isEqualTo(SyncStatus.FAILED);
             circuitBreakerRegistry.circuitBreaker(ResilientAdapterExecutor.INSTANCE_NAME).reset();
@@ -209,7 +193,7 @@ class SyncSchedulerTest {
 
             // Advance the clock, but stay inside the claim lease — the claim is still
             // fresh, so the due scan must skip this record.
-            mutableClock.advanceBy(Duration.ofMinutes(1));
+            clock.advanceBy(Duration.ofMinutes(1));
 
             scheduler.runDueScan();
 
