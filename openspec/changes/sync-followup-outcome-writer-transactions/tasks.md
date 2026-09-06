@@ -1,9 +1,9 @@
 ## 1. Confirm the premise before changing anything
 
-- [ ] 1.1 Re-read `design.md` D9, D12 and D15 in `openspec/changes/archive/2026-09-04-add-bidirectional-sync-engine/` and confirm the dirty marker is genuinely a scheduling hint, not a domain change, and that D12's claim guarantee rests on `claimed_at` rather than on any scheduling column.
-- [ ] 1.2 Establish that the race is real and the retry is load-bearing: write a test that reproduces the `markDirty` / `SyncOutcomeWriter#persist` collision and fails when the retry in `withOptimisticLockRetry` is removed. Without this the later removal proves nothing.
-- [ ] 1.3 Transcribe the scheduling behaviour of all ten methods listed in the proposal's table directly from their current bodies in `SyncRecord`, and record any row where the code disagrees with the table. The table is a starting point, not the source of truth.
-- [ ] 1.4 If the premise does not hold — the marker turns out to carry correctness, or the claim depends on a scheduling column — stop and report rather than proceeding.
+- [x] 1.1 Re-read `design.md` D9, D12 and D15 in `openspec/changes/archive/2026-09-04-add-bidirectional-sync-engine/` and confirm the dirty marker is genuinely a scheduling hint, not a domain change, and that D12's claim guarantee rests on `claimed_at` rather than on any scheduling column.
+- [x] 1.2 Establish that the race is real and the retry is load-bearing: write a test that reproduces the `markDirty` / `SyncOutcomeWriter#persist` collision and fails when the retry in `withOptimisticLockRetry` is removed. Without this the later removal proves nothing.
+- [x] 1.3 Transcribe the scheduling behaviour of all ten methods listed in the proposal's table directly from their current bodies in `SyncRecord`, and record any row where the code disagrees with the table. The table is a starting point, not the source of truth.
+- [x] 1.4 If the premise does not hold — the marker turns out to carry correctness, or the claim depends on a scheduling column — stop and report rather than proceeding.
 
 ## 2. Introduce the schedule as its own concept
 
@@ -18,6 +18,7 @@
 
 - [ ] 3.1 Remove the `dirtySince` and `nextAttemptDueAt` fields from `SyncRecord`, along with `markDirty`.
 - [ ] 3.2 Change the return type of the ten methods identified in 1.3 to return a `ScheduleEffect`, preserving each one's current behaviour exactly as transcribed — not as summarised in the proposal.
+- [ ] 3.2a `resolveWithDirection` is an eleventh call site found during 1.3: it delegates to `recordSuccess` and so inherits `clear()`. It must return that effect onward, and `SynchronizationService.resolveConflict` must apply it — easy to miss because the proposal's table does not list it separately.
 - [ ] 3.3 Keep `SyncRecord.getDirtySince()` / `getNextAttemptDueAt()` reading from a schedule loaded alongside the record, so existing readers keep working. The aggregate reads the schedule; it no longer owns its mutation.
 - [ ] 3.4 Verify `recordTerminalFailure` and `reset` still leave `dirtySince` standing (they clear only the due-at today) — a record that was dirty when it failed must still be dirty after a reset.
 - [ ] 3.5 Update `SyncRecordMemento` and the record's JDBC adapter to load the schedule with the record, never lazily.
