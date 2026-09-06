@@ -44,9 +44,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.servlet.HandlerMapping;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -318,6 +315,7 @@ public class EventController implements EventsApi {
         List<AccommodationListItemDto> items = assembleAccommodationItems(event);
 
         HalResponseContext.setDomainList(event.getRegistrations());
+        HalResponseContext.setContext(new AccommodationListContext(eventId));
         return ResponseEntity.ok(items);
     }
 
@@ -627,9 +625,18 @@ class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<
 }
 
 /**
- * Contributes the {@code event} relation to the accommodation list. The eventId comes from the URI
- * template rather than from an item, because an event with no registrations yields an empty
- * collection with nothing to recover it from.
+ * Carries the {@code eventId} of the accommodation-list request from
+ * {@code EventController#getAccommodationList} to the two postprocessors below. The id cannot come
+ * from the payload: an event with no registrations yields an empty collection, and
+ * {@link EventRegistration} carries no reference back to its event.
+ */
+record AccommodationListContext(UUID eventId) {
+}
+
+/**
+ * Contributes the {@code event} relation to the accommodation list. The eventId is published by
+ * {@code EventController#getAccommodationList} through {@link HalResponseContext}, because the
+ * payload cannot supply it — an event with no registrations yields an empty collection.
  */
 @MvcComponent
 class AccommodationListPostprocessor
@@ -638,8 +645,9 @@ class AccommodationListPostprocessor
     @Override
     public CollectionModel<EntityModel<AccommodationListItemDto>> process(
             CollectionModel<EntityModel<AccommodationListItemDto>> model) {
-        AccommodationListSupport.currentEventId().ifPresent(eventId ->
-                klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
+        HalResponseContext.findContext(AccommodationListContext.class)
+                .map(AccommodationListContext::eventId)
+                .ifPresent(eventId -> klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
                         .ifPresent(link -> model.add(link.withRel("event"))));
         return model;
     }
@@ -647,8 +655,9 @@ class AccommodationListPostprocessor
 
 /**
  * Gives each accommodation row a {@code self} link pointing at the registration it projects. The
- * eventId comes from the URI template, since {@link EventRegistration} carries no reference back to
- * its event.
+ * eventId is published by {@code EventController#getAccommodationList} through
+ * {@link HalResponseContext}, because {@link EventRegistration} carries no reference back to its
+ * event. The read is non-consuming, so every row still resolves the id.
  */
 @MvcComponent
 class AccommodationListItemPostprocessor
@@ -656,31 +665,11 @@ class AccommodationListItemPostprocessor
 
     @Override
     public void process(EntityModel<AccommodationListItemDto> dtoModel, EventRegistration registration) {
-        AccommodationListSupport.currentEventId().ifPresent(eventId ->
-                klabisLinkTo(methodOn(EventRegistrationsApi.class)
+        HalResponseContext.findContext(AccommodationListContext.class)
+                .map(AccommodationListContext::eventId)
+                .ifPresent(eventId -> klabisLinkTo(methodOn(EventRegistrationsApi.class)
                         .getRegistration(registration.memberId().value(), eventId, false))
                         .ifPresent(link -> dtoModel.add(link.withSelfRel())));
-    }
-}
-
-final class AccommodationListSupport {
-
-    private AccommodationListSupport() {
-    }
-
-    static Optional<UUID> currentEventId() {
-        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
-        if (attrs == null) {
-            return Optional.empty();
-        }
-        Object variables = attrs.getAttribute(
-                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
-                RequestAttributes.SCOPE_REQUEST);
-        if (!(variables instanceof Map<?, ?> pathVariables)) {
-            return Optional.empty();
-        }
-        Object eventId = pathVariables.get("eventId");
-        return eventId != null ? Optional.of(UUID.fromString(eventId.toString())) : Optional.empty();
     }
 }
 

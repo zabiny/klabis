@@ -34,13 +34,13 @@
 
 ## 4. Move the accommodation-list eventId
 
-- [ ] 4.1 Introduce a record carrying the accommodation-list `eventId`. Do not reuse the enrolment record — they are published by different endpoints and share nothing but a name.
-- [ ] 4.2 Publish it from `EventController#getAccommodationList`, which already holds `eventId` as a `@PathVariable` and already calls `HalResponseContext.setDomainList(...)`.
-- [ ] 4.3 Read it in `AccommodationListPostprocessor` via `findContext`, keeping an absence-means-no-link branch equivalent to today's `Optional.empty()`.
-- [ ] 4.4 Read it in `AccommodationListItemPostprocessor` the same way. This one runs per item — confirm every row still gets its `self` link, using a fixture with **at least two** registrations. A single-item fixture cannot detect a consuming read.
-- [ ] 4.5 Delete the `AccommodationListSupport` class entirely.
-- [ ] 4.6 Check `getAccommodationListAsCsv`: it renders CSV, runs no postprocessor, and must not need the context. Confirm it is unaffected rather than assuming it.
-- [ ] 4.7 Update the class javadoc on both postprocessors — both currently state the eventId "comes from the URI template", which stops being true.
+- [x] 4.1 Introduce a record carrying the accommodation-list `eventId`. Do not reuse the enrolment record — they are published by different endpoints and share nothing but a name.
+- [x] 4.2 Publish it from `EventController#getAccommodationList`, which already holds `eventId` as a `@PathVariable` and already calls `HalResponseContext.setDomainList(...)`.
+- [x] 4.3 Read it in `AccommodationListPostprocessor` via `findContext`, keeping an absence-means-no-link branch equivalent to today's `Optional.empty()`.
+- [x] 4.4 Read it in `AccommodationListItemPostprocessor` the same way. This one runs per item — confirm every row still gets its `self` link, using a fixture with **at least two** registrations. A single-item fixture cannot detect a consuming read.
+- [x] 4.5 Delete the `AccommodationListSupport` class entirely.
+- [x] 4.6 Check `getAccommodationListAsCsv`: it renders CSV, runs no postprocessor, and must not need the context. Confirm it is unaffected rather than assuming it.
+- [x] 4.7 Update the class javadoc on both postprocessors — both currently state the eventId "comes from the URI template", which stops being true.
 
 ## 5. Move the registrations-collection eventId
 
