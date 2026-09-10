@@ -163,6 +163,39 @@ class SyncScheduleRepositoryAdapterTest {
         }
 
         @Test
+        @DisplayName("dirtySince(instant) does not move an already-set marker (first-writer-wins, oldest-undelivered-change semantics)")
+        void secondDirtySinceDoesNotMoveExistingMarker() {
+            SyncRecordId recordId = enrollRecord("schedule-10", "9310");
+            syncScheduleRepository.createFor(recordId);
+            Instant first = Instant.now().minusSeconds(60);
+
+            syncScheduleRepository.apply(recordId, ScheduleEffect.dirtySince(first));
+            syncScheduleRepository.apply(recordId, ScheduleEffect.dirtySince(Instant.now()));
+
+            SyncSchedule schedule = syncScheduleRepository.findByRecordId(recordId);
+            assertThat(schedule.dirtySince().truncatedTo(ChronoUnit.MILLIS))
+                    .as("the first dirtySince marker must win over a later one — it records when the burst of unsynced changes started")
+                    .isEqualTo(first.truncatedTo(ChronoUnit.MILLIS));
+        }
+
+        @Test
+        @DisplayName("dirtySince(instant) sets a fresh marker again after clear() (COALESCE must not stick forever)")
+        void dirtySinceCanBeSetAgainAfterClear() {
+            SyncRecordId recordId = enrollRecord("schedule-11", "9311");
+            syncScheduleRepository.createFor(recordId);
+            syncScheduleRepository.apply(recordId, ScheduleEffect.dirtySince(Instant.now().minusSeconds(60)));
+            syncScheduleRepository.apply(recordId, ScheduleEffect.clear());
+            Instant newMarker = Instant.now();
+
+            syncScheduleRepository.apply(recordId, ScheduleEffect.dirtySince(newMarker));
+
+            SyncSchedule schedule = syncScheduleRepository.findByRecordId(recordId);
+            assertThat(schedule.dirtySince().truncatedTo(ChronoUnit.MILLIS))
+                    .as("after clear() the record must be markable dirty again, otherwise it would never resync")
+                    .isEqualTo(newMarker.truncatedTo(ChronoUnit.MILLIS));
+        }
+
+        @Test
         @DisplayName("repeated applies persist across separate calls (read-modify-write, no version conflict)")
         void repeatedAppliesPersistAcrossCalls() {
             SyncRecordId recordId = enrollRecord("schedule-7", "9307");

@@ -10,8 +10,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Each {@code updateXxx}/{@code upsertXxx} method is an unconditional write over only
- * the columns a {@link com.klabis.sync.domain.ScheduleEffect} touches — deliberately
+ * Each {@code updateXxx}/{@code upsertXxx} method is a single-column write over only
+ * the column a {@link com.klabis.sync.domain.ScheduleEffect} touches — deliberately
  * not a read-modify-write (proposal.md task 2.3, and the simplify review that replaced
  * the original read-modify-write {@code SyncScheduleRepositoryAdapter.apply}): two
  * concurrent effects on different fields (e.g. {@code markDirty}'s {@code DIRTY_SINCE}
@@ -19,6 +19,14 @@ import java.util.UUID;
  * pre-image and overwrite one another's column. The database row lock taken by each
  * statement is the only synchronisation needed; {@code sync_schedule} still carries no
  * version column, so there is nothing to retry.
+ * <p>
+ * {@code updateDirtySince} is the one exception to "unconditional": it is
+ * {@code SET dirty_since = COALESCE(dirty_since, :dirtySince)}, not a plain overwrite.
+ * {@code dirty_since} means "the oldest not-yet-synced change" — a later
+ * {@code DIRTY_SINCE} effect during a burst of edits must not push the marker forward,
+ * or the record would understate how long it has been waiting. The first marker wins;
+ * {@code CLEAR} (below) is what resets it back to {@code NULL} so the next burst can set
+ * it again.
  * <p>
  * {@code CLEAR}/{@code CLEAR_DUE_AT} stay plain {@code UPDATE}s: a missing row already
  * behaves like {@link com.klabis.sync.domain.SyncSchedule#empty()} (task 2.6's coded
@@ -69,7 +77,7 @@ interface SyncScheduleJdbcRepository extends CrudRepository<SyncScheduleMemento,
     @Modifying
     @Query("""
             UPDATE sync.sync_schedule
-            SET dirty_since = :dirtySince
+            SET dirty_since = COALESCE(dirty_since, :dirtySince)
             WHERE sync_record_id = :recordId
             """)
     int updateDirtySince(@Param("recordId") UUID recordId, @Param("dirtySince") Instant dirtySince);

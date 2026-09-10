@@ -60,6 +60,13 @@ public record ScheduleEffect(Kind kind, Instant value) {
      * package-private: only {@link SyncSchedule} and its repository need this — the
      * application layer treats a {@code ScheduleEffect} as an opaque instruction to
      * hand to {@code SyncScheduleRepository}, never applying it itself.
+     * <p>
+     * {@code DIRTY_SINCE} keeps {@code schedule.dirtySince()} when it is already set —
+     * mirroring {@code SyncScheduleJdbcRepository.updateDirtySince}'s
+     * {@code COALESCE(dirty_since, :dirtySince)}. Without this, this in-memory mirror
+     * would report a different {@code dirtySince} than the row a concurrent
+     * {@code DIRTY_SINCE} effect just persisted, even though both only ever get read as
+     * null/non-null (never for its actual age).
      */
     SyncSchedule applyTo(SyncSchedule schedule) {
         return switch (kind) {
@@ -67,7 +74,9 @@ public record ScheduleEffect(Kind kind, Instant value) {
             case CLEAR -> new SyncSchedule(null, null);
             case CLEAR_DUE_AT -> new SyncSchedule(schedule.dirtySince(), null);
             case DUE_AT -> new SyncSchedule(schedule.dirtySince(), value);
-            case DIRTY_SINCE -> new SyncSchedule(value, schedule.nextAttemptDueAt());
+            case DIRTY_SINCE -> new SyncSchedule(
+                    schedule.dirtySince() != null ? schedule.dirtySince() : value,
+                    schedule.nextAttemptDueAt());
         };
     }
 }

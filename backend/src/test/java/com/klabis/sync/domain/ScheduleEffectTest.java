@@ -71,6 +71,17 @@ class ScheduleEffectTest {
     }
 
     @Test
+    @DisplayName("dirtySince(instant) does not move an already-set dirtySince (mirrors the JDBC COALESCE)")
+    void dirtySinceDoesNotMoveExistingMarker() {
+        SyncSchedule startingPoint = new SyncSchedule(DIRTY_SINCE, null);
+        Instant laterDirtySince = DIRTY_SINCE.plusSeconds(60);
+
+        SyncSchedule result = startingPoint.apply(ScheduleEffect.dirtySince(laterDirtySince));
+
+        assertThat(result.dirtySince()).isEqualTo(DIRTY_SINCE);
+    }
+
+    @Test
     @DisplayName("dueAt(null) is rejected — a due date is always a concrete instant")
     void dueAtRejectsNull() {
         assertThatThrownBy(() -> ScheduleEffect.dueAt(null)).isInstanceOf(IllegalArgumentException.class);
