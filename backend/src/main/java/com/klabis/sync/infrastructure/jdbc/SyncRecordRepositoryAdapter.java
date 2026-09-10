@@ -72,6 +72,11 @@ class SyncRecordRepositoryAdapter implements SyncRecordRepository {
                 .toList();
     }
 
+    @Override
+    public void updateDirtySince(SyncRecordId id, Instant dirtySince) {
+        jdbcRepository.updateDirtySince(id.value(), dirtySince);
+    }
+
     private SyncProjectionType resolveProjectionType() {
         return projectionType.getObject();
     }

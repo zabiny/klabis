@@ -3,7 +3,6 @@ package com.klabis.sync.application;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.*;
 import org.jmolecules.ddd.annotation.Service;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
@@ -35,6 +34,7 @@ class SynchronizationService implements SynchronizationPort {
 
     private final SyncRecordRepository syncRecordRepository;
     private final SyncAttemptRepository syncAttemptRepository;
+    private final SyncScheduleRepository syncScheduleRepository;
     private final SynchronizationAdapterRegistry adapterRegistry;
     private final SyncProjectionHasher hasher;
     private final ResilientAdapterExecutor resilientAdapterExecutor;
@@ -46,6 +46,7 @@ class SynchronizationService implements SynchronizationPort {
     SynchronizationService(
             SyncRecordRepository syncRecordRepository,
             SyncAttemptRepository syncAttemptRepository,
+            SyncScheduleRepository syncScheduleRepository,
             SynchronizationAdapterRegistry adapterRegistry,
             SyncProjectionHasher hasher,
             ResilientAdapterExecutor resilientAdapterExecutor,
@@ -56,6 +57,7 @@ class SynchronizationService implements SynchronizationPort {
     ) {
         this.syncRecordRepository = syncRecordRepository;
         this.syncAttemptRepository = syncAttemptRepository;
+        this.syncScheduleRepository = syncScheduleRepository;
         this.adapterRegistry = adapterRegistry;
         this.hasher = hasher;
         this.resilientAdapterExecutor = resilientAdapterExecutor;
@@ -72,7 +74,11 @@ class SynchronizationService implements SynchronizationPort {
                 .orElseThrow(() -> new UnknownSyncEntityTypeException(target.entityType(), externalReference.system()));
 
         SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), target, externalReference);
-        return syncRecordRepository.save(record);
+        SyncRecord saved = syncRecordRepository.save(record);
+        // Same transaction as the record save (proposal.md task 4.7, task 2.6's "every
+        // record has a schedule row" invariant).
+        syncScheduleRepository.createFor(saved.getId());
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -105,24 +111,20 @@ class SynchronizationService implements SynchronizationPort {
 
     private void markDirty(SyncTarget target, ExternalSystem system) {
         syncRecordRepository.findByTargetAndSystem(target, system).ifPresent(record -> {
-            // SyncRecord no longer owns dirtySince mutation (proposal.md task 3.1); the
-            // ScheduleEffect is applied directly here rather than through a domain
-            // method, since SyncScheduleRepository wiring is task 4.3, not this
-            // iteration — the record's in-memory schedule must still reflect the change
-            // so SyncRecordMemento persists it via sync_record's own columns.
-            record.applyToSchedule(ScheduleEffect.dirtySince(clock.instant()));
-            // An inward write raises EventUpdatedEvent on the very entity the pass is
-            // writing (design.md D9 — "an inward write is itself a local change"), so
-            // this listener call can race the same pass's own trailing
-            // SyncOutcomeWriter#persist on the same sync_record row. Dirty-since is
-            // scheduling, never correctness (design.md D9, D11's "Dirty-since" row): if
-            // the concurrent pass's save wins, its own write already raises the flag it
-            // needs, so losing this one is a safe no-op, not a lost update.
-            try {
-                syncRecordRepository.save(record);
-            } catch (OptimisticLockingFailureException ignored) {
-                // Best effort only — see above.
-            }
+            // Writes only through SyncScheduleRepository now (proposal.md task 4.3) —
+            // no aggregate load beyond the id lookup above, no aggregate save, so this
+            // can no longer race SyncOutcomeWriter#persist's optimistic lock on
+            // sync_record at all; that race and its retry (design.md, "the race this
+            // change removes") is exactly what moving scheduling off the aggregate was
+            // for. sync_schedule has no version column (task 2.3) by design.
+            Instant now = clock.instant();
+            syncScheduleRepository.apply(record.getId(), ScheduleEffect.dirtySince(now));
+            // Transitional double-write (task 4.10): sync_record's own dirty_since
+            // column still backs findDueForScan and SyncRecordMemento's read path until
+            // task 4b moves them onto sync_schedule, so it must be kept in agreement.
+            // No version predicate on this update either — see SyncRecordJdbcRepository
+            // javadoc.
+            syncRecordRepository.updateDirtySince(record.getId(), now);
         });
     }
 
@@ -252,31 +254,46 @@ class SynchronizationService implements SynchronizationPort {
             // record's snapshots from the fresh reads so a subsequent GET shows the new
             // collision, but write nothing and leave the conflict standing. This method
             // has no ambient transaction to roll back, so the save below commits on its
-            // own even though the throw that follows ends the call in failure.
-            record.recordConflict(freshLocal, freshExternal, null, now);
-            syncRecordRepository.save(record);
+            // own even though the throw that follows ends the call in failure — the
+            // schedule write joins it in the same transaction (design.md D15,
+            // proposal.md task 4.2) via refreshConflict, both wrapped @Transactional.
+            refreshConflict(record, freshLocal, freshExternal, now);
             throw new ConflictNotAcknowledgedException(id);
         }
 
+        ScheduleEffect scheduleEffect;
         SyncRecord written = switch (resolution) {
             case INWARD -> {
                 resilientAdapterExecutor.run(() -> adapter.applyToLocal(entityId, freshExternal.projection()));
                 SyncSnapshot postWriteLocal = SyncSnapshot.of(resilientAdapterExecutor.call(() -> adapter.readLocal(entityId)), hasher);
-                record.resolveWithDirection(SyncDirection.INWARD, postWriteLocal, freshExternal, now);
+                scheduleEffect = record.resolveWithDirection(SyncDirection.INWARD, postWriteLocal, freshExternal, now);
                 yield record;
             }
             case OUTWARD -> {
                 resilientAdapterExecutor.run(() -> adapter.applyToExternal(externalId, freshLocal.projection()));
-                record.resolveWithDirection(SyncDirection.OUTWARD, freshLocal, freshLocal, now);
+                scheduleEffect = record.resolveWithDirection(SyncDirection.OUTWARD, freshLocal, freshLocal, now);
                 yield record;
             }
             case ACCEPT_DIVERGENCE -> {
-                record.acceptDivergence(freshLocal, freshExternal);
+                scheduleEffect = record.acceptDivergence(freshLocal, freshExternal);
                 yield record;
             }
         };
 
-        return outcomeWriter.persistResolution(written, now, resolutionDirection(resolution), freshLocal.hash(), freshExternal.hash(), actingUser);
+        return outcomeWriter.persistResolution(written, scheduleEffect, now, resolutionDirection(resolution), freshLocal.hash(), freshExternal.hash(), actingUser);
+    }
+
+    /**
+     * Saves the record's refreshed snapshots and its {@code recordConflict} schedule
+     * effect together (design.md D15, proposal.md task 4.2) — this method's own
+     * {@code @Transactional} is the transaction boundary {@link #resolveConflict}'s
+     * javadoc refers to as having none of its own.
+     */
+    @Transactional
+    void refreshConflict(SyncRecord record, SyncSnapshot freshLocal, SyncSnapshot freshExternal, Instant now) {
+        ScheduleEffect scheduleEffect = record.recordConflict(freshLocal, freshExternal, null, now);
+        syncRecordRepository.save(record);
+        syncScheduleRepository.apply(record.getId(), scheduleEffect);
     }
 
     @Override
@@ -285,8 +302,8 @@ class SynchronizationService implements SynchronizationPort {
         if (record.getStatus() != SyncStatus.FAILED) {
             throw new SyncRecordNotFailedException(id);
         }
-        record.reset();
-        return outcomeWriter.persist(record, clock.instant(), SyncTriggerKind.MANUAL, null, SyncOutcome.RESET, null, null, null, actingUser);
+        ScheduleEffect scheduleEffect = record.reset();
+        return outcomeWriter.persist(record, scheduleEffect, clock.instant(), SyncTriggerKind.MANUAL, null, SyncOutcome.RESET, null, null, null, actingUser);
     }
 
     private static SyncDirection resolutionDirection(SyncResolution resolution) {
@@ -345,8 +362,9 @@ class SynchronizationService implements SynchronizationPort {
                 if (currentToken.isPresent() && currentToken.get().equals(record.getExternalVersion())) {
                     // Cheap change indicator unchanged and no local edit observed: skip
                     // the full read entirely (design.md D3). Still recorded as an
-                    // attempt — D15 requires every attempt to appends a row.
-                    return outcomeWriter.persist(record, now, trigger, null, SyncOutcome.SKIPPED,
+                    // attempt — D15 requires every attempt to appends a row. No
+                    // scheduling method was called, so the schedule is left untouched.
+                    return outcomeWriter.persist(record, ScheduleEffect.noChange(), now, trigger, null, SyncOutcome.SKIPPED,
                             record.getLocal() != null ? record.getLocal().hash() : null,
                             record.getExternal() != null ? record.getExternal().hash() : null,
                             null, actingUser);
@@ -364,38 +382,47 @@ class SynchronizationService implements SynchronizationPort {
             SyncHash externalHashForAttempt = currentExternal.hash();
 
             return switch (decision.kind()) {
-                case NOTHING_TO_DO -> outcomeWriter.persist(record, now, trigger, null, SyncOutcome.SUCCESS, localHashForAttempt, externalHashForAttempt, null, actingUser);
+                case NOTHING_TO_DO -> outcomeWriter.persist(record, ScheduleEffect.noChange(), now, trigger, null, SyncOutcome.SUCCESS, localHashForAttempt, externalHashForAttempt, null, actingUser);
                 case CONVERGED -> {
                     // Both sides changed independently to the same value: rebase both
                     // baselines, write nothing (design.md D4).
-                    record.recordConverged(currentLocal, now);
-                    yield outcomeWriter.persist(record, now, trigger, null, SyncOutcome.SUCCESS, localHashForAttempt, externalHashForAttempt, null, actingUser);
+                    ScheduleEffect scheduleEffect = record.recordConverged(currentLocal, now);
+                    yield outcomeWriter.persist(record, scheduleEffect, now, trigger, null, SyncOutcome.SUCCESS, localHashForAttempt, externalHashForAttempt, null, actingUser);
                 }
                 case CONFLICT -> {
                     // Neither side is written while a conflict stands (design.md D6, D7).
-                    record.recordConflict(currentLocal, currentExternal, decision.direction(), now);
-                    yield outcomeWriter.persist(record, now, trigger, decision.direction(), SyncOutcome.CONFLICT, localHashForAttempt, externalHashForAttempt, null, actingUser);
+                    ScheduleEffect scheduleEffect = record.recordConflict(currentLocal, currentExternal, decision.direction(), now);
+                    yield outcomeWriter.persist(record, scheduleEffect, now, trigger, decision.direction(), SyncOutcome.CONFLICT, localHashForAttempt, externalHashForAttempt, null, actingUser);
                 }
                 case ADOPT_EXTERNAL, WRITE -> {
-                    boolean written = decision.direction() == SyncDirection.INWARD
+                    WriteOutcome writeOutcome = decision.direction() == SyncDirection.INWARD
                             ? writeInward(record, adapter, currentExternal, currentLocal, now)
                             : writeOutward(record, adapter, currentLocal, now);
-                    if (!written) {
+                    if (!writeOutcome.written()) {
                         // The local side moved again between the decision read and the
                         // write (design.md D9): abort, leave the record due for the next
                         // pass, and record the attempt as a no-op rather than a success.
-                        yield outcomeWriter.persist(record, now, trigger, decision.direction(), SyncOutcome.SKIPPED,
+                        yield outcomeWriter.persist(record, writeOutcome.scheduleEffect(), now, trigger, decision.direction(), SyncOutcome.SKIPPED,
                                 localHashForAttempt,
                                 record.getExternal() != null ? record.getExternal().hash() : externalHashForAttempt,
                                 null, actingUser);
                     }
                     resilientAdapterExecutor.call(() -> adapter.externalVersion(externalId)).ifPresent(record::setExternalVersion);
-                    yield outcomeWriter.persist(record, now, trigger, decision.direction(), SyncOutcome.SUCCESS, localHashForAttempt, externalHashForAttempt, null, actingUser);
+                    yield outcomeWriter.persist(record, writeOutcome.scheduleEffect(), now, trigger, decision.direction(), SyncOutcome.SUCCESS, localHashForAttempt, externalHashForAttempt, null, actingUser);
                 }
             };
         } catch (RuntimeException failure) {
             return handleFailure(record, now, trigger, actingUser, failure);
         }
+    }
+
+    /**
+     * Whether {@link #writeInward}/{@link #writeOutward} actually wrote, and the
+     * {@link ScheduleEffect} the domain call it made returned — kept together so
+     * {@link #runPass} cannot reach the {@code outcomeWriter.persist} call for either
+     * branch without an effect in hand (proposal.md task 4.9).
+     */
+    private record WriteOutcome(boolean written, ScheduleEffect scheduleEffect) {
     }
 
     /**
@@ -414,22 +441,20 @@ class SynchronizationService implements SynchronizationPort {
                 // An outage failure reschedules at the initial delay, never the grown
                 // one, and counts toward neither the failure count nor the backoff
                 // (design.md D11).
-                record.recordOutage(retryScheduler.nextAttemptDueAfterOutage(now));
-                yield outcomeWriter.persist(record, now, trigger, null, SyncOutcome.OUTAGE, null, null, reason, actingUser);
+                ScheduleEffect scheduleEffect = record.recordOutage(retryScheduler.nextAttemptDueAfterOutage(now));
+                yield outcomeWriter.persist(record, scheduleEffect, now, trigger, null, SyncOutcome.OUTAGE, null, null, reason, actingUser);
             }
             case RETRYABLE -> {
                 int failedAttempts = retryScheduler.failedAttemptsSince(syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(record.getId())) + 1;
-                if (retryScheduler.hasReachedLimit(failedAttempts)) {
-                    record.recordTerminalFailure(failedAttempts, reason, now);
-                } else {
-                    record.recordRetryableFailure(retryScheduler.nextAttemptDueAfter(failedAttempts, now));
-                }
-                yield outcomeWriter.persist(record, now, trigger, null, SyncOutcome.FAILED, null, null, reason, actingUser);
+                ScheduleEffect scheduleEffect = retryScheduler.hasReachedLimit(failedAttempts)
+                        ? record.recordTerminalFailure(failedAttempts, reason, now)
+                        : record.recordRetryableFailure(retryScheduler.nextAttemptDueAfter(failedAttempts, now));
+                yield outcomeWriter.persist(record, scheduleEffect, now, trigger, null, SyncOutcome.FAILED, null, null, reason, actingUser);
             }
             case TERMINAL -> {
                 int failedAttempts = retryScheduler.failedAttemptsSince(syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(record.getId())) + 1;
-                record.recordTerminalFailure(failedAttempts, reason, now);
-                yield outcomeWriter.persist(record, now, trigger, null, SyncOutcome.FAILED, null, null, reason, actingUser);
+                ScheduleEffect scheduleEffect = record.recordTerminalFailure(failedAttempts, reason, now);
+                yield outcomeWriter.persist(record, scheduleEffect, now, trigger, null, SyncOutcome.FAILED, null, null, reason, actingUser);
             }
         };
     }
@@ -444,14 +469,16 @@ class SynchronizationService implements SynchronizationPort {
      * longer matches the one the direction decision was based on, the write is
      * aborted and this returns {@code false} so the record stays due.
      *
-     * @return {@code true} if the write happened, {@code false} if aborted
+     * @return a {@link WriteOutcome} with {@code written = true} if the write happened,
+     * {@code false} if aborted — and either way the {@link ScheduleEffect} the domain
+     * call made produced
      */
-    private boolean writeInward(SyncRecord record, SynchronizationAdapter adapter, SyncSnapshot currentExternal, SyncSnapshot decisionLocal, Instant now) {
+    private WriteOutcome writeInward(SyncRecord record, SynchronizationAdapter adapter, SyncSnapshot currentExternal, SyncSnapshot decisionLocal, Instant now) {
         String entityId = record.getTarget().entityId();
 
         SyncSnapshot freshLocal = SyncSnapshot.of(resilientAdapterExecutor.call(() -> adapter.readLocal(entityId)), hasher);
         if (!freshLocal.matches(decisionLocal)) {
-            return false;
+            return new WriteOutcome(false, ScheduleEffect.noChange());
         }
 
         resilientAdapterExecutor.run(() -> adapter.applyToLocal(entityId, currentExternal.projection()));
@@ -459,8 +486,8 @@ class SynchronizationService implements SynchronizationPort {
         SyncProjection postWriteLocal = resilientAdapterExecutor.call(() -> adapter.readLocal(entityId));
         SyncSnapshot postWriteSnapshot = SyncSnapshot.of(postWriteLocal, hasher);
 
-        record.recordSuccess(SyncDirection.INWARD, postWriteSnapshot, currentExternal, now);
-        return true;
+        ScheduleEffect scheduleEffect = record.recordSuccess(SyncDirection.INWARD, postWriteSnapshot, currentExternal, now);
+        return new WriteOutcome(true, scheduleEffect);
     }
 
     /**
@@ -478,9 +505,11 @@ class SynchronizationService implements SynchronizationPort {
      * becomes both the record's external snapshot and the external half of the new
      * baseline.
      *
-     * @return {@code true} if the baseline was written, {@code false} if skipped
+     * @return a {@link WriteOutcome} with {@code written = true} if the baseline was
+     * written, {@code false} if skipped — and either way the {@link ScheduleEffect}
+     * the domain call made produced
      */
-    private boolean writeOutward(SyncRecord record, SynchronizationAdapter adapter, SyncSnapshot currentLocal, Instant now) {
+    private WriteOutcome writeOutward(SyncRecord record, SynchronizationAdapter adapter, SyncSnapshot currentLocal, Instant now) {
         String entityId = record.getTarget().entityId();
         String externalId = record.getExternalReference().externalId();
 
@@ -488,11 +517,11 @@ class SynchronizationService implements SynchronizationPort {
 
         SyncSnapshot freshLocal = SyncSnapshot.of(resilientAdapterExecutor.call(() -> adapter.readLocal(entityId)), hasher);
         if (!freshLocal.matches(currentLocal)) {
-            record.recordOutwardWriteWithSkippedAdvance(currentLocal, now);
-            return false;
+            ScheduleEffect scheduleEffect = record.recordOutwardWriteWithSkippedAdvance(currentLocal, now);
+            return new WriteOutcome(false, scheduleEffect);
         }
 
-        record.recordSuccess(SyncDirection.OUTWARD, currentLocal, currentLocal, now);
-        return true;
+        ScheduleEffect scheduleEffect = record.recordSuccess(SyncDirection.OUTWARD, currentLocal, currentLocal, now);
+        return new WriteOutcome(true, scheduleEffect);
     }
 }

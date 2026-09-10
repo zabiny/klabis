@@ -11,9 +11,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 
 /**
- * Persists the outcome of one pass — the record and its attempt row — atomically
- * (design.md D15: every attempt must appear in the history, so a crash between two
- * separately-committed writes must never happen).
+ * Persists the outcome of one pass — the record, its schedule and its attempt row —
+ * atomically (design.md D15: every attempt must appear in the history, so a crash
+ * between two separately-committed writes must never happen).
+ * <p>
+ * {@code scheduleEffect} is a required parameter on {@link #persist} and
+ * {@link #persistResolution} (proposal.md task 4.9): a caller cannot reach either
+ * method without a {@link ScheduleEffect} in hand, which is the structural guard
+ * against the dropped-effect trap the return-type-only signature would otherwise
+ * allow — silently discarding the {@code ScheduleEffect} a domain method returns
+ * compiles cleanly but loses the scheduling write with no failing test.
+ * {@link ScheduleEffect#noChange()} is the explicit value for a pass that never
+ * called a scheduling method (e.g. {@code NOTHING_TO_DO}, a skipped write).
  * <p>
  * A separate bean from {@link SynchronizationService}, not a private/protected method
  * on it: {@code SynchronizationService} calls these methods after phase 2 (the
@@ -32,6 +41,7 @@ class SyncOutcomeWriter {
 
     private final SyncRecordRepository syncRecordRepository;
     private final SyncAttemptRepository syncAttemptRepository;
+    private final SyncScheduleRepository syncScheduleRepository;
     private final SyncOutcomeWriter self;
 
     /**
@@ -43,9 +53,10 @@ class SyncOutcomeWriter {
      * apply at all.
      */
     SyncOutcomeWriter(SyncRecordRepository syncRecordRepository, SyncAttemptRepository syncAttemptRepository,
-                       @Lazy SyncOutcomeWriter self) {
+                       SyncScheduleRepository syncScheduleRepository, @Lazy SyncOutcomeWriter self) {
         this.syncRecordRepository = syncRecordRepository;
         this.syncAttemptRepository = syncAttemptRepository;
+        this.syncScheduleRepository = syncScheduleRepository;
         this.self = self;
     }
 
@@ -69,6 +80,7 @@ class SyncOutcomeWriter {
      */
     SyncRecord persist(
             SyncRecord record,
+            ScheduleEffect scheduleEffect,
             Instant startedAt,
             SyncTriggerKind trigger,
             SyncDirection direction,
@@ -80,12 +92,22 @@ class SyncOutcomeWriter {
     ) {
         record.releaseClaim();
         return withOptimisticLockRetry(record,
-                () -> self.doPersist(record, startedAt, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser));
+                () -> self.doPersist(record, scheduleEffect, startedAt, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser));
     }
 
+    /**
+     * The schedule write happens in this same {@code REQUIRES_NEW} transaction as the
+     * record save and attempt append (design.md D15, proposal.md task 4.2) — a schedule
+     * write committed outside it could survive a rolled-back outcome. {@code
+     * sync_schedule} has no version column (task 2.3), so this is a plain
+     * read-modify-write with nothing to retry if {@code doPersist} itself is retried by
+     * {@link #withOptimisticLockRetry} — reapplying the same effect twice is idempotent
+     * (each {@link ScheduleEffect} sets an absolute value, never increments one).
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     SyncRecord doPersist(
             SyncRecord record,
+            ScheduleEffect scheduleEffect,
             Instant startedAt,
             SyncTriggerKind trigger,
             SyncDirection direction,
@@ -96,6 +118,7 @@ class SyncOutcomeWriter {
             String actingUser
     ) {
         SyncRecord saved = syncRecordRepository.save(record);
+        syncScheduleRepository.apply(saved.getId(), scheduleEffect);
         appendAttempt(saved, startedAt, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser);
         return saved;
     }
@@ -110,9 +133,9 @@ class SyncOutcomeWriter {
      * {@code INWARD} resolution writes the local side just as an ordinary inward pass
      * does — so it gets the same version-conflict retry in a fresh transaction.
      */
-    SyncRecord persistResolution(SyncRecord record, Instant startedAt, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
+    SyncRecord persistResolution(SyncRecord record, ScheduleEffect scheduleEffect, Instant startedAt, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
         return withOptimisticLockRetry(record,
-                () -> self.doPersistResolution(record, startedAt, direction, localHash, externalHash, actingUser));
+                () -> self.doPersistResolution(record, scheduleEffect, startedAt, direction, localHash, externalHash, actingUser));
     }
 
     /**
@@ -139,8 +162,9 @@ class SyncOutcomeWriter {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    SyncRecord doPersistResolution(SyncRecord record, Instant startedAt, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
+    SyncRecord doPersistResolution(SyncRecord record, ScheduleEffect scheduleEffect, Instant startedAt, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
         SyncRecord saved = syncRecordRepository.save(record);
+        syncScheduleRepository.apply(saved.getId(), scheduleEffect);
         appendAttempt(saved, startedAt, SyncTriggerKind.MANUAL, direction, SyncOutcome.SUCCESS, localHash, externalHash, null, actingUser);
         return saved;
     }

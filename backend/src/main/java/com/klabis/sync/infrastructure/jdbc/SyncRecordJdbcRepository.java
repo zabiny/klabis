@@ -1,5 +1,6 @@
 package com.klabis.sync.infrastructure.jdbc;
 
+import org.springframework.data.jdbc.repository.query.Modifying;
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -72,4 +73,14 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
               AND (claimed_at IS NULL OR claimed_at <= :claimStaleBefore)
             """)
     List<SyncRecordMemento> findDueForScan(@Param("now") Instant now, @Param("claimStaleBefore") Instant claimStaleBefore);
+
+    /**
+     * Transitional double-write (proposal.md task 4.10): a plain column update with
+     * no {@code version} predicate, so it never contends for {@code sync_record}'s
+     * optimistic lock — the entire reason {@code markDirty} no longer loads/saves the
+     * aggregate (task 4.3). Deleted in task 4b.4.
+     */
+    @Modifying
+    @Query("UPDATE sync.sync_record SET dirty_since = :dirtySince WHERE id = :id")
+    void updateDirtySince(@Param("id") UUID id, @Param("dirtySince") Instant dirtySince);
 }
