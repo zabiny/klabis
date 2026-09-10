@@ -49,11 +49,12 @@ public interface SyncRecordRepository {
      * <p>
      * A record with no baseline yet, {@code CONFLICT} or {@code FAILED} is never
      * picked up here without any special-casing needed: {@link SyncRecord#recordConflict}
-     * and {@link SyncRecord#recordTerminalFailure} both clear {@code dirtySince} and
-     * {@code nextAttemptDueAt}, so such a record simply never matches "dirty or due"
-     * (design.md D7 — a standing conflict is still recomputed by the nightly full
-     * pass, just not by this frequent scan). {@code RETIRED} and freshly claimed
-     * records are excluded explicitly.
+     * and {@link SyncRecord#recordTerminalFailure} both return a {@link ScheduleEffect}
+     * that clears {@code dirtySince}/{@code nextAttemptDueAt} on the {@code sync_schedule}
+     * row, so such a record simply never matches "dirty or due" (design.md D7 — a
+     * standing conflict is still recomputed by the nightly full pass, just not by this
+     * frequent scan). {@code RETIRED} and freshly claimed records are excluded
+     * explicitly.
      */
     List<SyncRecord> findDueForScan(Instant now, java.time.Duration claimLease);
 }

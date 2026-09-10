@@ -206,11 +206,11 @@ class SynchronizationService implements SynchronizationPort {
      * never trusts stored snapshots: both sides are re-read through the adapter first,
      * with no transaction open (design.md D12), and the call proceeds only if the
      * fresh hash pair still equals the acknowledged one. If a side moved in between,
-     * the record's snapshots are refreshed from the fresh reads and saved directly —
-     * this method carries no {@code @Transactional} of its own to roll back, so the
-     * refresh commits on its own via the repository's per-call transaction — the
-     * conflict is left standing (re-raised so a subsequent GET shows the new
-     * collision), and the call is rejected.
+     * the record's refreshed snapshots and its schedule clear are saved together via
+     * {@link SyncOutcomeWriter#persistConflictRefresh} — a genuine cross-bean call, so
+     * its {@code @Transactional} boundary actually applies (this method itself carries
+     * no {@code @Transactional} of its own) — the conflict is left standing (re-raised
+     * so a subsequent GET shows the new collision), and the call is rejected.
      * <p>
      * The record save and attempt append on the happy path commit together in
      * {@link SyncOutcomeWriter#persistResolution}.
@@ -250,8 +250,11 @@ class SynchronizationService implements SynchronizationPort {
             // has no ambient transaction to roll back, so the save below commits on its
             // own even though the throw that follows ends the call in failure — the
             // schedule write joins it in the same transaction (design.md D15,
-            // proposal.md task 4.2) via refreshConflict, both wrapped @Transactional.
-            refreshConflict(record, freshLocal, freshExternal, now);
+            // proposal.md task 4.2) via SyncOutcomeWriter#persistConflictRefresh — a
+            // genuine cross-bean call, so @Transactional actually applies (see that
+            // class's javadoc on why this must never be a self-invoked method here).
+            ScheduleEffect refreshEffect = record.recordConflict(freshLocal, freshExternal, null, now);
+            outcomeWriter.persistConflictRefresh(record, refreshEffect);
             throw new ConflictNotAcknowledgedException(id);
         }
 
@@ -275,19 +278,6 @@ class SynchronizationService implements SynchronizationPort {
         };
 
         return outcomeWriter.persistResolution(written, scheduleEffect, now, resolutionDirection(resolution), freshLocal.hash(), freshExternal.hash(), actingUser);
-    }
-
-    /**
-     * Saves the record's refreshed snapshots and its {@code recordConflict} schedule
-     * effect together (design.md D15, proposal.md task 4.2) — this method's own
-     * {@code @Transactional} is the transaction boundary {@link #resolveConflict}'s
-     * javadoc refers to as having none of its own.
-     */
-    @Transactional
-    void refreshConflict(SyncRecord record, SyncSnapshot freshLocal, SyncSnapshot freshExternal, Instant now) {
-        ScheduleEffect scheduleEffect = record.recordConflict(freshLocal, freshExternal, null, now);
-        syncRecordRepository.save(record);
-        syncScheduleRepository.apply(record.getId(), scheduleEffect);
     }
 
     @Override

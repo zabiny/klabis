@@ -50,9 +50,10 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
      * whose claim is still fresh. {@code RETIRED} is excluded via
      * {@code retired_at IS NULL}. Neither {@code FAILED} nor {@code CONFLICT} is
      * excluded by construction: {@code recordConflict} and {@code recordTerminalFailure}
-     * do clear the scheduling fields, but {@code SyncScheduleRepository.apply} has no
-     * status guard, so an ordinary local edit to an entity whose record is already
-     * {@code CONFLICT} or {@code FAILED} re-sets {@code dirty_since} and the record then
+     * do clear {@code sync_schedule}'s columns via the {@code ScheduleEffect} they
+     * return, but {@code SyncScheduleRepository.apply} has no status guard, so an
+     * ordinary local edit to an entity whose record is already {@code CONFLICT} or
+     * {@code FAILED} re-sets {@code sync_schedule.dirty_since} and the record then
      * matches the dirty predicate. Handed to a pass in that state it is rejected by
      * {@code SyncRecord.assertBeingAttempted} once {@code runScheduledPass} tries it, an
      * exception the scheduler's per-record handler catches and logs at ERROR. The

@@ -76,22 +76,27 @@ class SynchronizationServiceMarkDirtyIntegrationTest {
     }
 
     /**
-     * Reproduces the collision described in {@code SyncOutcomeWriter}'s javadoc
-     * directly, rather than relying on the asynchronous module-event delivery that
-     * triggers it in production (proposal.md task 1.2): an inward pass reads the
-     * post-write local state, and — before {@code SyncOutcomeWriter#persist} saves the
-     * record — a concurrent {@code markDirty} call loads, mutates and saves the very
-     * same row first. The pass's own save must then win against a stale version, which
-     * only happens if {@code SyncOutcomeWriter}'s optimistic-lock retry is in place.
+     * Pins the same interleaving that used to reproduce the {@code markDirty} /
+     * {@code SyncOutcomeWriter#persist} version collision the change's proposal.md
+     * describes (proposal.md task 1.2, task 6.1): an inward pass reads the post-write
+     * local state, and — before {@code SyncOutcomeWriter#persist} saves the record — a
+     * concurrent {@code markDirty} call runs to completion first. What this now proves
+     * is that the race is structurally impossible rather than "won": {@code markDirty}
+     * (task 4.3) writes only through {@code SyncScheduleRepository} against the
+     * unversioned {@code sync_schedule} table (task 2.3) and never loads or saves the
+     * {@code sync_record} row at all, so there is no longer a shared version for the
+     * two writes to contend over. This test is the proof for task 6.1 — it stays even
+     * though it can no longer fail for the old reason, because it still exercises the
+     * exact interleaving that used to matter.
      * <p>
      * {@link TestSynchronizationAdapter#onLocalReadNumber} pins the interleaving to
-     * the exact point {@code SyncOutcomeWriter}'s javadoc describes — the post-write
-     * re-read inside {@code writeInward}, immediately before the record is handed to
+     * the point the race used to occur — the post-write re-read inside
+     * {@code writeInward}, immediately before the record is handed to
      * {@code outcomeWriter.persist} — rather than hoping an asynchronous listener
      * happens to lose the race within a test timeout.
      */
     @Test
-    @DisplayName("a pass's own save wins a version race against a concurrent markDirty on the same record")
+    @DisplayName("a concurrent markDirty on the same record cannot disrupt the pass's own save")
     void passSaveSurvivesConcurrentMarkDirty() throws Exception {
         SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-race-1");
         ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "9200");
@@ -127,10 +132,9 @@ class SynchronizationServiceMarkDirtyIntegrationTest {
             markDirtySaved.countDown();
         });
 
-        // Must not throw: without the retry in SyncOutcomeWriter#persist, the pass's
-        // own save loses the version race to the markDirty save that ran inside the
-        // hook and this throws OptimisticLockingFailureException instead of
-        // completing.
+        // Must not throw: markDirty writes sync_schedule alone (no version on that
+        // table, task 2.3), so it cannot collide with sync_record's version at all —
+        // there is no lock left to lose a race over.
         SyncRecord afterPass = synchronizationPort.synchronizeNow(enrolled.getId(), null);
 
         assertThat(markDirtySaved.getCount()).isZero();

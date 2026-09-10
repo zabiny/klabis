@@ -548,7 +548,7 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * schedule effect through {@code SyncScheduleRepository}, so without this call its
      * in-memory schedule would be stale — the caller's own record already has the
      * correct post-effect value (the domain method mutated it), but a freshly saved
-     * copy does not. {@code SyncOutcomeWriter.doPersist}/{@code doPersistResolution}
+     * copy does not. {@code SyncOutcomeWriter.persist}/{@code persistResolution}
      * call this right after {@code SyncScheduleRepository.apply} so the record they
      * return to the application layer (and ultimately the REST layer) reports the
      * same {@code dirtySince}/{@code nextAttemptDueAt} that was actually persisted.

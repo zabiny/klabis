@@ -55,23 +55,23 @@ being needed and the transitional hatch closes.
 
 ## 5. Remove the layers the race forced
 
-- [ ] 5.1 Remove `withOptimisticLockRetry` and the `AuditMetadata` version-stamp overwrite from `SyncOutcomeWriter`.
-- [ ] 5.2 Remove `Propagation.REQUIRES_NEW` from `doPersist` and `doPersistResolution`, and fold them back into `persist` / `persistResolution` as plain `@Transactional` methods.
-- [ ] 5.3 Remove the `@Lazy` self-proxy from the constructor.
-- [ ] 5.4 Remove the swallowed `OptimisticLockingFailureException` from `SynchronizationService.markDirty`.
-- [ ] 5.5 Keep `SyncOutcomeWriter` a separate bean — the cross-bean proxy boundary is still what makes `@Transactional` apply — and update its javadoc, which currently explains all four removed layers in detail.
-- [ ] 5.6 Update `SyncRecord`, `SyncRecordRepository` and `SyncRecordJdbcRepository` javadocs that describe scheduling fields as living on the record.
+- [x] 5.1 Remove `withOptimisticLockRetry` and the `AuditMetadata` version-stamp overwrite from `SyncOutcomeWriter`.
+- [x] 5.2 Remove `Propagation.REQUIRES_NEW` from `doPersist` and `doPersistResolution`, and fold them back into `persist` / `persistResolution` as plain `@Transactional` methods.
+- [x] 5.3 Remove the `@Lazy` self-proxy from the constructor.
+- [x] 5.4 Remove the swallowed `OptimisticLockingFailureException` from `SynchronizationService.markDirty`.
+- [x] 5.5 Keep `SyncOutcomeWriter` a separate bean — the cross-bean proxy boundary is still what makes `@Transactional` apply — and update its javadoc, which currently explains all four removed layers in detail.
+- [x] 5.6 Update `SyncRecord`, `SyncRecordRepository` and `SyncRecordJdbcRepository` javadocs that describe scheduling fields as living on the record.
 
 ## 6. Verification
 
-- [ ] 6.1 The test from 1.2 must now pass with the retry gone — that is the proof the race is actually eliminated rather than merely hidden.
-- [ ] 6.2 Verify atomicity directly: a failure between the record save, the attempt append and the schedule write must roll back all three.
-- [ ] 6.3 Assert the short-circuit from 4.4 still fires — a record with a baseline and no dirty marker must skip the full read. Verify this test fails if the schedule is not loaded with the record.
-- [ ] 6.4 Verify a record marked dirty is still returned by the due scan, and that a record whose claim is fresh is still excluded.
-- [ ] 6.5 Confirm a claim no longer fails with `OptimisticLockingFailureException` because of a concurrent dirty marker.
-- [ ] 6.6 Strengthen `SynchronizationServiceMarkDirtyIntegrationTest` and `SynchronizationServiceFailureHandlingIntegrationTest` rather than merely keeping them passing.
-- [ ] 6.7 Per the project's negative-test rule, verify each new test above fails when its mechanism is removed. A test that passes for the wrong reason is worse than no test.
-- [ ] 6.8 Review the test code itself, not just its green result.
-- [ ] 6.9 Run the full backend test suite; all tests compile and pass.
-- [ ] 6.10 Code review, focused on transaction boundaries, the concurrent paths, and the ten transcribed `ScheduleEffect` rows.
+- [x] 6.1 The test from 1.2 must now pass with the retry gone — that is the proof the race is actually eliminated rather than merely hidden.
+- [x] 6.2 Verify atomicity directly: a failure between the record save, the attempt append and the schedule write must roll back all three.
+- [x] 6.3 Assert the short-circuit from 4.4 still fires — a record with a baseline and no dirty marker must skip the full read. Verify this test fails if the schedule is not loaded with the record.
+- [x] 6.4 Verify a record marked dirty is still returned by the due scan, and that a record whose claim is fresh is still excluded.
+- [x] 6.5 Confirm a claim no longer fails with `OptimisticLockingFailureException` because of a concurrent dirty marker.
+- [x] 6.6 Strengthen `SynchronizationServiceMarkDirtyIntegrationTest` and `SynchronizationServiceFailureHandlingIntegrationTest` rather than merely keeping them passing.
+- [x] 6.7 Per the project's negative-test rule, verify each new test above fails when its mechanism is removed. A test that passes for the wrong reason is worse than no test.
+- [x] 6.8 Review the test code itself, not just its green result.
+- [x] 6.9 Run the full backend test suite; all tests compile and pass.
+- [x] 6.10 Code review, focused on transaction boundaries, the concurrent paths, and the ten transcribed `ScheduleEffect` rows.
 - [ ] 6.11 Commit.
