@@ -237,7 +237,7 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord dirty = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-1"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
             dirty.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
-            dirty.markDirty(Instant.now());
+            dirty.applyToSchedule(ScheduleEffect.dirtySince(Instant.now()));
             syncRecordRepository.save(dirty);
 
             List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
@@ -279,7 +279,7 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-4"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
             record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
-            record.markDirty(Instant.now());
+            record.applyToSchedule(ScheduleEffect.dirtySince(Instant.now()));
             record.retire(Instant.now());
             syncRecordRepository.save(record);
 
@@ -311,7 +311,7 @@ class SyncRecordJdbcRepositoryTest {
             SyncSnapshot external = SyncSnapshot.of(new TestSyncProjection("External", "Brno"), hasher);
             record.recordSuccess(SyncDirection.INWARD, local, local, Instant.now());
             record.recordConflict(local, external, null, Instant.now());
-            record.markDirty(Instant.now());
+            record.applyToSchedule(ScheduleEffect.dirtySince(Instant.now()));
             syncRecordRepository.save(record);
 
             Map<String, Object> persisted = jdbcTemplate.queryForMap(
@@ -345,7 +345,7 @@ class SyncRecordJdbcRepositoryTest {
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
             record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
             record.recordTerminalFailure(5, "boom", Instant.now());
-            record.markDirty(Instant.now());
+            record.applyToSchedule(ScheduleEffect.dirtySince(Instant.now()));
             syncRecordRepository.save(record);
 
             Map<String, Object> persisted = jdbcTemplate.queryForMap(
@@ -364,7 +364,7 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-7"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
             record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
-            record.markDirty(Instant.now());
+            record.applyToSchedule(ScheduleEffect.dirtySince(Instant.now()));
             record.claim(Instant.now());
             syncRecordRepository.save(record);
 

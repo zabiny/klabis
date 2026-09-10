@@ -10,6 +10,7 @@ import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
+import com.klabis.sync.domain.SyncSchedule;
 import com.klabis.sync.domain.SyncStatus;
 import com.klabis.sync.domain.SyncTarget;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,8 +53,8 @@ class OrisBulkSyncServiceTest {
         return SyncRecord.reconstruct(
                 record.getId(), record.getTarget(), record.getExternalReference(), status,
                 record.getBaseline(), record.getLocal(), record.getExternal(), record.getExternalVersion(),
-                record.getDirtySince(), record.getClaimedAt(), record.getAcknowledgement(),
-                record.getNextAttemptDueAt(), record.getLastSuccessfulSyncAt(), record.getLastDirection(),
+                new SyncSchedule(record.getDirtySince(), record.getNextAttemptDueAt()), record.getClaimedAt(), record.getAcknowledgement(),
+                record.getLastSuccessfulSyncAt(), record.getLastDirection(),
                 record.getRetiredAt());
     }
 

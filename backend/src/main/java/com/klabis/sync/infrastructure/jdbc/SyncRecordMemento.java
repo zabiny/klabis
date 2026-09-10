@@ -219,6 +219,12 @@ class SyncRecordMemento implements Persistable<UUID> {
             );
         }
 
+        // The schedule is loaded together with the record from sync_record's own
+        // dirty_since/next_attempt_due_at columns, never lazily (proposal.md task 3.5)
+        // — the sync_schedule table exists (task 2) but nothing reads/writes it yet
+        // (task 4.5), so this stays the transitional source of truth this iteration.
+        SyncSchedule schedule = new SyncSchedule(dirtySince, nextAttemptDueAt);
+
         SyncRecord record = SyncRecord.reconstruct(
                 new SyncRecordId(this.id),
                 target,
@@ -228,10 +234,9 @@ class SyncRecordMemento implements Persistable<UUID> {
                 local,
                 external,
                 externalVersionToken != null ? new ExternalVersionToken(externalVersionToken) : null,
-                dirtySince,
+                schedule,
                 claimedAt,
                 acknowledgement,
-                nextAttemptDueAt,
                 lastSuccessfulSyncAt,
                 lastDirection != null ? SyncDirection.valueOf(lastDirection) : null,
                 retiredAt

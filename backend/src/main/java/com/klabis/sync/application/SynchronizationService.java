@@ -105,7 +105,12 @@ class SynchronizationService implements SynchronizationPort {
 
     private void markDirty(SyncTarget target, ExternalSystem system) {
         syncRecordRepository.findByTargetAndSystem(target, system).ifPresent(record -> {
-            record.markDirty(clock.instant());
+            // SyncRecord no longer owns dirtySince mutation (proposal.md task 3.1); the
+            // ScheduleEffect is applied directly here rather than through a domain
+            // method, since SyncScheduleRepository wiring is task 4.3, not this
+            // iteration — the record's in-memory schedule must still reflect the change
+            // so SyncRecordMemento persists it via sync_record's own columns.
+            record.applyToSchedule(ScheduleEffect.dirtySince(clock.instant()));
             // An inward write raises EventUpdatedEvent on the very entity the pass is
             // writing (design.md D9 — "an inward write is itself a local change"), so
             // this listener call can race the same pass's own trailing

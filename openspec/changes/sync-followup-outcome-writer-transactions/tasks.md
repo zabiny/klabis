@@ -16,23 +16,42 @@
 
 ## 3. Move scheduling out of the aggregate
 
-- [ ] 3.1 Remove the `dirtySince` and `nextAttemptDueAt` fields from `SyncRecord`, along with `markDirty`.
-- [ ] 3.2 Change the return type of the ten methods identified in 1.3 to return a `ScheduleEffect`, preserving each one's current behaviour exactly as transcribed — not as summarised in the proposal.
-- [ ] 3.2a `resolveWithDirection` is an eleventh call site found during 1.3: it delegates to `recordSuccess` and so inherits `clear()`. It must return that effect onward, and `SynchronizationService.resolveConflict` must apply it — easy to miss because the proposal's table does not list it separately.
-- [ ] 3.3 Keep `SyncRecord.getDirtySince()` / `getNextAttemptDueAt()` reading from a schedule loaded alongside the record, so existing readers keep working. The aggregate reads the schedule; it no longer owns its mutation.
-- [ ] 3.4 Verify `recordTerminalFailure` and `reset` still leave `dirtySince` standing (they clear only the due-at today) — a record that was dirty when it failed must still be dirty after a reset.
-- [ ] 3.5 Update `SyncRecordMemento` and the record's JDBC adapter to load the schedule with the record, never lazily.
-- [ ] 3.6 Confirm `SyncStateResponseConverter` still reports the same `nextAttemptDueAt` value to the API.
+- [x] 3.1 Remove the `dirtySince` and `nextAttemptDueAt` fields from `SyncRecord`, along with `markDirty`.
+- [x] 3.2 Change the return type of the ten methods identified in 1.3 to return a `ScheduleEffect`, preserving each one's current behaviour exactly as transcribed — not as summarised in the proposal.
+- [x] 3.2a `resolveWithDirection` is an eleventh call site found during 1.3: it delegates to `recordSuccess` and so inherits `clear()`. It must return that effect onward, and `SynchronizationService.resolveConflict` must apply it — easy to miss because the proposal's table does not list it separately.
+- [x] 3.3 Keep `SyncRecord.getDirtySince()` / `getNextAttemptDueAt()` reading from a schedule loaded alongside the record, so existing readers keep working. The aggregate reads the schedule; it no longer owns its mutation.
+- [x] 3.4 Verify `recordTerminalFailure` and `reset` still leave `dirtySince` standing (they clear only the due-at today) — a record that was dirty when it failed must still be dirty after a reset.
+- [x] 3.5 Update `SyncRecordMemento` and the record's JDBC adapter to load the schedule with the record, never lazily.
+- [x] 3.6 Confirm `SyncStateResponseConverter` still reports the same `nextAttemptDueAt` value to the API.
 
-## 4. Apply effects from the application layer
+## 4a. Route effects through the schedule repository
 
-- [ ] 4.1 In `SynchronizationService`, capture the `ScheduleEffect` returned by each domain call and apply it through `SyncScheduleRepository`.
+Split from the original section 4 so the change lands in two independently testable
+halves. This half makes `sync_schedule` the authority for *writes* while `sync_record`'s
+old columns still back every *read*, so the system stays consistent at the end of it.
+
+- [ ] 4.1 In `SynchronizationService`, capture the `ScheduleEffect` returned by each domain call and apply it through `SyncScheduleRepository`. **Every one of these call sites currently discards the returned value** — harmless while `applyToSchedule` still mutates the aggregate in memory, but the moment 4.3 moves the write off the aggregate, any site left discarding it loses its scheduling write silently, with no compile error and no failing test. Work through the list rather than trusting a green suite: `recordConflict` (×2, in `resolveConflict` and `runPass`), `resolveWithDirection` (×2, INWARD and OUTWARD), `acceptDivergence`, `reset`, `recordConverged`, `recordOutage`, `recordTerminalFailure` (×2), `recordRetryableFailure`, `recordSuccess` (×2, in `writeInward` and `writeOutward`), `recordOutwardWriteWithSkippedAdvance`, and the `applyToSchedule` call in `markDirty`. Fourteen sites in total; re-derive the list from the code, since line numbers shift as you edit.
 - [ ] 4.2 Apply the schedule write **inside the same transaction** as the record and attempt row (D15). A schedule written outside it can survive a rolled-back outcome.
 - [ ] 4.3 Rewrite `SynchronizationService.markDirty` to write only through the schedule repository — no aggregate load, no aggregate save.
 - [ ] 4.4 Verify the version-token short-circuit at `SynchronizationService.java:338` still reads a populated `dirtySince`. This is the change's quietest failure mode: a null schedule makes the condition true when it should be false, the short-circuit stops firing, and the engine silently does a full read on every pass with no test failing.
-- [ ] 4.5 Update `findDueForScan` and `findAllActive` to join `sync_schedule` instead of filtering columns on `sync_record`, preserving the exact predicates (including the `status NOT IN ('FAILED', 'CONFLICT')` and claim-staleness clauses).
-- [ ] 4.6 Once 4.5 has moved the query, drop `idx_sync_record_due_scan` and the now-unused `dirty_since` / `next_attempt_due_at` columns from `sync_record` in `V001`. Deferred here from task 2.4 so the live query is never left without its index.
 - [ ] 4.7 Call `SyncScheduleRepository.createFor` from `SynchronizationService.enroll`, in the same transaction as the record save, so task 2.6's "every record has a schedule row" invariant actually holds. The method exists but has no caller yet.
+- [ ] 4.8 *(moved to 4b.5)* — `applyToSchedule` must stay public through this half, because 4.10's double-write depends on it.
+- [ ] 4.9 Make the dropped-effect trap impossible to reintroduce rather than relying on 4.1's checklist: once `applyToSchedule` no longer mutates the aggregate, a discarded `ScheduleEffect` is always a bug. Prefer a mechanism that fails loudly — annotate the domain methods so an ignored result is a compile-time warning/error, or have the effect be applied only by a helper the call site must pass it to. If no such mechanism fits the codebase, say so and instead add a test that a pass which schedules a retry actually leaves a persisted `next_attempt_due_at`, and verify it fails when one call site is left discarding.
+- [ ] 4.10 **The bridge that makes this half independently shippable:** every effect applied through `SyncScheduleRepository` must ALSO keep `sync_record`'s own `dirty_since`/`next_attempt_due_at` columns up to date, because until 4b lands those columns still back `findDueForScan`, `findAllActive` and `SyncRecordMemento`'s read path. Keeping `applyToSchedule`'s in-memory mutation (and therefore what `SyncRecordMemento.from` persists) achieves this for free — so do NOT remove it in this half; 4.8 moves to 4b. State explicitly in your report that both stores are written and that the two cannot disagree.
+- [ ] 4.11 Verify the double-write directly: after a pass that schedules a retry, assert `sync_schedule` and `sync_record` hold the same `next_attempt_due_at`. This test is what proves 4a is safe to ship on its own, and it is deleted in 4b once `sync_record`'s columns are gone.
+
+## 4b. Switch reads onto the schedule table and drop the old columns
+
+Second half. Only start once 4a is committed with a green suite. At the end of this half
+`sync_record` no longer carries scheduling at all, so the double-write from 4.10 stops
+being needed and the transitional hatch closes.
+
+- [ ] 4b.1 Update `findDueForScan` and `findAllActive` to join `sync_schedule` instead of filtering columns on `sync_record`, preserving the exact predicates (including the `status NOT IN ('FAILED', 'CONFLICT')` and claim-staleness clauses). A record with no schedule row must still behave exactly as one with an empty schedule does today — check what the join does to such a record, since an INNER JOIN would silently drop it from the scan.
+- [ ] 4b.2 Move `SyncRecordMemento`'s read path off `sync_record`'s scheduling columns and onto the schedule loaded via `SyncScheduleRepository`, keeping task 3.5's "never lazily" property.
+- [ ] 4b.3 Drop `idx_sync_record_due_scan` and the `dirty_since` / `next_attempt_due_at` columns from `sync_record` in `V001`. Deferred from task 2.4 so the live query was never left without its index.
+- [ ] 4b.4 Remove the 4.10 double-write and the 4.11 test that guarded it — both exist only to make 4a shippable on its own.
+- [ ] 4b.5 Close the iteration-3 transitional hatch: reduce `SyncRecord.applyToSchedule` to private, or drop it entirely (moved here from 4.8 — it must stay public while 4.10's double-write depends on it).
+- [ ] 4b.6 Re-verify the version-token short-circuit (4.4) now that `dirtySince` arrives from the new table rather than the aggregate's own columns. This is the second and last chance for the change's quietest failure mode to appear.
 
 ## 5. Remove the layers the race forced
 

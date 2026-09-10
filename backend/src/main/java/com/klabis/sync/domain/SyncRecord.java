@@ -38,13 +38,48 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
     private SyncSnapshot local;
     private SyncSnapshot external;
     private ExternalVersionToken externalVersion;
-    private Instant dirtySince;
     private Instant claimedAt;
     private ConflictAcknowledgement acknowledgement;
-    private Instant nextAttemptDueAt;
     private Instant lastSuccessfulSyncAt;
     private SyncDirection lastDirection;
     private Instant retiredAt;
+
+    /**
+     * The schedule loaded alongside this record (proposal.md "The read side keeps the
+     * schedule attached to the record"): {@code SyncRecord} no longer owns
+     * {@code dirtySince}/{@code nextAttemptDueAt} mutation — every method that used to
+     * mutate them now returns a {@link ScheduleEffect} for the caller to apply through
+     * {@code SyncScheduleRepository} — but it still needs to read them for the
+     * version-token short-circuit ({@code SynchronizationService.runPass}). Never
+     * loaded lazily: a {@code null} here would make that short-circuit misfire
+     * silently (proposal.md Risk section).
+     */
+    private SyncSchedule schedule = SyncSchedule.empty();
+
+    /**
+     * Applies a {@link ScheduleEffect} to the in-memory {@link #schedule} and returns
+     * it unchanged for the caller to forward. Transitional (proposal.md task 3, not
+     * yet task 4): the application layer does not yet route effects through
+     * {@code SyncScheduleRepository} — {@code SyncRecordMemento} still persists
+     * scheduling via {@code sync_record}'s own columns, reading them back through
+     * {@link #getDirtySince()}/{@link #getNextAttemptDueAt()} — so this keeps that
+     * existing persistence path correct by updating the same in-memory state those
+     * getters read, exactly as the field assignments it replaces used to. Once
+     * task 4.1-4.3 route effects through the schedule repository instead, this
+     * in-memory update stops being load-bearing but stays correct as a read-your-own-
+     * write convenience.
+     * <p>
+     * Public only as that transitional escape hatch for
+     * {@code SynchronizationService.markDirty}, which has no domain method left to call
+     * now that {@code markDirty(Instant)} is removed (proposal.md task 3.1) and cannot
+     * yet go through {@code SyncScheduleRepository} (task 4.3). Every other caller
+     * gets the same effect back from the domain method it already called and should
+     * never call this directly.
+     */
+    public ScheduleEffect applyToSchedule(ScheduleEffect effect) {
+        this.schedule = schedule.apply(effect);
+        return effect;
+    }
 
     private SyncRecord(SyncRecordId id, SyncTarget target, ExternalReference externalReference, SyncStatus status) {
         Assert.notNull(id, "id is required");
@@ -67,6 +102,8 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
 
     /**
      * Reconstructs a record from persisted state. Used only by the persistence layer.
+     * {@code schedule} must be loaded together with the record, never lazily
+     * (proposal.md task 3.5) — see the {@code schedule} field's javadoc.
      */
     public static SyncRecord reconstruct(
             SyncRecordId id,
@@ -77,35 +114,26 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
             SyncSnapshot local,
             SyncSnapshot external,
             ExternalVersionToken externalVersion,
-            Instant dirtySince,
+            SyncSchedule schedule,
             Instant claimedAt,
             ConflictAcknowledgement acknowledgement,
-            Instant nextAttemptDueAt,
             Instant lastSuccessfulSyncAt,
             SyncDirection lastDirection,
             Instant retiredAt
     ) {
+        Assert.notNull(schedule, "schedule is required");
         SyncRecord record = new SyncRecord(id, target, externalReference, status);
         record.baseline = baseline;
         record.local = local;
         record.external = external;
         record.externalVersion = externalVersion;
-        record.dirtySince = dirtySince;
+        record.schedule = schedule;
         record.claimedAt = claimedAt;
         record.acknowledgement = acknowledgement;
-        record.nextAttemptDueAt = nextAttemptDueAt;
         record.lastSuccessfulSyncAt = lastSuccessfulSyncAt;
         record.lastDirection = lastDirection;
         record.retiredAt = retiredAt;
         return record;
-    }
-
-    /**
-     * Marks the record due because a local change was observed (design.md D9).
-     * Purely a scheduling signal — never consulted to decide whether a write is safe.
-     */
-    public void markDirty(Instant now) {
-        this.dirtySince = now;
     }
 
     /**
@@ -183,9 +211,13 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
 
     /**
      * Records a successful pass: the post-write state becomes both the current
-     * snapshot for the written side and the new baseline (design.md D9).
+     * snapshot for the written side and the new baseline (design.md D9). Returns
+     * {@link ScheduleEffect#clear()} (proposal.md task 1.3/3.2) for the caller to apply
+     * through {@code SyncScheduleRepository} — both {@code dirtySince} and
+     * {@code nextAttemptDueAt} are cleared, matching this method's behaviour before
+     * scheduling moved out of the aggregate.
      */
-    public void recordSuccess(SyncDirection direction, SyncSnapshot local, SyncSnapshot external, Instant now) {
+    public ScheduleEffect recordSuccess(SyncDirection direction, SyncSnapshot local, SyncSnapshot external, Instant now) {
         Assert.notNull(direction, "direction is required");
         Assert.notNull(local, "local is required");
         Assert.notNull(external, "external is required");
@@ -196,8 +228,7 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         this.lastDirection = direction;
         this.lastSuccessfulSyncAt = now;
         this.status = SyncStatus.IN_SYNC;
-        this.dirtySince = null;
-        this.nextAttemptDueAt = null;
+        return applyToSchedule(ScheduleEffect.clear());
     }
 
     /**
@@ -217,24 +248,26 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * baseline pair here stays a normal, reconciled (equal-halves) pair.
      * <p>
      * The local side is intentionally left as it was: it is still due — the very edit
-     * that raced the guard re-read has not been pushed — and {@code dirtySince}
-     * already marks the record for re-evaluation. The next pass then correctly sees
-     * only the local side as changed and pushes the newer value outward.
+     * that raced the guard re-read has not been pushed — and the returned
+     * {@link ScheduleEffect#dirtySince(Instant)} already marks the record for
+     * re-evaluation. The next pass then correctly sees only the local side as changed
+     * and pushes the newer value outward.
      */
-    public void recordOutwardWriteWithSkippedAdvance(SyncSnapshot pushedSnapshot, Instant now) {
+    public ScheduleEffect recordOutwardWriteWithSkippedAdvance(SyncSnapshot pushedSnapshot, Instant now) {
         Assert.notNull(pushedSnapshot, "pushedSnapshot is required");
         this.external = pushedSnapshot;
         this.baseline = SyncBaseline.reconciled(pushedSnapshot);
-        this.dirtySince = now;
+        return applyToSchedule(ScheduleEffect.dirtySince(now));
     }
 
     /**
      * Records a converged pass (design.md D4): both sides changed independently but
      * now hold the same value. Nothing is written; both baseline halves rebase onto
      * the shared state, same as an ordinary reconciliation, but with no direction to
-     * report — a convergence is not a write.
+     * report — a convergence is not a write. Returns {@link ScheduleEffect#clear()}
+     * (proposal.md task 1.3/3.2).
      */
-    public void recordConverged(SyncSnapshot agreedSnapshot, Instant now) {
+    public ScheduleEffect recordConverged(SyncSnapshot agreedSnapshot, Instant now) {
         Assert.notNull(agreedSnapshot, "agreedSnapshot is required");
 
         this.local = agreedSnapshot;
@@ -242,8 +275,7 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         this.baseline = SyncBaseline.reconciled(agreedSnapshot);
         this.lastSuccessfulSyncAt = now;
         this.status = SyncStatus.IN_SYNC;
-        this.dirtySince = null;
-        this.nextAttemptDueAt = null;
+        return applyToSchedule(ScheduleEffect.clear());
     }
 
     /**
@@ -257,9 +289,10 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * collision — the hash pair differs from what the record already held. A repeated
      * call with the same pair (e.g. a resolution rejected twice against the same
      * unmoved collision, or a due-scan re-evaluating a record already in conflict)
-     * must not re-announce work that is already stuck and already known about.
+     * must not re-announce work that is already stuck and already known about. Returns
+     * {@link ScheduleEffect#clear()} (proposal.md task 1.3/3.2).
      */
-    public void recordConflict(SyncSnapshot currentLocal, SyncSnapshot currentExternal, SyncDirection attemptedDirection, Instant now) {
+    public ScheduleEffect recordConflict(SyncSnapshot currentLocal, SyncSnapshot currentExternal, SyncDirection attemptedDirection, Instant now) {
         Assert.notNull(currentLocal, "currentLocal is required");
         Assert.notNull(currentExternal, "currentExternal is required");
 
@@ -271,12 +304,11 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         this.external = currentExternal;
         this.status = SyncStatus.CONFLICT;
         this.acknowledgement = null;
-        this.dirtySince = null;
-        this.nextAttemptDueAt = null;
 
         if (!sameCollisionAsBefore) {
             registerEvent(SyncConflictDetected.of(id, attemptedDirection, currentLocal.hash(), currentExternal.hash(), now));
         }
+        return applyToSchedule(ScheduleEffect.clear());
     }
 
     /**
@@ -305,11 +337,15 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * written (by the caller, through the adapter) and the baseline is reset from it,
      * exactly like an ordinary successful pass (design.md D7 — a forced `INWARD`
      * resolution follows the same post-write re-read rule as any other inward write).
-     * The acknowledgement is cleared and the conflict lifts.
+     * The acknowledgement is cleared and the conflict lifts. Delegates to
+     * {@link #recordSuccess} and forwards its {@link ScheduleEffect} — an eleventh
+     * call site the proposal's ten-method table does not list separately (proposal.md
+     * task 3.2a), since it inherits {@code recordSuccess}'s behaviour exactly.
      */
-    public void resolveWithDirection(SyncDirection direction, SyncSnapshot local, SyncSnapshot external, Instant now) {
-        recordSuccess(direction, local, external, now);
+    public ScheduleEffect resolveWithDirection(SyncDirection direction, SyncSnapshot local, SyncSnapshot external, Instant now) {
+        ScheduleEffect effect = recordSuccess(direction, local, external, now);
         this.acknowledgement = null;
+        return effect;
     }
 
     /**
@@ -318,9 +354,9 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * may themselves differ — nothing is written in either direction, and the
      * conflict lifts. The inward guard in {@link #decide} then protects this accepted
      * value: any later external movement raises a new conflict instead of silently
-     * overwriting it.
+     * overwriting it. Returns {@link ScheduleEffect#clear()} (proposal.md task 1.3/3.2).
      */
-    public void acceptDivergence(SyncSnapshot local, SyncSnapshot external) {
+    public ScheduleEffect acceptDivergence(SyncSnapshot local, SyncSnapshot external) {
         Assert.notNull(local, "local is required");
         Assert.notNull(external, "external is required");
 
@@ -329,8 +365,7 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         this.baseline = SyncBaseline.accepted(local, external);
         this.status = SyncStatus.IN_SYNC;
         this.acknowledgement = null;
-        this.dirtySince = null;
-        this.nextAttemptDueAt = null;
+        return applyToSchedule(ScheduleEffect.clear());
     }
 
     /**
@@ -349,13 +384,13 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      *                                caller must have filtered them out before
      *                                attempting the record at all)
      */
-    public void recordOutage(Instant nextAttemptDueAt) {
+    public ScheduleEffect recordOutage(Instant nextAttemptDueAt) {
         Assert.notNull(nextAttemptDueAt, "nextAttemptDueAt is required");
         assertBeingAttempted();
         if (status == SyncStatus.NEW || status == SyncStatus.IN_SYNC) {
             this.status = SyncStatus.RETRYING;
         }
-        this.nextAttemptDueAt = nextAttemptDueAt;
+        return applyToSchedule(ScheduleEffect.dueAt(nextAttemptDueAt));
     }
 
     /**
@@ -368,11 +403,11 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * @throws IllegalStateException if the record is not currently being attempted
      *                                (see {@link #recordOutage})
      */
-    public void recordRetryableFailure(Instant nextAttemptDueAt) {
+    public ScheduleEffect recordRetryableFailure(Instant nextAttemptDueAt) {
         Assert.notNull(nextAttemptDueAt, "nextAttemptDueAt is required");
         assertBeingAttempted();
         this.status = SyncStatus.RETRYING;
-        this.nextAttemptDueAt = nextAttemptDueAt;
+        return applyToSchedule(ScheduleEffect.dueAt(nextAttemptDueAt));
     }
 
     /**
@@ -386,11 +421,11 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * @throws IllegalStateException if the record is not currently being attempted
      *                                (see {@link #recordOutage})
      */
-    public void recordTerminalFailure(int failedAttempts, String failureReason, Instant now) {
+    public ScheduleEffect recordTerminalFailure(int failedAttempts, String failureReason, Instant now) {
         assertBeingAttempted();
         this.status = SyncStatus.FAILED;
-        this.nextAttemptDueAt = null;
         registerEvent(SyncTerminallyFailed.of(id, failedAttempts, failureReason, now));
+        return applyToSchedule(ScheduleEffect.clearDueAt());
     }
 
     /**
@@ -414,10 +449,10 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
      * failure count restarts (design.md D10) — this method only clears the record's
      * own stuck state.
      */
-    public void reset() {
+    public ScheduleEffect reset() {
         Assert.state(status == SyncStatus.FAILED, "Only a terminally failed record can be reset");
         this.status = SyncStatus.IN_SYNC;
-        this.nextAttemptDueAt = null;
+        return applyToSchedule(ScheduleEffect.clearDueAt());
     }
 
     /**
@@ -506,7 +541,7 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
     }
 
     public Instant getDirtySince() {
-        return dirtySince;
+        return schedule.dirtySince();
     }
 
     public Instant getClaimedAt() {
@@ -518,7 +553,7 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
     }
 
     public Instant getNextAttemptDueAt() {
-        return nextAttemptDueAt;
+        return schedule.nextAttemptDueAt();
     }
 
     public Instant getLastSuccessfulSyncAt() {
