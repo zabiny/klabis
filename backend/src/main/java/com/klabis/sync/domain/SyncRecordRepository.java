@@ -56,16 +56,4 @@ public interface SyncRecordRepository {
      * records are excluded explicitly.
      */
     List<SyncRecord> findDueForScan(Instant now, java.time.Duration claimLease);
-
-    /**
-     * Transitional double-write (proposal.md task 4.10): updates only {@code
-     * sync_record}'s own {@code dirty_since} column, without loading or saving the
-     * whole aggregate and without touching its optimistic-lock version — mirroring
-     * what {@link SyncScheduleRepository#apply} does for {@code sync_schedule}.
-     * {@code SynchronizationService.markDirty} calls both so the two stores agree
-     * while {@code findDueForScan} and {@code SyncRecordMemento}'s read path still
-     * read {@code sync_record} (task 4b.1, 4b.2 move them onto {@code sync_schedule}).
-     * Deleted in task 4b.4 once the old columns are gone.
-     */
-    void updateDirtySince(SyncRecordId id, Instant dirtySince);
 }

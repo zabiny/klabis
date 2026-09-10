@@ -71,9 +71,6 @@ class SyncRecordMemento implements Persistable<UUID> {
     @Column("external_version_token")
     private String externalVersionToken;
 
-    @Column("dirty_since")
-    private Instant dirtySince;
-
     @Column("claimed_at")
     private Instant claimedAt;
 
@@ -88,9 +85,6 @@ class SyncRecordMemento implements Persistable<UUID> {
 
     @Column("acknowledged_by")
     private String acknowledgedBy;
-
-    @Column("next_attempt_due_at")
-    private Instant nextAttemptDueAt;
 
     @Column("last_successful_sync_at")
     private Instant lastSuccessfulSyncAt;
@@ -155,7 +149,6 @@ class SyncRecordMemento implements Persistable<UUID> {
 
         memento.externalVersionToken = record.getExternalVersion() != null ? record.getExternalVersion().value() : null;
 
-        memento.dirtySince = record.getDirtySince();
         memento.claimedAt = record.getClaimedAt();
 
         ConflictAcknowledgement acknowledgement = record.getAcknowledgement();
@@ -166,7 +159,6 @@ class SyncRecordMemento implements Persistable<UUID> {
             memento.acknowledgedBy = acknowledgement.acknowledgedBy();
         }
 
-        memento.nextAttemptDueAt = record.getNextAttemptDueAt();
         memento.lastSuccessfulSyncAt = record.getLastSuccessfulSyncAt();
         memento.lastDirection = record.getLastDirection() != null ? record.getLastDirection().name() : null;
         memento.retiredAt = record.getRetiredAt();
@@ -184,7 +176,13 @@ class SyncRecordMemento implements Persistable<UUID> {
         return memento;
     }
 
-    SyncRecord toSyncRecord(SyncProjectionType projectionType) {
+    /**
+     * {@code schedule} is loaded by the caller — via {@link SyncScheduleRepository},
+     * never lazily (proposal.md task 3.5, moved onto the schedule table in task 4b.2) —
+     * and handed in rather than read from this memento's own {@code dirty_since}/
+     * {@code next_attempt_due_at} columns, which no longer exist on {@code sync_record}.
+     */
+    SyncRecord toSyncRecord(SyncProjectionType projectionType, SyncSchedule schedule) {
         SyncEntityType type = SyncEntityType.valueOf(this.entityType);
         SyncTarget target = new SyncTarget(type, this.entityId);
         ExternalReference externalReference = new ExternalReference(ExternalSystem.valueOf(this.externalSystem), this.externalId);
@@ -218,12 +216,6 @@ class SyncRecordMemento implements Persistable<UUID> {
                     acknowledgedBy
             );
         }
-
-        // The schedule is loaded together with the record from sync_record's own
-        // dirty_since/next_attempt_due_at columns, never lazily (proposal.md task 3.5)
-        // — the sync_schedule table exists (task 2) but nothing reads/writes it yet
-        // (task 4.5), so this stays the transitional source of truth this iteration.
-        SyncSchedule schedule = new SyncSchedule(dirtySince, nextAttemptDueAt);
 
         SyncRecord record = SyncRecord.reconstruct(
                 new SyncRecordId(this.id),

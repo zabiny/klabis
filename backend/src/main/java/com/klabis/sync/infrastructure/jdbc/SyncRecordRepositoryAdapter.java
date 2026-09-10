@@ -5,6 +5,8 @@ import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncProjectionType;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncRecordRepository;
+import com.klabis.sync.domain.SyncSchedule;
+import com.klabis.sync.domain.SyncScheduleRepository;
 import com.klabis.sync.domain.SyncTarget;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
@@ -27,54 +29,66 @@ import java.util.Optional;
 class SyncRecordRepositoryAdapter implements SyncRecordRepository {
 
     private final SyncRecordJdbcRepository jdbcRepository;
+    private final SyncScheduleRepository scheduleRepository;
     private final ObjectProvider<SyncProjectionType> projectionType;
 
-    SyncRecordRepositoryAdapter(SyncRecordJdbcRepository jdbcRepository, ObjectProvider<SyncProjectionType> projectionType) {
+    SyncRecordRepositoryAdapter(SyncRecordJdbcRepository jdbcRepository, SyncScheduleRepository scheduleRepository, ObjectProvider<SyncProjectionType> projectionType) {
         this.jdbcRepository = jdbcRepository;
+        this.scheduleRepository = scheduleRepository;
         this.projectionType = projectionType;
     }
 
     @Override
     public SyncRecord save(SyncRecord record) {
-        return jdbcRepository.save(SyncRecordMemento.from(record)).toSyncRecord(resolveProjectionType());
+        SyncRecordMemento saved = jdbcRepository.save(SyncRecordMemento.from(record));
+        return saved.toSyncRecord(resolveProjectionType(), loadSchedule(saved));
     }
 
     @Override
     public Optional<SyncRecord> findById(SyncRecordId id) {
-        return jdbcRepository.findById(id.value()).map(memento -> memento.toSyncRecord(resolveProjectionType()));
+        return jdbcRepository.findById(id.value()).map(this::toSyncRecord);
     }
 
     @Override
     public Optional<SyncRecord> findByTargetAndSystem(SyncTarget target, ExternalSystem system) {
         return jdbcRepository.findByEntityTypeAndEntityIdAndExternalSystem(
                         target.entityType().name(), target.entityId(), system.name())
-                .map(memento -> memento.toSyncRecord(resolveProjectionType()));
+                .map(this::toSyncRecord);
     }
 
     @Override
     public List<SyncRecord> findAllActive() {
         return jdbcRepository.findAllActive().stream()
-                .map(memento -> memento.toSyncRecord(resolveProjectionType()))
+                .map(this::toSyncRecord)
                 .toList();
     }
 
     @Override
     public List<SyncRecord> findAllNonRetired() {
         return jdbcRepository.findAllNonRetired().stream()
-                .map(memento -> memento.toSyncRecord(resolveProjectionType()))
+                .map(this::toSyncRecord)
                 .toList();
     }
 
     @Override
     public List<SyncRecord> findDueForScan(Instant now, Duration claimLease) {
         return jdbcRepository.findDueForScan(now, now.minus(claimLease)).stream()
-                .map(memento -> memento.toSyncRecord(resolveProjectionType()))
+                .map(this::toSyncRecord)
                 .toList();
     }
 
-    @Override
-    public void updateDirtySince(SyncRecordId id, Instant dirtySince) {
-        jdbcRepository.updateDirtySince(id.value(), dirtySince);
+    private SyncRecord toSyncRecord(SyncRecordMemento memento) {
+        return memento.toSyncRecord(resolveProjectionType(), loadSchedule(memento));
+    }
+
+    /**
+     * Loaded eagerly, right alongside the record, for every read path (proposal.md
+     * task 3.5's "never lazily" property, carried over from task 4b.2) — a second
+     * query per record, not a single joined one, since {@link SyncScheduleRepository}
+     * is deliberately its own port with its own read/write path (see its javadoc).
+     */
+    private SyncSchedule loadSchedule(SyncRecordMemento memento) {
+        return scheduleRepository.findByRecordId(new SyncRecordId(memento.getId()));
     }
 
     private SyncProjectionType resolveProjectionType() {

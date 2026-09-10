@@ -119,12 +119,6 @@ class SynchronizationService implements SynchronizationPort {
             // for. sync_schedule has no version column (task 2.3) by design.
             Instant now = clock.instant();
             syncScheduleRepository.apply(record.getId(), ScheduleEffect.dirtySince(now));
-            // Transitional double-write (task 4.10): sync_record's own dirty_since
-            // column still backs findDueForScan and SyncRecordMemento's read path until
-            // task 4b moves them onto sync_schedule, so it must be kept in agreement.
-            // No version predicate on this update either — see SyncRecordJdbcRepository
-            // javadoc.
-            syncRecordRepository.updateDirtySince(record.getId(), now);
         });
     }
 

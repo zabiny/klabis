@@ -119,6 +119,13 @@ class SyncOutcomeWriter {
     ) {
         SyncRecord saved = syncRecordRepository.save(record);
         syncScheduleRepository.apply(saved.getId(), scheduleEffect);
+        // saved is a separate object built by the record repository before the
+        // schedule effect above was applied — without this its dirtySince/
+        // nextAttemptDueAt would be stale relative to what was just persisted. record's
+        // own in-memory schedule is already correct (the domain method that produced
+        // scheduleEffect mutated it), so copy that rather than re-querying the schedule
+        // repository.
+        saved.updateSchedule(new SyncSchedule(record.getDirtySince(), record.getNextAttemptDueAt()));
         appendAttempt(saved, startedAt, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser);
         return saved;
     }
@@ -165,6 +172,8 @@ class SyncOutcomeWriter {
     SyncRecord doPersistResolution(SyncRecord record, ScheduleEffect scheduleEffect, Instant startedAt, SyncDirection direction, SyncHash localHash, SyncHash externalHash, String actingUser) {
         SyncRecord saved = syncRecordRepository.save(record);
         syncScheduleRepository.apply(saved.getId(), scheduleEffect);
+        // See doPersist's comment: saved's schedule predates the apply() call above.
+        saved.updateSchedule(new SyncSchedule(record.getDirtySince(), record.getNextAttemptDueAt()));
         appendAttempt(saved, startedAt, SyncTriggerKind.MANUAL, direction, SyncOutcome.SUCCESS, localHash, externalHash, null, actingUser);
         return saved;
     }

@@ -999,7 +999,6 @@ CREATE TABLE sync.sync_record
 
     external_version_token    VARCHAR(200) NULL,
 
-    dirty_since               TIMESTAMP    NULL,
     claimed_at                TIMESTAMP    NULL,
 
     acknowledged_local_hash   VARCHAR(64)  NULL,
@@ -1007,7 +1006,6 @@ CREATE TABLE sync.sync_record
     acknowledged_at           TIMESTAMP    NULL,
     acknowledged_by           VARCHAR(100) NULL,
 
-    next_attempt_due_at       TIMESTAMP    NULL,
     last_successful_sync_at   TIMESTAMP    NULL,
     last_direction            VARCHAR(20)  NULL,
     retired_at                TIMESTAMP    NULL,
@@ -1030,8 +1028,6 @@ COMMENT ON COLUMN sync.sync_record.baseline_local_projection IS 'Encrypted at re
 COMMENT ON COLUMN sync.sync_record.baseline_external_projection IS 'Populated only while an accepted divergence stands (D6); null otherwise';
 COMMENT ON COLUMN sync.sync_record.local_hash IS 'Plaintext digest of the whole local projection — never a per-field digest (D13)';
 
--- Backs the due scan (design.md D10): one indexed lookup for dirty/retry-due records.
-CREATE INDEX idx_sync_record_due_scan ON sync.sync_record (dirty_since, next_attempt_due_at);
 -- Backs the nightly full pass (design.md D10, D17): every non-retired record.
 CREATE INDEX idx_sync_record_status ON sync.sync_record (status);
 
@@ -1090,9 +1086,8 @@ CREATE TABLE sync.sync_schedule
 COMMENT ON TABLE sync.sync_schedule IS 'Scheduling hint for one sync_record — never domain state, never versioned (design.md D9)';
 
 -- Backs the due scan (design.md D10): one indexed lookup for dirty/retry-due records.
--- Duplicates idx_sync_record_due_scan on sync_record for now (proposal.md iteration 2
--- is purely additive — findDueForScan still queries sync_record directly); the
--- sync_record index is dropped once the due-scan query moves onto this table.
+-- The only such index left (proposal.md task 4b.3 drops sync_record's own
+-- idx_sync_record_due_scan/columns once findDueForScan's query moves onto this table).
 CREATE INDEX idx_sync_schedule_due_scan ON sync.sync_schedule (dirty_since, next_attempt_due_at);
 
 -- ============================================================================

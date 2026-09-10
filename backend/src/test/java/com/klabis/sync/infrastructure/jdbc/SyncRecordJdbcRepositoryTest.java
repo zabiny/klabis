@@ -19,7 +19,6 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,6 +36,9 @@ class SyncRecordJdbcRepositoryTest {
 
     @Autowired
     private SyncRecordRepository syncRecordRepository;
+
+    @Autowired
+    private SyncScheduleRepository syncScheduleRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -237,8 +239,8 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord dirty = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-1"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
             dirty.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
-            dirty.applyToSchedule(ScheduleEffect.dirtySince(Instant.now()));
-            syncRecordRepository.save(dirty);
+            SyncRecord saved = syncRecordRepository.save(dirty);
+            syncScheduleRepository.apply(saved.getId(), ScheduleEffect.dirtySince(Instant.now()));
 
             List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
 
@@ -251,8 +253,9 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-2"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
             record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
-            record.recordRetryableFailure(Instant.now().minus(Duration.ofMinutes(1)));
-            syncRecordRepository.save(record);
+            SyncRecord saved = syncRecordRepository.save(record);
+            ScheduleEffect scheduleEffect = record.recordRetryableFailure(Instant.now().minus(Duration.ofMinutes(1)));
+            syncScheduleRepository.apply(saved.getId(), scheduleEffect);
 
             List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
 
@@ -279,9 +282,11 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-4"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
             record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
-            record.applyToSchedule(ScheduleEffect.dirtySince(Instant.now()));
-            record.retire(Instant.now());
-            syncRecordRepository.save(record);
+            SyncRecord saved = syncRecordRepository.save(record);
+            syncScheduleRepository.apply(saved.getId(), ScheduleEffect.dirtySince(Instant.now()));
+            SyncRecord retired = syncRecordRepository.findById(saved.getId()).orElseThrow();
+            retired.retire(Instant.now());
+            syncRecordRepository.save(retired);
 
             List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
 
@@ -311,13 +316,15 @@ class SyncRecordJdbcRepositoryTest {
             SyncSnapshot external = SyncSnapshot.of(new TestSyncProjection("External", "Brno"), hasher);
             record.recordSuccess(SyncDirection.INWARD, local, local, Instant.now());
             record.recordConflict(local, external, null, Instant.now());
-            record.applyToSchedule(ScheduleEffect.dirtySince(Instant.now()));
-            syncRecordRepository.save(record);
+            SyncRecord saved = syncRecordRepository.save(record);
+            syncScheduleRepository.apply(saved.getId(), ScheduleEffect.dirtySince(Instant.now()));
 
-            Map<String, Object> persisted = jdbcTemplate.queryForMap(
-                    "SELECT status, dirty_since FROM sync.sync_record WHERE id = ?", record.getId().value());
-            assertThat(persisted.get("status")).isEqualTo("CONFLICT");
-            assertThat(persisted.get("dirty_since")).as("fixture must actually reproduce the gap: a CONFLICT record with dirty_since set").isNotNull();
+            String status = jdbcTemplate.queryForObject(
+                    "SELECT status FROM sync.sync_record WHERE id = ?", String.class, record.getId().value());
+            Instant dirtySince = jdbcTemplate.queryForObject(
+                    "SELECT dirty_since FROM sync.sync_schedule WHERE sync_record_id = ?", Instant.class, record.getId().value());
+            assertThat(status).isEqualTo("CONFLICT");
+            assertThat(dirtySince).as("fixture must actually reproduce the gap: a CONFLICT record with dirty_since set").isNotNull();
 
             List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
 
@@ -345,13 +352,15 @@ class SyncRecordJdbcRepositoryTest {
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
             record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
             record.recordTerminalFailure(5, "boom", Instant.now());
-            record.applyToSchedule(ScheduleEffect.dirtySince(Instant.now()));
-            syncRecordRepository.save(record);
+            SyncRecord saved = syncRecordRepository.save(record);
+            syncScheduleRepository.apply(saved.getId(), ScheduleEffect.dirtySince(Instant.now()));
 
-            Map<String, Object> persisted = jdbcTemplate.queryForMap(
-                    "SELECT status, dirty_since FROM sync.sync_record WHERE id = ?", record.getId().value());
-            assertThat(persisted.get("status")).isEqualTo("FAILED");
-            assertThat(persisted.get("dirty_since")).as("fixture must actually reproduce the gap: a FAILED record with dirty_since set").isNotNull();
+            String status = jdbcTemplate.queryForObject(
+                    "SELECT status FROM sync.sync_record WHERE id = ?", String.class, record.getId().value());
+            Instant dirtySince = jdbcTemplate.queryForObject(
+                    "SELECT dirty_since FROM sync.sync_schedule WHERE sync_record_id = ?", Instant.class, record.getId().value());
+            assertThat(status).isEqualTo("FAILED");
+            assertThat(dirtySince).as("fixture must actually reproduce the gap: a FAILED record with dirty_since set").isNotNull();
 
             List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
 
@@ -364,15 +373,78 @@ class SyncRecordJdbcRepositoryTest {
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-7"), EXTERNAL_REF);
             SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
             record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
-            record.applyToSchedule(ScheduleEffect.dirtySince(Instant.now()));
-            record.claim(Instant.now());
-            syncRecordRepository.save(record);
+            SyncRecord saved = syncRecordRepository.save(record);
+            syncScheduleRepository.apply(saved.getId(), ScheduleEffect.dirtySince(Instant.now()));
+            SyncRecord claimedRecord = syncRecordRepository.findById(saved.getId()).orElseThrow();
+            claimedRecord.claim(Instant.now());
+            syncRecordRepository.save(claimedRecord);
 
             List<SyncRecord> stillClaimed = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
             assertThat(stillClaimed).extracting(SyncRecord::getId).doesNotContain(record.getId());
 
             List<SyncRecord> afterLeaseExpired = syncRecordRepository.findDueForScan(Instant.now().plus(Duration.ofMinutes(10)), Duration.ofMinutes(5));
             assertThat(afterLeaseExpired).extracting(SyncRecord::getId).contains(record.getId());
+        }
+
+        /**
+         * Proposal.md task 4b.1's explicit trap: a {@code sync_record} row with no
+         * matching {@code sync_schedule} row (e.g. one enrolled before this change, or
+         * any other path that reaches {@code sync_record} without one) must still be
+         * reachable by the query — an {@code INNER JOIN} would silently drop it from
+         * every result the scan could ever produce, not merely from today's due
+         * predicate, with no error anywhere. Verified directly against the join, not
+         * through {@code findDueForScan}'s own predicate: a schedule-less record is
+         * never "due" by definition either way (its {@code dirty_since}/
+         * {@code next_attempt_due_at} are both absent), so the two join types would
+         * agree on that outcome even if one of them had silently dropped the row —
+         * this asserts the row is still present in the joined result set at all.
+         */
+        @Test
+        @DisplayName("a record with no sync_schedule row is still reachable by the join, not dropped from the result set")
+        void recordWithNoScheduleRowIsStillReachableByTheJoin() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-10"), EXTERNAL_REF);
+            SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
+            SyncRecord saved = syncRecordRepository.save(record);
+            jdbcTemplate.update("DELETE FROM sync.sync_schedule WHERE sync_record_id = ?", saved.getId().value());
+
+            Integer matchedRows = jdbcTemplate.queryForObject("""
+                    SELECT COUNT(*) FROM sync.sync_record sr
+                    LEFT JOIN sync.sync_schedule ss ON ss.sync_record_id = sr.id
+                    WHERE sr.id = ?
+                    """, Integer.class, saved.getId().value());
+            assertThat(matchedRows).as("an INNER JOIN would have produced 0 rows here instead of 1").isEqualTo(1);
+
+            // Once something schedules an effect, the row exists and the record
+            // behaves normally again (proposal.md task 2.6/4.7's invariant restored).
+            syncScheduleRepository.apply(saved.getId(), ScheduleEffect.dirtySince(Instant.now()));
+            List<SyncRecord> dueAfterMarkedDirty = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
+            assertThat(dueAfterMarkedDirty).extracting(SyncRecord::getId).contains(record.getId());
+        }
+
+        /**
+         * Replaces the 4.10/4.11 double-write agreement test (proposal.md task 4b.4):
+         * with the double-write gone, {@code sync_schedule} is the only store left —
+         * this proves a pass that schedules a retry actually persists it there and
+         * that {@code findDueForScan} genuinely reads it back, not merely that the
+         * two former stores agreed with each other.
+         */
+        @Test
+        @DisplayName("a persisted retry (sync_schedule alone) is picked up by the due scan")
+        void persistedRetryIsPickedUpFromScheduleAlone() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "due-11"), EXTERNAL_REF);
+            SyncSnapshot agreed = SyncSnapshot.of(new TestSyncProjection("Sprint", "Brno"), hasher);
+            record.recordSuccess(SyncDirection.INWARD, agreed, agreed, Instant.now());
+            SyncRecord saved = syncRecordRepository.save(record);
+
+            ScheduleEffect scheduleEffect = record.recordRetryableFailure(Instant.now().minus(Duration.ofMinutes(1)));
+            syncScheduleRepository.apply(saved.getId(), scheduleEffect);
+
+            SyncSchedule persisted = syncScheduleRepository.findByRecordId(saved.getId());
+            assertThat(persisted.nextAttemptDueAt()).as("the retry must actually be persisted, not just returned in memory").isNotNull();
+
+            List<SyncRecord> due = syncRecordRepository.findDueForScan(Instant.now(), Duration.ofMinutes(5));
+            assertThat(due).extracting(SyncRecord::getId).contains(record.getId());
         }
     }
 }

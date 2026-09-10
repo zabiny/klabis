@@ -58,25 +58,17 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
 
     /**
      * Applies a {@link ScheduleEffect} to the in-memory {@link #schedule} and returns
-     * it unchanged for the caller to forward. Transitional (proposal.md task 3, not
-     * yet task 4): the application layer does not yet route effects through
-     * {@code SyncScheduleRepository} — {@code SyncRecordMemento} still persists
-     * scheduling via {@code sync_record}'s own columns, reading them back through
-     * {@link #getDirtySince()}/{@link #getNextAttemptDueAt()} — so this keeps that
-     * existing persistence path correct by updating the same in-memory state those
-     * getters read, exactly as the field assignments it replaces used to. Once
-     * task 4.1-4.3 route effects through the schedule repository instead, this
-     * in-memory update stops being load-bearing but stays correct as a read-your-own-
-     * write convenience.
-     * <p>
-     * Public only as that transitional escape hatch for
-     * {@code SynchronizationService.markDirty}, which has no domain method left to call
-     * now that {@code markDirty(Instant)} is removed (proposal.md task 3.1) and cannot
-     * yet go through {@code SyncScheduleRepository} (task 4.3). Every other caller
-     * gets the same effect back from the domain method it already called and should
-     * never call this directly.
+     * it unchanged for the caller to forward, so {@link #getDirtySince()}/
+     * {@link #getNextAttemptDueAt()} stay correct for the rest of this record's
+     * lifetime in memory (design.md D9, proposal.md task 3.3). The application layer
+     * persists the same effect separately, through {@code SyncScheduleRepository}
+     * (task 4.1-4.3) — this method only keeps the aggregate's own read-your-own-write
+     * view consistent; it is no longer any part of the persisted scheduling path
+     * (task 4b.2 moved reads onto the schedule table). Private: every caller is one of
+     * this class's own domain methods, which forward the same effect onward to the
+     * application layer that already called them.
      */
-    public ScheduleEffect applyToSchedule(ScheduleEffect effect) {
+    private ScheduleEffect applyToSchedule(ScheduleEffect effect) {
         this.schedule = schedule.apply(effect);
         return effect;
     }
@@ -542,6 +534,27 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
 
     public Instant getDirtySince() {
         return schedule.dirtySince();
+    }
+
+    /**
+     * Refreshes the in-memory {@link #schedule} from a value already persisted
+     * elsewhere — mirrors {@link #updateAuditMetadata} (inherited from
+     * {@code KlabisAggregateRoot}), which does the same for audit fields after a save.
+     * <p>
+     * Needed because {@code SyncScheduleRepository} is a separate port from {@code
+     * SyncRecordRepository} (proposal.md "Scheduling moves out of the aggregate into
+     * its own table and its own port"): the record returned by
+     * {@code SyncRecordRepository.save} is built before the caller applies the
+     * schedule effect through {@code SyncScheduleRepository}, so without this call its
+     * in-memory schedule would be stale — the caller's own record already has the
+     * correct post-effect value (the domain method mutated it), but a freshly saved
+     * copy does not. {@code SyncOutcomeWriter.doPersist}/{@code doPersistResolution}
+     * call this right after {@code SyncScheduleRepository.apply} so the record they
+     * return to the application layer (and ultimately the REST layer) reports the
+     * same {@code dirtySince}/{@code nextAttemptDueAt} that was actually persisted.
+     */
+    public void updateSchedule(SyncSchedule schedule) {
+        this.schedule = schedule;
     }
 
     public Instant getClaimedAt() {

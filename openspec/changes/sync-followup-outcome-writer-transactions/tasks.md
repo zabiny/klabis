@@ -46,12 +46,12 @@ Second half. Only start once 4a is committed with a green suite. At the end of t
 `sync_record` no longer carries scheduling at all, so the double-write from 4.10 stops
 being needed and the transitional hatch closes.
 
-- [ ] 4b.1 Update `findDueForScan` and `findAllActive` to join `sync_schedule` instead of filtering columns on `sync_record`, preserving the exact predicates (including the `status NOT IN ('FAILED', 'CONFLICT')` and claim-staleness clauses). A record with no schedule row must still behave exactly as one with an empty schedule does today — check what the join does to such a record, since an INNER JOIN would silently drop it from the scan.
-- [ ] 4b.2 Move `SyncRecordMemento`'s read path off `sync_record`'s scheduling columns and onto the schedule loaded via `SyncScheduleRepository`, keeping task 3.5's "never lazily" property.
-- [ ] 4b.3 Drop `idx_sync_record_due_scan` and the `dirty_since` / `next_attempt_due_at` columns from `sync_record` in `V001`. Deferred from task 2.4 so the live query was never left without its index.
-- [ ] 4b.4 Remove the 4.10 double-write and the 4.11 test that guarded it — both exist only to make 4a shippable on its own.
-- [ ] 4b.5 Close the iteration-3 transitional hatch: reduce `SyncRecord.applyToSchedule` to private, or drop it entirely (moved here from 4.8 — it must stay public while 4.10's double-write depends on it).
-- [ ] 4b.6 Re-verify the version-token short-circuit (4.4) now that `dirtySince` arrives from the new table rather than the aggregate's own columns. This is the second and last chance for the change's quietest failure mode to appear.
+- [x] 4b.1 Update `findDueForScan` and `findAllActive` to join `sync_schedule` instead of filtering columns on `sync_record`, preserving the exact predicates (including the `status NOT IN ('FAILED', 'CONFLICT')` and claim-staleness clauses). A record with no schedule row must still behave exactly as one with an empty schedule does today — check what the join does to such a record, since an INNER JOIN would silently drop it from the scan.
+- [x] 4b.2 Move `SyncRecordMemento`'s read path off `sync_record`'s scheduling columns and onto the schedule loaded via `SyncScheduleRepository`, keeping task 3.5's "never lazily" property.
+- [x] 4b.3 Drop `idx_sync_record_due_scan` and the `dirty_since` / `next_attempt_due_at` columns from `sync_record` in `V001`. Deferred from task 2.4 so the live query was never left without its index.
+- [x] 4b.4 Remove the 4.10 double-write and the 4.11 test that guarded it — both exist only to make 4a shippable on its own.
+- [x] 4b.5 Close the iteration-3 transitional hatch: reduce `SyncRecord.applyToSchedule` to private, or drop it entirely (moved here from 4.8 — it must stay public while 4.10's double-write depends on it).
+- [x] 4b.6 Re-verify the version-token short-circuit (4.4) now that `dirtySince` arrives from the new table rather than the aggregate's own columns. This is the second and last chance for the change's quietest failure mode to appear.
 
 ## 5. Remove the layers the race forced
 

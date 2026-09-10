@@ -50,8 +50,8 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
      * whose claim is still fresh. {@code RETIRED} is excluded via
      * {@code retired_at IS NULL}. Neither {@code FAILED} nor {@code CONFLICT} is
      * excluded by construction: {@code recordConflict} and {@code recordTerminalFailure}
-     * do clear the scheduling fields, but {@code SyncRecord.markDirty} has no status
-     * guard, so an ordinary local edit to an entity whose record is already
+     * do clear the scheduling fields, but {@code SyncScheduleRepository.apply} has no
+     * status guard, so an ordinary local edit to an entity whose record is already
      * {@code CONFLICT} or {@code FAILED} re-sets {@code dirty_since} and the record then
      * matches the dirty predicate. Handed to a pass in that state it is rejected by
      * {@code SyncRecord.assertBeingAttempted} once {@code runScheduledPass} tries it, an
@@ -63,24 +63,27 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
      * conflict still waits for a manager to resolve it — a resolution re-enrolls the
      * record and clears {@code CONFLICT}, at which point it is eligible again. One
      * indexed query, matching the index on {@code (dirty_since, next_attempt_due_at)}
-     * declared in the schema.
+     * declared on {@code sync_schedule} (proposal.md task 2.4).
+     * <p>
+     * {@code LEFT JOIN}, not {@code INNER JOIN} (proposal.md task 4b.1): every record
+     * gets a {@code sync_schedule} row at enrolment (task 2.6, 4.7), but this query
+     * must not depend on that invariant holding for every row that predates it — an
+     * {@code INNER JOIN} would silently drop a record with no schedule row from the
+     * scan (it would simply never be synchronised again, with no error anywhere). A
+     * missing row behaves exactly as {@link com.klabis.sync.domain.SyncSchedule#empty()}
+     * does everywhere else in this change: {@code dirty_since IS NULL} (never dirty)
+     * and {@code next_attempt_due_at <= :now} is false when the column itself is
+     * {@code NULL}, so such a record is due only once something else marks it dirty or
+     * schedules a retry — the same behaviour a freshly enrolled record with an empty
+     * schedule has today.
      */
     @Query("""
-            SELECT * FROM sync.sync_record
-            WHERE retired_at IS NULL
-              AND status NOT IN ('FAILED', 'CONFLICT')
-              AND (dirty_since IS NOT NULL OR next_attempt_due_at <= :now)
-              AND (claimed_at IS NULL OR claimed_at <= :claimStaleBefore)
+            SELECT sr.* FROM sync.sync_record sr
+            LEFT JOIN sync.sync_schedule ss ON ss.sync_record_id = sr.id
+            WHERE sr.retired_at IS NULL
+              AND sr.status NOT IN ('FAILED', 'CONFLICT')
+              AND (ss.dirty_since IS NOT NULL OR ss.next_attempt_due_at <= :now)
+              AND (sr.claimed_at IS NULL OR sr.claimed_at <= :claimStaleBefore)
             """)
     List<SyncRecordMemento> findDueForScan(@Param("now") Instant now, @Param("claimStaleBefore") Instant claimStaleBefore);
-
-    /**
-     * Transitional double-write (proposal.md task 4.10): a plain column update with
-     * no {@code version} predicate, so it never contends for {@code sync_record}'s
-     * optimistic lock — the entire reason {@code markDirty} no longer loads/saves the
-     * aggregate (task 4.3). Deleted in task 4b.4.
-     */
-    @Modifying
-    @Query("UPDATE sync.sync_record SET dirty_since = :dirtySince WHERE id = :id")
-    void updateDirtySince(@Param("id") UUID id, @Param("dirtySince") Instant dirtySince);
 }

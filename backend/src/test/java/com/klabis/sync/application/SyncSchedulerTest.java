@@ -51,6 +51,9 @@ class SyncSchedulerTest {
     private SyncRecordRepository syncRecordRepository;
 
     @Autowired
+    private SyncScheduleRepository syncScheduleRepository;
+
+    @Autowired
     private SynchronizationAdapter synchronizationAdapter;
 
     @Autowired
@@ -173,9 +176,7 @@ class SyncSchedulerTest {
         @DisplayName("picks up a dirty record and clears it")
         void picksUpDirtyRecord() {
             SyncRecord record = enrollAndSync("sched-due-1", "8302");
-            SyncRecord marked = syncRecordRepository.findById(record.getId()).orElseThrow();
-            marked.applyToSchedule(ScheduleEffect.dirtySince(clock.instant()));
-            syncRecordRepository.save(marked);
+            syncScheduleRepository.apply(record.getId(), ScheduleEffect.dirtySince(clock.instant()));
             adapter.withExternalState("8302", new TestSyncProjection("Sprint Updated", "Brno"));
 
             scheduler.runDueScan();
@@ -200,8 +201,8 @@ class SyncSchedulerTest {
         @DisplayName("skips a claimed record still within its lease")
         void skipsFreshlyClaimedRecord() {
             SyncRecord record = enrollAndSync("sched-due-3", "8304");
+            syncScheduleRepository.apply(record.getId(), ScheduleEffect.dirtySince(clock.instant()));
             SyncRecord claimed = syncRecordRepository.findById(record.getId()).orElseThrow();
-            claimed.applyToSchedule(ScheduleEffect.dirtySince(clock.instant()));
             claimed.claim(clock.instant());
             syncRecordRepository.save(claimed);
             adapter.withExternalState("8304", new TestSyncProjection("Sprint Updated", "Brno"));
@@ -220,9 +221,7 @@ class SyncSchedulerTest {
         @DisplayName("stops the scan when the circuit breaker is open, leaving the remaining records untouched")
         void stopsOnOpenCircuitBreaker() {
             SyncRecord record = enrollAndSync("sched-due-4", "8305");
-            SyncRecord marked = syncRecordRepository.findById(record.getId()).orElseThrow();
-            marked.applyToSchedule(ScheduleEffect.dirtySince(clock.instant()));
-            syncRecordRepository.save(marked);
+            syncScheduleRepository.apply(record.getId(), ScheduleEffect.dirtySince(clock.instant()));
 
             circuitBreakerRegistry.circuitBreaker(ResilientAdapterExecutor.INSTANCE_NAME)
                     .transitionToForcedOpenState();
