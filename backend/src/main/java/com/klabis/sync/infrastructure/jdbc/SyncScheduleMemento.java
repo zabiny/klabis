@@ -13,7 +13,11 @@ import java.util.UUID;
 /**
  * Memento for {@link SyncSchedule}, keyed by the owning record's id — no surrogate id
  * and, deliberately, no version column (proposal.md task 2.3): a scheduling write must
- * never contend for the same optimistic lock as {@code sync_record}.
+ * never contend for the same optimistic lock as {@code sync_record}. Only used to read
+ * a schedule and to insert its row at enrolment — every other write goes through
+ * {@link SyncScheduleJdbcRepository}'s unconditional {@code UPDATE} queries, not
+ * {@code CrudRepository.save}, so this memento never has to distinguish an update from
+ * an insert for those paths.
  */
 @Table(schema = "sync", value = "sync_schedule")
 class SyncScheduleMemento implements Persistable<UUID> {
@@ -38,21 +42,6 @@ class SyncScheduleMemento implements Persistable<UUID> {
         SyncScheduleMemento memento = new SyncScheduleMemento();
         memento.syncRecordId = syncRecordId;
         memento.isNew = true;
-        return memento;
-    }
-
-    /**
-     * {@code rowExists} must reflect whether a row is already present for {@code
-     * syncRecordId} — unlike the other mementos in this module, there is no audit
-     * metadata to use as an is-new sentinel, so the caller (which just read the current
-     * schedule to compute {@code schedule}) is the one place that already knows.
-     */
-    static SyncScheduleMemento existing(UUID syncRecordId, SyncSchedule schedule, boolean rowExists) {
-        SyncScheduleMemento memento = new SyncScheduleMemento();
-        memento.syncRecordId = syncRecordId;
-        memento.dirtySince = schedule.dirtySince();
-        memento.nextAttemptDueAt = schedule.nextAttemptDueAt();
-        memento.isNew = !rowExists;
         return memento;
     }
 

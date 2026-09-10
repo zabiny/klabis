@@ -86,6 +86,21 @@ class SyncRecordRepositoryAdapter implements SyncRecordRepository {
      * task 3.5's "never lazily" property, carried over from task 4b.2) — a second
      * query per record, not a single joined one, since {@link SyncScheduleRepository}
      * is deliberately its own port with its own read/write path (see its javadoc).
+     * <p>
+     * A deliberate N+1 on every list path ({@link #findAllActive}, {@link
+     * #findAllNonRetired}, {@link #findDueForScan}), accepted rather than fixed
+     * (simplify review): N is the count of active records — tens to low hundreds in
+     * this deployment — and the nightly full pass that calls {@link #findAllActive}
+     * runs once a day, already issuing at least four loads plus an HTTP call to ORIS
+     * per record it attempts, so one more query per record is noise by comparison. The
+     * due scan ({@link #findDueForScan}) typically returns zero records, so N there is
+     * usually 0 anyway. A join would pull the schedule columns into {@code
+     * SyncRecordMemento} and blur the boundary this change deliberately drew between
+     * {@code sync_record} and {@code sync_schedule}. If the active-record count grows
+     * into the thousands, join {@code sync_schedule} directly into {@link
+     * SyncRecordJdbcRepository#findDueForScan}/{@link
+     * SyncRecordJdbcRepository#findAllActive} — both already reference the table for
+     * their own predicates.
      */
     private SyncSchedule loadSchedule(SyncRecordMemento memento) {
         return scheduleRepository.findByRecordId(new SyncRecordId(memento.getId()));

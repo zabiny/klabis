@@ -1,6 +1,5 @@
 package com.klabis.sync.infrastructure.jdbc;
 
-import org.springframework.data.jdbc.repository.query.Modifying;
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;

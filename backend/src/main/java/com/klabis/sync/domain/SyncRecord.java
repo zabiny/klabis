@@ -557,6 +557,18 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         this.schedule = schedule;
     }
 
+    /**
+     * The schedule as this record's own in-memory copy already has it — used by
+     * {@code SyncOutcomeWriter} (a different package: the application layer that
+     * orchestrates a pass) to refresh a freshly-saved copy of this same record (see
+     * {@link #updateSchedule}'s javadoc) without re-deriving a {@link SyncSchedule}
+     * from the two getters at each call site, which would silently drop a third field
+     * if one were ever added.
+     */
+    public SyncSchedule getSchedule() {
+        return schedule;
+    }
+
     public Instant getClaimedAt() {
         return claimedAt;
     }

@@ -88,7 +88,7 @@ class SyncOutcomeWriter {
         // own in-memory schedule is already correct (the domain method that produced
         // scheduleEffect mutated it), so copy that rather than re-querying the schedule
         // repository.
-        saved.updateSchedule(new SyncSchedule(record.getDirtySince(), record.getNextAttemptDueAt()));
+        saved.updateSchedule(record.getSchedule());
         appendAttempt(saved, startedAt, trigger, direction, outcome, localHash, externalHash, failureReason, actingUser);
         return saved;
     }
@@ -104,7 +104,7 @@ class SyncOutcomeWriter {
         SyncRecord saved = syncRecordRepository.save(record);
         syncScheduleRepository.apply(saved.getId(), scheduleEffect);
         // See persist's comment: saved's schedule predates the apply() call above.
-        saved.updateSchedule(new SyncSchedule(record.getDirtySince(), record.getNextAttemptDueAt()));
+        saved.updateSchedule(record.getSchedule());
         appendAttempt(saved, startedAt, SyncTriggerKind.MANUAL, direction, SyncOutcome.SUCCESS, localHash, externalHash, null, actingUser);
         return saved;
     }
