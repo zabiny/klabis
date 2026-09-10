@@ -35,7 +35,7 @@ old columns still back every *read*, so the system stays consistent at the end o
 - [x] 4.3 Rewrite `SynchronizationService.markDirty` to write only through the schedule repository — no aggregate load, no aggregate save.
 - [x] 4.4 Verify the version-token short-circuit at `SynchronizationService.java:338` still reads a populated `dirtySince`. This is the change's quietest failure mode: a null schedule makes the condition true when it should be false, the short-circuit stops firing, and the engine silently does a full read on every pass with no test failing.
 - [x] 4.7 Call `SyncScheduleRepository.createFor` from `SynchronizationService.enroll`, in the same transaction as the record save, so task 2.6's "every record has a schedule row" invariant actually holds. The method exists but has no caller yet.
-- [ ] 4.8 *(moved to 4b.5)* — `applyToSchedule` must stay public through this half, because 4.10's double-write depends on it.
+- [x] 4.8 *(moved to 4b.5 — done there)* — `applyToSchedule` must stay public through this half, because 4.10's double-write depends on it.
 - [x] 4.9 Make the dropped-effect trap impossible to reintroduce rather than relying on 4.1's checklist: once `applyToSchedule` no longer mutates the aggregate, a discarded `ScheduleEffect` is always a bug. Prefer a mechanism that fails loudly — annotate the domain methods so an ignored result is a compile-time warning/error, or have the effect be applied only by a helper the call site must pass it to. If no such mechanism fits the codebase, say so and instead add a test that a pass which schedules a retry actually leaves a persisted `next_attempt_due_at`, and verify it fails when one call site is left discarding.
 - [x] 4.10 **The bridge that makes this half independently shippable:** every effect applied through `SyncScheduleRepository` must ALSO keep `sync_record`'s own `dirty_since`/`next_attempt_due_at` columns up to date, because until 4b lands those columns still back `findDueForScan`, `findAllActive` and `SyncRecordMemento`'s read path. Keeping `applyToSchedule`'s in-memory mutation (and therefore what `SyncRecordMemento.from` persists) achieves this for free — so do NOT remove it in this half; 4.8 moves to 4b. State explicitly in your report that both stores are written and that the two cannot disagree.
 - [x] 4.11 Verify the double-write directly: after a pass that schedules a retry, assert `sync_schedule` and `sync_record` hold the same `next_attempt_due_at`. This test is what proves 4a is safe to ship on its own, and it is deleted in 4b once `sync_record`'s columns are gone.
@@ -74,4 +74,4 @@ being needed and the transitional hatch closes.
 - [x] 6.8 Review the test code itself, not just its green result.
 - [x] 6.9 Run the full backend test suite; all tests compile and pass.
 - [x] 6.10 Code review, focused on transaction boundaries, the concurrent paths, and the ten transcribed `ScheduleEffect` rows.
-- [ ] 6.11 Commit.
+- [x] 6.11 Commit.
