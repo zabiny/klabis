@@ -186,6 +186,28 @@ decisive question of this migration — not the DDL, and not the trigger bookkee
 It touches the exact invariant that `sync-followup-outcome-writer-transactions`
 recently tightened.
 
+### The race that moved scheduling out is not a scheduling problem
+
+It is worth being explicit about why Quartz cannot undo the split that created
+`sync_schedule`, since that is the most natural thing to hope for from this migration.
+
+Scheduling was moved off `SyncRecord` because two *threads* write the same row: a pass
+writing its outcome, and `EventsSyncListener` — an `@ApplicationModuleListener`, so
+asynchronous — calling `markDirty`. Quartz decides what wakes a pass; it has no bearing
+on what happens once the pass is running. Whatever triggers it, `markDirty` still
+arrives on its own thread and still has to write somewhere.
+
+So `dirty_since` cannot return to the aggregate under Quartz any more than it can
+today, and `sync_schedule` cannot be deleted outright unless the dirty marker moves
+into a Quartz trigger — which is precisely the move that exposes it to the
+lost-trigger failure above.
+
+Removing the engine's *self-inflicted* half of that race is possible and worthwhile,
+but it is a separate change (`sync-skip-self-inflicted-dirty-marker`) and it does not
+change this conclusion: a manager editing an event while a pass is in flight is a
+genuine concurrent write, not an artefact, because D12 leaves no transaction open
+across the external call.
+
 ### Trigger lifecycle becomes explicit
 
 Today "stop scheduling this record" is a side effect of a query predicate. With Quartz
@@ -241,9 +263,10 @@ the dropped-effect trap"). Replacing it with scheduler calls gives that guard up
   `scheduler.triggerJob()`). Synchronisation tests become slower and more prone to
   non-determinism, and a scheduling assertion moves from "select the row and check the
   column" to inspecting trigger state.
-- `sync-followup-clock-injection` — injecting the existing `Clock` bean at the 13 sites
-  still calling `Instant.now()` — would make those tests deterministic *without*
-  Quartz, and is worth doing regardless of what happens here.
+- `Clock` is already injected throughout `sync` (archived change
+  `2026-09-06-sync-followup-clock-injection`), so time-dependent tests are already
+  deterministic today — moving scheduling into Quartz's own store would take some of
+  that back, since a trigger's fire time is not driven by the injected clock.
 
 ## Recommendation
 

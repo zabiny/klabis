@@ -140,9 +140,9 @@ be re-raised under the `spec-driven` schema:
 - Tests must not start a live scheduler. Quartz should be in `standby` for the test
   profile, with jobs invoked directly — which is how the existing scheduler tests
   already work, since they call the inner methods rather than waiting for a cron.
-- Worth doing first regardless: `sync-followup-clock-injection` (injecting the existing
-  `Clock` bean at the 13 sites still calling `Instant.now()`), which makes
-  time-dependent tests deterministic independently of this change.
+- `Clock` is already injected across `sync` (archived change
+  `2026-09-06-sync-followup-clock-injection`), so the jobs' own time handling is
+  already testable without waiting on a scheduler.
 
 ## Open Questions
 
