@@ -348,4 +348,109 @@ describe('Modal Component', () => {
         })
     });
 
+    describe('Header Icon Prop', () => {
+        it('should render icon before the title', () => {
+            const {container} = render(
+                <Modal isOpen={true} onClose={() => {}} title="Nadpis" headerIcon={<svg data-testid="header-icon"/>}>
+                    Content
+                </Modal>,
+            );
+            const icon = screen.getByTestId('header-icon');
+            const title = container.querySelector('#modal-title');
+            expect(icon).toBeInTheDocument();
+            expect(icon.compareDocumentPosition(title!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        });
+
+        it('should tint the header with primary-subtle when headerIcon is provided', () => {
+            const {container} = render(
+                <Modal isOpen={true} onClose={() => {}} title="Nadpis" headerIcon={<svg/>}>
+                    Content
+                </Modal>,
+            );
+            expect(container.querySelector('[data-testid="modal-header"]')).toHaveClass('bg-primary-subtle');
+        });
+
+        it('should keep base header background without headerIcon', () => {
+            const {container} = render(
+                <Modal isOpen={true} onClose={() => {}} title="Nadpis">
+                    Content
+                </Modal>,
+            );
+            expect(container.querySelector('[data-testid="modal-header"]')).toHaveClass('bg-surface-base');
+            expect(container.querySelector('[data-testid="modal-header"]')).not.toHaveClass('bg-primary-subtle');
+        });
+
+        it('should render compact close button with header icon', () => {
+            const {container} = render(
+                <Modal isOpen={true} onClose={() => {}} title="Nadpis" headerIcon={<svg/>}>
+                    Content
+                </Modal>,
+            );
+            expect(container.querySelector('[data-testid="modal-close-button"]')).toHaveClass('h-8', 'w-8');
+        });
+    });
+
+    describe('Context Strip Prop', () => {
+        it('should render context strip above the content inside scroll area', () => {
+            render(
+                <Modal isOpen={true} onClose={() => {}} context={<div data-testid="context-content">Event name</div>}>
+                    Form content
+                </Modal>,
+            );
+            const strip = screen.getByTestId('modal-context');
+            expect(strip).toBeInTheDocument();
+            expect(strip).toHaveTextContent('Event name');
+            const scrollArea = strip.parentElement!;
+            expect(scrollArea).toHaveClass('overflow-y-auto');
+            expect(scrollArea).toContainElement(screen.getByText('Form content'));
+        });
+
+        it('should style context strip with subtle background and bottom border', () => {
+            const {container} = render(
+                <Modal isOpen={true} onClose={() => {}} context={<div>ctx</div>}>
+                    Content
+                </Modal>,
+            );
+            expect(container.querySelector('[data-testid="modal-context"]')).toHaveClass('bg-bg-subtle', 'border-b', 'border-border', 'px-6', 'py-4');
+        });
+
+        it('should not render context strip when not provided', () => {
+            const {container} = render(
+                <Modal isOpen={true} onClose={() => {}}>
+                    Content
+                </Modal>,
+            );
+            expect(container.querySelector('[data-testid="modal-context"]')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Footer Note Prop', () => {
+        it('should render footer note in the left slot', () => {
+            render(
+                <Modal isOpen={true} onClose={() => {}} footerNote={<span>Poznámka</span>}>
+                    Content
+                </Modal>,
+            );
+            expect(screen.getByTestId('modal-footer-note')).toHaveTextContent('Poznámka');
+        });
+
+        it('should render footer when only footerNote is provided', () => {
+            const {container} = render(
+                <Modal isOpen={true} onClose={() => {}} footerNote={<span>Poznámka</span>}>
+                    Content
+                </Modal>,
+            );
+            expect(container.querySelector('.border-t')).toBeInTheDocument();
+        });
+
+        it('should not render footer area when neither footer nor footerNote provided', () => {
+            const {container} = render(
+                <Modal isOpen={true} onClose={() => {}}>
+                    Content
+                </Modal>,
+            );
+            expect(container.querySelector('.border-t')).not.toBeInTheDocument();
+        });
+    });
+
 });

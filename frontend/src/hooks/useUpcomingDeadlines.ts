@@ -1,15 +1,20 @@
-import type {HalResponse} from '../api';
-import type {HalFormsTemplate} from '../api';
-import {toHref} from '../api/hateoas';
+import type {HalResourceLinks, HalResponse, Link} from '../api';
+import {asLinkArray, toHref} from '../api/hateoas';
+import type {components} from '../api/klabisApi';
 import {useAuthorizedQuery} from './useAuthorizedFetch';
+import {getTodayIso} from '../utils/dateUtils';
+
+function linkHref(links: HalResourceLinks | undefined): string | undefined {
+    const link = asLinkArray(links)[0];
+    return link ? toHref(link) : undefined;
+}
 
 export interface UpcomingDeadlineItem {
     selfHref: string;
     name: string;
     eventDate: string;
     deadline: string;
-    newRegistrationHref: string | undefined;
-    registerForEventTemplate: HalFormsTemplate | undefined;
+    newRegistration: Link | undefined;
 }
 
 export interface UpcomingDeadlinesData {
@@ -19,23 +24,13 @@ export interface UpcomingDeadlinesData {
 
 function pickNextRelevantDeadline(deadlines: string[] | undefined): string {
     if (!deadlines || deadlines.length === 0) return '';
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getTodayIso();
     return deadlines.find(d => d >= today) ?? deadlines[deadlines.length - 1];
 }
 
 function toUpcomingDeadlinesData(response: HalResponse): UpcomingDeadlinesData {
     const embedded = response._embedded as {
-        eventSummaryDtoList?: Array<{
-            id?: {value?: string};
-            name?: string;
-            eventDate?: string;
-            deadlines?: string[];
-            _links?: {
-                self?: {href: string};
-                newRegistration?: {href: string};
-            };
-            _templates?: Record<string, HalFormsTemplate>;
-        }>;
+        eventSummaryDtoList?: Array<components['schemas']['EntityModelEventSummaryDto']>;
     } | undefined;
 
     const page = (response as {page?: {totalElements?: number}}).page;
@@ -43,14 +38,13 @@ function toUpcomingDeadlinesData(response: HalResponse): UpcomingDeadlinesData {
 
     const rawItems = embedded?.eventSummaryDtoList ?? [];
     const items: UpcomingDeadlineItem[] = rawItems
-        .filter(e => e._links?.self?.href)
+        .filter(e => asLinkArray(e._links?.self)[0])
         .map(e => ({
-            selfHref: toHref(e._links!.self!),
+            selfHref: linkHref(e._links?.self)!,
             name: e.name ?? '',
             eventDate: e.eventDate ?? '',
             deadline: pickNextRelevantDeadline(e.deadlines),
-            newRegistrationHref: e._links?.newRegistration ? toHref(e._links.newRegistration) : undefined,
-            registerForEventTemplate: e._templates?.registerForEvent,
+            newRegistration: asLinkArray(e._links?.newRegistration)[0],
         }));
 
     return {items, totalElements};

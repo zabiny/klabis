@@ -112,6 +112,12 @@ class EventMemento implements Persistable<UUID> {
     @Column("base_entry_fee_currency")
     private String baseEntryFeeCurrency;
 
+    @Column("shared_transport_enabled")
+    private boolean sharedTransportEnabled;
+
+    @Column("shared_accommodation_enabled")
+    private boolean sharedAccommodationEnabled;
+
     // Registrations are part of the aggregate
     // Using Set instead of List to avoid needing a position/key column
     @MappedCollection(idColumn = "event_id")
@@ -213,6 +219,9 @@ class EventMemento implements Persistable<UUID> {
             memento.baseEntryFeeAmount = baseEntryFee.amount();
             memento.baseEntryFeeCurrency = baseEntryFee.currency().getCurrencyCode();
         }
+
+        memento.sharedTransportEnabled = event.isSharedTransportEnabled();
+        memento.sharedAccommodationEnabled = event.isSharedAccommodationEnabled();
     }
 
     /**
@@ -284,6 +293,8 @@ class EventMemento implements Persistable<UUID> {
                 categoriesList,
                 ranking,
                 baseEntryFee,
+                this.sharedTransportEnabled,
+                this.sharedAccommodationEnabled,
                 registrations.stream().map(EventRegistrationMemento::toEventRegistration).toList(),
                 new AuditMetadata(
                         this.createdAt,

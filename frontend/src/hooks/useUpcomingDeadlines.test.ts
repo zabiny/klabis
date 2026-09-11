@@ -42,22 +42,24 @@ const buildEventsResponse = (events: {
     name: string;
     eventDate: string;
     deadlines: string[];
+    location?: string;
+    sharedTransportEnabled?: boolean;
+    sharedAccommodationEnabled?: boolean;
     newRegistrationHref?: string;
-    registerForEventTarget?: string;
 }[]) => ({
     _embedded: {
         eventSummaryDtoList: events.map(e => ({
             id: {value: e.id},
             name: e.name,
             eventDate: e.eventDate,
+            ...(e.location !== undefined ? {location: e.location} : {}),
             deadlines: e.deadlines,
+            ...(e.sharedTransportEnabled !== undefined ? {sharedTransportEnabled: e.sharedTransportEnabled} : {}),
+            ...(e.sharedAccommodationEnabled !== undefined ? {sharedAccommodationEnabled: e.sharedAccommodationEnabled} : {}),
             _links: {
                 self: {href: `/api/events/${e.id}`},
                 ...(e.newRegistrationHref ? {newRegistration: {href: e.newRegistrationHref}} : {}),
             },
-            _templates: e.registerForEventTarget
-                ? {registerForEvent: {target: e.registerForEventTarget, method: 'POST', properties: []}}
-                : undefined,
         })),
     },
     _links: {self: {href: '/api/events?status=ACTIVE&deadlineWithin=P7D&notRegisteredBy=me&size=5&sort=registrationDeadline,asc'}},
@@ -72,16 +74,17 @@ describe('useUpcomingDeadlines', () => {
                 id: 'evt-1',
                 name: 'Jarní závod',
                 eventDate: '2026-05-20',
+                location: 'Brno',
                 deadlines: ['2026-05-14'],
+                sharedTransportEnabled: true,
+                sharedAccommodationEnabled: false,
                 newRegistrationHref: '/api/events/evt-1/registrations/new',
-                registerForEventTarget: '/api/events/evt-1/registrations',
             },
             {
                 id: 'evt-2',
                 name: 'Letní kemp',
                 eventDate: '2026-06-10',
                 deadlines: ['2026-05-15'],
-                newRegistrationHref: '/api/events/evt-2/registrations/new',
             },
         ]));
 
@@ -95,7 +98,8 @@ describe('useUpcomingDeadlines', () => {
         expect(items[0].eventDate).toBe('2026-05-20');
         expect(items[0].selfHref).toBe('/api/events/evt-1');
         expect(items[0].deadline).toBe('2026-05-14');
-        expect(items[0].newRegistrationHref).toBe('/api/events/evt-1/registrations/new');
+        expect(items[0].newRegistration).toEqual({href: '/api/events/evt-1/registrations/new'});
+        expect(items[1].newRegistration).toBeUndefined();
     });
 
     it('does not fetch when href is undefined (query is disabled)', () => {

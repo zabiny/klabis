@@ -654,6 +654,44 @@ class EventManagementE2ETest extends SecurityTestBase {
                 .andExpect(jsonPath("$._links['event-type']").doesNotExist());
     }
 
+    @Test
+    @DisplayName("Event list rows carry shared-offer flags")
+    void shouldExposeSharedOfferFlagsInEventList() throws Exception {
+        Event.CreateEvent createCommand = EventCreateEventBuilder.builder()
+                .name("Shared Offers List Event")
+                .eventDate(LocalDate.of(2026, 10, 15))
+                .location("Forest")
+                .organizer("OOB")
+                .sharedTransportEnabled(true)
+                .sharedAccommodationEnabled(false)
+                .build();
+
+        MvcResult createResult = mockMvc.perform(
+                        post("/api/events")
+                                .contentType("application/json")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                .content(objectMapper.writeValueAsString(createCommand))
+                )
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String eventId = extractEventIdFromLocation(createResult);
+
+        mockMvc.perform(
+                post("/api/events/{id}/publish", eventId)
+                        .contentType("application/json")
+        ).andExpect(status().isNoContent());
+
+        mockMvc.perform(
+                        get("/api/events")
+                                .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                )
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.eventSummaryDtoList[?(@.id == '%s')].sharedTransportEnabled", eventId).value(true))
+                .andExpect(jsonPath("$._embedded.eventSummaryDtoList[?(@.id == '%s')].sharedAccommodationEnabled", eventId).value(false));
+    }
+
     private String extractEventIdFromLocation(MvcResult result) {
         String location = result.getResponse().getHeader("Location");
         return location.substring(location.lastIndexOf('/') + 1);

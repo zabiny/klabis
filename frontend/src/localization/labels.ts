@@ -1,3 +1,9 @@
+export function czechPlural(count: number, one: string, few: string, many: string): string {
+    if (count === 1) return one;
+    if (count >= 2 && count <= 4) return few;
+    return many;
+}
+
 export const labels = {
     nav: {
         home: 'Domů',
@@ -186,7 +192,13 @@ export const labels = {
         eventTypeId: 'Typ závodu',
         orisDisciplineIds: 'ORIS disciplíny',
         ranking: 'Žebříček',
+        rankingLevelId: 'ID úrovně',
+        rankingName: 'Název žebříčku',
         baseEntryFee: 'Startovné',
+        sharedTransportEnabled: 'Nabídnout společnou dopravu',
+        sharedAccommodationEnabled: 'Nabídnout společné ubytování',
+        wantsSharedTransport: 'Chci využít společnou dopravu',
+        wantsSharedAccommodation: 'Chci využít společné ubytování',
         yearlyFeeAmount: 'Roční poplatek',
         yearlyFeeCurrency: 'Měna',
         tierIds: 'Tiery',
@@ -327,6 +339,10 @@ export const labels = {
         deadlineOrdinal: (n: number) => `${n}. termín:`,
         deadlineOrdinalShort: (n: number) => `${n}. termín`,
         notProvided: 'neuvedeno',
+        yes: 'Ano',
+        no: 'Ne',
+        sharedTransportCount: (count: number) => `Společná doprava: ${count} ${czechPlural(count, 'člen', 'členové', 'členů')}`,
+        sharedAccommodationCount: (count: number) => `Společné ubytování: ${count} ${czechPlural(count, 'člen', 'členové', 'členů')}`,
         form: 'Formulář',
         showRawJson: 'Zobrazit zdrojový JSON',
         completeJson: 'Úplná JSON data položky',
@@ -394,6 +410,7 @@ export const labels = {
         deadlines: 'UZÁVĚRKY PŘIHLÁŠEK',
         eventCancelled: 'AKCE BYLA ZRUŠENA',
         accommodationList: 'Seznam pro ubytování',
+        sharedServices: 'SPOLEČNÉ SLUŽBY',
         personalInfo: 'OSOBNÍ ÚDAJE',
         contact: 'KONTAKT',
         address: 'ADRESA',
@@ -468,6 +485,25 @@ export const labels = {
     links: {
         trainingGroup: 'Tréninková skupina',
         familyGroup: 'Rodina',
+    },
+
+    events: {
+        registrationModal: {
+            siChip: 'SI čip',
+            siChipHelperPrefilled: 'Předvyplněno z vašeho profilu · 4–8 číslic',
+            siChipHelper: '4–8 číslic',
+            siChipRequired: 'Zadejte SI čip',
+            siChipInvalidFormat: 'Zadejte 4–8 číslic',
+            category: 'Kategorie',
+            categoryRequired: 'Vyberte kategorii',
+            savedWithTemplate: (what: string) => `${what} — úspěšně uloženo`,
+            selectCategoryPlaceholder: 'Vyberte možnost',
+            deadlinePrefix: (date: string) => `Přihlášky do ${date}`,
+            confirmNew: 'Potvrdit přihlášku',
+            confirmEdit: 'Uložit změny',
+            prefillLoadError: 'Nepodařilo se načíst výchozí údaje přihlášky.',
+            noRegistrationAffordance: 'Formulář se nepodařilo načíst – přihlášky pravděpodobně nejsou otevřené.',
+        },
     },
 
     eventsFilter: {

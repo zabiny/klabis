@@ -68,6 +68,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     private List<EventCategory> categories = new ArrayList<>();
     private EventRanking ranking;
     private Money baseEntryFee;
+    private boolean sharedTransportEnabled;
+    private boolean sharedAccommodationEnabled;
 
     // Event registrations
     private final List<EventRegistration> registrations = new ArrayList<>();
@@ -96,8 +98,17 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             LinkedHashSet<MemberId> coordinators,
             EventTypeId eventTypeId,
             RegistrationDeadlines registrationDeadlines,
-            List<EventCategory> categories
+            List<EventCategory> categories,
+            Boolean sharedTransportEnabled,
+            Boolean sharedAccommodationEnabled
     ) {
+        public CreateEvent(String name, LocalDate eventDate, String location, String organizer, String websiteUrl,
+                           LinkedHashSet<MemberId> coordinators, EventTypeId eventTypeId,
+                           RegistrationDeadlines registrationDeadlines, List<EventCategory> categories) {
+            this(name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId, registrationDeadlines,
+                    categories, false, false);
+        }
+
         public static CreateEvent from(Event event) {
             return new CreateEvent(
                     event.name,
@@ -108,7 +119,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     new LinkedHashSet<>(event.coordinators),
                     event.eventTypeId,
                     event.registrationDeadlines,
-                    event.categories
+                    event.categories,
+                    event.sharedTransportEnabled,
+                    event.sharedAccommodationEnabled
             );
         }
     }
@@ -138,7 +151,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             RegistrationDeadlines registrationDeadlines,
             List<EventCategory> categories,
             EventRanking ranking,
-            Money baseEntryFee
+            Money baseEntryFee,
+            Boolean sharedTransportEnabled,
+            Boolean sharedAccommodationEnabled
     ) {
         public static UpdateEvent from(Event event) {
             return new UpdateEvent(
@@ -152,7 +167,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                     event.registrationDeadlines,
                     event.categories,
                     event.ranking,
-                    event.baseEntryFee
+                    event.baseEntryFee,
+                    event.sharedTransportEnabled,
+                    event.sharedAccommodationEnabled
             );
         }
     }
@@ -191,8 +208,14 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @NotBlank(message = "SI card number is required")
             @Pattern(regexp = "\\d{6,7}", message = "SI card number must be 6-7 digits")
             String siCardNumber,
-            EventCategoryId categoryId
+            EventCategoryId categoryId,
+            boolean wantsSharedTransport,
+            boolean wantsSharedAccommodation
     ) {
+        public RegisterCommand(String siCardNumber, EventCategoryId categoryId) {
+            this(siCardNumber, categoryId, false, false);
+        }
+
         public static RegisterCommand from(Event event) {
             return new RegisterCommand(null, null);
         }
@@ -267,8 +290,14 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     @RecordBuilder
     public record EditRegistrationCommand(
             SiCardNumber siCardNumber,
-            EventCategoryId categoryId
-    ) {}
+            EventCategoryId categoryId,
+            boolean wantsSharedTransport,
+            boolean wantsSharedAccommodation
+    ) {
+        public EditRegistrationCommand(SiCardNumber siCardNumber, EventCategoryId categoryId) {
+            this(siCardNumber, categoryId, false, false);
+        }
+    }
 
     /**
      * Private constructor for creating new Event instances.
@@ -292,6 +321,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             List<EventCategory> categories,
             EventRanking ranking,
             Money baseEntryFee,
+            boolean sharedTransportEnabled,
+            boolean sharedAccommodationEnabled,
             AuditMetadata auditMetadata) {
 
         this.id = id;
@@ -309,6 +340,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.categories = categories != null ? new ArrayList<>(categories) : new ArrayList<>();
         this.ranking = ranking;
         this.baseEntryFee = baseEntryFee;
+        this.sharedTransportEnabled = sharedTransportEnabled;
+        this.sharedAccommodationEnabled = sharedAccommodationEnabled;
         updateAuditMetadata(auditMetadata);
     }
 
@@ -347,6 +380,31 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             Money baseEntryFee,
             List<EventRegistration> registrations,
             AuditMetadata auditMetadata) {
+        return reconstruct(id, name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId,
+                registrationDeadlines, status, cancellationReason, orisId, categories, ranking, baseEntryFee,
+                false, false, registrations, auditMetadata);
+    }
+
+    public static Event reconstruct(
+            EventId id,
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl,
+            LinkedHashSet<MemberId> coordinators,
+            EventTypeId eventTypeId,
+            RegistrationDeadlines registrationDeadlines,
+            EventStatus status,
+            String cancellationReason,
+            Integer orisId,
+            List<EventCategory> categories,
+            EventRanking ranking,
+            Money baseEntryFee,
+            boolean sharedTransportEnabled,
+            boolean sharedAccommodationEnabled,
+            List<EventRegistration> registrations,
+            AuditMetadata auditMetadata) {
 
         Event event = new Event(
                 id,
@@ -364,6 +422,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 categories,
                 ranking,
                 baseEntryFee,
+                sharedTransportEnabled,
+                sharedAccommodationEnabled,
                 auditMetadata
         );
         event.registrations.addAll(registrations);
@@ -405,6 +465,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 command.categories(),
                 null,
                 null,
+                Boolean.TRUE.equals(command.sharedTransportEnabled()),
+                Boolean.TRUE.equals(command.sharedAccommodationEnabled()),
                 null
         );
 
@@ -447,6 +509,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 command.categories(),
                 command.ranking(),
                 command.baseEntryFee(),
+                false,
+                false,
                 null
         );
 
@@ -571,6 +635,14 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         return baseEntryFee;
     }
 
+    public boolean isSharedTransportEnabled() {
+        return sharedTransportEnabled;
+    }
+
+    public boolean isSharedAccommodationEnabled() {
+        return sharedAccommodationEnabled;
+    }
+
     // ========== Domain Methods ==========
 
     /**
@@ -667,6 +739,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.categories = command.categories() != null ? new ArrayList<>(command.categories()) : new ArrayList<>();
         this.ranking = command.ranking();
         this.baseEntryFee = command.baseEntryFee();
+        this.sharedTransportEnabled = Boolean.TRUE.equals(command.sharedTransportEnabled());
+        this.sharedAccommodationEnabled = Boolean.TRUE.equals(command.sharedAccommodationEnabled());
 
         registerEvent(EventUpdatedEvent.fromAggregate(this));
     }
@@ -775,6 +849,11 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @throws DuplicateRegistrationException    if member is already registered
      */
     public void registerMember(MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId) {
+        registerMember(memberId, siCardNumber, categoryId, false, false);
+    }
+
+    public void registerMember(MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId,
+                               boolean wantsSharedTransport, boolean wantsSharedAccommodation) {
         assertRegistrationsOpen();
 
         if (findRegistration(memberId).isPresent()) {
@@ -784,7 +863,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         EventCategoryId resolvedCategoryId = resolveCategoryId(categoryId);
 
         EventRegistration registration = EventRegistration.create(
-                new EventRegistration.CreateEventRegistration(memberId, siCardNumber, resolvedCategoryId));
+                new EventRegistration.CreateEventRegistration(memberId, siCardNumber, resolvedCategoryId,
+                        wantsSharedTransport, wantsSharedAccommodation));
         registrations.add(registration);
 
         registerEvent(MemberRegisteredForEventEvent.fromAggregate(this, memberId));
@@ -832,7 +912,12 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 .orElseThrow(() -> new RegistrationNotFoundException(memberId, this.id));
 
         EventCategoryId resolvedCategoryId = resolveCategoryId(command.categoryId());
-        EventRegistration updated = current.withChanges(command.siCardNumber(), resolvedCategoryId);
+        boolean wantsSharedTransport = sharedTransportEnabled ? command.wantsSharedTransport()
+                : current.wantsSharedTransport();
+        boolean wantsSharedAccommodation = sharedAccommodationEnabled ? command.wantsSharedAccommodation()
+                : current.wantsSharedAccommodation();
+        EventRegistration updated = current.withChanges(command.siCardNumber(), resolvedCategoryId,
+                wantsSharedTransport, wantsSharedAccommodation);
 
         registrations.remove(current);
         registrations.add(updated);
@@ -879,6 +964,23 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      */
     public List<EventRegistration> getRegistrations() {
         return Collections.unmodifiableList(registrations);
+    }
+
+    /**
+     * Number of registered members who asked to use shared transport. A plain tally over the
+     * registrations — it does not consult {@link #isSharedTransportEnabled()}; callers that only
+     * want the count for an enabled offer gate on that flag themselves.
+     */
+    public long sharedTransportCount() {
+        return registrations.stream().filter(EventRegistration::wantsSharedTransport).count();
+    }
+
+    /**
+     * Number of registered members who asked to use shared accommodation. See
+     * {@link #sharedTransportCount()} for the gating note.
+     */
+    public long sharedAccommodationCount() {
+        return registrations.stream().filter(EventRegistration::wantsSharedAccommodation).count();
     }
 
     /**

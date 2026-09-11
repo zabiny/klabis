@@ -40,6 +40,9 @@ class UpdateEventRequestMapper {
         overlay(request.ranking(), v -> b.ranking(toRanking(v)));
         overlay(request.baseEntryFee(), v -> b.baseEntryFee(EventRequestConversions.toMoney(v)));
 
+        overlay(request.sharedTransportEnabled(), b::sharedTransportEnabled);
+        overlay(request.sharedAccommodationEnabled(), b::sharedAccommodationEnabled);
+
         overlay(request.coordinators(), v -> b.coordinators(EventRequestConversions.toCoordinators(v)));
         overlay(request.deadlines(), v -> b.registrationDeadlines(EventRequestConversions.toRegistrationDeadlines(v)));
         overlay(request.categories(), v -> b.categories(mergeCategories(v, prefilled.categories())));

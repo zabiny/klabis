@@ -3,6 +3,7 @@
 ## Project
 
 - [Shared HAL envelope base models](project_hal_shared_envelope_models.md) — bundler deriver composes EntityModel/CollectionModel/PagedModel from _shared/hal.yaml via allOf; markers keep flat shape
+- [Event aggregate signature growth](project_event_aggregate_signature_growth.md) — add fields to Event/EventRegistration factories via delegating overloads + non-canonical record constructor; ~60 positional call sites otherwise
 
 ## Project patterns confirmed
 

@@ -1602,6 +1602,66 @@ class EventJdbcRepositoryTest {
     }
 
     @Nested
+    @DisplayName("Shared-service offer flags persistence — round-trip")
+    class SharedServiceFlagsPersistence {
+
+        @Test
+        @DisplayName("should persist and reload both event offer flags when enabled")
+        void shouldPersistAndReloadEnabledFlags() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Shared Services Event")
+                    .eventDate(LocalDate.now().plusDays(60))
+                    .organizer("OOB")
+                    .sharedTransportEnabled(true)
+                    .sharedAccommodationEnabled(true)
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.isSharedTransportEnabled()).isTrue();
+            assertThat(reloaded.isSharedAccommodationEnabled()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should default both event offer flags to false when not set")
+        void shouldDefaultFlagsToFalse() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Plain Event")
+                    .eventDate(LocalDate.now().plusDays(60))
+                    .organizer("OOB")
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.isSharedTransportEnabled()).isFalse();
+            assertThat(reloaded.isSharedAccommodationEnabled()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should persist and reload a registration's shared-service choices")
+        void shouldPersistAndReloadRegistrationChoices() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Event With Choosy Member")
+                    .eventDate(LocalDate.now().plusDays(60))
+                    .organizer("OOB")
+                    .sharedAccommodationEnabled(true)
+                    .build());
+            event.publish();
+            MemberId memberId = new MemberId(TEST_MEMBER_1_ID);
+            event.registerMember(memberId, new SiCardNumber("123456"), null, false, true);
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            EventRegistration registration = reloaded.findRegistration(memberId).orElseThrow();
+            assertThat(registration.wantsSharedTransport()).isFalse();
+            assertThat(registration.wantsSharedAccommodation()).isTrue();
+        }
+    }
+
+    @Nested
     @DisplayName("findImportedOrisIds() — batch lookup of already-imported ORIS IDs")
     class FindImportedOrisIds {
 

@@ -35,6 +35,9 @@ interface EventDtoConverter extends Converter<Event, EventDto> {
     @Mapping(target = "cancellationReason", source = "cancellationReason")
     @Mapping(target = "deadlines", source = "registrationDeadlines")
     @Mapping(target = "baseEntryFee", source = "baseEntryFee")
+    // Assembled by EventController.getEvent after conversion — it carries the auth/status gating
+    // that decides whether the summary is shown at all.
+    @Mapping(target = "sharedServicesSummary", ignore = true)
     EventDto convert(Event event);
 
     default UUID toUuid(MemberId memberId) {

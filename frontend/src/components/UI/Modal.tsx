@@ -11,6 +11,9 @@ interface ModalProps {
     size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl'
     className?: string
     closeOnBackdropClick?: boolean
+    headerIcon?: ReactNode
+    context?: ReactNode
+    footerNote?: ReactNode
 }
 
 const sizeClasses = {
@@ -32,6 +35,9 @@ export const Modal = ({
                           size = 'md',
                           className = '',
                           closeOnBackdropClick = true,
+                          headerIcon,
+                          context,
+                          footerNote,
                       }: ModalProps) => {
 
     const handleBackdropClick = () => {
@@ -62,36 +68,58 @@ export const Modal = ({
                 aria-labelledby={title ? 'modal-title' : undefined}
             >
                 <div
-                    className={`bg-surface-raised rounded-md shadow-lg w-full ${sizeClasses[size]} animate-scale-in ${className}`}
+                    className={`bg-surface-raised rounded-md shadow-lg w-full ${sizeClasses[size]} animate-scale-in ${className} flex flex-col max-h-[90vh]`}
                     onClick={handleContentClick}
                 >
                     {(title || closeButton) && (
                         <div
-                            className="flex items-center justify-between border-b border-border px-6 py-4 bg-surface-base rounded-t-md"
+                            className={`flex items-center justify-between border-b border-border px-6 py-4 rounded-t-md flex-shrink-0 gap-3 ${headerIcon ? 'bg-primary-subtle' : 'bg-surface-base'}`}
                             data-testid="modal-header"
                         >
-                            {title && (
-                                <h2 id="modal-title" className="text-lg font-semibold text-text-primary font-display" data-testid="modal-title">
-                                    {title}
-                                </h2>
-                            )}
+                            <div className="flex items-center gap-3 min-w-0">
+                                {headerIcon}
+                                {title && (
+                                    <h2 id="modal-title" className="text-lg font-semibold text-text-primary font-display" data-testid="modal-title">
+                                        {title}
+                                    </h2>
+                                )}
+                            </div>
                             {closeButton && (
                                 <button
                                     onClick={onClose}
-                                    className="ml-auto text-text-secondary hover:text-text-primary transition-colors duration-base"
+                                    className={
+                                        headerIcon
+                                            ? 'ml-auto flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-surface text-text-secondary hover:text-text-primary transition-colors duration-base'
+                                            : 'ml-auto text-text-secondary hover:text-text-primary transition-colors duration-base'
+                                    }
                                     aria-label="Close modal"
                                     data-testid="modal-close-button"
                                 >
-                                    <X className="w-6 h-6" />
+                                    {headerIcon ? <X className="w-4 h-4"/> : <X className="w-6 h-6"/>}
                                 </button>
                             )}
                         </div>
                     )}
 
-                    <div className="px-6 py-4 text-text-primary">{children}</div>
+                    <div className="overflow-y-auto flex-1 min-h-0">
+                        {context && (
+                            <div
+                                className="bg-bg-subtle border-b border-border px-6 py-4 flex-shrink-0"
+                                data-testid="modal-context"
+                            >
+                                {context}
+                            </div>
+                        )}
+                        <div className="px-6 py-4 text-text-primary">{children}</div>
+                    </div>
 
-                    {footer && (
-                        <div className="border-t border-border px-6 py-4 flex justify-end gap-3">
+                    {(footer || footerNote) && (
+                        <div className="border-t border-border px-6 py-4 flex justify-end gap-3 flex-shrink-0">
+                            {footerNote && (
+                                <div className="mr-auto inline-flex items-center" data-testid="modal-footer-note">
+                                    {footerNote}
+                                </div>
+                            )}
                             {footer}
                         </div>
                     )}

@@ -1,5 +1,4 @@
 import {type ReactElement, useState} from "react";
-import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
 import type {HalFormsTemplate, HalResourceLinks, Link} from "../../api";
 import type {components} from "../../api/klabisApi";
 import {TableCell} from "../../components/KlabisTable";
@@ -10,8 +9,8 @@ import {asLinkArray, toHref} from "../../api/hateoas.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {useHalRoute} from "../../contexts/halRouteContext.ts";
 import {formatDate, getFutureDeadlines, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
-import {normalizeKlabisApiPath} from "../../utils/halFormsUtils.ts";
 import {getActionVariant} from "../../utils/actionVariants.ts";
+import {EventRegistrationDialog} from "../../components/events/EventRegistrationDialog.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {getDialogTitleLabel, getEnumLabel, getTemplateLabel, labels} from "../../localization";
 import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal.tsx";
@@ -95,6 +94,7 @@ const CoordinatorName = ({onNavigate}: { onNavigate: () => void }): ReactElement
 
 const CREATE_FORM_BASIC_FIELDS = ['name', 'eventDate', 'location', 'organizer', 'websiteUrl'];
 const CREATE_FORM_COORDINATION_FIELDS = ['coordinators', 'eventTypeId'];
+const CREATE_FORM_SHARED_SERVICE_FIELDS = ['sharedTransportEnabled', 'sharedAccommodationEnabled'];
 
 export const EventsPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
@@ -103,13 +103,8 @@ export const EventsPage = (): ReactElement => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isBulkSyncModalOpen, setIsBulkSyncModalOpen] = useState(false);
     const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
-    const [newRegistrationState, setNewRegistrationState] = useState<{url: string; event: EventListData} | null>(null);
+    const [newRegistrationTarget, setNewRegistrationTarget] = useState<Link | null>(null);
     const {filterValue, extraParams, defaultSort, handleFilterChange} = useEventsFilterState();
-
-    const {data: newRegistrationData} = useAuthorizedQuery<Record<string, unknown>>(
-        newRegistrationState?.url ?? '',
-        {enabled: newRegistrationState !== null, staleTime: 0, gcTime: 0, retry: false},
-    );
 
     const importBatchTemplate = resourceData?._templates?.importEventsBatch;
     const importTemplate = resourceData?._templates?.importEvent;
@@ -140,7 +135,7 @@ export const EventsPage = (): ReactElement => {
                 {newRegLink && (
                     <Button key="newRegistration" variant={getActionVariant('newRegistration')} size="sm" title={labels.templates.registerForEvent} onClick={(e) => {
                         e.stopPropagation();
-                        setNewRegistrationState({url: newRegLink.href, event});
+                        setNewRegistrationTarget(newRegLink);
                     }}>
                         <UserPlus className="w-4 h-4"/>
                     </Button>
@@ -220,6 +215,20 @@ export const EventsPage = (): ReactElement => {
                                     {hasField('categories') && (
                                         <Section title={labels.sections.eventCategories}>
                                             {renderInput('categories')}
+                                        </Section>
+                                    )}
+                                    {hasFields(CREATE_FORM_SHARED_SERVICE_FIELDS) && (
+                                        <Section title={labels.sections.sharedServices}>
+                                            {hasField('sharedTransportEnabled') && (
+                                                <DetailRow label={labels.fields.sharedTransportEnabled}>
+                                                    {renderInput('sharedTransportEnabled')}
+                                                </DetailRow>
+                                            )}
+                                            {hasField('sharedAccommodationEnabled') && (
+                                                <DetailRow label={labels.fields.sharedAccommodationEnabled}>
+                                                    {renderInput('sharedAccommodationEnabled')}
+                                                </DetailRow>
+                                            )}
                                         </Section>
                                     )}
                                     <div className="flex flex-wrap justify-end gap-3 pt-4 border-t border-border">
@@ -363,30 +372,10 @@ export const EventsPage = (): ReactElement => {
             </Modal>
         )}
 
-        {(() => {
-            if (!newRegistrationState || !newRegistrationData) return null;
-            const eventTemplates = newRegistrationState.event._templates as Record<string, HalFormsTemplate> | undefined;
-            const registerTemplate = eventTemplates?.registerForEvent;
-            if (!registerTemplate) return null;
-            // Submit must use the registerForEvent template (POST) from the event resource,
-            // not editRegistration (PUT) from the prefill defaults — the registration does
-            // not yet exist. resourceData carries the prefilled siCardNumber from defaults.
-            const registerTemplatePath = registerTemplate.target
-                ? normalizeKlabisApiPath(registerTemplate.target)
-                : route.pathname;
-            return (
-                <Modal isOpen={true} onClose={() => setNewRegistrationState(null)}
-                       title={labels.templates.registerForEvent} size="2xl">
-                    <HalFormDisplay
-                        template={registerTemplate}
-                        templateName="registerForEvent"
-                        resourceData={newRegistrationData}
-                        pathname={registerTemplatePath}
-                        onClose={() => setNewRegistrationState(null)}
-                        navigateOnSuccess={false}
-                    />
-                </Modal>
-            );
-        })()}
+        <EventRegistrationDialog
+            registration={newRegistrationTarget}
+            onClose={() => setNewRegistrationTarget(null)}
+            onRegistered={route.refetch}
+        />
     </div>;
 }
