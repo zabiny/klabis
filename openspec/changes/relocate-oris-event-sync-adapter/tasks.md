@@ -1,8 +1,8 @@
 ## 1. Safety net before moving anything
 
-- [ ] 1.1 Read `OrisEventProjectionMapperTest` and confirm what it already guarantees: both sides hash equally (`fromEvent` vs `fromOrisFields`), differing data hashes differently, and `resolvedEventTypeId` never affects the hash. These three must keep passing unchanged through the whole change — they are the regression net for design.md's first risk.
-- [ ] 1.2 Add a test pinning the exact canonical JSON of a fully-populated `OrisEventProjection` (`SyncProjectionCodec.toCanonicalJson`), asserting the literal string. `SyncProjectionCodecTest` only covers a local `TestProjection`, so no test currently fixes this projection's field names or field set. Write it now so it can fail honestly later, rather than after the move when it would just be fitted to whatever the new code emits.
-- [ ] 1.3 Run the full backend suite and record the baseline. `ModularEventsTest` and `EventLoggingTests` fail on clean `main` — note them so they are not mistaken for regressions of this change.
+- [x] 1.1 Read `OrisEventProjectionMapperTest` and confirm what it already guarantees: both sides hash equally (`fromEvent` vs `fromOrisFields`), differing data hashes differently, and `resolvedEventTypeId` never affects the hash. These three must keep passing unchanged through the whole change — they are the regression net for design.md's first risk.
+- [x] 1.2 Add a test pinning the exact canonical JSON of a fully-populated `OrisEventProjection` (`SyncProjectionCodec.toCanonicalJson`), asserting the literal string. `SyncProjectionCodecTest` only covers a local `TestProjection`, so no test currently fixes this projection's field names or field set. Write it now so it can fail honestly later, rather than after the move when it would just be fitted to whatever the new code emits.
+- [x] 1.3 Run the full backend suite and record the baseline. **Baseline measured 2026-09-17 on `claude/klabis-oris-sync-engine-t9sy9q`: 3489/3489 passing, zero failures.** `ModularEventsTest` and `EventLoggingTests` were expected to fail on clean `main` but pass here, so there are no pre-existing failures to discount — any failure in a later phase is a regression of this change.
 
 ## 2. Move `@OrisIntegrationComponent` to `com.klabis.common`
 
