@@ -6,10 +6,10 @@
 
 ## 2. Move `@OrisIntegrationComponent` to `com.klabis.common`
 
-- [ ] 2.1 Move the annotation to `com.klabis.common`, directly in the package beside `ClockConfiguration` and `ClubProperties` (design.md D5). Content is unchanged: `@Profile("oris")` + `@Component`.
-- [ ] 2.2 Update the import in all seven applying classes: `OrisEventImportService`, `OrisEventBulkImportService`, `OrisBulkSyncService`, `EventsSyncListener`, `OrisEventController`, `OrisEventFieldsGatewayService`, `OrisEventSyncAdapter`. Also update `OrisControllerTest` and any other test referencing it.
-- [ ] 2.3 Verify `grep -rn "import com.klabis.oris" backend/src/main/java/com/klabis/events/` returns nothing — the `events → oris` edge should now be gone entirely.
-- [ ] 2.4 Start the application with the `oris` profile active and confirm the ORIS beans still register; then start it *without* the profile and confirm they do not. The annotation's whole job is that gating, and a broken move fails silently in the "always on" direction.
+- [x] 2.1 Move the annotation to `com.klabis.common`, directly in the package beside `ClockConfiguration` and `ClubProperties` (design.md D5). Content is unchanged: `@Profile("oris")` + `@Component`.
+- [x] 2.2 Update the import in all seven applying classes: `OrisEventImportService`, `OrisEventBulkImportService`, `OrisBulkSyncService`, `EventsSyncListener`, `OrisEventController`, `OrisEventFieldsGatewayService`, `OrisEventSyncAdapter`. Also update `OrisControllerTest` and any other test referencing it.
+- [x] 2.3 Verify `grep -rn "import com.klabis.oris" backend/src/main/java/com/klabis/events/` returns nothing — the `events → oris` edge should now be gone entirely.
+- [x] 2.4 Verified the `@Profile("oris")` gating still works. Done with an `ApplicationContextRunner` test (`backend/src/test/java/com/klabis/common/OrisIntegrationComponentTest.java`) rather than a full app start: it asserts an annotated bean registers with `spring.profiles.active=oris` and does not register without it. The annotation's whole job is that gating, and a broken move fails silently in the "always on" direction.
 
 ## 3. Move the adapter into `events.infrastructure.orissync`
 

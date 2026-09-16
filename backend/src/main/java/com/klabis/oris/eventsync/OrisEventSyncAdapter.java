@@ -4,7 +4,7 @@ import com.klabis.events.EventId;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.OrisEventFieldsGateway;
 import com.klabis.events.domain.Event;
-import com.klabis.oris.OrisIntegrationComponent;
+import com.klabis.common.OrisIntegrationComponent;
 import com.klabis.sync.domain.*;
 import org.jmolecules.architecture.hexagonal.Application;
 
