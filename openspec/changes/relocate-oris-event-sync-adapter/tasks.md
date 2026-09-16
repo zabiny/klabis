@@ -13,10 +13,10 @@
 
 ## 3. Move the adapter into `events.infrastructure.orissync`
 
-- [ ] 3.1 Create `com.klabis.events.infrastructure.orissync` and move `OrisEventSyncAdapter`, `OrisEventProjection` and `OrisEventProjectionMapper` into it (design.md D1). Carry `OrisEventProjection`'s record component list over character-for-character, `@JsonIgnore` on `resolvedEventTypeId` included.
-- [ ] 3.2 Move `OrisEventFieldsToProjectionMapper`'s body into the new package as a package-private helper — the external read keeps going `EventDetails → OrisEventFields → OrisEventProjection` (design.md D4). Do not write a second `EventDetails` mapper.
-- [ ] 3.3 Move the four tests: `OrisEventSyncAdapterTest`, `OrisEventProjectionMapperTest`, `OrisEventSyncAdapterIntegrationTest`, `OrisEventSyncScenarioIntegrationTest`. Assertions stay as they are; only packages and imports change.
-- [ ] 3.4 Run the suite. At this point the gateway still exists and the adapter still calls it — behaviour must be identical to 1.3's baseline.
+- [x] 3.1 Create `com.klabis.events.infrastructure.orissync` and move `OrisEventSyncAdapter`, `OrisEventProjection` and `OrisEventProjectionMapper` into it (design.md D1). Carry `OrisEventProjection`'s record component list over character-for-character, `@JsonIgnore` on `resolvedEventTypeId` included.
+- [x] 3.2 Move `OrisEventFieldsToProjectionMapper`'s body into the new package as a package-private helper — the external read keeps going `EventDetails → OrisEventFields → OrisEventProjection` (design.md D4). Do not write a second `EventDetails` mapper.
+- [x] 3.3 Move the four tests: `OrisEventSyncAdapterTest`, `OrisEventProjectionMapperTest`, `OrisEventSyncAdapterIntegrationTest`, `OrisEventSyncScenarioIntegrationTest`. Assertions stay as they are; only packages and imports change.
+- [x] 3.4 Run the suite. At this point the gateway still exists and the adapter still calls it — behaviour must be identical to 1.3's baseline.
 
 ## 4. Expose the `events.application` seam
 
