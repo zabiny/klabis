@@ -124,6 +124,10 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
     }
 
     private static int toOrisId(String externalId) {
-        return Integer.parseInt(externalId);
+        try {
+            return Integer.parseInt(externalId);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid ORIS externalId: " + externalId, ex);
+        }
     }
 }
