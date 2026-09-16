@@ -52,10 +52,12 @@ class OrisEventTypeAutoMappingTest {
 
     @BeforeEach
     void setUp() {
-        // The real gateway stays wired in: importEventFromOris resolves the event type
-        // through it, so the import tests exercise the whole pipeline as production does.
-        gateway = new OrisEventFieldsGatewayService(eventRepository, orisApiClient, orisWebUrls, eventTypeRepository);
-        service = new OrisEventImportService(eventRepository, gateway, synchronizationPort);
+        // The real gateway and reader stay wired in: importEventFromOris resolves the
+        // event type through them, so the import tests exercise the whole pipeline as
+        // production does.
+        OrisEventFieldsReader reader = new OrisEventFieldsReader(orisApiClient, orisWebUrls, eventTypeRepository);
+        gateway = new OrisEventFieldsGatewayService(eventRepository, reader);
+        service = new OrisEventImportService(eventRepository, reader, synchronizationPort);
     }
 
     @Nested

@@ -20,9 +20,9 @@
 
 ## 4. Expose the `events.application` seam
 
-- [ ] 4.1 Decide the seam's shape (design.md open question 1): the adapter needs the `EventDetails` fetch plus ORIS-discipline resolution — what `OrisEventFieldsGatewayService.readOrisFields` does minus the port. One named collaborator, not two package-private statics.
-- [ ] 4.2 Implement it in `events.application`, reusing `OrisEventDetailsMapper` and the existing `resolveEventTypeFromOrisDiscipline` logic verbatim. Keep `@Transactional(readOnly = true)` — it reads `EventTypeRepository`.
-- [ ] 4.3 Confirm `OrisEventImportService` can use the same seam, so the `EventDetails` mapping still exists exactly once across the import and sync paths.
+- [x] 4.1 Seam decided (design.md open question 1): a single public `@Component`, `OrisEventFieldsReader` in `events.application`, exposing `readOrisFields(int orisId)`. The read half turned out to be genuinely shared rather than merely a boundary bridge — `OrisEventImportService` already consumed `readOrisFields` for `Event.createFromOris` — so one named collaborator serves both the import path and the adapter. The write half has no second consumer and folds into `applyToLocal` in phase 5 instead.
+- [x] 4.2 Implement it in `events.application`, reusing `OrisEventDetailsMapper` and the existing `resolveEventTypeFromOrisDiscipline` logic verbatim. Keep `@Transactional(readOnly = true)` — it reads `EventTypeRepository`.
+- [x] 4.3 Confirm `OrisEventImportService` can use the same seam, so the `EventDetails` mapping still exists exactly once across the import and sync paths.
 
 ## 5. Fold the gateway into the adapter
 
