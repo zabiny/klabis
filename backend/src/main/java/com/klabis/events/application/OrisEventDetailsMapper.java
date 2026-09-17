@@ -23,12 +23,13 @@ import java.util.Objects;
 /**
  * Maps an ORIS {@code EventDetails} response into {@link OrisEventFields} — the
  * ORIS-owned event fields, independent of event type resolution (which needs the
- * {@code EventTypeRepository} and stays a method on {@link OrisEventFieldsGatewayService}).
+ * {@code EventTypeRepository} and stays a method on {@link OrisEventFieldsReader}).
  * <p>
  * Extracted so the mapping exists exactly once and serves both the import flow
- * ({@link OrisEventImportService}, via {@link OrisEventFieldsGateway}) and the
+ * ({@link OrisEventImportService}, via {@link OrisEventFieldsReader}) and the
  * synchronisation engine's external-side read
- * ({@code com.klabis.oris.eventsync.OrisEventSyncAdapter}) (design.md D2, D3).
+ * ({@code com.klabis.events.infrastructure.orissync.OrisEventSyncAdapter})
+ * (design.md D2, D3, D4).
  */
 final class OrisEventDetailsMapper {
 

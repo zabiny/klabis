@@ -1,4 +1,4 @@
-package com.klabis.oris.eventsync;
+package com.klabis.events.infrastructure.orissync;
 
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisWebUrls;

@@ -1,4 +1,4 @@
-package com.klabis.oris.eventsync;
+package com.klabis.events.infrastructure.orissync;
 
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.application.OrisEventFields;

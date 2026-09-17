@@ -1,4 +1,4 @@
-package com.klabis.oris.eventsync;
+package com.klabis.events.infrastructure.orissync;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.klabis.events.EventTypeId;

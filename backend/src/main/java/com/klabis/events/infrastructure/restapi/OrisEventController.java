@@ -6,7 +6,7 @@ import com.klabis.events.application.OrisBulkSyncPort;
 import com.klabis.events.application.OrisEventBulkImportPort;
 import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
-import com.klabis.oris.OrisIntegrationComponent;
+import com.klabis.common.OrisIntegrationComponent;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.MediaTypes;

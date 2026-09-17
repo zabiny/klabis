@@ -2,7 +2,7 @@ package com.klabis.events.application;
 
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
-import com.klabis.oris.OrisIntegrationComponent;
+import com.klabis.common.OrisIntegrationComponent;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
@@ -19,21 +19,21 @@ import org.springframework.transaction.annotation.Transactional;
 class OrisEventImportService implements OrisEventImportPort {
 
     private final EventRepository eventRepository;
-    private final OrisEventFieldsGateway orisEventFieldsGateway;
+    private final OrisEventFieldsReader orisEventFieldsReader;
     private final SynchronizationPort synchronizationPort;
 
     OrisEventImportService(EventRepository eventRepository,
-                           OrisEventFieldsGateway orisEventFieldsGateway,
+                           OrisEventFieldsReader orisEventFieldsReader,
                            SynchronizationPort synchronizationPort) {
         this.eventRepository = eventRepository;
-        this.orisEventFieldsGateway = orisEventFieldsGateway;
+        this.orisEventFieldsReader = orisEventFieldsReader;
         this.synchronizationPort = synchronizationPort;
     }
 
     @Transactional
     @Override
     public Event importEventFromOris(int orisId) {
-        OrisEventFields fields = orisEventFieldsGateway.readOrisFields(orisId);
+        OrisEventFields fields = orisEventFieldsReader.readOrisFields(orisId);
 
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                 .orisId(orisId)

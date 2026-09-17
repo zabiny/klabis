@@ -5,8 +5,6 @@ import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.Discipline;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Organizer;
-import com.klabis.events.EventId;
-import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventType;
@@ -47,15 +45,17 @@ class OrisEventTypeAutoMappingTest {
     @Mock
     private SynchronizationPort synchronizationPort;
 
-    private OrisEventFieldsGatewayService gateway;
     private OrisEventImportService service;
 
     @BeforeEach
     void setUp() {
-        // The real gateway stays wired in: importEventFromOris resolves the event type
-        // through it, so the import tests exercise the whole pipeline as production does.
-        gateway = new OrisEventFieldsGatewayService(eventRepository, orisApiClient, orisWebUrls, eventTypeRepository);
-        service = new OrisEventImportService(eventRepository, gateway, synchronizationPort);
+        // The real reader stays wired in: importEventFromOris resolves the event type
+        // through it, so the import tests exercise the whole pipeline as production
+        // does. The sync ("applyOrisSync") half of this behaviour now lives on
+        // OrisEventSyncAdapter (events.infrastructure.orissync) after the D2 fold —
+        // see OrisEventSyncAdapterTest for its auto-mapping preserve/fill coverage.
+        OrisEventFieldsReader reader = new OrisEventFieldsReader(orisApiClient, orisWebUrls, eventTypeRepository);
+        service = new OrisEventImportService(eventRepository, reader, synchronizationPort);
     }
 
     @Nested
@@ -136,122 +136,10 @@ class OrisEventTypeAutoMappingTest {
         }
     }
 
-    @Nested
-    @DisplayName("applyOrisSync() — auto-mapping with preserve behavior (task 8.9: rewired from the old direct-write syncEventFromOris path, this is now the engine's inward write)")
-    class SyncAutoMapping {
-
-        @Test
-        @DisplayName("should fill eventTypeId when event has none and discipline ID matches")
-        void shouldFillEventTypeIdOnSyncWhenEmpty() {
-            EventId eventId = EventId.generate();
-            int orisId = 200;
-            Event event = com.klabis.events.EventTestDataBuilder.anEvent()
-                    .withOrisId(orisId)
-                    .withName("Old Name")
-                    .build();
-
-            Discipline discipline = new Discipline(1, "CL", "Klasická trať", "Classic");
-            EventType matchedType = EventType.create(
-                    new EventType.CreateEventType("Klasika", null, 2, java.util.Set.of(1)), 2);
-
-            EventDetails details = buildDetailsWithDiscipline(orisId, "Klasická závod", discipline);
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
-            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
-            when(eventTypeRepository.findByOrisDisciplineId(1)).thenReturn(Optional.of(matchedType));
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            OrisEventFields fields = gateway.readOrisFields(orisId);
-            gateway.applyOrisSync(eventId, fields);
-
-            assertThat(event.getEventTypeId()).isPresent();
-            assertThat(event.getEventTypeId().get()).isEqualTo(matchedType.getId());
-        }
-
-        @Test
-        @DisplayName("should NOT overwrite existing eventTypeId during sync even when discipline matches")
-        void shouldNotOverwriteExistingEventTypeOnSync() {
-            EventId eventId = EventId.generate();
-            int orisId = 201;
-            EventTypeId existingTypeId = EventTypeId.generate();
-            Event event = com.klabis.events.EventTestDataBuilder.anEvent()
-                    .withOrisId(orisId)
-                    .withEventTypeId(existingTypeId)
-                    .withName("Old Name")
-                    .build();
-
-            Discipline discipline = new Discipline(2, "KR", "Krátká trať", "Short");
-            EventType differentType = EventType.create(
-                    new EventType.CreateEventType("Krátká", null, 3, java.util.Set.of(2)), 3);
-
-            EventDetails details = buildDetailsWithDiscipline(orisId, "Short Race Resync", discipline);
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
-            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
-            when(eventTypeRepository.findByOrisDisciplineId(2)).thenReturn(Optional.of(differentType));
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            OrisEventFields fields = gateway.readOrisFields(orisId);
-            gateway.applyOrisSync(eventId, fields);
-
-            assertThat(event.getEventTypeId()).contains(existingTypeId);
-        }
-
-        @Test
-        @DisplayName("should NOT overwrite existing eventTypeId during sync when discipline has no match")
-        void shouldPreserveExistingEventTypeWhenNoDisciplineMatchDuringSync() {
-            EventId eventId = EventId.generate();
-            int orisId = 202;
-            EventTypeId existingTypeId = EventTypeId.generate();
-            Event event = com.klabis.events.EventTestDataBuilder.anEvent()
-                    .withOrisId(orisId)
-                    .withEventTypeId(existingTypeId)
-                    .withName("Old Name")
-                    .build();
-
-            Discipline discipline = new Discipline(99, "X", "Neznámá disciplína", "Unknown");
-            EventDetails details = buildDetailsWithDiscipline(orisId, "Strange Resync", discipline);
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
-            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
-            when(eventTypeRepository.findByOrisDisciplineId(99)).thenReturn(Optional.empty());
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            OrisEventFields fields = gateway.readOrisFields(orisId);
-            gateway.applyOrisSync(eventId, fields);
-
-            assertThat(event.getEventTypeId()).contains(existingTypeId);
-        }
-
-        @Test
-        @DisplayName("should preserve existing eventTypeId when discipline is null during sync")
-        void shouldPreserveExistingEventTypeWhenDisciplineIsNullDuringSync() {
-            EventId eventId = EventId.generate();
-            int orisId = 203;
-            EventTypeId existingTypeId = EventTypeId.generate();
-            Event event = com.klabis.events.EventTestDataBuilder.anEvent()
-                    .withOrisId(orisId)
-                    .withEventTypeId(existingTypeId)
-                    .withName("Old Name")
-                    .build();
-
-            EventDetails details = buildDetailsWithDiscipline(orisId, "No Discipline Resync", null);
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
-            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            OrisEventFields fields = gateway.readOrisFields(orisId);
-            gateway.applyOrisSync(eventId, fields);
-
-            assertThat(event.getEventTypeId()).contains(existingTypeId);
-            Mockito.verify(eventTypeRepository, Mockito.never()).findByOrisDisciplineId(any(Integer.class));
-        }
-    }
+    // applyOrisSync() auto-mapping with preserve behaviour (fill-when-empty,
+    // preserve-when-set, across matched/unmatched/null discipline) moved to
+    // OrisEventSyncAdapterTest (events.infrastructure.orissync) — that is where
+    // applyToLocal (formerly applyOrisSync) now lives after the D2 fold.
 
     private EventDetails buildDetailsWithDiscipline(int id, String name, Discipline discipline) {
         EventDetails details = Mockito.mock(EventDetails.class);

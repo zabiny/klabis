@@ -3,7 +3,7 @@ package com.klabis.events.application;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
-import com.klabis.oris.OrisIntegrationComponent;
+import com.klabis.common.OrisIntegrationComponent;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;

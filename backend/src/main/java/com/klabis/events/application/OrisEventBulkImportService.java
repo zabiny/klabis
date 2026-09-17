@@ -1,7 +1,7 @@
 package com.klabis.events.application;
 
 import com.klabis.events.domain.Event;
-import com.klabis.oris.OrisIntegrationComponent;
+import com.klabis.common.OrisIntegrationComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;

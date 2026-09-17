@@ -3,6 +3,7 @@ package com.klabis.oris;
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisEventListFilter;
 import com.dpolach.api.orisclient.OrisRegion;
+import com.klabis.common.OrisIntegrationComponent;
 import com.klabis.events.application.ImportedOrisEventsPort;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.http.MediaType;
