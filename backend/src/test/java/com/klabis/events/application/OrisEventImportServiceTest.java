@@ -5,11 +5,8 @@ import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Level;
 import com.dpolach.api.orisclient.dto.Organizer;
-import com.klabis.events.EventCategory;
-import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
-import com.klabis.members.MemberId;
 import com.klabis.sync.application.SynchronizationPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +23,6 @@ import java.time.LocalDate;
 import java.util.Currency;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,16 +49,16 @@ class OrisEventImportServiceTest {
     @Mock
     private SynchronizationPort synchronizationPort;
 
-    private OrisEventFieldsGatewayService gateway;
     private OrisEventImportService service;
 
     @BeforeEach
     void setUp() {
-        // The real gateway and reader stay wired in: importEventFromOris reads the ORIS
-        // fields through them, so the import tests exercise the whole pipeline as
-        // production does.
+        // The real reader stays wired in: importEventFromOris reads the ORIS fields
+        // through it, so the import tests exercise the whole pipeline as production
+        // does. The sync ("applyOrisSync") half of this behaviour now lives on
+        // OrisEventSyncAdapter (events.infrastructure.orissync) after the D2 fold —
+        // see OrisEventSyncAdapterTest for its inward-write coverage.
         OrisEventFieldsReader reader = new OrisEventFieldsReader(orisApiClient, orisWebUrls, eventTypeRepository);
-        gateway = new OrisEventFieldsGatewayService(eventRepository, reader);
         service = new OrisEventImportService(eventRepository, reader, synchronizationPort);
     }
 
@@ -263,131 +259,11 @@ class OrisEventImportServiceTest {
         }
     }
 
-    @Nested
-    @DisplayName("applyOrisSync() — the engine's inward write (task 8.9: rewired from the old direct-write syncEventFromOris path)")
-    class ApplyOrisSyncMethod {
-
-        @Test
-        @DisplayName("should apply all fields fetched from ORIS")
-        void shouldApplyAllFieldsFromOris() {
-            EventId eventId = EventId.generate();
-            int orisId = 9876;
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(orisId)
-                    .name("Old Name")
-                    .eventDate(LocalDate.of(2026, 8, 1))
-                    .location("Old Location")
-                    .organizer("OLD")
-                    .build());
-
-            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
-            EventDetails details = buildEventDetails(orisId, "New Name from ORIS", LocalDate.of(2026, 8, 15), "New Location", org1, null);
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(orisApiClient.getEventDetails(orisId)).thenReturn(
-                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            OrisEventFields fields = gateway.readOrisFields(orisId);
-            gateway.applyOrisSync(eventId, fields);
-
-            assertThat(event.getName()).isEqualTo("New Name from ORIS");
-            assertThat(event.getLocation()).isEqualTo("New Location");
-            assertThat(event.getOrganizer()).isEqualTo("OOB");
-            verify(eventRepository).save(event);
-        }
-
-        @Test
-        @DisplayName("should throw EventNotFoundException when event does not exist")
-        void shouldThrowWhenEventNotFound() {
-            EventId eventId = EventId.generate();
-            when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
-
-            OrisEventFields fields = new OrisEventFields(
-                    "Name", LocalDate.of(2026, 8, 1), "Location", "Org", null, null,
-                    java.util.List.of(), null, null, null);
-
-            assertThatThrownBy(() -> gateway.applyOrisSync(eventId, fields))
-                    .isInstanceOf(EventNotFoundException.class);
-        }
-
-        @Test
-        @DisplayName("should log warning when sync removes categories that have existing registrations (task 8.11)")
-        void shouldLogWarningWhenSyncRemovesCategoriesWithRegistrations() {
-            EventId eventId = EventId.generate();
-            int orisId = 9876;
-            EventCategory m21 = new EventCategory(
-                    EventCategoryId.generate(), "M21", "M21", null);
-            EventCategory w21 = new EventCategory(
-                    EventCategoryId.generate(), "W21", "W21", null);
-            // registerMember() below refuses to register on or after the event date, so this one
-            // has to stay in the future as the suite ages — unlike the fixed dates elsewhere in
-            // this class, which never reach the domain's LocalDate.now() comparison.
-            LocalDate eventDate = LocalDate.now().plusDays(30);
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(orisId)
-                    .name("Race")
-                    .eventDate(eventDate)
-                    .location("Forest")
-                    .organizer("OOB")
-                    .categories(java.util.List.of(m21, w21))
-                    .build());
-            event.publish();
-            MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, new SiCardNumber("12345"), m21.id());
-
-            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
-            EventDetails details = buildEventDetailsWithClasses(orisId, "Race Updated", eventDate.plusDays(14), "Forest",
-                    org1, null, Map.of("W21", mockClass("W21")));
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(orisApiClient.getEventDetails(orisId)).thenReturn(
-                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            OrisEventFields fields = gateway.readOrisFields(orisId);
-            gateway.applyOrisSync(eventId, fields);
-
-            verify(eventRepository).save(event);
-            assertThat(event.getCategories()).extracting(EventCategory::name)
-                    .containsExactly("W21");
-        }
-
-        @Test
-        @DisplayName("should populate category orisId from ORIS EventClass.id() on sync")
-        void shouldPopulateCategoryOrisIdOnSync() {
-            EventId eventId = EventId.generate();
-            int orisId = 4242;
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(orisId)
-                    .name("Race")
-                    .eventDate(LocalDate.of(2026, 8, 1))
-                    .location("Forest")
-                    .organizer("OOB")
-                    .categories(java.util.List.of())
-                    .build());
-            event.publish();
-
-            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
-            EventDetails details = buildEventDetailsWithClasses(orisId, "Race", LocalDate.of(2026, 8, 1), "Forest",
-                    org1, null, Map.of("100", mockClass("100", "M21")));
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(orisApiClient.getEventDetails(orisId)).thenReturn(
-                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            OrisEventFields fields = gateway.readOrisFields(orisId);
-            gateway.applyOrisSync(eventId, fields);
-
-            assertThat(event.getCategories()).hasSize(1);
-            assertThat(event.getCategories().get(0).orisId()).isEqualTo("100");
-            assertThat(event.getCategories().get(0).name()).isEqualTo("M21");
-        }
-    }
+    // applyOrisSync() — the engine's inward write — moved to OrisEventSyncAdapterTest
+    // (events.infrastructure.orissync): field application, EventNotFoundException,
+    // the category-removal warning (task 8.11) and category orisId population on sync
+    // all now exercise OrisEventSyncAdapter.applyToLocal, where this behaviour lives
+    // after the D2 fold.
 
     @Nested
     @DisplayName("RegistrationDeadlines mapping")
@@ -529,56 +405,10 @@ class OrisEventImportServiceTest {
             assertThat(result.getRanking()).isNull();
         }
 
-        @Test
-        @DisplayName("should map level to EventRanking on sync")
-        void shouldMapLevelToRankingOnSync() {
-            EventId eventId = EventId.generate();
-            int orisId = 2003;
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(orisId).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
-                    .location("Location").organizer("OOB").build());
-
-            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
-            Level level = new Level(5, "ŽB", "Žebříček B", "Ranking B");
-            EventDetails details = buildEventDetailsWithLevel(orisId, "Updated Race", LocalDate.of(2026, 9, 1), "Forest", org1, level);
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(orisApiClient.getEventDetails(orisId)).thenReturn(
-                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            OrisEventFields fields = gateway.readOrisFields(orisId);
-            gateway.applyOrisSync(eventId, fields);
-
-            assertThat(event.getRanking()).isNotNull();
-            assertThat(event.getRanking().levelId()).isEqualTo(5);
-            assertThat(event.getRanking().shortName()).isEqualTo("ŽB");
-        }
-
-        @Test
-        @DisplayName("should set ranking to null when level is null on sync")
-        void shouldSetRankingNullWhenLevelNullOnSync() {
-            EventId eventId = EventId.generate();
-            int orisId = 2004;
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(orisId).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
-                    .location("Location").organizer("OOB").build());
-
-            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
-            EventDetails details = buildEventDetailsWithLevel(orisId, "Updated Race", LocalDate.of(2026, 9, 1), "Forest", org1, null);
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(orisApiClient.getEventDetails(orisId)).thenReturn(
-                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            OrisEventFields fields = gateway.readOrisFields(orisId);
-            gateway.applyOrisSync(eventId, fields);
-
-            assertThat(event.getRanking()).isNull();
-        }
+        // "on sync" ranking mapping (mapping EventRanking / null on applyOrisSync)
+        // moved to OrisEventSyncAdapterTest (events.infrastructure.orissync) —
+        // OrisEventSyncAdapter.applyToLocal now reassembles EventRanking from the
+        // projection directly (design.md D2, D4/task 5.4).
     }
 
     @Nested
@@ -717,35 +547,9 @@ class OrisEventImportServiceTest {
             assertThat(result.getBaseEntryFee().currency()).isEqualTo(Currency.getInstance("CZK"));
         }
 
-        @Test
-        @DisplayName("should derive baseEntryFee on sync")
-        void shouldDeriveBaseEntryFeeOnSync() {
-            EventId eventId = EventId.generate();
-            int orisId = 3007;
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(orisId).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
-                    .location("Location").organizer("OOB").build());
-
-            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
-            Map<String, com.dpolach.api.orisclient.dto.EventClass> classes = Map.of(
-                    "M21", mockClassWithFee("M21", "400"),
-                    "W21", mockClassWithFee("W21", "350")
-            );
-            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "Sync Fee Race", LocalDate.of(2026, 9, 1),
-                    "Forest", org1, classes, "CZK");
-
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(orisApiClient.getEventDetails(orisId)).thenReturn(
-                    new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
-            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            OrisEventFields fields = gateway.readOrisFields(orisId);
-            gateway.applyOrisSync(eventId, fields);
-
-            assertThat(event.getBaseEntryFee()).isNotNull();
-            assertThat(event.getBaseEntryFee().amount()).isEqualByComparingTo(new BigDecimal("400"));
-        }
+        // "should derive baseEntryFee on sync" moved to OrisEventSyncAdapterTest
+        // (events.infrastructure.orissync) — OrisEventSyncAdapter.applyToLocal now
+        // reassembles Money from the projection directly (design.md D2, D4/task 5.4).
     }
 
     private EventDetails buildEventDetails(int id, String name, LocalDate date, String place,

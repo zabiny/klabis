@@ -15,9 +15,9 @@ import java.util.List;
  * independent of any particular Klabis {@code Event} instance.
  * <p>
  * Produced by {@link OrisEventFieldsReader} — shared by {@link OrisEventImportService}
- * (import) and by {@code com.klabis.events.infrastructure.orissync.OrisEventSyncAdapter},
- * the synchronisation engine's external-side read (via {@link OrisEventFieldsGateway}
- * today) — so the ORIS field mapping exists exactly once (design.md D2, D3, D4).
+ * (import) and by {@code com.klabis.events.infrastructure.orissync.OrisEventSyncAdapter}
+ * (the synchronisation engine's external-side read) — so the ORIS field mapping exists
+ * exactly once (design.md D2, D3, D4).
  */
 public record OrisEventFields(
         String name,

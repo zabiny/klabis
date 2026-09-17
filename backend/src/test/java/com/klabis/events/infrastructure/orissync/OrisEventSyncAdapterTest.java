@@ -1,14 +1,20 @@
 package com.klabis.events.infrastructure.orissync;
 
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.application.EventManagementPort;
+import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.OrisEventFields;
-import com.klabis.events.application.OrisEventFieldsGateway;
+import com.klabis.events.application.OrisEventFieldsReader;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
+import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.RegistrationDeadlines;
+import com.klabis.events.domain.SiCardNumber;
+import com.klabis.members.MemberId;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncProjection;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,10 +24,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +47,10 @@ class OrisEventSyncAdapterTest {
     private EventManagementPort eventManagementPort;
 
     @Mock
-    private OrisEventFieldsGateway orisEventFieldsGateway;
+    private OrisEventFieldsReader orisEventFieldsReader;
+
+    @Mock
+    private EventRepository eventRepository;
 
     private OrisEventSyncAdapter adapter;
 
@@ -49,7 +60,7 @@ class OrisEventSyncAdapterTest {
 
     @BeforeEach
     void setUp() {
-        adapter = new OrisEventSyncAdapter(eventManagementPort, orisEventFieldsGateway);
+        adapter = new OrisEventSyncAdapter(eventManagementPort, orisEventFieldsReader, eventRepository);
     }
 
     @Test
@@ -89,13 +100,13 @@ class OrisEventSyncAdapterTest {
     class ReadExternalMethod {
 
         @Test
-        @DisplayName("maps the ORIS fields read through OrisEventFieldsGateway into the canonical projection")
+        @DisplayName("maps the ORIS fields read through OrisEventFieldsReader into the canonical projection")
         void mapsOrisFieldsIntoProjection() {
             OrisEventFields fields = new OrisEventFields(
                     "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
                     WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"),
                     RegistrationDeadlines.none(), List.of(), null, null, null);
-            when(orisEventFieldsGateway.readOrisFields(ORIS_ID)).thenReturn(fields);
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(fields);
 
             SyncProjection projection = adapter.readExternal(String.valueOf(ORIS_ID));
 
@@ -133,9 +144,9 @@ class OrisEventSyncAdapterTest {
     class ApplyToLocalMethod {
 
         @Test
-        @DisplayName("writes the projection inward via OrisEventFieldsGateway.applyOrisSync")
-        void writesInwardViaApplyOrisSync() {
-            when(orisEventFieldsGateway.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+        @DisplayName("writes the projection inward via Event.syncFromOris and saves through EventRepository")
+        void writesInwardViaSyncFromOris() {
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
                     "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
                     WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"),
                     RegistrationDeadlines.none(), List.of(), null, null, null));
@@ -145,31 +156,84 @@ class OrisEventSyncAdapterTest {
             // without a second ORIS read (task 8.10).
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(ORIS_ID)
+                    .name("Old name")
+                    .eventDate(LocalDate.of(2026, 5, 1))
+                    .location("Brno Park")
+                    .organizer("OOB")
+                    .build());
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
             adapter.applyToLocal(EVENT_UUID.toString(), incoming);
 
-            ArgumentCaptor<OrisEventFields> captor = ArgumentCaptor.forClass(OrisEventFields.class);
-            verify(orisEventFieldsGateway).applyOrisSync(eq(EVENT_ID), captor.capture());
-            assertThat(captor.getValue().name()).isEqualTo("New name");
+            assertThat(event.getName()).isEqualTo("New name");
+            verify(eventRepository).save(event);
+        }
+
+        @Test
+        @DisplayName("throws EventNotFoundException when the event does not exist")
+        void throwsWhenEventNotFound() {
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null,
+                    RegistrationDeadlines.none(), List.of(), null, null, null));
+            SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> adapter.applyToLocal(EVENT_UUID.toString(), incoming))
+                    .isInstanceOf(EventNotFoundException.class);
         }
 
         @Test
         @DisplayName("carries the event type resolved by readExternal, without reading ORIS a second time (task 8.10)")
         void carriesResolvedEventTypeWithoutSecondOrisRead() {
             EventTypeId resolvedType = EventTypeId.generate();
-            when(orisEventFieldsGateway.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
                     "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
                     WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"),
                     RegistrationDeadlines.none(), List.of(), null, null, resolvedType));
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(ORIS_ID)
+                    .name("Old name")
+                    .eventDate(LocalDate.of(2026, 5, 1))
+                    .location("Brno Park")
+                    .organizer("OOB")
+                    .build());
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
             adapter.applyToLocal(EVENT_UUID.toString(), incoming);
 
-            ArgumentCaptor<OrisEventFields> captor = ArgumentCaptor.forClass(OrisEventFields.class);
-            verify(orisEventFieldsGateway).applyOrisSync(eq(EVENT_ID), captor.capture());
-            assertThat(captor.getValue().resolvedEventTypeId()).isEqualTo(resolvedType);
+            assertThat(event.getEventTypeId()).contains(resolvedType);
             // readOrisFields must have been called exactly once — by readExternal — not
             // again inside applyToLocal.
-            verify(orisEventFieldsGateway, org.mockito.Mockito.times(1)).readOrisFields(ORIS_ID);
+            verify(orisEventFieldsReader, Mockito.times(1)).readOrisFields(ORIS_ID);
+        }
+
+        @Test
+        @DisplayName("does not overwrite an existing eventTypeId during sync even when a different type was resolved (moved from OrisEventTypeAutoMappingTest.SyncAutoMapping)")
+        void preservesExistingEventTypeOnSync() {
+            EventTypeId existingTypeId = EventTypeId.generate();
+            EventTypeId differentResolvedType = EventTypeId.generate();
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null,
+                    RegistrationDeadlines.none(), List.of(), null, null, differentResolvedType));
+            SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
+
+            Event event = com.klabis.events.EventTestDataBuilder.anEvent()
+                    .withOrisId(ORIS_ID)
+                    .withEventTypeId(existingTypeId)
+                    .withName("Old Name")
+                    .build();
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            adapter.applyToLocal(EVENT_UUID.toString(), incoming);
+
+            assertThat(event.getEventTypeId()).contains(existingTypeId);
         }
 
         @Test
@@ -179,11 +243,11 @@ class OrisEventSyncAdapterTest {
             EventId otherEventId = new EventId(UUID.randomUUID());
             EventTypeId firstResolvedType = EventTypeId.generate();
 
-            when(orisEventFieldsGateway.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
                     "First event", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
                     WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=" + ORIS_ID),
                     RegistrationDeadlines.none(), List.of(), null, null, firstResolvedType));
-            when(orisEventFieldsGateway.readOrisFields(otherOrisId)).thenReturn(new OrisEventFields(
+            when(orisEventFieldsReader.readOrisFields(otherOrisId)).thenReturn(new OrisEventFields(
                     "Second event", LocalDate.of(2026, 6, 1), "Praha Park", "POB",
                     WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=" + otherOrisId),
                     RegistrationDeadlines.none(), List.of(), null, null, null));
@@ -195,11 +259,182 @@ class OrisEventSyncAdapterTest {
             adapter.readExternal(String.valueOf(ORIS_ID));
             SyncProjection secondIncoming = adapter.readExternal(String.valueOf(otherOrisId));
 
+            Event otherEvent = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(otherOrisId)
+                    .name("Second event")
+                    .eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Praha Park")
+                    .organizer("POB")
+                    .build());
+            when(eventRepository.findById(otherEventId)).thenReturn(Optional.of(otherEvent));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
             adapter.applyToLocal(otherEventId.value().toString(), secondIncoming);
 
-            ArgumentCaptor<OrisEventFields> captor = ArgumentCaptor.forClass(OrisEventFields.class);
-            verify(orisEventFieldsGateway).applyOrisSync(eq(otherEventId), captor.capture());
-            assertThat(captor.getValue().resolvedEventTypeId()).isNull();
+            assertThat(otherEvent.getEventTypeId()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("fills eventTypeId when event has none and the resolved discipline matched (moved from OrisEventTypeAutoMappingTest.SyncAutoMapping)")
+        void fillsEventTypeIdOnSyncWhenEmpty() {
+            EventTypeId matchedType = EventTypeId.generate();
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "Klasická závod", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null,
+                    RegistrationDeadlines.none(), List.of(), null, null, matchedType));
+            SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
+
+            Event event = com.klabis.events.EventTestDataBuilder.anEvent()
+                    .withOrisId(ORIS_ID)
+                    .withName("Old Name")
+                    .build();
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            adapter.applyToLocal(EVENT_UUID.toString(), incoming);
+
+            assertThat(event.getEventTypeId()).contains(matchedType);
+        }
+
+        @Test
+        @DisplayName("does not overwrite existing eventTypeId when discipline has no catalog match (moved from OrisEventTypeAutoMappingTest.SyncAutoMapping)")
+        void preservesExistingEventTypeWhenNoDisciplineMatch() {
+            EventTypeId existingTypeId = EventTypeId.generate();
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "Strange Resync", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null,
+                    RegistrationDeadlines.none(), List.of(), null, null, null));
+            SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
+
+            Event event = com.klabis.events.EventTestDataBuilder.anEvent()
+                    .withOrisId(ORIS_ID)
+                    .withEventTypeId(existingTypeId)
+                    .withName("Old Name")
+                    .build();
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            adapter.applyToLocal(EVENT_UUID.toString(), incoming);
+
+            assertThat(event.getEventTypeId()).contains(existingTypeId);
+        }
+
+        @Test
+        @DisplayName("preserves existing eventTypeId when discipline is null (moved from OrisEventTypeAutoMappingTest.SyncAutoMapping)")
+        void preservesExistingEventTypeWhenDisciplineIsNull() {
+            EventTypeId existingTypeId = EventTypeId.generate();
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "No Discipline Resync", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null,
+                    RegistrationDeadlines.none(), List.of(), null, null, null));
+            SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
+
+            Event event = com.klabis.events.EventTestDataBuilder.anEvent()
+                    .withOrisId(ORIS_ID)
+                    .withEventTypeId(existingTypeId)
+                    .withName("Old Name")
+                    .build();
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            adapter.applyToLocal(EVENT_UUID.toString(), incoming);
+
+            assertThat(event.getEventTypeId()).contains(existingTypeId);
+        }
+
+        @Test
+        @DisplayName("maps ORIS ranking level into EventRanking on sync (moved from OrisEventImportServiceTest.RankingMapping)")
+        void mapsLevelToRankingOnSync() {
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "Updated Race", LocalDate.of(2026, 9, 1), "Forest", "OOB", null,
+                    RegistrationDeadlines.none(), List.of(),
+                    com.klabis.events.domain.EventRanking.of(5, "ŽB", "Žebříček B"), null, null));
+            SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
+
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(ORIS_ID).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Location").organizer("OOB").build());
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            adapter.applyToLocal(EVENT_UUID.toString(), incoming);
+
+            assertThat(event.getRanking()).isNotNull();
+            assertThat(event.getRanking().levelId()).isEqualTo(5);
+            assertThat(event.getRanking().shortName()).isEqualTo("ŽB");
+        }
+
+        @Test
+        @DisplayName("sets ranking to null when the projection carries no ranking (moved from OrisEventImportServiceTest.RankingMapping)")
+        void setsRankingNullWhenAbsentOnSync() {
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "Updated Race", LocalDate.of(2026, 9, 1), "Forest", "OOB", null,
+                    RegistrationDeadlines.none(), List.of(), null, null, null));
+            SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
+
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(ORIS_ID).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Location").organizer("OOB").build());
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            adapter.applyToLocal(EVENT_UUID.toString(), incoming);
+
+            assertThat(event.getRanking()).isNull();
+        }
+
+        @Test
+        @DisplayName("derives baseEntryFee from the projection's amount and currency on sync (moved from OrisEventImportServiceTest.BaseEntryFeeMapping)")
+        void derivesBaseEntryFeeOnSync() {
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "Sync Fee Race", LocalDate.of(2026, 9, 1), "Forest", "OOB", null,
+                    RegistrationDeadlines.none(), List.of(), null,
+                    com.klabis.events.domain.Money.of(new java.math.BigDecimal("400"), java.util.Currency.getInstance("CZK")),
+                    null));
+            SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
+
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(ORIS_ID).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
+                    .location("Location").organizer("OOB").build());
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            adapter.applyToLocal(EVENT_UUID.toString(), incoming);
+
+            assertThat(event.getBaseEntryFee()).isNotNull();
+            assertThat(event.getBaseEntryFee().amount()).isEqualByComparingTo(new java.math.BigDecimal("400"));
+        }
+
+        @Test
+        @DisplayName("logs a warning when the sync removes categories that still have registrations (design.md D2)")
+        void logsWarningWhenSyncRemovesCategoriesWithRegistrations() {
+            EventCategory m21 = new EventCategory(EventCategoryId.generate(), "M21", "M21", null);
+            EventCategory w21 = new EventCategory(EventCategoryId.generate(), "W21", "W21", null);
+            LocalDate eventDate = LocalDate.now().plusDays(30);
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .orisId(ORIS_ID)
+                    .name("Race")
+                    .eventDate(eventDate)
+                    .location("Forest")
+                    .organizer("OOB")
+                    .categories(List.of(m21, w21))
+                    .build());
+            event.publish();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, new SiCardNumber("12345"), m21.id());
+
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "Race Updated", eventDate.plusDays(14), "Forest", "OOB", null,
+                    RegistrationDeadlines.none(),
+                    List.of(EventCategory.createFromOris("W21", "W21")),
+                    null, null, null));
+            SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
+
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            adapter.applyToLocal(EVENT_UUID.toString(), incoming);
+
+            verify(eventRepository).save(event);
+            assertThat(event.getCategories()).extracting(EventCategory::name)
+                    .containsExactly("W21");
         }
     }
 

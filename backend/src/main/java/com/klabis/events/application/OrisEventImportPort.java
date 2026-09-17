@@ -6,7 +6,7 @@ import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
 /**
  * Orchestrates the ORIS import and sync flows; the ORIS field primitives live on
- * {@link OrisEventFieldsGateway}.
+ * {@link OrisEventFieldsReader}.
  */
 @PrimaryPort
 public interface OrisEventImportPort {

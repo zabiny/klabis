@@ -1,26 +1,44 @@
 package com.klabis.events.infrastructure.orissync;
 
+import com.klabis.events.EventCategory;
 import com.klabis.events.EventId;
+import com.klabis.events.WebsiteUrl;
 import com.klabis.events.application.EventManagementPort;
-import com.klabis.events.application.OrisEventFieldsGateway;
+import com.klabis.events.application.EventNotFoundException;
+import com.klabis.events.application.OrisEventFields;
+import com.klabis.events.application.OrisEventFieldsReader;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRanking;
+import com.klabis.events.domain.EventRepository;
+import com.klabis.events.domain.EventSyncFromOrisBuilder;
+import com.klabis.events.domain.Money;
+import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.common.OrisIntegrationComponent;
 import com.klabis.sync.domain.*;
 import org.jmolecules.architecture.hexagonal.Application;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Currency;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * The ORIS event {@link SynchronizationAdapter} (design.md D2, D3): inward-only,
- * reusing the ORIS field mapping of the events module's ORIS integration
- * ({@link OrisEventFieldsGateway}).
+ * reaching {@code events} as a module-internal collaborator rather than through a
+ * primary port that existed only to cross a package boundary.
  * <p>
- * Reaches the {@code events} module only through its {@code events.application}
- * primary ports — {@link EventManagementPort} to read the local side,
- * {@link OrisEventFieldsGateway} to read the external side and to write inward via
- * {@code Event.syncFromOris} — so this module gains no knowledge of {@code events}
- * internals beyond what {@code OrisController} already has (design.md D2).
+ * Reaches the {@code events} module through {@link EventManagementPort} to read the
+ * local side, {@link OrisEventFieldsReader} to read the external side, and
+ * {@link EventRepository} together with {@code Event.syncFromOris} to write inward —
+ * this class now lives inside {@code events.infrastructure}, so these are
+ * module-internal dependencies rather than a cross-module port (design.md D2, D4).
  * <p>
  * Declares no outward write, no create on either side, and no sensitive data: ORIS
  * event data is public, and Klabis has no way to push event changes back to ORIS.
@@ -42,23 +60,26 @@ import java.util.UUID;
  * {@code @SecondaryAdapter} may never reach a primary port. {@code Application} is the
  * classification that permits the primary-port access D2 prescribes. The D2 dependency
  * direction is unchanged and still correct.
- * <p>
- * Depends only on {@link OrisEventFieldsGateway}, which has no dependency on the sync
- * engine, so the wiring here is eager and acyclic.
  */
 @OrisIntegrationComponent
 @Application
 class OrisEventSyncAdapter implements SynchronizationAdapter {
 
+    private static final Logger log = LoggerFactory.getLogger(OrisEventSyncAdapter.class);
+
     private static final SyncCapabilities CAPABILITIES =
             SyncCapabilities.pullOnly();
 
     private final EventManagementPort eventManagementPort;
-    private final OrisEventFieldsGateway orisEventFieldsGateway;
+    private final OrisEventFieldsReader orisEventFieldsReader;
+    private final EventRepository eventRepository;
 
-    OrisEventSyncAdapter(EventManagementPort eventManagementPort, OrisEventFieldsGateway orisEventFieldsGateway) {
+    OrisEventSyncAdapter(EventManagementPort eventManagementPort,
+                          OrisEventFieldsReader orisEventFieldsReader,
+                          EventRepository eventRepository) {
         this.eventManagementPort = eventManagementPort;
-        this.orisEventFieldsGateway = orisEventFieldsGateway;
+        this.orisEventFieldsReader = orisEventFieldsReader;
+        this.eventRepository = eventRepository;
     }
 
     @Override
@@ -90,7 +111,7 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
     @Override
     public SyncProjection readExternal(String externalId) {
         return OrisEventFieldsToProjectionMapper.fromOrisFields(
-                orisEventFieldsGateway.readOrisFields(toOrisId(externalId)));
+                orisEventFieldsReader.readOrisFields(toOrisId(externalId)));
     }
 
     /**
@@ -107,10 +128,74 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
     }
 
     @Override
+    @Transactional
     public void applyToLocal(String entityId, SyncProjection projection) {
         EventId eventId = toEventId(entityId);
         OrisEventProjection orisProjection = (OrisEventProjection) projection;
-        orisEventFieldsGateway.applyOrisSync(eventId, OrisEventProjectionToFieldsMapper.toOrisEventFields(orisProjection));
+
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+
+        RegistrationDeadlines deadlines = RegistrationDeadlines.of(
+                orisProjection.registrationDeadline1(),
+                orisProjection.registrationDeadline2(),
+                orisProjection.registrationDeadline3());
+
+        EventRanking ranking = orisProjection.rankingLevelId() != null
+                ? EventRanking.of(orisProjection.rankingLevelId(), orisProjection.rankingShortName(), orisProjection.rankingName())
+                : null;
+
+        Money baseEntryFee = orisProjection.baseEntryFeeAmount() != null
+                ? Money.of(orisProjection.baseEntryFeeAmount(), Currency.getInstance(orisProjection.baseEntryFeeCurrency()))
+                : null;
+
+        List<EventCategory> categories = orisProjection.categories().stream()
+                .map(category -> EventCategory.createFromOris(category.orisId(), category.name()))
+                .toList();
+
+        warnIfSyncRemovesCategoriesWithRegistrations(event, categories);
+
+        event.syncFromOris(EventSyncFromOrisBuilder.builder()
+                .name(orisProjection.name())
+                .eventDate(orisProjection.eventDate())
+                .location(orisProjection.location())
+                .organizer(orisProjection.organizer())
+                .websiteUrl(orisProjection.websiteUrl() != null ? WebsiteUrl.of(orisProjection.websiteUrl()) : null)
+                .registrationDeadlines(deadlines)
+                .categories(categories)
+                .ranking(ranking)
+                .baseEntryFee(baseEntryFee)
+                .build());
+
+        event.applyAutoMappedEventType(orisProjection.resolvedEventTypeId());
+
+        eventRepository.save(event);
+    }
+
+    /**
+     * Logs when an inward ORIS sync would drop categories that still carry
+     * registrations. Carried verbatim from the deleted
+     * {@code OrisEventFieldsGatewayService.warnIfSyncRemovesCategoriesWithRegistrations}
+     * (design.md D2) — it is the only diagnostic on this path, and its loss is
+     * invisible until an event silently drops a category that had registrations.
+     */
+    private void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<EventCategory> incomingCategories) {
+        if (event.getRegistrations().isEmpty()) {
+            return;
+        }
+        Set<String> incomingOrisIds = incomingCategories.stream()
+                .map(EventCategory::orisId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, Long> affectedCounts = event.getRegistrations().stream()
+                .filter(r -> r.categoryId() != null)
+                .map(r -> event.findCategory(r.categoryId()).orElse(null))
+                .filter(category -> category != null && category.orisId() != null && !incomingOrisIds.contains(category.orisId()))
+                .collect(Collectors.groupingBy(EventCategory::name, Collectors.counting()));
+        if (!affectedCounts.isEmpty()) {
+            log.warn("ORIS sync for event {} will remove categories that have existing registrations: {}",
+                    event.getId(), affectedCounts);
+        }
     }
 
     @Override

@@ -26,12 +26,12 @@
 
 ## 5. Fold the gateway into the adapter
 
-- [ ] 5.1 Move `readOrisFields`'s body into `OrisEventSyncAdapter.readExternal`, via the 4.2 seam. Preserve design.md D12: no transaction may span the external HTTP call.
-- [ ] 5.2 Move `applyOrisSync`'s body into `applyToLocal`, building `EventSyncFromOrisBuilder` directly from the `OrisEventProjection` — this is what makes `OrisEventProjectionToFieldsMapper` unnecessary. Keep `@Transactional`; the `EventRepository.save` at the end depends on it.
-- [ ] 5.3 Carry `warnIfSyncRemovesCategoriesWithRegistrations` across verbatim. It is the only diagnostic on this path and its loss is invisible until an event silently drops a category that had registrations (design.md D2).
-- [ ] 5.4 Reassemble `RegistrationDeadlines`, `Money`, `EventRanking` and `EventCategory` from the projection's flat fields inside `applyToLocal`, matching `OrisEventProjectionToFieldsMapper`'s logic exactly — including `RegistrationDeadlines.of(d1, d2, d3)` and the null guards on ranking and fee.
-- [ ] 5.5 Delete `OrisEventFieldsGateway`, `OrisEventFieldsGatewayService` and `OrisEventProjectionToFieldsMapper`.
-- [ ] 5.6 Verify `OrisEventFields` still exists and is still used by `OrisEventImportService` for `Event.createFromOris` (design.md D3 — the types are not merged), and that it no longer appears in any port signature.
+- [x] 5.1 Move `readOrisFields`'s body into `OrisEventSyncAdapter.readExternal`, via the 4.2 seam. Preserve design.md D12: no transaction may span the external HTTP call.
+- [x] 5.2 Move `applyOrisSync`'s body into `applyToLocal`, building `EventSyncFromOrisBuilder` directly from the `OrisEventProjection` — this is what makes `OrisEventProjectionToFieldsMapper` unnecessary. Keep `@Transactional`; the `EventRepository.save` at the end depends on it.
+- [x] 5.3 Carry `warnIfSyncRemovesCategoriesWithRegistrations` across verbatim. It is the only diagnostic on this path and its loss is invisible until an event silently drops a category that had registrations (design.md D2).
+- [x] 5.4 Reassemble `RegistrationDeadlines`, `Money`, `EventRanking` and `EventCategory` from the projection's flat fields inside `applyToLocal`, matching `OrisEventProjectionToFieldsMapper`'s logic exactly — including `RegistrationDeadlines.of(d1, d2, d3)` and the null guards on ranking and fee.
+- [x] 5.5 Delete `OrisEventFieldsGateway`, `OrisEventFieldsGatewayService` and `OrisEventProjectionToFieldsMapper`.
+- [x] 5.6 Verify `OrisEventFields` still exists and is still used by `OrisEventImportService` for `Event.createFromOris` (design.md D3 — the types are not merged), and that it no longer appears in any port signature.
 
 ## 6. Verify nothing moved that should not have
 
