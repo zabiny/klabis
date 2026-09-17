@@ -49,6 +49,6 @@
 
 ## 8. Close out
 
-- [ ] 8.1 Update `sync-skip-self-inflicted-dirty-marker`'s proposal, which describes the call path `OrisEventSyncAdapter.applyToLocal → OrisEventFieldsGatewayService.applyOrisSync`. No file overlap, but that prose is now wrong.
-- [ ] 8.2 Grep the codebase and `openspec/` for lingering references to `com.klabis.oris.eventsync`, `OrisEventFieldsGateway` and the two deleted mappers — javadoc in `sync` and `events` cites them by name.
-- [ ] 8.3 Note in design.md that the storage half of the projection risk stays dormant until the Postgres migration, so whoever performs it knows to check the projection shape has not drifted.
+- [x] 8.1 Update `sync-skip-self-inflicted-dirty-marker`'s proposal, which describes the call path `OrisEventSyncAdapter.applyToLocal → OrisEventFieldsGatewayService.applyOrisSync`. No file overlap, but that prose is now wrong.
+- [x] 8.2 Swept the live docs for references to `com.klabis.oris.eventsync`, `OrisEventFieldsGateway` and the deleted mappers. Updated `docs/design-decisions.md` (ADR-005, three places), `backend/CLAUDE.md`, and the `backend-patterns` skill's `references/synchronization-adapter.md` — the skill mattered most, since its step 3 actively instructed future work to place adapters in the integration's own package, the arrangement this change reverses. `openspec/changes/archive/**` was deliberately left alone: those record what was true when written, and rewriting them would falsify the archive.
+- [x] 8.3 Note in design.md that the storage half of the projection risk stays dormant until the Postgres migration, so whoever performs it knows to check the projection shape has not drifted.

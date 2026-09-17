@@ -75,7 +75,7 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 
 Spring Modulith application modules under `com.klabis.*`: `members`, `events`, `calendar`, `finance`, `oris` (ORIS integration), `authorizationserver`, `common` (shared kernel), and:
 
-- **`sync`** — generic bidirectional synchronisation engine (`com.klabis.sync`). Owns change detection, conflict handling, retry and audit for any entity paired against any external system; entirely unaware of ORIS or any other integration. The only adapter today is `OrisEventSyncAdapter` (`com.klabis.oris.eventsync`), which moves the existing ORIS event synchronisation behind the engine. See `docs/design-decisions.md` ADR-005 and the `backend-patterns` skill (`references/synchronization-adapter.md`) for how to add another one.
+- **`sync`** — generic bidirectional synchronisation engine (`com.klabis.sync`). Owns change detection, conflict handling, retry and audit for any entity paired against any external system; entirely unaware of ORIS or any other integration. The only adapter today is `OrisEventSyncAdapter` (`com.klabis.events.infrastructure.orissync`), which moves the existing ORIS event synchronisation behind the engine. It lives in the module that owns the entity, not in `com.klabis.oris` — see ADR-005 and openspec `relocate-oris-event-sync-adapter` for why. See `docs/design-decisions.md` ADR-005 and the `backend-patterns` skill (`references/synchronization-adapter.md`) for how to add another one.
 
 ## Documentation Index
 

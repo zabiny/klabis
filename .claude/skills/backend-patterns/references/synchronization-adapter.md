@@ -2,7 +2,7 @@
 
 How to plug a new entity type into the `sync` engine (`com.klabis.sync`), which owns change detection, conflict handling, retry and audit generically (`docs/design-decisions.md` ADR-005, `openspec/changes/add-bidirectional-sync-engine/design.md`).
 
-The only adapter that exists today is `OrisEventSyncAdapter` in `com.klabis.oris.eventsync` — read it alongside this page. This page also walks through **`Member`** as a worked example throughout, to make the steps concrete for an entity with sensitive data and a two-way external system. **No member adapter exists** — member synchronisation is an explicit non-goal of the proposal that built this engine. Treat every `Member`/ORIS-person reference below as illustrative, not as code you will find in the repo.
+The only adapter that exists today is `OrisEventSyncAdapter` in `com.klabis.events.infrastructure.orissync` — read it alongside this page. This page also walks through **`Member`** as a worked example throughout, to make the steps concrete for an entity with sensitive data and a two-way external system. **No member adapter exists** — member synchronisation is an explicit non-goal of the proposal that built this engine. Treat every `Member`/ORIS-person reference below as illustrative, not as code you will find in the repo.
 
 ## Before you start
 
@@ -64,7 +64,11 @@ public record OrisEventProjection(
 
 ## 3. Write the adapter
 
-Implement `SynchronizationAdapter` in the integration's own module (not in `sync`, and not in the owning module's own package — ORIS's adapter lives in `com.klabis.oris.eventsync`, a sibling of `com.klabis.oris`, precisely so it does not read as belonging inside the `sync` module itself).
+Implement `SynchronizationAdapter` in the module that OWNS the entity being synchronised, under its `infrastructure` package beside the module's other driven adapters — ORIS's event adapter lives in `com.klabis.events.infrastructure.orissync`. Never in `sync` itself.
+
+This reverses earlier guidance, which placed the adapter in the integration's own package (`com.klabis.oris.eventsync`). That arrangement forced the adapter to reach the owning module through a primary port — `OrisEventFieldsGateway` — justified as avoiding a `sync ↔ events` cycle. Measurement showed no such cycle was possible: `com.klabis.sync` imports nothing from `com.klabis.events`. The port bought nothing and cost a parallel field record plus two mappers, so `relocate-oris-event-sync-adapter` deleted it and moved the adapter inside `events`, where it reaches `EventRepository` and the aggregate directly.
+
+Put the adapter in the integration's package only if it genuinely synchronises an entity no Klabis module owns.
 
 ```java
 @OrisIntegrationComponent   // or the equivalent module-scoped component annotation

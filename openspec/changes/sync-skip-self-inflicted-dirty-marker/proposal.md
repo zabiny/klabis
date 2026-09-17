@@ -3,8 +3,8 @@
 Every inward synchronisation wakes a writer that immediately contends with it.
 
 When a pass decides to adopt ORIS's values, it calls
-`OrisEventSyncAdapter.applyToLocal` → `OrisEventFieldsGatewayService.applyOrisSync` →
-`Event.syncFromOris(...)`, which registers an `EventUpdatedEvent`. That event is
+`OrisEventSyncAdapter.applyToLocal` → `Event.syncFromOris(...)`, which registers an
+`EventUpdatedEvent`. That event is
 consumed asynchronously by `EventsSyncListener` (`@ApplicationModuleListener`), which
 calls `SynchronizationPort.markDirty` on the very record the pass is about to finish
 writing. The engine marks its own write as an unsynchronised local change.

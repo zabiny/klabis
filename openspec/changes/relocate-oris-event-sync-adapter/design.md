@@ -194,6 +194,13 @@ should be understood as dormant rather than handled — whoever performs the Pos
 migration inherits it, and it only bites if a projection's shape changed in the meantime
 without anyone noticing.
 
+This move does not change that: `OrisEventProjection`'s record component list is carried over
+unchanged by D1/D2 (the type relocates, its shape does not), so the dormancy is unaffected either
+way. Whoever eventually performs the Postgres migration should still check the projection's shape
+against the canonical-JSON test added below before trusting any projection persisted before that
+migration — this change is not evidence that check is unnecessary, only that it did not need to
+happen now.
+
 Mitigation, driven by the first half and cheap enough to cover both: carry the record
 component list over character-for-character, and add a test asserting the canonical JSON
 of a fully-populated projection *before* the move, so it can fail meaningfully rather than
