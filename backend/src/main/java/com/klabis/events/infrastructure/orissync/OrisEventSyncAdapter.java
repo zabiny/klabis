@@ -5,7 +5,6 @@ import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
-import com.klabis.events.application.OrisEventFields;
 import com.klabis.events.application.OrisEventFieldsReader;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRanking;
@@ -136,6 +135,19 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
+        List<EventCategory> categories = toEventCategories(orisProjection);
+
+        warnIfSyncRemovesCategoriesWithRegistrations(event, categories);
+
+        event.syncFromOris(buildSyncFromOris(orisProjection, categories));
+
+        event.applyAutoMappedEventType(orisProjection.resolvedEventTypeId());
+
+        eventRepository.save(event);
+    }
+
+    private static Event.SyncFromOris buildSyncFromOris(
+            OrisEventProjection orisProjection, List<EventCategory> categories) {
         RegistrationDeadlines deadlines = RegistrationDeadlines.of(
                 orisProjection.registrationDeadline1(),
                 orisProjection.registrationDeadline2(),
@@ -149,13 +161,7 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
                 ? Money.of(orisProjection.baseEntryFeeAmount(), Currency.getInstance(orisProjection.baseEntryFeeCurrency()))
                 : null;
 
-        List<EventCategory> categories = orisProjection.categories().stream()
-                .map(category -> EventCategory.createFromOris(category.orisId(), category.name()))
-                .toList();
-
-        warnIfSyncRemovesCategoriesWithRegistrations(event, categories);
-
-        event.syncFromOris(EventSyncFromOrisBuilder.builder()
+        return EventSyncFromOrisBuilder.builder()
                 .name(orisProjection.name())
                 .eventDate(orisProjection.eventDate())
                 .location(orisProjection.location())
@@ -165,11 +171,13 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
                 .categories(categories)
                 .ranking(ranking)
                 .baseEntryFee(baseEntryFee)
-                .build());
+                .build();
+    }
 
-        event.applyAutoMappedEventType(orisProjection.resolvedEventTypeId());
-
-        eventRepository.save(event);
+    private static List<EventCategory> toEventCategories(OrisEventProjection orisProjection) {
+        return orisProjection.categories().stream()
+                .map(category -> EventCategory.createFromOris(category.orisId(), category.name()))
+                .toList();
     }
 
     /**
