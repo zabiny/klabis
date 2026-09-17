@@ -59,4 +59,16 @@ public interface SynchronizationAdapter {
      * Only called when {@link SyncCapabilities#writesExternal()} is declared.
      */
     void applyToExternal(String externalId, SyncProjection projection);
+
+    /**
+     * Builds a local entity from an external projection and returns its identifier
+     * (design.md D2, "Domain Changes"). Only called when
+     * {@link SyncCapabilities#createsLocal()} is declared — the default refuses, so an
+     * integration that never opts in cannot silently gain the ability to create local
+     * entities merely by not overriding this method.
+     */
+    default String createLocal(SyncProjection projection) {
+        throw new UnsupportedOperationException(
+                "This adapter does not support creating the local side — declare SyncCapabilities.createsLocal and override createLocal");
+    }
 }

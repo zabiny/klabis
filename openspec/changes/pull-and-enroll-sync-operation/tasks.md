@@ -1,26 +1,26 @@
 ## 1. Adapter can create the local side
 
-- [ ] 1.1 RED: adapter test asserting the default `createLocal` refuses, so an integration that has not opted in cannot silently create entities
-- [ ] 1.2 GREEN: add `createLocal(SyncProjection)` returning the new entity identifier to `SynchronizationAdapter`, defaulting to a refusal
-- [ ] 1.3 RED: test asserting `SyncCapabilities.pullOnlyCreating()` declares reads both sides, writes local only, creates local, creates nothing external
-- [ ] 1.4 GREEN: add the `pullOnlyCreating()` factory
-- [ ] 1.5 REFACTOR: check the new factory reads consistently alongside `pullOnly()` and `bidirectional()`
+- [x] 1.1 RED: adapter test asserting the default `createLocal` refuses, so an integration that has not opted in cannot silently create entities
+- [x] 1.2 GREEN: add `createLocal(SyncProjection)` returning the new entity identifier to `SynchronizationAdapter`, defaulting to a refusal
+- [x] 1.3 RED: test asserting `SyncCapabilities.pullOnlyCreating()` declares reads both sides, writes local only, creates local, creates nothing external
+- [x] 1.4 GREEN: add the `pullOnlyCreating()` factory
+- [x] 1.5 REFACTOR: check the new factory reads consistently alongside `pullOnly()` and `bidirectional()`
 
 ## 2. A retired pairing can be brought back
 
-- [ ] 2.1 RED: domain test — `reactivate()` on a retired pairing clears retirement, discards the baseline, and returns a `ScheduleEffect` that makes the pairing due again
-- [ ] 2.2 GREEN: add `SyncRecord.reactivate()` (design D6)
-- [ ] 2.3 RED: domain test — `reactivate()` is refused on a pairing that is not retired
-- [ ] 2.4 GREEN: add the state guard
-- [ ] 2.5 RED: test — the pass following a reactivation adopts the external side, exactly as for a fresh pairing. This is what proves the baseline was discarded rather than merely ignored; make sure it fails before 2.2 is in place
-- [ ] 2.6 GREEN: whatever 2.5 exposes
-- [ ] 2.7 REFACTOR: keep `retire`/`reactivate` symmetric and adjacent in the aggregate
+- [x] 2.1 RED: domain test — `reactivate()` on a retired pairing clears retirement, discards the baseline, and returns a `ScheduleEffect` that makes the pairing due again
+- [x] 2.2 GREEN: add `SyncRecord.reactivate()` (design D6)
+- [x] 2.3 RED: domain test — `reactivate()` is refused on a pairing that is not retired
+- [x] 2.4 GREEN: add the state guard
+- [x] 2.5 RED: test — the pass following a reactivation adopts the external side, exactly as for a fresh pairing. This is what proves the baseline was discarded rather than merely ignored; make sure it fails before 2.2 is in place
+- [x] 2.6 GREEN: whatever 2.5 exposes
+- [x] 2.7 REFACTOR: keep `retire`/`reactivate` symmetric and adjacent in the aggregate
 
 ## 3. A pairing can be found from the external side
 
-- [ ] 3.1 RED: repository test — `findBySystemAndExternalId` finds active, conflicted, failed and retired pairings, and returns empty when nothing is paired. Retired must be included; assert it explicitly, since excluding it is the easy mistake and everything in section 5 depends on it
-- [ ] 3.2 GREEN: add the method to `SyncRecordRepository` and implement it in `SyncRecordRepositoryAdapter` — no migration, the existing `uq_sync_record_external` constraint backs the query
-- [ ] 3.3 REFACTOR: confirm the query plan uses that constraint's index rather than scanning
+- [x] 3.1 RED: repository test — `findBySystemAndExternalId` finds active, conflicted, failed and retired pairings, and returns empty when nothing is paired. Retired must be included; assert it explicitly, since excluding it is the easy mistake and everything in section 5 depends on it
+- [x] 3.2 GREEN: add the method to `SyncRecordRepository` and implement it in `SyncRecordRepositoryAdapter` — no migration, the existing `uq_sync_record_external` constraint backs the query
+- [x] 3.3 REFACTOR: confirm the query plan uses that constraint's index rather than scanning
 
 ## 4. Bringing in a record Klabis does not have
 

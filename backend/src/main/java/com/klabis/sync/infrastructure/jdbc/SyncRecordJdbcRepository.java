@@ -16,6 +16,16 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
     Optional<SyncRecordMemento> findByEntityTypeAndEntityIdAndExternalSystem(String entityType, String entityId, String externalSystem);
 
     /**
+     * Looks a pairing up from the external side, every status included — {@code
+     * RETIRED} deliberately so (see
+     * {@link com.klabis.sync.domain.SyncRecordRepository#findBySystemAndExternalId}).
+     * Rides {@code uq_sync_record_external UNIQUE (external_system, external_id,
+     * entity_type)} (V001__initial_schema.sql): that constraint's own index serves
+     * this two-column prefix of its columns, so no new index is needed.
+     */
+    Optional<SyncRecordMemento> findByExternalSystemAndExternalId(String externalSystem, String externalId);
+
+    /**
      * Backs the nightly full pass (design.md D10, D17): every record still eligible
      * to be attempted by the scheduler. Excludes {@code RETIRED} (D17, no longer
      * scanned) and {@code FAILED} (D10, "skipped by the scheduler" until a manager

@@ -57,6 +57,12 @@ class SyncRecordRepositoryAdapter implements SyncRecordRepository {
     }
 
     @Override
+    public Optional<SyncRecord> findBySystemAndExternalId(ExternalSystem system, String externalId) {
+        return jdbcRepository.findByExternalSystemAndExternalId(system.name(), externalId)
+                .map(this::toSyncRecord);
+    }
+
+    @Override
     public List<SyncRecord> findAllActive() {
         return jdbcRepository.findAllActive().stream()
                 .map(this::toSyncRecord)

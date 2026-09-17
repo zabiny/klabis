@@ -157,6 +157,84 @@ class SyncRecordJdbcRepositoryTest {
     }
 
     @Nested
+    @DisplayName("findBySystemAndExternalId() — looks a pairing up from the external side (design.md, \"Domain Changes\")")
+    class FindBySystemAndExternalId {
+
+        @Test
+        @DisplayName("finds an active record")
+        void findsActiveRecord() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "ext-active"),
+                    new ExternalReference(ExternalSystem.ORIS, "9001"));
+            syncRecordRepository.save(record);
+
+            Optional<SyncRecord> found = syncRecordRepository.findBySystemAndExternalId(ExternalSystem.ORIS, "9001");
+
+            assertThat(found).isPresent();
+            assertThat(found.get().getId()).isEqualTo(record.getId());
+        }
+
+        @Test
+        @DisplayName("finds a conflicted record")
+        void findsConflictedRecord() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "ext-conflicted"),
+                    new ExternalReference(ExternalSystem.ORIS, "9002"));
+            SyncSnapshot local = SyncSnapshot.of(new TestSyncProjection("Local", "Brno"), hasher);
+            SyncSnapshot external = SyncSnapshot.of(new TestSyncProjection("External", "Brno"), hasher);
+            record.recordSuccess(SyncDirection.INWARD, local, local, Instant.now());
+            record.recordConflict(local, external, null, Instant.now());
+            syncRecordRepository.save(record);
+
+            Optional<SyncRecord> found = syncRecordRepository.findBySystemAndExternalId(ExternalSystem.ORIS, "9002");
+
+            assertThat(found).isPresent();
+            assertThat(found.get().getStatus()).isEqualTo(SyncStatus.CONFLICT);
+        }
+
+        @Test
+        @DisplayName("finds a terminally failed record")
+        void findsFailedRecord() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "ext-failed"),
+                    new ExternalReference(ExternalSystem.ORIS, "9003"));
+            record.recordRetryableFailure(Instant.now());
+            record.recordTerminalFailure(5, "boom", Instant.now());
+            syncRecordRepository.save(record);
+
+            Optional<SyncRecord> found = syncRecordRepository.findBySystemAndExternalId(ExternalSystem.ORIS, "9003");
+
+            assertThat(found).isPresent();
+            assertThat(found.get().getStatus()).isEqualTo(SyncStatus.FAILED);
+        }
+
+        /**
+         * Retired must be included — a repeat import of a finished event's pairing
+         * needs to find it in order to reactivate it (design.md D7); omitting retired
+         * pairings here is the easy mistake this test exists to catch, and the whole
+         * of a later reactivation slice depends on this lookup seeing them.
+         */
+        @Test
+        @DisplayName("finds a retired record")
+        void findsRetiredRecord() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "ext-retired"),
+                    new ExternalReference(ExternalSystem.ORIS, "9004"));
+            record.retire(Instant.now());
+            syncRecordRepository.save(record);
+
+            Optional<SyncRecord> found = syncRecordRepository.findBySystemAndExternalId(ExternalSystem.ORIS, "9004");
+
+            assertThat(found).isPresent();
+            assertThat(found.get().getStatus()).isEqualTo(SyncStatus.RETIRED);
+        }
+
+        @Test
+        @DisplayName("returns empty when nothing is paired for the external reference")
+        void returnsEmptyWhenNotPaired() {
+            Optional<SyncRecord> found = syncRecordRepository.findBySystemAndExternalId(ExternalSystem.ORIS, "unknown-external-id");
+
+            assertThat(found).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("findAllActive() — backs the nightly full pass (design.md D10, D17)")
     class FindAllActive {
 

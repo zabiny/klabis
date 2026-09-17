@@ -22,6 +22,16 @@ public interface SyncRecordRepository {
     Optional<SyncRecord> findByTargetAndSystem(SyncTarget target, ExternalSystem system);
 
     /**
+     * Looks a pairing up from the external side (design.md, "Domain Changes") — every
+     * status is included, {@code RETIRED} deliberately so: a repeat import of a
+     * finished event's pairing must find it in order to reactivate it (design.md D7).
+     * Backed by the existing uniqueness constraint on external system, external
+     * identifier and entity type ({@code uq_sync_record_external}) — no new index, no
+     * migration needed.
+     */
+    Optional<SyncRecord> findBySystemAndExternalId(ExternalSystem system, String externalId);
+
+    /**
      * Every record still eligible to be attempted by the scheduler — the nightly full
      * pass re-compares each one (design.md D10, D17): the only way an external change
      * that announces itself nowhere gets noticed. Excludes {@code RETIRED} (D17) and

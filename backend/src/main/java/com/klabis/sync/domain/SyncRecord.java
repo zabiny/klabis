@@ -601,4 +601,21 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         this.status = SyncStatus.RETIRED;
         this.retiredAt = now;
     }
+
+    /**
+     * Returns a retired record to service (design.md D6, D7, "Domain Changes"): status
+     * moves back to the pre-baseline state, retirement clears, and the baseline is
+     * discarded — it describes agreement at a moment that may be long past, and both
+     * sides could have moved independently since. Discarding it makes the pass that
+     * follows adopt the external side, exactly like a fresh enrolment (design.md D5),
+     * rather than manufacture a conflict against a stale agreement.
+     */
+    public ScheduleEffect reactivate(Instant now) {
+        Assert.notNull(now, "now is required");
+        Assert.state(status == SyncStatus.RETIRED, "Only a retired record can be reactivated");
+        this.status = SyncStatus.NEW;
+        this.retiredAt = null;
+        this.baseline = null;
+        return applyToSchedule(ScheduleEffect.dirtySince(now));
+    }
 }

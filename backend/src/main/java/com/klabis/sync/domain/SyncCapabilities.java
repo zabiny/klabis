@@ -40,4 +40,14 @@ public record SyncCapabilities(
     public static SyncCapabilities bidirectional() {
         return new SyncCapabilities(true, true, true, true, false, false, false);
     }
+
+    /**
+     * A pull-only integration that can also create the local side (design.md
+     * "Domain Changes", D2) — what ORIS events declares for pull-and-enrol. Same
+     * read/write shape as {@link #pullOnly()}, plus {@code createsLocal}. The
+     * external side is never created by the engine.
+     */
+    public static SyncCapabilities pullOnlyCreating() {
+        return new SyncCapabilities(true, true, true, false, true, false, false);
+    }
 }
