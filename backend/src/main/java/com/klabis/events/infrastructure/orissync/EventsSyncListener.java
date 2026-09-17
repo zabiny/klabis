@@ -1,10 +1,10 @@
-package com.klabis.events.infrastructure.listeners;
+package com.klabis.events.infrastructure.orissync;
 
+import com.klabis.common.OrisIntegrationComponent;
 import com.klabis.events.EventCancelledEvent;
 import com.klabis.events.EventFinishedEvent;
 import com.klabis.events.EventId;
 import com.klabis.events.EventUpdatedEvent;
-import com.klabis.common.OrisIntegrationComponent;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;

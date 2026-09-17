@@ -1,4 +1,4 @@
-package com.klabis.events.infrastructure.listeners;
+package com.klabis.events.infrastructure.orissync;
 
 import com.klabis.events.EventCancelledEvent;
 import com.klabis.events.EventFinishedEvent;
@@ -6,11 +6,7 @@ import com.klabis.events.EventId;
 import com.klabis.events.EventUpdatedEvent;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.application.SynchronizationPort;
-import com.klabis.sync.domain.ExternalReference;
-import com.klabis.sync.domain.ExternalSystem;
-import com.klabis.sync.domain.SyncEntityType;
-import com.klabis.sync.domain.SyncRecord;
-import com.klabis.sync.domain.SyncTarget;
+import com.klabis.sync.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,9 +18,7 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("EventsSyncListener")
