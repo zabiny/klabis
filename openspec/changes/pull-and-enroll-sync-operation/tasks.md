@@ -79,9 +79,9 @@
 
 ## 10. End-to-end behaviour
 
-- [ ] 10.1 RED: extend `OrisEventSyncScenarioIntegrationTest` — an imported event is in step immediately, without waiting for a scheduled run
-- [ ] 10.2 RED: same test class — re-importing a cancelled event resumes synchronisation and takes the current ORIS values
-- [ ] 10.3 GREEN: whatever 10.1 and 10.2 expose
-- [ ] 10.4 Walk every scenario in the `data-synchronization` and `events` delta specs and confirm a test covers it
-- [ ] 10.5 Run the full backend suite; confirm no regression beyond the pre-existing known failures
-- [ ] 10.6 Code review before commit
+- [x] 10.1 RED: extend `OrisEventSyncScenarioIntegrationTest` — an imported event is in step immediately, without waiting for a scheduled run
+- [x] 10.2 RED: same test class — re-importing a cancelled event resumes synchronisation and takes the current ORIS values
+- [x] 10.3 GREEN: whatever 10.1 and 10.2 expose
+- [x] 10.4 Walk every scenario in the `data-synchronization` and `events` delta specs and confirm a test covers it
+- [x] 10.5 Run the full backend suite; confirm no regression beyond the pre-existing known failures
+- [x] 10.6 Code review before commit

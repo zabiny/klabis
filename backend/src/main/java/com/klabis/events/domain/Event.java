@@ -748,23 +748,23 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     /**
      * Syncs event data from ORIS, overwriting all relevant fields.
      * <p>
-     * Business rules:
-     * - Only allowed in DRAFT or ACTIVE status
-     * - Event must have a non-null orisId (only events imported from ORIS can be synced)
+     * Allowed in any status, including FINISHED and CANCELLED: the synchronisation
+     * engine retires the pairing for those the moment the event reaches the end of
+     * its life (see {@code EventsSyncListener}), so a scheduled pass never reaches
+     * this method for them — the only way it does is a manager deliberately
+     * reactivating the pairing by importing the same ORIS event again (design.md D7,
+     * D6). Reactivation resumes synchronisation of data only; it does not reopen the
+     * event, so a FINISHED or CANCELLED event keeps its status.
+     * <p>
+     * Business rule: event must have a non-null orisId (only events imported from
+     * ORIS can be synced).
      *
      * @param command sync command with all ORIS-sourced fields
-     * @throws IllegalStateException if event is not in DRAFT or ACTIVE status
      * @throws IllegalStateException if event has no orisId
      */
     public void syncFromOris(SyncFromOris command) {
         if (orisId == null) {
             throw new IllegalStateException("Cannot sync from ORIS: event has no orisId");
-        }
-        if (status == EventStatus.FINISHED) {
-            throw new IllegalStateException("Cannot sync from ORIS: event is in FINISHED status");
-        }
-        if (status == EventStatus.CANCELLED) {
-            throw new IllegalStateException("Cannot sync from ORIS: event is in CANCELLED status");
         }
         validateCategories(command.categories());
 

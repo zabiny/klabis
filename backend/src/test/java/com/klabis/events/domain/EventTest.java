@@ -1759,8 +1759,8 @@ class EventTest {
         }
 
         @Test
-        @DisplayName("should throw IllegalStateException when event is FINISHED")
-        void shouldThrowWhenEventIsFinished() {
+        @DisplayName("overwrites fields for a FINISHED event without reopening it (design.md D7)")
+        void shouldOverwriteFieldsForFinishedEventWithoutReopeningIt() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .orisId(100)
                     .name("Old Name")
@@ -1771,14 +1771,15 @@ class EventTest {
             event.publish();
             event.finish();
 
-            assertThatThrownBy(() -> event.syncFromOris(defaultSyncCommand()))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("FINISHED");
+            event.syncFromOris(defaultSyncCommand());
+
+            assertThat(event.getName()).isEqualTo("Synced Name");
+            assertThat(event.getStatus()).isEqualTo(EventStatus.FINISHED);
         }
 
         @Test
-        @DisplayName("should throw IllegalStateException when event is CANCELLED")
-        void shouldThrowWhenEventIsCancelled() {
+        @DisplayName("overwrites fields for a CANCELLED event without reopening it (design.md D7)")
+        void shouldOverwriteFieldsForCancelledEventWithoutReopeningIt() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .orisId(100)
                     .name("Old Name")
@@ -1788,9 +1789,10 @@ class EventTest {
                     .build());
             event.cancel();
 
-            assertThatThrownBy(() -> event.syncFromOris(defaultSyncCommand()))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("CANCELLED");
+            event.syncFromOris(defaultSyncCommand());
+
+            assertThat(event.getName()).isEqualTo("Synced Name");
+            assertThat(event.getStatus()).isEqualTo(EventStatus.CANCELLED);
         }
 
         @Test

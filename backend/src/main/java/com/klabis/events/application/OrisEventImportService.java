@@ -12,7 +12,6 @@ import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncStatus;
 import com.klabis.sync.domain.SyncTarget;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -44,8 +43,14 @@ class OrisEventImportService implements OrisEventImportPort {
      * {@link EventSyncNeedsResolutionException} for the same reason
      * {@link #syncEventFromOris} does: this module's REST layer should not need to
      * know the sync module's internal exception vocabulary.
+     * <p>
+     * Deliberately NOT {@code @Transactional}: {@code pullAndEnroll} performs a
+     * blocking external ORIS HTTP call and relies on {@code SyncRecordCreator} and the
+     * engine's claim/pass steps being genuine cross-bean calls with their own short
+     * transactions (design.md D8). Wrapping this method in a transaction would keep it
+     * open across the external call, defeating that design — see
+     * {@link com.klabis.sync.application.SynchronizationService} javadoc.
      */
-    @Transactional
     @Override
     public Event importEventFromOris(int orisId) {
         SyncRecord record;

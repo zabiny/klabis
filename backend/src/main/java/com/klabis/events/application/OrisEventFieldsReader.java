@@ -8,7 +8,6 @@ import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
 import com.klabis.common.OrisIntegrationComponent;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Fetches an ORIS event's details and maps them to {@link OrisEventFields}, shared by
@@ -16,6 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code com.klabis.events.infrastructure.orissync.OrisEventSyncAdapter} (the
  * synchronisation engine's external-side read), so the {@code EventDetails} mapping
  * exists exactly once (design.md D4, open question 1).
+ * <p>
+ * Deliberately NOT {@code @Transactional}: its only caller is {@code
+ * OrisEventSyncAdapter.readExternal}, which the synchronisation engine always invokes
+ * through {@code ResilientAdapterExecutor} with no transaction open (design.md D8,
+ * D12) — wrapping this method would open one around the blocking
+ * {@code orisApiClient.getEventDetails} call, the exact thing that design relies on
+ * not happening. The single local read ({@code eventTypeRepository
+ * .findByOrisDisciplineId}) runs fine without an explicit read-only transaction.
  */
 @OrisIntegrationComponent
 public class OrisEventFieldsReader {
@@ -32,7 +39,6 @@ public class OrisEventFieldsReader {
         this.eventTypeRepository = eventTypeRepository;
     }
 
-    @Transactional(readOnly = true)
     public OrisEventFields readOrisFields(int orisId) {
         EventDetails details = fetchEventDetails(orisId);
         EventTypeId resolvedEventTypeId = resolveEventTypeFromOrisDiscipline(details.discipline());

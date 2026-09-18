@@ -32,6 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -102,6 +103,121 @@ class OrisEventSyncScenarioIntegrationTest {
 
         assertThat(record.getTarget()).isEqualTo(new SyncTarget(SyncEntityType.EVENT, eventId.value().toString()));
         assertThat(record.getExternalReference().externalId()).isEqualTo(String.valueOf(orisId));
+    }
+
+    @Nested
+    @DisplayName("Transaction boundaries (code review regression: no Spring transaction around the external ORIS call)")
+    class TransactionBoundaries {
+
+        /**
+         * Regression test for the bug introduced by 6d542576: {@code
+         * OrisEventImportService.importEventFromOris} was annotated {@code
+         * @Transactional}, which — now that it delegates to {@code
+         * SynchronizationPort#pullAndEnroll} — kept a Spring transaction open across the
+         * blocking external ORIS HTTP call, defeating design.md D8 ("no transaction
+         * spans an external call"; see {@code SynchronizationService} javadoc). Captures
+         * whether a real transaction is active from inside the mocked
+         * {@code orisApiClient.getEventDetails} call, which is where {@code
+         * OrisEventSyncAdapter.readExternal} performs the "external" read that
+         * production code guards against running inside a transaction.
+         */
+        @Test
+        @DisplayName("no transaction is active while the ORIS adapter performs its external read during import")
+        void importEventFromOris_doesNotHoldTransactionOpenAcrossExternalOrisCall() {
+            int freshOrisId = ORIS_ID_SEQUENCE.incrementAndGet();
+            when(orisWebUrls.eventUrl(freshOrisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + freshOrisId);
+            EventDetails details = EventDetailsBuilder.builder()
+                    .name("Transaction Boundary Check")
+                    .date(LocalDate.of(2026, 5, 1))
+                    .place("Brno Park")
+                    .org1(new Organizer(205, "OOB", "Orel Brno"))
+                    .build();
+
+            AtomicInteger callCount = new AtomicInteger();
+            AtomicInteger transactionActiveDuringCall = new AtomicInteger(-1);
+            when(orisApiClient.getEventDetails(freshOrisId)).thenAnswer(invocation -> {
+                callCount.incrementAndGet();
+                transactionActiveDuringCall.set(TransactionSynchronizationManager.isActualTransactionActive() ? 1 : 0);
+                return new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent");
+            });
+
+            orisEventImportPort.importEventFromOris(freshOrisId);
+
+            assertThat(callCount.get()).isGreaterThan(0);
+            assertThat(transactionActiveDuringCall.get())
+                    .as("a Spring transaction must NOT be active while the external ORIS call is in flight")
+                    .isZero();
+        }
+    }
+
+    @Nested
+    @DisplayName("Pull and enrol end-to-end (task 10.1, 10.2)")
+    class PullAndEnrollEndToEnd {
+
+        @Test
+        @DisplayName("an imported event is in step immediately, with no scheduled run needed")
+        void importedEventIsInStepWithoutScheduledRun() {
+            int freshOrisId = ORIS_ID_SEQUENCE.incrementAndGet();
+            when(orisWebUrls.eventUrl(freshOrisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + freshOrisId);
+            stubOrisEventDetails(freshOrisId, "Autumn Classic", null);
+
+            // No synchronizeNow call here, unlike setUp() — the import itself must
+            // establish the baseline and leave the pairing IN_SYNC (design.md D3,
+            // spec.md "An entity brought in from an external system is in step
+            // straight away").
+            Event imported = orisEventImportPort.importEventFromOris(freshOrisId);
+
+            SyncRecord record = synchronizationPort.findByTarget(
+                            new SyncTarget(SyncEntityType.EVENT, imported.getId().value().toString()))
+                    .orElseThrow();
+
+            assertThat(record.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+            assertThat(record.getBaseline()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("re-importing a cancelled event reactivates it and takes the current ORIS values")
+        void reimportingCancelledEventReactivatesAndTakesCurrentOrisValues() {
+            eventManagementPort.cancelEvent(eventId, Event.CancelEvent.withoutReason());
+
+            SyncRecord afterCancel = synchronizationPort.state(enrolled.getId());
+            assertThat(afterCancel.getStatus()).isEqualTo(SyncStatus.RETIRED);
+
+            stubOrisEventDetails("Spring Sprint Renamed After Cancellation", null);
+            Event reimported = orisEventImportPort.importEventFromOris(orisId);
+
+            assertThat(reimported.getId()).isEqualTo(eventId);
+            assertThat(reimported.getName()).isEqualTo("Spring Sprint Renamed After Cancellation");
+
+            SyncRecord afterReimport = synchronizationPort.state(enrolled.getId());
+            assertThat(afterReimport.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+            assertThat(afterReimport.getBaseline()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("a club's own change survives a repeated import — the event ends up awaiting a decision (spec.md events, task 10.4)")
+        void clubsOwnChangeSurvivesRepeatedImport() {
+            editNameLocally("Manager's Correction");
+            stubOrisEventDetails("ORIS Renamed It Too", null);
+
+            // Calling importEventFromOris a second time — not synchronizeNow — is the
+            // exact path spec.md's "A club's own change survives a repeated import"
+            // scenario describes: a manager re-running the import must not discard the
+            // local edit (design.md D5).
+            Event reimported = orisEventImportPort.importEventFromOris(orisId);
+
+            assertThat(reimported.getName()).isEqualTo("Manager's Correction");
+            SyncRecord afterReimport = synchronizationPort.state(enrolled.getId());
+            assertThat(afterReimport.getStatus()).isEqualTo(SyncStatus.CONFLICT);
+        }
+
+        private void editNameLocally(String name) {
+            Event event = eventManagementPort.getEvent(eventId, true);
+            Event.UpdateEvent corrected = EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .name(name)
+                    .build();
+            eventManagementPort.updateEvent(eventId, corrected);
+        }
     }
 
     @Nested
@@ -297,6 +413,10 @@ class OrisEventSyncScenarioIntegrationTest {
     }
 
     private void stubOrisEventDetails(String name, Map<String, EventClass> classes) {
+        stubOrisEventDetails(orisId, name, classes);
+    }
+
+    private void stubOrisEventDetails(int forOrisId, String name, Map<String, EventClass> classes) {
         EventDetailsBuilder builder = EventDetailsBuilder.builder()
                 .name(name)
                 .date(LocalDate.of(2026, 5, 1))
@@ -307,7 +427,7 @@ class OrisEventSyncScenarioIntegrationTest {
         }
         EventDetails details = builder.build();
 
-        when(orisApiClient.getEventDetails(orisId)).thenReturn(
+        when(orisApiClient.getEventDetails(forOrisId)).thenReturn(
                 new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent"));
     }
 
