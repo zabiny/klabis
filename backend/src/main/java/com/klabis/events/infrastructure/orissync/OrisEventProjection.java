@@ -37,6 +37,17 @@ import java.util.List;
  * 8.10's follow-up fix). Always {@code null} on the local-side projection
  * ({@link OrisEventProjectionMapper#fromEvent}): the event type is never read back out
  * of a local {@code Event} for synchronisation purposes.
+ * <p>
+ * {@code orisId} is likewise {@link JsonIgnore}d — Klabis-owned identity for the
+ * pairing, not an ORIS-owned field — and carries the external record's ORIS id from
+ * {@link OrisEventSyncAdapter#readExternal} through to
+ * {@link OrisEventSyncAdapter#createLocal}, which has no other way to learn it: the
+ * engine hands {@code createLocal} only the projection {@code readExternal} produced
+ * (design.md "Domain Changes", D2). Boxed as {@link Integer}, not a primitive: a
+ * projection read back out of storage via {@code SyncProjectionCodec.fromCanonicalJson}
+ * carries no {@code orisId} at all (it was never serialised), and Jackson cannot bind a
+ * missing value into a primitive {@code int}. Always {@code null} on the local-side
+ * projection — unused there, mirroring {@code resolvedEventTypeId}.
  */
 public record OrisEventProjection(
         String name,
@@ -53,7 +64,8 @@ public record OrisEventProjection(
         String rankingName,
         BigDecimal baseEntryFeeAmount,
         String baseEntryFeeCurrency,
-        @JsonIgnore EventTypeId resolvedEventTypeId
+        @JsonIgnore EventTypeId resolvedEventTypeId,
+        @JsonIgnore Integer orisId
 ) implements SyncProjection {
 
     @Override

@@ -7,6 +7,7 @@ import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.OrisEventFieldsReader;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
 import com.klabis.events.domain.EventRanking;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventSyncFromOrisBuilder;
@@ -67,7 +68,7 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
     private static final Logger log = LoggerFactory.getLogger(OrisEventSyncAdapter.class);
 
     private static final SyncCapabilities CAPABILITIES =
-            SyncCapabilities.pullOnly();
+            SyncCapabilities.pullOnlyCreating();
 
     private final EventManagementPort eventManagementPort;
     private final OrisEventFieldsReader orisEventFieldsReader;
@@ -109,8 +110,9 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
 
     @Override
     public SyncProjection readExternal(String externalId) {
+        int orisId = toOrisId(externalId);
         return OrisEventFieldsToProjectionMapper.fromOrisFields(
-                orisEventFieldsReader.readOrisFields(toOrisId(externalId)));
+                orisEventFieldsReader.readOrisFields(orisId), orisId);
     }
 
     /**
@@ -148,29 +150,16 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
 
     private static Event.SyncFromOris buildSyncFromOris(
             OrisEventProjection orisProjection, List<EventCategory> categories) {
-        RegistrationDeadlines deadlines = RegistrationDeadlines.of(
-                orisProjection.registrationDeadline1(),
-                orisProjection.registrationDeadline2(),
-                orisProjection.registrationDeadline3());
-
-        EventRanking ranking = orisProjection.rankingLevelId() != null
-                ? EventRanking.of(orisProjection.rankingLevelId(), orisProjection.rankingShortName(), orisProjection.rankingName())
-                : null;
-
-        Money baseEntryFee = orisProjection.baseEntryFeeAmount() != null
-                ? Money.of(orisProjection.baseEntryFeeAmount(), Currency.getInstance(orisProjection.baseEntryFeeCurrency()))
-                : null;
-
         return EventSyncFromOrisBuilder.builder()
                 .name(orisProjection.name())
                 .eventDate(orisProjection.eventDate())
                 .location(orisProjection.location())
                 .organizer(orisProjection.organizer())
                 .websiteUrl(orisProjection.websiteUrl() != null ? WebsiteUrl.of(orisProjection.websiteUrl()) : null)
-                .registrationDeadlines(deadlines)
+                .registrationDeadlines(deadlinesOf(orisProjection))
                 .categories(categories)
-                .ranking(ranking)
-                .baseEntryFee(baseEntryFee)
+                .ranking(rankingOf(orisProjection))
+                .baseEntryFee(baseEntryFeeOf(orisProjection))
                 .build();
     }
 
@@ -204,6 +193,61 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
             log.warn("ORIS sync for event {} will remove categories that have existing registrations: {}",
                     event.getId(), affectedCounts);
         }
+    }
+
+    /**
+     * Builds a new {@link Event} from the ORIS projection {@code readExternal} already
+     * produced, applies the auto-mapped event type, and saves it — the "no pairing"
+     * branch of {@code pullAndEnroll} (design.md "Domain Changes", D2). Moved out of
+     * {@code OrisEventImportService.importEventFromOris} (Migration Plan step 3);
+     * {@code orisId} and {@code resolvedEventTypeId} travel on the projection itself
+     * because the engine hands this method only the projection, not the external id.
+     */
+    @Override
+    @Transactional
+    public String createLocal(SyncProjection projection) {
+        OrisEventProjection orisProjection = (OrisEventProjection) projection;
+
+        Event event = Event.createFromOris(buildCreateFromOris(orisProjection));
+
+        event.applyAutoMappedEventType(orisProjection.resolvedEventTypeId());
+
+        Event saved = eventRepository.save(event);
+        return saved.getId().value().toString();
+    }
+
+    private static Event.CreateEventFromOris buildCreateFromOris(OrisEventProjection orisProjection) {
+        return EventCreateEventFromOrisBuilder.builder()
+                .orisId(orisProjection.orisId() != null ? orisProjection.orisId() : 0)
+                .name(orisProjection.name())
+                .eventDate(orisProjection.eventDate())
+                .location(orisProjection.location())
+                .organizer(orisProjection.organizer())
+                .websiteUrl(orisProjection.websiteUrl() != null ? WebsiteUrl.of(orisProjection.websiteUrl()) : null)
+                .registrationDeadlines(deadlinesOf(orisProjection))
+                .categories(toEventCategories(orisProjection))
+                .ranking(rankingOf(orisProjection))
+                .baseEntryFee(baseEntryFeeOf(orisProjection))
+                .build();
+    }
+
+    private static RegistrationDeadlines deadlinesOf(OrisEventProjection orisProjection) {
+        return RegistrationDeadlines.of(
+                orisProjection.registrationDeadline1(),
+                orisProjection.registrationDeadline2(),
+                orisProjection.registrationDeadline3());
+    }
+
+    private static EventRanking rankingOf(OrisEventProjection orisProjection) {
+        return orisProjection.rankingLevelId() != null
+                ? EventRanking.of(orisProjection.rankingLevelId(), orisProjection.rankingShortName(), orisProjection.rankingName())
+                : null;
+    }
+
+    private static Money baseEntryFeeOf(OrisEventProjection orisProjection) {
+        return orisProjection.baseEntryFeeAmount() != null
+                ? Money.of(orisProjection.baseEntryFeeAmount(), Currency.getInstance(orisProjection.baseEntryFeeCurrency()))
+                : null;
     }
 
     @Override

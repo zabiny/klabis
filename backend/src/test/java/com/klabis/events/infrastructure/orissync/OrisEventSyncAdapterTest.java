@@ -64,15 +64,15 @@ class OrisEventSyncAdapterTest {
     }
 
     @Test
-    @DisplayName("declares inward-only capabilities: no outward write, no create, no sensitive data")
-    void declaresInwardOnlyCapabilities() {
+    @DisplayName("declares pull-only-creating capabilities: no outward write, creates the local side, no sensitive data")
+    void declaresPullOnlyCreatingCapabilities() {
         var capabilities = adapter.capabilities();
 
         assertThat(capabilities.readsLocal()).isTrue();
         assertThat(capabilities.readsExternal()).isTrue();
         assertThat(capabilities.writesLocal()).isTrue();
         assertThat(capabilities.writesExternal()).isFalse();
-        assertThat(capabilities.createsLocal()).isFalse();
+        assertThat(capabilities.createsLocal()).isTrue();
         assertThat(capabilities.createsExternal()).isFalse();
         assertThat(capabilities.containsSensitiveData()).isFalse();
     }
@@ -439,6 +439,34 @@ class OrisEventSyncAdapterTest {
     }
 
     @Nested
+    @DisplayName("createLocal()")
+    class CreateLocalMethod {
+
+        @Test
+        @DisplayName("builds an event from the ORIS projection, applies the auto-mapped event type, and returns its identifier")
+        void buildsEventFromProjectionAndReturnsId() {
+            EventTypeId resolvedType = EventTypeId.generate();
+            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+                    "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
+                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=" + ORIS_ID),
+                    RegistrationDeadlines.none(), List.of(), null, null, resolvedType));
+            SyncProjection externalProjection = adapter.readExternal(String.valueOf(ORIS_ID));
+
+            ArgumentCaptor<Event> savedEventCaptor = ArgumentCaptor.forClass(Event.class);
+            when(eventRepository.save(savedEventCaptor.capture())).thenAnswer(inv -> inv.getArgument(0));
+
+            String entityId = adapter.createLocal(externalProjection);
+
+            Event saved = savedEventCaptor.getValue();
+            assertThat(entityId).isEqualTo(saved.getId().value().toString());
+            assertThat(saved.getName()).isEqualTo("Spring Sprint");
+            assertThat(saved.getLocation()).isEqualTo("Brno Park");
+            assertThat(saved.getOrganizer()).isEqualTo("OOB");
+            assertThat(saved.getEventTypeId()).contains(resolvedType);
+        }
+    }
+
+    @Nested
     @DisplayName("applyToExternal()")
     class ApplyToExternalMethod {
 
@@ -447,7 +475,7 @@ class OrisEventSyncAdapterTest {
         void throwsUnsupported() {
             OrisEventProjection projection = new OrisEventProjection(
                     "Name", LocalDate.now(), "Loc", "Org", null,
-                    null, null, null, List.of(), null, null, null, null, null, null);
+                    null, null, null, List.of(), null, null, null, null, null, null, 0);
 
             assertThatThrownBy(() -> adapter.applyToExternal("4242", projection))
                     .isInstanceOf(UnsupportedOperationException.class);

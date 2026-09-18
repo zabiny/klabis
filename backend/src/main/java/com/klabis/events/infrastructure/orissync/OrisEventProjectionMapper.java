@@ -43,6 +43,7 @@ final class OrisEventProjectionMapper {
                 ranking != null ? ranking.name() : null,
                 baseEntryFee != null ? baseEntryFee.amount() : null,
                 baseEntryFee != null ? baseEntryFee.currency().getCurrencyCode() : null,
+                null,
                 null
         );
     }

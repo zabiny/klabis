@@ -59,12 +59,12 @@
 
 ## 8. ORIS events create their own side
 
-- [ ] 8.1 RED: adapter test — `createLocal` builds the event from an ORIS projection, applies the auto-mapped event type, and returns its identifier
-- [ ] 8.2 GREEN: move the event-creation logic out of `OrisEventImportService` into `OrisEventSyncAdapter.createLocal`
-- [ ] 8.3 RED: test — the resolved event type reaches the created event but never the hash or the stored projection
-- [ ] 8.4 GREEN: whatever 8.3 exposes
-- [ ] 8.5 GREEN: declare `pullOnlyCreating()` in `OrisEventSyncAdapter.capabilities()`
-- [ ] 8.6 REFACTOR: verify `OrisEventTypeAutoMappingTest` still passes with creation moved
+- [x] 8.1 RED: adapter test — `createLocal` builds the event from an ORIS projection, applies the auto-mapped event type, and returns its identifier
+- [x] 8.2 GREEN: move the event-creation logic out of `OrisEventImportService` into `OrisEventSyncAdapter.createLocal`
+- [x] 8.3 RED: test — the resolved event type reaches the created event but never the hash or the stored projection
+- [x] 8.4 GREEN: whatever 8.3 exposes
+- [x] 8.5 GREEN: declare `pullOnlyCreating()` in `OrisEventSyncAdapter.capabilities()`
+- [x] 8.6 REFACTOR: verify `OrisEventTypeAutoMappingTest` still passes with creation moved
 
 ## 9. ORIS import delegates to the engine
 

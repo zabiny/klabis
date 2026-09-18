@@ -20,7 +20,7 @@ final class OrisEventFieldsToProjectionMapper {
     private OrisEventFieldsToProjectionMapper() {
     }
 
-    static OrisEventProjection fromOrisFields(OrisEventFields fields) {
+    static OrisEventProjection fromOrisFields(OrisEventFields fields, int orisId) {
         RegistrationDeadlines deadlines = fields.registrationDeadlines();
         EventRanking ranking = fields.ranking();
         Money baseEntryFee = fields.baseEntryFee();
@@ -43,7 +43,8 @@ final class OrisEventFieldsToProjectionMapper {
                 ranking != null ? ranking.name() : null,
                 baseEntryFee != null ? baseEntryFee.amount() : null,
                 baseEntryFee != null ? baseEntryFee.currency().getCurrencyCode() : null,
-                fields.resolvedEventTypeId()
+                fields.resolvedEventTypeId(),
+                orisId
         );
     }
 }

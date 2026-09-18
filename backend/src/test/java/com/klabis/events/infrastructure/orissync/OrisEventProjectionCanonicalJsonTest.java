@@ -41,7 +41,8 @@ class OrisEventProjectionCanonicalJsonTest {
                 "Mistrovství republiky",
                 new BigDecimal("150.00"),
                 "CZK",
-                new EventTypeId(UUID.fromString("11111111-1111-1111-1111-111111111111"))
+                new EventTypeId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+                1234
         );
 
         String json = SyncProjectionCodec.toCanonicalJson(projection);
