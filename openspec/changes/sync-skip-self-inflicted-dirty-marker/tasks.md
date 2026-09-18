@@ -51,16 +51,16 @@
 
 ## 4. Integration coverage for the real self-inflicted sequence
 
-- [ ] 4.1 Write an integration test covering the actual asynchronous sequence:
+- [x] 4.1 Write an integration test covering the actual asynchronous sequence:
       an inward sync pass → `OrisEventSyncAdapter.applyToLocal` →
       `Event.syncFromOris` → async `EventsSyncListener` handling → assert the
       paired `SyncRecord` is NOT left dirty afterwards. Confirm it would have
       failed before section 2's change (run against a stash/revert of 2.3, or
       reason from the unit test in 2.1 that it exercises the same branch).
-- [ ] 4.2 Add/keep a companion integration test (or reuse an existing one)
+- [x] 4.2 Add/keep a companion integration test (or reuse an existing one)
       showing an ordinary manual update DOES leave the record dirty, so a
       listener broken outright (e.g. always skipping) would fail this test.
-- [ ] 4.3 Confirm both integration tests pass against the current implementation.
+- [x] 4.3 Confirm both integration tests pass against the current implementation.
 
 ## 5. Full verification
 
