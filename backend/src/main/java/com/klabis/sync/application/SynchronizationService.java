@@ -100,19 +100,29 @@ class SynchronizationService implements SynchronizationPort {
 
         Optional<SyncRecord> existing = syncRecordRepository.findBySystemAndExternalId(externalReference.system(), externalReference.externalId());
 
-        SyncRecordId recordId;
-        if (existing.isEmpty()) {
-            recordId = createAndPair(entityType, externalReference, adapter).getId();
-        } else if (existing.get().getStatus() == SyncStatus.RETIRED) {
-            recordId = reactivate(existing.get()).getId();
-        } else if (existing.get().getStatus() == SyncStatus.CONFLICT || existing.get().getStatus() == SyncStatus.FAILED) {
-            throw new SyncRecordNeedsResolutionException(existing.get().getId(), existing.get().getStatus());
-        } else {
-            recordId = existing.get().getId();
-        }
+        SyncRecordId recordId = existing
+                .map(this::resolveExistingPairing)
+                .orElseGet(() -> createAndPair(entityType, externalReference, adapter).getId());
 
         SyncRecord claimed = claimer.claim(recordId);
         return runPass(claimed, adapter, SyncTriggerKind.MANUAL, actingUser);
+    }
+
+    /**
+     * Two of {@link #pullAndEnroll}'s three branches (design.md D5-D7): a retired
+     * pairing is brought back into service; an active one awaiting a decision is
+     * refused outright; any other active pairing is simply the one the pass that
+     * follows will run against, letting the decision table resolve the direction —
+     * "pull" does not mean the external side always wins (design.md D5).
+     */
+    private SyncRecordId resolveExistingPairing(SyncRecord record) {
+        if (record.getStatus() == SyncStatus.RETIRED) {
+            return reactivate(record).getId();
+        }
+        if (record.getStatus() == SyncStatus.CONFLICT || record.getStatus() == SyncStatus.FAILED) {
+            throw new SyncRecordNeedsResolutionException(record.getId(), record.getStatus());
+        }
+        return record.getId();
     }
 
     /**

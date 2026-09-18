@@ -36,15 +36,15 @@
 
 ## 5. Bringing in a record that is already linked
 
-- [ ] 5.1 RED: integration test — repeating the operation on an in-step pairing creates no second entity, runs an ordinary pass, and returns the existing pairing
-- [ ] 5.2 GREEN: implement the existing-pairing branch as an ordinary `synchronizeNow`, letting the decision table resolve direction (design D5)
-- [ ] 5.3 RED: integration test — a local change to an externally-owned field is not overwritten by a repeat; the pairing ends in conflict. This is the behaviour the whole design turns on, so make sure the test fails loudly if direction is ever forced inward
-- [ ] 5.4 GREEN: whatever 5.3 exposes
-- [ ] 5.5 RED: integration test — a repeat on a `CONFLICT` pairing and on a `FAILED` pairing is refused, nothing is written, and no attempt is recorded
-- [ ] 5.6 GREEN: reuse the existing needs-resolution guard
-- [ ] 5.7 RED: integration test — a repeat on a retired pairing returns it to service, adopts the external values, and keeps its earlier history
-- [ ] 5.8 GREEN: implement the retired branch using `reactivate()` from section 2, then fall through to the pass
-- [ ] 5.9 REFACTOR: the three branches should read as three branches, not as nested conditionals
+- [x] 5.1 RED: integration test — repeating the operation on an in-step pairing creates no second entity, runs an ordinary pass, and returns the existing pairing
+- [x] 5.2 GREEN: implement the existing-pairing branch as an ordinary `synchronizeNow`, letting the decision table resolve direction (design D5)
+- [x] 5.3 RED: integration test — a local change to an externally-owned field is not overwritten by a repeat; the pairing ends in conflict. This is the behaviour the whole design turns on, so make sure the test fails loudly if direction is ever forced inward
+- [x] 5.4 GREEN: whatever 5.3 exposes
+- [x] 5.5 RED: integration test — a repeat on a `CONFLICT` pairing and on a `FAILED` pairing is refused, nothing is written, and no attempt is recorded
+- [x] 5.6 GREEN: reuse the existing needs-resolution guard
+- [x] 5.7 RED: integration test — a repeat on a retired pairing returns it to service, adopts the external values, and keeps its earlier history
+- [x] 5.8 GREEN: implement the retired branch using `reactivate()` from section 2, then fall through to the pass
+- [x] 5.9 REFACTOR: the three branches should read as three branches, not as nested conditionals
 
 ## 6. A rejected creation stops the pairing
 
