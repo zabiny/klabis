@@ -53,7 +53,6 @@ class ICalendarRendererTest {
                 null,
                 status,
                 null,
-                null,
                 List.of(),
                 null,
                 null,

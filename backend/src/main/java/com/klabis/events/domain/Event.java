@@ -53,7 +53,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     // Event details
     private String name;
-    private Integer orisId;
     private LocalDate eventDate;
     private String location;
     private String organizer;
@@ -176,7 +175,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     @RecordBuilder
     public record CreateEventFromOris(
-            int orisId,
             String name,
             LocalDate eventDate,
             String location,
@@ -187,20 +185,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             EventRanking ranking,
             Money baseEntryFee
     ) {
-        public static CreateEventFromOris from(Event event) {
-            return new CreateEventFromOris(
-                    event.orisId != null ? event.orisId : 0,
-                    event.name,
-                    event.eventDate,
-                    event.location,
-                    event.organizer,
-                    event.websiteUrl,
-                    event.registrationDeadlines,
-                    event.categories,
-                    event.ranking,
-                    event.baseEntryFee
-            );
-        }
     }
 
     @RecordBuilder
@@ -226,9 +210,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             @jakarta.validation.constraints.Positive(message = "ORIS event ID must be positive")
             int orisId
     ) {
-        public static ImportCommand from(Event event) {
-            return new ImportCommand(event.orisId != null ? event.orisId : 0);
-        }
     }
 
     @RecordBuilder
@@ -317,7 +298,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             RegistrationDeadlines registrationDeadlines,
             EventStatus status,
             String cancellationReason,
-            Integer orisId,
             List<EventCategory> categories,
             EventRanking ranking,
             Money baseEntryFee,
@@ -336,7 +316,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.registrationDeadlines = registrationDeadlines != null ? registrationDeadlines : RegistrationDeadlines.none();
         this.status = status;
         this.cancellationReason = cancellationReason;
-        this.orisId = orisId;
         this.categories = categories != null ? new ArrayList<>(categories) : new ArrayList<>();
         this.ranking = ranking;
         this.baseEntryFee = baseEntryFee;
@@ -374,14 +353,13 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             RegistrationDeadlines registrationDeadlines,
             EventStatus status,
             String cancellationReason,
-            Integer orisId,
             List<EventCategory> categories,
             EventRanking ranking,
             Money baseEntryFee,
             List<EventRegistration> registrations,
             AuditMetadata auditMetadata) {
         return reconstruct(id, name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId,
-                registrationDeadlines, status, cancellationReason, orisId, categories, ranking, baseEntryFee,
+                registrationDeadlines, status, cancellationReason, categories, ranking, baseEntryFee,
                 false, false, registrations, auditMetadata);
     }
 
@@ -397,7 +375,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             RegistrationDeadlines registrationDeadlines,
             EventStatus status,
             String cancellationReason,
-            Integer orisId,
             List<EventCategory> categories,
             EventRanking ranking,
             Money baseEntryFee,
@@ -418,7 +395,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 registrationDeadlines,
                 status,
                 cancellationReason,
-                orisId,
                 categories,
                 ranking,
                 baseEntryFee,
@@ -461,7 +437,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 deadlines,
                 EventStatus.DRAFT,
                 null,
-                null,
                 command.categories(),
                 null,
                 null,
@@ -479,10 +454,9 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * Factory method to create an Event imported from ORIS.
      * <p>
      * Creates a new event in DRAFT status with data sourced from the ORIS orienteering system.
-     * The orisId is stored internally and is never exposed in API responses.
      *
      * @param command event creation command with all ORIS-sourced fields
-     * @return new Event instance in DRAFT status with orisId set
+     * @return new Event instance in DRAFT status
      */
     public static Event createFromOris(CreateEventFromOris command) {
         validateName(command.name());
@@ -505,7 +479,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 deadlines,
                 EventStatus.DRAFT,
                 null,
-                command.orisId(),
                 command.categories(),
                 command.ranking(),
                 command.baseEntryFee(),
@@ -613,10 +586,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     public EventStatus getStatus() {
         return status;
-    }
-
-    public Integer getOrisId() {
-        return orisId;
     }
 
     public List<EventCategory> getCategories() {
@@ -742,30 +711,27 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.sharedTransportEnabled = Boolean.TRUE.equals(command.sharedTransportEnabled());
         this.sharedAccommodationEnabled = Boolean.TRUE.equals(command.sharedAccommodationEnabled());
 
-        registerEvent(EventUpdatedEvent.fromAggregate(this));
+        registerEvent(EventUpdatedEvent.fromAggregate(this, UpdateOrigin.MANUAL));
     }
 
     /**
      * Syncs event data from ORIS, overwriting all relevant fields.
      * <p>
-     * Business rules:
-     * - Only allowed in DRAFT or ACTIVE status
-     * - Event must have a non-null orisId (only events imported from ORIS can be synced)
+     * Allowed in any status, including FINISHED and CANCELLED: the synchronisation
+     * engine retires the pairing for those the moment the event reaches the end of
+     * its life (see {@code EventsSyncListener}), so a scheduled pass never reaches
+     * this method for them — the only way it does is a manager deliberately
+     * reactivating the pairing by importing the same ORIS event again (design.md D7,
+     * D6). Reactivation resumes synchronisation of data only; it does not reopen the
+     * event, so a FINISHED or CANCELLED event keeps its status.
+     * <p>
+     * Whether an event should be synced from ORIS at all is decided by the {@code sync}
+     * module's enrolment (a {@code SyncRecord} pairing) before this method is ever
+     * invoked — see {@code OrisEventSyncAdapter.applyToLocal}.
      *
      * @param command sync command with all ORIS-sourced fields
-     * @throws IllegalStateException if event is not in DRAFT or ACTIVE status
-     * @throws IllegalStateException if event has no orisId
      */
     public void syncFromOris(SyncFromOris command) {
-        if (orisId == null) {
-            throw new IllegalStateException("Cannot sync from ORIS: event has no orisId");
-        }
-        if (status == EventStatus.FINISHED) {
-            throw new IllegalStateException("Cannot sync from ORIS: event is in FINISHED status");
-        }
-        if (status == EventStatus.CANCELLED) {
-            throw new IllegalStateException("Cannot sync from ORIS: event is in CANCELLED status");
-        }
         validateCategories(command.categories());
 
         this.name = command.name();
@@ -779,7 +745,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.ranking = command.ranking();
         this.baseEntryFee = command.baseEntryFee();
 
-        registerEvent(EventUpdatedEvent.fromAggregate(this));
+        registerEvent(EventUpdatedEvent.fromAggregate(this, UpdateOrigin.SYNCHRONISATION));
     }
 
     /**

@@ -19,6 +19,11 @@ import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.members.*;
 import com.klabis.members.infrastructure.restapi.MembersApi;
+import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncTarget;
+import com.klabis.sync.infrastructure.restapi.SyncApi;
+import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
 import jakarta.annotation.Nullable;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
@@ -39,13 +44,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.servlet.HandlerMapping;
 
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -68,6 +71,7 @@ public class EventController implements EventsApi {
     private final Members members;
     private final AccommodationListCsvRenderer csvRenderer;
     private final ConversionService conversionService;
+    private final SynchronizationPort synchronizationPort;
 
     public EventController(
             EventManagementPort eventManagementService,
@@ -75,12 +79,14 @@ public class EventController implements EventsApi {
             Members members,
             java.util.Optional<OrisEventImportPort> orisEventImportPort,
             AccommodationListCsvRenderer csvRenderer,
-            ConversionService conversionService) {
+            ConversionService conversionService,
+            SynchronizationPort synchronizationPort) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
         this.csvRenderer = csvRenderer;
         this.conversionService = conversionService;
+        this.synchronizationPort = synchronizationPort;
     }
 
     @Override
@@ -132,6 +138,14 @@ public class EventController implements EventsApi {
         // they are scanned by every @WebMvcTest, so unrelated slice tests would have to mock them.
         HalResponseContext.setDomain(event);
         HalResponseContext.embed(buildRegistrationDtos(event), RegistrationSummaryDto.class);
+
+        // Same reasoning for SynchronizationPort (task 8.6): the postprocessor reads this from
+        // HalResponseContext instead of holding the port itself, so unrelated @WebMvcTest slices need not mock it.
+        boolean isEnrolled = synchronizationPort.findByTarget(
+                new SyncTarget(SyncEntityType.EVENT, event.getId().value().toString())).isPresent();
+        Set<String> enrolledIds = isEnrolled ? Set.of(event.getId().value().toString()) : Set.of();
+        HalResponseContext.setContext(new EnrolledEventIds(enrolledIds));
+
         return ResponseEntity.ok(dto);
     }
 
@@ -193,6 +207,17 @@ public class EventController implements EventsApi {
             return ResponseEntity.ok(empty.map(e -> conversionService.convert(e, EventSummaryDto.class)));
         }
         Page<Event> page = eventManagementService.listEvents(filter, pageable, EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE));
+
+        // Same reasoning as getEvent (task 8.6): one enrolment lookup per request, scoped to this
+        // page's event ids rather than every active EVENT sync record, read back by the
+        // postprocessor via HalResponseContext, rather than injecting SynchronizationPort there.
+        List<String> pageEventIds = page.getContent().stream().map(e -> e.getId().value().toString()).toList();
+        Set<String> enrolledEventIds = pageEventIds.isEmpty()
+                ? Set.of()
+                : synchronizationPort.findActiveByTargets(SyncEntityType.EVENT, pageEventIds).stream()
+                        .map(reference -> reference.target().entityId())
+                        .collect(Collectors.toSet());
+        HalResponseContext.setContext(new EnrolledEventIds(enrolledEventIds));
 
         HalResponseContext.setDomainList(page.getContent());
         return ResponseEntity.ok(page.map(e -> conversionService.convert(e, EventSummaryDto.class)));
@@ -335,6 +360,7 @@ public class EventController implements EventsApi {
         List<AccommodationListItemDto> items = assembleAccommodationItems(accommodationRegistrations);
 
         HalResponseContext.setDomainList(accommodationRegistrations);
+        HalResponseContext.setContext(new AccommodationListContext(eventId));
         return ResponseEntity.ok(items);
     }
 
@@ -400,13 +426,27 @@ public class EventController implements EventsApi {
 
 }
 
+/**
+ * Carries which events (by id) are enrolled for synchronisation, from
+ * {@code EventController#getEvent}/{@code #listEvents} to {@code EventDetailsPostprocessor}/
+ * {@code EventSummaryPostprocessor} — one lookup per request rather than one per row, and rather
+ * than injecting {@code SynchronizationPort} into the postprocessors. {@code getEvent} populates
+ * this with a zero-or-one-element set from its single-target lookup.
+ */
+record EnrolledEventIds(Set<String> eventIds) {
+
+    boolean contains(UUID eventId) {
+        return eventIds.contains(eventId.toString());
+    }
+}
+
 class EventAffordanceSupport {
 
     static boolean hasAuthority(Authentication auth, Authority authority) {
         return SecuritySpelEvaluator.hasAuthority(auth, authority);
     }
 
-    static Link addManagementAffordances(Link selfLink, Event event, boolean orisIntegrationActive, Authentication auth) {
+    static Link addManagementAffordances(Link selfLink, Event event, boolean orisIntegrationActive, boolean orisEnrolled, Authentication auth) {
         UUID eventId = event.getId().value();
 
         boolean canManage = hasAuthority(auth, Authority.EVENTS_MANAGE);
@@ -423,7 +463,7 @@ class EventAffordanceSupport {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).publishEvent(eventId)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
                 }
-                if (orisIntegrationActive && event.getOrisId() != null) {
+                if (orisIntegrationActive && orisEnrolled) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).syncEventFromOris(eventId)));
                 }
                 break;
@@ -433,7 +473,7 @@ class EventAffordanceSupport {
                 if (canManage) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
                 }
-                if (orisIntegrationActive && event.getOrisId() != null) {
+                if (orisIntegrationActive && orisEnrolled) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).syncEventFromOris(eventId)));
                 }
                 break;
@@ -501,8 +541,10 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
+        boolean orisEnrolled = isEnrolled(eventId);
+
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, auth);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, orisEnrolled, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
@@ -549,6 +591,17 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
             klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
+
+        if (isEnrolled(eventId)) {
+            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENTS, eventId.toString()))
+                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
+        }
+    }
+
+    static boolean isEnrolled(UUID eventId) {
+        return HalResponseContext.findContext(EnrolledEventIds.class)
+                .map(enrolled -> enrolled.contains(eventId))
+                .orElse(false);
     }
 }
 
@@ -570,8 +623,10 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
+        boolean orisEnrolled = EventDetailsPostprocessor.isEnrolled(eventId);
+
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, auth);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, orisEnrolled, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
@@ -640,9 +695,18 @@ class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<
 }
 
 /**
- * Contributes the {@code event} relation to the accommodation list. The eventId comes from the URI
- * template rather than from an item, because an event with no registrations yields an empty
- * collection with nothing to recover it from.
+ * Carries the {@code eventId} of the accommodation-list request from
+ * {@code EventController#getAccommodationList} to the two postprocessors below. The id cannot come
+ * from the payload: an event with no registrations yields an empty collection, and
+ * {@link EventRegistration} carries no reference back to its event.
+ */
+record AccommodationListContext(UUID eventId) {
+}
+
+/**
+ * Contributes the {@code event} relation to the accommodation list. The eventId is published by
+ * {@code EventController#getAccommodationList} through {@link HalResponseContext}, because the
+ * payload cannot supply it — an event with no registrations yields an empty collection.
  */
 @MvcComponent
 class AccommodationListPostprocessor
@@ -651,8 +715,9 @@ class AccommodationListPostprocessor
     @Override
     public CollectionModel<EntityModel<AccommodationListItemDto>> process(
             CollectionModel<EntityModel<AccommodationListItemDto>> model) {
-        AccommodationListSupport.currentEventId().ifPresent(eventId ->
-                klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
+        HalResponseContext.findContext(AccommodationListContext.class)
+                .map(AccommodationListContext::eventId)
+                .ifPresent(eventId -> klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
                         .ifPresent(link -> model.add(link.withRel("event"))));
         return model;
     }
@@ -660,8 +725,9 @@ class AccommodationListPostprocessor
 
 /**
  * Gives each accommodation row a {@code self} link pointing at the registration it projects. The
- * eventId comes from the URI template, since {@link EventRegistration} carries no reference back to
- * its event.
+ * eventId is published by {@code EventController#getAccommodationList} through
+ * {@link HalResponseContext}, because {@link EventRegistration} carries no reference back to its
+ * event. The read is non-consuming, so every row still resolves the id.
  */
 @MvcComponent
 class AccommodationListItemPostprocessor
@@ -669,31 +735,11 @@ class AccommodationListItemPostprocessor
 
     @Override
     public void process(EntityModel<AccommodationListItemDto> dtoModel, EventRegistration registration) {
-        AccommodationListSupport.currentEventId().ifPresent(eventId ->
-                klabisLinkTo(methodOn(EventRegistrationsApi.class)
+        HalResponseContext.findContext(AccommodationListContext.class)
+                .map(AccommodationListContext::eventId)
+                .ifPresent(eventId -> klabisLinkTo(methodOn(EventRegistrationsApi.class)
                         .getRegistration(registration.memberId().value(), eventId, false))
                         .ifPresent(link -> dtoModel.add(link.withSelfRel())));
-    }
-}
-
-final class AccommodationListSupport {
-
-    private AccommodationListSupport() {
-    }
-
-    static Optional<UUID> currentEventId() {
-        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
-        if (attrs == null) {
-            return Optional.empty();
-        }
-        Object variables = attrs.getAttribute(
-                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
-                RequestAttributes.SCOPE_REQUEST);
-        if (!(variables instanceof Map<?, ?> pathVariables)) {
-            return Optional.empty();
-        }
-        Object eventId = pathVariables.get("eventId");
-        return eventId != null ? Optional.of(UUID.fromString(eventId.toString())) : Optional.empty();
     }
 }
 

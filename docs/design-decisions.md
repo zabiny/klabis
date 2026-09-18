@@ -154,3 +154,75 @@ Two hand-written envelopes remain, both in `common.yaml`: `EntityModelRootModel`
 - `_templates` is emitted on every derived envelope, uniformly. The property is an `additionalProperties` map with no named members, so it only declares that a template map may appear — true of every HAL-FORMS resource. The contract that says *which* templates is `x-hal-templates`, which `haltypes.mjs` turns into the named union in `halTypes.ts`.
 
 **References:** OpenSpec change `derive-hal-envelopes-in-bundler`, ADR-002 (why the backend needs no envelope types at all), `klabis-api-spec` skill.
+
+## ADR-005: A generic `sync` module with integration-owned adapters and a record-held identity mapping
+
+**Status:** Accepted
+
+**Context:**
+
+ORIS event synchronisation existed as one concrete pull path inside the `events` module: `OrisEventImportService.syncEventFromOris` fetched the upstream event and overwrote every ORIS-owned field, protected only by field ownership (`orisId == null` categories survive, an empty event type gets filled) rather than by change detection. A manager's correction to an ORIS-owned field was silently discarded on the next sync — no conflict, no record of the loss.
+
+The ORIS API is also structurally asymmetric: events are pull-only (no `updateEvent`), while persons, club memberships and entries have write operations. A synchronisation mechanism could not assume symmetry between the two sides, and a second integration was expected to need genuinely two-way behaviour that a one-off event-only fix would not generalise to.
+
+**Decision:**
+
+1. **A new top-level `sync` module** (`com.klabis.sync`, `application`/`domain`/`infrastructure` packages, primary port via `@NamedInterface("application")` per ADR-001) owns change detection, conflict handling, retry and audit generically. No type in the module names ORIS or any other external system; a `SyncTarget` addresses the local entity by entity-type enum plus an opaque id string, and an `ExternalReference` addresses the external counterpart by an `ExternalSystem` discriminator plus an opaque id string.
+
+2. **Adapters normally live in the integration's own module** and reach the owning module only through its `events.application` primary ports — the same direction `OrisController` already took — so the owning module gains no new knowledge of the integration's internals. `OrisEventSyncAdapter` is the one exception: OpenSpec change `relocate-oris-event-sync-adapter` moved it into `events.infrastructure.orissync`, inside the module it writes to, because the port it previously reached through (`OrisEventFieldsGateway`) existed only to cross a package boundary — measurement showed the `sync ↔ events` cycle it was guarding against did not exist (`com.klabis.sync` imports nothing from `com.klabis.events`). The adapter is now a plain module-internal collaborator of `events`, holding `EventManagementPort`, `OrisEventFieldsReader` and `EventRepository` directly. The general guidance above still holds for the next integration; treat this adapter's placement as the documented exception, not the new default.
+
+3. **The identity mapping between a Klabis entity and its external counterpart is held only by the synchronisation record** (`SyncRecord`, via its `SyncTarget` and `ExternalReference`), never by either aggregate. `Event` carries no new external-identifier field beyond the `orisId` it already had. This matters most for an external identity that is composite (an ORIS person has both a person id and a club-membership id): the record can hold that pair without forcing either half onto the local aggregate.
+
+4. **Synchronisation resources are addressed uniformly**, at `/api/{entityType}/{id}/sync…`, with `{entityType}` a path parameter constrained to the declared `SyncEntityType` values. One controller in the `sync` module serves every entity type; a new integration becomes reachable by adding an enum value and its adapter, with no new endpoints and no per-module duplication of the same four operations (state, synchronise now, acknowledge conflict, resolve conflict, reset).
+
+An adapter declares what it can actually do — read/write each side, create on either side, whether its projections carry sensitive data — via `SyncCapabilities`, and maps both sides into one shared-shape **canonical projection** (`SyncProjection`) that the engine hashes and diffs without ever looking at the entities themselves. A field only Klabis owns is simply absent from the projection, so editing it is invisible to synchronisation by construction — see `design.md` D3 for the full reasoning, and the `backend-patterns` skill for the adapter/projection authoring contract.
+
+**Three boundary decisions made during implementation, not anticipated in `design.md`:**
+
+- **`@NamedInterface("sync.domain")` deliberately exports the whole `sync.domain` package**, not a narrowed subset. `SynchronizationPort`'s own method signatures already return and accept `SyncRecord`, `SyncTarget`, `SyncEntityType`, `ExternalReference` and `SyncResolution` — types that live in `domain`. Narrowing the named interface without also narrowing the port's signatures would not reduce what a caller depends on; it would just move the compile error from "cannot import the type" to "cannot call the port at all". This was reviewed and deliberately accepted, not an oversight left for later tightening.
+
+- **`OrisEventSyncAdapter` is annotated jMolecules `@Application`, not `@SecondaryAdapter`.** The class holds two hexagonal roles at once: a driven adapter implementing `sync`'s `SynchronizationAdapter` port (called by the engine), and a driving adapter calling `events`' `@PrimaryPort` interface (`EventManagementPort`). jMolecules cannot express both on one class — `@PrimaryAdapter` and `@SecondaryAdapter` are mutually exclusive in the library's own layer predicates, and a `@SecondaryAdapter` may never reach a primary port. `@Application` is the classification that permits the primary-port access the module boundary (point 2 above) requires, while the dependency direction itself is unchanged and still correct.
+
+- **The adapter's field-primitives dependency is a gateway with no sync-engine knowledge.** An interim fix put `@Lazy` on the adapter's import-port dependency to make a bean-construction cycle constructible (`OrisEventImportService` → `SynchronizationPort` → the adapter registry → the adapter → the import port, back) at the cost of fail-fast startup. Change `sync-followup-oris-import-cycle` replaced it by splitting the port along its two roles: the primitives the adapter calls (`readOrisFields`, `applyOrisSync`) moved to a dedicated `OrisEventFieldsGateway` implemented without any dependency on `SynchronizationPort`, while `OrisEventImportPort` keeps the orchestration (`importEventFromOris`, `syncEventFromOris`) and may keep depending on `SynchronizationPort`. The adapter never sees the orchestration bean, the cycle is gone, and wiring is eager again. OpenSpec change `relocate-oris-event-sync-adapter` has since folded that gateway into the adapter itself — `readOrisFields` became `readExternal` and `applyOrisSync` became `applyToLocal`, both now methods on `OrisEventSyncAdapter` — because the adapter had moved inside `events` and the gateway's sole purpose, crossing the package boundary, no longer applied. No cycle reappeared: the adapter still depends on `EventManagementPort` (a primary port) plus the plain `OrisEventFieldsReader` and `EventRepository`, and `OrisEventImportService` still reaches the sync engine only through `SynchronizationPort`.
+
+**Consequences:**
+
+- A future integration (member synchronisation, entries) follows the same shape: an adapter in its own module, a projection type, capabilities declared honestly rather than implemented as throwing methods — and reaches the `sync` module and its own module only through primary ports, per ADR-001.
+- `Event.syncFromOris` became the inward write the adapter's `applyToLocal` invokes, rather than the whole synchronisation path; its field-ownership merge behaviour for categories is unchanged.
+- A conflict — a local edit to an ORIS-owned field that cannot be written outward — now blocks synchronisation and asks a human, instead of being silently overwritten. This is the one user-visible behaviour change (`design.md` D6).
+- The three boundary decisions above are precedents: the next adapter that needs to call a primary port on its own module should also be `@Application`, not forced into `@SecondaryAdapter`; the next module exporting a named interface should check whether its primary port's own signatures already force the interface wide before trying to narrow it.
+
+**References:** OpenSpec change `add-bidirectional-sync-engine` (`proposal.md`, `design.md` — D1–D19 — `tasks.md`), ADR-001 (primary-port-only cross-module dependency rule), `backend-patterns` skill.
+
+## ADR-006: Tests substitute the `Clock` bean via `@TestBean`, not a `@Configuration` override
+
+**Status:** Accepted
+
+**Context:**
+
+The `Clock` dependency-injection seam (`com.klabis.common.ClockConfiguration`) exists so application components read the current instant from an injected `Clock` rather than `Instant.now()`, letting tests control time. The `sync` engine's scheduled-scan and history-retention tests need a fixed, advanceable clock in a full Spring context.
+
+Two approaches were tried and rejected. Registering a test `@Bean Clock clock()` under the production bean's name plus `spring.main.allow-bean-definition-overriding=true` works only by registration-order luck — the flag is also context-wide, silencing every accidental duplicate-bean definition, not just the clock — and moving the test config from a nested class to a shared `@Import` target already flipped the order once, letting the real `Clock.systemDefaultZone()` win silently. Marking the production bean `@ConditionalOnMissingBean` is order-safe only on `@AutoConfiguration` classes; `ClockConfiguration` is a plain component-scanned `@Configuration`, so the condition is evaluated in the same `ConfigurationClassPostProcessor` pass as an `@Import`ed test configuration and Spring's reference documentation explicitly states these conditions cannot be used reliably in a regular `@Configuration` class.
+
+**Decision:**
+
+`ClockConfiguration.clock()` stays a plain, unconditional `@Bean`. A test that needs to control time replaces it with Spring's bean-override infrastructure — `@TestBean` (the non-mock sibling of `@MockitoBean`, already used across the test suite):
+
+```java
+@TestBean(enforceOverride = true)
+private Clock clock;
+
+static Clock clock() {                       // factory name matches the field name
+    return FixedClockTestSupport.fixedClock();
+}
+```
+
+`@TestBean` replaces the target bean in the `BeanFactory` regardless of configuration registration order, needs no global override flag, and `enforceOverride = true` turns a missing production bean into a hard failure. The field is typed `Clock` because `@TestBean` matches the bean to replace by the field's type (and name), and the production bean is declared `Clock`; a test that needs the mutable API narrows the injected instance back to `MutableClock` (the factory returns one). `com.klabis.sync.fixtures.FixedClockTestSupport` holds only the shared `FIXED_NOW` constant and the `fixedClock()` factory body — it is not a Spring configuration.
+
+**Consequences:**
+
+- Clock substitution is deterministic and local to the test that does it; no context-wide flag, no reliance on evaluation order.
+- The production configuration is untouched — no auto-configuration idiom retrofitted onto a hand-written `@Configuration`.
+- A test opts in explicitly with a `@TestBean` field plus its static factory method; being on the classpath does nothing.
+
+**References:** OpenSpec change `sync-followup-clock-injection`, ADR-005 (the `sync` module this seam serves).

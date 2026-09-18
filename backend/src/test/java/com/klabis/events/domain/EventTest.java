@@ -839,7 +839,7 @@ class EventTest {
                     "Location", "Organizer",
                     null, null, null,
                     RegistrationDeadlines.single(LocalDate.now().minusDays(1)),
-                    EventStatus.ACTIVE, null, null,
+                    EventStatus.ACTIVE, null,
                     List.of(),
                     null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
@@ -862,7 +862,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now(),
                     "Location", "Organizer",
-                    null, null, null, null, EventStatus.ACTIVE, null, null,
+                    null, null, null, null, EventStatus.ACTIVE, null,
                     List.of(),
                     null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
@@ -1055,7 +1055,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now(),
                     "Test Location", "Test Organizer",
-                    null, null, null, null, EventStatus.ACTIVE, null, null,
+                    null, null, null, null, EventStatus.ACTIVE, null,
                     List.of(),
                     null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
@@ -1075,7 +1075,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now().minusDays(1),
                     "Test Location", "Test Organizer",
-                    null, null, null, null, EventStatus.ACTIVE, null, null,
+                    null, null, null, null, EventStatus.ACTIVE, null,
                     List.of(),
                     null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
@@ -1561,6 +1561,7 @@ class EventTest {
             assertThat(updatedEvent.organizer()).isEqualTo("Updated Organizer");
             assertThat(updatedEvent.websiteUrl()).isEqualTo(WebsiteUrl.of("https://updated.com"));
             assertThat(updatedEvent.occurredAt()).isNotNull();
+            assertThat(updatedEvent.origin()).isEqualTo(com.klabis.events.UpdateOrigin.MANUAL);
         }
 
         @Test
@@ -1624,9 +1625,8 @@ class EventTest {
     class CreateFromOrisMethod {
 
         @Test
-        @DisplayName("should create event in DRAFT status with correct field values and non-null orisId")
+        @DisplayName("should create event in DRAFT status with correct field values")
         void shouldCreateEventFromOrisInDraftStatusWithCorrectFields() {
-            int orisId = 9876;
             String name = "Oris Sprint Race";
             LocalDate eventDate = LocalDate.of(2026, 8, 10);
             String location = "Brno City Center";
@@ -1634,7 +1634,6 @@ class EventTest {
             WebsiteUrl websiteUrl = WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=9876");
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(orisId)
                     .name(name)
                     .eventDate(eventDate)
                     .location(location)
@@ -1649,14 +1648,12 @@ class EventTest {
             assertThat(event.getOrganizer()).isEqualTo(organizer);
             assertThat(event.getWebsiteUrl()).isEqualTo(websiteUrl);
             assertThat(event.getStatus()).isEqualTo(EventStatus.DRAFT);
-            assertThat(event.getOrisId()).isEqualTo(orisId);
         }
 
         @Test
         @DisplayName("should register EventCreatedEvent on creation")
         void shouldRegisterEventCreatedEvent() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(1234)
                     .name("Test ORIS Event")
                     .eventDate(LocalDate.of(2026, 9, 5))
                     .location("Prague Forest")
@@ -1672,7 +1669,6 @@ class EventTest {
         @DisplayName("should not set coordinators (imported events have no coordinator)")
         void shouldNotSetEventCoordinatorId() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(5555)
                     .name("Coordinator-less Event")
                     .eventDate(LocalDate.of(2026, 10, 1))
                     .location("Some Place")
@@ -1687,7 +1683,6 @@ class EventTest {
         @DisplayName("should create event from ORIS when location is null")
         void shouldCreateEventFromOrisWhenLocationIsNull() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(7777)
                     .name("Event Without Location")
                     .eventDate(LocalDate.of(2026, 11, 1))
                     .location(null)
@@ -1720,7 +1715,6 @@ class EventTest {
         @DisplayName("should overwrite all event fields and publish EventUpdatedEvent for DRAFT event")
         void shouldOverwriteFieldsAndPublishEventForDraftEvent() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Old Name")
                     .eventDate(LocalDate.of(2026, 8, 1))
                     .location("Old Location")
@@ -1738,13 +1732,19 @@ class EventTest {
             assertThat(event.getDomainEvents()).hasSize(2); // create + sync
             assertThat(event.getDomainEvents())
                     .anyMatch(e -> e instanceof com.klabis.events.EventUpdatedEvent);
+
+            com.klabis.events.EventUpdatedEvent updatedEvent = event.getDomainEvents().stream()
+                    .filter(com.klabis.events.EventUpdatedEvent.class::isInstance)
+                    .map(com.klabis.events.EventUpdatedEvent.class::cast)
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(updatedEvent.origin()).isEqualTo(com.klabis.events.UpdateOrigin.SYNCHRONISATION);
         }
 
         @Test
         @DisplayName("should overwrite all event fields for ACTIVE event")
         void shouldOverwriteFieldsForActiveEvent() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Old Name")
                     .eventDate(LocalDate.of(2026, 8, 1))
                     .location("Old Location")
@@ -1759,10 +1759,9 @@ class EventTest {
         }
 
         @Test
-        @DisplayName("should throw IllegalStateException when event is FINISHED")
-        void shouldThrowWhenEventIsFinished() {
+        @DisplayName("overwrites fields for a FINISHED event without reopening it (design.md D7)")
+        void shouldOverwriteFieldsForFinishedEventWithoutReopeningIt() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Old Name")
                     .eventDate(LocalDate.of(2026, 8, 1))
                     .location("Old Location")
@@ -1771,16 +1770,16 @@ class EventTest {
             event.publish();
             event.finish();
 
-            assertThatThrownBy(() -> event.syncFromOris(defaultSyncCommand()))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("FINISHED");
+            event.syncFromOris(defaultSyncCommand());
+
+            assertThat(event.getName()).isEqualTo("Synced Name");
+            assertThat(event.getStatus()).isEqualTo(EventStatus.FINISHED);
         }
 
         @Test
-        @DisplayName("should throw IllegalStateException when event is CANCELLED")
-        void shouldThrowWhenEventIsCancelled() {
+        @DisplayName("overwrites fields for a CANCELLED event without reopening it (design.md D7)")
+        void shouldOverwriteFieldsForCancelledEventWithoutReopeningIt() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Old Name")
                     .eventDate(LocalDate.of(2026, 8, 1))
                     .location("Old Location")
@@ -1788,31 +1787,16 @@ class EventTest {
                     .build());
             event.cancel();
 
-            assertThatThrownBy(() -> event.syncFromOris(defaultSyncCommand()))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("CANCELLED");
-        }
+            event.syncFromOris(defaultSyncCommand());
 
-        @Test
-        @DisplayName("should throw IllegalStateException when event has no orisId")
-        void shouldThrowWhenEventHasNoOrisId() {
-            Event event = Event.create(EventCreateEventBuilder.builder()
-                    .name("Manual Event")
-                    .eventDate(DEFAULT_DATE)
-                    .location("Location")
-                    .organizer("OOB")
-                    .build());
-
-            assertThatThrownBy(() -> event.syncFromOris(defaultSyncCommand()))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("orisId");
+            assertThat(event.getName()).isEqualTo("Synced Name");
+            assertThat(event.getStatus()).isEqualTo(EventStatus.CANCELLED);
         }
 
         @Test
         @DisplayName("should update registrationDeadlines from command")
         void shouldUpdateRegistrationDeadline() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Old Name")
                     .eventDate(LocalDate.of(2026, 9, 10))
                     .location("Location")
@@ -1913,7 +1897,7 @@ class EventTest {
                     "Location", "Organizer",
                     null, null, null,
                     RegistrationDeadlines.single(LocalDate.now().minusDays(1)),
-                    EventStatus.ACTIVE, null, null,
+                    EventStatus.ACTIVE, null,
                     List.of(),
                     null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
@@ -1936,7 +1920,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now(),
                     "Location", "Organizer",
-                    null, null, null, null, EventStatus.ACTIVE, null, null,
+                    null, null, null, null, EventStatus.ACTIVE, null,
                     List.of(),
                     null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
@@ -1959,7 +1943,7 @@ class EventTest {
             Event event = Event.reconstruct(
                     EventId.generate(), "Test Event", LocalDate.now().minusDays(1),
                     "Location", "Organizer",
-                    null, null, null, null, EventStatus.ACTIVE, null, null,
+                    null, null, null, null, EventStatus.ACTIVE, null,
                     List.of(),
                     null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
@@ -2011,7 +1995,6 @@ class EventTest {
         @DisplayName("should store ranking and baseEntryFee when provided in CreateEventFromOris command")
         void shouldStoreRankingAndFeeFromOrisCreate() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Race")
                     .eventDate(LocalDate.of(2026, 8, 1))
                     .location("Forest")
@@ -2028,7 +2011,6 @@ class EventTest {
         @DisplayName("should store null ranking and null baseEntryFee when not provided in CreateEventFromOris command")
         void shouldStoreNullRankingAndFeeWhenAbsentInOrisCreate() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(200)
                     .name("Race")
                     .eventDate(LocalDate.of(2026, 8, 1))
                     .location("Forest")
@@ -2054,7 +2036,6 @@ class EventTest {
             Money oldFee = Money.ofCzk(BigDecimal.valueOf(100));
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Race")
                     .eventDate(LocalDate.of(2026, 8, 1))
                     .location("Forest")
@@ -2081,7 +2062,6 @@ class EventTest {
         @DisplayName("should set ranking and baseEntryFee to null when absent in sync command")
         void shouldClearRankingAndFeeWhenAbsentInSync() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Race")
                     .eventDate(LocalDate.of(2026, 8, 1))
                     .location("Forest")
@@ -2412,7 +2392,6 @@ class EventTest {
         @DisplayName("createFromOris() should initialize empty coordinators")
         void createFromOrisShouldInitializeEmptyCoordinators() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(42)
                     .name("ORIS Event")
                     .eventDate(DEFAULT_DATE)
                     .location("Location")
@@ -2427,7 +2406,6 @@ class EventTest {
         void syncFromOrisShouldNotChangeCoordinators() {
             MemberId coordinator = new MemberId(UUID.randomUUID());
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(42)
                     .name("ORIS Event")
                     .eventDate(DEFAULT_DATE)
                     .location("Location")
@@ -2492,7 +2470,6 @@ class EventTest {
             // has to stay in the future as the suite ages — DEFAULT_DATE is relative for the same
             // reason.
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Race")
                     .eventDate(DEFAULT_DATE)
                     .location("Forest")
@@ -2527,7 +2504,6 @@ class EventTest {
             EventCategory orisCategory = new EventCategory(EventCategoryId.generate(), "42", "M21", null);
             EventCategory manualCategory = EventCategory.create("Volunteers");
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Race")
                     .eventDate(LocalDate.of(2026, 9, 10))
                     .location("Forest")
@@ -2554,7 +2530,6 @@ class EventTest {
         void removesCategoryMissingFromIncomingDataAndPreservesRegistrations() {
             EventCategory m21 = new EventCategory(EventCategoryId.generate(), "42", "M21", null);
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Race")
                     .eventDate(DEFAULT_DATE)
                     .location("Forest")
@@ -2584,7 +2559,6 @@ class EventTest {
         @DisplayName("adds a new category with no orisId match among existing categories")
         void addsNewCategoryWithNoMatch() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(100)
                     .name("Race")
                     .eventDate(LocalDate.of(2026, 9, 10))
                     .location("Forest")

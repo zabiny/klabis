@@ -33,13 +33,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.servlet.HandlerMapping;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -138,6 +134,7 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .toList();
 
         HalResponseContext.setDomainList(domainList);
+        HalResponseContext.setContext(new RegistrationsCollectionContext(eventId));
         return ResponseEntity.ok(payload);
     }
 
@@ -206,6 +203,9 @@ class EventRegistrationController implements EventRegistrationsApi {
 
 }
 
+record RegistrationsCollectionContext(UUID eventId) {
+}
+
 @MvcComponent
 class RegistrationSummaryPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationSummaryDto, EventRegistrationController.RegistrationView> {
@@ -232,8 +232,8 @@ class RegistrationSummaryPostprocessor
 
 /**
  * Adds the collection-level {@code event} link — always present, regardless of whether the event
- * has any registrations. The eventId is read off the current request's resolved
- * {@code @PathVariable} map, since {@code CollectionModel<EntityModel<RegistrationSummaryDto>>}
+ * has any registrations. The eventId is published by {@code listRegistrations} through
+ * {@link HalResponseContext}, since {@code CollectionModel<EntityModel<RegistrationSummaryDto>>}
  * carries no reference back to the event when the list is empty. The self link itself is built by
  * {@code HalResponseBodyAdvice}.
  */
@@ -244,24 +244,11 @@ class RegistrationListPostprocessor
     @Override
     public CollectionModel<EntityModel<RegistrationSummaryDto>> process(
             CollectionModel<EntityModel<RegistrationSummaryDto>> model) {
-        currentEventId().flatMap(eventId -> klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)))
+        HalResponseContext.findContext(RegistrationsCollectionContext.class)
+                .map(RegistrationsCollectionContext::eventId)
+                .flatMap(eventId -> klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)))
                 .ifPresent(l -> model.add(l.withRel("event")));
         return model;
-    }
-
-    private static Optional<UUID> currentEventId() {
-        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
-        if (attrs == null) {
-            return Optional.empty();
-        }
-        Object variables = attrs.getAttribute(
-                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
-                RequestAttributes.SCOPE_REQUEST);
-        if (!(variables instanceof Map<?, ?> pathVariables)) {
-            return Optional.empty();
-        }
-        Object eventId = pathVariables.get("eventId");
-        return eventId != null ? Optional.of(UUID.fromString(eventId.toString())) : Optional.empty();
     }
 }
 

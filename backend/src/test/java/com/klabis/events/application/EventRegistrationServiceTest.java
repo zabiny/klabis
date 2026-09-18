@@ -273,7 +273,7 @@ class EventRegistrationServiceTest {
             Event eventOnToday = Event.reconstruct(
                     EventId.generate(), "Today Event", LocalDate.now(),
                     "Test Location", "OOB",
-                    null, null, null, null, EventStatus.ACTIVE, null, null,
+                    null, null, null, null, EventStatus.ACTIVE, null,
                     List.of(),
                     null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
@@ -297,7 +297,7 @@ class EventRegistrationServiceTest {
             Event pastEvent = Event.reconstruct(
                     EventId.generate(), "Past Event", LocalDate.now().minusDays(1),
                     "Test Location", "OOB",
-                    null, null, null, null, EventStatus.ACTIVE, null, null,
+                    null, null, null, null, EventStatus.ACTIVE, null,
                     List.of(),
                     null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
@@ -329,7 +329,7 @@ class EventRegistrationServiceTest {
                     null,
                     RegistrationDeadlines.single(LocalDate.now().minusDays(1)),
                     EventStatus.ACTIVE,
-                    null, null,
+                    null,
                     List.of(),
                     null, null,
                     List.of(EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()

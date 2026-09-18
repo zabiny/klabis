@@ -68,7 +68,6 @@ class IcalFeedServiceTest {
                 null,
                 EventStatus.ACTIVE,
                 null,
-                null,
                 List.of(),
                 null,
                 null,

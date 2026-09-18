@@ -2,6 +2,9 @@ package com.klabis.events.application;
 
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.domain.Event;
+import com.klabis.sync.SyncRecordId;
+import com.klabis.sync.application.SyncRecordNeedsResolutionException;
+import com.klabis.sync.domain.SyncStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -35,25 +38,27 @@ class OrisEventBulkImportServiceTest {
     class ImportEventsFromOris {
 
         @Test
-        @DisplayName("should return totalProcessed=3, successCount=2, failureCount=1 when middle event is duplicate")
-        void shouldImportThreeEventsWithMiddleDuplicate() {
+        @DisplayName("should count a previously-imported event as imported, not failed (design.md D10, task 9.6)")
+        void shouldCountRepeatedImportAsImportedNotFailed() {
             int orisId1 = 101;
             int orisId2 = 102;
             int orisId3 = 103;
 
             Event event1 = EventTestDataBuilder.anEvent().withName("Spring Sprint").withDate(LocalDate.of(2026, 6, 1)).build();
+            Event alreadyImportedEvent = EventTestDataBuilder.anEvent().withName("Already Imported").withDate(LocalDate.of(2026, 7, 1)).build();
             Event event3 = EventTestDataBuilder.anEvent().withName("Autumn Race").withDate(LocalDate.of(2026, 9, 10)).build();
 
             when(orisEventImportPort.importEventFromOris(orisId1)).thenReturn(event1);
-            when(orisEventImportPort.importEventFromOris(orisId2)).thenThrow(new DuplicateOrisImportException(orisId2));
+            when(orisEventImportPort.importEventFromOris(orisId2)).thenReturn(alreadyImportedEvent);
             when(orisEventImportPort.importEventFromOris(orisId3)).thenReturn(event3);
 
             BulkImportResult result = service.importEventsFromOris(List.of(orisId1, orisId2, orisId3));
 
             assertThat(result.totalProcessed()).isEqualTo(3);
-            assertThat(result.successCount()).isEqualTo(2);
-            assertThat(result.failureCount()).isEqualTo(1);
+            assertThat(result.successCount()).isEqualTo(3);
+            assertThat(result.failureCount()).isEqualTo(0);
             assertThat(result.results()).hasSize(3);
+            assertThat(result.results()).allMatch(entry -> entry.status() == BulkImportResult.ImportStatus.IMPORTED);
         }
 
         @Test
@@ -77,11 +82,12 @@ class OrisEventBulkImportServiceTest {
         }
 
         @Test
-        @DisplayName("should record FAILED status with error message for duplicate event")
-        void shouldRecordFailedStatusForDuplicateEvent() {
+        @DisplayName("should record FAILED status with error message when a pairing awaits a decision")
+        void shouldRecordFailedStatusWhenNeedsResolution() {
             int orisId = 301;
 
-            when(orisEventImportPort.importEventFromOris(orisId)).thenThrow(new DuplicateOrisImportException(orisId));
+            when(orisEventImportPort.importEventFromOris(orisId))
+                    .thenThrow(new SyncRecordNeedsResolutionException(SyncRecordId.newId(), SyncStatus.CONFLICT));
 
             BulkImportResult result = service.importEventsFromOris(List.of(orisId));
 
@@ -100,7 +106,8 @@ class OrisEventBulkImportServiceTest {
 
             Event successEvent = EventTestDataBuilder.anEvent().withName("New Event").withDate(LocalDate.of(2026, 7, 1)).build();
 
-            when(orisEventImportPort.importEventFromOris(failingOrisId)).thenThrow(new DuplicateOrisImportException(failingOrisId));
+            when(orisEventImportPort.importEventFromOris(failingOrisId))
+                    .thenThrow(new SyncRecordNeedsResolutionException(SyncRecordId.newId(), SyncStatus.FAILED));
             when(orisEventImportPort.importEventFromOris(successOrisId)).thenReturn(successEvent);
 
             BulkImportResult result = service.importEventsFromOris(List.of(failingOrisId, successOrisId));

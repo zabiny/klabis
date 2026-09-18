@@ -26,7 +26,6 @@ public class EventTestDataBuilder {
     private LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
     private RegistrationDeadlines registrationDeadlines = RegistrationDeadlines.none();
     private EventId eventId = new EventId(UUID.randomUUID());
-    private Integer orisId = null;
     private EventTypeId eventTypeId = null;
     private List<EventRegistration> registrations = new ArrayList<>();
     private List<EventCategory> categories = List.of();
@@ -109,11 +108,6 @@ public class EventTestDataBuilder {
         return this;
     }
 
-    public EventTestDataBuilder withOrisId(Integer orisId) {
-        this.orisId = orisId;
-        return this;
-    }
-
     public EventTestDataBuilder withEventTypeId(EventTypeId eventTypeId) {
         this.eventTypeId = eventTypeId;
         return this;
@@ -161,7 +155,6 @@ public class EventTestDataBuilder {
                 registrationDeadlines,
                 EventStatus.DRAFT,
                 null,
-                orisId,
                 categories,
                 ranking,
                 baseEntryFee,

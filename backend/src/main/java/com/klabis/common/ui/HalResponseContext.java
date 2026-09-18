@@ -4,7 +4,10 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Carries the domain object(s) behind a plain payload DTO returned by a controller method,
@@ -20,6 +23,7 @@ public final class HalResponseContext {
     private static final String SINGLE_DOMAIN_ATTR = HalResponseContext.class.getName() + ".singleDomain";
     private static final String DOMAIN_LIST_ATTR = HalResponseContext.class.getName() + ".domainList";
     private static final String EMBEDDED_ATTR = HalResponseContext.class.getName() + ".embedded";
+    private static final String CONTEXT_MAP_ATTR = HalResponseContext.class.getName() + ".contextMap";
 
     private HalResponseContext() {
     }
@@ -77,10 +81,93 @@ public final class HalResponseContext {
         return (List<D>) takeAttribute(DOMAIN_LIST_ATTR);
     }
 
+    /**
+     * Publishes an arbitrary value for a postprocessor to read back, keyed by its runtime class.
+     * The type token is the key, so producer and consumer are linked by the compiler rather than
+     * by a shared string. A second value of the same class replaces the first; values of different
+     * classes coexist. No-op when no request attributes are bound.
+     */
+    public static void setContext(Object value) {
+        Map<Class<?>, Object> map = contextMap(true);
+        if (map != null) {
+            map.put(value.getClass(), value);
+        }
+    }
+
+    /**
+     * Resolves a published value by assignability: returns a stored value whose runtime class is
+     * assignable to {@code type}, so it can be read through an interface or supertype. Empty when
+     * nothing matches or no request is bound.
+     * <p>
+     * <strong>Does not consume.</strong> Unlike {@link #takeDomain()} and friends, the value stays
+     * in the map so it can be read again — {@code AccommodationListItemPostprocessor} reads the same
+     * context once per row.
+     *
+     * @throws IllegalStateException if two stored values are both assignable to {@code type} —
+     *                               picking one would depend on map iteration order
+     */
+    public static <T> Optional<T> findContext(Class<T> type) {
+        Map<Class<?>, Object> map = contextMap(false);
+        if (map == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(resolve(map, type));
+    }
+
+    /**
+     * Same assignability lookup as {@link #findContext(Class)}, for a caller that declares the value
+     * mandatory.
+     * <p>
+     * <strong>Does not consume.</strong> The value stays in the map so it can be read again —
+     * {@code AccommodationListItemPostprocessor} reads the same context once per row.
+     *
+     * @throws IllegalStateException if nothing is stored for {@code type}, or if two stored values
+     *                               are both assignable to it
+     */
+    public static <T> T getContext(Class<T> type) {
+        Map<Class<?>, Object> map = contextMap(false);
+        T value = map == null ? null : resolve(map, type);
+        if (value == null) {
+            throw new IllegalStateException("HalResponseContext has nothing stored for " + type.getName());
+        }
+        return value;
+    }
+
+    private static <T> T resolve(Map<Class<?>, Object> map, Class<T> type) {
+        Class<?> match = null;
+        for (Class<?> storedType : map.keySet()) {
+            if (type.isAssignableFrom(storedType)) {
+                if (match != null) {
+                    throw new IllegalStateException(
+                            "HalResponseContext has an ambiguous match for " + type.getName() + ": both "
+                                    + match.getName() + " and " + storedType.getName());
+                }
+                match = storedType;
+            }
+        }
+        return match == null ? null : type.cast(map.get(match));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<Class<?>, Object> contextMap(boolean createIfAbsent) {
+        ServletRequestAttributes attributes = currentAttributes();
+        if (attributes == null) {
+            return null;
+        }
+        Map<Class<?>, Object> map =
+                (Map<Class<?>, Object>) attributes.getAttribute(CONTEXT_MAP_ATTR, ServletRequestAttributes.SCOPE_REQUEST);
+        if (map == null && createIfAbsent) {
+            map = new HashMap<>();
+            attributes.setAttribute(CONTEXT_MAP_ATTR, map, ServletRequestAttributes.SCOPE_REQUEST);
+        }
+        return map;
+    }
+
     static void clear() {
         takeAttribute(SINGLE_DOMAIN_ATTR);
         takeAttribute(DOMAIN_LIST_ATTR);
         takeAttribute(EMBEDDED_ATTR);
+        takeAttribute(CONTEXT_MAP_ATTR);
     }
 
     private static void setAttribute(String name, Object value) {

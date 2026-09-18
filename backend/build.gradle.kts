@@ -338,3 +338,10 @@ openApiModule(
     specFile = "oris.yaml",
     mappings = emptyMap()
 )
+
+openApiModule(
+    module = "sync",
+    pkg = "com.klabis.sync.infrastructure.restapi",
+    specFile = "sync.yaml",
+    mappings = emptyMap()
+)

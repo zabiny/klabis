@@ -1,216 +1,98 @@
 package com.klabis.events.application;
 
-import com.dpolach.api.orisclient.OrisApiClient;
-import com.dpolach.api.orisclient.OrisWebUrls;
-import com.dpolach.api.orisclient.dto.Discipline;
-import com.dpolach.api.orisclient.dto.EventClass;
-import com.dpolach.api.orisclient.dto.EventDetails;
-import com.dpolach.api.orisclient.dto.Level;
-import com.klabis.common.exceptions.BusinessRuleViolationException;
-import com.klabis.events.EventCategory;
-import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
-import com.klabis.events.EventTypeId;
-import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.*;
-import com.klabis.oris.OrisIntegrationComponent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
+import com.klabis.common.OrisIntegrationComponent;
+import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.application.SyncRecordNeedsResolutionException;
+import com.klabis.sync.domain.ExternalReference;
+import com.klabis.sync.domain.ExternalSystem;
+import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncRecord;
+import com.klabis.sync.domain.SyncStatus;
+import com.klabis.sync.domain.SyncTarget;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Currency;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 @OrisIntegrationComponent
 class OrisEventImportService implements OrisEventImportPort {
 
-    private static final Logger log = LoggerFactory.getLogger(OrisEventImportService.class);
-
-    private static final String UNKNOWN_ORGANIZER = "---";
-
     private final EventRepository eventRepository;
-    private final OrisApiClient orisApiClient;
-    private final OrisWebUrls orisWebUrls;
-    private final EventTypeRepository eventTypeRepository;
+    private final SynchronizationPort synchronizationPort;
 
     OrisEventImportService(EventRepository eventRepository,
-                           OrisApiClient orisApiClient,
-                           OrisWebUrls orisWebUrls,
-                           EventTypeRepository eventTypeRepository) {
+                           SynchronizationPort synchronizationPort) {
         this.eventRepository = eventRepository;
-        this.orisApiClient = orisApiClient;
-        this.orisWebUrls = orisWebUrls;
-        this.eventTypeRepository = eventTypeRepository;
+        this.synchronizationPort = synchronizationPort;
     }
 
-    @Transactional
+    /**
+     * Delegates to the synchronisation engine's {@code pullAndEnroll} (design.md D10,
+     * task 9.2) instead of building the event and enrolling it by hand: creation,
+     * pairing and the initial pass all now live in the engine, with
+     * {@code OrisEventSyncAdapter.createLocal} supplying the ORIS-specific build
+     * (design.md D2, D3). A repeated import synchronises the existing pairing and
+     * returns the existing event rather than failing with a duplicate (design.md D5) —
+     * the old {@code DuplicateOrisImportException} is unreachable from this path and
+     * has been removed (design.md Open Questions, task 9.8).
+     * <p>
+     * A pairing already awaiting a decision (CONFLICT or FAILED) is refused by the
+     * engine with {@link SyncRecordNeedsResolutionException}, translated here into
+     * {@link EventSyncNeedsResolutionException} for the same reason
+     * {@link #syncEventFromOris} does: this module's REST layer should not need to
+     * know the sync module's internal exception vocabulary.
+     * <p>
+     * Deliberately NOT {@code @Transactional}: {@code pullAndEnroll} performs a
+     * blocking external ORIS HTTP call and relies on {@code SyncRecordCreator} and the
+     * engine's claim/pass steps being genuine cross-bean calls with their own short
+     * transactions (design.md D8). Wrapping this method in a transaction would keep it
+     * open across the external call, defeating that design — see
+     * {@link com.klabis.sync.application.SynchronizationService} javadoc.
+     */
     @Override
     public Event importEventFromOris(int orisId) {
-        EventDetails details = orisApiClient.getEventDetails(orisId).payload()
-                .orElseThrow(() -> new EventNotFoundException(orisId));
-
-        String organizer = resolveOrganizer(details);
-        WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.eventUrl(orisId));
-        RegistrationDeadlines registrationDeadlines = buildRegistrationDeadlines(details, orisId);
-        List<EventCategory> categories = extractCategories(details);
-        EventRanking ranking = resolveRanking(details.level());
-        Money baseEntryFee = deriveBaseEntryFee(details);
-
-        Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                .orisId(orisId)
-                .name(details.name())
-                .eventDate(details.date())
-                .location(details.place())
-                .organizer(organizer)
-                .websiteUrl(websiteUrl)
-                .registrationDeadlines(registrationDeadlines)
-                .categories(categories)
-                .ranking(ranking)
-                .baseEntryFee(baseEntryFee)
-                .build());
-
-        event.applyAutoMappedEventType(resolveEventTypeFromOrisDiscipline(details.discipline()));
-
+        SyncRecord record;
         try {
-            return eventRepository.save(event);
-        } catch (DataIntegrityViolationException e) {
-            throw new DuplicateOrisImportException(orisId);
+            record = synchronizationPort.pullAndEnroll(
+                    SyncEntityType.EVENT,
+                    new ExternalReference(ExternalSystem.ORIS, String.valueOf(orisId)),
+                    null);
+        } catch (SyncRecordNeedsResolutionException e) {
+            throw new EventSyncNeedsResolutionException(orisId);
         }
+
+        EventId eventId = new EventId(UUID.fromString(record.getTarget().entityId()));
+        return eventRepository.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
     }
 
-    @Transactional
+    /**
+     * Delegates to the synchronisation engine (design.md D18, task 8.3) instead of
+     * overwriting the event's ORIS-owned fields itself: a local edit to one of them
+     * now surfaces as a conflict rather than being silently discarded (design.md D6 —
+     * the behaviour change task 8.9 covers in the pre-existing tests that assumed the
+     * old silent-overwrite semantics).
+     * <p>
+     * Refuses up front, without claiming or attempting the record, when it is already
+     * {@code CONFLICT} or {@code FAILED} — the same guard
+     * {@link SynchronizationPort#synchronizeNow} applies, surfaced here as
+     * {@link EventSyncNeedsResolutionException} instead of the sync module's own
+     * exception type so this module's REST layer needs no knowledge of sync's
+     * internal exception vocabulary.
+     */
     @Override
     public void syncEventFromOris(EventId eventId) {
-        Event event = eventRepository.findById(eventId)
+        eventRepository.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
+
+        SyncTarget target = new SyncTarget(SyncEntityType.EVENT, eventId.value().toString());
+        SyncRecord record = synchronizationPort.findByTarget(target)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
-        int orisId = event.getOrisId();
-        EventDetails details = orisApiClient.getEventDetails(orisId).payload()
-                .orElseThrow(() -> new EventNotFoundException(orisId));
-
-        String organizer = resolveOrganizer(details);
-        WebsiteUrl websiteUrl = WebsiteUrl.of(orisWebUrls.eventUrl(orisId));
-        RegistrationDeadlines registrationDeadlines = buildRegistrationDeadlines(details, orisId);
-        List<EventCategory> categories = extractCategories(details);
-        EventRanking ranking = resolveRanking(details.level());
-        Money baseEntryFee = deriveBaseEntryFee(details);
-
-        warnIfSyncRemovesCategoriesWithRegistrations(event, categories);
-
-        event.syncFromOris(EventSyncFromOrisBuilder.builder()
-                .name(details.name())
-                .eventDate(details.date())
-                .location(details.place())
-                .organizer(organizer)
-                .websiteUrl(websiteUrl)
-                .registrationDeadlines(registrationDeadlines)
-                .categories(categories)
-                .ranking(ranking)
-                .baseEntryFee(baseEntryFee)
-                .build());
-
-        event.applyAutoMappedEventType(resolveEventTypeFromOrisDiscipline(details.discipline()));
-
-        eventRepository.save(event);
-    }
-
-    private RegistrationDeadlines buildRegistrationDeadlines(EventDetails details, int orisId) {
-        LocalDate d1 = details.entryDate1() != null ? details.entryDate1().toLocalDate() : null;
-        LocalDate d2 = details.entryDate2() != null ? details.entryDate2().toLocalDate() : null;
-        LocalDate d3 = details.entryDate3() != null ? details.entryDate3().toLocalDate() : null;
-        try {
-            return RegistrationDeadlines.of(d1, d2, d3);
-        } catch (IllegalArgumentException e) {
-            log.error("ORIS event {} contains out-of-order or invalid registration deadlines (d1={}, d2={}, d3={}): {}",
-                    orisId, d1, d2, d3, e.getMessage());
-            throw new BusinessRuleViolationException(
-                    "ORIS event %d has invalid registration deadlines: %s".formatted(orisId, e.getMessage())) {};
+        if (record.getStatus() == SyncStatus.CONFLICT || record.getStatus() == SyncStatus.FAILED) {
+            throw new EventSyncNeedsResolutionException(eventId);
         }
-    }
 
-    private String resolveOrganizer(EventDetails details) {
-        if (details.org1() != null && details.org1().abbreviation() != null && !details.org1().abbreviation().isBlank()) {
-            return details.org1().abbreviation();
-        }
-        if (details.org2() != null && details.org2().abbreviation() != null && !details.org2().abbreviation().isBlank()) {
-            return details.org2().abbreviation();
-        }
-        return UNKNOWN_ORGANIZER;
-    }
-
-    private List<EventCategory> extractCategories(EventDetails details) {
-        if (details.classes() == null || details.classes().isEmpty()) {
-            return List.of();
-        }
-        return details.classes().values().stream()
-                .filter(c -> c.name() != null && !c.name().isBlank())
-                .map(c -> EventCategory.createFromOris(c.id(), c.name()))
-                .toList();
-    }
-
-    private EventTypeId resolveEventTypeFromOrisDiscipline(Discipline discipline) {
-        if (discipline == null || discipline.id() <= 0) {
-            // ORIS uses id 0 as sentinel for a missing discipline
-            return null;
-        }
-        return eventTypeRepository.findByOrisDisciplineId(discipline.id())
-                .map(EventType::getId)
-                .orElse(null);
-    }
-
-    private EventRanking resolveRanking(Level level) {
-        if (level == null) {
-            return null;
-        }
-        return EventRanking.of(level.id(), level.shortName(), level.nameCZ());
-    }
-
-    private Money deriveBaseEntryFee(EventDetails details) {
-        if (details.classes() == null || details.classes().isEmpty()) {
-            return null;
-        }
-        Currency currency = Money.parseCurrency(details.currency());
-        return details.classes().values().stream()
-                .map(EventClass::fee)
-                .filter(fee -> fee != null && !fee.isBlank())
-                .map(fee -> {
-                    try {
-                        return new BigDecimal(fee.trim());
-                    } catch (NumberFormatException e) {
-                        return (BigDecimal) null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .max(BigDecimal::compareTo)
-                .map(maxFee -> Money.of(maxFee, currency))
-                .orElse(null);
-    }
-
-    private void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<EventCategory> incomingCategories) {
-        if (event.getRegistrations().isEmpty()) {
-            return;
-        }
-        Set<String> incomingOrisIds = incomingCategories.stream()
-                .map(EventCategory::orisId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        Map<String, Long> affectedCounts = event.getRegistrations().stream()
-                .filter(r -> r.categoryId() != null)
-                .map(r -> event.findCategory(r.categoryId()).orElse(null))
-                .filter(category -> category != null && category.orisId() != null && !incomingOrisIds.contains(category.orisId()))
-                .collect(Collectors.groupingBy(EventCategory::name, Collectors.counting()));
-        if (!affectedCounts.isEmpty()) {
-            log.warn("ORIS sync for event {} will remove categories that have existing registrations: {}",
-                    event.getId(), affectedCounts);
-        }
+        synchronizationPort.synchronizeNow(record.getId(), null);
     }
 }

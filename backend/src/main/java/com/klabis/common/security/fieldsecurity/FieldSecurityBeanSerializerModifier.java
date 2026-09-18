@@ -3,6 +3,7 @@ package com.klabis.common.security.fieldsecurity;
 import tools.jackson.databind.BeanDescription;
 import tools.jackson.databind.SerializationConfig;
 import tools.jackson.databind.ser.BeanPropertyWriter;
+import tools.jackson.databind.ser.BeanSerializerBuilder;
 import tools.jackson.databind.ser.ValueSerializerModifier;
 import com.klabis.common.users.HasAuthority;
 import org.slf4j.Logger;
@@ -24,6 +25,18 @@ import java.util.UUID;
  * {@link OwnerVisible}. Authorization is evaluated during serialization — no interface or
  * proxy needed.
  * <p>
+ * Runs from {@link #updateBuilder}, not {@link #changeProperties}. Jackson applies every
+ * registered modifier's {@code changeProperties} first (in registration order — which Spring
+ * does not let us control) and only afterwards calls every modifier's {@code updateBuilder}
+ * with the fully-resolved property list. A {@code JsonNullable}-typed property (from
+ * {@code org.openapitools:jackson-databind-nullable}) is replaced by that library's own
+ * {@code changeProperties}, and since {@link BeanPropertyWriter}'s copy constructor copies
+ * state rather than composing a delegate, whichever modifier's {@code changeProperties} runs
+ * last wins outright — silently discarding a {@link SecuredBeanPropertyWriter} installed by an
+ * earlier {@code changeProperties} call. Wrapping in {@code updateBuilder} instead means we
+ * always see, and wrap, whatever writer survived that race, regardless of module registration
+ * order.
+ * <p>
  * Uses {@link ObjectProvider} to allow lazy resolution of {@link OwnershipResolver} and
  * {@link ConversionService}, breaking the circular dependency that arises from Jackson
  * initialization ordering.
@@ -43,14 +56,14 @@ class FieldSecurityBeanSerializerModifier extends ValueSerializerModifier {
     }
 
     @Override
-    public List<BeanPropertyWriter> changeProperties(
+    public BeanSerializerBuilder updateBuilder(
             SerializationConfig config,
             BeanDescription.Supplier beanDescSupplier,
-            List<BeanPropertyWriter> beanProperties) {
+            BeanSerializerBuilder builder) {
 
         Class<?> beanClass = beanDescSupplier.get().getBeanClass();
         if (!beanClass.isRecord()) {
-            return beanProperties;
+            return builder;
         }
 
         RecordComponent[] recordComponents = beanClass.getRecordComponents();
@@ -60,6 +73,7 @@ class FieldSecurityBeanSerializerModifier extends ValueSerializerModifier {
         OwnershipResolver ownershipResolver = anyOwnerVisible ? ownershipResolverProvider.getIfAvailable() : null;
         Method ownerIdAccessor = anyOwnerVisible ? resolveOwnerIdAccessor(beanClass, recordComponents, conversionService) : null;
 
+        List<BeanPropertyWriter> beanProperties = builder.getProperties();
         for (int i = 0; i < beanProperties.size(); i++) {
             BeanPropertyWriter writer = beanProperties.get(i);
             RecordComponent component = findMatchingComponent(writer.getName(), recordComponents);
@@ -81,8 +95,9 @@ class FieldSecurityBeanSerializerModifier extends ValueSerializerModifier {
                     writer, preAuthorize, hasAuthority, deniedHandler, accessor,
                     ownerVisible, ownerIdAccessor, ownershipResolver));
         }
+        builder.setProperties(beanProperties);
 
-        return beanProperties;
+        return builder;
     }
 
     private boolean hasAnyOwnerVisible(RecordComponent[] components) {
