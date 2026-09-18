@@ -1,27 +1,27 @@
 ## 1. `Event` records the write's origin on `EventUpdatedEvent`
 
-- [ ] 1.1 Write a failing unit test on `Event`'s ordinary update method
+- [x] 1.1 Write a failing unit test on `Event`'s ordinary update method
       asserting the registered `EventUpdatedEvent.origin()` equals
       `UpdateOrigin.MANUAL` (reference the not-yet-existing `UpdateOrigin`
       type and `origin()` accessor — this drives their creation).
-- [ ] 1.2 Write a failing unit test on `Event.syncFromOris` asserting the
+- [x] 1.2 Write a failing unit test on `Event.syncFromOris` asserting the
       registered `EventUpdatedEvent.origin()` equals `UpdateOrigin.SYNCHRONISATION`.
-- [ ] 1.3 Add `com.klabis.events.UpdateOrigin` enum with values `MANUAL`,
+- [x] 1.3 Add `com.klabis.events.UpdateOrigin` enum with values `MANUAL`,
       `SYNCHRONISATION`, documenting that it must reflect the code path that
       performed the write and must never be inferred from data (design.md D1, D2).
-- [ ] 1.4 Add `origin` component (`UpdateOrigin`, non-null, no default) to
+- [x] 1.4 Add `origin` component (`UpdateOrigin`, non-null, no default) to
       `EventUpdatedEvent`; update the compact constructor's `Objects.requireNonNull`
       checks accordingly; change `EventUpdatedEvent.fromAggregate` to accept
       an `UpdateOrigin` parameter and pass it through.
-- [ ] 1.5 Update the ordinary update path (`Event.java:714`) to call
+- [x] 1.5 Update the ordinary update path (`Event.java:714`) to call
       `fromAggregate` with `UpdateOrigin.MANUAL`, and `Event.syncFromOris`
       (`Event.java:748`) with `UpdateOrigin.SYNCHRONISATION` — the minimal
       change to make both tests from 1.1/1.2 pass.
-- [ ] 1.6 Fix all remaining compile errors from the new required
+- [x] 1.6 Fix all remaining compile errors from the new required
       constructor/factory parameter across production and test code
       (`EventUpdatedEventBuilder` usages, direct `new EventUpdatedEvent(...)`
       calls, unrelated test fixtures) without changing their assertions.
-- [ ] 1.7 Refactor: review naming/placement of `UpdateOrigin` and the two
+- [x] 1.7 Refactor: review naming/placement of `UpdateOrigin` and the two
       call sites for clarity; re-run tests from 1.1/1.2 to confirm still green.
 
 ## 2. `EventsSyncListener` ignores self-inflicted updates
