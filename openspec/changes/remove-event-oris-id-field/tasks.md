@@ -1,11 +1,11 @@
 ## 1. Sync engine: new batch lookup by external reference
 
-- [ ] 1.1 Add `SyncedEntityReference(SyncTarget target, ExternalReference externalReference)` value type to `sync.domain`
-- [ ] 1.2 Write failing test for `SyncRecordRepository.findByExternalReferences(SyncEntityType, ExternalSystem, Collection<String>)` — covers: no match, single match, multiple matches, and a `RETIRED` record still matching
-- [ ] 1.3 Add `findByExternalReferences` to `SyncRecordRepository` (secondary port)
-- [ ] 1.4 Implement `SyncRecordJdbcRepository` query (`SELECT external_id, entity_id FROM sync.sync_record WHERE entity_type = :entityType AND external_system = :system AND external_id IN (:externalIds)`, no `retired_at` filter) and wire `SyncRecordRepositoryAdapter` to assemble `SyncedEntityReference` results
-- [ ] 1.5 Add `findByExternalReferences` to `SynchronizationPort` (primary port), delegating straight through
-- [ ] 1.6 Run the failing tests from 1.2, confirm green
+- [x] 1.1 Add `SyncedEntityReference(SyncTarget target, ExternalReference externalReference)` value type to `sync.domain`
+- [x] 1.2 Write failing test for `SyncRecordRepository.findByExternalReferences(SyncEntityType, ExternalSystem, Collection<String>)` — covers: no match, single match, multiple matches, and a `RETIRED` record still matching
+- [x] 1.3 Add `findByExternalReferences` to `SyncRecordRepository` (secondary port)
+- [x] 1.4 Implement `SyncRecordJdbcRepository` query (`SELECT external_id, entity_id FROM sync.sync_record WHERE entity_type = :entityType AND external_system = :system AND external_id IN (:externalIds)`, no `retired_at` filter) and wire `SyncRecordRepositoryAdapter` to assemble `SyncedEntityReference` results
+- [x] 1.5 Add `findByExternalReferences` to `SynchronizationPort` (primary port), delegating straight through
+- [x] 1.6 Run the failing tests from 1.2, confirm green
 
 ## 2. Events module: re-point the "already imported" filter
 

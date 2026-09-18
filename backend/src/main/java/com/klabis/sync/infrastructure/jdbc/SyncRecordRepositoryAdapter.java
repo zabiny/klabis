@@ -1,19 +1,23 @@
 package com.klabis.sync.infrastructure.jdbc;
 
 import com.klabis.sync.SyncRecordId;
+import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
+import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncProjectionType;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncRecordRepository;
 import com.klabis.sync.domain.SyncSchedule;
 import com.klabis.sync.domain.SyncScheduleRepository;
 import com.klabis.sync.domain.SyncTarget;
+import com.klabis.sync.domain.SyncedEntityReference;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.beans.factory.ObjectProvider;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -80,6 +84,15 @@ class SyncRecordRepositoryAdapter implements SyncRecordRepository {
     public List<SyncRecord> findDueForScan(Instant now, Duration claimLease) {
         return jdbcRepository.findDueForScan(now, now.minus(claimLease)).stream()
                 .map(this::toSyncRecord)
+                .toList();
+    }
+
+    @Override
+    public List<SyncedEntityReference> findByExternalReferences(SyncEntityType entityType, ExternalSystem system, Collection<String> externalIds) {
+        return jdbcRepository.findByEntityTypeAndExternalSystemAndExternalIdIn(entityType.name(), system.name(), externalIds).stream()
+                .map(match -> new SyncedEntityReference(
+                        new SyncTarget(entityType, match.entityId()),
+                        new ExternalReference(system, match.externalId())))
                 .toList();
     }
 

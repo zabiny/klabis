@@ -2,12 +2,15 @@ package com.klabis.sync.application;
 
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.ExternalReference;
+import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncResolution;
 import com.klabis.sync.domain.SyncTarget;
+import com.klabis.sync.domain.SyncedEntityReference;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -95,6 +98,15 @@ public interface SynchronizationPort {
      * "still honouring... the {@code CONFLICT}/{@code FAILED} skip").
      */
     List<SyncRecord> findActiveByEntityType(SyncEntityType entityType);
+
+    /**
+     * Batch lookup of pairings from the external side (design.md D1): which of these
+     * external ids already have any record — {@code RETIRED} included — for this
+     * entity type and system. Delegates straight through to
+     * {@link com.klabis.sync.domain.SyncRecordRepository#findByExternalReferences};
+     * "already paired" needs no extra logic at this layer.
+     */
+    List<SyncedEntityReference> findByExternalReferences(SyncEntityType entityType, ExternalSystem system, Collection<String> externalIds);
 
     /**
      * Marks the record for this target dirty (design.md D9) — a scheduling signal

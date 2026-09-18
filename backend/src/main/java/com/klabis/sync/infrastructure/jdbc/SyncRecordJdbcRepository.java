@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -96,4 +97,22 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
               AND (sr.claimed_at IS NULL OR sr.claimed_at <= :claimStaleBefore)
             """)
     List<SyncRecordMemento> findDueForScan(@Param("now") Instant now, @Param("claimStaleBefore") Instant claimStaleBefore);
+
+    /**
+     * Batch lookup of pairings from the external side
+     * (see {@link com.klabis.sync.domain.SyncRecordRepository#findByExternalReferences}).
+     * Deliberately no {@code retired_at IS NULL} predicate — a {@code RETIRED} pairing
+     * still counts as a match. Rides the existing
+     * {@code uq_sync_record_external UNIQUE (external_system, external_id, entity_type)}
+     * index (V001__initial_schema.sql), same as {@link #findByExternalSystemAndExternalId}.
+     */
+    @Query("""
+            SELECT external_id, entity_id FROM sync.sync_record
+            WHERE entity_type = :entityType AND external_system = :system AND external_id IN (:externalIds)
+            """)
+    List<ExternalReferenceMatch> findByEntityTypeAndExternalSystemAndExternalIdIn(
+            @Param("entityType") String entityType, @Param("system") String system, @Param("externalIds") Collection<String> externalIds);
+
+    record ExternalReferenceMatch(String externalId, String entityId) {
+    }
 }

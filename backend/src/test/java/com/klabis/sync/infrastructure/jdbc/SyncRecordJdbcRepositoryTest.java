@@ -525,4 +525,72 @@ class SyncRecordJdbcRepositoryTest {
             assertThat(due).extracting(SyncRecord::getId).contains(record.getId());
         }
     }
+
+    @Nested
+    @DisplayName("findByExternalReferences() — batch lookup by external reference (design.md D1)")
+    class FindByExternalReferences {
+
+        @Test
+        @DisplayName("returns empty when none of the external ids match")
+        void returnsEmptyWhenNoMatch() {
+            List<SyncedEntityReference> found = syncRecordRepository.findByExternalReferences(
+                    SyncEntityType.EVENT, ExternalSystem.ORIS, List.of("no-match-1", "no-match-2"));
+
+            assertThat(found).isEmpty();
+        }
+
+        @Test
+        @DisplayName("returns a single match")
+        void returnsSingleMatch() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "ext-batch-1"),
+                    new ExternalReference(ExternalSystem.ORIS, "7001"));
+            syncRecordRepository.save(record);
+
+            List<SyncedEntityReference> found = syncRecordRepository.findByExternalReferences(
+                    SyncEntityType.EVENT, ExternalSystem.ORIS, List.of("7001", "no-match"));
+
+            assertThat(found).hasSize(1);
+            assertThat(found.get(0).target()).isEqualTo(new SyncTarget(SyncEntityType.EVENT, "ext-batch-1"));
+            assertThat(found.get(0).externalReference()).isEqualTo(new ExternalReference(ExternalSystem.ORIS, "7001"));
+        }
+
+        @Test
+        @DisplayName("returns multiple matches")
+        void returnsMultipleMatches() {
+            SyncRecord first = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "ext-batch-2"),
+                    new ExternalReference(ExternalSystem.ORIS, "7002"));
+            SyncRecord second = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "ext-batch-3"),
+                    new ExternalReference(ExternalSystem.ORIS, "7003"));
+            syncRecordRepository.save(first);
+            syncRecordRepository.save(second);
+
+            List<SyncedEntityReference> found = syncRecordRepository.findByExternalReferences(
+                    SyncEntityType.EVENT, ExternalSystem.ORIS, List.of("7002", "7003", "no-match"));
+
+            assertThat(found).extracting(r -> r.externalReference().externalId())
+                    .containsExactlyInAnyOrder("7002", "7003");
+        }
+
+        /**
+         * No {@code retired_at IS NULL} predicate on this query (design.md D1) — a
+         * RETIRED record must still be returned, since the caller ("already imported"
+         * filter) must keep excluding an ORIS id even after its pairing was retired,
+         * matching today's behavior where any prior import keeps an ORIS id off the
+         * candidate list regardless of status.
+         */
+        @Test
+        @DisplayName("a RETIRED record still matches")
+        void retiredRecordStillMatches() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "ext-batch-4"),
+                    new ExternalReference(ExternalSystem.ORIS, "7004"));
+            record.retire(Instant.now());
+            syncRecordRepository.save(record);
+
+            List<SyncedEntityReference> found = syncRecordRepository.findByExternalReferences(
+                    SyncEntityType.EVENT, ExternalSystem.ORIS, List.of("7004"));
+
+            assertThat(found).hasSize(1);
+            assertThat(found.get(0).externalReference().externalId()).isEqualTo("7004");
+        }
+    }
 }

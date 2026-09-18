@@ -8,6 +8,7 @@ import org.springframework.util.Assert;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -172,6 +173,12 @@ class SynchronizationService implements SynchronizationPort {
         return syncRecordRepository.findAllNonRetired().stream()
                 .filter(record -> record.getTarget().entityType() == entityType)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<SyncedEntityReference> findByExternalReferences(SyncEntityType entityType, ExternalSystem system, Collection<String> externalIds) {
+        return syncRecordRepository.findByExternalReferences(entityType, system, externalIds);
     }
 
     @Transactional

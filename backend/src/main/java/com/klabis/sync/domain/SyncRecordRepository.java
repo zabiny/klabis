@@ -4,6 +4,7 @@ import com.klabis.sync.SyncRecordId;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -67,4 +68,12 @@ public interface SyncRecordRepository {
      * explicitly.
      */
     List<SyncRecord> findDueForScan(Instant now, java.time.Duration claimLease);
+
+    /**
+     * Batch lookup of pairings from the external side (design.md D1): which of these
+     * external ids already have any record — {@code RETIRED} included, deliberately,
+     * same reasoning as {@link #findBySystemAndExternalId} — for this entity type and
+     * system. Rides the same {@code uq_sync_record_external} constraint.
+     */
+    List<SyncedEntityReference> findByExternalReferences(SyncEntityType entityType, ExternalSystem system, Collection<String> externalIds);
 }
