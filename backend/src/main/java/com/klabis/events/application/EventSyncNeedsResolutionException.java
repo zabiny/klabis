@@ -18,7 +18,7 @@ import com.klabis.events.EventId;
 public class EventSyncNeedsResolutionException extends BusinessRuleViolationException {
 
     public EventSyncNeedsResolutionException(EventId eventId) {
-        super("Event " + eventId + " is not in sync and needs a decision (resolve the conflict or reset) via its synchronisation resource before it can be synchronised again");
+        super(message("Event " + eventId));
     }
 
     /**
@@ -31,6 +31,10 @@ public class EventSyncNeedsResolutionException extends BusinessRuleViolationExce
      * duplicate-import discovery.
      */
     public EventSyncNeedsResolutionException(int orisId) {
-        super("ORIS event " + orisId + " is already paired and its synchronisation is not in sync — it needs a decision (resolve the conflict or reset) via its synchronisation resource before it can be imported again");
+        super(message("ORIS event " + orisId));
+    }
+
+    private static String message(String subject) {
+        return subject + " is not in sync and needs a decision (resolve the conflict or reset) via its synchronisation resource before it can be synchronised again";
     }
 }

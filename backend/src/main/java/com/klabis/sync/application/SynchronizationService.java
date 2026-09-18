@@ -76,12 +76,7 @@ class SynchronizationService implements SynchronizationPort {
         adapterRegistry.find(target.entityType(), externalReference.system())
                 .orElseThrow(() -> new UnknownSyncEntityTypeException(target.entityType(), externalReference.system()));
 
-        SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), target, externalReference);
-        SyncRecord saved = syncRecordRepository.save(record);
-        // Same transaction as the record save (proposal.md task 4.7, task 2.6's "every
-        // record has a schedule row" invariant).
-        syncScheduleRepository.createFor(saved.getId());
-        return saved;
+        return recordCreator.createAndPair(target, externalReference);
     }
 
     /**

@@ -12,13 +12,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Persists a newly created local entity's pairing (design.md D8): the record save and
- * its schedule row commit together, in one short transaction, after {@code createLocal}
- * has already run with no transaction open. Mirrors {@link SynchronizationService#enroll}'s
- * own persistence, but as a separate bean — {@link SynchronizationPort#pullAndEnroll}
- * calls this from the same class as the external read that must precede it with no
- * transaction open, and only a genuine cross-bean call goes through the Spring AOP
- * proxy that applies {@code @Transactional} (see {@link SyncRecordClaimer}'s javadoc
- * for the same reasoning).
+ * its schedule row commit together, in one short transaction. Used directly by
+ * {@link SynchronizationService#enroll}, and by {@link SynchronizationPort#pullAndEnroll}'s
+ * "no pairing" branch as a separate bean — that branch calls this from the same class
+ * as the external read that must precede it with no transaction open, and only a
+ * genuine cross-bean call goes through the Spring AOP proxy that applies
+ * {@code @Transactional} (see {@link SyncRecordClaimer}'s javadoc for the same
+ * reasoning).
  */
 @Service
 class SyncRecordCreator {
