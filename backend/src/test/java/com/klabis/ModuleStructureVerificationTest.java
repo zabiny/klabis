@@ -64,11 +64,8 @@ class ModuleStructureVerificationTest {
      *
      * <p><b>Known Violations (Technical Debt):</b>
      * <ul>
-     *   <li>members depends on users.domain (User, UserRepository, PasswordSetupToken, etc.)</li>
-     *   <li>members depends on users.application (PerKeyRateLimiter)</li>
+     *   <li>members depends on common.users (Authority, UserId — shared kernel value objects)</li>
      *   <li>members depends on common.email (EmailService, EmailTemplate, ThymeleafTemplateRenderer)</li>
-     *   <li>users depends on common.audit (Auditable, AuditEventType)</li>
-     *   <li>events depends on users.domain (UserId - shared kernel value object)</li>
      *   <li>events depends on members.application (Members - public query API for member data)</li>
      * </ul>
      *
@@ -77,6 +74,22 @@ class ModuleStructureVerificationTest {
      *   <li>Move shared types to `api` packages within each module, or</li>
      *   <li>Further refactor to use event-driven communication where possible</li>
      * </ol>
+     *
+     * <p><b>oris module (openspec {@code relocate-oris-event-sync-adapter}):</b>
+     * {@code com.klabis.oris} is declared as an {@code @ApplicationModule} (not
+     * {@code OPEN}). It previously had four inbound imports from {@code events.domain}
+     * plus an {@code events → oris} edge (via {@code @OrisIntegrationComponent}, then
+     * defined in {@code com.klabis.oris}); both are now gone — {@code oris}'s only
+     * outbound edge into {@code events} is {@code events.application.ImportedOrisEventsPort},
+     * and this test enforces that boundary rather than assuming it. The ORIS
+     * synchronisation adapter that used to justify the edge now lives inside
+     * {@code events.infrastructure.orissync} as a module-internal collaborator of
+     * {@code events}, implementing {@code sync}'s {@code SynchronizationAdapter} port, so
+     * it never crosses into {@code oris} at all. The generated {@code OrisImportApi},
+     * {@code OrisEventSummary} and {@code OrisEventSummaryBuilder} sit in the module's
+     * root package and stay exposed to Spring MVC under the plain declaration —
+     * verified via {@code OrisControllerTest} (a {@code @WebMvcTest} slice), so
+     * {@code Type.OPEN} was not needed.
      *
      * <p>If violations are detected, the test will fail with a detailed error message
      * describing the architectural problems.

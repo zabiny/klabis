@@ -1,0 +1,105 @@
+## Why
+
+Klabis synchronises data with ORIS today in exactly one shape: a single event is pulled from ORIS and every ORIS-owned field on the local event is overwritten. `OrisEventImportService.syncEventFromOris` re-reads the upstream event and assigns `name`, `eventDate`, `location`, `organizer`, `websiteUrl`, `registrationDeadlines`, `ranking` and `baseEntryFee` unconditionally; `OrisBulkSyncService` loops that call over all upcoming ORIS events and counts successes.
+
+That mechanism has four gaps that block every further integration:
+
+1. **Silent data loss.** A manager who corrects an ORIS-owned field in Klabis loses that edit on the next synchronisation, with no record that it ever existed. The only protection today is field ownership — categories added manually (`orisId == null`), `feeOverride` and an already-set `eventType` are preserved — which protects fields ORIS does not own, not edits to fields it does.
+2. **No memory of what was synchronised.** Nothing persists what the two sides looked like at the last successful synchronisation, so the system cannot tell which side changed, cannot detect that both changed, and cannot report when a record was last in agreement.
+3. **No failure handling.** A failure is caught, logged and counted for one bulk run. There is no retry, no backoff, no record of a persistently failing entity, and no signal that a given event has been failing for a week.
+4. **Not reusable.** The logic is written against the Event aggregate and the ORIS event API. Synchronising members, or any second external system, means writing all of it again — including the parts that are genuinely hard (change detection, conflict handling, retry).
+
+This change introduces a generic, bidirectional synchronisation engine that owns those four concerns once, for any entity and any external system, and migrates the existing ORIS event synchronisation onto it as the first adapter.
+
+## What Changes
+
+**A new `sync` module** owning synchronisation state and orchestration, independent of both the entities being synchronised and the external system involved. Integrations plug in through a declared adapter contract; the engine never names ORIS.
+
+**Change detection through three-way comparison.** Each synchronised entity gets a synchronisation record holding the canonical projection of both sides plus the baseline captured at the last successful synchronisation. Comparing current hashes against the baseline determines what happened:
+
+```mermaid
+stateDiagram-v2
+    [*] --> New: entity enrolled by an integration
+    New --> InSync: first pass adopts the external side
+    New --> Retrying: first pass failed retryably
+
+    InSync --> InSync: neither side moved (no work)
+    InSync --> InSync: only one side moved (synchronised in that direction)
+    InSync --> InSync: both sides moved to the same state (baseline rebased)
+    InSync --> Conflict: both sides moved to different states
+    InSync --> Conflict: local side moved but the integration cannot write outward
+    InSync --> Retrying: attempt failed retryably
+    InSync --> Failed: non-retryable failure
+
+    Retrying --> InSync: a later attempt succeeds
+    Retrying --> Conflict: a later attempt finds a conflict
+    Retrying --> Failed: attempts exhausted, or a non-retryable failure
+
+    Conflict --> InSync: a side reverts, a manager forces a direction, or accepts the divergence
+    Failed --> InSync: manager resets the record and it succeeds
+    InSync --> Retired: entity finished, cancelled or deactivated
+    Retrying --> Retired: entity finished, cancelled or deactivated
+    Conflict --> Retired: entity finished, cancelled or deactivated
+    Failed --> Retired: entity finished, cancelled or deactivated
+    Retired --> [*]
+```
+
+**Conflicts are never resolved automatically.** When both sides moved and their current states differ, the record stops synchronising and reports which fields diverged. A manager acknowledges the conflict and then explicitly resolves it — forces a direction, or **accepts the divergence**: both sides stay as they are, and any later external change asks again instead of overwriting the accepted local value. Nothing is written until the manager decides. The same applies when only the local side moved but the external system offers no way to write that entity back — the situation that silently destroys a manager's edit today; accepting the divergence is what lets such an edit survive permanently.
+
+**Retry with backoff and a terminal state.** A failed synchronisation is retried on a growing delay; once the attempts since the last success exceed the limit, the record is marked terminally failed, stops consuming external calls, and waits for a manager to reset it. An outage of the external system trips a circuit breaker that ends the pass instead of burning every record's retry budget.
+
+Resilience4j covers what it is built for — the in-attempt retry and the circuit breaker, both as configurable named instances. The cross-pass backoff (the growing delay between scheduled attempts) is deliberately not Resilience4j: it must survive restarts and span hours to days, so it is engine-owned persistent state (a due timestamp on the record), configurable through the same properties block.
+
+**Audit trail.** Every attempt is appended to a synchronisation history: when, what triggered it, which direction, the outcome, the failure reason, and — for manually triggered work — who asked for it. The record itself carries the time and direction of the last successful synchronisation. Domain events are published only for the two states that strand work — a detected conflict and a terminal failure; successful synchronisations are recorded in the history but deliberately not published as events.
+
+**Existing ORIS event synchronisation moves onto the engine.** The endpoints, HAL affordances and frontend stay as they are; the behaviour behind them gains change detection, conflict handling, retry and audit. The visible change is that a local edit to an ORIS-owned field now raises a conflict instead of being silently overwritten.
+
+**Member synchronisation is explicitly out of scope.** No member adapter, no changes to the `members` module — no new domain event, no listener, no member projection. Members remain the motivating case that keeps the engine contract honest about two-way integrations; building that integration is a separate change.
+
+## Capabilities
+
+### New Capabilities
+
+- `data-synchronization`: how synchronisation between Klabis and an external system behaves from a manager's point of view — when a record synchronises on its own, when it stops and asks for a decision, what a manager sees about a conflict, how they resolve it, what happens to a repeatedly failing record, and what the system reports about the last successful synchronisation.
+
+### Modified Capabilities
+
+- `events`: ORIS synchronisation of an event changes observable behaviour. A local edit to an ORIS-owned field no longer disappears on the next synchronisation — it blocks that event's synchronisation until a manager resolves it. The event exposes its synchronisation state and the actions to resolve a conflict or reset a failed record. The existing "Synchronizovat" action and the bulk synchronisation keep working unchanged for the case where nothing has diverged.
+
+## Impact
+
+**Affected specs**
+- `openspec/specs/data-synchronization/spec.md` — new.
+- `openspec/specs/events/spec.md` — ORIS synchronisation requirements gain conflict, resolution and failure scenarios; the row-level "Synchronizovat" action requirement is extended with the conflicted and failed cases.
+- `openspec/specs/non-functional-requirements/spec.md` — protection and retention of synchronisation data.
+
+**Affected code — new `sync` module**
+- Synchronisation record and attempt history aggregates, their repositories and persistence.
+- Direction resolution, conflict detection, claiming, retry scheduling and circuit breaking.
+- The adapter contract integrations implement, including declared capabilities and the canonical projection.
+- Primary port for enrolment, synchronisation, conflict acknowledgement, forced direction and reset.
+- REST resources for synchronisation state and conflict resolution, addressed uniformly across entity types.
+- Domain events for conflict detected and terminal failure.
+- Two scheduled cadences — a nightly full pass and a frequent due scan for dirty or retry-due records — and a scheduled cleanup of expired history.
+
+**Affected code — ORIS integration**
+- A new `oris.sync` package holding the ORIS event adapter, built from the existing import/sync mapping logic.
+- `OrisEventImportService` keeps first-time import; its synchronisation path moves behind the engine.
+- `OrisBulkSyncService` becomes a scheduled pass over due records instead of a loop over events.
+
+**Affected code — events module**
+- `events` enrols an event with the engine when it is imported from ORIS, and retires the record when the event finishes or is cancelled.
+- Local changes to an event already announce themselves (`EventUpdatedEvent`), so the engine can mark a record as needing attention without any new event.
+
+**Not affected — members module**
+- No changes. No member adapter, no member-updated event, no listener, no member projection.
+
+**APIs (REST)** — additive and owned by the `sync` module: read synchronisation state, acknowledge a conflict, resolve it (force a direction or accept the divergence), reset a failed record. They are addressed uniformly for every synchronised entity type rather than duplicated per module. Existing ORIS synchronisation endpoints keep their paths and operation identifiers. A new `SYNC:MANAGE` authority gates the new operations.
+
+**Data** — new `sync_record` and `sync_attempt` tables in `V001`. Projection columns are encrypted at rest from the start: projections will carry personal data as soon as an entity such as a member is synchronised, and retrofitting encryption onto a populated column is considerably worse than starting with it.
+
+**Configuration** — new properties with defaults for the attempt limit, retry delay growth, claim lease, history retention and the two scan cadences (nightly full pass, frequent due scan), plus Resilience4j retry and circuit-breaker instances alongside the existing rate-limiter configuration.
+
+**Dependencies** — Resilience4j (already a dependency, currently used only for rate limiting) gains retry and circuit-breaker configuration. Scheduling already exists.
+
+**Related work** — `gh-113-oris-auto-sync` asks, in its open question 4, what happens when an ORIS change meets a manually edited field. This change answers that question and provides the mechanism; the scheduled bulk import, group tagging and deadline offset that `gh-113` proposes remain separate.

@@ -83,9 +83,6 @@ class EventMemento implements Persistable<UUID> {
     @Column("registration_deadline_3")
     private LocalDate registrationDeadline3;
 
-    @Column("oris_id")
-    private Integer orisId;
-
     // Race categories are part of the aggregate; category id is the primary key, so renaming
     // a category (or leaving its id unchanged across an update) preserves its identity.
     @MappedCollection(idColumn = "event_id")
@@ -200,7 +197,6 @@ class EventMemento implements Persistable<UUID> {
         memento.registrationDeadline2 = rd.deadline2().orElse(null);
         memento.registrationDeadline3 = rd.deadline3().orElse(null);
         memento.status = event.getStatus().name();
-        memento.orisId = event.getOrisId();
         memento.categories = event.getCategories().stream()
                 .map(EventCategoryMemento::from)
                 .collect(java.util.stream.Collectors.toSet());
@@ -289,7 +285,6 @@ class EventMemento implements Persistable<UUID> {
                 deadlines,
                 eventStatus,
                 this.cancellationReason,
-                this.orisId,
                 categoriesList,
                 ranking,
                 baseEntryFee,

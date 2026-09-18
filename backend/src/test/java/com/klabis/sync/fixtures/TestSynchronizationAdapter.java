@@ -1,0 +1,250 @@
+package com.klabis.sync.fixtures;
+
+import com.klabis.sync.domain.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * Test double for {@link SynchronizationAdapter} with configurable capabilities and
+ * controllable state on both sides — the harness every slice's integration tests
+ * extend (tasks.md 1.14). Not a Spring bean: constructed directly by tests so each
+ * test controls exactly which capabilities and starting state it needs.
+ */
+public class TestSynchronizationAdapter implements SynchronizationAdapter {
+
+    private final SyncEntityType entityType;
+    private final ExternalSystem system;
+    private SyncCapabilities capabilities;
+    private final Map<String, TestSyncProjection> localState = new HashMap<>();
+    private final Map<String, TestSyncProjection> externalState = new HashMap<>();
+    private ExternalVersionToken versionToken;
+    private int externalReadCount = 0;
+    private int localReadCount = 0;
+    private int fireHookOnLocalReadNumber = -1;
+    private Runnable countedHook;
+    private final java.util.Deque<RuntimeException> readExternalFailures = new java.util.ArrayDeque<>();
+    private int failReadExternalFromCallNumber = -1;
+    private int createLocalCallCount = 0;
+    private String lastCreatedEntityId;
+
+    public TestSynchronizationAdapter(SyncEntityType entityType, ExternalSystem system) {
+        this.entityType = entityType;
+        this.system = system;
+        this.capabilities = SyncCapabilities.pullOnly();
+    }
+
+    public TestSynchronizationAdapter withCapabilities(SyncCapabilities capabilities) {
+        this.capabilities = capabilities;
+        return this;
+    }
+
+    public TestSynchronizationAdapter withLocalState(String entityId, TestSyncProjection projection) {
+        localState.put(entityId, projection);
+        return this;
+    }
+
+    public TestSynchronizationAdapter withExternalState(String externalId, TestSyncProjection projection) {
+        externalState.put(externalId, projection);
+        return this;
+    }
+
+    public TestSynchronizationAdapter withVersionToken(ExternalVersionToken token) {
+        this.versionToken = token;
+        return this;
+    }
+
+    /**
+     * Registers a hook that fires on the Nth call to {@link #readLocal(String)} within
+     * a pass (1-based, counted from the last {@link #reset()}), before it returns —
+     * lets a test target a specific re-read point (e.g. the guard re-read inside the
+     * write, as opposed to the earlier decision read) when a pass reads the local side
+     * more than once.
+     */
+    public TestSynchronizationAdapter onLocalReadNumber(int readNumber, Runnable hook) {
+        this.fireHookOnLocalReadNumber = readNumber;
+        this.countedHook = hook;
+        return this;
+    }
+
+    /**
+     * Queues an exception to be thrown by the next call(s) to {@link #readExternal},
+     * one per call, in the order queued — lets a test simulate a failing external
+     * system for a controlled number of passes without the exception ever leaking
+     * into unrelated tests once the queue is drained.
+     * <p>
+     * A production call to the adapter goes through {@code ResilientAdapterExecutor},
+     * which retries a retryable failure in-attempt (the {@code sync-adapter}
+     * Resilience4j retry, up to 3 attempts by default — design.md D10). To simulate
+     * one genuinely failed pass-level attempt, queue the failure enough times to
+     * exhaust that in-attempt retry budget, e.g. {@link #failNextReadExternalWith(int, RuntimeException)}.
+     */
+    public TestSynchronizationAdapter failNextReadExternalWith(RuntimeException failure) {
+        this.readExternalFailures.addLast(failure);
+        return this;
+    }
+
+    /**
+     * Queues the same exception {@code times} times — the usual way to simulate one
+     * failed pass-level attempt when the failure is itself retryable and would
+     * otherwise be absorbed by the in-attempt Resilience4j retry (see
+     * {@link #failNextReadExternalWith(RuntimeException)}).
+     */
+    public TestSynchronizationAdapter failNextReadExternalWith(int times, RuntimeException failure) {
+        for (int i = 0; i < times; i++) {
+            this.readExternalFailures.addLast(failure);
+        }
+        return this;
+    }
+
+    /**
+     * Like {@link #failNextReadExternalWith(int, RuntimeException)}, but the failures
+     * only start applying from the given 1-based call number — earlier calls (e.g.
+     * {@code pullAndEnroll}'s creation-time read, before the pass that follows even
+     * starts) return real state undisturbed. Lets a test fail only the initial pass
+     * that runs after creation (design.md D8), not the creation read itself.
+     */
+    public TestSynchronizationAdapter failReadExternalFromCallNumber(int fromCallNumber, int times, RuntimeException failure) {
+        this.failReadExternalFromCallNumber = fromCallNumber;
+        for (int i = 0; i < times; i++) {
+            this.readExternalFailures.addLast(failure);
+        }
+        return this;
+    }
+
+    /**
+     * Clears the version token and read counters. This adapter is typically wired as
+     * a Spring singleton bean shared across every test in a class, so a test that sets
+     * a version token or relies on read counts should reset it in {@code @BeforeEach}
+     * to avoid leaking state into unrelated tests.
+     */
+    public void reset() {
+        this.versionToken = null;
+        this.externalReadCount = 0;
+        this.localReadCount = 0;
+        this.fireHookOnLocalReadNumber = -1;
+        this.countedHook = null;
+        this.readExternalFailures.clear();
+        this.failReadExternalFromCallNumber = -1;
+        this.createLocalCallCount = 0;
+        this.lastCreatedEntityId = null;
+    }
+
+    public int externalReadCount() {
+        return externalReadCount;
+    }
+
+    public int localReadCount() {
+        return localReadCount;
+    }
+
+    /**
+     * Zeroes the local-read counter only, leaving state, capabilities and hooks
+     * untouched — useful to target {@link #onLocalReadNumber} at reads within a
+     * specific upcoming pass rather than counting from the start of the test.
+     */
+    public void resetLocalReadCount() {
+        this.localReadCount = 0;
+    }
+
+    @Override
+    public SyncEntityType entityType() {
+        return entityType;
+    }
+
+    @Override
+    public ExternalSystem system() {
+        return system;
+    }
+
+    @Override
+    public SyncCapabilities capabilities() {
+        return capabilities;
+    }
+
+    @Override
+    public Class<? extends SyncProjection> projectionType() {
+        return TestSyncProjection.class;
+    }
+
+    @Override
+    public SyncProjection readLocal(String entityId) {
+        localReadCount++;
+        if (localReadCount == fireHookOnLocalReadNumber) {
+            Runnable hook = countedHook;
+            fireHookOnLocalReadNumber = -1;
+            countedHook = null;
+            hook.run();
+        }
+        TestSyncProjection projection = localState.get(entityId);
+        if (projection == null) {
+            throw new IllegalStateException("No local test state configured for entityId " + entityId);
+        }
+        return projection;
+    }
+
+    @Override
+    public SyncProjection readExternal(String externalId) {
+        externalReadCount++;
+        boolean pastGate = failReadExternalFromCallNumber < 0 || externalReadCount >= failReadExternalFromCallNumber;
+        if (pastGate && !readExternalFailures.isEmpty()) {
+            throw readExternalFailures.pollFirst();
+        }
+        TestSyncProjection projection = externalState.get(externalId);
+        if (projection == null) {
+            throw new IllegalStateException("No external test state configured for externalId " + externalId);
+        }
+        return projection;
+    }
+
+    @Override
+    public Optional<ExternalVersionToken> externalVersion(String externalId) {
+        return Optional.ofNullable(versionToken);
+    }
+
+    @Override
+    public void applyToLocal(String entityId, SyncProjection projection) {
+        localState.put(entityId, (TestSyncProjection) projection);
+    }
+
+    @Override
+    public void applyToExternal(String externalId, SyncProjection projection) {
+        if (!capabilities.writesExternal()) {
+            throw new UnsupportedOperationException("This test adapter does not declare an outward write capability");
+        }
+        externalState.put(externalId, (TestSyncProjection) projection);
+    }
+
+    /**
+     * Builds a local entity id deterministically from the external projection's
+     * {@code value} (used as the external id by every test in this class's package)
+     * and seeds the local state under that id, so the pass that runs right after
+     * creation reads back exactly what was just created (design.md D3).
+     */
+    @Override
+    public String createLocal(SyncProjection projection) {
+        if (!capabilities.createsLocal()) {
+            return SynchronizationAdapter.super.createLocal(projection);
+        }
+        createLocalCallCount++;
+        TestSyncProjection testProjection = (TestSyncProjection) projection;
+        String entityId = "created-from-" + testProjection.value() + "-" + createLocalCallCount;
+        localState.put(entityId, testProjection);
+        lastCreatedEntityId = entityId;
+        return entityId;
+    }
+
+    public int createLocalCallCount() {
+        return createLocalCallCount;
+    }
+
+    /**
+     * The entity id returned by the most recent {@link #createLocal(SyncProjection)}
+     * call — lets a test confirm the pairing left behind by a failed initial pass
+     * (design.md D8) points at the entity that actually got created.
+     */
+    public String lastCreatedEntityId() {
+        return lastCreatedEntityId;
+    }
+}

@@ -1,0 +1,5 @@
+### Fetch list of club users
+POST https://oris.ceskyorientak.cz/API
+Content-Type: application/x-www-form-urlencoded
+
+method=getClubUserList&format=xml&clubkey={{orisClubKey}}

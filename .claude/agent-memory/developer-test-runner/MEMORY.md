@@ -1,5 +1,46 @@
 # Test Runner Agent Memory
 
+## Full Backend Test Suite Run (2026-09-17)
+
+### Context
+Phase 5 refactoring: folded `OrisEventFieldsGatewayService` into `OrisEventSyncAdapter` and deleted gateway/mapper classes. Tests moved from `OrisEventImportServiceTest`/`OrisEventTypeAutoMappingTest` into `OrisEventSyncAdapterTest`.
+
+### Results
+**ALL 3502 BACKEND TESTS PASSED** ✓
+
+- Total tests: 3502
+- Passed: 3502 (100%)
+- Failed: 0
+- Skipped: 14
+- Wall-clock: ~14-15 minutes
+
+All required oris sync tests passing:
+- OrisEventProjectionCanonicalJsonTest: 1/1 passed
+- OrisEventProjectionMapperTest: 5/5 passed
+- OrisEventSyncAdapterTest: 18/18 passed
+- OrisEventSyncAdapterIntegrationTest: 3/3 passed
+- OrisEventSyncScenarioIntegrationTest: 9/9 passed
+
+---
+
+## Full Backend Test Suite Run (2026-09-04)
+
+### Context
+After cleanup changes in modules `sync`, `oris.eventsync`, and `events` (removal of duplicates, shared test fixtures).
+
+### Results
+**ALL 3399 BACKEND TESTS PASSED** ✓
+
+- Total tests: 3399
+- Passed: 3399 (100%)
+- Failed: 0
+- Skipped: 0
+- Compilation: ✓ Success
+
+The cleanup changes (duplicate removal, shared testing fixtures) had NO functional impact on test behavior.
+
+---
+
 ## PermissionController HATEOAS Links Fix (2026-03-03)
 
 ### Issue

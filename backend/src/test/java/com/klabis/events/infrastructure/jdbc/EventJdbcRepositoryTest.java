@@ -514,67 +514,6 @@ class EventJdbcRepositoryTest {
     }
 
     @Nested
-    @DisplayName("existsByOrisId() — ORIS duplicate detection")
-    class ExistsByOrisId {
-
-        @Test
-        @DisplayName("should return true for a saved event with the given orisId")
-        void shouldReturnTrueForSavedEventWithOrisId() {
-            // Given
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(9876)
-                    .name("ORIS Imported Event")
-                    .eventDate(LocalDate.of(2026, 8, 15))
-                    .location("Test Location")
-                    .organizer("OOB")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=9876"))
-                    .build());
-            eventRepository.save(event);
-
-            // When & Then
-            assertThat(eventRepository.existsByOrisId(9876)).isTrue();
-        }
-
-        @Test
-        @DisplayName("should return false when no event with the given orisId exists")
-        void shouldReturnFalseWhenNoEventWithOrisId() {
-            // When & Then
-            assertThat(eventRepository.existsByOrisId(99999)).isFalse();
-        }
-
-        @Test
-        @DisplayName("should reject duplicate orisId via unique constraint")
-        void shouldRejectDuplicateOrisIdViaUniqueConstraint() {
-            // Given — save the first event with orisId 1111
-            Event first = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(1111)
-                    .name("First ORIS Event")
-                    .eventDate(LocalDate.of(2026, 9, 1))
-                    .location("Location A")
-                    .organizer("PRG")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111"))
-                    .build());
-            eventRepository.save(first);
-
-            // When — create and save a second event with same orisId
-            Event second = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(1111)
-                    .name("Duplicate ORIS Event")
-                    .eventDate(LocalDate.of(2026, 9, 10))
-                    .location("Location B")
-                    .organizer("BRN")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111"))
-                    .build());
-
-            // Then — DB unique constraint rejects the duplicate
-            org.junit.jupiter.api.Assertions.assertThrows(
-                    Exception.class,
-                    () -> eventRepository.save(second)
-            );
-        }
-    }
-
-    @Nested
     @DisplayName("Unique constraint on (event_id, member_id)")
     class UniqueConstraintEventMember {
 
@@ -1390,92 +1329,6 @@ class EventJdbcRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findAllUpcomingOrisEvents() — events eligible for bulk sync")
-    class FindAllUpcomingOrisEvents {
-
-        private static final LocalDate TODAY = LocalDate.of(2026, 6, 1);
-
-        @Test
-        @DisplayName("should return DRAFT and ACTIVE events with orisId and date >= today")
-        void shouldReturnEligibleDraftAndActiveEvents() {
-            Event draftOris = saveOrisEvent("Future DRAFT", EventStatus.DRAFT, TODAY, 101);
-            Event activeOris = saveOrisEvent("Future ACTIVE", EventStatus.ACTIVE, TODAY.plusDays(5), 102);
-
-            java.util.List<Event> result = eventRepository.findAllUpcomingOrisEvents(TODAY);
-
-            assertThat(result).extracting(Event::getName)
-                    .containsExactlyInAnyOrder("Future DRAFT", "Future ACTIVE");
-        }
-
-        @Test
-        @DisplayName("should exclude events without orisId even if status and date match")
-        void shouldExcludeNonOrisEvents() {
-            saveManualEvent("Manual future DRAFT", EventStatus.DRAFT, TODAY.plusDays(1));
-            saveOrisEvent("ORIS future DRAFT", EventStatus.DRAFT, TODAY.plusDays(1), 201);
-
-            java.util.List<Event> result = eventRepository.findAllUpcomingOrisEvents(TODAY);
-
-            assertThat(result).extracting(Event::getName).containsExactly("ORIS future DRAFT");
-        }
-
-        @Test
-        @DisplayName("should exclude events with status FINISHED or CANCELLED")
-        void shouldExcludeTerminalStatusEvents() {
-            saveOrisEvent("Past FINISHED", EventStatus.FINISHED, TODAY.plusDays(1), 301);
-            saveOrisEvent("Past CANCELLED", EventStatus.CANCELLED, TODAY.plusDays(1), 302);
-            saveOrisEvent("Future DRAFT", EventStatus.DRAFT, TODAY.plusDays(1), 303);
-
-            java.util.List<Event> result = eventRepository.findAllUpcomingOrisEvents(TODAY);
-
-            assertThat(result).extracting(Event::getName).containsExactly("Future DRAFT");
-        }
-
-        @Test
-        @DisplayName("should exclude events whose eventDate is before today")
-        void shouldExcludePastEvents() {
-            saveOrisEvent("Past event", EventStatus.ACTIVE, TODAY.minusDays(1), 401);
-            saveOrisEvent("Today event", EventStatus.ACTIVE, TODAY, 402);
-            saveOrisEvent("Future event", EventStatus.ACTIVE, TODAY.plusDays(1), 403);
-
-            java.util.List<Event> result = eventRepository.findAllUpcomingOrisEvents(TODAY);
-
-            assertThat(result).extracting(Event::getName)
-                    .containsExactlyInAnyOrder("Today event", "Future event");
-        }
-
-        private Event saveOrisEvent(String name, EventStatus status, LocalDate date, int orisId) {
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(orisId)
-                    .name(name)
-                    .eventDate(date)
-                    .location("Location")
-                    .organizer("OOB")
-                    .build());
-            if (status == EventStatus.ACTIVE) {
-                event.publish();
-            } else if (status == EventStatus.FINISHED) {
-                event.publish();
-                event.finish();
-            } else if (status == EventStatus.CANCELLED) {
-                event.cancel();
-            }
-            return eventRepository.save(event);
-        }
-
-        private Event saveManualEvent(String name, EventStatus status, LocalDate date) {
-            Event event = Event.create(EventCreateEventBuilder.builder()
-                    .name(name)
-                    .eventDate(date)
-                    .organizer("OOB")
-                    .build());
-            if (status == EventStatus.ACTIVE) {
-                event.publish();
-            }
-            return eventRepository.save(event);
-        }
-    }
-
-    @Nested
     @DisplayName("EventRanking persistence — round-trip")
     class EventRankingPersistence {
 
@@ -1484,7 +1337,6 @@ class EventJdbcRepositoryTest {
         void shouldPersistAndReloadEventRanking() {
             EventRanking ranking = EventRanking.of(3, "MN", "Mistrovství národa");
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(5001)
                     .name("Ranking Event")
                     .eventDate(LocalDate.of(2026, 9, 1))
                     .location("Forest")
@@ -1520,7 +1372,6 @@ class EventJdbcRepositoryTest {
         @DisplayName("should persist updated ranking after event update")
         void shouldPersistUpdatedRanking() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(5002)
                     .name("Ranking Update Event")
                     .eventDate(LocalDate.of(2026, 9, 3))
                     .location("Forest")
@@ -1550,7 +1401,6 @@ class EventJdbcRepositoryTest {
         void shouldPersistAndReloadBaseEntryFee() {
             Money fee = Money.of(new BigDecimal("350.00"), Currency.getInstance("CZK"));
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(6001)
                     .name("Entry Fee Event")
                     .eventDate(LocalDate.of(2026, 10, 1))
                     .location("Forest")
@@ -1586,7 +1436,6 @@ class EventJdbcRepositoryTest {
         void shouldPersistAndReloadBaseEntryFeeWithDecimalPrecision() {
             Money fee = Money.of(new BigDecimal("199.50"), Currency.getInstance("CZK"));
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(6002)
                     .name("Decimal Fee Event")
                     .eventDate(LocalDate.of(2026, 10, 3))
                     .location("Forest")
@@ -1658,49 +1507,6 @@ class EventJdbcRepositoryTest {
             EventRegistration registration = reloaded.findRegistration(memberId).orElseThrow();
             assertThat(registration.wantsSharedTransport()).isFalse();
             assertThat(registration.wantsSharedAccommodation()).isTrue();
-        }
-    }
-
-    @Nested
-    @DisplayName("findImportedOrisIds() — batch lookup of already-imported ORIS IDs")
-    class FindImportedOrisIds {
-
-        @Test
-        @DisplayName("should return only the candidate IDs that already exist in DB")
-        void shouldReturnOnlyExistingCandidateIds() {
-            eventRepository.save(Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(1001).name("Imported Race A").eventDate(LocalDate.of(2026, 8, 1))
-                    .location("Location").organizer("OOB")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1001")).build()));
-            eventRepository.save(Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(1002).name("Imported Race B").eventDate(LocalDate.of(2026, 8, 2))
-                    .location("Location").organizer("OOB")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1002")).build()));
-
-            Set<Integer> result = eventRepository.findImportedOrisIds(List.of(1001, 1002, 9999));
-
-            assertThat(result).containsExactlyInAnyOrder(1001, 1002);
-        }
-
-        @Test
-        @DisplayName("should return empty set when no candidates match")
-        void shouldReturnEmptySetWhenNoCandidatesMatch() {
-            eventRepository.save(Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(2001).name("Race Z").eventDate(LocalDate.of(2026, 9, 1))
-                    .location("Location").organizer("OOB")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=2001")).build()));
-
-            Set<Integer> result = eventRepository.findImportedOrisIds(List.of(9998, 9997));
-
-            assertThat(result).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should return empty set for empty candidate collection without querying DB")
-        void shouldReturnEmptySetForEmptyCandidateCollection() {
-            Set<Integer> result = eventRepository.findImportedOrisIds(List.of());
-
-            assertThat(result).isEmpty();
         }
     }
 

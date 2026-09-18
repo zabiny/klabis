@@ -4,7 +4,7 @@ import {useMediaQuery} from '../hooks'
 import {Alert, Button, Spinner, Toast} from '../components/UI'
 import {LogoutIcon} from '../components/UI/icons'
 import {ThemeToggle} from '../components/ThemeToggle/ThemeToggle'
-import {AdminToggle} from '../components/AdminToggle/AdminToggle'
+import {RawDataViewToggle} from '../components/AdminToggle/RawDataViewToggle.tsx'
 import type {AuthUserDetails} from '../contexts/authContext'
 import {useAuth} from '../contexts/authContext'
 import {useRootNavigation} from '../hooks/useRootNavigation'
@@ -152,8 +152,8 @@ const Layout = () => {
                         {/* Theme toggle */}
                         <ThemeToggle className="border border-zinc-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800" />
 
-                        {/* Admin mode toggle */}
-                        <AdminToggle />
+                        {/* Raw data view toggle */}
+                        <RawDataViewToggle />
 
                         {/* Logout button */}
                         <Button

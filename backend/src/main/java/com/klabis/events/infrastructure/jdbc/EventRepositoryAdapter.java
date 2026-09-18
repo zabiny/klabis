@@ -21,15 +21,12 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 
 /**
@@ -181,37 +178,6 @@ class EventRepositoryAdapter implements EventRepository {
         long total = pageable.isUnpaged() ? results.size() : jdbcAggregateTemplate.count(criteriaQuery, EventMemento.class);
 
         return new PageImpl<>(results, pageable, total);
-    }
-
-    @Override
-    public Set<Integer> findImportedOrisIds(Collection<Integer> candidateOrisIds) {
-        if (candidateOrisIds.isEmpty()) {
-            return Set.of();
-        }
-        MapSqlParameterSource params = new MapSqlParameterSource("ids", candidateOrisIds);
-        List<Integer> found = namedJdbc.query(
-                "SELECT oris_id FROM events.events WHERE oris_id IN (:ids)",
-                params,
-                (rs, rowNum) -> rs.getInt(1)
-        );
-        return new HashSet<>(found);
-    }
-
-    @Override
-    public boolean existsByOrisId(int orisId) {
-        return jdbcRepository.existsByOrisId(orisId);
-    }
-
-    @Override
-    public List<Event> findAllUpcomingOrisEvents(LocalDate today) {
-        Criteria criteria = Criteria
-                .where("status").in(List.of(EventStatus.DRAFT.name(), EventStatus.ACTIVE.name()))
-                .and("event_date").greaterThanOrEquals(today)
-                .and("oris_id").isNotNull();
-        Iterable<EventMemento> mementos = jdbcAggregateTemplate.findAll(Query.query(criteria), EventMemento.class);
-        return StreamSupport.stream(mementos.spliterator(), false)
-                .map(EventMemento::toEvent)
-                .toList();
     }
 
     /**

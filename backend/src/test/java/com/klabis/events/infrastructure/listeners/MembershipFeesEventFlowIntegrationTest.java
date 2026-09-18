@@ -12,11 +12,7 @@ import com.klabis.members.Members;
 import com.klabis.members.application.AllMembersPort;
 import com.klabis.membershipfees.MemberFeeSelectionResolvedEvent;
 import com.klabis.membershipfees.MemberMissedFeeSelectionEvent;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
@@ -37,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>{@link MemberFeeSelectionResolvedEvent} → member registration block gets lifted</li>
  * </ul>
  */
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE, extraIncludes = "membershipfees")
+@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES, extraIncludes = {"membershipfees", "sync"})
 @ActiveProfiles("test")
 @CleanupTestData
 @Import(TestApplicationConfiguration.class)

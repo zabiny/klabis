@@ -102,6 +102,29 @@ class FieldLevelAuthorizationTest {
             @OwnerVisible JsonNullable<String> ownerOnlyField
     ) {}
 
+    // JsonNullable<T> response fields go through a second ValueSerializerModifier
+    // (org.openapitools:jackson-databind-nullable's JsonNullableJackson3Module), registered
+    // independently of FieldSecurityJacksonModule with no defined order between the two. This
+    // record exists to prove @HasAuthority still gates a JsonNullable-typed property despite that.
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
+    record JsonNullableFieldResponse(
+            String publicField,
+            @HasAuthority(Authority.MEMBERS_MANAGE)
+            JsonNullable<String> hasAuthorityJsonNullableField
+    ) {}
+
+    // No @JsonInclude(NON_NULL) here on purpose: under NON_NULL, JsonNullable.undefined() and
+    // JsonNullable.of(null) can both end up omitted, which would hide the distinction this test
+    // record exists to observe — a defined-but-null value must still serialize as an explicit
+    // `null`, not be silently dropped like the undefined case.
+    @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
+    record JsonNullableDefinedNullFieldResponse(
+            String publicField,
+            @HasAuthority(Authority.MEMBERS_MANAGE)
+            JsonNullable<String> hasAuthorityJsonNullableField
+    ) {}
+
     @MvcComponent
     @RestController
     static class TestController {
@@ -159,6 +182,24 @@ class FieldLevelAuthorizationTest {
         @OwnerVisible
         ResponseEntity<String> getOwnerOnlyResource(@PathVariable @OwnerId UUID id) {
             return ResponseEntity.ok("owner-only-data");
+        }
+
+        @GetMapping(value = "/test/json-nullable-field-auth", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        EntityModel<JsonNullableFieldResponse> getJsonNullableFieldData() {
+            return EntityModel.of(new JsonNullableFieldResponse(
+                    "public-value", JsonNullable.of("secret-value")));
+        }
+
+        @GetMapping(value = "/test/json-nullable-field-auth-undefined", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        EntityModel<JsonNullableFieldResponse> getJsonNullableFieldDataUndefined() {
+            return EntityModel.of(new JsonNullableFieldResponse(
+                    "public-value", JsonNullable.undefined()));
+        }
+
+        @GetMapping(value = "/test/json-nullable-field-auth-defined-null", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        EntityModel<JsonNullableDefinedNullFieldResponse> getJsonNullableFieldDataDefinedNull() {
+            return EntityModel.of(new JsonNullableDefinedNullFieldResponse(
+                    "public-value", JsonNullable.of(null)));
         }
     }
 
@@ -565,6 +606,58 @@ class FieldLevelAuthorizationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"publicField\": \"new-value\"}"))
                     .andExpect(status().is2xxSuccessful());
+        }
+    }
+
+    @Nested
+    @DisplayName("@HasAuthority on a JsonNullable<T> response field")
+    class JsonNullableFieldAuthorization {
+
+        @Test
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        @DisplayName("authorized user sees the JsonNullable field's value")
+        void authorizedUserSeesJsonNullableField() throws Exception {
+            mockMvc.perform(get("/test/json-nullable-field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.hasAuthorityJsonNullableField").value("secret-value"));
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("unauthorized user does not see the JsonNullable field, even though it is present")
+        void unauthorizedUserDoesNotSeeJsonNullableField() throws Exception {
+            mockMvc.perform(get("/test/json-nullable-field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.hasAuthorityJsonNullableField").doesNotExist());
+        }
+
+        @Test
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        @DisplayName("undefined JsonNullable still serializes as absent for an authorized caller")
+        void authorizedUserStillSeesUndefinedAsAbsent() throws Exception {
+            // Guards against a fix that "hides" a field by making SecuredBeanPropertyWriter
+            // always write null instead of delegating to the JsonNullable writer's own
+            // undefined-skip logic — that would satisfy the two tests above while silently
+            // breaking JsonNullable's tri-state contract for authorized callers.
+            mockMvc.perform(get("/test/json-nullable-field-auth-undefined").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.hasAuthorityJsonNullableField").doesNotExist());
+        }
+
+        @Test
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        @DisplayName("a defined-but-null JsonNullable still serializes as explicit null for an authorized caller")
+        void authorizedUserSeesDefinedNullAsExplicitNull() throws Exception {
+            // The third leg of the tri-state: defined-null must be distinguishable from
+            // undefined. If the security wrapper collapsed both to "absent", this would pass
+            // the undefined-case test above for the wrong reason.
+            mockMvc.perform(get("/test/json-nullable-field-auth-defined-null").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.publicField").value("public-value"))
+                    .andExpect(jsonPath("$.hasAuthorityJsonNullableField").value(org.hamcrest.Matchers.nullValue()));
         }
     }
 }

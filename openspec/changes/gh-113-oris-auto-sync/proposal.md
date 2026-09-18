@@ -1,105 +1,72 @@
 ## Why
 
-GitHub issue #113 ("Automaticky vytvaret a synchronizovat (a tagovat pro ktere skupiny, termin prihlasek -1D,..) akce z ORIS k diskuzi jak a co implementovat", milestone `MVP`, labels `ORIS`, `přihlašovatel`, `question`) asks for automatic mass synchronization of ORIS events into klabis, including:
-- automatic periodic import of newly-published ORIS events,
-- automatic refresh when existing ORIS events change upstream,
-- tagging imported events with the training groups they are relevant to,
-- per-group adjustments such as "registration deadline minus one day" (so the club's internal registration closes one day before the ORIS upstream deadline, leaving a buffer for the organizer to forward the list).
+GitHub issue #113 ("Automaticky vytvaret a synchronizovat (a tagovat pro ktere skupiny, termin prihlasek -1D,..) akce z ORIS", milestone `MVP`, labels `ORIS`, `přihlašovatel`, `question`) asks for automatic mass import of ORIS events. Today a manager must open the "Import z ORISu" dialog and pick events by hand; a newly published ORIS event stays invisible to the club until somebody remembers to look.
 
-Today the `events` spec supports **manual, one-event-at-a-time** import from ORIS:
-- `ORIS Import Includes Registration Deadline` — imports a single event including its primary entry deadline.
-- `ORIS Import Tolerates Missing Location` — imports even if upstream location is missing.
-- `Row-Level Management Actions in Events Table` — managers can trigger a "Synchronizovat" action on individual ORIS-imported events.
+Everything that happens *after* an event is imported is already solved. The bidirectional synchronisation engine (`data-synchronization` capability) keeps every imported event in step with ORIS, detects upstream changes, escalates a manager's local edit as a conflict instead of overwriting it, and retries failures with backoff. The gap is narrower than when this issue was filed: **nothing discovers newly published ORIS events and enrols them on its own**.
 
-There is no:
-- automatic bulk import schedule,
-- notification when new ORIS events appear,
-- group-tagging mechanism linking ORIS events to training groups,
-- internal-deadline offset vs. the ORIS upstream deadline,
-- change detection / diff view on ORIS refresh.
+This change closes exactly that gap — scheduled discovery and automatic import. The other two features bundled in issue #113 are split into their own changes, since neither depends on the import schedule:
 
-The issue is labelled `question` because the scope is broad. This proposal covers the full set; open questions at the end capture the decision points.
+- `gh-113-event-training-group-tagging` — tagging events with the training groups they are relevant to
+- `gh-113-oris-internal-deadline-offset` — the club's internal registration deadline ahead of the ORIS one
+
+## What Changes
+
+- **Persisted ORIS import settings.** A single club-level configuration for which ORIS events to pick up, replacing today's values hardcoded in `OrisController` (region `JIHOMORAVSKA`, window "today .. today + 1 year"). Editable by a manager on a settings page. The exact set of fields is an open question below.
+- **Scheduled discovery.** A recurring job asks ORIS for events matching the configured rules, drops the ones already present, and imports the rest. Can be switched off.
+- **Automatic import and enrolment.** Each discovered event is created through the existing single-event import path, so it is enrolled into the synchronisation engine on creation exactly like a manually imported one. From that moment the engine owns it — no separate refresh mechanism is introduced.
+- **Manual trigger.** A manager can run the discovery immediately instead of waiting for the schedule.
+- **Run visibility.** The outcome of the last run (when, how many found / imported / skipped / failed) is visible to a manager, so a silently failing job is noticeable.
+- **Import settings page** in the administration area, plus a marker in the events list distinguishing automatically imported events.
+
+Explicitly **not** in this change: group tagging, the internal deadline offset, notifications about newly discovered events (issue #91 — the project has no notification engine yet), and any change to conflict handling or retry behaviour.
 
 ## Capabilities
 
 ### New Capabilities
 
-<!-- None required at the capability level — the ORIS integration lives inside the `events` capability today. An open question asks whether a dedicated `oris-integration` capability is warranted. -->
+- `oris-import`: scheduled discovery and automatic import of ORIS events, and the club-level settings that drive it.
+
+Rationale for a separate capability rather than extending `events`: this is about *acquiring* events from an upstream system on a schedule, which has its own settings, its own permissions surface and its own failure modes. The `events` capability describes what an event is and what a manager can do with one; `data-synchronization` describes how an already-linked entity is kept in step. Neither is a natural home for an import schedule. The existing manual-import requirements stay where they are.
 
 ### Modified Capabilities
 
-- `events`: extend the existing ORIS import requirements with scheduled auto-import, auto-refresh on change, event→group tagging, and the deadline-offset feature.
-- `calendar-items`: indirectly affected — when an ORIS event updates (e.g., deadline shifts), the already-synced calendar items must reconcile (the automatic-sync requirement already covers this, but we confirm it handles the ORIS-triggered update path).
-- Possibly `user-groups`: if group-tagging is bi-directional (i.e., a training group's detail page lists relevant upcoming events), that spec needs scenarios too.
+- `events`: the existing ORIS import requirements (`Multi-Event ORIS Import`, `ORIS Import Includes Registration Deadlines`, `ORIS Import Tolerates Missing Location`, `ORIS Import Auto-Maps Event Type by Name`) gain the notion that an event may arrive without a manager selecting it, and that such an event is marked as automatically imported. The import rules themselves (which fields are read, how the event type is mapped) are unchanged.
+
+`data-synchronization` is **not** modified: an automatically imported event is enrolled through the same port and behaves identically to a manually imported one from the engine's point of view.
 
 ## Impact
 
-**Affected specs:**
-- `openspec/specs/events/spec.md` — new requirements (or extensions) covering: "Automatic ORIS Bulk Import" (scheduled), "ORIS Change Detection on Re-Import" (what happens to fields that were manually overridden — see #112), "Event-to-Group Tagging" (optional per-event training-group association, manual or auto), "Registration Deadline Offset" (per-event or per-group).
-- Possibly new `openspec/specs/oris-integration/spec.md` if the team prefers a dedicated capability.
+**Affected code (backend):**
 
-**Affected code (backend, events module):**
-- A new scheduled job that queries ORIS for events matching the club's organizer code / region / date range and imports/refreshes them.
-- Change detection logic comparing fresh ORIS data with the stored event; decides update vs. conflict (coordinated with #112).
-- A new `tags` / `relevantGroups` collection on the event aggregate, plus rules for auto-assignment (by distance, by competition level, by age-range overlap with training groups — all open).
-- A new "internal registration deadline" field distinct from the ORIS-upstream deadline (or a global club-level offset).
+- `com.klabis.oris` — a new settings aggregate and its persistence; a new discovery service holding the logic currently inlined in `OrisController.listOrisEvents` (build the ORIS filter, merge regions, drop already-imported ids, order by date), so that both the interactive dialog and the scheduled job share one implementation; a new scheduled job following the pattern established by `SyncScheduler` (cron from configuration, per-item try/catch so one failure cannot abort the run).
+- `com.klabis.events.application.OrisEventImportService` — unchanged in behaviour. The job MUST import through `importEventFromOris`, which already creates the event and calls `synchronizationPort.enroll` in one transaction. Bypassing it would create events invisible to the synchronisation engine; this is the main implementation risk of this change.
+- `Event` — a flag distinguishing an automatically imported event from a manually imported one.
 
-**Affected code (frontend):**
-- Possibly a new settings page for ORIS auto-import rules (region, date range, offset, etc.).
-- Events list: visual marker for ORIS-auto-imported events; affordance to "ignore" an imported event.
-- Event detail: group-tag badges and editable tag list.
+**APIs (REST):** additive — read/update of the import settings, a "run discovery now" action, and the last-run summary. All under `EVENTS:MANAGE`.
 
-**APIs (REST):** additive — endpoints for the new settings, tag management, and possibly a manual "trigger auto-import now" affordance for debugging.
+**Data:** a settings table (single row) and a column on `events` marking automatic import. No migration of existing data: events imported before this change stay marked as manual.
 
-**Dependencies:** ORIS client library / API access already exists (for single-event import). Scheduling infrastructure already exists (for `Automatic Event Completion`).
+**Dependencies:** none new. `oris-client` already provides event listing; the Spring scheduling infrastructure is already in use by `SyncScheduler` and `SyncHistoryRetentionJob`.
 
-**Data:** new tables or columns for auto-import rules, event tags, internal deadline offset.
+**Notable constraint:** `OrisEventListFilter` — the only filter the ORIS API accepts — carries exactly four fields: `region`, `dateFrom`, `dateTo`, `officialOnly`. Any rule beyond these (competition level / ranking, organizer, event type) cannot be pushed to ORIS and would have to be applied client-side after fetching the list. This bounds the settings design and is the reason the field set is an open question rather than a decided list.
 
 ## Open Questions
 
-All questions below MUST be answered before the next OpenSpec artifacts (specs, design, tasks) are created for this change. This is a broad change with many forks; the team should decide scope before investing in design.
+1. **Which fields does the settings page expose?**
 
-1. **Scope for this proposal.** The issue bundles four related features: scheduled import, change detection, group tagging, deadline offset. Options:
-   - (a) Tackle all four in this proposal.
-   - (b) Split into four proposals (scheduled import / change detection / group tagging / deadline offset) — each can be decided independently.
-   - (c) Do only scheduled import now (biggest value, unblocks everything else) and split the rest out.
+   The ORIS API can filter only by region, date range and "official events only". Everything else must be filtered on our side after fetching.
 
-   Recommend: Option (c).
+   To decide: which of these belong in the MVP?
+   - region — multiple values, or one? (the dialog already accepts a list)
+   - how far ahead to look — a number of months rather than today's fixed one year
+   - official events only — yes/no
+   - client-side filters: competition level / ranking, organizer, event type — worth the extra complexity now, or defer?
+   - the schedule itself — fixed (nightly), or manager-editable?
 
-2. **Auto-import trigger and frequency.**
-   - Periodic schedule (daily? nightly?).
-   - On-demand only (user clicks a "refresh from ORIS" button on the events list — partially already there at the single-event level; at the bulk level, new).
-   - Both (scheduled + manual trigger).
+2. **How many events may one run import?** A first run against a year-wide window can match hundreds of events. Is a cap per run needed, and what happens to the remainder — next run, or reported as skipped?
 
-3. **Auto-import scope — which ORIS events are imported?**
-   - Events matching the club's organizer code (where the club itself is organizer).
-   - Events within a configured region.
-   - Events within a configured date range (next N months).
-   - Events matching a configured competition-level (ČR / Morava / regional).
-   - Combination — configurable on a settings page.
+3. **Is an automatically imported event created as DRAFT?** A manually imported event's status follows the existing import rules. An event nobody asked for arguably should not go straight to the members' calendar, which argues for DRAFT and an explicit publish. To confirm against the current import behaviour.
 
-4. **Change detection on re-import vs. manual overrides.** Coordinate with proposal #112 (add-event-supplementary-services / edit-overrides). If a manager manually edited a field, should an ORIS change overwrite it, skip it, or flag a conflict for review?
+4. **Can a manager reject a discovered event?** Without it, an unwanted event is imported again on the next run after being deleted. A per-event "ignore" list would prevent that. Needed for MVP, or acceptable to leave out?
 
-5. **Group tagging — manual or automatic?**
-   - Manual: event managers pick which training groups the event is relevant to.
-   - Automatic: system infers from age category overlap, distance to location, competition level.
-   - Both (auto as default, manual override).
-
-6. **"Registration deadline -1D".** What does "-1D" mean?
-   - Option A: a global club-level offset — every ORIS event's internal deadline is stored as ORIS deadline minus 24 hours.
-   - Option B: per-group offset (larger kids can register later than younger ones).
-   - Option C: per-event manual offset set at import time.
-
-   Recommend: Option A for MVP.
-
-7. **Internal vs. upstream deadline semantics.** If the klabis internal deadline has passed but the ORIS upstream has not, can members still register "post-deadline" through an admin? Tie-in with issue #99 ("koho mam dohlasit rucne"). Confirm this is out of scope here.
-
-8. **Notification on new ORIS events (#91).** Related issue #91 ("Chci být informován o nových akcích z ORISu") depends on the auto-import existing. Scope: does this proposal also deliver the notification, or just the import?
-
-9. **Idempotency / dedup.** If an ORIS event is re-imported, the system must match it to the existing record by ORIS id, not by name/date. Is the ORIS id already stored per event? Confirm.
-
-10. **New capability vs. extension.** Is this large enough to warrant a new `oris-integration` capability, or should it stay inside `events`? Recommend: extension of `events` for now; promote to its own capability only if ORIS integration grows further (CUS sync, etc.).
-
-11. **Where does the "ORIS auto-import settings" UI live?** Admin area, next to member permissions management. Confirm.
-
-12. **Permissions.** Who can configure auto-import rules? `EVENTS:MANAGE` or a new dedicated permission? Recommend: `EVENTS:MANAGE` to keep permissions surface small.
+5. **Where does the settings page live?** Administration area, next to the other club-level settings — to confirm.
