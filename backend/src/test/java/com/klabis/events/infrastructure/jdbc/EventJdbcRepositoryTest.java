@@ -514,67 +514,6 @@ class EventJdbcRepositoryTest {
     }
 
     @Nested
-    @DisplayName("existsByOrisId() — ORIS duplicate detection")
-    class ExistsByOrisId {
-
-        @Test
-        @DisplayName("should return true for a saved event with the given orisId")
-        void shouldReturnTrueForSavedEventWithOrisId() {
-            // Given
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(9876)
-                    .name("ORIS Imported Event")
-                    .eventDate(LocalDate.of(2026, 8, 15))
-                    .location("Test Location")
-                    .organizer("OOB")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=9876"))
-                    .build());
-            eventRepository.save(event);
-
-            // When & Then
-            assertThat(eventRepository.existsByOrisId(9876)).isTrue();
-        }
-
-        @Test
-        @DisplayName("should return false when no event with the given orisId exists")
-        void shouldReturnFalseWhenNoEventWithOrisId() {
-            // When & Then
-            assertThat(eventRepository.existsByOrisId(99999)).isFalse();
-        }
-
-        @Test
-        @DisplayName("should reject duplicate orisId via unique constraint")
-        void shouldRejectDuplicateOrisIdViaUniqueConstraint() {
-            // Given — save the first event with orisId 1111
-            Event first = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(1111)
-                    .name("First ORIS Event")
-                    .eventDate(LocalDate.of(2026, 9, 1))
-                    .location("Location A")
-                    .organizer("PRG")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111"))
-                    .build());
-            eventRepository.save(first);
-
-            // When — create and save a second event with same orisId
-            Event second = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(1111)
-                    .name("Duplicate ORIS Event")
-                    .eventDate(LocalDate.of(2026, 9, 10))
-                    .location("Location B")
-                    .organizer("BRN")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1111"))
-                    .build());
-
-            // Then — DB unique constraint rejects the duplicate
-            org.junit.jupiter.api.Assertions.assertThrows(
-                    Exception.class,
-                    () -> eventRepository.save(second)
-            );
-        }
-    }
-
-    @Nested
     @DisplayName("Unique constraint on (event_id, member_id)")
     class UniqueConstraintEventMember {
 
@@ -1658,49 +1597,6 @@ class EventJdbcRepositoryTest {
             EventRegistration registration = reloaded.findRegistration(memberId).orElseThrow();
             assertThat(registration.wantsSharedTransport()).isFalse();
             assertThat(registration.wantsSharedAccommodation()).isTrue();
-        }
-    }
-
-    @Nested
-    @DisplayName("findImportedOrisIds() — batch lookup of already-imported ORIS IDs")
-    class FindImportedOrisIds {
-
-        @Test
-        @DisplayName("should return only the candidate IDs that already exist in DB")
-        void shouldReturnOnlyExistingCandidateIds() {
-            eventRepository.save(Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(1001).name("Imported Race A").eventDate(LocalDate.of(2026, 8, 1))
-                    .location("Location").organizer("OOB")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1001")).build()));
-            eventRepository.save(Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(1002).name("Imported Race B").eventDate(LocalDate.of(2026, 8, 2))
-                    .location("Location").organizer("OOB")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=1002")).build()));
-
-            Set<Integer> result = eventRepository.findImportedOrisIds(List.of(1001, 1002, 9999));
-
-            assertThat(result).containsExactlyInAnyOrder(1001, 1002);
-        }
-
-        @Test
-        @DisplayName("should return empty set when no candidates match")
-        void shouldReturnEmptySetWhenNoCandidatesMatch() {
-            eventRepository.save(Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(2001).name("Race Z").eventDate(LocalDate.of(2026, 9, 1))
-                    .location("Location").organizer("OOB")
-                    .websiteUrl(new WebsiteUrl("https://oris.ceskyorientak.cz/Zavod?id=2001")).build()));
-
-            Set<Integer> result = eventRepository.findImportedOrisIds(List.of(9998, 9997));
-
-            assertThat(result).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should return empty set for empty candidate collection without querying DB")
-        void shouldReturnEmptySetForEmptyCandidateCollection() {
-            Set<Integer> result = eventRepository.findImportedOrisIds(List.of());
-
-            assertThat(result).isEmpty();
         }
     }
 

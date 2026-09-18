@@ -1,9 +1,7 @@
 package com.klabis.events.domain;
 
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 /**
@@ -27,26 +25,6 @@ public interface EventRepository extends Events {
      * @return the saved event with generated ID
      */
     Event save(Event event);
-
-    /**
-     * Checks if an event with the given ORIS ID already exists.
-     * Used to prevent duplicate imports from ORIS.
-     *
-     * @param orisId the ORIS event identifier
-     * @return true if an event with this orisId already exists
-     */
-    boolean existsByOrisId(int orisId);
-
-    /**
-     * Returns the subset of {@code candidateOrisIds} that already have a matching event in the repository.
-     * <p>
-     * Uses a single batch {@code IN (:ids)} query. Returns empty set immediately when
-     * {@code candidateOrisIds} is empty — avoids invalid {@code IN ()} SQL.
-     *
-     * @param candidateOrisIds ORIS IDs to check; may be empty
-     * @return IDs from the candidate set that are already imported
-     */
-    Set<Integer> findImportedOrisIds(Collection<Integer> candidateOrisIds);
 
     /**
      * Returns all DRAFT or ACTIVE events whose event date is on or after {@code today}

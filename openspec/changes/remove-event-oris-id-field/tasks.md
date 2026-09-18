@@ -9,15 +9,15 @@
 
 ## 2. Events module: re-point the "already imported" filter
 
-- [ ] 2.1 Write/update test for `ImportedOrisEventsService.findImportedOrisIds` asserting it now sources from `SynchronizationPort.findByExternalReferences` instead of `EventRepository`, including the `RETIRED`-still-excluded case
-- [ ] 2.2 Update `ImportedOrisEventsService` to call `synchronizationPort.findByExternalReferences(EVENT, ORIS, candidateOrisIds as strings)` and map `externalReference().externalId()` back to `Set<Integer>`
-- [ ] 2.3 Remove `EventRepository.findImportedOrisIds`, `EventJdbcRepository.findImportedOrisIds`, `EventRepositoryAdapter.findImportedOrisIds`
-- [ ] 2.4 Run `OrisController` / `ImportOrisEventModal`-covering integration tests, confirm the "already imported events are not offered" scenario still passes unchanged
+- [x] 2.1 Write/update test for `ImportedOrisEventsService.findImportedOrisIds` asserting it now sources from `SynchronizationPort.findByExternalReferences` instead of `EventRepository`, including the `RETIRED`-still-excluded case
+- [x] 2.2 Update `ImportedOrisEventsService` to call `synchronizationPort.findByExternalReferences(EVENT, ORIS, candidateOrisIds as strings)` and map `externalReference().externalId()` back to `Set<Integer>`
+- [x] 2.3 Remove `EventRepository.findImportedOrisIds`, `EventJdbcRepository.findImportedOrisIds`, `EventRepositoryAdapter.findImportedOrisIds`
+- [x] 2.4 Run `OrisController` / `ImportOrisEventModal`-covering integration tests, confirm the "already imported events are not offered" scenario still passes unchanged
 
 ## 3. Events module: remove the dead duplicate-import guard
 
-- [ ] 3.1 Confirm (grep) `EventRepository.existsByOrisId` has no remaining callers
-- [ ] 3.2 Remove `EventRepository.existsByOrisId`, `EventJdbcRepository.existsByOrisId`, `EventRepositoryAdapter.existsByOrisId`
+- [x] 3.1 Confirm (grep) `EventRepository.existsByOrisId` has no remaining callers
+- [x] 3.2 Remove `EventRepository.existsByOrisId`, `EventJdbcRepository.existsByOrisId`, `EventRepositoryAdapter.existsByOrisId`
 
 ## 4. REST layer: affordance gate reuses existing enrolment flag
 
