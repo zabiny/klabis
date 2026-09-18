@@ -31,6 +31,42 @@ public interface SynchronizationPort {
     SyncRecord enroll(SyncTarget target, ExternalReference externalReference);
 
     /**
+     * Brings in a record Klabis does not have (design.md "Domain Changes", D1-D4,
+     * D8): creates the local entity from the external system's record, pairs it, and
+     * runs the initial pass, which establishes the baseline (design.md D3 — an
+     * ordinary pass, no special path). A single attempt is recorded, from that pass
+     * (design.md D4).
+     * <p>
+     * Three branches depending on what {@code externalReference} already resolves to
+     * (design.md D8's sequence diagram): no pairing — create, pair and run the
+     * initial pass; a retired pairing — reactivate it (discarding its stale
+     * baseline, design.md D6) and run a pass; an active pairing — run an ordinary
+     * pass, letting the decision table resolve the direction (design.md D5 — this is
+     * not a forced pull).
+     * <p>
+     * The operation cannot be transactional as a whole (design.md D8): the external
+     * system is called with no transaction open; creation and pairing commit
+     * together, and the pass that follows commits its own outcome separately.
+     *
+     * @param entityType   the kind of Klabis entity to create — the adapter registry
+     *                     is keyed on entity type and system together, and an
+     *                     external reference alone does not say what kind of thing
+     *                     it points at (design.md D1)
+     * @param actingUser   opaque identifier of the user who triggered this import
+     *                     (design.md D15), carried by the single attempt the initial
+     *                     pass appends
+     * @throws UnknownSyncEntityTypeException     if no adapter is registered for the
+     *                                             entity type and external system
+     * @throws UnsupportedOperationException      if the adapter does not declare
+     *                                             {@link com.klabis.sync.domain.SyncCapabilities#createsLocal()}
+     * @throws SyncRecordNeedsResolutionException if an existing active pairing is
+     *                                             {@code CONFLICT} or {@code FAILED}
+     *                                             and needs a decision first
+     *                                             (design.md D5)
+     */
+    SyncRecord pullAndEnroll(SyncEntityType entityType, ExternalReference externalReference, String actingUser);
+
+    /**
      * Looks up the synchronisation record for a Klabis entity by target alone — no
      * external system in the call, unlike {@link #enroll} (design.md D14's REST
      * resources are addressed by entity type and id only, since a caller reading or

@@ -24,15 +24,15 @@
 
 ## 4. Bringing in a record Klabis does not have
 
-- [ ] 4.1 RED: integration test — the operation creates the entity, links the pairing, establishes the baseline, and records exactly one attempt carrying the acting user
-- [ ] 4.2 GREEN: add `pullAndEnroll(SyncEntityType, ExternalReference, String actingUser)` to `SynchronizationPort` and implement the no-pairing branch: resolve the adapter, `readExternal`, `createLocal`, `enroll`, then run the ordinary pass (design D3, D4, D8)
-- [ ] 4.3 RED: integration test — an adapter that does not declare `createsLocal` has the operation refused, and nothing is created
-- [ ] 4.4 GREEN: add the capability gate
-- [ ] 4.5 RED: integration test — no adapter registered for the entity type and system is refused with a clear exception
-- [ ] 4.6 GREEN: add the registry lookup failure
-- [ ] 4.7 RED: integration test — the external system cannot be read: no entity is created and no pairing is left behind
-- [ ] 4.8 GREEN: whatever 4.7 exposes
-- [ ] 4.9 REFACTOR: keep the external calls outside every transaction boundary; creation and enrolment commit together, the pass commits its own outcome
+- [x] 4.1 RED: integration test — the operation creates the entity, links the pairing, establishes the baseline, and records exactly one attempt carrying the acting user
+- [x] 4.2 GREEN: add `pullAndEnroll(SyncEntityType, ExternalReference, String actingUser)` to `SynchronizationPort` and implement the no-pairing branch: resolve the adapter, `readExternal`, `createLocal`, `enroll`, then run the ordinary pass (design D3, D4, D8)
+- [x] 4.3 RED: integration test — an adapter that does not declare `createsLocal` has the operation refused, and nothing is created
+- [x] 4.4 GREEN: add the capability gate
+- [x] 4.5 RED: integration test — no adapter registered for the entity type and system is refused with a clear exception
+- [x] 4.6 GREEN: add the registry lookup failure
+- [x] 4.7 RED: integration test — the external system cannot be read: no entity is created and no pairing is left behind
+- [x] 4.8 GREEN: whatever 4.7 exposes
+- [x] 4.9 REFACTOR: keep the external calls outside every transaction boundary; creation and enrolment commit together, the pass commits its own outcome
 
 ## 5. Bringing in a record that is already linked
 

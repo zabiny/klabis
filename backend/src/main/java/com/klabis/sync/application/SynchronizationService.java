@@ -41,6 +41,7 @@ class SynchronizationService implements SynchronizationPort {
     private final RetryScheduler retryScheduler;
     private final SyncRecordClaimer claimer;
     private final SyncOutcomeWriter outcomeWriter;
+    private final SyncRecordCreator recordCreator;
     private final Clock clock;
 
     SynchronizationService(
@@ -53,6 +54,7 @@ class SynchronizationService implements SynchronizationPort {
             SyncProperties properties,
             SyncRecordClaimer claimer,
             SyncOutcomeWriter outcomeWriter,
+            SyncRecordCreator recordCreator,
             Clock clock
     ) {
         this.syncRecordRepository = syncRecordRepository;
@@ -64,6 +66,7 @@ class SynchronizationService implements SynchronizationPort {
         this.retryScheduler = new RetryScheduler(properties);
         this.claimer = claimer;
         this.outcomeWriter = outcomeWriter;
+        this.recordCreator = recordCreator;
         this.clock = clock;
     }
 
@@ -79,6 +82,69 @@ class SynchronizationService implements SynchronizationPort {
         // record has a schedule row" invariant).
         syncScheduleRepository.createFor(saved.getId());
         return saved;
+    }
+
+    /**
+     * Brings in a record Klabis does not have (design.md "Domain Changes", D1-D4, D8):
+     * three branches depending on what the external reference already resolves to.
+     * Deliberately carries no {@code @Transactional} of its own — the external calls
+     * in the "no pairing" branch and the pass that follows every branch must run with
+     * no transaction open (design.md D8, D12); only the collaborators this method
+     * calls (each a genuine cross-bean call, so their own {@code @Transactional}
+     * boundaries actually apply) commit anything.
+     */
+    @Override
+    public SyncRecord pullAndEnroll(SyncEntityType entityType, ExternalReference externalReference, String actingUser) {
+        SynchronizationAdapter adapter = adapterRegistry.find(entityType, externalReference.system())
+                .orElseThrow(() -> new UnknownSyncEntityTypeException(entityType, externalReference.system()));
+
+        Optional<SyncRecord> existing = syncRecordRepository.findBySystemAndExternalId(externalReference.system(), externalReference.externalId());
+
+        SyncRecordId recordId;
+        if (existing.isEmpty()) {
+            recordId = createAndPair(entityType, externalReference, adapter).getId();
+        } else if (existing.get().getStatus() == SyncStatus.RETIRED) {
+            recordId = reactivate(existing.get()).getId();
+        } else if (existing.get().getStatus() == SyncStatus.CONFLICT || existing.get().getStatus() == SyncStatus.FAILED) {
+            throw new SyncRecordNeedsResolutionException(existing.get().getId(), existing.get().getStatus());
+        } else {
+            recordId = existing.get().getId();
+        }
+
+        SyncRecord claimed = claimer.claim(recordId);
+        return runPass(claimed, adapter, SyncTriggerKind.MANUAL, actingUser);
+    }
+
+    /**
+     * The "no pairing" branch (design.md D8's sequence diagram): reads the external
+     * system with no transaction open, then creates the local entity and pairs it —
+     * committing together (design.md D8) — through {@link SyncRecordCreator}, a
+     * separate bean so that commit is a genuine cross-bean call.
+     *
+     * @throws UnsupportedOperationException if the adapter does not declare
+     *                                        {@link SyncCapabilities#createsLocal()}
+     *                                        (the default {@link SynchronizationAdapter#createLocal}
+     *                                        throws it)
+     */
+    private SyncRecord createAndPair(SyncEntityType entityType, ExternalReference externalReference, SynchronizationAdapter adapter) {
+        if (!adapter.capabilities().createsLocal()) {
+            throw new UnsupportedOperationException(
+                    "This adapter does not support creating the local side — declare SyncCapabilities.createsLocal and override createLocal");
+        }
+        SyncProjection externalProjection = resilientAdapterExecutor.call(() -> adapter.readExternal(externalReference.externalId()));
+        String entityId = resilientAdapterExecutor.call(() -> adapter.createLocal(externalProjection));
+        SyncTarget target = new SyncTarget(entityType, entityId);
+        return recordCreator.createAndPair(target, externalReference);
+    }
+
+    /**
+     * The "pairing retired" branch (design.md D6, D7): discards the stale baseline
+     * and puts the pairing back into the pre-baseline state, committing on its own
+     * before the pass that follows (design.md D8).
+     */
+    private SyncRecord reactivate(SyncRecord record) {
+        ScheduleEffect scheduleEffect = record.reactivate(clock.instant());
+        return recordCreator.persistReactivation(record, scheduleEffect);
     }
 
     @Transactional(readOnly = true)

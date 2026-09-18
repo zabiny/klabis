@@ -25,6 +25,7 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
     private int fireHookOnLocalReadNumber = -1;
     private Runnable countedHook;
     private final java.util.Deque<RuntimeException> readExternalFailures = new java.util.ArrayDeque<>();
+    private int createLocalCallCount = 0;
 
     public TestSynchronizationAdapter(SyncEntityType entityType, ExternalSystem system) {
         this.entityType = entityType;
@@ -108,6 +109,7 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
         this.fireHookOnLocalReadNumber = -1;
         this.countedHook = null;
         this.readExternalFailures.clear();
+        this.createLocalCallCount = 0;
     }
 
     public int externalReadCount() {
@@ -192,5 +194,27 @@ public class TestSynchronizationAdapter implements SynchronizationAdapter {
             throw new UnsupportedOperationException("This test adapter does not declare an outward write capability");
         }
         externalState.put(externalId, (TestSyncProjection) projection);
+    }
+
+    /**
+     * Builds a local entity id deterministically from the external projection's
+     * {@code value} (used as the external id by every test in this class's package)
+     * and seeds the local state under that id, so the pass that runs right after
+     * creation reads back exactly what was just created (design.md D3).
+     */
+    @Override
+    public String createLocal(SyncProjection projection) {
+        if (!capabilities.createsLocal()) {
+            return SynchronizationAdapter.super.createLocal(projection);
+        }
+        createLocalCallCount++;
+        TestSyncProjection testProjection = (TestSyncProjection) projection;
+        String entityId = "created-from-" + testProjection.value() + "-" + createLocalCallCount;
+        localState.put(entityId, testProjection);
+        return entityId;
+    }
+
+    public int createLocalCallCount() {
+        return createLocalCallCount;
     }
 }
