@@ -309,9 +309,6 @@ CREATE TABLE events.events
     registration_deadline_2 DATE        NULL,
     registration_deadline_3 DATE        NULL,
 
-    -- ORIS integration: source identifier for imported events (null for manually created events)
-    oris_id              INTEGER      NULL UNIQUE,
-
     -- Optional free-text reason provided when the event is cancelled (null when not cancelled or no reason given)
     cancellation_reason  VARCHAR(500)  NULL,
 

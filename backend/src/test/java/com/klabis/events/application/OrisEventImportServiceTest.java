@@ -152,7 +152,7 @@ class OrisEventImportServiceTest {
         void shouldThrowWhenEventNotEnrolled() {
             EventId eventId = EventId.generate();
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(9876).name("Race").eventDate(LocalDate.of(2026, 8, 1))
+                    .name("Race").eventDate(LocalDate.of(2026, 8, 1))
                     .location("Forest").organizer("OOB").build());
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
             when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
@@ -166,7 +166,7 @@ class OrisEventImportServiceTest {
         void shouldDelegateToSynchronizationEngine() {
             EventId eventId = EventId.generate();
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(9876).name("Race").eventDate(LocalDate.of(2026, 8, 1))
+                    .name("Race").eventDate(LocalDate.of(2026, 8, 1))
                     .location("Forest").organizer("OOB").build());
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
@@ -185,7 +185,7 @@ class OrisEventImportServiceTest {
         void shouldRefuseWhenRecordInConflict() {
             EventId eventId = EventId.generate();
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(9876).name("Race").eventDate(LocalDate.of(2026, 8, 1))
+                    .name("Race").eventDate(LocalDate.of(2026, 8, 1))
                     .location("Forest").organizer("OOB").build());
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 

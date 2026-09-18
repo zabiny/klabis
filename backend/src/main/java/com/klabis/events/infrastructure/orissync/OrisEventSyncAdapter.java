@@ -218,7 +218,6 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
 
     private static Event.CreateEventFromOris buildCreateFromOris(OrisEventProjection orisProjection) {
         return EventCreateEventFromOrisBuilder.builder()
-                .orisId(Objects.requireNonNull(orisProjection.orisId(), "orisId must be set by readExternal before createLocal"))
                 .name(orisProjection.name())
                 .eventDate(orisProjection.eventDate())
                 .location(orisProjection.location())

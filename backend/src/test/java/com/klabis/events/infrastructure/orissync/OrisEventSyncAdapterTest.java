@@ -123,7 +123,6 @@ class OrisEventSyncAdapterTest {
         @DisplayName("maps the Klabis event read through EventManagementPort into the canonical projection")
         void mapsEventIntoProjection() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(ORIS_ID)
                     .name("Spring Sprint")
                     .eventDate(LocalDate.of(2026, 5, 1))
                     .location("Brno Park")
@@ -157,7 +156,6 @@ class OrisEventSyncAdapterTest {
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(ORIS_ID)
                     .name("Old name")
                     .eventDate(LocalDate.of(2026, 5, 1))
                     .location("Brno Park")
@@ -196,7 +194,6 @@ class OrisEventSyncAdapterTest {
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(ORIS_ID)
                     .name("Old name")
                     .eventDate(LocalDate.of(2026, 5, 1))
                     .location("Brno Park")
@@ -224,7 +221,6 @@ class OrisEventSyncAdapterTest {
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = com.klabis.events.EventTestDataBuilder.anEvent()
-                    .withOrisId(ORIS_ID)
                     .withEventTypeId(existingTypeId)
                     .withName("Old Name")
                     .build();
@@ -260,7 +256,6 @@ class OrisEventSyncAdapterTest {
             SyncProjection secondIncoming = adapter.readExternal(String.valueOf(otherOrisId));
 
             Event otherEvent = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(otherOrisId)
                     .name("Second event")
                     .eventDate(LocalDate.of(2026, 6, 1))
                     .location("Praha Park")
@@ -284,7 +279,6 @@ class OrisEventSyncAdapterTest {
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = com.klabis.events.EventTestDataBuilder.anEvent()
-                    .withOrisId(ORIS_ID)
                     .withName("Old Name")
                     .build();
             when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
@@ -305,7 +299,6 @@ class OrisEventSyncAdapterTest {
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = com.klabis.events.EventTestDataBuilder.anEvent()
-                    .withOrisId(ORIS_ID)
                     .withEventTypeId(existingTypeId)
                     .withName("Old Name")
                     .build();
@@ -327,7 +320,6 @@ class OrisEventSyncAdapterTest {
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = com.klabis.events.EventTestDataBuilder.anEvent()
-                    .withOrisId(ORIS_ID)
                     .withEventTypeId(existingTypeId)
                     .withName("Old Name")
                     .build();
@@ -349,7 +341,7 @@ class OrisEventSyncAdapterTest {
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(ORIS_ID).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
+                    .name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
                     .location("Location").organizer("OOB").build());
             when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -370,7 +362,7 @@ class OrisEventSyncAdapterTest {
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(ORIS_ID).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
+                    .name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
                     .location("Location").organizer("OOB").build());
             when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -391,7 +383,7 @@ class OrisEventSyncAdapterTest {
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(ORIS_ID).name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
+                    .name("Old Name").eventDate(LocalDate.of(2026, 8, 1))
                     .location("Location").organizer("OOB").build());
             when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
             when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -409,7 +401,6 @@ class OrisEventSyncAdapterTest {
             EventCategory w21 = new EventCategory(EventCategoryId.generate(), "W21", "W21", null);
             LocalDate eventDate = LocalDate.now().plusDays(30);
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .orisId(ORIS_ID)
                     .name("Race")
                     .eventDate(eventDate)
                     .location("Forest")

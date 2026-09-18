@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 
 /**
@@ -179,18 +178,6 @@ class EventRepositoryAdapter implements EventRepository {
         long total = pageable.isUnpaged() ? results.size() : jdbcAggregateTemplate.count(criteriaQuery, EventMemento.class);
 
         return new PageImpl<>(results, pageable, total);
-    }
-
-    @Override
-    public List<Event> findAllUpcomingOrisEvents(LocalDate today) {
-        Criteria criteria = Criteria
-                .where("status").in(List.of(EventStatus.DRAFT.name(), EventStatus.ACTIVE.name()))
-                .and("event_date").greaterThanOrEquals(today)
-                .and("oris_id").isNotNull();
-        Iterable<EventMemento> mementos = jdbcAggregateTemplate.findAll(Query.query(criteria), EventMemento.class);
-        return StreamSupport.stream(mementos.spliterator(), false)
-                .map(EventMemento::toEvent)
-                .toList();
     }
 
     /**

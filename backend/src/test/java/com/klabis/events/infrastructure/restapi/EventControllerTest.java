@@ -2427,7 +2427,6 @@ class EventControllerTest {
         void regularMemberSeesOnlyRegisterUnregisterNotManagementActions() throws Exception {
             Event activeEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
-                    .withOrisId(42)
                     .buildPublished();
 
             when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))

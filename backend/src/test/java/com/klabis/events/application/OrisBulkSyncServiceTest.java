@@ -65,9 +65,9 @@ class OrisBulkSyncServiceTest {
         @Test
         @DisplayName("should return successCount=3, failureCount=0 when all 3 active records sync successfully")
         void shouldSyncAllSuccessfully() {
-            Event event1 = EventTestDataBuilder.anEvent().withName("Race A").withOrisId(101).build();
-            Event event2 = EventTestDataBuilder.anEvent().withName("Race B").withOrisId(102).build();
-            Event event3 = EventTestDataBuilder.anEvent().withName("Race C").withOrisId(103).build();
+            Event event1 = EventTestDataBuilder.anEvent().withName("Race A").build();
+            Event event2 = EventTestDataBuilder.anEvent().withName("Race B").build();
+            Event event3 = EventTestDataBuilder.anEvent().withName("Race C").build();
 
             SyncRecord record1 = recordFor(event1.getId(), SyncStatus.NEW);
             SyncRecord record2 = recordFor(event2.getId(), SyncStatus.NEW);
@@ -95,9 +95,9 @@ class OrisBulkSyncServiceTest {
         @Test
         @DisplayName("should return successCount=2, failureCount=1 with error when one record throws")
         void shouldAccumulateFailuresAndContinue() {
-            Event event1 = EventTestDataBuilder.anEvent().withName("Race A").withOrisId(101).build();
-            Event event2 = EventTestDataBuilder.anEvent().withName("Race B").withOrisId(102).build();
-            Event event3 = EventTestDataBuilder.anEvent().withName("Race C").withOrisId(103).build();
+            Event event1 = EventTestDataBuilder.anEvent().withName("Race A").build();
+            Event event2 = EventTestDataBuilder.anEvent().withName("Race B").build();
+            Event event3 = EventTestDataBuilder.anEvent().withName("Race C").build();
 
             SyncRecord record1 = recordFor(event1.getId(), SyncStatus.NEW);
             SyncRecord record2 = recordFor(event2.getId(), SyncStatus.NEW);
@@ -148,7 +148,7 @@ class OrisBulkSyncServiceTest {
         @Test
         @DisplayName("should count and list CONFLICT records under awaitingDecision without attempting them")
         void shouldSeparateConflictRecords() {
-            Event event1 = EventTestDataBuilder.anEvent().withName("Race A").withOrisId(101).build();
+            Event event1 = EventTestDataBuilder.anEvent().withName("Race A").build();
             SyncRecord conflicted = recordFor(event1.getId(), SyncStatus.CONFLICT);
 
             when(synchronizationPort.findActiveByEntityType(SyncEntityType.EVENT))
@@ -171,7 +171,7 @@ class OrisBulkSyncServiceTest {
         @Test
         @DisplayName("should count and list FAILED records under stoppedByFailure without attempting them")
         void shouldSeparateFailedRecords() {
-            Event event1 = EventTestDataBuilder.anEvent().withName("Race A").withOrisId(101).build();
+            Event event1 = EventTestDataBuilder.anEvent().withName("Race A").build();
             SyncRecord failed = recordFor(event1.getId(), SyncStatus.FAILED);
 
             when(synchronizationPort.findActiveByEntityType(SyncEntityType.EVENT))

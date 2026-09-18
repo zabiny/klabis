@@ -1,6 +1,5 @@
 package com.klabis.events.domain;
 
-import java.time.LocalDate;
 import java.util.List;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
@@ -25,15 +24,6 @@ public interface EventRepository extends Events {
      * @return the saved event with generated ID
      */
     Event save(Event event);
-
-    /**
-     * Returns all DRAFT or ACTIVE events whose event date is on or after {@code today}
-     * and which have an ORIS event ID — i.e., events eligible for bulk sync.
-     *
-     * @param today lower-bound for event date (inclusive)
-     * @return unordered list of matching events
-     */
-    List<Event> findAllUpcomingOrisEvents(LocalDate today);
 
     // Read methods inherited from Events public API:
     // - Optional<Event> findById(EventId id)

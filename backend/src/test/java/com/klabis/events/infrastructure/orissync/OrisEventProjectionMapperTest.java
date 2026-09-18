@@ -21,7 +21,6 @@ class OrisEventProjectionMapperTest {
     @DisplayName("maps an Event's ORIS-owned fields into the projection")
     void fromEvent_mapsOrisOwnedFields() {
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                .orisId(1234)
                 .name("Spring Sprint")
                 .eventDate(LocalDate.of(2026, 5, 1))
                 .location("Brno Park")
@@ -56,7 +55,6 @@ class OrisEventProjectionMapperTest {
     @DisplayName("omits manually added categories, which are Klabis-owned")
     void fromEvent_omitsManuallyAddedCategories() {
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                .orisId(1234)
                 .name("Spring Sprint")
                 .eventDate(LocalDate.of(2026, 5, 1))
                 .location("Brno Park")
@@ -76,7 +74,6 @@ class OrisEventProjectionMapperTest {
     @DisplayName("mapping the Event side and the ORIS side of equal data hashes equally")
     void fromEvent_andFromOrisFields_withEqualData_hashEqually() {
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                .orisId(1234)
                 .name("Spring Sprint")
                 .eventDate(LocalDate.of(2026, 5, 1))
                 .location("Brno Park")
@@ -113,7 +110,6 @@ class OrisEventProjectionMapperTest {
     @DisplayName("a changed field on either side hashes differently")
     void fromEvent_andFromOrisFields_withDifferentData_hashDifferently() {
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                .orisId(1234)
                 .name("Spring Sprint")
                 .eventDate(LocalDate.of(2026, 5, 1))
                 .location("Brno Park")
