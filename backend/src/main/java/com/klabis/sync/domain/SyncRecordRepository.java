@@ -76,4 +76,16 @@ public interface SyncRecordRepository {
      * system. Rides the same {@code uq_sync_record_external} constraint.
      */
     List<SyncedEntityReference> findByExternalReferences(SyncEntityType entityType, ExternalSystem system, Collection<String> externalIds);
+
+    /**
+     * Batch lookup from the target side — the mirror of {@link #findByExternalReferences}
+     * — of which of these entities are actively enrolled for synchronisation, for one
+     * page of results rather than every active record of the entity type. Backs
+     * {@code EventController#listEvents}'s sync-affordance gating, which otherwise had
+     * to download every active {@code EVENT} sync record to answer a question about ten
+     * rows. Unlike {@link #findByExternalReferences}, {@code RETIRED} is excluded: this
+     * answers "is synchronisation currently active for this entity", not "was this
+     * external id ever paired".
+     */
+    List<SyncedEntityReference> findActiveByTargets(SyncEntityType entityType, Collection<String> entityIds);
 }

@@ -181,6 +181,12 @@ class SynchronizationService implements SynchronizationPort {
         return syncRecordRepository.findByExternalReferences(entityType, system, externalIds);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public List<SyncedEntityReference> findActiveByTargets(SyncEntityType entityType, Collection<String> entityIds) {
+        return syncRecordRepository.findActiveByTargets(entityType, entityIds);
+    }
+
     @Transactional
     @Override
     public void markDirty(SyncTarget target) {

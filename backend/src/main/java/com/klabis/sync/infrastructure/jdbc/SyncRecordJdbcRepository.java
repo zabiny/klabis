@@ -113,6 +113,25 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
     List<ExternalReferenceMatch> findByEntityTypeAndExternalSystemAndExternalIdIn(
             @Param("entityType") String entityType, @Param("system") String system, @Param("externalIds") Collection<String> externalIds);
 
+    /**
+     * Batch lookup from the target side — mirror of
+     * {@link #findByEntityTypeAndExternalSystemAndExternalIdIn} — for one page of
+     * entity ids rather than every active record of the entity type (see
+     * {@link com.klabis.sync.domain.SyncRecordRepository#findActiveByTargets}).
+     * {@code retired_at IS NULL} deliberately excludes RETIRED, unlike the
+     * external-side lookup: this answers "is sync currently active", not "was this id
+     * ever paired".
+     */
+    @Query("""
+            SELECT external_system, external_id, entity_id FROM sync.sync_record
+            WHERE entity_type = :entityType AND entity_id IN (:entityIds) AND retired_at IS NULL
+            """)
+    List<TargetMatch> findActiveByEntityTypeAndEntityIdIn(
+            @Param("entityType") String entityType, @Param("entityIds") Collection<String> entityIds);
+
     record ExternalReferenceMatch(String externalId, String entityId) {
+    }
+
+    record TargetMatch(String externalSystem, String externalId, String entityId) {
     }
 }

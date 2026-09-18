@@ -86,7 +86,7 @@ class EventControllerTest {
     @BeforeEach
     void stubSynchronizationPortAbsentByDefault() {
         when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
-        when(synchronizationPort.findActiveByEntityType(any())).thenReturn(List.of());
+        when(synchronizationPort.findActiveByTargets(any(), any())).thenReturn(List.of());
     }
 
     @Nested

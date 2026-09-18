@@ -96,6 +96,15 @@ class SyncRecordRepositoryAdapter implements SyncRecordRepository {
                 .toList();
     }
 
+    @Override
+    public List<SyncedEntityReference> findActiveByTargets(SyncEntityType entityType, Collection<String> entityIds) {
+        return jdbcRepository.findActiveByEntityTypeAndEntityIdIn(entityType.name(), entityIds).stream()
+                .map(match -> new SyncedEntityReference(
+                        new SyncTarget(entityType, match.entityId()),
+                        new ExternalReference(ExternalSystem.valueOf(match.externalSystem()), match.externalId())))
+                .toList();
+    }
+
     private SyncRecord toSyncRecord(SyncRecordMemento memento) {
         return memento.toSyncRecord(resolveProjectionType(), loadSchedule(memento));
     }

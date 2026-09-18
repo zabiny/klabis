@@ -26,6 +26,7 @@ import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncTarget;
+import com.klabis.sync.domain.SyncedEntityReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -47,6 +48,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -95,7 +97,7 @@ class OrisEventControllerTest {
     @BeforeEach
     void stubSynchronizationPortAbsentByDefault() {
         when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
-        when(synchronizationPort.findActiveByEntityType(any())).thenReturn(List.of());
+        when(synchronizationPort.findActiveByTargets(any(), any())).thenReturn(List.of());
     }
 
     @Nested
@@ -386,9 +388,8 @@ class OrisEventControllerTest {
                     .thenReturn(new PageImpl<>(List.of(orisEvent), PageRequest.of(0, 10), 1));
 
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, eventId.value().toString());
-            SyncRecord syncRecord = SyncRecord.enroll(
-                    new SyncRecordId(UUID.randomUUID()), target, new ExternalReference(ExternalSystem.ORIS, "42"));
-            when(synchronizationPort.findActiveByEntityType(SyncEntityType.EVENT)).thenReturn(List.of(syncRecord));
+            SyncedEntityReference syncedReference = new SyncedEntityReference(target, new ExternalReference(ExternalSystem.ORIS, "42"));
+            when(synchronizationPort.findActiveByTargets(eq(SyncEntityType.EVENT), any())).thenReturn(List.of(syncedReference));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())

@@ -109,6 +109,14 @@ public interface SynchronizationPort {
     List<SyncedEntityReference> findByExternalReferences(SyncEntityType entityType, ExternalSystem system, Collection<String> externalIds);
 
     /**
+     * Batch lookup of which of these entities are actively enrolled for
+     * synchronisation, for one page of results rather than every active record of the
+     * entity type. Delegates straight through to
+     * {@link com.klabis.sync.domain.SyncRecordRepository#findActiveByTargets}.
+     */
+    List<SyncedEntityReference> findActiveByTargets(SyncEntityType entityType, Collection<String> entityIds);
+
+    /**
      * Marks the record for this target dirty (design.md D9) — a scheduling signal
      * only, collapsing a burst of local edits into one due pass; never consulted to
      * decide whether a write is safe. Does nothing if the target is not enrolled: a

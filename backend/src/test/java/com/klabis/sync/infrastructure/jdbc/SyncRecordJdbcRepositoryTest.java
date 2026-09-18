@@ -593,4 +593,84 @@ class SyncRecordJdbcRepositoryTest {
             assertThat(found.get(0).externalReference().externalId()).isEqualTo("7004");
         }
     }
+
+    @Nested
+    @DisplayName("findActiveByTargets() — batch lookup by target/entity id, backs EventController#listEvents (avoids full-scan)")
+    class FindActiveByTargets {
+
+        @Test
+        @DisplayName("returns empty when none of the entity ids match")
+        void returnsEmptyWhenNoMatch() {
+            List<SyncedEntityReference> found = syncRecordRepository.findActiveByTargets(
+                    SyncEntityType.EVENT, List.of("no-match-1", "no-match-2"));
+
+            assertThat(found).isEmpty();
+        }
+
+        @Test
+        @DisplayName("returns a single match")
+        void returnsSingleMatch() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "target-batch-1"),
+                    new ExternalReference(ExternalSystem.ORIS, "6001"));
+            syncRecordRepository.save(record);
+
+            List<SyncedEntityReference> found = syncRecordRepository.findActiveByTargets(
+                    SyncEntityType.EVENT, List.of("target-batch-1", "no-match"));
+
+            assertThat(found).hasSize(1);
+            assertThat(found.get(0).target()).isEqualTo(new SyncTarget(SyncEntityType.EVENT, "target-batch-1"));
+        }
+
+        @Test
+        @DisplayName("returns multiple matches")
+        void returnsMultipleMatches() {
+            SyncRecord first = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "target-batch-2"),
+                    new ExternalReference(ExternalSystem.ORIS, "6002"));
+            SyncRecord second = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "target-batch-3"),
+                    new ExternalReference(ExternalSystem.ORIS, "6003"));
+            syncRecordRepository.save(first);
+            syncRecordRepository.save(second);
+
+            List<SyncedEntityReference> found = syncRecordRepository.findActiveByTargets(
+                    SyncEntityType.EVENT, List.of("target-batch-2", "target-batch-3", "no-match"));
+
+            assertThat(found).extracting(r -> r.target().entityId())
+                    .containsExactlyInAnyOrder("target-batch-2", "target-batch-3");
+        }
+
+        /**
+         * Unlike {@link FindByExternalReferences}, a RETIRED record must NOT match
+         * here: this query backs the "which of these events currently show the sync
+         * affordance" question, and a retired pairing is no longer active
+         * synchronisation (design.md D17).
+         */
+        @Test
+        @DisplayName("a RETIRED record does not match")
+        void retiredRecordDoesNotMatch() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "target-batch-4"),
+                    new ExternalReference(ExternalSystem.ORIS, "6004"));
+            record.retire(Instant.now());
+            syncRecordRepository.save(record);
+
+            List<SyncedEntityReference> found = syncRecordRepository.findActiveByTargets(
+                    SyncEntityType.EVENT, List.of("target-batch-4"));
+
+            assertThat(found).isEmpty();
+        }
+
+        @Test
+        @DisplayName("a terminally failed record still matches — FAILED is active, only RETIRED is excluded")
+        void failedRecordStillMatches() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(SyncEntityType.EVENT, "target-batch-5"),
+                    new ExternalReference(ExternalSystem.ORIS, "6005"));
+            record.recordRetryableFailure(Instant.now());
+            record.recordTerminalFailure(5, "boom", Instant.now());
+            syncRecordRepository.save(record);
+
+            List<SyncedEntityReference> found = syncRecordRepository.findActiveByTargets(
+                    SyncEntityType.EVENT, List.of("target-batch-5"));
+
+            assertThat(found).hasSize(1);
+        }
+    }
 }
