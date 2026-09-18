@@ -62,7 +62,8 @@ class EventsEventListenerTest {
                 "OOB",
                 WebsiteUrl.of("https://example.com/updated"),
                 List.of(),
-                Instant.now()
+                Instant.now(),
+                UpdateOrigin.MANUAL
         );
 
         // When
@@ -86,7 +87,8 @@ class EventsEventListenerTest {
                 "OOB",
                 null,
                 List.of(),
-                Instant.now()
+                Instant.now(),
+                UpdateOrigin.MANUAL
         );
 
         // When

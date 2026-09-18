@@ -711,7 +711,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.sharedTransportEnabled = Boolean.TRUE.equals(command.sharedTransportEnabled());
         this.sharedAccommodationEnabled = Boolean.TRUE.equals(command.sharedAccommodationEnabled());
 
-        registerEvent(EventUpdatedEvent.fromAggregate(this));
+        registerEvent(EventUpdatedEvent.fromAggregate(this, UpdateOrigin.MANUAL));
     }
 
     /**
@@ -745,7 +745,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         this.ranking = command.ranking();
         this.baseEntryFee = command.baseEntryFee();
 
-        registerEvent(EventUpdatedEvent.fromAggregate(this));
+        registerEvent(EventUpdatedEvent.fromAggregate(this, UpdateOrigin.SYNCHRONISATION));
     }
 
     /**

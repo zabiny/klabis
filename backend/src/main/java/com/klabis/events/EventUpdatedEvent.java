@@ -37,7 +37,8 @@ public record EventUpdatedEvent(
         String organizer,
         WebsiteUrl websiteUrl,
         List<EventCategory> categories,
-        Instant occurredAt
+        Instant occurredAt,
+        UpdateOrigin origin
 ) {
 
     public EventUpdatedEvent {
@@ -47,10 +48,11 @@ public record EventUpdatedEvent(
         Objects.requireNonNull(eventDate, "Event date is required");
         Objects.requireNonNull(organizer, "Event organizer is required");
         Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
+        Objects.requireNonNull(origin, "Update origin is required");
         categories = categories != null ? List.copyOf(categories) : List.of();
     }
 
-    public static EventUpdatedEvent fromAggregate(Event event) {
+    public static EventUpdatedEvent fromAggregate(Event event, UpdateOrigin origin) {
         return new EventUpdatedEvent(
                 UUID.randomUUID(),
                 event.getId(),
@@ -60,7 +62,8 @@ public record EventUpdatedEvent(
                 event.getOrganizer(),
                 event.getWebsiteUrl(),
                 event.getCategories(),
-                Instant.now()
+                Instant.now(),
+                origin
         );
     }
 }

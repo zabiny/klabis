@@ -1561,6 +1561,7 @@ class EventTest {
             assertThat(updatedEvent.organizer()).isEqualTo("Updated Organizer");
             assertThat(updatedEvent.websiteUrl()).isEqualTo(WebsiteUrl.of("https://updated.com"));
             assertThat(updatedEvent.occurredAt()).isNotNull();
+            assertThat(updatedEvent.origin()).isEqualTo(com.klabis.events.UpdateOrigin.MANUAL);
         }
 
         @Test
@@ -1731,6 +1732,13 @@ class EventTest {
             assertThat(event.getDomainEvents()).hasSize(2); // create + sync
             assertThat(event.getDomainEvents())
                     .anyMatch(e -> e instanceof com.klabis.events.EventUpdatedEvent);
+
+            com.klabis.events.EventUpdatedEvent updatedEvent = event.getDomainEvents().stream()
+                    .filter(com.klabis.events.EventUpdatedEvent.class::isInstance)
+                    .map(com.klabis.events.EventUpdatedEvent.class::cast)
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(updatedEvent.origin()).isEqualTo(com.klabis.events.UpdateOrigin.SYNCHRONISATION);
         }
 
         @Test

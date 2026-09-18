@@ -4,6 +4,7 @@ import com.klabis.events.EventCancelledEvent;
 import com.klabis.events.EventFinishedEvent;
 import com.klabis.events.EventId;
 import com.klabis.events.EventUpdatedEvent;
+import com.klabis.events.UpdateOrigin;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.*;
@@ -44,7 +45,7 @@ class EventsSyncListenerTest {
     void marksDirtyOnEventUpdated() {
         EventUpdatedEvent event = new EventUpdatedEvent(
                 UUID.randomUUID(), eventId, "Sprint", java.time.LocalDate.now(),
-                "Location", "Organizer", null, java.util.List.of(), Instant.now());
+                "Location", "Organizer", null, java.util.List.of(), Instant.now(), UpdateOrigin.MANUAL);
 
         listener.handle(event);
 
