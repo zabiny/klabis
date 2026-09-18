@@ -422,38 +422,24 @@ class OrisEventSyncScenarioIntegrationTest {
         @Autowired
         private OrisEventSyncAdapter orisEventSyncAdapter;
 
+        private SyncRecord baseline;
+
+        @BeforeEach
+        void syncOnceAndCaptureBaseline() {
+            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+            baseline = synchronizationPort.state(enrolled.getId());
+            assertThat(baseline.getDirtySince()).isNull();
+        }
+
         /**
-         * Task 4.1: exercises the real sequence named in tasks.md 4.1 directly rather
-         * than through {@code SynchronizationPort.synchronizeNow} — that entry point
-         * always finishes a pass with its own {@code outcomeWriter.persist} call,
-         * which applies {@code ScheduleEffect.clear()} to {@code sync_schedule}
-         * <em>after</em> {@code applyToLocal} and its listener have already run,
-         * unconditionally overwriting whatever {@code dirtySince} the listener wrote —
-         * true in both this test harness (where {@code TestApplicationConfiguration}
-         * deliberately swaps in a {@code SyncTaskExecutor} so
-         * {@code @ApplicationModuleListener} runs synchronously, avoiding shutdown
-         * races) and, per design.md's own race description, in production too, once
-         * the pass's own outcome-persist step follows. Calling
-         * {@link OrisEventSyncAdapter#applyToLocal} directly isolates exactly the
-         * write → event → listener sequence tasks.md 4.1 names, with nothing
-         * afterwards to mask the listener's effect on {@code dirtySince}.
-         * <p>
-         * Confirmed failing before the iteration-2 fix: temporarily removing the
-         * {@code if (event.origin() == UpdateOrigin.SYNCHRONISATION) return;} guard
-         * from {@code EventsSyncListener.handle(EventUpdatedEvent)} and re-running this
-         * test made it fail with a non-null {@code dirtySince} (the listener
-         * unconditionally called {@code markDirty} on the record {@code applyToLocal}
-         * had just reconciled); the guard was then restored and this test passes
-         * again. See also {@code EventsSyncListenerTest.doesNotMarkDirtyOnSelfInflictedUpdate},
-         * which exercises the same branch at the unit level with a hand-built event.
+         * Exercises {@link OrisEventSyncAdapter#applyToLocal} directly rather than via
+         * {@code SynchronizationPort.synchronizeNow} — that entry point's own
+         * outcome-persist step runs after the listener and would overwrite
+         * {@code dirtySince}, masking the effect under test.
          */
         @Test
         @DisplayName("OrisEventSyncAdapter.applyToLocal does not leave the paired SyncRecord dirty")
         void applyToLocalDoesNotLeaveRecordDirty() {
-            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
-            SyncRecord baseline = synchronizationPort.state(enrolled.getId());
-            assertThat(baseline.getDirtySince()).isNull();
-
             stubOrisEventDetails("Spring Sprint Renamed By ORIS", null);
             var externalProjection = orisEventSyncAdapter.readExternal(String.valueOf(orisId));
 
@@ -468,22 +454,10 @@ class OrisEventSyncScenarioIntegrationTest {
                     .isNull();
         }
 
-        /**
-         * Task 4.2 companion: an ordinary manual update (not from sync) DOES leave the
-         * paired SyncRecord dirty — so a listener broken outright (e.g. always
-         * skipping {@code markDirty}) would fail this test. Covered at unit level by
-         * {@code EventsSyncListenerTest.marksDirtyOnEventUpdated} too, but that test
-         * hand-constructs the event; this one drives it through the real
-         * {@code EventManagementPort.updateEvent} call and the real listener, to pair
-         * with the sequence proven above using the same {@code getDirtySince()} signal.
-         */
+        /** Control: an ordinary manual update still leaves the paired SyncRecord dirty. */
         @Test
         @DisplayName("an ordinary manual update leaves the paired SyncRecord dirty")
         void manualUpdateLeavesRecordDirty() {
-            synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
-            SyncRecord beforeEdit = synchronizationPort.state(enrolled.getId());
-            assertThat(beforeEdit.getDirtySince()).isNull();
-
             Event event = eventManagementPort.getEvent(eventId, true);
             Event.UpdateEvent corrected = EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
                     .name("Manager's Correction")

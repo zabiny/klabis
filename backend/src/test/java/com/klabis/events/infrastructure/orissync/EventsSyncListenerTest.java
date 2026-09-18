@@ -43,11 +43,7 @@ class EventsSyncListenerTest {
     @Test
     @DisplayName("marks the record dirty on EventUpdatedEvent with MANUAL origin (task 8.2)")
     void marksDirtyOnEventUpdated() {
-        EventUpdatedEvent event = new EventUpdatedEvent(
-                UUID.randomUUID(), eventId, "Sprint", java.time.LocalDate.now(),
-                "Location", "Organizer", null, java.util.List.of(), Instant.now(), UpdateOrigin.MANUAL);
-
-        listener.handle(event);
+        listener.handle(eventUpdatedEvent(UpdateOrigin.MANUAL));
 
         verify(synchronizationPort).markDirty(target);
     }
@@ -55,13 +51,15 @@ class EventsSyncListenerTest {
     @Test
     @DisplayName("does not mark the record dirty on EventUpdatedEvent with SYNCHRONISATION origin")
     void doesNotMarkDirtyOnSelfInflictedUpdate() {
-        EventUpdatedEvent event = new EventUpdatedEvent(
-                UUID.randomUUID(), eventId, "Sprint", java.time.LocalDate.now(),
-                "Location", "Organizer", null, java.util.List.of(), Instant.now(), UpdateOrigin.SYNCHRONISATION);
-
-        listener.handle(event);
+        listener.handle(eventUpdatedEvent(UpdateOrigin.SYNCHRONISATION));
 
         verifyNoInteractions(synchronizationPort);
+    }
+
+    private EventUpdatedEvent eventUpdatedEvent(UpdateOrigin origin) {
+        return new EventUpdatedEvent(
+                UUID.randomUUID(), eventId, "Sprint", java.time.LocalDate.now(),
+                "Location", "Organizer", null, java.util.List.of(), Instant.now(), origin);
     }
 
     @Test
