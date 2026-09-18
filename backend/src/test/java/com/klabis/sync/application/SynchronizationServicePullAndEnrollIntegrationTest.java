@@ -6,6 +6,7 @@ import com.klabis.sync.domain.*;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
 import com.klabis.sync.fixtures.TestSyncProjection;
 import com.klabis.sync.fixtures.TestSynchronizationAdapter;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -35,10 +36,16 @@ class SynchronizationServicePullAndEnrollIntegrationTest {
     private SynchronizationPort synchronizationPort;
 
     @Autowired
+    private SynchronizationService synchronizationService;
+
+    @Autowired
     private SynchronizationAdapter synchronizationAdapter;
 
     @Autowired
     private SyncAttemptRepository syncAttemptRepository;
+
+    @Autowired
+    private CircuitBreakerRegistry circuitBreakerRegistry;
 
     private TestSynchronizationAdapter adapter;
 
@@ -47,6 +54,15 @@ class SynchronizationServicePullAndEnrollIntegrationTest {
         adapter = (TestSynchronizationAdapter) synchronizationAdapter;
         adapter.reset();
         adapter.withCapabilities(SyncCapabilities.pullOnlyCreating());
+        // The circuit breaker is a Spring singleton shared across every test method in
+        // this class (they reuse one Spring context) — reset it so a previous test's
+        // induced failures cannot open the breaker for this one (same pattern as
+        // SynchronizationServiceFailureHandlingIntegrationTest).
+        resetCircuitBreaker();
+    }
+
+    private void resetCircuitBreaker() {
+        circuitBreakerRegistry.circuitBreaker(ResilientAdapterExecutor.INSTANCE_NAME).reset();
     }
 
     @Test
@@ -94,6 +110,55 @@ class SynchronizationServicePullAndEnrollIntegrationTest {
         assertThat(synchronizationPort.findActiveByEntityType(SyncEntityType.EVENT))
                 .noneMatch(record -> record.getExternalReference().equals(externalRef));
         assertThat(adapter.createLocalCallCount()).isZero();
+    }
+
+    @Test
+    @DisplayName("the initial pass fails after creation: the entity and pairing exist without a baseline, and a later scheduled pass completes it (design.md D8)")
+    void pullAndEnroll_initialPassFailsAfterCreation_leavesCreatedEntityPairedWithoutBaseline_scheduledPassCompletesIt() {
+        // design.md D8: creation and pairing commit first, in their own transaction;
+        // the pass that establishes the baseline runs afterwards with no transaction
+        // open and commits its own outcome separately. A failure in that pass must
+        // therefore leave behind exactly what a failed import leaves today: a created
+        // entity, paired, with no baseline yet — not a rolled-back creation.
+        adapter.withExternalState("9220", new TestSyncProjection("Sprint", "Brno-9220"));
+        ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "9220");
+        // The first readExternal call (inside createAndPair, to build the creation
+        // projection) must succeed so the entity actually gets created; only the pass's
+        // own readExternal, the second call, must fail. Queued exactly 3 times — the
+        // configured sync-adapter Resilience4j in-attempt retry budget (design.md D10;
+        // application.yml resilience4j.retry.instances.sync-adapter.max-attempts) — so
+        // the queue is fully drained by the failed pass, leaving the external system
+        // healthy again for the scheduled pass that follows. RetryableSyncFailureException
+        // is both a configured retry-exception (so Resilience4j actually retries
+        // in-attempt) and FailureClassifier-retryable, so the pass ends in RETRYING
+        // rather than FAILED.
+        adapter.failReadExternalFromCallNumber(2, 3,
+                new RetryableSyncFailureException("external system unreachable during initial pass"));
+
+        SyncRecord created = synchronizationPort.pullAndEnroll(SyncEntityType.EVENT, externalRef, "test-user");
+
+        // The pass's own try/catch classifies and persists the failure rather than
+        // rethrowing (SynchronizationService#runPass) — pullAndEnroll returns the
+        // failed record instead of throwing.
+        assertThat(adapter.createLocalCallCount()).isEqualTo(1);
+        assertThat(created.getStatus()).isEqualTo(SyncStatus.RETRYING);
+        assertThat(created.getBaseline()).isNull();
+        assertThat(created.getTarget().entityId()).isEqualTo(adapter.lastCreatedEntityId());
+
+        // Three retryable failures alone should not trip the circuit breaker (it needs
+        // a minimum of 5 calls before evaluating its failure-rate threshold), but reset
+        // it defensively so this test's own induced failures cannot bleed into the
+        // scheduled pass that follows.
+        resetCircuitBreaker();
+
+        // The next scheduled pass completes what the failed initial pass left behind —
+        // an ordinary pass, run against the same still-healthy external state, with no
+        // special-casing for "this pairing came from pullAndEnroll" (design.md D8, D3).
+        SyncRecord completed = synchronizationService.runScheduledPass(created.getId());
+
+        assertThat(completed.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+        assertThat(completed.getBaseline()).isNotNull();
+        assertThat(completed.getLocal().projection()).isEqualTo(new TestSyncProjection("Sprint", "Brno-9220"));
     }
 
     @Nested

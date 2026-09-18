@@ -48,14 +48,14 @@
 
 ## 6. A rejected creation stops the pairing
 
-- [ ] 6.1 RED: test — a creation refused by a uniqueness constraint is classified terminal, not retryable, so it is not repeated five times against the same rejection
-- [ ] 6.2 GREEN: classify it in `FailureClassifier` (design D9)
-- [ ] 6.3 REFACTOR: confirm the classification does not catch unrelated data-integrity failures that genuinely are retryable
+- [x] 6.1 RED: test — a creation refused by a uniqueness constraint is classified terminal, not retryable, so it is not repeated five times against the same rejection
+- [x] 6.2 GREEN: classify it in `FailureClassifier` (design D9)
+- [x] 6.3 REFACTOR: confirm the classification does not catch unrelated data-integrity failures that genuinely are retryable
 
 ## 7. A failed initial pass leaves a completable state
 
-- [ ] 7.1 RED: integration test — when the initial pass fails after the entity was created, the entity and pairing exist without a baseline, and a subsequent scheduled pass completes them (design D8's accepted boundary, stated as a test so it stays true)
-- [ ] 7.2 GREEN: whatever 7.1 exposes
+- [x] 7.1 RED: integration test — when the initial pass fails after the entity was created, the entity and pairing exist without a baseline, and a subsequent scheduled pass completes them (design D8's accepted boundary, stated as a test so it stays true)
+- [x] 7.2 GREEN: whatever 7.1 exposes
 
 ## 8. ORIS events create their own side
 

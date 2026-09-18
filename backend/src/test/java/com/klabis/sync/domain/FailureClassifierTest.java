@@ -3,6 +3,8 @@ package com.klabis.sync.domain;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -65,6 +67,41 @@ class FailureClassifierTest {
     @Test
     void classify_illegalState_terminal() {
         assertThat(FailureClassifier.classify(new IllegalStateException("unexpected state"))).isEqualTo(FailureCategory.TERMINAL);
+    }
+
+    @Test
+    void classify_dataIntegrityViolation_terminal() {
+        // design.md D9: a database constraint refusing a creation (createLocal) is not
+        // a transient fault — retrying it repeats the same rejection. Must be terminal,
+        // never retryable, so a rejected creation stops the pairing instead of being
+        // retried against the same rejection.
+        assertThat(FailureClassifier.classify(new DataIntegrityViolationException("constraint violation")))
+                .isEqualTo(FailureCategory.TERMINAL);
+    }
+
+    @Test
+    void classify_duplicateKey_terminal() {
+        // DuplicateKeyException is the more specific subtype JDBC drivers raise for a
+        // unique-constraint violation — the exact shape createLocal's rejection takes
+        // (design.md D9).
+        assertThat(FailureClassifier.classify(new DuplicateKeyException("unique constraint violated")))
+                .isEqualTo(FailureCategory.TERMINAL);
+    }
+
+    @Test
+    void classify_dataIntegrityViolationWrappingUnrelatedCause_stillTerminal() {
+        // Refactor-phase guard for D9: classification must key off the failure's own
+        // shape (falling through to TERMINAL because it is not IOException- or
+        // outage-shaped), never off something unrelated buried in its cause chain — a
+        // DataIntegrityViolationException wrapping, say, a plain RuntimeException must
+        // not accidentally read as retryable just because a cause happens to be
+        // IOException-shaped further down. Here the cause chain has nothing retryable
+        // in it at all, so this simply confirms the classification is not order- or
+        // cause-dependent for this exception family.
+        DataIntegrityViolationException wrapping = new DataIntegrityViolationException(
+                "unique constraint violated", new IllegalStateException("duplicate external id"));
+
+        assertThat(FailureClassifier.classify(wrapping)).isEqualTo(FailureCategory.TERMINAL);
     }
 
     @Test
