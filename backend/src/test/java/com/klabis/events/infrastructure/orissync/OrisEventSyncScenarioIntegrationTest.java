@@ -135,7 +135,7 @@ class OrisEventSyncScenarioIntegrationTest {
 
             AtomicInteger callCount = new AtomicInteger();
             AtomicInteger transactionActiveDuringCall = new AtomicInteger(-1);
-            when(orisApiClient.getEventDetails(freshOrisId)).thenAnswer(invocation -> {
+            when(orisApiClient.getEventDetails(freshOrisId)).thenAnswer(_invocation -> {
                 callCount.incrementAndGet();
                 transactionActiveDuringCall.set(TransactionSynchronizationManager.isActualTransactionActive() ? 1 : 0);
                 return new OrisApiClient.OrisResponse<>(details, "JSON", "OK", null, "getEvent");

@@ -496,6 +496,7 @@ public class SyncRecord extends KlabisAggregateRoot<SyncRecord, SyncRecordId> {
         return List.copyOf(changedSides(fieldReader).keySet());
     }
 
+    @Override
     public SyncRecordId getId() {
         return id;
     }

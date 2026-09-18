@@ -48,7 +48,7 @@ class OrisEventDetailsMapperTest {
             int orisId = 5555;
             Organizer org1 = new Organizer(1, "", "Empty Org");
             Organizer org2 = new Organizer(205, "PRG", "Prague OB");
-            EventDetails details = buildEventDetails(orisId, "Prague Race", LocalDate.of(2026, 9, 1), "Prague", org1, org2);
+            EventDetails details = buildEventDetails("Prague Race", LocalDate.of(2026, 9, 1), "Prague", org1, org2);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
             OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
@@ -61,7 +61,7 @@ class OrisEventDetailsMapperTest {
         void shouldUseUnknownOrganizerWhenBothOrgsAreBlank() {
             int orisId = 7777;
             Organizer org1 = new Organizer(1, null, "Unnamed Org");
-            EventDetails details = buildEventDetails(orisId, "Unnamed Race", LocalDate.of(2026, 10, 1), "Somewhere", org1, null);
+            EventDetails details = buildEventDetails("Unnamed Race", LocalDate.of(2026, 10, 1), "Somewhere", org1, null);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
             OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
@@ -75,7 +75,7 @@ class OrisEventDetailsMapperTest {
     void shouldPopulateCategoryOrisId() {
         int orisId = 2222;
         Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
-        EventDetails details = buildEventDetailsWithClasses(orisId, "Race", LocalDate.of(2026, 8, 15), "Forest",
+        EventDetails details = buildEventDetailsWithClasses("Race", LocalDate.of(2026, 8, 15), "Forest",
                 org1, null, Map.of("100", mockClass("100", "M21")));
         when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
@@ -183,7 +183,7 @@ class OrisEventDetailsMapperTest {
             int orisId = 2001;
             Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
             Level level = new Level(3, "MČR", "Mistrovství ČR", "Czech Championships");
-            EventDetails details = buildEventDetailsWithLevel(orisId, "MČR 2026", LocalDate.of(2026, 9, 1), "Forest", org1, level);
+            EventDetails details = buildEventDetailsWithLevel("MČR 2026", LocalDate.of(2026, 9, 1), "Forest", org1, level);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
             OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
@@ -199,7 +199,7 @@ class OrisEventDetailsMapperTest {
         void shouldSetRankingNullWhenLevelNull() {
             int orisId = 2002;
             Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
-            EventDetails details = buildEventDetailsWithLevel(orisId, "Local Race", LocalDate.of(2026, 9, 1), "Forest", org1, null);
+            EventDetails details = buildEventDetailsWithLevel("Local Race", LocalDate.of(2026, 9, 1), "Forest", org1, null);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
             OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
@@ -222,7 +222,7 @@ class OrisEventDetailsMapperTest {
                     "W21", mockClassWithFee("W21", "200"),
                     "M35", mockClassWithFee("M35", "180")
             );
-            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "Fee Race", LocalDate.of(2026, 9, 1),
+            EventDetails details = buildEventDetailsWithClassesAndCurrency("Fee Race", LocalDate.of(2026, 9, 1),
                     "Forest", org1, classes, "CZK");
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
@@ -243,7 +243,7 @@ class OrisEventDetailsMapperTest {
                     "W21", mockClassWithFee("W21", ""),
                     "M35", mockClassWithFee("M35", "N/A")
             );
-            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "Partial Fee Race", LocalDate.of(2026, 9, 1),
+            EventDetails details = buildEventDetailsWithClassesAndCurrency("Partial Fee Race", LocalDate.of(2026, 9, 1),
                     "Forest", org1, classes, "CZK");
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
@@ -262,7 +262,7 @@ class OrisEventDetailsMapperTest {
                     "M21", mockClassWithFee("M21", ""),
                     "W21", mockClassWithFee("W21", "free")
             );
-            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "No Fee Race", LocalDate.of(2026, 9, 1),
+            EventDetails details = buildEventDetailsWithClassesAndCurrency("No Fee Race", LocalDate.of(2026, 9, 1),
                     "Forest", org1, classes, "CZK");
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
@@ -276,7 +276,7 @@ class OrisEventDetailsMapperTest {
         void shouldReturnNullBaseEntryFeeWhenClassesNull() {
             int orisId = 3004;
             Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
-            EventDetails details = buildEventDetails(orisId, "No Classes Race", LocalDate.of(2026, 9, 1), "Forest", org1, null);
+            EventDetails details = buildEventDetails("No Classes Race", LocalDate.of(2026, 9, 1), "Forest", org1, null);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
             OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
@@ -290,7 +290,7 @@ class OrisEventDetailsMapperTest {
             int orisId = 3005;
             Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
             Map<String, EventClass> classes = Map.of("M21", mockClassWithFee("M21", "150"));
-            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "No Currency Race", LocalDate.of(2026, 9, 1),
+            EventDetails details = buildEventDetailsWithClassesAndCurrency("No Currency Race", LocalDate.of(2026, 9, 1),
                     "Forest", org1, classes, "");
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
@@ -306,7 +306,7 @@ class OrisEventDetailsMapperTest {
             int orisId = 3006;
             Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
             Map<String, EventClass> classes = Map.of("M21", mockClassWithFee("M21", "150"));
-            EventDetails details = buildEventDetailsWithClassesAndCurrency(orisId, "Invalid Currency Race", LocalDate.of(2026, 9, 1),
+            EventDetails details = buildEventDetailsWithClassesAndCurrency("Invalid Currency Race", LocalDate.of(2026, 9, 1),
                     "Forest", org1, classes, "INVALID");
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
@@ -317,7 +317,7 @@ class OrisEventDetailsMapperTest {
         }
     }
 
-    private EventDetails buildEventDetails(int id, String name, LocalDate date, String place,
+    private EventDetails buildEventDetails(String name, LocalDate date, String place,
                                             Organizer org1, Organizer org2) {
         EventDetails details = Mockito.mock(EventDetails.class);
         Mockito.when(details.name()).thenReturn(name);
@@ -335,7 +335,7 @@ class OrisEventDetailsMapperTest {
         return details;
     }
 
-    private EventDetails buildEventDetailsWithClasses(int id, String name, LocalDate date, String place,
+    private EventDetails buildEventDetailsWithClasses(String name, LocalDate date, String place,
                                                         Organizer org1, Organizer org2,
                                                         Map<String, EventClass> classes) {
         EventDetails details = Mockito.mock(EventDetails.class);
@@ -369,7 +369,7 @@ class OrisEventDetailsMapperTest {
         return cls;
     }
 
-    private EventDetails buildEventDetailsWithLevel(int id, String name, LocalDate date, String place,
+    private EventDetails buildEventDetailsWithLevel(String name, LocalDate date, String place,
                                                       Organizer org1, Level level) {
         EventDetails details = Mockito.mock(EventDetails.class);
         Mockito.when(details.name()).thenReturn(name);
@@ -387,7 +387,7 @@ class OrisEventDetailsMapperTest {
         return details;
     }
 
-    private EventDetails buildEventDetailsWithClassesAndCurrency(int id, String name, LocalDate date, String place,
+    private EventDetails buildEventDetailsWithClassesAndCurrency(String name, LocalDate date, String place,
                                                                    Organizer org1,
                                                                    Map<String, EventClass> classes,
                                                                    String currency) {

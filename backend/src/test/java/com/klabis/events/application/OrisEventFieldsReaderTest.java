@@ -65,7 +65,7 @@ class OrisEventFieldsReaderTest {
             EventType matchedType = EventType.create(
                     new EventType.CreateEventType("Sprint", null, 1, java.util.Set.of(3)), 1);
 
-            EventDetails details = buildDetailsWithDiscipline(orisId, "Sprint závod", discipline);
+            EventDetails details = buildDetailsWithDiscipline("Sprint závod", discipline);
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
@@ -82,7 +82,7 @@ class OrisEventFieldsReaderTest {
             int orisId = 101;
             Discipline discipline = new Discipline(99, "X", "Neznámá disciplína", "Unknown Discipline");
 
-            EventDetails details = buildDetailsWithDiscipline(orisId, "Strange Race", discipline);
+            EventDetails details = buildDetailsWithDiscipline("Strange Race", discipline);
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
@@ -97,7 +97,7 @@ class OrisEventFieldsReaderTest {
         @DisplayName("should resolve no eventTypeId when ORIS discipline is null")
         void shouldResolveNoEventTypeWhenDisciplineIsNull() {
             int orisId = 102;
-            EventDetails details = buildDetailsWithDiscipline(orisId, "No Discipline Race", null);
+            EventDetails details = buildDetailsWithDiscipline("No Discipline Race", null);
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
@@ -114,7 +114,7 @@ class OrisEventFieldsReaderTest {
             int orisId = 103;
             Discipline discipline = new Discipline(0, "", "", "");
 
-            EventDetails details = buildDetailsWithDiscipline(orisId, "No Discipline ID Race", discipline);
+            EventDetails details = buildDetailsWithDiscipline("No Discipline ID Race", discipline);
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
@@ -138,7 +138,7 @@ class OrisEventFieldsReaderTest {
                 .isInstanceOf(EventNotFoundException.class);
     }
 
-    private EventDetails buildDetailsWithDiscipline(int id, String name, Discipline discipline) {
+    private EventDetails buildDetailsWithDiscipline(String name, Discipline discipline) {
         EventDetails details = Mockito.mock(EventDetails.class);
         Mockito.when(details.name()).thenReturn(name);
         Mockito.when(details.date()).thenReturn(LocalDate.of(2026, 9, 1));
