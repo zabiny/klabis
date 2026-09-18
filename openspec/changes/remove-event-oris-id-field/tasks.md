@@ -21,10 +21,10 @@
 
 ## 4. REST layer: affordance gate reuses existing enrolment flag
 
-- [ ] 4.1 Update `EventController.addManagementAffordances` signature to accept `boolean orisEnrolled` instead of reading `event.getOrisId()`
-- [ ] 4.2 Update both call sites (DRAFT and ACTIVE branches) to use `orisEnrolled` in place of `event.getOrisId() != null`
-- [ ] 4.3 Update `EventController.getEvent` (and any other caller of `addManagementAffordances`) to pass the `isEnrolled` value already computed via `synchronizationPort.findByTarget(...)` for `EventSyncEnrolment`
-- [ ] 4.4 Run/update `EventController` HAL affordance tests (sync affordance present/absent for enrolled/non-enrolled events), confirm unchanged observable behavior
+- [x] 4.1 Update `EventController.addManagementAffordances` signature to accept `boolean orisEnrolled` instead of reading `event.getOrisId()`
+- [x] 4.2 Update both call sites (DRAFT and ACTIVE branches) to use `orisEnrolled` in place of `event.getOrisId() != null`
+- [x] 4.3 Update `EventController.getEvent` (and any other caller of `addManagementAffordances`) to pass the `isEnrolled` value already computed via `synchronizationPort.findByTarget(...)` for `EventSyncEnrolment`. `listEvents` (list-row postprocessor `EventSummaryPostprocessor` also calls `addManagementAffordances`) had no equivalent per-row enrolment flag, so this task additionally added one: `synchronizationPort.findActiveByEntityType(EVENT)` is called once in `listEvents`, published as a new `EnrolledEventIds` context record, and read per row.
+- [x] 4.4 Run/update `EventController` HAL affordance tests (sync affordance present/absent for enrolled/non-enrolled events), confirm unchanged observable behavior
 
 ## 5. Domain: remove `Event.orisId`
 

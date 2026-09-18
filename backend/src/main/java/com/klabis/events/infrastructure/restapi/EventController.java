@@ -48,6 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -205,6 +206,13 @@ public class EventController implements EventsApi {
             return ResponseEntity.ok(empty.map(e -> conversionService.convert(e, EventSummaryDto.class)));
         }
         Page<Event> page = eventManagementService.listEvents(filter, pageable, EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE));
+
+        // Same reasoning as getEvent (task 8.6): one enrolment lookup per request, read back by the
+        // postprocessor via HalResponseContext, rather than injecting SynchronizationPort there.
+        Set<String> enrolledEventIds = synchronizationPort.findActiveByEntityType(SyncEntityType.EVENT).stream()
+                .map(syncRecord -> syncRecord.getTarget().entityId())
+                .collect(Collectors.toSet());
+        HalResponseContext.setContext(new EnrolledEventIds(enrolledEventIds));
 
         HalResponseContext.setDomainList(page.getContent());
         return ResponseEntity.ok(page.map(e -> conversionService.convert(e, EventSummaryDto.class)));
@@ -421,13 +429,26 @@ public class EventController implements EventsApi {
 record EventSyncEnrolment(boolean enrolled) {
 }
 
+/**
+ * Carries which events (by id) are enrolled for synchronisation, from
+ * {@code EventController#listEvents} to {@code EventSummaryPostprocessor} — one lookup per request
+ * rather than one per row, and rather than injecting {@code SynchronizationPort} into the
+ * postprocessor (same reasoning as {@link EventSyncEnrolment}).
+ */
+record EnrolledEventIds(Set<String> eventIds) {
+
+    boolean contains(UUID eventId) {
+        return eventIds.contains(eventId.toString());
+    }
+}
+
 class EventAffordanceSupport {
 
     static boolean hasAuthority(Authentication auth, Authority authority) {
         return SecuritySpelEvaluator.hasAuthority(auth, authority);
     }
 
-    static Link addManagementAffordances(Link selfLink, Event event, boolean orisIntegrationActive, Authentication auth) {
+    static Link addManagementAffordances(Link selfLink, Event event, boolean orisIntegrationActive, boolean orisEnrolled, Authentication auth) {
         UUID eventId = event.getId().value();
 
         boolean canManage = hasAuthority(auth, Authority.EVENTS_MANAGE);
@@ -444,7 +465,7 @@ class EventAffordanceSupport {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).publishEvent(eventId)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
                 }
-                if (orisIntegrationActive && event.getOrisId() != null) {
+                if (orisIntegrationActive && orisEnrolled) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).syncEventFromOris(eventId)));
                 }
                 break;
@@ -454,7 +475,7 @@ class EventAffordanceSupport {
                 if (canManage) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
                 }
-                if (orisIntegrationActive && event.getOrisId() != null) {
+                if (orisIntegrationActive && orisEnrolled) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).syncEventFromOris(eventId)));
                 }
                 break;
@@ -522,8 +543,12 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
+        boolean orisEnrolled = HalResponseContext.findContext(EventSyncEnrolment.class)
+                .map(EventSyncEnrolment::enrolled)
+                .orElse(false);
+
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, auth);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, orisEnrolled, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
@@ -596,8 +621,12 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
+        boolean orisEnrolled = HalResponseContext.findContext(EnrolledEventIds.class)
+                .map(enrolled -> enrolled.contains(eventId))
+                .orElse(false);
+
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, auth);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, orisEnrolled, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
