@@ -26,26 +26,26 @@
 
 ## 2. `EventsSyncListener` ignores self-inflicted updates
 
-- [ ] 2.1 Write a failing unit test asserting `SynchronizationPort.markDirty`
+- [x] 2.1 Write a failing unit test asserting `SynchronizationPort.markDirty`
       is NOT called when `EventsSyncListener.handle(EventUpdatedEvent)`
       receives an event with `UpdateOrigin.SYNCHRONISATION` (must fail against
       the current, unconditional implementation).
-- [ ] 2.2 Write (or confirm existing coverage for) a test asserting `markDirty`
+- [x] 2.2 Write (or confirm existing coverage for) a test asserting `markDirty`
       IS still called for `UpdateOrigin.MANUAL`, so the fix can't overshoot
       into ignoring everything.
-- [ ] 2.3 Update `EventsSyncListener.handle(EventUpdatedEvent)` with the
+- [x] 2.3 Update `EventsSyncListener.handle(EventUpdatedEvent)` with the
       minimal change to make 2.1 pass while keeping 2.2 green: return without
       calling `markDirty` when `event.origin() == UpdateOrigin.SYNCHRONISATION`.
-- [ ] 2.4 Refactor if needed; confirm `handle(EventFinishedEvent)` /
+- [x] 2.4 Refactor if needed; confirm `handle(EventFinishedEvent)` /
       `handle(EventCancelledEvent)` are untouched and their existing tests
       still pass unmodified.
 
 ## 3. Verify no regression in other consumers
 
-- [ ] 3.1 Confirm `calendar.infrastructure.listeners.EventsEventListener` needs
+- [x] 3.1 Confirm `calendar.infrastructure.listeners.EventsEventListener` needs
       no code change and its existing tests pass unmodified (it must keep
       reacting to `EventUpdatedEvent` regardless of `origin()`).
-- [ ] 3.2 Grep for any other `EventUpdatedEvent` consumers or constructors
+- [x] 3.2 Grep for any other `EventUpdatedEvent` consumers or constructors
       project-wide to confirm the two registration sites in `Event` remain the
       only producers.
 

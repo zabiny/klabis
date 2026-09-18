@@ -5,6 +5,7 @@ import com.klabis.events.EventCancelledEvent;
 import com.klabis.events.EventFinishedEvent;
 import com.klabis.events.EventId;
 import com.klabis.events.EventUpdatedEvent;
+import com.klabis.events.UpdateOrigin;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
@@ -14,9 +15,12 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 
 /**
  * Self-listener on the {@code events} module's own domain events (design.md D9, D17,
- * task 8.1, 8.2): marks a record dirty on {@link EventUpdatedEvent}, and retires it
- * once the event reaches the end of its life ({@link EventFinishedEvent},
- * {@link EventCancelledEvent}).
+ * task 8.1, 8.2): marks a record dirty on a {@code MANUAL}-origin
+ * {@link EventUpdatedEvent}, and retires it once the event reaches the end of its life
+ * ({@link EventFinishedEvent}, {@link EventCancelledEvent}). A {@code SYNCHRONISATION}-origin
+ * update is the engine's own write reconciling the record and is ignored, so the engine
+ * never wakes itself back up (see openspec change
+ * {@code sync-skip-self-inflicted-dirty-marker}).
  * <p>
  * A {@code @PrimaryAdapter} event listener is permitted to call a foreign module's
  * primary port ({@link SynchronizationPort}, in {@code sync.application}) — the same
@@ -38,6 +42,9 @@ class EventsSyncListener {
 
     @ApplicationModuleListener
     void handle(EventUpdatedEvent event) {
+        if (event.origin() == UpdateOrigin.SYNCHRONISATION) {
+            return;
+        }
         synchronizationPort.markDirty(targetFor(event.eventId()));
     }
 
