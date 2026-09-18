@@ -4,68 +4,62 @@ import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
 import com.klabis.common.OrisIntegrationComponent;
 import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.application.SyncRecordNeedsResolutionException;
 import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncStatus;
 import com.klabis.sync.domain.SyncTarget;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @OrisIntegrationComponent
 class OrisEventImportService implements OrisEventImportPort {
 
     private final EventRepository eventRepository;
-    private final OrisEventFieldsReader orisEventFieldsReader;
     private final SynchronizationPort synchronizationPort;
 
     OrisEventImportService(EventRepository eventRepository,
-                           OrisEventFieldsReader orisEventFieldsReader,
                            SynchronizationPort synchronizationPort) {
         this.eventRepository = eventRepository;
-        this.orisEventFieldsReader = orisEventFieldsReader;
         this.synchronizationPort = synchronizationPort;
     }
 
+    /**
+     * Delegates to the synchronisation engine's {@code pullAndEnroll} (design.md D10,
+     * task 9.2) instead of building the event and enrolling it by hand: creation,
+     * pairing and the initial pass all now live in the engine, with
+     * {@code OrisEventSyncAdapter.createLocal} supplying the ORIS-specific build
+     * (design.md D2, D3). A repeated import synchronises the existing pairing and
+     * returns the existing event rather than failing with a duplicate (design.md D5) —
+     * the old {@code DuplicateOrisImportException} is unreachable from this path and
+     * has been removed (design.md Open Questions, task 9.8).
+     * <p>
+     * A pairing already awaiting a decision (CONFLICT or FAILED) is refused by the
+     * engine with {@link SyncRecordNeedsResolutionException}, translated here into
+     * {@link EventSyncNeedsResolutionException} for the same reason
+     * {@link #syncEventFromOris} does: this module's REST layer should not need to
+     * know the sync module's internal exception vocabulary.
+     */
     @Transactional
     @Override
     public Event importEventFromOris(int orisId) {
-        OrisEventFields fields = orisEventFieldsReader.readOrisFields(orisId);
-
-        Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                .orisId(orisId)
-                .name(fields.name())
-                .eventDate(fields.eventDate())
-                .location(fields.location())
-                .organizer(fields.organizer())
-                .websiteUrl(fields.websiteUrl())
-                .registrationDeadlines(fields.registrationDeadlines())
-                .categories(fields.categories())
-                .ranking(fields.ranking())
-                .baseEntryFee(fields.baseEntryFee())
-                .build());
-
-        event.applyAutoMappedEventType(fields.resolvedEventTypeId());
-
-        Event saved;
+        SyncRecord record;
         try {
-            saved = eventRepository.save(event);
-        } catch (DataIntegrityViolationException e) {
-            throw new DuplicateOrisImportException(orisId);
+            record = synchronizationPort.pullAndEnroll(
+                    SyncEntityType.EVENT,
+                    new ExternalReference(ExternalSystem.ORIS, String.valueOf(orisId)),
+                    null);
+        } catch (SyncRecordNeedsResolutionException e) {
+            throw new EventSyncNeedsResolutionException(orisId);
         }
 
-        // Enrolment happens synchronously here, colocated with the ORIS-specific import
-        // path, rather than via a listener on EventCreatedEvent — that event fires for
-        // every event, manually created ones included, so a listener would need an
-        // orisId != null filter this path never needs (design.md D17, task 8.1).
-        synchronizationPort.enroll(
-                new SyncTarget(SyncEntityType.EVENT, saved.getId().value().toString()),
-                new ExternalReference(ExternalSystem.ORIS, String.valueOf(orisId)));
-
-        return saved;
+        EventId eventId = new EventId(UUID.fromString(record.getTarget().entityId()));
+        return eventRepository.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
     }
 
     /**

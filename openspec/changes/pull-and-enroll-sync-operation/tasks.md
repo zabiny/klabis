@@ -68,14 +68,14 @@
 
 ## 9. ORIS import delegates to the engine
 
-- [ ] 9.1 RED: rewrite the duplicate-import tests in `OrisEventImportServiceTest` and `OrisEventControllerTest` to the new contract — a repeat synchronises and returns the existing event instead of failing. Rewrite, do not delete: the new contract needs the coverage the old one had
-- [ ] 9.2 GREEN: rewrite `importEventFromOris` to call `pullAndEnroll`; remove the hand-rolled enrolment and duplicate detection
-- [ ] 9.3 RED: controller test — importing an event awaiting a decision is refused with the existing problem detail pointing at the synchronisation resource
-- [ ] 9.4 GREEN: map the needs-resolution case onto `EventSyncNeedsResolutionException`
-- [ ] 9.5 RED: controller test — a repeat import still answers `201 Created` with a `Location` header, having created nothing (design D10)
-- [ ] 9.6 RED: `OrisEventBulkImportServiceTest` — an already-present event counts as imported, not failed, and is not distinguished from a newly created one (design D10)
-- [ ] 9.7 GREEN: whatever 9.5 and 9.6 expose
-- [ ] 9.8 REFACTOR: decide the fate of `DuplicateOrisImportException` and its `409` handler — after 9.2 the only thing that can raise it is the terminal constraint violation of 6.2, which is a server fault rather than a caller error (design, Open Questions)
+- [x] 9.1 RED: rewrite the duplicate-import tests in `OrisEventImportServiceTest` and `OrisEventControllerTest` to the new contract — a repeat synchronises and returns the existing event instead of failing. Rewrite, do not delete: the new contract needs the coverage the old one had
+- [x] 9.2 GREEN: rewrite `importEventFromOris` to call `pullAndEnroll`; remove the hand-rolled enrolment and duplicate detection
+- [x] 9.3 RED: controller test — importing an event awaiting a decision is refused with the existing problem detail pointing at the synchronisation resource
+- [x] 9.4 GREEN: map the needs-resolution case onto `EventSyncNeedsResolutionException`
+- [x] 9.5 RED: controller test — a repeat import still answers `201 Created` with a `Location` header, having created nothing (design D10)
+- [x] 9.6 RED: `OrisEventBulkImportServiceTest` — an already-present event counts as imported, not failed, and is not distinguished from a newly created one (design D10)
+- [x] 9.7 GREEN: whatever 9.5 and 9.6 expose
+- [x] 9.8 REFACTOR: decide the fate of `DuplicateOrisImportException` and its `409` handler — after 9.2 the only thing that can raise it is the terminal constraint violation of 6.2, which is a server fault rather than a caller error (design, Open Questions)
 
 ## 10. End-to-end behaviour
 

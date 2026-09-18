@@ -5,11 +5,8 @@ import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.Discipline;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Organizer;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
-import com.klabis.sync.application.SynchronizationPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,15 +23,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+/**
+ * Event-type auto-mapping (discipline ID → catalog) coverage, relocated from
+ * {@code OrisEventTypeAutoMappingTest}'s "importEventFromOris() — auto-mapping" nested
+ * class (task 9.1/9.2): {@code OrisEventImportService.importEventFromOris} no longer
+ * calls {@link OrisEventFieldsReader} directly — the read now happens inside {@code
+ * OrisEventSyncAdapter.readExternal} via the synchronisation engine's {@code
+ * pullAndEnroll} (design.md D2, D3) — so this resolution is exercised directly against
+ * {@link OrisEventFieldsReader#readOrisFields}, the one place it lives regardless of
+ * which caller triggers the read.
+ */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ORIS event type auto-mapping via Discipline ID")
-class OrisEventTypeAutoMappingTest {
-
-    @Mock
-    private EventRepository eventRepository;
-
-    @Mock
-    private EventTypeRepository eventTypeRepository;
+@DisplayName("OrisEventFieldsReader — event type auto-mapping via Discipline ID")
+class OrisEventFieldsReaderTest {
 
     @Mock
     private OrisApiClient orisApiClient;
@@ -43,28 +44,22 @@ class OrisEventTypeAutoMappingTest {
     private OrisWebUrls orisWebUrls;
 
     @Mock
-    private SynchronizationPort synchronizationPort;
+    private EventTypeRepository eventTypeRepository;
 
-    private OrisEventImportService service;
+    private OrisEventFieldsReader reader;
 
     @BeforeEach
     void setUp() {
-        // The real reader stays wired in: importEventFromOris resolves the event type
-        // through it, so the import tests exercise the whole pipeline as production
-        // does. The sync ("applyOrisSync") half of this behaviour now lives on
-        // OrisEventSyncAdapter (events.infrastructure.orissync) after the D2 fold —
-        // see OrisEventSyncAdapterTest for its auto-mapping preserve/fill coverage.
-        OrisEventFieldsReader reader = new OrisEventFieldsReader(orisApiClient, orisWebUrls, eventTypeRepository);
-        service = new OrisEventImportService(eventRepository, reader, synchronizationPort);
+        reader = new OrisEventFieldsReader(orisApiClient, orisWebUrls, eventTypeRepository);
     }
 
     @Nested
-    @DisplayName("importEventFromOris() — auto-mapping")
-    class ImportAutoMapping {
+    @DisplayName("readOrisFields() — auto-mapping")
+    class AutoMapping {
 
         @Test
-        @DisplayName("should set eventTypeId when discipline ID has a catalog match")
-        void shouldSetEventTypeIdWhenDisciplineMatches() {
+        @DisplayName("should resolve eventTypeId when discipline ID has a catalog match")
+        void shouldResolveEventTypeIdWhenDisciplineMatches() {
             int orisId = 100;
             Discipline discipline = new Discipline(3, "SP", "Sprint", "Sprint");
             EventType matchedType = EventType.create(
@@ -75,17 +70,15 @@ class OrisEventTypeAutoMappingTest {
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
             when(eventTypeRepository.findByOrisDisciplineId(3)).thenReturn(Optional.of(matchedType));
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            Event result = service.importEventFromOris(orisId);
+            OrisEventFields result = reader.readOrisFields(orisId);
 
-            assertThat(result.getEventTypeId()).isPresent();
-            assertThat(result.getEventTypeId().get()).isEqualTo(matchedType.getId());
+            assertThat(result.resolvedEventTypeId()).isEqualTo(matchedType.getId());
         }
 
         @Test
-        @DisplayName("should leave eventTypeId empty when discipline ID has no catalog match")
-        void shouldLeaveEventTypeEmptyWhenNoDisciplineMatch() {
+        @DisplayName("should resolve no eventTypeId when discipline ID has no catalog match")
+        void shouldResolveNoEventTypeWhenNoDisciplineMatch() {
             int orisId = 101;
             Discipline discipline = new Discipline(99, "X", "Neznámá disciplína", "Unknown Discipline");
 
@@ -94,32 +87,30 @@ class OrisEventTypeAutoMappingTest {
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
             when(eventTypeRepository.findByOrisDisciplineId(99)).thenReturn(Optional.empty());
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            Event result = service.importEventFromOris(orisId);
+            OrisEventFields result = reader.readOrisFields(orisId);
 
-            assertThat(result.getEventTypeId()).isEmpty();
+            assertThat(result.resolvedEventTypeId()).isNull();
         }
 
         @Test
-        @DisplayName("should leave eventTypeId empty when ORIS discipline is null")
-        void shouldLeaveEventTypeEmptyWhenDisciplineIsNull() {
+        @DisplayName("should resolve no eventTypeId when ORIS discipline is null")
+        void shouldResolveNoEventTypeWhenDisciplineIsNull() {
             int orisId = 102;
             EventDetails details = buildDetailsWithDiscipline(orisId, "No Discipline Race", null);
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            Event result = service.importEventFromOris(orisId);
+            OrisEventFields result = reader.readOrisFields(orisId);
 
-            assertThat(result.getEventTypeId()).isEmpty();
+            assertThat(result.resolvedEventTypeId()).isNull();
             Mockito.verify(eventTypeRepository, Mockito.never()).findByOrisDisciplineId(any(Integer.class));
         }
 
         @Test
-        @DisplayName("should leave eventTypeId empty when ORIS discipline ID is 0 (missing/invalid)")
-        void shouldLeaveEventTypeEmptyWhenDisciplineIdIsZero() {
+        @DisplayName("should resolve no eventTypeId when ORIS discipline ID is 0 (missing/invalid)")
+        void shouldResolveNoEventTypeWhenDisciplineIdIsZero() {
             int orisId = 103;
             Discipline discipline = new Discipline(0, "", "", "");
 
@@ -127,19 +118,25 @@ class OrisEventTypeAutoMappingTest {
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
-            when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            Event result = service.importEventFromOris(orisId);
+            OrisEventFields result = reader.readOrisFields(orisId);
 
-            assertThat(result.getEventTypeId()).isEmpty();
+            assertThat(result.resolvedEventTypeId()).isNull();
             Mockito.verify(eventTypeRepository, Mockito.never()).findByOrisDisciplineId(any(Integer.class));
         }
     }
 
-    // applyOrisSync() auto-mapping with preserve behaviour (fill-when-empty,
-    // preserve-when-set, across matched/unmatched/null discipline) moved to
-    // OrisEventSyncAdapterTest (events.infrastructure.orissync) — that is where
-    // applyToLocal (formerly applyOrisSync) now lives after the D2 fold.
+    @Test
+    @DisplayName("should throw EventNotFoundException when ORIS returns no data for the given ID")
+    void shouldThrowEventNotFoundWhenOrisReturnsEmpty() {
+        int orisId = 9999;
+
+        when(orisApiClient.getEventDetails(orisId)).thenReturn(
+                new OrisApiClient.OrisResponse<>(null, "JSON", "OK", null, "getEvent"));
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> reader.readOrisFields(orisId))
+                .isInstanceOf(EventNotFoundException.class);
+    }
 
     private EventDetails buildDetailsWithDiscipline(int id, String name, Discipline discipline) {
         EventDetails details = Mockito.mock(EventDetails.class);

@@ -20,4 +20,17 @@ public class EventSyncNeedsResolutionException extends BusinessRuleViolationExce
     public EventSyncNeedsResolutionException(EventId eventId) {
         super("Event " + eventId + " is not in sync and needs a decision (resolve the conflict or reset) via its synchronisation resource before it can be synchronised again");
     }
+
+    /**
+     * For {@code importEventFromOris} (task 9.4): {@code pullAndEnroll} refuses
+     * before returning a {@code SyncRecord} when the existing pairing already awaits a
+     * decision, so this path never learns the paired event's {@link EventId} — only
+     * the ORIS id the caller supplied. The message still points at the synchronisation
+     * resource concept; the caller is expected to find the specific event through
+     * {@code GET /api/events?orisId=...} or the events list, same as any other
+     * duplicate-import discovery.
+     */
+    public EventSyncNeedsResolutionException(int orisId) {
+        super("ORIS event " + orisId + " is already paired and its synchronisation is not in sync — it needs a decision (resolve the conflict or reset) via its synchronisation resource before it can be imported again");
+    }
 }

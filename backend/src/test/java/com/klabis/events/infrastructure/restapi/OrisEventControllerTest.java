@@ -9,7 +9,6 @@ import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.application.BulkImportResult;
 import com.klabis.events.application.BulkSyncResult;
-import com.klabis.events.application.DuplicateOrisImportException;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.application.EventSyncNeedsResolutionException;
@@ -127,11 +126,28 @@ class OrisEventControllerTest {
         }
 
         @Test
-        @DisplayName("should return 409 when ORIS event already imported")
+        @DisplayName("should return 201 with Location header on repeated import instead of 409 (design.md D10, task 9.5)")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
-        void shouldReturn409WhenDuplicate() throws Exception {
+        void shouldReturn201OnRepeatedImport() throws Exception {
+            Event existingEvent = EventTestDataBuilder.anEvent().withName("Already Imported Race").build();
+            when(orisEventImportPort.importEventFromOris(9876)).thenReturn(existingEvent);
+
+            mockMvc.perform(
+                            post("/api/events/import")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"orisId\": 9876}")
+                    )
+                    .andExpect(status().isCreated())
+                    .andExpect(header().exists("Location"));
+        }
+
+        @Test
+        @DisplayName("should return 409 pointing at the synchronisation resource when the event awaits a decision (design.md D10, task 9.3)")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn409WhenImportedEventNeedsResolution() throws Exception {
             when(orisEventImportPort.importEventFromOris(9876))
-                    .thenThrow(new DuplicateOrisImportException(9876));
+                    .thenThrow(new EventSyncNeedsResolutionException(new EventId(UUID.randomUUID())));
 
             mockMvc.perform(
                             post("/api/events/import")
