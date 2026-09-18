@@ -64,8 +64,8 @@
 
 ## 5. Full verification
 
-- [ ] 5.1 Run the full `events` and `sync` module test suites; confirm no
+- [x] 5.1 Run the full `events` and `sync` module test suites; confirm no
       existing test needed a non-mechanical change (only the required-origin
       compile fixes from task 1.6).
-- [ ] 5.2 Update `tasks.md` checkboxes and confirm `openspec status` shows the
+- [x] 5.2 Update `tasks.md` checkboxes and confirm `openspec status` shows the
       change ready to archive.
