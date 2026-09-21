@@ -6,8 +6,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -20,13 +20,23 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link DisciplineDiscoveryJob#discoverNewDisciplines()} is scheduled off the same
  * property key (design.md D4, tasks.md 5.2) — independent of
  * {@code com.klabis.sync.application.SyncProperties}'s own {@code scan-cron}/
- * {@code due-scan-interval}, per {@code com.klabis.sync.application.SyncPropertiesTest}'s mirrored shape.
+ * {@code due-scan-interval}.
+ * <p>
+ * Uses {@code @SpringBootTest} rather than {@code @ApplicationModuleTest(STANDALONE)}
+ * (unlike {@code SyncPropertiesTest}'s otherwise-identical shape): {@code
+ * DisciplinesProperties} lives in {@code events.infrastructure.orissync}, a nested
+ * module boundary within {@code events}, and a STANDALONE bootstrap scoped to that
+ * nested module does not pick up {@code @ConfigurationPropertiesScan}'s registration
+ * from {@code KlabisApplication} — confirmed by a real CI run
+ * ({@code NoSuchBeanDefinitionException} for exactly this bean). A full
+ * {@code @SpringBootTest} context (as {@link DisciplineDiscoverySyncScenarioIntegrationTest}
+ * already uses successfully in this same package) does not have that limitation.
  */
 @DisplayName("DisciplinesProperties")
 class DisciplinesPropertiesTest {
 
     @Nested
-    @ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+    @SpringBootTest
     @ActiveProfiles("test")
     @CleanupTestData
     @Import(TestApplicationConfiguration.class)
@@ -44,7 +54,7 @@ class DisciplinesPropertiesTest {
     }
 
     @Nested
-    @ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+    @SpringBootTest
     @ActiveProfiles("test")
     @CleanupTestData
     @Import(TestApplicationConfiguration.class)
