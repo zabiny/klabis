@@ -43,6 +43,12 @@ paths:
     $ref: './events.yaml#/paths/~1api~1event-types'
   /api/event-types/{id}:
     $ref: './events.yaml#/paths/~1api~1event-types~1{id}'
+  /api/disciplines:
+    $ref: './events.yaml#/paths/~1api~1disciplines'
+  /api/disciplines/{id}:
+    $ref: './events.yaml#/paths/~1api~1disciplines~1{id}'
+  /api/disciplines/{id}/restore:
+    $ref: './events.yaml#/paths/~1api~1disciplines~1{id}~1restore'
   /api/events:
     $ref: './events.yaml#/paths/~1api~1events'
   /api/events/{id}:
