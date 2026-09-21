@@ -18,6 +18,7 @@ import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncTarget;
+import com.klabis.sync.domain.SyncedEntityReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -60,6 +61,7 @@ class DisciplineControllerTest {
     @BeforeEach
     void stubSynchronizationPortAbsentByDefault() {
         when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
+        when(synchronizationPort.findActiveByTargets(any(), any())).thenReturn(List.of());
     }
 
     private static SyncTarget targetFor(DisciplineId id) {
@@ -129,6 +131,35 @@ class DisciplineControllerTest {
         }
 
         @Test
+        @DisplayName("should include sync link for a discipline paired to ORIS")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void shouldIncludeSyncLinkForPairedDiscipline() throws Exception {
+            Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
+            when(disciplineManagementService.list(any())).thenReturn(
+                    new PageImpl<>(List.of(discipline), PageRequest.of(0, 10), 1));
+            when(synchronizationPort.findActiveByTargets(SyncEntityType.DISCIPLINE, List.of(discipline.getId().value().toString())))
+                    .thenReturn(List.of(new SyncedEntityReference(
+                            targetFor(discipline.getId()), new ExternalReference(ExternalSystem.ORIS, "100"))));
+
+            mockMvc.perform(get("/api/disciplines").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.disciplineDtoList[0]._links.sync.href").exists());
+        }
+
+        @Test
+        @DisplayName("should omit sync link for a manually created discipline")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void shouldOmitSyncLinkForUnpairedDiscipline() throws Exception {
+            Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
+            when(disciplineManagementService.list(any())).thenReturn(
+                    new PageImpl<>(List.of(discipline), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/disciplines").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.disciplineDtoList[0]._links.sync").doesNotExist());
+        }
+
+        @Test
         @DisplayName("should return 401 when unauthenticated")
         void shouldReturn401WhenUnauthenticated() throws Exception {
             mockMvc.perform(get("/api/disciplines").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -166,7 +197,8 @@ class DisciplineControllerTest {
                     .andExpect(jsonPath("$._templates.archiveDiscipline.method").value("DELETE"))
                     .andExpect(jsonPath("$._templates.restoreDiscipline").doesNotExist())
                     .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._links.collection.href").exists());
+                    .andExpect(jsonPath("$._links.collection.href").exists())
+                    .andExpect(jsonPath("$._links.sync").doesNotExist());
         }
 
         @Test
@@ -184,7 +216,8 @@ class DisciplineControllerTest {
                     .andExpect(jsonPath("$.archived").value(true))
                     .andExpect(jsonPath("$._templates.restoreDiscipline.method").value("POST"))
                     .andExpect(jsonPath("$._templates.updateDiscipline.method").value("PUT"))
-                    .andExpect(jsonPath("$._templates.archiveDiscipline").doesNotExist());
+                    .andExpect(jsonPath("$._templates.archiveDiscipline").doesNotExist())
+                    .andExpect(jsonPath("$._links.sync").doesNotExist());
         }
 
         @Test
@@ -202,7 +235,8 @@ class DisciplineControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updateDiscipline").doesNotExist())
                     .andExpect(jsonPath("$._templates.archiveDiscipline.method").value("DELETE"))
-                    .andExpect(jsonPath("$._templates.restoreDiscipline").doesNotExist());
+                    .andExpect(jsonPath("$._templates.restoreDiscipline").doesNotExist())
+                    .andExpect(jsonPath("$._links.sync.href").exists());
         }
 
         @Test

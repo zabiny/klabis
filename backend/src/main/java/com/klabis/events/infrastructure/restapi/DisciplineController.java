@@ -11,6 +11,8 @@ import com.klabis.members.CurrentUserData;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncTarget;
+import com.klabis.sync.infrastructure.restapi.SyncApi;
+import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.core.convert.ConversionService;
@@ -29,7 +31,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -58,6 +63,20 @@ public class DisciplineController implements DisciplinesApi {
 
         Page<Discipline> page = disciplineManagementService.list(pageable);
 
+        // Mirrors EventController#listEvents (design.md D9): one batched enrolment lookup for
+        // the whole page rather than one per row, read back by the postprocessor via
+        // HalResponseContext instead of injecting SynchronizationPort into it (an @MvcComponent,
+        // scanned by every @WebMvcTest slice).
+        List<String> pageDisciplineIds = page.getContent().stream()
+                .map(discipline -> discipline.getId().value().toString())
+                .toList();
+        Set<String> enrolledDisciplineIds = pageDisciplineIds.isEmpty()
+                ? Set.of()
+                : synchronizationPort.findActiveByTargets(SyncEntityType.DISCIPLINE, pageDisciplineIds).stream()
+                        .map(reference -> reference.target().entityId())
+                        .collect(Collectors.toSet());
+        HalResponseContext.setContext(new EnrolledDisciplineIds(enrolledDisciplineIds));
+
         HalResponseContext.setDomainList(page.getContent());
         return ResponseEntity.ok(page.map(discipline -> conversionService.convert(discipline, DisciplineDto.class)));
     }
@@ -80,16 +99,16 @@ public class DisciplineController implements DisciplinesApi {
         DisciplineId disciplineId = new DisciplineId(id);
         Discipline discipline = disciplineManagementService.get(disciplineId);
 
-        // Mirrors DisciplineManagementService.update's own pairing check (design.md D7/D9): the
-        // postprocessor needs this to decide whether to offer updateDiscipline, but must not hold
-        // SynchronizationPort itself (it is an @MvcComponent, scanned by every @WebMvcTest slice) —
-        // so the controller resolves it once here and hands it over via HalResponseContext, the same
-        // way EventController does for EnrolledEventIds. Task 9.4 folds this into EnrolledDisciplineIds
-        // alongside the batched list-view check and the "sync" link itself.
-        boolean orisPaired = synchronizationPort.findByTarget(targetFor(disciplineId)).isPresent();
+        // Mirrors EventController#getEvent (design.md D9): one lookup per request, feeding both
+        // DisciplineManagementService.update's own pairing check (D7 — whether to offer
+        // updateDiscipline) and the "sync" link, read back by the postprocessor via
+        // HalResponseContext rather than injecting SynchronizationPort into it (an @MvcComponent,
+        // scanned by every @WebMvcTest slice).
+        boolean isEnrolled = synchronizationPort.findByTarget(targetFor(disciplineId)).isPresent();
+        Set<String> enrolledIds = isEnrolled ? Set.of(disciplineId.value().toString()) : Set.of();
+        HalResponseContext.setContext(new EnrolledDisciplineIds(enrolledIds));
 
         HalResponseContext.setDomain(discipline);
-        HalResponseContext.setContext(new DisciplineSyncPairing(orisPaired));
         return ResponseEntity.ok(conversionService.convert(discipline, DisciplineDto.class));
     }
 
@@ -129,14 +148,19 @@ public class DisciplineController implements DisciplinesApi {
 }
 
 /**
- * Interim carrier (task 9.3) for the single boolean design.md D7 needs to gate {@code
- * updateDiscipline}: whether the discipline currently has any sync pairing at all, active or
- * retired. Populated once per {@code getDiscipline} request, mirroring how {@code EventController}
- * hands {@code EnrolledEventIds} to its postprocessor rather than injecting {@link
- * SynchronizationPort} into an {@code @MvcComponent}. Task 9.4 folds this into the richer {@code
- * EnrolledDisciplineIds} (batched for the list view too), which also drives the {@code sync} link.
+ * Carries which disciplines (by id) are currently paired for synchronisation, from
+ * {@code DisciplineController#getDiscipline}/{@code #listDisciplines} to {@code
+ * DisciplineDetailsPostprocessor} — one lookup per request rather than one per row, and rather than
+ * injecting {@link SynchronizationPort} into the postprocessor, mirroring {@code EventController}'s
+ * {@code EnrolledEventIds} (design.md D9). Doubles as the "is this discipline ORIS-managed" signal
+ * D7 needs to gate {@code updateDiscipline}, and as the set driving the {@code sync} link.
+ * {@code getDiscipline} populates this with a zero-or-one-element set from its single-target lookup.
  */
-record DisciplineSyncPairing(boolean orisPaired) {
+record EnrolledDisciplineIds(Set<String> disciplineIds) {
+
+    boolean contains(UUID disciplineId) {
+        return disciplineIds.contains(disciplineId.toString());
+    }
 }
 
 @MvcComponent
@@ -145,9 +169,7 @@ class DisciplineDetailsPostprocessor extends ModelWithDomainPostprocessor<Discip
     @Override
     public void process(EntityModel<DisciplineDto> dtoModel, Discipline discipline) {
         UUID id = discipline.getId().value();
-        boolean orisPaired = HalResponseContext.findContext(DisciplineSyncPairing.class)
-                .map(DisciplineSyncPairing::orisPaired)
-                .orElse(false);
+        boolean orisPaired = isEnrolled(id);
 
         klabisLinkTo(methodOn(DisciplinesApi.class).getDiscipline(id)).ifPresent(link -> {
             var self = link.withSelfRel();
@@ -164,6 +186,17 @@ class DisciplineDetailsPostprocessor extends ModelWithDomainPostprocessor<Discip
 
         klabisLinkTo(methodOn(DisciplinesApi.class).listDisciplines(null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
+
+        if (orisPaired) {
+            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.DISCIPLINES, id.toString()))
+                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
+        }
+    }
+
+    static boolean isEnrolled(UUID disciplineId) {
+        return HalResponseContext.findContext(EnrolledDisciplineIds.class)
+                .map(enrolled -> enrolled.contains(disciplineId))
+                .orElse(false);
     }
 }
 
