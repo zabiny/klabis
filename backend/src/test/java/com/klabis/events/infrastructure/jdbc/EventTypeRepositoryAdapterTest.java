@@ -283,4 +283,34 @@ class EventTypeRepositoryAdapterTest {
             assertThat(eventTypeRepository.findByDisciplineId(disciplineId)).isEmpty();
         }
     }
+
+    @Nested
+    @DisplayName("reference to an archived discipline")
+    class ArchivedDisciplineReference {
+
+        @Test
+        @DisplayName("should keep loading and saving an EventType that references an archived discipline")
+        void shouldLoadAndSaveWhenReferencedDisciplineIsArchived() {
+            DisciplineId disciplineId = newDiscipline("ARC1");
+            EventType saved = eventTypeRepository.save(
+                    EventType.create(new EventType.CreateEventType("Archived Ref", null, 1, Set.of(disciplineId)), 1));
+
+            Discipline discipline = disciplineRepository.findById(disciplineId).orElseThrow();
+            discipline.archive();
+            disciplineRepository.save(discipline);
+
+            Optional<EventType> loaded = eventTypeRepository.findById(saved.getId());
+            assertThat(loaded).isPresent();
+            assertThat(loaded.get().getDisciplineIds()).containsExactly(disciplineId);
+
+            EventType resaved = eventTypeRepository.save(loaded.get());
+
+            assertThat(eventTypeRepository.findById(resaved.getId()))
+                    .get()
+                    .extracting(EventType::getDisciplineIds)
+                    .isEqualTo(Set.of(disciplineId));
+            assertThat(disciplineRepository.findById(disciplineId)).get()
+                    .extracting(Discipline::isArchived).isEqualTo(true);
+        }
+    }
 }

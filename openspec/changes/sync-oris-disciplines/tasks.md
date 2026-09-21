@@ -35,8 +35,8 @@
 
 ## 7. Archiving a discipline never breaks an EventType's reference
 
-- [ ] 7.1 Add `archived: boolean` to `Discipline`, plus `archive()`/`restore()` domain methods and a `DisciplineArchivedEvent`; write a failing unit test asserting `archive()` flips the flag and publishes the event, then implement to pass
-- [ ] 7.2 Update `DisciplineMemento`/persistence for the new column; write an integration test proving an `EventType` still referencing an archived `Discipline`'s id loads and saves correctly (the FK is never touched by archiving)
+- [x] 7.1 Add `archived: boolean` to `Discipline`, plus `archive()`/`restore()` domain methods and a `DisciplineArchivedEvent`; write a failing unit test asserting `archive()` flips the flag and publishes the event, then implement to pass
+- [x] 7.2 Update `DisciplineMemento`/persistence for the new column; write an integration test proving an `EventType` still referencing an archived `Discipline`'s id loads and saves correctly (the FK is never touched by archiving)
 
 ## 8. Archiving and restoring reuse the sync engine's retire/reactivate lifecycle
 

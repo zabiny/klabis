@@ -67,6 +67,31 @@ class DisciplineRepositoryAdapterTest {
         void shouldReturnEmptyWhenNotFound() {
             assertThat(disciplineRepository.findById(DisciplineId.generate())).isEmpty();
         }
+
+        @Test
+        @DisplayName("should persist and load archived flag")
+        void shouldPersistAndLoadArchivedFlag() {
+            Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("ARCH", "Archivovaná disciplína"));
+            discipline.archive();
+
+            Discipline saved = disciplineRepository.save(discipline);
+            Optional<Discipline> loaded = disciplineRepository.findById(saved.getId());
+
+            assertThat(loaded).isPresent();
+            assertThat(loaded.get().isArchived()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should default archived to false for newly created discipline")
+        void shouldDefaultArchivedToFalse() {
+            Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("NEW", "Nová disciplína"));
+
+            Discipline saved = disciplineRepository.save(discipline);
+            Optional<Discipline> loaded = disciplineRepository.findById(saved.getId());
+
+            assertThat(loaded).isPresent();
+            assertThat(loaded.get().isArchived()).isFalse();
+        }
     }
 
     @Nested

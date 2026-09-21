@@ -58,7 +58,7 @@ class DisciplineMemento implements Persistable<UUID> {
         memento.id = discipline.getId().value();
         memento.code = discipline.getCode();
         memento.name = discipline.getName();
-        memento.archived = false;
+        memento.archived = discipline.isArchived();
 
         memento.createdAt = discipline.getCreatedAt();
         memento.createdBy = discipline.getCreatedBy();
@@ -74,6 +74,7 @@ class DisciplineMemento implements Persistable<UUID> {
                 new DisciplineId(this.id),
                 this.code,
                 this.name,
+                this.archived,
                 new AuditMetadata(this.createdAt, this.createdBy, this.lastModifiedAt, this.lastModifiedBy, this.version)
         );
     }
