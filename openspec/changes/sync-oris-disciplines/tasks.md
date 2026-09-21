@@ -40,9 +40,9 @@
 
 ## 8. Archiving and restoring reuse the sync engine's retire/reactivate lifecycle
 
-- [ ] 8.1 Implement `DisciplineSyncListener` (mirrors `EventsSyncListener`): on `DisciplineArchivedEvent`, call `SynchronizationPort.retire` for the discipline's `SyncRecord` if one exists (no-op otherwise); write a unit test covering both the paired and unpaired cases
-- [ ] 8.2 Implement the restore path: look up the discipline's `SyncRecord` via `SynchronizationPort.findByTarget` and, if found, call `pullAndEnroll` again to reactivate it (unpaired disciplines just clear the `archived` flag); write a unit test covering both cases
-- [ ] 8.3 Write an integration test proving specs/disciplines' "manager removes a discipline that is still assigned" and "manager restores a removed discipline" scenarios end-to-end, including that the reactivated pairing's next sync pass runs correctly
+- [x] 8.1 Implement `DisciplineSyncListener` (mirrors `EventsSyncListener`): on `DisciplineArchivedEvent`, call `SynchronizationPort.retire` for the discipline's `SyncRecord` if one exists (no-op otherwise); write a unit test covering both the paired and unpaired cases
+- [x] 8.2 Implement the restore path: look up the discipline's `SyncRecord` via `SynchronizationPort.findByTarget` and, if found, call `pullAndEnroll` again to reactivate it (unpaired disciplines just clear the `archived` flag); write a unit test covering both cases
+- [x] 8.3 Write an integration test proving specs/disciplines' "manager removes a discipline that is still assigned" and "manager restores a removed discipline" scenarios end-to-end, including that the reactivated pairing's next sync pass runs correctly
 
 ## 9. Discipline CRUD REST API
 
