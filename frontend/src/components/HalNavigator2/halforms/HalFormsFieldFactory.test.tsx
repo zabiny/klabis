@@ -112,7 +112,7 @@ describe('halFormsFieldsFactory', () => {
     describe('multi-select with inline options', () => {
         it('renders checkbox group when multi=true and options.inline has items', () => {
             const prop: HalFormsProperty = {
-                name: 'orisDisciplineIds',
+                name: 'disciplineIds',
                 type: 'number',
                 multi: true,
                 options: {inline: [{value: '1', prompt: 'Orientační běh'}, {value: '3', prompt: 'Lyžařský OB'}]},

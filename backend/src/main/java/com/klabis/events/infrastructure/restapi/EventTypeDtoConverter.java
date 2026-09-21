@@ -12,5 +12,6 @@ interface EventTypeDtoConverter extends Converter<EventType, EventTypeDto> {
     @Override
     @Mapping(target = "id", expression = "java(eventType.getId().value())")
     @Mapping(target = "color", expression = "java(eventType.getColor().orElse(null))")
+    @Mapping(target = "disciplineIds", expression = "java(EventTypeRequestConversions.toDisciplineUuids(eventType.getDisciplineIds()))")
     EventTypeDto convert(EventType eventType);
 }

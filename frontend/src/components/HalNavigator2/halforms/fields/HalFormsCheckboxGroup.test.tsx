@@ -136,7 +136,7 @@ describe('HalFormsCheckboxGroup', () => {
 
     describe('number value normalization for options with string values', () => {
         const disciplineProp: HalFormsInputProps['prop'] = {
-            name: 'orisDisciplineIds',
+            name: 'disciplineIds',
             prompt: 'ORIS disciplíny',
             type: 'number',
             multi: true,
@@ -159,41 +159,41 @@ describe('HalFormsCheckboxGroup', () => {
         });
 
         it('shows option as checked when initial value contains number matching string option value', () => {
-            renderWithFormik({orisDisciplineIds: [1, 3]}, disciplineProp);
+            renderWithFormik({disciplineIds: [1, 3]}, disciplineProp);
 
             expect(screen.getByLabelText('Orientační běh')).toBeChecked();
             expect(screen.getByLabelText('Krátká trať')).not.toBeChecked();
         });
 
         it('shows no options checked when initial numeric array has no matching option values', () => {
-            renderWithFormik({orisDisciplineIds: [99]}, disciplineProp);
+            renderWithFormik({disciplineIds: [99]}, disciplineProp);
 
             expect(screen.getByLabelText('Orientační běh')).not.toBeChecked();
             expect(screen.getByLabelText('Krátká trať')).not.toBeChecked();
         });
 
         it('submits number values when initial value was number array (type:number property)', async () => {
-            const {onSubmit} = renderWithFormik({orisDisciplineIds: [1]}, disciplineProp);
+            const {onSubmit} = renderWithFormik({disciplineIds: [1]}, disciplineProp);
 
             fireEvent.click(screen.getByRole('button', {name: 'Submit'}));
 
             await vi.waitFor(() => {
                 expect(onSubmit).toHaveBeenCalledWith(
-                    {orisDisciplineIds: [1]},
+                    {disciplineIds: [1]},
                     expect.anything()
                 );
             });
         });
 
         it('submits numbers when user checks an option on a number-typed field', async () => {
-            const {onSubmit} = renderWithFormik({orisDisciplineIds: []}, disciplineProp);
+            const {onSubmit} = renderWithFormik({disciplineIds: []}, disciplineProp);
 
             fireEvent.click(screen.getByLabelText('Orientační běh'));
             fireEvent.click(screen.getByRole('button', {name: 'Submit'}));
 
             await vi.waitFor(() => {
                 expect(onSubmit).toHaveBeenCalledWith(
-                    {orisDisciplineIds: [1]},
+                    {disciplineIds: [1]},
                     expect.anything()
                 );
             });

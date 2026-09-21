@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.EventType;
 import org.springframework.data.annotation.*;
@@ -52,7 +53,7 @@ class EventTypeMemento implements Persistable<UUID> {
     private Long version;
 
     @MappedCollection(idColumn = "event_type_id")
-    private Set<OrisDisciplineMemento> orisDisciplines = new HashSet<>();
+    private Set<EventTypeDisciplineMemento> disciplines = new HashSet<>();
 
     @Transient
     private boolean isNew = true;
@@ -66,8 +67,8 @@ class EventTypeMemento implements Persistable<UUID> {
         memento.name = eventType.getName();
         memento.color = eventType.getColor().orElse(null);
         memento.sortOrder = eventType.getSortOrder();
-        memento.orisDisciplines = eventType.getOrisDisciplineIds().stream()
-                .map(OrisDisciplineMemento::of)
+        memento.disciplines = eventType.getDisciplineIds().stream()
+                .map(EventTypeDisciplineMemento::of)
                 .collect(Collectors.toCollection(HashSet::new));
 
         memento.createdAt = eventType.getCreatedAt();
@@ -80,8 +81,8 @@ class EventTypeMemento implements Persistable<UUID> {
     }
 
     EventType toEventType() {
-        Set<Integer> disciplineIds = this.orisDisciplines.stream()
-                .map(OrisDisciplineMemento::getDisciplineId)
+        Set<DisciplineId> disciplineIds = this.disciplines.stream()
+                .map(EventTypeDisciplineMemento::getDisciplineId)
                 .collect(Collectors.toSet());
         return EventType.reconstruct(
                 new EventTypeId(this.id),

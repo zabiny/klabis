@@ -1,6 +1,7 @@
 package com.klabis.events.domain;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -211,62 +212,68 @@ class EventTypeTest {
         }
 
         @Test
-        @DisplayName("should reconstruct with orisDisciplineIds")
-        void shouldReconstructWithOrisDisciplineIds() {
-            EventType eventType = EventType.reconstruct(EventTypeId.generate(), "Type", null, 0, null, Set.of(1, 2));
-            assertThat(eventType.getOrisDisciplineIds()).containsExactlyInAnyOrder(1, 2);
+        @DisplayName("should reconstruct with disciplineIds")
+        void shouldReconstructWithDisciplineIds() {
+            DisciplineId first = DisciplineId.generate();
+            DisciplineId second = DisciplineId.generate();
+            EventType eventType = EventType.reconstruct(EventTypeId.generate(), "Type", null, 0, null, Set.of(first, second));
+            assertThat(eventType.getDisciplineIds()).containsExactlyInAnyOrder(first, second);
         }
 
         @Test
-        @DisplayName("should reconstruct with empty orisDisciplineIds when null provided")
-        void shouldReconstructWithEmptyWhenNullOrisDisciplineIds() {
+        @DisplayName("should reconstruct with empty disciplineIds when null provided")
+        void shouldReconstructWithEmptyWhenNullDisciplineIds() {
             EventType eventType = EventType.reconstruct(EventTypeId.generate(), "Type", null, 0, null, null);
-            assertThat(eventType.getOrisDisciplineIds()).isEmpty();
+            assertThat(eventType.getDisciplineIds()).isEmpty();
         }
     }
 
     @Nested
-    @DisplayName("orisDisciplineIds")
-    class OrisDisciplineIdsTests {
+    @DisplayName("disciplineIds")
+    class DisciplineIdsTests {
 
         @Test
-        @DisplayName("create with null orisDisciplineIds defaults to empty set")
-        void createWithNullOrisDisciplineIdsDefaultsToEmpty() {
+        @DisplayName("create with null disciplineIds defaults to empty set")
+        void createWithNullDisciplineIdsDefaultsToEmpty() {
             var command = new EventType.CreateEventType("Trénink", null, null, null);
             EventType eventType = EventType.create(command, 1);
-            assertThat(eventType.getOrisDisciplineIds()).isEmpty();
+            assertThat(eventType.getDisciplineIds()).isEmpty();
         }
 
         @Test
-        @DisplayName("create with orisDisciplineIds stores them")
-        void createWithOrisDisciplineIds() {
-            var command = new EventType.CreateEventType("Závod", null, null, Set.of(3, 5));
+        @DisplayName("create with disciplineIds stores them")
+        void createWithDisciplineIds() {
+            DisciplineId first = DisciplineId.generate();
+            DisciplineId second = DisciplineId.generate();
+            var command = new EventType.CreateEventType("Závod", null, null, Set.of(first, second));
             EventType eventType = EventType.create(command, 1);
-            assertThat(eventType.getOrisDisciplineIds()).containsExactlyInAnyOrder(3, 5);
+            assertThat(eventType.getDisciplineIds()).containsExactlyInAnyOrder(first, second);
         }
 
         @Test
-        @DisplayName("update with null orisDisciplineIds clears them")
-        void updateWithNullOrisDisciplineIdsClears() {
-            EventType eventType = EventType.create(new EventType.CreateEventType("Type", null, null, Set.of(1)), 1);
+        @DisplayName("update with null disciplineIds clears them")
+        void updateWithNullDisciplineIdsClears() {
+            EventType eventType = EventType.create(new EventType.CreateEventType("Type", null, null, Set.of(DisciplineId.generate())), 1);
             eventType.update(new EventType.UpdateEventType("Type", null, null, null));
-            assertThat(eventType.getOrisDisciplineIds()).isEmpty();
+            assertThat(eventType.getDisciplineIds()).isEmpty();
         }
 
         @Test
-        @DisplayName("update with orisDisciplineIds replaces them")
-        void updateWithOrisDisciplineIdsReplaces() {
-            EventType eventType = EventType.create(new EventType.CreateEventType("Type", null, null, Set.of(1)), 1);
-            eventType.update(new EventType.UpdateEventType("Type", null, null, Set.of(2, 4)));
-            assertThat(eventType.getOrisDisciplineIds()).containsExactlyInAnyOrder(2, 4);
+        @DisplayName("update with disciplineIds replaces them")
+        void updateWithDisciplineIdsReplaces() {
+            EventType eventType = EventType.create(new EventType.CreateEventType("Type", null, null, Set.of(DisciplineId.generate())), 1);
+            DisciplineId replacementFirst = DisciplineId.generate();
+            DisciplineId replacementSecond = DisciplineId.generate();
+            eventType.update(new EventType.UpdateEventType("Type", null, null, Set.of(replacementFirst, replacementSecond)));
+            assertThat(eventType.getDisciplineIds()).containsExactlyInAnyOrder(replacementFirst, replacementSecond);
         }
 
         @Test
-        @DisplayName("getOrisDisciplineIds returns an immutable copy")
-        void getOrisDisciplineIdsReturnsImmutableCopy() {
-            EventType eventType = EventType.create(new EventType.CreateEventType("Type", null, null, Set.of(1, 2)), 1);
-            Set<Integer> ids = eventType.getOrisDisciplineIds();
-            assertThatThrownBy(() -> ids.add(99)).isInstanceOf(UnsupportedOperationException.class);
+        @DisplayName("getDisciplineIds returns an immutable copy")
+        void getDisciplineIdsReturnsImmutableCopy() {
+            EventType eventType = EventType.create(new EventType.CreateEventType("Type", null, null, Set.of(DisciplineId.generate(), DisciplineId.generate())), 1);
+            Set<DisciplineId> ids = eventType.getDisciplineIds();
+            assertThatThrownBy(() -> ids.add(DisciplineId.generate())).isInstanceOf(UnsupportedOperationException.class);
         }
     }
 }

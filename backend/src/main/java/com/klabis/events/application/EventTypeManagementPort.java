@@ -21,9 +21,8 @@ public interface EventTypeManagementPort {
     List<EventType> listAllSorted();
 
     /**
-     * Returns ORIS discipline options available for assignment to event types.
-     * Each option carries a machine value (discipline ID string) and a human-readable Czech prompt.
-     * Returns an empty list when ORIS integration is not active.
+     * Returns local discipline options available for assignment to event types.
+     * Each option carries a machine value (local discipline ID) and a human-readable prompt (discipline name).
      */
     List<HalFormsInlineOption> listDisciplineOptions();
 }

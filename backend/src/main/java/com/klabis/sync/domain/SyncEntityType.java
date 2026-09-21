@@ -9,7 +9,8 @@ package com.klabis.sync.domain;
  */
 public enum SyncEntityType {
 
-    EVENT("events");
+    EVENT("events"),
+    DISCIPLINE("disciplines");
 
     private final String pathSegment;
 

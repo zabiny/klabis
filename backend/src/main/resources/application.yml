@@ -172,6 +172,9 @@ klabis:
     logging:
       enabled: ${KLABIS_EVENT_LOGGING_ENABLED:true}
 
+  disciplines:
+    discovery-cron: ${KLABIS_DISCIPLINES_DISCOVERY_CRON:0 0 3 * * *}
+
   frontend:
     allowed-origins: ${KLABIS_FRONTEND_ALLOWED_ORIGINS:http://localhost:3000,https://localhost:8443}
     allow-credentials: ${KLABIS_FRONTEND_ALLOW_CREDENTIALS:true}

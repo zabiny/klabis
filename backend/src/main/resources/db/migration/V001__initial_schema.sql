@@ -14,7 +14,8 @@
 -- 2. common.users (no dependencies)
 -- 3. common.user_permissions (FK → common.users)
 -- 4. common.password_setup_tokens (FK → common.users)
--- 4a. events.event_types (no dependencies — must precede events)
+-- 4a. events.disciplines (no dependencies — local ORIS-sourced discipline catalog)
+-- 4b. events.event_types (no dependencies — must precede events)
 -- 5. events.events (FK → members.members, events.event_types)
 -- 6. events.event_registrations (FK → events.events, members.members)
 -- 7. calendar.calendar_items (FK → events.events)
@@ -241,7 +242,35 @@ COMMENT ON COLUMN common.password_setup_tokens.modified_by IS 'Identifier of who
 COMMENT ON COLUMN common.password_setup_tokens.version IS 'Optimistic locking version for concurrent modification detection';
 
 -- ============================================================================
--- 4a. EVENT_TYPES TABLE
+-- 4a. DISCIPLINES TABLE
+-- Local, ORIS-sourced catalog of orienteering disciplines that event types can
+-- be mapped to. Per ADR-005, carries no orisId column — the ORIS correlation
+-- is tracked exclusively by the synchronisation engine's own sync.sync_record.
+-- ============================================================================
+
+CREATE TABLE events.disciplines
+(
+    id          UUID         NOT NULL PRIMARY KEY,
+    code        VARCHAR(50)  NOT NULL,
+    name        VARCHAR(200) NOT NULL,
+    archived    BOOLEAN      NOT NULL DEFAULT FALSE,
+
+    -- Audit fields
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by  VARCHAR(100) NOT NULL,
+    modified_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_by VARCHAR(100) NOT NULL,
+    version     BIGINT       NOT NULL DEFAULT 0
+);
+
+-- Comments for disciplines
+COMMENT ON TABLE events.disciplines IS 'Local, ORIS-sourced catalog of orienteering disciplines that event types can be mapped to';
+COMMENT ON COLUMN events.disciplines.code IS 'Short discipline code (e.g. OB)';
+COMMENT ON COLUMN events.disciplines.name IS 'Display name of the discipline (e.g. Orientační běh)';
+COMMENT ON COLUMN events.disciplines.archived IS 'Soft-delete flag — archived disciplines are hidden from new assignments but existing EventType references keep working';
+
+-- ============================================================================
+-- 4b. EVENT_TYPES TABLE
 -- Catalog of event types (e.g. Training, Race, Championship) managed by admin
 -- Must be created before events table due to FK dependency
 -- ============================================================================
@@ -277,17 +306,18 @@ COMMENT ON COLUMN events.event_types.color IS 'Optional hex color code for displ
 COMMENT ON COLUMN events.event_types.sort_order IS 'Position in sorted lists and filters; newly created types get MAX+1';
 
 -- ============================================================================
--- 4b. EVENT_TYPE_ORIS_DISCIPLINES TABLE
--- Maps ORIS discipline IDs to event types (each discipline ID belongs to at most one event type)
+-- 4c. EVENT_TYPE_DISCIPLINES TABLE
+-- Maps local disciplines (events.disciplines) to event types (each discipline belongs to
+-- at most one event type).
 -- ============================================================================
 
-CREATE TABLE events.event_type_oris_disciplines
+CREATE TABLE events.event_type_disciplines
 (
     event_type_id UUID NOT NULL REFERENCES events.event_types (id) ON DELETE CASCADE,
-    discipline_id INT  NOT NULL
+    discipline_id UUID NOT NULL REFERENCES events.disciplines (id)
 );
 
-CREATE UNIQUE INDEX idx_event_type_oris_disciplines_discipline ON events.event_type_oris_disciplines (discipline_id);
+CREATE UNIQUE INDEX idx_event_type_disciplines_discipline ON events.event_type_disciplines (discipline_id);
 
 -- ============================================================================
 -- 5. EVENTS TABLE

@@ -1,7 +1,10 @@
 package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
+import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
+import com.klabis.events.domain.Discipline;
+import com.klabis.events.domain.DisciplineRepository;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
 import org.jmolecules.ddd.annotation.Repository;
@@ -36,6 +39,14 @@ class EventTypeRepositoryAdapterTest {
 
     @Autowired
     private EventTypeRepository eventTypeRepository;
+
+    @Autowired
+    private DisciplineRepository disciplineRepository;
+
+    private DisciplineId newDiscipline(String code) {
+        Discipline discipline = Discipline.create(new Discipline.CreateDiscipline(code, code));
+        return disciplineRepository.save(discipline).getId();
+    }
 
     @Nested
     @DisplayName("save() and findById() round-trip")
@@ -189,25 +200,27 @@ class EventTypeRepositoryAdapterTest {
     }
 
     @Nested
-    @DisplayName("orisDisciplineIds persistence")
-    class OrisDisciplineIdsPersistence {
+    @DisplayName("disciplineIds persistence")
+    class DisciplineIdsPersistence {
 
         @Test
-        @DisplayName("should persist and load orisDisciplineIds")
-        void shouldPersistAndLoadOrisDisciplineIds() {
+        @DisplayName("should persist and load disciplineIds")
+        void shouldPersistAndLoadDisciplineIds() {
+            DisciplineId first = newDiscipline("SP1");
+            DisciplineId second = newDiscipline("SP2");
             EventType eventType = EventType.create(
-                    new EventType.CreateEventType("Sprint", null, 1, Set.of(1, 2)), 1);
+                    new EventType.CreateEventType("Sprint", null, 1, Set.of(first, second)), 1);
 
             EventType saved = eventTypeRepository.save(eventType);
             Optional<EventType> loaded = eventTypeRepository.findById(saved.getId());
 
             assertThat(loaded).isPresent();
-            assertThat(loaded.get().getOrisDisciplineIds()).containsExactlyInAnyOrder(1, 2);
+            assertThat(loaded.get().getDisciplineIds()).containsExactlyInAnyOrder(first, second);
         }
 
         @Test
-        @DisplayName("should persist event type with empty orisDisciplineIds")
-        void shouldPersistWithEmptyOrisDisciplineIds() {
+        @DisplayName("should persist event type with empty disciplineIds")
+        void shouldPersistWithEmptyDisciplineIds() {
             EventType eventType = EventType.create(
                     new EventType.CreateEventType("Long", null, 1, null), 1);
 
@@ -215,21 +228,22 @@ class EventTypeRepositoryAdapterTest {
             Optional<EventType> loaded = eventTypeRepository.findById(saved.getId());
 
             assertThat(loaded).isPresent();
-            assertThat(loaded.get().getOrisDisciplineIds()).isEmpty();
+            assertThat(loaded.get().getDisciplineIds()).isEmpty();
         }
     }
 
     @Nested
-    @DisplayName("findByOrisDisciplineId()")
-    class FindByOrisDisciplineId {
+    @DisplayName("findByDisciplineId()")
+    class FindByDisciplineId {
 
         @Test
-        @DisplayName("should find event type by ORIS discipline ID")
+        @DisplayName("should find event type by discipline ID")
         void shouldFindByDisciplineId() {
+            DisciplineId disciplineId = newDiscipline("SP3");
             EventType saved = eventTypeRepository.save(
-                    EventType.create(new EventType.CreateEventType("Sprint", null, 1, Set.of(3)), 1));
+                    EventType.create(new EventType.CreateEventType("Sprint", null, 1, Set.of(disciplineId)), 1));
 
-            Optional<EventType> found = eventTypeRepository.findByOrisDisciplineId(3);
+            Optional<EventType> found = eventTypeRepository.findByDisciplineId(disciplineId);
 
             assertThat(found).isPresent();
             assertThat(found.get().getId()).isEqualTo(saved.getId());
@@ -238,31 +252,65 @@ class EventTypeRepositoryAdapterTest {
         @Test
         @DisplayName("should return empty when no event type has the discipline ID")
         void shouldReturnEmptyWhenNotFound() {
-            assertThat(eventTypeRepository.findByOrisDisciplineId(99)).isEmpty();
+            assertThat(eventTypeRepository.findByDisciplineId(DisciplineId.generate())).isEmpty();
         }
 
         @Test
-        @DisplayName("should return all orisDisciplineIds when found by one of them")
-        void shouldReturnCompleteOrisDisciplineIds() {
+        @DisplayName("should return all disciplineIds when found by one of them")
+        void shouldReturnCompleteDisciplineIds() {
+            DisciplineId first = newDiscipline("M1");
+            DisciplineId second = newDiscipline("M2");
+            DisciplineId third = newDiscipline("M3");
             EventType saved = eventTypeRepository.save(
-                    EventType.create(new EventType.CreateEventType("Middle", null, 1, Set.of(10, 20, 30)), 1));
+                    EventType.create(new EventType.CreateEventType("Middle", null, 1, Set.of(first, second, third)), 1));
 
-            Optional<EventType> found = eventTypeRepository.findByOrisDisciplineId(20);
+            Optional<EventType> found = eventTypeRepository.findByDisciplineId(second);
 
             assertThat(found).isPresent();
             assertThat(found.get().getId()).isEqualTo(saved.getId());
-            assertThat(found.get().getOrisDisciplineIds()).containsExactlyInAnyOrder(10, 20, 30);
+            assertThat(found.get().getDisciplineIds()).containsExactlyInAnyOrder(first, second, third);
         }
 
         @Test
         @DisplayName("should not find deleted event type by discipline ID after cascade delete")
         void shouldNotFindAfterDelete() {
+            DisciplineId disciplineId = newDiscipline("SP4");
             EventType saved = eventTypeRepository.save(
-                    EventType.create(new EventType.CreateEventType("Sprint", null, 1, Set.of(4)), 1));
+                    EventType.create(new EventType.CreateEventType("Sprint", null, 1, Set.of(disciplineId)), 1));
 
             eventTypeRepository.deleteById(saved.getId());
 
-            assertThat(eventTypeRepository.findByOrisDisciplineId(4)).isEmpty();
+            assertThat(eventTypeRepository.findByDisciplineId(disciplineId)).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("reference to an archived discipline")
+    class ArchivedDisciplineReference {
+
+        @Test
+        @DisplayName("should keep loading and saving an EventType that references an archived discipline")
+        void shouldLoadAndSaveWhenReferencedDisciplineIsArchived() {
+            DisciplineId disciplineId = newDiscipline("ARC1");
+            EventType saved = eventTypeRepository.save(
+                    EventType.create(new EventType.CreateEventType("Archived Ref", null, 1, Set.of(disciplineId)), 1));
+
+            Discipline discipline = disciplineRepository.findById(disciplineId).orElseThrow();
+            discipline.archive();
+            disciplineRepository.save(discipline);
+
+            Optional<EventType> loaded = eventTypeRepository.findById(saved.getId());
+            assertThat(loaded).isPresent();
+            assertThat(loaded.get().getDisciplineIds()).containsExactly(disciplineId);
+
+            EventType resaved = eventTypeRepository.save(loaded.get());
+
+            assertThat(eventTypeRepository.findById(resaved.getId()))
+                    .get()
+                    .extracting(EventType::getDisciplineIds)
+                    .isEqualTo(Set.of(disciplineId));
+            assertThat(disciplineRepository.findById(disciplineId)).get()
+                    .extracting(Discipline::isArchived).isEqualTo(true);
         }
     }
 }

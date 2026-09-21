@@ -118,7 +118,7 @@ class EventTypeDetailsPostprocessor extends ModelWithDomainPostprocessor<EventTy
                 dtoModel.add(link.withSelfRel()
                         .andAffordances(klabisAffordWithPromptedOptions(
                                 methodOn(EventTypesApi.class).updateEventType(id, null),
-                                Map.of("orisDisciplineIds", disciplineOptions)))
+                                Map.of("disciplineIds", disciplineOptions)))
                         .andAffordances(klabisAfford(methodOn(EventTypesApi.class).deleteEventType(id)))));
         klabisLinkTo(methodOn(EventTypesApi.class).listEventTypes())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
@@ -149,7 +149,7 @@ class EventTypeListPostprocessor
         model.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
                 .andAffordances(klabisAffordWithPromptedOptions(
                         methodOn(EventTypesApi.class).createEventType(null),
-                        Map.of("orisDisciplineIds", disciplineOptions))));
+                        Map.of("disciplineIds", disciplineOptions))));
         return model;
     }
 }

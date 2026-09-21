@@ -9,7 +9,7 @@ import {normalizeArrayValue} from './normalizeArrayValue.ts'
 /**
  * Converts a string checkbox value to the correct submission type based on the HAL property type.
  *
- * For number-typed properties (e.g. orisDisciplineIds: Set<Integer> on backend),
+ * For number-typed properties (e.g. a Set<Integer> field on backend),
  * values must be submitted as numbers — Jackson cannot deserialize string "1" into Integer.
  * For all other types (text, UUID-based trainers), string submission is correct.
  */

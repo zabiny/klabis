@@ -58,8 +58,9 @@ paths:
             createEventType:
               operation: createEventType
               description: |
-                Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
-                populated at runtime with the available ORIS discipline options.
+                Present only for callers with EVENTS:MANAGE. The disciplineIds property is
+                populated at runtime with the available options from the local Klabis discipline
+                catalog.
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -140,8 +141,9 @@ paths:
             updateEventType:
               operation: updateEventType
               description: |
-                Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
-                populated at runtime with the available ORIS discipline options.
+                Present only for callers with EVENTS:MANAGE. The disciplineIds property is
+                populated at runtime with the available options from the local Klabis discipline
+                catalog.
             deleteEventType:
               operation: deleteEventType
               description: Present only for callers with EVENTS:MANAGE
@@ -217,6 +219,254 @@ paths:
         '404':
           $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/disciplines:
+    get:
+      operationId: listDisciplines
+      tags: [Disciplines]
+      summary: List disciplines
+      description: |
+        Returns a paginated list of all disciplines, active and archived, each with its archived
+        flag. Default: page=0, size=10.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_READ
+      x-spring-paginated: true
+      parameters:
+        - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
+        - $ref: './_shared/pagination.yaml#/components/parameters/SizeParam'
+      responses:
+        '200':
+          description: Paginated list of disciplines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DisciplineDto'
+          x-hal-links:
+            self:
+              description: This collection, with the current paging parameters
+            first:
+              description: First page (present when the result is paged)
+            last:
+              description: Last page (present when the result is paged)
+            next:
+              description: Next page (present when one exists)
+            prev:
+              description: Previous page (present when one exists)
+          x-hal-templates:
+            createDiscipline:
+              operation: createDiscipline
+              description: Present only for callers with EVENTS:MANAGE
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    post:
+      operationId: createDiscipline
+      tags: [Disciplines]
+      summary: Create a discipline
+      description: |
+        Creates a discipline manually. Normally the local catalog is filled automatically by ORIS
+        discovery; this lets a manager add one by hand, e.g. before ORIS has published it.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDisciplineRequest'
+      responses:
+        '201':
+          description: Discipline created
+          headers:
+            Location:
+              description: URI of the created discipline
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/disciplines/{id}:
+    get:
+      operationId: getDiscipline
+      tags: [Disciplines]
+      summary: Get discipline by ID
+      description: Returns a single discipline.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_READ
+      parameters:
+        - $ref: '#/components/parameters/DisciplineIdParam'
+      responses:
+        '200':
+          description: Discipline found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisciplineDto'
+          x-hal-links:
+            self:
+              description: This discipline
+            collection:
+              operation: listDisciplines
+              description: Back to the discipline list
+            sync:
+              operation: getSyncState
+              description: Present only when the discipline is paired to ORIS
+          x-hal-templates:
+            updateDiscipline:
+              operation: updateDiscipline
+              description: |
+                Present only for callers with EVENTS:MANAGE and only when the discipline is not
+                paired to ORIS — code/name are ORIS-owned once paired.
+            archiveDiscipline:
+              operation: archiveDiscipline
+              description: Present only for callers with EVENTS:MANAGE and only while the discipline is active
+            restoreDiscipline:
+              operation: restoreDiscipline
+              description: Present only for callers with EVENTS:MANAGE and only while the discipline is archived
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    put:
+      operationId: updateDiscipline
+      tags: [Disciplines]
+      summary: Update a discipline
+      description: |
+        Updates an existing discipline's code/name. Refused with 409 when the discipline is paired
+        to ORIS — ORIS is that discipline's sole source of truth for these fields once paired.
+        Normally unreachable over HTTP since updateDiscipline is not offered in that case.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/DisciplineIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDisciplineRequest'
+      responses:
+        '204':
+          description: Discipline updated
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          # DisciplineExceptionHandler maps DisciplineNotEditableException to 409 here.
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    delete:
+      operationId: archiveDiscipline
+      tags: [Disciplines]
+      summary: Archive a discipline
+      description: |
+        Soft-deletes (archives) the discipline. Always succeeds, regardless of how many event types
+        still reference its id — unlike deleteEventType, archiving never refuses.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/DisciplineIdParam'
+      responses:
+        '204':
+          description: Discipline archived
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/disciplines/{id}/restore:
+    post:
+      operationId: restoreDiscipline
+      tags: [Disciplines]
+      summary: Restore an archived discipline
+      description: |
+        Restores an archived discipline and, if it was paired to ORIS, reactivates the sync pairing.
+        Refused with 409 when the discipline is not currently archived.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/DisciplineIdParam'
+      responses:
+        '204':
+          description: Discipline restored
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          # DisciplineExceptionHandler maps DisciplineNotArchivedException to 409 here.
           $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
@@ -1312,6 +1562,15 @@ components:
         type: string
         format: uuid
 
+    DisciplineIdParam:
+      name: id
+      in: path
+      description: Discipline UUID
+      required: true
+      schema:
+        type: string
+        format: uuid
+
     RegEventIdParam:
       name: eventId
       in: path
@@ -2039,13 +2298,13 @@ components:
         sortOrder:
           type: integer
           format: int32
-        orisDisciplineIds:
+        disciplineIds:
           type: array
-          description: ORIS discipline identifiers mapped onto this event type.
+          description: Local discipline identifiers mapped onto this event type.
           uniqueItems: true
           items:
-            type: integer
-            format: int32
+            type: string
+            format: uuid
 
     CreateEventTypeRequest:
       type: object
@@ -2064,12 +2323,12 @@ components:
           format: int32
           description: Assigned automatically when omitted.
           minimum: 0
-        orisDisciplineIds:
+        disciplineIds:
           type: array
           uniqueItems: true
           items:
-            type: integer
-            format: int32
+            type: string
+            format: uuid
 
     UpdateEventTypeRequest:
       type: object
@@ -2088,9 +2347,51 @@ components:
           format: int32
           description: Left unchanged when omitted.
           minimum: 0
-        orisDisciplineIds:
+        disciplineIds:
           type: array
           uniqueItems: true
           items:
-            type: integer
-            format: int32
+            type: string
+            format: uuid
+
+    # A named schema, not an inline array: the item payload needs a stable wire-contract name for
+    # the bundler to reconstruct the collection envelope in klabis-full.json from.
+    DisciplineDto:
+      type: object
+      description: Discipline catalog entry.
+      properties:
+        id:
+          type: string
+          format: uuid
+          x-klabis-halforms-access: READ_ONLY
+        code:
+          type: string
+        name:
+          type: string
+        archived:
+          type: boolean
+          x-klabis-halforms-access: READ_ONLY
+
+    CreateDisciplineRequest:
+      type: object
+      description: Discipline creation data
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          x-klabis-not-blank: true
+        name:
+          type: string
+          x-klabis-not-blank: true
+
+    UpdateDisciplineRequest:
+      type: object
+      description: Discipline update data
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          x-klabis-not-blank: true
+        name:
+          type: string
+          x-klabis-not-blank: true

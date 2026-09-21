@@ -1,5 +1,6 @@
 package com.klabis.events.domain;
 
+import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
 
 import java.util.List;
@@ -25,5 +26,5 @@ public interface EventTypeRepository {
 
     List<String> findEventNamesReferencingType(EventTypeId id, int limit);
 
-    Optional<EventType> findByOrisDisciplineId(int disciplineId);
+    Optional<EventType> findByDisciplineId(DisciplineId disciplineId);
 }
