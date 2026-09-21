@@ -31,9 +31,9 @@ Users with the EVENTS:MANAGE authority mapping ORIS disciplines to an event type
 - **THEN** the manager still sees the full list of known disciplines by name
 - **AND** the manager can assign one to the event type
 
-### Requirement: Manager Can Maintain The Discipline Catalog By Hand
+### Requirement: Manager Can Maintain A Manually Added Discipline By Hand
 
-Users with the EVENTS:MANAGE authority SHALL be able to create a discipline directly in Klabis, ahead of ORIS discovering it, and SHALL be able to correct a discipline's name.
+Users with the EVENTS:MANAGE authority SHALL be able to create a discipline directly in Klabis, ahead of ORIS discovering it, and SHALL be able to correct such a manually added discipline's name. A discipline that came from ORIS SHALL NOT be editable in Klabis — ORIS remains its sole source of truth for `code` and `name`.
 
 #### Scenario: Manager adds a discipline ORIS has not published yet
 
@@ -41,10 +41,16 @@ Users with the EVENTS:MANAGE authority SHALL be able to create a discipline dire
 - **THEN** the discipline appears in the catalog immediately
 - **AND** it is available for a manager to assign to an event type
 
-#### Scenario: Manager corrects a discipline's name
+#### Scenario: Manager corrects a manually added discipline's name
 
-- **WHEN** a manager with EVENTS:MANAGE authority changes a discipline's name
+- **WHEN** a manager with EVENTS:MANAGE authority changes the name of a discipline that was created directly in Klabis, not sourced from ORIS
 - **THEN** the catalog shows the corrected name
+
+#### Scenario: Manager cannot edit a discipline sourced from ORIS
+
+- **WHEN** a manager with EVENTS:MANAGE authority attempts to change the name of a discipline that came from ORIS
+- **THEN** the attempt is refused
+- **AND** the discipline's name is unchanged
 
 ### Requirement: Removing A Discipline Never Breaks An Event Type That Uses It
 
