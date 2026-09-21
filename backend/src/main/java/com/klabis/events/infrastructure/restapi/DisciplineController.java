@@ -3,6 +3,7 @@ package com.klabis.events.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
+import com.klabis.common.ui.RootModel;
 import com.klabis.events.DisciplineId;
 import com.klabis.events.application.DisciplineManagementPort;
 import com.klabis.events.domain.Discipline;
@@ -144,6 +145,21 @@ public class DisciplineController implements DisciplinesApi {
 
     private static String actingUserId(CurrentUserData currentUser) {
         return currentUser.userId().uuid().toString();
+    }
+}
+
+/**
+ * Adds the {@code disciplines} link to root navigation.
+ * Authorization gated via klabisAfford (EVENTS_MANAGE) in the actual endpoint.
+ */
+@MvcComponent
+class DisciplinesRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
+
+    @Override
+    public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        klabisLinkTo(methodOn(DisciplinesApi.class).listDisciplines(null))
+                .ifPresent(link -> model.add(link.withRel("disciplines")));
+        return model;
     }
 }
 

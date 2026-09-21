@@ -15,6 +15,7 @@ export const labels = {
         'family-groups': 'Rodinné skupiny',
         'category-presets': 'Šablony kategorií',
         'event-types': 'Typy akcí',
+        disciplines: 'Disciplíny',
         account: 'Finance',
         'membership-fee-tiers': 'Katalog tierů',
         'fee-selection-campaigns': 'Kampaň volby členského příspěvku',

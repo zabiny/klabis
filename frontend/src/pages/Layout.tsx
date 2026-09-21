@@ -16,6 +16,7 @@ import {labels} from '../localization'
 import type {LucideIcon} from 'lucide-react'
 import {
     Banknote,
+    BookOpen,
     Calendar,
     Dumbbell,
     Heart,
@@ -39,6 +40,7 @@ const navIcons: Record<string, LucideIcon> = {
     'family-groups': Heart,
     'category-presets': Tags,
     'event-types': ListChecks,
+    disciplines: BookOpen,
     account: Banknote,
     admin: LayoutDashboard,
 }
