@@ -4,9 +4,19 @@ import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.Discipline;
 import com.dpolach.api.orisclient.dto.EventDetails;
+import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
+import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
 import com.klabis.common.OrisIntegrationComponent;
+import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.domain.ExternalSystem;
+import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncedEntityReference;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Fetches an ORIS event's details and maps them to {@link OrisEventFields}, shared by
@@ -20,10 +30,9 @@ import com.klabis.common.OrisIntegrationComponent;
  * through {@code ResilientAdapterExecutor} with no transaction open (design.md D8,
  * D12) — wrapping this method would open one around the blocking
  * {@code orisApiClient.getEventDetails} call, the exact thing that design relies on
- * not happening. The single local read ({@code eventTypeRepository
- * .findByDisciplineId}) runs fine without an explicit read-only transaction — currently
- * unreachable until task 6.1 wires the ORIS-id resolution back in (see the TODO on
- * {@code resolveEventTypeFromOrisDiscipline}).
+ * not happening. The local reads triggered by {@code resolveEventTypeFromOrisDiscipline}
+ * ({@link SynchronizationPort#findByExternalReferences} and {@code eventTypeRepository
+ * .findByDisciplineId}) run fine without an explicit read-only transaction (design.md D6).
  */
 @OrisIntegrationComponent
 public class OrisEventFieldsReader {
@@ -31,13 +40,16 @@ public class OrisEventFieldsReader {
     private final OrisApiClient orisApiClient;
     private final OrisWebUrls orisWebUrls;
     private final EventTypeRepository eventTypeRepository;
+    private final SynchronizationPort synchronizationPort;
 
     OrisEventFieldsReader(OrisApiClient orisApiClient,
                           OrisWebUrls orisWebUrls,
-                          EventTypeRepository eventTypeRepository) {
+                          EventTypeRepository eventTypeRepository,
+                          SynchronizationPort synchronizationPort) {
         this.orisApiClient = orisApiClient;
         this.orisWebUrls = orisWebUrls;
         this.eventTypeRepository = eventTypeRepository;
+        this.synchronizationPort = synchronizationPort;
     }
 
     public OrisEventFields readOrisFields(int orisId) {
@@ -56,11 +68,17 @@ public class OrisEventFieldsReader {
             // ORIS uses id 0 as sentinel for a missing discipline
             return null;
         }
-        // TODO(task 6.1): resolve the ORIS discipline id to a local DisciplineId via
-        // SynchronizationPort.findByExternalReferences(DISCIPLINE, ORIS, ...), then
-        // look it up with EventTypeRepository.findByDisciplineId(DisciplineId) (design.md D6).
-        // EventTypeRepository no longer exposes an ORIS-integer-keyed lookup, so until that
-        // wiring lands this always resolves to "no match", same as today's unmapped-discipline case.
-        return null;
+        return findPairedDisciplineId(discipline.id())
+                .flatMap(eventTypeRepository::findByDisciplineId)
+                .map(EventType::getId)
+                .orElse(null);
+    }
+
+    private Optional<DisciplineId> findPairedDisciplineId(int orisDisciplineId) {
+        List<SyncedEntityReference> pairings = synchronizationPort.findByExternalReferences(
+                SyncEntityType.DISCIPLINE, ExternalSystem.ORIS, List.of(String.valueOf(orisDisciplineId)));
+        return pairings.stream()
+                .findFirst()
+                .map(reference -> new DisciplineId(UUID.fromString(reference.target().entityId())));
     }
 }

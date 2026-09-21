@@ -31,7 +31,7 @@
 
 ## 6. Resolve an event's ORIS discipline through the sync pairing
 
-- [ ] 6.1 Update `OrisEventFieldsReader.resolveEventTypeFromOrisDiscipline` to resolve the ORIS discipline id via `SynchronizationPort.findByExternalReferences(DISCIPLINE, ORIS, ...)` then `EventTypeRepository.findByDisciplineId(DisciplineId)`, returning `null` when the discipline is not yet paired (same as today's "no match" branch); update `OrisEventFieldsReaderTest` to mock `SynchronizationPort` instead of `EventTypeRepository.findByOrisDisciplineId`
+- [x] 6.1 Update `OrisEventFieldsReader.resolveEventTypeFromOrisDiscipline` to resolve the ORIS discipline id via `SynchronizationPort.findByExternalReferences(DISCIPLINE, ORIS, ...)` then `EventTypeRepository.findByDisciplineId(DisciplineId)`, returning `null` when the discipline is not yet paired (same as today's "no match" branch); update `OrisEventFieldsReaderTest` to mock `SynchronizationPort` instead of `EventTypeRepository.findByOrisDisciplineId`
 
 ## 7. Archiving a discipline never breaks an EventType's reference
 
