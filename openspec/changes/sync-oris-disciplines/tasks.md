@@ -25,9 +25,9 @@
 
 ## 5. Automatic discovery of new ORIS disciplines
 
-- [ ] 5.1 Implement `DisciplineDiscoveryJob`: call `orisApiClient.listDisciplines()`, filter out ids already returned by `SynchronizationPort.findByExternalReferences(DISCIPLINE, ORIS, ids)`, call `pullAndEnroll(DISCIPLINE, externalReference, null)` for each remaining id; write a unit test verifying only undiscovered ids trigger `pullAndEnroll`
-- [ ] 5.2 Schedule `DisciplineDiscoveryJob` on its own `klabis.disciplines.discovery-cron` property (default nightly, independent of `klabis.sync.scan-cron`), externalized via `KLABIS_DISCIPLINES_DISCOVERY_CRON`; verify it runs on schedule via a Spring context test
-- [ ] 5.3 Write an integration test (mirroring `OrisEventSyncScenarioIntegrationTest`) proving specs/disciplines' "new ORIS discipline appears automatically" and "name change follows ORIS" scenarios end-to-end: discovery creates the local `Discipline`, a later pass updates its name
+- [x] 5.1 Implement `DisciplineDiscoveryJob`: call `orisApiClient.listDisciplines()`, filter out ids already returned by `SynchronizationPort.findByExternalReferences(DISCIPLINE, ORIS, ids)`, call `pullAndEnroll(DISCIPLINE, externalReference, null)` for each remaining id; write a unit test verifying only undiscovered ids trigger `pullAndEnroll`
+- [x] 5.2 Schedule `DisciplineDiscoveryJob` on its own `klabis.disciplines.discovery-cron` property (default nightly, independent of `klabis.sync.scan-cron`), externalized via `KLABIS_DISCIPLINES_DISCOVERY_CRON`; verify it runs on schedule via a Spring context test
+- [x] 5.3 Write an integration test (mirroring `OrisEventSyncScenarioIntegrationTest`) proving specs/disciplines' "new ORIS discipline appears automatically" and "name change follows ORIS" scenarios end-to-end: discovery creates the local `Discipline`, a later pass updates its name
 
 ## 6. Resolve an event's ORIS discipline through the sync pairing
 
