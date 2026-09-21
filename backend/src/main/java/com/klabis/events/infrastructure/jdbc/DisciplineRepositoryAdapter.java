@@ -4,6 +4,8 @@ import com.klabis.events.DisciplineId;
 import com.klabis.events.domain.Discipline;
 import com.klabis.events.domain.DisciplineRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,5 +35,10 @@ class DisciplineRepositoryAdapter implements DisciplineRepository {
         return jdbcRepository.findAllByOrderByNameAsc().stream()
                 .map(DisciplineMemento::toDiscipline)
                 .toList();
+    }
+
+    @Override
+    public Page<Discipline> findAll(Pageable pageable) {
+        return jdbcRepository.findAll(pageable).map(DisciplineMemento::toDiscipline);
     }
 }

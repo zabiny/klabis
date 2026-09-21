@@ -13,6 +13,8 @@ import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -115,6 +117,46 @@ class DisciplineRepositoryAdapterTest {
         @DisplayName("should return empty list when no disciplines exist")
         void shouldReturnEmptyListWhenNoDisciplines() {
             assertThat(disciplineRepository.findAllSorted()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findAll(Pageable) — paginated listing (D10)")
+    class FindAllPaged {
+
+        @Test
+        @DisplayName("should return the requested page and correct total count")
+        void shouldReturnRequestedPageAndTotal() {
+            disciplineRepository.save(Discipline.create(new Discipline.CreateDiscipline("A1", "Alpha")));
+            disciplineRepository.save(Discipline.create(new Discipline.CreateDiscipline("B1", "Bravo")));
+            disciplineRepository.save(Discipline.create(new Discipline.CreateDiscipline("C1", "Charlie")));
+
+            Page<Discipline> page = disciplineRepository.findAll(PageRequest.of(0, 2));
+
+            assertThat(page.getContent()).hasSize(2);
+            assertThat(page.getTotalElements()).isEqualTo(3);
+            assertThat(page.getTotalPages()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("should include archived disciplines in the listing")
+        void shouldIncludeArchivedDisciplines() {
+            Discipline archived = Discipline.create(new Discipline.CreateDiscipline("ARCH2", "Archived one"));
+            archived.archive();
+            disciplineRepository.save(archived);
+
+            Page<Discipline> page = disciplineRepository.findAll(PageRequest.of(0, 10));
+
+            assertThat(page.getContent()).extracting(Discipline::isArchived).containsExactly(true);
+        }
+
+        @Test
+        @DisplayName("should return an empty page when no disciplines exist")
+        void shouldReturnEmptyPageWhenNoDisciplines() {
+            Page<Discipline> page = disciplineRepository.findAll(PageRequest.of(0, 10));
+
+            assertThat(page.getContent()).isEmpty();
+            assertThat(page.getTotalElements()).isZero();
         }
     }
 }
