@@ -30,3 +30,34 @@ Users with the EVENTS:MANAGE authority mapping ORIS disciplines to an event type
 - **WHEN** a manager with EVENTS:MANAGE authority opens the event type form to assign ORIS disciplines and ORIS cannot be reached at that moment
 - **THEN** the manager still sees the full list of known disciplines by name
 - **AND** the manager can assign one to the event type
+
+### Requirement: Manager Can Maintain The Discipline Catalog By Hand
+
+Users with the EVENTS:MANAGE authority SHALL be able to create a discipline directly in Klabis, ahead of ORIS discovering it, and SHALL be able to correct a discipline's name.
+
+#### Scenario: Manager adds a discipline ORIS has not published yet
+
+- **WHEN** a manager with EVENTS:MANAGE authority creates a discipline with a code and a name
+- **THEN** the discipline appears in the catalog immediately
+- **AND** it is available for a manager to assign to an event type
+
+#### Scenario: Manager corrects a discipline's name
+
+- **WHEN** a manager with EVENTS:MANAGE authority changes a discipline's name
+- **THEN** the catalog shows the corrected name
+
+### Requirement: Removing A Discipline Never Breaks An Event Type That Uses It
+
+Users with the EVENTS:MANAGE authority SHALL be able to remove a discipline from active use. Removing it SHALL NOT delete it and SHALL NOT affect any event type that already has it assigned — only new assignments are prevented. A removed discipline SHALL be restorable to active use at any time.
+
+#### Scenario: Manager removes a discipline that is still assigned to an event type
+
+- **WHEN** a manager with EVENTS:MANAGE authority removes a discipline that one or more event types already have assigned
+- **THEN** the removal succeeds
+- **AND** those event types keep showing that discipline as assigned, unchanged
+- **AND** the discipline no longer appears as a choice when assigning disciplines to an event type
+
+#### Scenario: Manager restores a removed discipline
+
+- **WHEN** a manager with EVENTS:MANAGE authority restores a previously removed discipline
+- **THEN** the discipline is available again as a choice when assigning disciplines to an event type

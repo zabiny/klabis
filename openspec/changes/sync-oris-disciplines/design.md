@@ -15,10 +15,11 @@ See proposal.md - Why / What Changes for the motivation.
 - Route the event-type discipline picklist through local data instead of a live ORIS call.
 - Keep the local catalog current automatically, with no manual per-discipline admin action.
 - Reuse the existing `sync` engine and its `SynchronizationAdapter` contract unchanged — no new engine capability beyond what this change's discovery step needs.
+- Give managers a CRUD API over the local `Discipline` catalog, with HAL links/affordances following the same shape as `EventTypeController`, and a soft-delete (archive) that never breaks an existing `EventType`'s reference.
 
 **Non-Goals:**
 - No outward (Klabis → ORIS) writes for disciplines — ORIS is the sole source of truth (same as events).
-- No handling of ORIS discipline *removal*; pull-only sync has no delete semantics today, and ORIS disciplines are not observed to disappear in practice. Flagged as an open question, not solved here.
+- No handling of ORIS discipline *removal*; pull-only sync has no delete semantics today, and ORIS disciplines are not observed to disappear in practice.
 - No change to `Event`'s own sync behaviour or the `OrisEventSyncAdapter`.
 - No change to the frontend event-type form beyond it continuing to consume the same `HalFormsInlineOption` shape it already does.
 
@@ -36,7 +37,7 @@ Alternative considered: key `Discipline` by the ORIS integer id directly (it's a
 
 Mirrors `OrisEventSyncAdapter` exactly: `SyncEntityType.DISCIPLINE("disciplines")`, `ExternalSystem.ORIS`, `SyncCapabilities.pullOnlyCreating()`. `readExternal`/`readLocal` map to a `DisciplineProjection(code, name)`. Lives in `com.klabis.events.infrastructure.orissync`, next to the event adapter, per ADR-005 ("lives in the module that owns the entity").
 
-### D4: A scheduled discovery step drives enrolment, reusing `SynchronizationPort.pullAndEnroll`
+### D4: A scheduled discovery step drives enrolment, reusing `SynchronizationPort.pullAndEnroll`, on its own schedule
 
 The engine has no built-in "list the external system and enrol anything new" primitive — every existing adapter is driven by a caller that already knows the external id. Disciplines have no such caller: nobody names "ORIS discipline 7" the way an admin names an ORIS event. A small scheduled `DisciplineDiscoveryJob`:
 
@@ -45,6 +46,8 @@ The engine has no built-in "list the external system and enrol anything new" pri
 3. Calls `SynchronizationPort.pullAndEnroll(SyncEntityType.DISCIPLINE, externalReference, actingUser = null)` for each new id.
 
 This adds no new port method — `pullAndEnroll` already creates the local entity, pairs it, and runs the initial pass (design.md of `add-bidirectional-sync-engine`, D8). Already-paired disciplines are kept current by the engine's existing nightly/due-date scan; the discovery job only ever handles *new* ids. `actingUser = null` mirrors the scheduler's existing convention for system-triggered passes (`SynchronizationPort.synchronizeNow` already accepts `null` for the same reason).
+
+**Resolved (was an open question): the discovery job runs on its own schedule**, not `klabis.sync.scan-cron`/`due-scan-interval`. Disciplines change far less often than events, and coupling the two would force one schedule to fit two very different change rates. New property `klabis.disciplines.discovery-cron` (default e.g. `0 0 3 * * *`, nightly, offset from the sync engine's own `0 0 2 * * *` so the two jobs don't contend), externalized via `KLABIS_DISCIPLINES_DISCOVERY_CRON`, following the same `@ConfigurationProperties`-with-coded-default convention `SyncProperties` already uses.
 
 ### D5: `EventTypeManagementService.listDisciplineOptions()` reads the local catalog
 
@@ -62,6 +65,22 @@ The resolution becomes two steps, both already-existing primitives:
 
 Alternative considered: keep `EventTypeRepository.findByOrisDisciplineId(int)` and have it internally query the sync tables. Rejected — it would leak ORIS/sync concepts into the `events.domain` repository port, which per ADR-005 should stay unaware of any external system; the two-step lookup keeps that awareness in `events.application`/`sync`, where `OrisEventFieldsReader` already knows about ORIS.
 
+### D7: A manager-facing CRUD API over `Discipline`, mirroring `EventTypeController`
+
+Even though the catalog is normally filled by discovery (D4), a manager can also create a discipline by hand (e.g. one ORIS has not published yet) and edit its `code`/`name`. This follows the exact shape already established for `EventType`: a spec-first `DisciplinesApi` (`docs/openapi/spec/events.yaml`), a `DisciplineController` implementing it, `DisciplineManagementPort`/`DisciplineManagementService` in `events.application`, HAL links (`self`, `collection`) and HAL-FORMS templates (`createDiscipline`, `updateDiscipline`, `archiveDiscipline`, `restoreDiscipline`) gated by `x-klabis-authority`, same as `createEventType`/`updateEventType`/`deleteEventType`.
+
+Authority: reuses `EVENTS_READ`/`EVENTS_MANAGE` rather than introducing a new authority. Disciplines only exist to feed the event-type mapping (D5's picklist); they have no independent meaning elsewhere in the domain, so a separate authority would add ceremony without a real access-control distinction.
+
+A manager edit to `code`/`name` is a genuinely local write to a field ORIS also considers its own — exactly the situation `pullOnlyCreating()` already handles: the next sync pass finds both sides changed and surfaces it as an ordinary conflict (`data-synchronization`'s existing "Both sides changed to different values" requirement), not a new mechanism.
+
+### D8: Archiving is a soft delete that reuses the sync engine's existing retire/reactivate lifecycle
+
+"Delete" must never break an `EventType`'s reference to a `Discipline` still in use — unlike `EventType.delete`, which refuses when an event still references the type (`EventTypeManagementService.deleteEventType`), archiving a `Discipline` SHALL always succeed regardless of how many event types reference it. `Discipline` gains an `archived: boolean` flag; archiving never deletes the row or touches `event_type_oris_disciplines`, so every existing FK stays valid and an archived discipline keeps whatever `code`/`name` it last had.
+
+Archiving is modelled as the same "entity reaches the end of its life" case `data-synchronization`'s existing requirements already cover for `Event` (`EventsSyncListener` retiring on `EventFinishedEvent`/`EventCancelledEvent`): `Discipline.archive()` publishes a `DisciplineArchivedEvent`; a new `DisciplineSyncListener` (mirroring `EventsSyncListener`) retires the discipline's `SyncRecord` via `SynchronizationPort.retire`, a no-op if the discipline was never paired to ORIS (manually created). Restoring reverses both: `Discipline.restore()` clears the flag, and the controller looks up the existing `SyncRecord` via `SynchronizationPort.findByTarget` for its `ExternalReference`, then calls `pullAndEnroll` again — exactly the existing "reactivate a retired pairing... starting over from the external system's values" behaviour `data-synchronization` already specifies, needing no new engine capability. Restoring a discipline that was never paired is a pure domain-only flag flip (`findByTarget` returns empty, nothing to reactivate).
+
+Alternative considered: a hard delete guarded the same way `EventType.delete` is (refuse if referenced). Rejected — it's exactly what the user asked to avoid: any club that has ever assigned a discipline to an event type would find deletion permanently blocked once ORIS retires or duplicates a discipline, with no way to tidy the picklist.
+
 ## Domain Changes
 
 ```mermaid
@@ -70,6 +89,9 @@ classDiagram
         +DisciplineId id
         +String code
         +String name
+        +boolean archived
+        +archive()
+        +restore()
     }
     class EventType {
         +EventTypeId id
@@ -86,38 +108,51 @@ classDiagram
 
 | Element | Change |
 |---|---|
-| `Discipline` (new, `events.domain`) | Added. Local aggregate: `DisciplineId`, `code`, `name`. No `orisId` field — pairing lives only in `sync`'s `SyncRecord`. |
+| `Discipline` (new, `events.domain`) | Added. Local aggregate: `DisciplineId`, `code`, `name`, `archived`; `archive()`/`restore()`. No `orisId` field — pairing lives only in `sync`'s `SyncRecord`. |
 | `DisciplineId` (new) | Added. Type-safe id, same pattern as `EventTypeId`. |
+| `DisciplineArchivedEvent` (new) | Added. Published by `Discipline.archive()`; consumed by `DisciplineSyncListener` to retire the sync pairing (D8). |
 | `EventType.orisDisciplineIds: Set<Integer>` | Changed to `disciplineIds: Set<DisciplineId>`. |
 | `OrisDisciplineMemento` | Changed: `discipline_id` column changes from raw `int` to `DisciplineId`'s `UUID`. |
 | `SyncEntityType` | Changed: new `DISCIPLINE("disciplines")` value added alongside `EVENT`. |
 | `DisciplineSyncAdapter` (new, `events.infrastructure.orissync`) | Added. Implements `SynchronizationAdapter` for `Discipline`/ORIS. |
-| `DisciplineDiscoveryJob` (new, `events.infrastructure.orissync`) | Added. Scheduled; calls `pullAndEnroll` for undiscovered ORIS discipline ids. |
-| `EventTypeManagementService` | Changed: `Optional<OrisApiClient>` dependency removed; `listDisciplineOptions()` reads `Discipline` catalog instead. |
+| `DisciplineDiscoveryJob` (new, `events.infrastructure.orissync`) | Added. Scheduled on its own cron (D4); calls `pullAndEnroll` for undiscovered ORIS discipline ids. |
+| `DisciplineSyncListener` (new, `events.infrastructure.orissync`) | Added. Retires the `SyncRecord` on `DisciplineArchivedEvent`, mirroring `EventsSyncListener`. |
+| `DisciplineManagementPort`/`DisciplineManagementService` (new, `events.application`) | Added. CRUD + archive/restore application service, mirroring `EventTypeManagementPort`/`Service`. |
+| `DisciplineController` (new, `events.infrastructure.restapi`) | Added. Implements generated `DisciplinesApi`; HAL links/affordances (D7). |
+| `EventTypeManagementService` | Changed: `Optional<OrisApiClient>` dependency removed; `listDisciplineOptions()` reads the local, non-archived `Discipline` catalog instead. |
 | `EventTypeRepository.findByOrisDisciplineId(int)` | Changed to `findByDisciplineId(DisciplineId)` — purely local lookup, no ORIS integer involved. |
 | `OrisEventFieldsReader` | Changed: gains a `SynchronizationPort` dependency; resolves an ORIS discipline id to a local `EventType` via `findByExternalReferences` + `findByDisciplineId` (D6) instead of a single direct repository call. |
 
 ## API Changes
 
-No REST contract changes. `GET`/HAL-FORMS affordances on `EventType` resources (create/update templates) keep the same `orisDisciplineIds` property name and the same `HalFormsInlineOption` shape for its options — only where those options are sourced from changes, which is not visible over HTTP. No new endpoints are added for `Discipline` itself; it has no direct API of its own in this change (it is consumed only through the event type affordance and, like any synced entity, through the existing generic `/api/disciplines/{id}/sync…` surface `SyncEntityType.pathSegment()` already provides for every enrolled entity type).
+New spec-first resource in `docs/openapi/spec/events.yaml`, following the exact conventions `EventTypesApi` already uses (`x-klabis-authority`, `x-hal-links`, `x-hal-templates`):
+
+| Method | Path | Authority | Notes |
+|---|---|---|---|
+| `GET` | `/api/disciplines` | `EVENTS_READ` | Lists all disciplines, active and archived, each with its `archived` flag. `x-hal-links.self`; `x-hal-templates.createDiscipline` present only for `EVENTS_MANAGE`. |
+| `POST` | `/api/disciplines` | `EVENTS_MANAGE` | Creates a discipline manually (`code`, `name`). `201` + `Location`. |
+| `GET` | `/api/disciplines/{id}` | `EVENTS_READ` | `x-hal-links.self`, `.collection` (→ `listDisciplines`). `x-hal-templates`: `updateDiscipline` and, for `EVENTS_MANAGE`, exactly one of `archiveDiscipline` (if active) or `restoreDiscipline` (if archived) — never both. |
+| `PUT` | `/api/disciplines/{id}` | `EVENTS_MANAGE` | Updates `code`/`name`. `204`. A later ORIS sync pass surfaces this as an ordinary conflict if ORIS disagrees (D7) — no new response shape for that; it is the existing generic sync-conflict flow. |
+| `DELETE` | `/api/disciplines/{id}` | `EVENTS_MANAGE` | Archives (soft-deletes) the discipline; always succeeds, unlike `deleteEventType` (D8). `204`. |
+| `POST` | `/api/disciplines/{id}/restore` | `EVENTS_MANAGE` | Restores an archived discipline and, if it was ORIS-paired, reactivates the sync pairing (D8). `204`; `409 Conflict` if not currently archived. |
+
+`EventType`'s existing HAL-FORMS templates (`createEventType`/`updateEventType`'s `orisDisciplineIds` property options) are unchanged in shape — only their source moves from a live ORIS call to the local, non-archived `Discipline` catalog (D5), which is not visible over HTTP. Every enrolled `Discipline` also gets the generic sync-state surface any `SyncEntityType` already exposes at `/api/disciplines/{id}/sync…` — no new work, `SyncEntityType.DISCIPLINE`'s `pathSegment()` is enough.
 
 ## Glossary
 
 - **Discipline**: a local, ORIS-sourced record of an orienteering discipline (e.g. "OB" / "Orientační běh") that an event type can be mapped to.
 - **Discovery**: the act of the system finding an external record it does not yet have a local counterpart for and bringing it in on its own, without a user naming it explicitly.
+- **Archived discipline**: a discipline no longer offered for new event-type assignments, but never removed — any event type already referencing it keeps working, unchanged.
 
 ## Risks / Trade-offs
 
 - [Discovery job runs against every ORIS discipline on every tick, even after the catalog is fully populated] → Cheap in practice: `listDisciplines()` returns a short, rarely-changing list, and `findByExternalReferences` is a single batch lookup; no incremental/paginated discovery is needed.
-- [ORIS discipline removal is unhandled] → Accepted for now (see Non-Goals); disciplines are not observed to disappear from ORIS. Revisit if it ever happens.
+- [ORIS discipline removal is unhandled] → Accepted for now (see Non-Goals); disciplines are not observed to disappear from ORIS. A manager can archive one by hand if it should stop being offered.
 - [Schema change to `event_type_oris_disciplines` is breaking] → Acceptable: no production data exists yet (backend `CLAUDE.md`, Application Profiles section).
+- [A manual edit to a discipline ORIS also owns will conflict on the next sync pass] → Intentional (D7): the existing generic conflict flow already tells the manager which side changed; no data is silently lost.
 
 ## Migration Plan
 
-1. Edit `V001__initial_schema.sql`: add `events.disciplines`; change `event_type_oris_disciplines.discipline_id` to the new FK.
+1. Edit `V001__initial_schema.sql`: add `events.disciplines` (including the `archived` column); change `event_type_oris_disciplines.discipline_id` to the new FK.
 2. No data backfill needed (dev-only, H2 resets on restart; no production environment exists).
 3. `EventTypeDataBootstrap`'s seeded event types reference no disciplines by default, so bootstrap data is unaffected.
-
-## Open Questions
-
-- Should the discovery job share `klabis.sync.scan-cron`/`due-scan-interval`, or run on its own (coarser) schedule, given disciplines change far less often than events? Does not affect the spec, approach, or task breakdown — can be decided during implementation.
