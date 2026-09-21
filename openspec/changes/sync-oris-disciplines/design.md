@@ -94,6 +94,12 @@ Alternative considered: a hard delete guarded the same way `EventType.delete` is
 
 This lookup is the same one D7 needs to decide whether `updateDiscipline` may be offered (a discipline is ORIS-managed exactly when it has an active sync pairing) — `EnrolledDisciplineIds` doubles as the "is this discipline ORIS-managed" signal for both the `sync` link and the conditional `updateDiscipline`/`archiveDiscipline`/`restoreDiscipline` templates, with a single sync lookup per request driving all of it. A manually created, never-paired discipline gets no `sync` link, exactly as an un-enrolled `Event` gets none today.
 
+### D10: `GET /api/disciplines` is paginated, following `listEvents` rather than `listEventTypes`
+
+Follows the `listEvents` shape exactly: `Pageable` (`PageParam`/`SizeParam`), `x-spring-paginated: true`, and the standard `self`/`first`/`last`/`next`/`prev` HAL paging links, rather than `listEventTypes`' plain unpaged array. Chosen for two reasons: the catalog's size is open-ended (ORIS discovery plus manual creation, D7) unlike the short, deliberately curated `EventType` list, and the frontend's generic paged-list handling (the HAL table component already drives itself off `first`/`last`/`next`/`prev` links for `listEvents`) then needs no special unpaged case for this resource either.
+
+`DisciplineManagementService.listDisciplines` takes a `Pageable` and returns `Page<Discipline>`; `DisciplineRepository` gains a paginated query for it. This is separate from `DisciplineRepository.findAllSorted()` (D5), which stays an unpaged `List<Discipline>` — it only ever backs the small, in-memory `HalFormsInlineOption` list for the event-type picklist, not the `/api/disciplines` collection resource, so paginating it would add no value and would complicate D5's call site for no reason.
+
 ## Domain Changes
 
 ```mermaid
@@ -132,8 +138,9 @@ classDiagram
 | `DisciplineSyncListener` (new, `events.infrastructure.orissync`) | Added. Retires the `SyncRecord` on `DisciplineArchivedEvent`, mirroring `EventsSyncListener`. |
 | `DisciplineManagementPort`/`DisciplineManagementService` (new, `events.application`) | Added. CRUD + archive/restore application service, mirroring `EventTypeManagementPort`/`Service`; `updateDiscipline` refuses (`DisciplineNotEditableException`) when the discipline has any sync pairing (D7). |
 | `DisciplineNotEditableException` (new, `events.domain`) | Added. Thrown by `updateDiscipline` for an ORIS-paired discipline; maps to `409 Conflict` (D7). |
-| `DisciplineController` (new, `events.infrastructure.restapi`) | Added. Implements generated `DisciplinesApi`; HAL links/affordances (D7), `sync` link on every item via `EnrolledDisciplineIds` (D9). |
+| `DisciplineController` (new, `events.infrastructure.restapi`) | Added. Implements generated `DisciplinesApi`; HAL links/affordances (D7), `sync` link on every item via `EnrolledDisciplineIds` (D9), paginated `listDisciplines` (D10). |
 | `EnrolledDisciplineIds` (new, `events.infrastructure.restapi`) | Added. `HalResponseContext` carrier of paired discipline ids for the current request, mirroring `EnrolledEventIds` (D9). |
+| `DisciplineRepository` (new, `events.domain`) | Added. `findAllSorted(): List<Discipline>` (unpaged, non-archived, backs D5's picklist) and a paginated `Page<Discipline>` query (backs `listDisciplines`, D10) — two distinct methods for two distinct callers. |
 | `EventTypeManagementService` | Changed: `Optional<OrisApiClient>` dependency removed; `listDisciplineOptions()` reads the local, non-archived `Discipline` catalog instead. |
 | `EventTypeRepository.findByOrisDisciplineId(int)` | Changed to `findByDisciplineId(DisciplineId)` — purely local lookup, no ORIS integer involved. |
 | `OrisEventFieldsReader` | Changed: gains a `SynchronizationPort` dependency; resolves an ORIS discipline id to a local `EventType` via `findByExternalReferences` + `findByDisciplineId` (D6) instead of a single direct repository call. |
@@ -144,7 +151,7 @@ New spec-first resource in `docs/openapi/spec/events.yaml`, following the exact 
 
 | Method | Path | Authority | Notes |
 |---|---|---|---|
-| `GET` | `/api/disciplines` | `EVENTS_READ` | Lists all disciplines, active and archived, each with its `archived` flag. `x-hal-links.self`; `x-hal-templates.createDiscipline` present only for `EVENTS_MANAGE`. |
+| `GET` | `/api/disciplines` | `EVENTS_READ` | Paginated (`PageParam`/`SizeParam`, `x-spring-paginated: true`, D10) — lists all disciplines, active and archived, each with its `archived` flag. `x-hal-links`: `self`, `first`, `last`, `next`, `prev` (standard paging links, same as `listEvents`); `x-hal-templates.createDiscipline` present only for `EVENTS_MANAGE`. |
 | `POST` | `/api/disciplines` | `EVENTS_MANAGE` | Creates a discipline manually (`code`, `name`). `201` + `Location`. |
 | `GET` | `/api/disciplines/{id}` | `EVENTS_READ` | `x-hal-links.self`, `.collection` (→ `listDisciplines`), `.sync` (→ generic sync state, only if ORIS-paired, D9). `x-hal-templates`: `updateDiscipline` present only for `EVENTS_MANAGE` **and only when not ORIS-paired** (D7); for `EVENTS_MANAGE`, exactly one of `archiveDiscipline` (if active) or `restoreDiscipline` (if archived) — never both. |
 | `PUT` | `/api/disciplines/{id}` | `EVENTS_MANAGE` | Updates `code`/`name`. `204`. Refused with `409 Conflict` (`DisciplineNotEditableException`) if the discipline is ORIS-paired (D7) — normally unreachable over HTTP since the template is hidden in that case. |
