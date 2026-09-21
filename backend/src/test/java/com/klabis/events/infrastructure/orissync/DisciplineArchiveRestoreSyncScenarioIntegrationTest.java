@@ -88,7 +88,7 @@ class DisciplineArchiveRestoreSyncScenarioIntegrationTest {
         disciplineRepository.save(discipline);
 
         // "any EventType already referencing it keeps working, unchanged" (design.md
-        // D8/Glossary) — archiving never touches event_type_oris_disciplines.
+        // D8/Glossary) — archiving never touches event_type_disciplines.
         EventType reloaded = eventTypeManagementPort.getEventType(eventType.getId());
         assertThat(reloaded.getDisciplineIds()).contains(discipline.getId());
 

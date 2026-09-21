@@ -6,19 +6,19 @@ import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.UUID;
 
-@Table(schema = "events", value = "event_type_oris_disciplines")
-class OrisDisciplineMemento {
+@Table(schema = "events", value = "event_type_disciplines")
+class EventTypeDisciplineMemento {
 
     // event_type_id is managed by @MappedCollection in EventTypeMemento — Spring Data JDBC sets it automatically
 
     @Column("discipline_id")
     private UUID disciplineId;
 
-    protected OrisDisciplineMemento() {
+    protected EventTypeDisciplineMemento() {
     }
 
-    static OrisDisciplineMemento of(DisciplineId disciplineId) {
-        OrisDisciplineMemento m = new OrisDisciplineMemento();
+    static EventTypeDisciplineMemento of(DisciplineId disciplineId) {
+        EventTypeDisciplineMemento m = new EventTypeDisciplineMemento();
         m.disciplineId = disciplineId.value();
         return m;
     }

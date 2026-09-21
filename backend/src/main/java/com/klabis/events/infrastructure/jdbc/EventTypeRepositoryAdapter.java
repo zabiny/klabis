@@ -43,7 +43,7 @@ class EventTypeRepositoryAdapter implements EventTypeRepository {
             String message = cause.getMessage();
             if (message != null) {
                 String lower = message.toLowerCase();
-                if (lower.contains("event_type_oris_disciplines") || lower.contains("idx_event_type_oris_disciplines_discipline")) {
+                if (lower.contains("event_type_disciplines") || lower.contains("idx_event_type_disciplines_discipline")) {
                     return true;
                 }
             }
