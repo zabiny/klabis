@@ -7,7 +7,6 @@ import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
-import com.klabis.sync.domain.SyncedEntityReference;
 import org.jmolecules.architecture.hexagonal.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +50,11 @@ class DisciplineDiscoveryJob {
     DisciplineDiscoveryJob(OrisApiClient orisApiClient, SynchronizationPort synchronizationPort) {
         this.orisApiClient = orisApiClient;
         this.synchronizationPort = synchronizationPort;
+    }
+
+    @Scheduled(initialDelayString = "PT10S")
+    void onStartup() {
+        discoverNewDisciplines();
     }
 
     @Scheduled(cron = "${klabis.disciplines.discovery-cron}")
