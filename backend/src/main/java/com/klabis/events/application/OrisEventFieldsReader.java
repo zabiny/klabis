@@ -13,6 +13,7 @@ import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncedEntityReference;
+import org.springframework.context.annotation.Lazy;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +34,14 @@ import java.util.UUID;
  * not happening. The local reads triggered by {@code resolveEventTypeFromOrisDiscipline}
  * ({@link SynchronizationPort#findByExternalReferences} and {@code eventTypeRepository
  * .findByDisciplineId}) run fine without an explicit read-only transaction (design.md D6).
+ * <p>
+ * {@link SynchronizationPort} is injected {@code @Lazy}: its implementation depends on
+ * {@code SynchronizationAdapterRegistry}, which eagerly collects every
+ * {@code SynchronizationAdapter} bean — including {@code OrisEventSyncAdapter}, which
+ * itself depends on this class. Without {@code @Lazy}, that forms a circular bean
+ * dependency ({@code OrisEventFieldsReader -> SynchronizationPort ->
+ * SynchronizationAdapterRegistry -> OrisEventSyncAdapter -> OrisEventFieldsReader}) that
+ * Spring cannot resolve at startup.
  */
 @OrisIntegrationComponent
 public class OrisEventFieldsReader {
@@ -45,7 +54,7 @@ public class OrisEventFieldsReader {
     OrisEventFieldsReader(OrisApiClient orisApiClient,
                           OrisWebUrls orisWebUrls,
                           EventTypeRepository eventTypeRepository,
-                          SynchronizationPort synchronizationPort) {
+                          @Lazy SynchronizationPort synchronizationPort) {
         this.orisApiClient = orisApiClient;
         this.orisWebUrls = orisWebUrls;
         this.eventTypeRepository = eventTypeRepository;
