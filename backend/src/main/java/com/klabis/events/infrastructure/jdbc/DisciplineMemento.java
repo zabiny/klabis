@@ -4,11 +4,14 @@ import com.klabis.common.domain.AuditMetadata;
 import com.klabis.events.DisciplineId;
 import com.klabis.events.domain.Discipline;
 import org.springframework.data.annotation.*;
+import org.springframework.data.domain.AfterDomainEventPublication;
+import org.springframework.data.domain.DomainEvents;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Table(schema = "events", value = "disciplines")
@@ -50,6 +53,12 @@ class DisciplineMemento implements Persistable<UUID> {
     @Transient
     private boolean isNew = true;
 
+    // Transient reference to Discipline for domain event delegation (archive()
+    // registers DisciplineArchivedEvent — without this, Spring Data JDBC never
+    // publishes it, and DisciplineSyncListener never fires).
+    @Transient
+    private Discipline discipline;
+
     protected DisciplineMemento() {
     }
 
@@ -66,6 +75,7 @@ class DisciplineMemento implements Persistable<UUID> {
         memento.lastModifiedBy = discipline.getLastModifiedBy();
 
         memento.isNew = (discipline.getAuditMetadata() == null);
+        memento.discipline = discipline;
         return memento;
     }
 
@@ -87,5 +97,17 @@ class DisciplineMemento implements Persistable<UUID> {
     @Override
     public boolean isNew() {
         return isNew;
+    }
+
+    @DomainEvents
+    List<Object> domainEvents() {
+        return discipline != null ? discipline.getDomainEvents() : List.of();
+    }
+
+    @AfterDomainEventPublication
+    void clearDomainEvents() {
+        if (discipline != null) {
+            discipline.clearDomainEvents();
+        }
     }
 }
