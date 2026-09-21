@@ -3,7 +3,6 @@ package com.klabis.events.infrastructure.restapi;
 import com.klabis.events.DisciplineId;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -12,7 +11,8 @@ import java.util.stream.Collectors;
  * Wire-to-domain (and back) conversions shared by the create/update event type mappers and the
  * DTO converter. The generated request/response records carry wire types only ({@code UUID}
  * rather than {@code DisciplineId}) — see the "DTOs carry wire types" rule in the klabis-api-spec
- * skill.
+ * skill. The generated {@code disciplineIds} property (a {@code uniqueItems: true} array of
+ * {@code uuid}) is generated as {@code Set<UUID>}, not {@code List<UUID>}.
  */
 final class EventTypeRequestConversions {
 
@@ -25,10 +25,10 @@ final class EventTypeRequestConversions {
         return disciplineIds.stream().map(DisciplineId::new).collect(Collectors.toSet());
     }
 
-    static List<UUID> toDisciplineUuids(Set<DisciplineId> disciplineIds) {
+    static Set<UUID> toDisciplineUuids(Set<DisciplineId> disciplineIds) {
         if (disciplineIds == null) {
-            return List.of();
+            return Set.of();
         }
-        return disciplineIds.stream().map(DisciplineId::value).toList();
+        return disciplineIds.stream().map(DisciplineId::value).collect(Collectors.toSet());
     }
 }
