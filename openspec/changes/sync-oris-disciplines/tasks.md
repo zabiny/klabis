@@ -2,8 +2,8 @@
 
 ## 1. Local Discipline catalog
 
-- [ ] 1.1 Write a failing unit test for the new `Discipline` domain aggregate (create with code/name, no `orisId` field, defaults to not archived) in `events.domain`, then implement `Discipline` and `DisciplineId` to make it pass
-- [ ] 1.2 Add `events.disciplines(id UUID PK, code, name, archived, audit columns)` to `V001__initial_schema.sql`; add `DisciplineMemento`, `DisciplineJdbcRepository`, `DisciplineRepositoryAdapter`; verify a new `DisciplineRepositoryAdapterTest` (save + `findById`) passes against H2
+- [x] 1.1 Write a failing unit test for the new `Discipline` domain aggregate (create with code/name, no `orisId` field, defaults to not archived) in `events.domain`, then implement `Discipline` and `DisciplineId` to make it pass
+- [x] 1.2 Add `events.disciplines(id UUID PK, code, name, archived, audit columns)` to `V001__initial_schema.sql`; add `DisciplineMemento`, `DisciplineJdbcRepository`, `DisciplineRepositoryAdapter`; verify a new `DisciplineRepositoryAdapterTest` (save + `findById`) passes against H2
 
 ## 2. EventType references local disciplines instead of raw ORIS ints
 
