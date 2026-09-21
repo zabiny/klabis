@@ -19,9 +19,9 @@
 
 ## 4. Discipline synchronisation adapter
 
-- [ ] 4.1 Add `SyncEntityType.DISCIPLINE("disciplines")` next to `EVENT`; verify existing `SyncEntityType`-based tests still pass unchanged
-- [ ] 4.2 Add `DisciplineProjection` (code, name) and a mapper from ORIS's `DisciplineListEntry`/`Discipline` DTOs and from the local `Discipline` aggregate; write unit tests for both mapping directions
-- [ ] 4.3 Implement `DisciplineSyncAdapter` (`events.infrastructure.orissync`) — `SyncCapabilities.pullOnlyCreating()`, `readLocal`, `readExternal`, `applyToLocal`, `createLocal`, `applyToExternal` throwing `UnsupportedOperationException` — mirroring `OrisEventSyncAdapterTest`'s structure; verify a new `DisciplineSyncAdapterTest` covers create, update and the no-outward-write case
+- [x] 4.1 Add `SyncEntityType.DISCIPLINE("disciplines")` next to `EVENT`; verify existing `SyncEntityType`-based tests still pass unchanged
+- [x] 4.2 Add `DisciplineProjection` (code, name) and a mapper from ORIS's `DisciplineListEntry`/`Discipline` DTOs and from the local `Discipline` aggregate; write unit tests for both mapping directions
+- [x] 4.3 Implement `DisciplineSyncAdapter` (`events.infrastructure.orissync`) — `SyncCapabilities.pullOnlyCreating()`, `readLocal`, `readExternal`, `applyToLocal`, `createLocal`, `applyToExternal` throwing `UnsupportedOperationException` — mirroring `OrisEventSyncAdapterTest`'s structure; verify a new `DisciplineSyncAdapterTest` covers create, update and the no-outward-write case
 
 ## 5. Automatic discovery of new ORIS disciplines
 

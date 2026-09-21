@@ -63,6 +63,20 @@ public class Discipline extends KlabisAggregateRoot<Discipline, DisciplineId> {
         return name;
     }
 
+    /**
+     * Overwrites {@code code}/{@code name} from the paired ORIS record
+     * ({@code DisciplineSyncAdapter.applyToLocal}, design.md D3). Both fields are
+     * ORIS-owned once a discipline is paired, so this is the only way they change
+     * after creation — there is no independent manual-edit path for a paired
+     * discipline (D7).
+     */
+    public void update(String code, String name) {
+        validateCode(code);
+        validateName(name);
+        this.code = code;
+        this.name = name;
+    }
+
     @Override
     public String toString() {
         return "Discipline{id=" + id + ", code='" + code + "', name='" + name + "'}";
