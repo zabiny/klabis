@@ -15,7 +15,7 @@
 
 ## 3. Discipline picklist reads local data
 
-- [ ] 3.1 Add `DisciplineRepository.findAllSorted()` (non-archived only) to `events.domain`; rewrite `EventTypeManagementService.listDisciplineOptions()` to read it instead of calling `orisApiClient.get().listDisciplines()`, removing the `Optional<OrisApiClient>` constructor dependency; verify `EventTypeManagementServiceTest`'s discipline-options tests pass against local fixtures with no ORIS mock involved, and that an archived discipline is excluded
+- [x] 3.1 Add `DisciplineRepository.findAllSorted()` (non-archived only) to `events.domain`; rewrite `EventTypeManagementService.listDisciplineOptions()` to read it instead of calling `orisApiClient.get().listDisciplines()`, removing the `Optional<OrisApiClient>` constructor dependency; verify `EventTypeManagementServiceTest`'s discipline-options tests pass against local fixtures with no ORIS mock involved, and that an archived discipline is excluded
 
 ## 4. Discipline synchronisation adapter
 

@@ -5,6 +5,7 @@ import com.klabis.events.domain.Discipline;
 import com.klabis.events.domain.DisciplineRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 
+import java.util.List;
 import java.util.Optional;
 
 @SecondaryAdapter
@@ -25,5 +26,12 @@ class DisciplineRepositoryAdapter implements DisciplineRepository {
     @Override
     public Optional<Discipline> findById(DisciplineId id) {
         return jdbcRepository.findById(id.value()).map(DisciplineMemento::toDiscipline);
+    }
+
+    @Override
+    public List<Discipline> findAllSorted() {
+        return jdbcRepository.findAllByOrderByNameAsc().stream()
+                .map(DisciplineMemento::toDiscipline)
+                .toList();
     }
 }

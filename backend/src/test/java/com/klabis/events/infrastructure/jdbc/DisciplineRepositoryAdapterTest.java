@@ -16,6 +16,7 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,6 +66,30 @@ class DisciplineRepositoryAdapterTest {
         @DisplayName("should return empty when not found")
         void shouldReturnEmptyWhenNotFound() {
             assertThat(disciplineRepository.findById(DisciplineId.generate())).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("findAllSorted()")
+    class FindAllSorted {
+
+        @Test
+        @DisplayName("should return disciplines sorted by name, regardless of insertion order")
+        void shouldReturnDisciplinesSortedByName() {
+            disciplineRepository.save(Discipline.create(new Discipline.CreateDiscipline("SPR", "Sprint")));
+            disciplineRepository.save(Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh")));
+            disciplineRepository.save(Discipline.create(new Discipline.CreateDiscipline("MTBO", "Orientační běh na kole")));
+
+            List<Discipline> disciplines = disciplineRepository.findAllSorted();
+
+            assertThat(disciplines).extracting(Discipline::getName)
+                    .containsExactly("Orientační běh", "Orientační běh na kole", "Sprint");
+        }
+
+        @Test
+        @DisplayName("should return empty list when no disciplines exist")
+        void shouldReturnEmptyListWhenNoDisciplines() {
+            assertThat(disciplineRepository.findAllSorted()).isEmpty();
         }
     }
 }

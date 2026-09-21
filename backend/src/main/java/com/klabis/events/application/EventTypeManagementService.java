@@ -1,33 +1,26 @@
 package com.klabis.events.application;
 
-import com.dpolach.api.orisclient.OrisApiClient;
-import com.dpolach.api.orisclient.dto.lov.DisciplineListEntry;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.*;
 import org.jmolecules.ddd.annotation.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Service
 class EventTypeManagementService implements EventTypeManagementPort {
 
-    private static final Logger log = LoggerFactory.getLogger(EventTypeManagementService.class);
     private static final int MAX_AFFECTED_EVENTS_IN_ERROR = 5;
 
     private final EventTypeRepository eventTypeRepository;
-    private final Optional<OrisApiClient> orisApiClient;
+    private final DisciplineRepository disciplineRepository;
 
-    EventTypeManagementService(EventTypeRepository eventTypeRepository, Optional<OrisApiClient> orisApiClient) {
+    EventTypeManagementService(EventTypeRepository eventTypeRepository, DisciplineRepository disciplineRepository) {
         this.eventTypeRepository = eventTypeRepository;
-        this.orisApiClient = orisApiClient;
+        this.disciplineRepository = disciplineRepository;
     }
 
     @Transactional
@@ -101,26 +94,12 @@ class EventTypeManagementService implements EventTypeManagementPort {
     @Transactional(readOnly = true)
     @Override
     public List<HalFormsInlineOption> listDisciplineOptions() {
-        if (orisApiClient.isEmpty()) {
-            return Collections.emptyList();
-        }
-        try {
-            return orisApiClient.get().listDisciplines().payload()
-                    .map(disciplines -> disciplines.values().stream()
-                            .sorted(java.util.Comparator.comparingInt(e -> Integer.parseInt(e.id())))
-                            .map(EventTypeManagementService::toInlineOption)
-                            .toList())
-                    .orElse(Collections.emptyList());
-        } catch (RuntimeException e) {
-            log.warn("ORIS discipline list unavailable, returning empty options", e);
-            return Collections.emptyList();
-        }
+        return disciplineRepository.findAllSorted().stream()
+                .map(EventTypeManagementService::toInlineOption)
+                .toList();
     }
 
-    private static HalFormsInlineOption toInlineOption(DisciplineListEntry entry) {
-        String prompt = (entry.descriptionCZ() != null && !entry.descriptionCZ().isBlank())
-                ? entry.descriptionCZ()
-                : entry.name();
-        return new HalFormsInlineOption(entry.id(), prompt);
+    private static HalFormsInlineOption toInlineOption(Discipline discipline) {
+        return new HalFormsInlineOption(discipline.getId().value().toString(), discipline.getName());
     }
 }

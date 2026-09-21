@@ -1,10 +1,10 @@
 package com.klabis.events.application;
 
-import com.dpolach.api.orisclient.OrisApiClient;
-import com.dpolach.api.orisclient.dto.lov.DisciplineListEntry;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
+import com.klabis.events.domain.Discipline;
+import com.klabis.events.domain.DisciplineRepository;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
 import com.klabis.events.domain.OrisDisciplineAlreadyMappedException;
@@ -17,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -34,13 +33,13 @@ class EventTypeManagementServiceTest {
     private EventTypeRepository eventTypeRepository;
 
     @Mock
-    private OrisApiClient orisApiClient;
+    private DisciplineRepository disciplineRepository;
 
     private EventTypeManagementService service;
 
     @BeforeEach
     void setUp() {
-        service = new EventTypeManagementService(eventTypeRepository, Optional.of(orisApiClient));
+        service = new EventTypeManagementService(eventTypeRepository, disciplineRepository);
     }
 
     @Nested
@@ -134,83 +133,28 @@ class EventTypeManagementServiceTest {
     class ListDisciplineOptionsTests {
 
         @Test
-        @DisplayName("should return value+prompt pairs sorted numerically by ID")
-        void shouldReturnSortedDisciplineOptionsWithPromptWhenOrisAvailable() {
-            var disciplineMap = Map.of(
-                    "3", new DisciplineListEntry("3", "OB", "Orientační běh", null, null, null),
-                    "1", new DisciplineListEntry("1", "LOB", "Lyžařský orientační běh", null, null, null),
-                    "7", new DisciplineListEntry("7", "Sprint", "Sprintová orientace", null, null, null)
+        @DisplayName("should map local disciplines to value+prompt pairs, preserving repository order")
+        void shouldReturnLocalDisciplinesAsOptions() {
+            Discipline lob = Discipline.create(new Discipline.CreateDiscipline("LOB", "Lyžařský orientační běh"));
+            Discipline ob = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
+            Discipline sprint = Discipline.create(new Discipline.CreateDiscipline("SPR", "Sprintová orientace"));
+            when(disciplineRepository.findAllSorted()).thenReturn(List.of(lob, ob, sprint));
+
+            List<HalFormsInlineOption> options = service.listDisciplineOptions();
+
+            assertThat(options).containsExactly(
+                    new HalFormsInlineOption(lob.getId().value().toString(), "Lyžařský orientační běh"),
+                    new HalFormsInlineOption(ob.getId().value().toString(), "Orientační běh"),
+                    new HalFormsInlineOption(sprint.getId().value().toString(), "Sprintová orientace")
             );
-            when(orisApiClient.listDisciplines())
-                    .thenReturn(new OrisApiClient.OrisResponse<>(disciplineMap, "JSON", "OK", null, "getList"));
-
-            List<HalFormsInlineOption> options = service.listDisciplineOptions();
-
-            assertThat(options).extracting(HalFormsInlineOption::value).containsExactly("1", "3", "7");
-            assertThat(options).extracting(HalFormsInlineOption::prompt)
-                    .containsExactly("Lyžařský orientační běh", "Orientační běh", "Sprintová orientace");
         }
 
         @Test
-        @DisplayName("should use name as prompt fallback when descriptionCZ is null or blank")
-        void shouldFallbackToNameWhenDescriptionCzMissing() {
-            var disciplineMap = Map.of(
-                    "5", new DisciplineListEntry("5", "MTB-OB", null, null, null, null),
-                    "6", new DisciplineListEntry("6", "TRAIL", "   ", null, null, null)
-            );
-            when(orisApiClient.listDisciplines())
-                    .thenReturn(new OrisApiClient.OrisResponse<>(disciplineMap, "JSON", "OK", null, "getList"));
+        @DisplayName("should return empty list when no local disciplines exist")
+        void shouldReturnEmptyListWhenNoDisciplines() {
+            when(disciplineRepository.findAllSorted()).thenReturn(List.of());
 
             List<HalFormsInlineOption> options = service.listDisciplineOptions();
-
-            assertThat(options).extracting(HalFormsInlineOption::prompt).containsExactlyInAnyOrder("MTB-OB", "TRAIL");
-        }
-
-        @Test
-        @DisplayName("should sort discipline IDs numerically, not lexicographically")
-        void shouldReturnNumericallyOrderedDisciplineIds() {
-            var disciplineMap = Map.of(
-                    "10", new DisciplineListEntry("10", "Noc", "Noční OB", null, null, null),
-                    "2", new DisciplineListEntry("2", "LOB", "Lyžařský OB", null, null, null),
-                    "9", new DisciplineListEntry("9", "Sprint", "Sprint OB", null, null, null)
-            );
-            when(orisApiClient.listDisciplines())
-                    .thenReturn(new OrisApiClient.OrisResponse<>(disciplineMap, "JSON", "OK", null, "getList"));
-
-            List<HalFormsInlineOption> options = service.listDisciplineOptions();
-
-            assertThat(options).extracting(HalFormsInlineOption::value).containsExactly("2", "9", "10");
-        }
-
-        @Test
-        @DisplayName("should return empty list when ORIS returns non-OK status")
-        void shouldReturnEmptyListWhenOrisReturnsNonOkStatus() {
-            when(orisApiClient.listDisciplines())
-                    .thenReturn(new OrisApiClient.OrisResponse<>(null, "JSON", "ERR", null, "getList"));
-
-            List<HalFormsInlineOption> options = service.listDisciplineOptions();
-
-            assertThat(options).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should return empty list when ORIS call throws RuntimeException")
-        void shouldReturnEmptyListWhenOrisCallThrows() {
-            when(orisApiClient.listDisciplines())
-                    .thenThrow(new RuntimeException("ORIS connection refused"));
-
-            List<HalFormsInlineOption> options = service.listDisciplineOptions();
-
-            assertThat(options).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should return empty list when ORIS is not available")
-        void shouldReturnEmptyListWhenOrisNotAvailable() {
-            EventTypeManagementService serviceWithoutOris =
-                    new EventTypeManagementService(eventTypeRepository, Optional.empty());
-
-            List<HalFormsInlineOption> options = serviceWithoutOris.listDisciplineOptions();
 
             assertThat(options).isEmpty();
         }
