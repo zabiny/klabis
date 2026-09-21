@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.jdbc;
 
+import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
@@ -28,7 +29,9 @@ class EventTypeRepositoryAdapter implements EventTypeRepository {
             if (isDisciplineConstraintViolation(e)) {
                 // Translate DB unique constraint on discipline_id to a domain exception so the
                 // race-condition path (TOCTOU between app-layer check and save) surfaces correctly.
-                throw new OrisDisciplineAlreadyMappedException(-1);
+                // The specific conflicting DisciplineId isn't available here (only the DB
+                // constraint violation is), hence the id-less variant of the exception.
+                throw new OrisDisciplineAlreadyMappedException();
             }
             throw e;
         }
@@ -92,10 +95,10 @@ class EventTypeRepositoryAdapter implements EventTypeRepository {
     }
 
     @Override
-    public Optional<EventType> findByOrisDisciplineId(int disciplineId) {
+    public Optional<EventType> findByDisciplineId(DisciplineId disciplineId) {
         // Custom @Query does not trigger @MappedCollection loading in Spring Data JDBC.
-        // Reload the full aggregate via findById to ensure orisDisciplineIds is populated.
-        return jdbcRepository.findByOrisDisciplineId(disciplineId)
+        // Reload the full aggregate via findById to ensure disciplineIds is populated.
+        return jdbcRepository.findByDisciplineId(disciplineId.value())
                 .map(m -> jdbcRepository.findById(m.getId()).orElseThrow())
                 .map(EventTypeMemento::toEventType);
     }

@@ -190,7 +190,7 @@ export const labels = {
         color: 'Barva',
         sortOrder: 'Pořadí',
         eventTypeId: 'Typ závodu',
-        orisDisciplineIds: 'ORIS disciplíny',
+        disciplineIds: 'ORIS disciplíny',
         ranking: 'Žebříček',
         rankingLevelId: 'ID úrovně',
         rankingName: 'Název žebříčku',

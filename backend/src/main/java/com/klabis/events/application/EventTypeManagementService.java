@@ -3,6 +3,7 @@ package com.klabis.events.application;
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.dto.lov.DisciplineListEntry;
 import com.klabis.common.ui.HalFormsInlineOption;
+import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.*;
 import org.jmolecules.ddd.annotation.Service;
@@ -35,7 +36,7 @@ class EventTypeManagementService implements EventTypeManagementPort {
         if (eventTypeRepository.existsByNameIgnoreCase(command.name())) {
             throw new EventTypeNameAlreadyExistsException(command.name());
         }
-        validateNoDisciplineIdConflict(command.orisDisciplineIds(), null);
+        validateNoDisciplineIdConflict(command.disciplineIds(), null);
         int nextSortOrder = eventTypeRepository.findMaxSortOrder() + 1;
         EventType eventType = EventType.create(command, nextSortOrder);
         return eventTypeRepository.save(eventType);
@@ -52,17 +53,17 @@ class EventTypeManagementService implements EventTypeManagementPort {
             throw new EventTypeNameAlreadyExistsException(command.name());
         }
 
-        validateNoDisciplineIdConflict(command.orisDisciplineIds(), eventType);
+        validateNoDisciplineIdConflict(command.disciplineIds(), eventType);
         eventType.update(command);
         eventTypeRepository.save(eventType);
     }
 
-    private void validateNoDisciplineIdConflict(Set<Integer> disciplineIds, EventType ownerOrNull) {
+    private void validateNoDisciplineIdConflict(Set<DisciplineId> disciplineIds, EventType ownerOrNull) {
         if (disciplineIds == null || disciplineIds.isEmpty()) {
             return;
         }
-        for (int disciplineId : disciplineIds) {
-            eventTypeRepository.findByOrisDisciplineId(disciplineId).ifPresent(existing -> {
+        for (DisciplineId disciplineId : disciplineIds) {
+            eventTypeRepository.findByDisciplineId(disciplineId).ifPresent(existing -> {
                 if (ownerOrNull == null || !existing.getId().equals(ownerOrNull.getId())) {
                     throw new OrisDisciplineAlreadyMappedException(disciplineId);
                 }

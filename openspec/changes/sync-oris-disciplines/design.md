@@ -21,7 +21,7 @@ See proposal.md - Why / What Changes for the motivation.
 - No outward (Klabis → ORIS) writes for disciplines — ORIS is the sole source of truth (same as events).
 - No handling of ORIS discipline *removal*; pull-only sync has no delete semantics today, and ORIS disciplines are not observed to disappear in practice.
 - No change to `Event`'s own sync behaviour or the `OrisEventSyncAdapter`.
-- No change to the frontend event-type form beyond it continuing to consume the same `HalFormsInlineOption` shape it already does.
+- No UX/behaviour change to the frontend event-type form — it continues to consume the same `HalFormsInlineOption` shape for the discipline picklist. (The property's wire *name* and id *type* do change, per D2 — see that decision for why, and the corresponding frontend task in tasks.md for the mechanical follow-through: regenerated types plus the two hardcoded `orisDisciplineIds` string references.)
 
 ## Decisions
 
@@ -32,6 +32,10 @@ Alternative considered: key `Discipline` by the ORIS integer id directly (it's a
 ### D2: `EventType.orisDisciplineIds: Set<Integer>` becomes `EventType.disciplineIds: Set<DisciplineId>`
 
 `events.event_type_oris_disciplines.discipline_id` changes from `INT` to a `UUID` foreign key into the new `events.disciplines` table. Since there is no production environment yet (backend `CLAUDE.md`), this is a direct edit to `V001__initial_schema.sql`, not an additive migration. `OrisDisciplineAlreadyMappedException` / `validateNoDisciplineIdConflict` keep their behaviour, now keyed on the local id.
+
+**This also changes the `EventTypeController` REST contract**, correcting what an earlier draft of this design assumed (see the old wording this replaces, under "API Changes" below). `EventTypeDto`/`CreateEventTypeRequest`/`UpdateEventTypeRequest`'s `orisDisciplineIds: integer[]` becomes `disciplineIds: uuid[]`, referencing local `Discipline` ids directly — not the ORIS integer. This is not an independent choice; it falls out of D5: once `listDisciplineOptions()` serves the `createEventType`/`updateEventType` picklist from the local `Discipline` catalog, the option *values* it hands the client are local `DisciplineId`s (a `Discipline` has no ORIS integer to offer any more). A client can therefore only ever submit a local id back, so the request/response field must speak that language too — an ORIS-integer wire format would need a value the picklist no longer has. Resolving local-id submissions back to ORIS integers via the sync engine (mirroring D6) was considered and rejected: it would require every event-type create/update to make a sync-pairing lookup for no benefit, since the local id is already exactly what `EventTypeRepository.findByDisciplineId` (D2) and every other consumer wants. `CreateEventTypeRequestConverter`/`UpdateEventTypeRequestConverter`/`EventTypeDtoConverter` map the renamed field directly, with no sync-engine involvement at this boundary.
+
+**Frontend impact**: this is a real, if small, break — the frontend's generated API types (`klabisApi.d.ts`/`halTypes.ts`) come from this spec, and two places hardcode the property name as a string rather than a generated constant: the event-type form's `HalFormsCheckboxGroup` (which reads options for a named property) and `labels.ts` (a display label keyed by field name). Regenerating types alone would leave those two silently matching nothing. This is in scope for this change (not deferred) — see tasks.md's frontend task under Group 2 — but is a mechanical rename, not a UX or behaviour change: the picklist still renders the same way, backed by the same `HalFormsInlineOption` list, just keyed by a differently-named, differently-typed id.
 
 ### D3: Disciplines sync through a new `DisciplineSyncAdapter`, capabilities `pullOnlyCreating()`
 
@@ -131,6 +135,7 @@ classDiagram
 | `DisciplineId` (new) | Added. Type-safe id, same pattern as `EventTypeId`. |
 | `DisciplineArchivedEvent` (new) | Added. Published by `Discipline.archive()`; consumed by `DisciplineSyncListener` to retire the sync pairing (D8). |
 | `EventType.orisDisciplineIds: Set<Integer>` | Changed to `disciplineIds: Set<DisciplineId>`. |
+| `EventTypeDto`/`CreateEventTypeRequest`/`UpdateEventTypeRequest` (`docs/openapi/spec/events.yaml`) | Changed: `orisDisciplineIds: integer[]` renamed to `disciplineIds: uuid[]` (D2); `CreateEventTypeRequestConverter`/`UpdateEventTypeRequestConverter`/`EventTypeDtoConverter` updated to match. |
 | `OrisDisciplineMemento` | Changed: `discipline_id` column changes from raw `int` to `DisciplineId`'s `UUID`. |
 | `SyncEntityType` | Changed: new `DISCIPLINE("disciplines")` value added alongside `EVENT`. |
 | `DisciplineSyncAdapter` (new, `events.infrastructure.orissync`) | Added. Implements `SynchronizationAdapter` for `Discipline`/ORIS. |
@@ -158,7 +163,7 @@ New spec-first resource in `docs/openapi/spec/events.yaml`, following the exact 
 | `DELETE` | `/api/disciplines/{id}` | `EVENTS_MANAGE` | Archives (soft-deletes) the discipline; always succeeds, unlike `deleteEventType` (D8). `204`. |
 | `POST` | `/api/disciplines/{id}/restore` | `EVENTS_MANAGE` | Restores an archived discipline and, if it was ORIS-paired, reactivates the sync pairing (D8). `204`; `409 Conflict` if not currently archived. |
 
-`EventType`'s existing HAL-FORMS templates (`createEventType`/`updateEventType`'s `orisDisciplineIds` property options) are unchanged in shape — only their source moves from a live ORIS call to the local, non-archived `Discipline` catalog (D5), which is not visible over HTTP. Every `DisciplineDto` — in both `listDisciplines` and `getDiscipline` — carries a `sync` link when the discipline is paired to ORIS, pointing at the generic sync-state surface any `SyncEntityType` already exposes at `/api/disciplines/{id}/sync…` (`SyncEntityType.DISCIPLINE`'s `pathSegment()`; D9). A manually created, never-paired discipline has no `sync` link.
+`EventType`'s existing HAL-FORMS templates change the shape of one property (D2): `createEventType`/`updateEventType`/`EventTypeDto`'s `orisDisciplineIds: integer[]` becomes `disciplineIds: uuid[]`, referencing local `Discipline` ids. The property's runtime-populated options (`x-hal-templates` description text updates accordingly) now come from the local, non-archived `Discipline` catalog (D5) instead of a live ORIS call — existing API consumers (the frontend event-type form) must switch to treating the option values as opaque local ids rather than ORIS integers, same as any other `HalFormsInlineOption`-backed field. Every `DisciplineDto` — in both `listDisciplines` and `getDiscipline` — carries a `sync` link when the discipline is paired to ORIS, pointing at the generic sync-state surface any `SyncEntityType` already exposes at `/api/disciplines/{id}/sync…` (`SyncEntityType.DISCIPLINE`'s `pathSegment()`; D9). A manually created, never-paired discipline has no `sync` link.
 
 ## Glossary
 

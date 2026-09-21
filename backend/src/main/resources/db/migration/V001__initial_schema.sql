@@ -307,13 +307,15 @@ COMMENT ON COLUMN events.event_types.sort_order IS 'Position in sorted lists and
 
 -- ============================================================================
 -- 4c. EVENT_TYPE_ORIS_DISCIPLINES TABLE
--- Maps ORIS discipline IDs to event types (each discipline ID belongs to at most one event type)
+-- Maps local disciplines (events.disciplines) to event types (each discipline belongs to
+-- at most one event type). Table name kept for historical continuity even though the FK
+-- now targets the local catalog rather than a raw ORIS integer.
 -- ============================================================================
 
 CREATE TABLE events.event_type_oris_disciplines
 (
     event_type_id UUID NOT NULL REFERENCES events.event_types (id) ON DELETE CASCADE,
-    discipline_id INT  NOT NULL
+    discipline_id UUID NOT NULL REFERENCES events.disciplines (id)
 );
 
 CREATE UNIQUE INDEX idx_event_type_oris_disciplines_discipline ON events.event_type_oris_disciplines (discipline_id);

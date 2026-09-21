@@ -382,9 +382,13 @@ export interface paths {
         put?: never;
         /**
          * Bulk sync all upcoming ORIS events
-         * @description Synchronises all DRAFT/ACTIVE events with eventDate >= today that have an ORIS ID.
-         *     Processes each event sequentially; partial failures are collected and returned in the
-         *     summary. Always returns 200 — check failureCount in the response body.
+         * @description Runs a manual synchronisation pass over every active synchronisation record for events
+         *     (design.md D18) — ignoring next-attempt-due and the dirty flag, since a manager explicitly
+         *     asking for freshness wants every record attempted now. Records already in CONFLICT or FAILED
+         *     are not attempted; they are counted and listed separately (awaitingDecisionCount / results, and
+         *     stoppedByFailureCount / results) rather than lumped into failureCount, since only a decision on
+         *     the synchronisation resource — not a retry — can move them again. Always returns 200 — inspect
+         *     the counts in the response body.
          *
          */
         post: operations["syncAllUpcomingFromOris"];
@@ -568,8 +572,11 @@ export interface paths {
         put?: never;
         /**
          * Sync event from ORIS
-         * @description Re-fetches event data from ORIS and overwrites all local fields. Only allowed for DRAFT and
-         *     ACTIVE events with an orisId.
+         * @description Runs one synchronisation pass for this event through the synchronisation engine (design.md
+         *     D18). ORIS-owned fields are written inward when only the external side changed; a local edit
+         *     to one of them is no longer silently overwritten and instead surfaces as a conflict on the
+         *     event's synchronisation resource (design.md D6). Only allowed for DRAFT and ACTIVE events
+         *     with an orisId.
          *
          */
         post: operations["syncEventFromOris"];
@@ -1767,7 +1774,9 @@ export interface paths {
         /**
          * Read synchronisation state
          * @description Returns the current synchronisation state of one linked entity, without running
-         *     a pass. `divergedFields`/`changedSides` are present only while the record is in
+         *     a pass. Which fields are present depends on the caller: fields marked with
+         *     x-klabis-authority are omitted unless the caller holds SYNC:MANAGE.
+         *     `divergedFields`/`changedSides` are present only while the record is in
          *     CONFLICT. `local`/`external`/`baseline` are the decrypted projections, shaped
          *     per entity type; `baselineExternal` appears only while an accepted divergence
          *     stands (design.md D6).
@@ -1977,10 +1986,28 @@ export interface components {
             /** Format: int32 */
             totalProcessed?: number;
         };
+        /** @description Summary of a manual pass over every active event synchronisation record (task 8.4, 8.5).
+         *     totalProcessed counts every active record considered, including the ones awaiting a decision
+         *     or stopped by failure — successCount and failureCount cover only records that were actually
+         *     attempted this pass (design.md D18: the two new categories are reported separately, not lumped
+         *     into failureCount).
+         *      */
         BulkSyncResult: {
+            awaitingDecision?: components["schemas"]["EventSyncEntry"][];
+            /**
+             * Format: int32
+             * @description Records already in CONFLICT — not attempted this pass; see awaitingDecision for the per-event list.
+             */
+            awaitingDecisionCount?: number;
             /** Format: int32 */
             failureCount?: number;
             results?: components["schemas"]["EventSyncEntry"][];
+            stoppedByFailure?: components["schemas"]["EventSyncEntry"][];
+            /**
+             * Format: int32
+             * @description Records already terminally FAILED — not attempted this pass; see stoppedByFailure for the per-event list.
+             */
+            stoppedByFailureCount?: number;
             /** Format: int32 */
             successCount?: number;
             /** Format: int32 */
@@ -2160,8 +2187,8 @@ export interface components {
         /** @description Event type creation data */
         CreateEventTypeRequest: {
             color?: string;
+            disciplineIds?: string[];
             name: string;
-            orisDisciplineIds?: number[];
             /**
              * Format: int32
              * @description Assigned automatically when omitted.
@@ -2404,11 +2431,11 @@ export interface components {
         EventTypeDto: {
             /** @description Hex color code used to render the event type in the UI. */
             color?: string;
+            /** @description Local discipline identifiers mapped onto this event type. */
+            disciplineIds?: string[];
             /** Format: uuid */
             id?: string;
             name?: string;
-            /** @description ORIS discipline identifiers mapped onto this event type. */
-            orisDisciplineIds?: number[];
             /** Format: int32 */
             sortOrder?: number;
         };
@@ -3060,10 +3087,14 @@ export interface components {
         };
         /** @enum {string} */
         SyncEntityTypeParam: "events";
-        /** @description The synchronisation state of one linked entity against one external system. */
+        /** @description The synchronisation state of one linked entity against one external system.
+         *     Fields carrying x-klabis-authority are omitted for callers without SYNC:MANAGE;
+         *     entityType, status, externalSystem and lastSuccessfulSyncAt are always visible
+         *     to any authenticated caller.
+         *      */
         SyncStateResponse: {
             /** @description Whether the baseline pair is currently diverged (design.md D6) — visible in any status, since an accepted divergence persists into IN_SYNC. */
-            acceptedDivergence: boolean;
+            acceptedDivergence?: boolean;
             /** @description The local half of the baseline pair. Null before the first synchronisation pass. */
             baseline?: {
                 [key: string]: unknown;
@@ -3084,11 +3115,11 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /** @description The entity's identifier in the external system. */
-            externalId: string;
+            externalId?: string;
             /** @enum {string} */
             externalSystem: "ORIS";
             /** Format: int32 */
-            failedAttemptsSinceLastSuccess: number;
+            failedAttemptsSinceLastSuccess?: number;
             /** @enum {string|null} */
             lastDirection?: "INWARD" | "OUTWARD" | null;
             /** Format: date-time */
@@ -3225,8 +3256,8 @@ export interface components {
         /** @description Event type update data */
         UpdateEventTypeRequest: {
             color?: string;
+            disciplineIds?: string[];
             name: string;
-            orisDisciplineIds?: number[];
             /**
              * Format: int32
              * @description Left unchanged when omitted.
@@ -4626,7 +4657,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
+            409: components["responses"]["NeedsDecision"];
             422: components["responses"]["UnprocessableEntity"];
         };
     };

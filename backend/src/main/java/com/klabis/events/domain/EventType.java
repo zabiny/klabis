@@ -2,6 +2,7 @@ package com.klabis.events.domain;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
+import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import jakarta.validation.constraints.NotBlank;
@@ -26,7 +27,7 @@ public class EventType extends KlabisAggregateRoot<EventType, EventTypeId> {
     private String name;
     private String color;
     private int sortOrder;
-    private Set<Integer> orisDisciplineIds;
+    private Set<DisciplineId> disciplineIds;
 
     @RecordBuilder
     public record CreateEventType(
@@ -36,7 +37,7 @@ public class EventType extends KlabisAggregateRoot<EventType, EventTypeId> {
             @Pattern(regexp = "^#[0-9a-fA-F]{6}$", message = "Color must be a valid hex code like #aabbcc")
             String color,
             Integer sortOrder,
-            Set<Integer> orisDisciplineIds
+            Set<DisciplineId> disciplineIds
     ) {}
 
     @RecordBuilder
@@ -47,15 +48,15 @@ public class EventType extends KlabisAggregateRoot<EventType, EventTypeId> {
             @Pattern(regexp = "^#[0-9a-fA-F]{6}$", message = "Color must be a valid hex code like #aabbcc")
             String color,
             Integer sortOrder,
-            Set<Integer> orisDisciplineIds
+            Set<DisciplineId> disciplineIds
     ) {}
 
-    private EventType(EventTypeId id, String name, String color, int sortOrder, Set<Integer> orisDisciplineIds, AuditMetadata auditMetadata) {
+    private EventType(EventTypeId id, String name, String color, int sortOrder, Set<DisciplineId> disciplineIds, AuditMetadata auditMetadata) {
         this.id = id;
         this.name = name;
         this.color = color;
         this.sortOrder = sortOrder;
-        this.orisDisciplineIds = new HashSet<>(orisDisciplineIds != null ? orisDisciplineIds : Set.of());
+        this.disciplineIds = new HashSet<>(disciplineIds != null ? disciplineIds : Set.of());
         updateAuditMetadata(auditMetadata);
     }
 
@@ -64,11 +65,11 @@ public class EventType extends KlabisAggregateRoot<EventType, EventTypeId> {
         validateColor(command.color());
         int order = command.sortOrder() != null ? command.sortOrder() : resolvedSortOrder;
         Assert.isTrue(order >= 0, "Sort order must be non-negative");
-        return new EventType(EventTypeId.generate(), command.name(), command.color(), order, command.orisDisciplineIds(), null);
+        return new EventType(EventTypeId.generate(), command.name(), command.color(), order, command.disciplineIds(), null);
     }
 
-    public static EventType reconstruct(EventTypeId id, String name, String color, int sortOrder, AuditMetadata auditMetadata, Set<Integer> orisDisciplineIds) {
-        return new EventType(id, name, color, sortOrder, orisDisciplineIds, auditMetadata);
+    public static EventType reconstruct(EventTypeId id, String name, String color, int sortOrder, AuditMetadata auditMetadata, Set<DisciplineId> disciplineIds) {
+        return new EventType(id, name, color, sortOrder, disciplineIds, auditMetadata);
     }
 
     public void update(UpdateEventType command) {
@@ -80,7 +81,7 @@ public class EventType extends KlabisAggregateRoot<EventType, EventTypeId> {
         }
         this.name = command.name();
         this.color = command.color();
-        this.orisDisciplineIds = new HashSet<>(command.orisDisciplineIds() != null ? command.orisDisciplineIds() : Set.of());
+        this.disciplineIds = new HashSet<>(command.disciplineIds() != null ? command.disciplineIds() : Set.of());
     }
 
     private static void validateName(String name) {
@@ -111,8 +112,8 @@ public class EventType extends KlabisAggregateRoot<EventType, EventTypeId> {
         return sortOrder;
     }
 
-    public Set<Integer> getOrisDisciplineIds() {
-        return Collections.unmodifiableSet(orisDisciplineIds);
+    public Set<DisciplineId> getDisciplineIds() {
+        return Collections.unmodifiableSet(disciplineIds);
     }
 
     @Override

@@ -58,8 +58,9 @@ paths:
             createEventType:
               operation: createEventType
               description: |
-                Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
-                populated at runtime with the available ORIS discipline options.
+                Present only for callers with EVENTS:MANAGE. The disciplineIds property is
+                populated at runtime with the available options from the local Klabis discipline
+                catalog.
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -140,8 +141,9 @@ paths:
             updateEventType:
               operation: updateEventType
               description: |
-                Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
-                populated at runtime with the available ORIS discipline options.
+                Present only for callers with EVENTS:MANAGE. The disciplineIds property is
+                populated at runtime with the available options from the local Klabis discipline
+                catalog.
             deleteEventType:
               operation: deleteEventType
               description: Present only for callers with EVENTS:MANAGE
@@ -2039,13 +2041,13 @@ components:
         sortOrder:
           type: integer
           format: int32
-        orisDisciplineIds:
+        disciplineIds:
           type: array
-          description: ORIS discipline identifiers mapped onto this event type.
+          description: Local discipline identifiers mapped onto this event type.
           uniqueItems: true
           items:
-            type: integer
-            format: int32
+            type: string
+            format: uuid
 
     CreateEventTypeRequest:
       type: object
@@ -2064,12 +2066,12 @@ components:
           format: int32
           description: Assigned automatically when omitted.
           minimum: 0
-        orisDisciplineIds:
+        disciplineIds:
           type: array
           uniqueItems: true
           items:
-            type: integer
-            format: int32
+            type: string
+            format: uuid
 
     UpdateEventTypeRequest:
       type: object
@@ -2088,9 +2090,9 @@ components:
           format: int32
           description: Left unchanged when omitted.
           minimum: 0
-        orisDisciplineIds:
+        disciplineIds:
           type: array
           uniqueItems: true
           items:
-            type: integer
-            format: int32
+            type: string
+            format: uuid

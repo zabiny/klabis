@@ -5,7 +5,6 @@ import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.Discipline;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
 import com.klabis.common.OrisIntegrationComponent;
 
@@ -22,7 +21,9 @@ import com.klabis.common.OrisIntegrationComponent;
  * D12) — wrapping this method would open one around the blocking
  * {@code orisApiClient.getEventDetails} call, the exact thing that design relies on
  * not happening. The single local read ({@code eventTypeRepository
- * .findByOrisDisciplineId}) runs fine without an explicit read-only transaction.
+ * .findByDisciplineId}) runs fine without an explicit read-only transaction — currently
+ * unreachable until task 6.1 wires the ORIS-id resolution back in (see the TODO on
+ * {@code resolveEventTypeFromOrisDiscipline}).
  */
 @OrisIntegrationComponent
 public class OrisEventFieldsReader {
@@ -55,8 +56,11 @@ public class OrisEventFieldsReader {
             // ORIS uses id 0 as sentinel for a missing discipline
             return null;
         }
-        return eventTypeRepository.findByOrisDisciplineId(discipline.id())
-                .map(EventType::getId)
-                .orElse(null);
+        // TODO(task 6.1): resolve the ORIS discipline id to a local DisciplineId via
+        // SynchronizationPort.findByExternalReferences(DISCIPLINE, ORIS, ...), then
+        // look it up with EventTypeRepository.findByDisciplineId(DisciplineId) (design.md D6).
+        // EventTypeRepository no longer exposes an ORIS-integer-keyed lookup, so until that
+        // wiring lands this always resolves to "no match", same as today's unmapped-discipline case.
+        return null;
     }
 }

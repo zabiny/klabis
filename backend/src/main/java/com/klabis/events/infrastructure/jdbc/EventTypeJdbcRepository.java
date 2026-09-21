@@ -31,5 +31,5 @@ interface EventTypeJdbcRepository extends CrudRepository<EventTypeMemento, UUID>
     List<String> findEventNamesReferencingType(@Param("eventTypeId") UUID eventTypeId, @Param("limit") int limit);
 
     @Query("SELECT et.* FROM events.event_types et JOIN events.event_type_oris_disciplines d ON d.event_type_id = et.id WHERE d.discipline_id = :disciplineId LIMIT 1")
-    Optional<EventTypeMemento> findByOrisDisciplineId(@Param("disciplineId") int disciplineId);
+    Optional<EventTypeMemento> findByDisciplineId(@Param("disciplineId") UUID disciplineId);
 }

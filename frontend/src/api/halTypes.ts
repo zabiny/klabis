@@ -10,6 +10,27 @@
 import type {HalFormsTemplate, HalResourceLinks} from './types';
 import type {components} from './klabisApi';
 
+// --- PATCH /api/fee-selection-campaigns/{id}/deadline (200) ---
+
+export interface ChangeDeadlineHal {
+  _links?: {
+    /** This publication */
+    'self'?: HalResourceLinks;
+  };
+  _templates?: Record<never, never>;
+}
+
+export type ChangeDeadlineResource =
+  components['schemas']['EntityModelFeeSelectionCampaignResponse'] & ChangeDeadlineHal;
+
+export const ChangeDeadlineRels = {
+  links: ['self'] as const,
+  templates: [] as const,
+} as const;
+
+export type ChangeDeadlineLinkRel = typeof ChangeDeadlineRels.links[number];
+export type ChangeDeadlineTemplateRel = typeof ChangeDeadlineRels.templates[number];
+
 // --- GET /api/dashboard (200) ---
 
 export interface DashboardHal {
@@ -140,6 +161,36 @@ export const GetCalendarItemRels = {
 export type GetCalendarItemLinkRel = typeof GetCalendarItemRels.links[number];
 export type GetCalendarItemTemplateRel = typeof GetCalendarItemRels.templates[number];
 
+// --- GET /api/members/{memberId}/fee-choice/{year} (200) ---
+
+export interface GetChoiceHal {
+  _links?: {
+    /** Present when the member has a current fee group choice */
+    'currentGroup'?: HalResourceLinks;
+    /** Present when a recommended tier exists for this year */
+    'recommendedLevel'?: HalResourceLinks;
+    /** This fee choice */
+    'self'?: HalResourceLinks;
+  };
+  _templates?: {
+    /** Choose a fee level for this year */
+    'chooseTier'?: HalFormsTemplate;
+    /** Remove the fee level choice for this year */
+    'removeChoice'?: HalFormsTemplate;
+  };
+}
+
+export type GetChoiceResource =
+  components['schemas']['EntityModelMemberFeeChoiceResponse'] & GetChoiceHal;
+
+export const GetChoiceRels = {
+  links: ['currentGroup', 'recommendedLevel', 'self'] as const,
+  templates: ['chooseTier', 'removeChoice'] as const,
+} as const;
+
+export type GetChoiceLinkRel = typeof GetChoiceRels.links[number];
+export type GetChoiceTemplateRel = typeof GetChoiceRels.templates[number];
+
 // --- GET /api/events/{id} (200) ---
 
 export interface GetEventHal {
@@ -162,6 +213,10 @@ being offered
     'registrations'?: HalResourceLinks;
     /** This event */
     'self'?: HalResourceLinks;
+    /** Present when the event is enrolled in synchronisation and the caller has SYNC:MANAGE
+(task 8.6) — the same authority getSyncState itself requires.
+ */
+    'sync'?: HalResourceLinks;
   };
   _templates?: {
     /** Present for DRAFT/ACTIVE events and callers with EVENTS:MANAGE */
@@ -193,7 +248,7 @@ export type GetEventResource =
   components['schemas']['EntityModelEventDtoWithRegistrations'] & GetEventHal;
 
 export const GetEventRels = {
-  links: ['accommodation-list', 'collection', 'coordinator', 'event-type', 'newRegistration', 'registrations', 'self'] as const,
+  links: ['accommodation-list', 'collection', 'coordinator', 'event-type', 'newRegistration', 'registrations', 'self', 'sync'] as const,
   templates: ['cancelEvent', 'editRegistration', 'publishEvent', 'registerForEvent', 'syncEventFromOris', 'unregisterFromEvent', 'updateEvent'] as const,
 } as const;
 
@@ -212,8 +267,9 @@ export interface GetEventTypeHal {
   _templates?: {
     /** Present only for callers with EVENTS:MANAGE */
     'deleteEventType'?: HalFormsTemplate;
-    /** Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
-populated at runtime with the available ORIS discipline options.
+    /** Present only for callers with EVENTS:MANAGE. The disciplineIds property is
+populated at runtime with the available options from the local Klabis discipline
+catalog.
  */
     'updateEventType'?: HalFormsTemplate;
   };
@@ -361,36 +417,6 @@ export const GetGroupRels = {
 
 export type GetGroupLinkRel = typeof GetGroupRels.links[number];
 export type GetGroupTemplateRel = typeof GetGroupRels.templates[number];
-
-// --- GET /api/members/{memberId}/fee-choice/{year} (200) ---
-
-export interface GetChoiceHal {
-  _links?: {
-    /** Present when the member has a current fee group choice */
-    'currentGroup'?: HalResourceLinks;
-    /** Present when a recommended tier exists for this year */
-    'recommendedLevel'?: HalResourceLinks;
-    /** This fee choice */
-    'self'?: HalResourceLinks;
-  };
-  _templates?: {
-    /** Choose a fee level for this year */
-    'chooseTier'?: HalFormsTemplate;
-    /** Remove the fee level choice for this year */
-    'removeChoice'?: HalFormsTemplate;
-  };
-}
-
-export type GetChoiceResource =
-  components['schemas']['EntityModelMemberFeeChoiceResponse'] & GetChoiceHal;
-
-export const GetChoiceRels = {
-  links: ['currentGroup', 'recommendedLevel', 'self'] as const,
-  templates: ['chooseTier', 'removeChoice'] as const,
-} as const;
-
-export type GetChoiceLinkRel = typeof GetChoiceRels.links[number];
-export type GetChoiceTemplateRel = typeof GetChoiceRels.templates[number];
 
 // --- GET /api/members/{id} (200) ---
 
@@ -745,27 +771,6 @@ export const GetUserPermissionsRels = {
 export type GetUserPermissionsLinkRel = typeof GetUserPermissionsRels.links[number];
 export type GetUserPermissionsTemplateRel = typeof GetUserPermissionsRels.templates[number];
 
-// --- PATCH /api/fee-selection-campaigns/{id}/deadline (200) ---
-
-export interface ChangeDeadlineHal {
-  _links?: {
-    /** This publication */
-    'self'?: HalResourceLinks;
-  };
-  _templates?: Record<never, never>;
-}
-
-export type ChangeDeadlineResource =
-  components['schemas']['EntityModelFeeSelectionCampaignResponse'] & ChangeDeadlineHal;
-
-export const ChangeDeadlineRels = {
-  links: ['self'] as const,
-  templates: [] as const,
-} as const;
-
-export type ChangeDeadlineLinkRel = typeof ChangeDeadlineRels.links[number];
-export type ChangeDeadlineTemplateRel = typeof ChangeDeadlineRels.templates[number];
-
 // --- POST /api/events/import-batch (200) ---
 
 export interface ImportEventsBatchHal {
@@ -861,8 +866,9 @@ export interface ListEventTypesHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
-    /** Present only for callers with EVENTS:MANAGE. The orisDisciplineIds property is
-populated at runtime with the available ORIS discipline options.
+    /** Present only for callers with EVENTS:MANAGE. The disciplineIds property is
+populated at runtime with the available options from the local Klabis discipline
+catalog.
  */
     'createEventType'?: HalFormsTemplate;
   };

@@ -5,7 +5,6 @@ import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.Discipline;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Organizer;
-import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,10 +16,8 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
@@ -57,23 +54,26 @@ class OrisEventFieldsReaderTest {
     @DisplayName("readOrisFields() — auto-mapping")
     class AutoMapping {
 
+        // Interim state (pending task 6.1): EventTypeRepository no longer exposes an
+        // ORIS-integer-keyed lookup (design.md D2/D6), so resolution always yields no match
+        // until the sync-engine-based lookup (SynchronizationPort.findByExternalReferences +
+        // EventTypeRepository.findByDisciplineId) is wired in. This mirrors today's existing
+        // "no match" branch, just for every discipline id rather than only unmapped ones.
         @Test
-        @DisplayName("should resolve eventTypeId when discipline ID has a catalog match")
-        void shouldResolveEventTypeIdWhenDisciplineMatches() {
+        @DisplayName("should resolve no eventTypeId even when discipline ID would have matched the local catalog")
+        void shouldResolveNoEventTypeUntilSyncBasedResolutionLands() {
             int orisId = 100;
             Discipline discipline = new Discipline(3, "SP", "Sprint", "Sprint");
-            EventType matchedType = EventType.create(
-                    new EventType.CreateEventType("Sprint", null, 1, java.util.Set.of(3)), 1);
 
             EventDetails details = buildDetailsWithDiscipline("Sprint závod", discipline);
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
-            when(eventTypeRepository.findByOrisDisciplineId(3)).thenReturn(Optional.of(matchedType));
 
             OrisEventFields result = reader.readOrisFields(orisId);
 
-            assertThat(result.resolvedEventTypeId()).isEqualTo(matchedType.getId());
+            assertThat(result.resolvedEventTypeId()).isNull();
+            Mockito.verifyNoInteractions(eventTypeRepository);
         }
 
         @Test
@@ -86,7 +86,6 @@ class OrisEventFieldsReaderTest {
 
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
-            when(eventTypeRepository.findByOrisDisciplineId(99)).thenReturn(Optional.empty());
 
             OrisEventFields result = reader.readOrisFields(orisId);
 
@@ -105,7 +104,7 @@ class OrisEventFieldsReaderTest {
             OrisEventFields result = reader.readOrisFields(orisId);
 
             assertThat(result.resolvedEventTypeId()).isNull();
-            Mockito.verify(eventTypeRepository, Mockito.never()).findByOrisDisciplineId(any(Integer.class));
+            Mockito.verifyNoInteractions(eventTypeRepository);
         }
 
         @Test
@@ -122,7 +121,7 @@ class OrisEventFieldsReaderTest {
             OrisEventFields result = reader.readOrisFields(orisId);
 
             assertThat(result.resolvedEventTypeId()).isNull();
-            Mockito.verify(eventTypeRepository, Mockito.never()).findByOrisDisciplineId(any(Integer.class));
+            Mockito.verifyNoInteractions(eventTypeRepository);
         }
     }
 

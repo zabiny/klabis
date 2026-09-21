@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.EventType;
 import org.springframework.data.annotation.*;
@@ -66,7 +67,7 @@ class EventTypeMemento implements Persistable<UUID> {
         memento.name = eventType.getName();
         memento.color = eventType.getColor().orElse(null);
         memento.sortOrder = eventType.getSortOrder();
-        memento.orisDisciplines = eventType.getOrisDisciplineIds().stream()
+        memento.orisDisciplines = eventType.getDisciplineIds().stream()
                 .map(OrisDisciplineMemento::of)
                 .collect(Collectors.toCollection(HashSet::new));
 
@@ -80,7 +81,7 @@ class EventTypeMemento implements Persistable<UUID> {
     }
 
     EventType toEventType() {
-        Set<Integer> disciplineIds = this.orisDisciplines.stream()
+        Set<DisciplineId> disciplineIds = this.orisDisciplines.stream()
                 .map(OrisDisciplineMemento::getDisciplineId)
                 .collect(Collectors.toSet());
         return EventType.reconstruct(
