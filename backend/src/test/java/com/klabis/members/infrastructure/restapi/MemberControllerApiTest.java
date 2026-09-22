@@ -12,6 +12,8 @@ import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.MonetaryAmount;
 import com.klabis.members.OwnedGroup;
+import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
+import com.klabis.members.infrastructure.orissync.OrisClubKeyPort;
 import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
 import com.klabis.members.domain.DeactivationReason;
@@ -89,6 +91,12 @@ class MemberControllerApiTest {
 
     @MockitoBean
     private RegistrationPort registrationService;
+
+    @MockitoBean
+    private MemberDiscoveryJob memberDiscoveryJob;
+
+    @MockitoBean
+    private OrisClubKeyPort orisClubKeyPort;
 
     @Autowired
     private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;

@@ -13,6 +13,9 @@ import com.klabis.members.application.ManagementPort;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.infrastructure.orissync.ClubKeyHeld;
+import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
+import com.klabis.members.infrastructure.orissync.OrisClubKeyPort;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
@@ -32,6 +35,7 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -49,14 +53,39 @@ public class MemberController implements MembersApi {
     private final ManagementPort managementService;
     private final MemberRepository memberRepository;
     private final ConversionService conversionService;
+    private final Optional<MemberDiscoveryJob> memberDiscoveryJob;
+    private final OrisClubKeyPort orisClubKeyPort;
 
     public MemberController(
             ManagementPort managementService,
             MemberRepository memberRepository,
-            ConversionService conversionService) {
+            ConversionService conversionService,
+            Optional<MemberDiscoveryJob> memberDiscoveryJob,
+            OrisClubKeyPort orisClubKeyPort) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
         this.conversionService = conversionService;
+        this.memberDiscoveryJob = memberDiscoveryJob;
+        this.orisClubKeyPort = orisClubKeyPort;
+    }
+
+    /**
+     * Runs the exact same discovery pass {@link MemberDiscoveryJob}'s own cron runs
+     * (design.md D11) — this only lets a human start it once, deliberately, before the
+     * schedule is relied upon. Running it twice brings nobody in twice: already-paired
+     * members are skipped identically either way.
+     * <p>
+     * {@link MemberDiscoveryJob} only exists under the {@code oris} profile
+     * ({@code @OrisIntegrationComponent}); without it there is nothing to trigger.
+     */
+    @Override
+    public ResponseEntity<Void> importFromOris() {
+        return memberDiscoveryJob
+                .map(job -> {
+                    job.discoverNewMembers();
+                    return ResponseEntity.noContent().<Void>build();
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @Override
@@ -135,6 +164,7 @@ public class MemberController implements MembersApi {
 
         Page<Member> memberPage = memberRepository.findAll(filter, pageable);
 
+        HalResponseContext.setContext(new ClubKeyHeld(memberDiscoveryJob.isPresent() && orisClubKeyPort.isSet()));
         HalResponseContext.setDomainList(memberPage.getContent());
 
         return ResponseEntity.ok(memberPage.map(member -> conversionService.convert(member, MemberSummaryResponse.class)));
