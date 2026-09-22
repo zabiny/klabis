@@ -284,7 +284,7 @@ components:
     # one of them.
     SyncEntityTypeParam:
       type: string
-      enum: [events, disciplines]
+      enum: [events, disciplines, members]
 
     SyncStateResponse:
       type: object

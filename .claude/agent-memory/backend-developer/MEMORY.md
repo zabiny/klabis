@@ -4,6 +4,8 @@
 
 - [Shared HAL envelope base models](project_hal_shared_envelope_models.md) — bundler deriver composes EntityModel/CollectionModel/PagedModel from _shared/hal.yaml via allOf; markers keep flat shape
 - [Event aggregate signature growth](project_event_aggregate_signature_growth.md) — add fields to Event/EventRegistration factories via delegating overloads + non-canonical record constructor; ~60 positional call sites otherwise
+- [SyncEntityType addition (spec-first)](project_sync_entity_type_addition.md) — edit sync.yaml SyncEntityTypeParam enum, regen via openapiBundle+compileJava, then add domain SyncEntityType constant by hand
+- [Member sync projection mapping quirks](project_member_sync_projection.md) — si==0→null chip, blank→null, phone needs CZ-only E.164 normalization, Member.register() never sets chipNumber
 
 ## Project patterns confirmed
 
