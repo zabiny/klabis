@@ -5,7 +5,7 @@ package com.klabis.members.infrastructure.orissync;
  * has no getter — the value can only be replaced or discarded, never read back, so
  * no caller outside this package can leak it even by accident.
  */
-interface OrisClubKeyPort {
+public interface OrisClubKeyPort {
 
     void store(String clubKey);
 

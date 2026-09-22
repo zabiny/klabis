@@ -66,6 +66,104 @@ paths:
         '403':
           $ref: './_shared/responses.yaml#/components/responses/Forbidden'
 
+  /api/oris/club-key:
+    get:
+      operationId: getClubKeyState
+      tags: [OrisClubKey]
+      summary: Whether the ORIS club key is held
+      description: |
+        Reports only whether a club key is currently held — never the key itself, not even
+        partially masked. The response carries exactly one affordance: 'set' while no key is
+        held, 'clear' while one is (design.md D10) — a client never has to decide which action
+        applies.
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      responses:
+        '200':
+          description: Club key state returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClubKeyStateResponse'
+          x-hal-links:
+            self:
+              description: This club key state
+          x-hal-templates:
+            setClubKey:
+              operation: setClubKey
+              description: Present only while no club key is held
+            clearClubKey:
+              operation: clearClubKey
+              description: Present only while a club key is held
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
+    put:
+      operationId: setClubKey
+      tags: [OrisClubKey]
+      summary: Supply the ORIS club key
+      description: |
+        Supplies the club key used to read the club's membership list from ORIS. Replaces any
+        previously held key. The value is never shown back, at any point. A blank value is
+        refused — discarding a key is a deliberate DELETE instead (design.md D10).
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetClubKeyRequest'
+      responses:
+        '200':
+          description: Club key stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClubKeyStateResponse'
+          x-hal-links:
+            self:
+              description: This club key state
+          x-hal-templates:
+            setClubKey:
+              operation: setClubKey
+              description: Present only while no club key is held
+            clearClubKey:
+              operation: clearClubKey
+              description: Present only while a club key is held
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
+    delete:
+      operationId: clearClubKey
+      tags: [OrisClubKey]
+      summary: Discard the held ORIS club key
+      description: |
+        Discards the held club key, leaving the system as though none had ever been supplied.
+        Work needing the key stops until a new one is supplied. Discarding while no key is held
+        succeeds without error (design.md D10, spec scenario "Discarding when no key is held").
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      responses:
+        '204':
+          description: Club key discarded (or none was held)
+          content:
+            application/prs.hal-forms+json: {}
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
 components:
   securitySchemes:
     KlabisAuth:
@@ -100,3 +198,20 @@ components:
           type: string
         organizer:
           type: string
+
+    ClubKeyStateResponse:
+      type: object
+      description: Whether the ORIS club key is currently held. Never carries the key itself.
+      required: [isSet]
+      properties:
+        isSet:
+          type: boolean
+
+    SetClubKeyRequest:
+      type: object
+      description: Supplies the ORIS club key. A blank value is refused.
+      required: [clubKey]
+      properties:
+        clubKey:
+          type: string
+          x-klabis-not-blank: true

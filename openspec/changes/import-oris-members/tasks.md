@@ -12,10 +12,10 @@
 
 ## 3. Club key REST surface
 
-- [ ] 3.1 Author the club-key resource in `docs/openapi/spec/` per the project's spec-first workflow: `GET`/`PUT`/`DELETE` on `/api/oris/club-key`, the response carrying `isSet` only, all three gated on `SYNC:MANAGE` via the field-security extension; regenerate the API interfaces
-- [ ] 3.2 Write a failing `@WebMvcTest` asserting `GET` returns `isSet: false` with only a `set` affordance, `isSet: true` with only a `clear` affordance (never both, design.md D10), and that **no response ever contains the key value**; then implement the controller and its postprocessor to pass
-- [ ] 3.3 Write a failing test asserting the club-key link is absent from the API root for a user without `SYNC:MANAGE` and present with it, then implement the root postprocessor on `EntityModel<RootModel>` (mirroring `RootAdminLinkProcessor`)
-- [ ] 3.4 Write a failing test asserting `PUT` with a blank body is refused and `DELETE` on an unheld key succeeds without error (specs/oris-club-key), then wire the controller to the port to pass
+- [x] 3.1 Author the club-key resource in `docs/openapi/spec/` per the project's spec-first workflow: `GET`/`PUT`/`DELETE` on `/api/oris/club-key`, the response carrying `isSet` only, all three gated on `SYNC:MANAGE` via the field-security extension; regenerate the API interfaces
+- [x] 3.2 Write a failing `@WebMvcTest` asserting `GET` returns `isSet: false` with only a `set` affordance, `isSet: true` with only a `clear` affordance (never both, design.md D10), and that **no response ever contains the key value**; then implement the controller and its postprocessor to pass
+- [x] 3.3 Write a failing test asserting the club-key link is absent from the API root for a user without `SYNC:MANAGE` and present with it, then implement the root postprocessor on `EntityModel<RootModel>` (mirroring `RootAdminLinkProcessor`)
+- [x] 3.4 Write a failing test asserting `PUT` with a blank body is refused and `DELETE` on an unheld key succeeds without error (specs/oris-club-key), then wire the controller to the port to pass
 
 ## 4. Member domain gains a synchronisation command
 
