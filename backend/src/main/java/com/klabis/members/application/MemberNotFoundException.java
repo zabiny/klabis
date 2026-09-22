@@ -15,6 +15,16 @@ public class MemberNotFoundException extends ResourceNotFoundException {
         this.memberId = memberId;
     }
 
+    /**
+     * Used when a member is looked up by an external system's own id (e.g. an ORIS
+     * club member id during synchronisation) rather than the Klabis {@link MemberId} —
+     * mirrors {@code DisciplineNotFoundException}'s external-id overload.
+     */
+    public MemberNotFoundException(String externalId) {
+        super("ORIS club member not found with ID: " + externalId);
+        this.memberId = null;
+    }
+
     public MemberId getMemberId() {
         return memberId;
     }

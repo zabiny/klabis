@@ -40,10 +40,10 @@
 
 ## 7. Member synchronisation adapter
 
-- [ ] 7.1 Write a failing `MemberSyncAdapterTest` asserting `capabilities()` is `pullOnlyCreating()` **with `containsSensitiveData = true`** (design.md D13) and that `applyToExternal` throws `UnsupportedOperationException`; then implement the adapter skeleton in `members.infrastructure.orissync`
-- [ ] 7.2 Write a failing test for `createLocal` asserting it calls `importMember` with the ORIS registration number and returns the new member's id; implement to pass
-- [ ] 7.3 Write a failing test for `applyToLocal` asserting it builds a `SyncFromOris` from the projection and calls `syncMemberFromOris` — and that a member's trainer licence and guardian survive the call untouched (the regression this design exists to prevent); implement to pass
-- [ ] 7.4 Write a failing test for `readExternal`/`readLocal` asserting both produce a `MemberProjection` in the same shape, and that `readExternal` for an id absent from the club list fails meaningfully; implement to pass
+- [x] 7.1 Write a failing `MemberSyncAdapterTest` asserting `capabilities()` is `pullOnlyCreating()` **with `containsSensitiveData = true`** (design.md D13) and that `applyToExternal` throws `UnsupportedOperationException`; then implement the adapter skeleton in `members.infrastructure.orissync`
+- [x] 7.2 Write a failing test for `createLocal` asserting it calls `importMember` with the ORIS registration number and returns the new member's id; implement to pass
+- [x] 7.3 Write a failing test for `applyToLocal` asserting it builds a `SyncFromOris` from the projection and calls `syncMemberFromOris` — and that a member's trainer licence and guardian survive the call untouched (the regression this design exists to prevent); implement to pass
+- [x] 7.4 Write a failing test for `readExternal`/`readLocal` asserting both produce a `MemberProjection` in the same shape, and that `readExternal` for an id absent from the club list fails meaningfully; implement to pass
 
 ## 8. Discovery job
 
