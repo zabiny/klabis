@@ -66,8 +66,8 @@
 
 ## 11. Sample data stands down when ORIS is active
 
-- [ ] 11.1 Change `MembersDataBootstrap`, `TrainingGroupDataBootstrap`, `EventsDataBootstrap` and `MembershipFeeTiersDataBootstrap` from `@Profile("example-data")` to `@Profile({"example-data", "!oris"})` (design.md D14); write a context test asserting the initialisers are absent when both profiles are active and present with `example-data` alone
-- [ ] 11.2 Update the profile table and the "Clean database (ORIS sync scenario)" note in `backend/CLAUDE.md` to state that demo data no longer loads while `oris` is active — including that the documented default profile set now yields an empty database
+- [x] 11.1 Change `MembersDataBootstrap`, `TrainingGroupDataBootstrap`, `EventsDataBootstrap` and `MembershipFeeTiersDataBootstrap` from `@Profile("example-data")` to `@Profile("example-data & !oris")` (design.md D14 — expression-form annotation used instead of the array form in the original task text, since Spring's array-form `@Profile` is OR semantics and does not stand down when both profiles are active); write a context test asserting the initialisers are absent when both profiles are active and present with `example-data` alone
+- [x] 11.2 Update the profile table and the "Clean database (ORIS sync scenario)" note in `backend/CLAUDE.md` to state that demo data no longer loads while `oris` is active — including that the documented default profile set now yields an empty database
 
 ## 12. End-to-end verification
 
