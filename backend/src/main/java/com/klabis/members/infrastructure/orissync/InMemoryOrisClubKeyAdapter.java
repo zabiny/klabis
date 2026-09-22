@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.orissync;
 
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -13,6 +14,7 @@ import org.springframework.util.Assert;
 @Component
 class InMemoryOrisClubKeyAdapter implements OrisClubKeyPort, OrisClubKeyAccessor {
 
+    @Value("klabis.oris.club.key")
     private volatile String clubKey;
 
     @Override
