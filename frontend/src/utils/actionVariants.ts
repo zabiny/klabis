@@ -23,6 +23,7 @@ const ACTION_VARIANT_MAP: Record<string, ButtonVariant> = {
     cancelEvent: 'danger-ghost',
     updateEvent: 'ghost',
     syncEventFromOris: 'ghost',
+    importFromOris: 'ghost',
 };
 
 export const getActionVariant = (affordanceName: string): ButtonVariant =>

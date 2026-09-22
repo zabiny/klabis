@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter, useLocation} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
@@ -172,6 +172,35 @@ describe('MembersPage', () => {
         };
         renderPage(createMockPageData(resourceData));
         expect(screen.queryByTestId('form-template-button-registerMember')).not.toBeInTheDocument();
+    });
+
+    it('renders "Synchronizovat s ORIS" button when importFromOris template is present', () => {
+        const resourceData: HalResponse = {
+            _links: {self: {href: '/api/members'}},
+            _templates: {
+                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
+                importFromOris: mockHalFormsTemplate({
+                    title: 'Synchronizovat s ORIS',
+                    method: 'POST',
+                    target: 'http://localhost/api/members/oris-import',
+                    properties: [],
+                }),
+            },
+        };
+        renderPage(createMockPageData(resourceData));
+        expect(screen.getByTestId('form-template-button-importFromOris')).toBeInTheDocument();
+        expect(screen.getByText('Synchronizovat s ORIS')).toBeInTheDocument();
+    });
+
+    it('does NOT render "Synchronizovat s ORIS" button when importFromOris template is absent', () => {
+        const resourceData: HalResponse = {
+            _links: {self: {href: '/api/members'}},
+            _templates: {
+                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
+            },
+        };
+        renderPage(createMockPageData(resourceData));
+        expect(screen.queryByTestId('form-template-button-importFromOris')).not.toBeInTheDocument();
     });
 
     it('renders basic table columns: Registrační číslo, Příjmení, Jméno', () => {
