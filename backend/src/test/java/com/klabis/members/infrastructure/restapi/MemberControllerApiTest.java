@@ -18,6 +18,14 @@ import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.Gender;
+import com.klabis.sync.SyncRecordId;
+import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.domain.ExternalReference;
+import com.klabis.sync.domain.ExternalSystem;
+import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncRecord;
+import com.klabis.sync.domain.SyncTarget;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +49,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -97,6 +106,14 @@ class MemberControllerApiTest {
 
     @MockitoBean
     private OrisClubKeyPort orisClubKeyPort;
+
+    @MockitoBean
+    private SynchronizationPort synchronizationPort;
+
+    @BeforeEach
+    void stubSynchronizationPortAbsentByDefault() {
+        when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
+    }
 
     @Autowired
     private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
@@ -528,6 +545,41 @@ class MemberControllerApiTest {
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links['ical-token']").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should include sync link for a member brought in from ORIS")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldIncludeSyncLinkForOrisLinkedMember() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenReturn(member);
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), targetFor(new MemberId(memberId)),
+                    new ExternalReference(ExternalSystem.ORIS, "100"));
+            when(synchronizationPort.findByTarget(targetFor(new MemberId(memberId)))).thenReturn(Optional.of(record));
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.sync.href").exists());
+        }
+
+        @Test
+        @DisplayName("should not include sync link for a hand-registered member")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldNotIncludeSyncLinkForHandRegisteredMember() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.sync").doesNotExist());
+        }
+
+        private static SyncTarget targetFor(MemberId memberId) {
+            return new SyncTarget(SyncEntityType.MEMBER, memberId.uuid().toString());
         }
     }
 
