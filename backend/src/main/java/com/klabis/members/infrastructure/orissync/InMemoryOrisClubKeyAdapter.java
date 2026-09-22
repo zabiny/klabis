@@ -11,7 +11,7 @@ import org.springframework.util.Assert;
  */
 @SecondaryAdapter
 @Component
-class InMemoryOrisClubKeyAdapter implements OrisClubKeyPort {
+class InMemoryOrisClubKeyAdapter implements OrisClubKeyPort, OrisClubKeyAccessor {
 
     private volatile String clubKey;
 
@@ -37,7 +37,8 @@ class InMemoryOrisClubKeyAdapter implements OrisClubKeyPort {
      * (design.md D9). Only {@link DefaultOrisClubMembers}, living in this same
      * package, may call it to attach the key to an outgoing ORIS request.
      */
-    String currentKey() {
+    @Override
+    public String currentKey() {
         return clubKey;
     }
 }
