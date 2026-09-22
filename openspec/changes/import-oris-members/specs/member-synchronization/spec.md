@@ -55,6 +55,13 @@ ORIS issues the registration number that identifies a member across the whole sp
 - **WHEN** an administrator registers a member by hand without giving a registration number
 - **THEN** the system issues one as it always has
 
+#### Scenario: The registration number changes in ORIS
+
+- **GIVEN** a member kept in step with ORIS
+- **WHEN** their registration number changes in ORIS and nobody has changed it in Klabis
+- **THEN** the member's registration number in Klabis is updated to match
+- **AND** the member remains linked to the same ORIS record
+
 ### Requirement: Changes Made In ORIS Reach The Member Record
 
 Once a member is kept in step with ORIS, the system SHALL apply changes made in ORIS to the member's record in Klabis, exactly as though an administrator had edited the member.
@@ -74,7 +81,7 @@ Once a member is kept in step with ORIS, the system SHALL apply changes made in 
 
 ### Requirement: Only The Details ORIS Owns Are Kept In Step
 
-Klabis records a great deal about a member that ORIS knows nothing about. The system SHALL keep in step only the details ORIS holds — name, date of birth, gender, nationality, birth number, e-mail, telephone, address and SI chip number — and SHALL leave everything else exactly as Klabis holds it.
+Klabis records a great deal about a member that ORIS knows nothing about. The system SHALL keep in step only the details ORIS holds — registration number, name, date of birth, gender, nationality, birth number, e-mail, telephone, address and SI chip number — and SHALL leave everything else exactly as Klabis holds it.
 
 #### Scenario: Details Klabis alone keeps are never disturbed
 
@@ -115,6 +122,33 @@ Members are kept in step through the same machinery as every other linked record
 - **WHEN** a user views a member who was never brought in from ORIS
 - **THEN** no way to reach a synchronisation state is offered for that member
 - **AND** the member is presented exactly as members were before ORIS synchronisation existed
+
+### Requirement: The Import Can Be Started By Hand
+
+Bringing in the whole club at once has consequences a club will want to watch happen — not least a burst of invitations to set passwords. The system SHALL therefore let a user with the synchronisation permission start the import themselves, from the member list, rather than only waiting for it to run on its own. The action SHALL be offered only when it could actually do something.
+
+#### Scenario: The administrator starts the import from the member list
+
+- **WHEN** a user with the synchronisation permission starts the import from the member list
+- **THEN** the club's members are brought in from ORIS
+- **AND** the members that were brought in appear in the list
+
+#### Scenario: The action is not offered without the club key
+
+- **WHEN** a user with the synchronisation permission views the member list while no club key is held
+- **THEN** the action to start the import is not offered
+
+#### Scenario: The action is not offered without the permission
+
+- **WHEN** a user without the synchronisation permission views the member list
+- **THEN** the action to start the import is not offered
+
+#### Scenario: Starting the import by hand does not bring anyone in twice
+
+- **GIVEN** the club's members have already been brought in
+- **WHEN** a user with the synchronisation permission starts the import again
+- **THEN** no member is registered a second time
+- **AND** only members not yet brought in are added
 
 ### Requirement: One Member's Failure Does Not Stop The Rest
 
