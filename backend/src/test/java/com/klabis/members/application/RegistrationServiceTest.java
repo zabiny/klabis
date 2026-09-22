@@ -23,6 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -536,6 +537,86 @@ class RegistrationServiceTest {
             Member savedMember = memberCaptor.getValue();
             assertThat(savedMember.getBirthNumber()).isNull();
             assertThat(savedMember.getBankAccountNumber()).isNull();
+        }
+
+        @Test
+        @DisplayName("should generate a registration number as before (regression guard)")
+        void shouldStillGenerateRegistrationNumber() {
+            // Given
+            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
+            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
+            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
+            EmailAddress email = EmailAddress.of("jan.novak@example.com");
+            PhoneNumber phone = PhoneNumber.of("+420777888999");
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Jan", "Novák", dateOfBirth, "CZ", Gender.MALE
+            );
+
+            // RegisterNewMember carries no registration number field - it must stay this shape
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
+                    address,
+                    email,
+                    phone,
+                    null,
+                    BirthNumber.of("050615/1234"),
+                    null,
+                    null
+            );
+
+            mockUserCreation(testSharedId);
+            mockMemberCreation(testSharedId);
+
+            // When
+            Member result = service.registerMember(command);
+
+            // Then
+            verify(registrationNumberGenerator).generate(dateOfBirth);
+            assertThat(result.getRegistrationNumber().getValue()).isEqualTo("ZBM0500");
+        }
+    }
+
+    @Nested
+    @DisplayName("importMember() method")
+    class ImportMemberMethod {
+
+        @Test
+        @DisplayName("should create member with the given registration number and never call the generator")
+        void shouldCreateMemberWithGivenRegistrationNumberAndNeverGenerate() {
+            // Given
+            LocalDate dateOfBirth = LocalDate.of(2005, 6, 15);
+            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
+            Address address = Address.of("Hlavní 123", "Praha", "11000", "CZ");
+            EmailAddress email = EmailAddress.of("jan.novak@example.com");
+            PhoneNumber phone = PhoneNumber.of("+420777888999");
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Jan", "Novák", dateOfBirth, "CZ", Gender.MALE
+            );
+            RegistrationNumber importedRegistrationNumber = RegistrationNumber.of("ZBM0099");
+
+            RegistrationPort.RegisterNewMember details = new RegistrationPort.RegisterNewMember(personalInformation,
+                    address,
+                    email,
+                    phone,
+                    null,
+                    BirthNumber.of("050615/1234"),
+                    null,
+                    null
+            );
+            RegistrationPort.ImportMember command = new RegistrationPort.ImportMember(details, importedRegistrationNumber);
+
+            mockUserCreation(testSharedId);
+            mockMemberCreation(testSharedId);
+
+            // When
+            Member result = service.importMember(command);
+
+            // Then
+            assertThat(result.getRegistrationNumber()).isEqualTo(importedRegistrationNumber);
+            verify(registrationNumberGenerator, never()).generate(any(LocalDate.class));
+
+            ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
+            verify(userService).createUser(usernameCaptor.capture(), anyString(), any(Set.class));
+            assertThat(usernameCaptor.getValue()).isEqualTo("ZBM0099");
         }
     }
 }
