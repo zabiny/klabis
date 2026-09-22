@@ -61,8 +61,8 @@
 
 ## 10. Member exposes its synchronisation state
 
-- [ ] 10.1 Write a failing test asserting a member brought in from ORIS carries a `sync` link and a hand-registered member carries **none** (specs/member-synchronization "A member not linked to ORIS", design.md D12); implement via `synchronizationPort.findByTarget`, mirroring `EventController`
-- [ ] 10.2 Write a test asserting the linked sync-state resource shows the member's differing fields to a `SYNC:MANAGE` holder and nothing to a user without it (the engine's existing rules, verified end-to-end for members)
+- [x] 10.1 Write a failing test asserting a member brought in from ORIS carries a `sync` link and a hand-registered member carries **none** (specs/member-synchronization "A member not linked to ORIS", design.md D12); implement via `synchronizationPort.findByTarget`, mirroring `EventController`
+- [x] 10.2 Write a test asserting the linked sync-state resource shows the member's differing fields to a `SYNC:MANAGE` holder and nothing to a user without it (the engine's existing rules, verified end-to-end for members)
 
 ## 11. Sample data stands down when ORIS is active
 

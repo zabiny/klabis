@@ -16,6 +16,11 @@ import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.infrastructure.orissync.ClubKeyHeld;
 import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
 import com.klabis.members.infrastructure.orissync.OrisClubKeyPort;
+import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncTarget;
+import com.klabis.sync.infrastructure.restapi.SyncApi;
+import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
@@ -55,18 +60,21 @@ public class MemberController implements MembersApi {
     private final ConversionService conversionService;
     private final Optional<MemberDiscoveryJob> memberDiscoveryJob;
     private final OrisClubKeyPort orisClubKeyPort;
+    private final SynchronizationPort synchronizationPort;
 
     public MemberController(
             ManagementPort managementService,
             MemberRepository memberRepository,
             ConversionService conversionService,
             Optional<MemberDiscoveryJob> memberDiscoveryJob,
-            OrisClubKeyPort orisClubKeyPort) {
+            OrisClubKeyPort orisClubKeyPort,
+            SynchronizationPort synchronizationPort) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
         this.conversionService = conversionService;
         this.memberDiscoveryJob = memberDiscoveryJob;
         this.orisClubKeyPort = orisClubKeyPort;
+        this.synchronizationPort = synchronizationPort;
     }
 
     /**
@@ -222,10 +230,31 @@ public class MemberController implements MembersApi {
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
                 currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
+        boolean isEnrolled = synchronizationPort.findByTarget(targetFor(memberId)).isPresent();
+        Set<String> enrolledIds = isEnrolled ? Set.of(memberId.uuid().toString()) : Set.of();
+        HalResponseContext.setContext(new EnrolledMemberIds(enrolledIds));
+
         HalResponseContext.setDomain(member);
         return ResponseEntity.ok(conversionService.convert(member, MemberDetailsResponse.class));
     }
 
+    private static SyncTarget targetFor(MemberId memberId) {
+        return new SyncTarget(SyncEntityType.MEMBER, memberId.uuid().toString());
+    }
+
+}
+
+/**
+ * Carries which member (by id) is currently paired for synchronisation, from
+ * {@code MemberController#getMember} to {@code MemberDetailsPostprocessor} — one lookup per
+ * request rather than injecting {@link SynchronizationPort} into the postprocessor, mirroring
+ * {@code DisciplineController}'s {@code EnrolledDisciplineIds} (design.md D12).
+ */
+record EnrolledMemberIds(Set<String> memberIds) {
+
+    boolean contains(UUID memberId) {
+        return memberIds.contains(memberId.toString());
+    }
 }
 
 @MvcComponent
@@ -237,6 +266,18 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
 
         klabisLinkTo(methodOn(MembersApi.class).listMembers(null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
+
+        UUID memberId = member.getId().uuid();
+        if (isEnrolled(memberId)) {
+            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.MEMBERS, memberId.toString()))
+                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
+        }
+    }
+
+    private static boolean isEnrolled(UUID memberId) {
+        return HalResponseContext.findContext(EnrolledMemberIds.class)
+                .map(enrolled -> enrolled.contains(memberId))
+                .orElse(false);
     }
 }
 

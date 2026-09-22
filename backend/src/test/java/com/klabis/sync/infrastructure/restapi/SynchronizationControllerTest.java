@@ -247,6 +247,59 @@ class SynchronizationControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api/members/{id}/sync")
+    class GetSyncStateForMembers {
+
+        private static final SyncTarget MEMBER_TARGET = new SyncTarget(SyncEntityType.MEMBER, "member-1");
+
+        private SyncRecord memberConflictedRecord() {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), MEMBER_TARGET, EXTERNAL_REF);
+            SyncSnapshot inSync = SyncSnapshot.reconstruct(new TestSyncProjection("Sprint", "Brno"), SyncHash.of("h1"));
+            record.recordSuccess(SyncDirection.INWARD, inSync, inSync, Instant.now());
+            SyncSnapshot local = SyncSnapshot.reconstruct(new TestSyncProjection("Local", "Brno"), SyncHash.of("hl"));
+            SyncSnapshot external = SyncSnapshot.reconstruct(new TestSyncProjection("External", "Brno"), SyncHash.of("he"));
+            record.recordConflict(local, external, null, Instant.now());
+            return record;
+        }
+
+        @Test
+        @DisplayName("a SYNC:MANAGE holder sees the member's differing fields, including the conflict diagnosis")
+        @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+        void showsDifferingFieldsWithAuthority() throws Exception {
+            when(fieldReader.fields(any())).thenReturn(java.util.Map.of("name", "Local"));
+            when(synchronizationPort.findByTarget(MEMBER_TARGET)).thenReturn(Optional.of(memberConflictedRecord()));
+            when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
+
+            mockMvc.perform(get("/api/members/{id}/sync", "member-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.entityType").value("members"))
+                    .andExpect(jsonPath("$.status").exists())
+                    .andExpect(jsonPath("$.local").exists())
+                    .andExpect(jsonPath("$.external").exists())
+                    .andExpect(jsonPath("$.divergedFields").exists())
+                    .andExpect(jsonPath("$.changedSides").exists());
+        }
+
+        @Test
+        @DisplayName("a user without SYNC:MANAGE sees nothing but the headline fields")
+        @WithKlabisMockUser(authorities = {})
+        void showsNoManagedFieldsWithoutAuthority() throws Exception {
+            when(fieldReader.fields(any())).thenReturn(java.util.Map.of("name", "Local"));
+            when(synchronizationPort.findByTarget(MEMBER_TARGET)).thenReturn(Optional.of(memberConflictedRecord()));
+            when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
+
+            mockMvc.perform(get("/api/members/{id}/sync", "member-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.entityType").value("members"))
+                    .andExpect(jsonPath("$.status").exists())
+                    .andExpect(jsonPath("$.local").doesNotExist())
+                    .andExpect(jsonPath("$.external").doesNotExist())
+                    .andExpect(jsonPath("$.divergedFields").doesNotExist())
+                    .andExpect(jsonPath("$.changedSides").doesNotExist());
+        }
+    }
+
+    @Nested
     @DisplayName("POST /api/{entityType}/{id}/sync")
     class SynchronizeNow {
 
