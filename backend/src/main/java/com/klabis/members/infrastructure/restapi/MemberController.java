@@ -10,11 +10,11 @@ import com.klabis.members.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
+import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.infrastructure.orissync.ClubKeyHeld;
-import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
 import com.klabis.members.infrastructure.orissync.OrisClubKeyPort;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
@@ -58,7 +58,7 @@ public class MemberController implements MembersApi {
     private final ManagementPort managementService;
     private final MemberRepository memberRepository;
     private final ConversionService conversionService;
-    private final Optional<MemberDiscoveryJob> memberDiscoveryJob;
+    private final Optional<MemberDiscoveryPort> memberDiscoveryJob;
     private final OrisClubKeyPort orisClubKeyPort;
     private final SynchronizationPort synchronizationPort;
 
@@ -66,7 +66,7 @@ public class MemberController implements MembersApi {
             ManagementPort managementService,
             MemberRepository memberRepository,
             ConversionService conversionService,
-            Optional<MemberDiscoveryJob> memberDiscoveryJob,
+            Optional<MemberDiscoveryPort> memberDiscoveryJob,
             OrisClubKeyPort orisClubKeyPort,
             SynchronizationPort synchronizationPort) {
         this.managementService = managementService;
@@ -83,8 +83,9 @@ public class MemberController implements MembersApi {
      * schedule is relied upon. Running it twice brings nobody in twice: already-paired
      * members are skipped identically either way.
      * <p>
-     * {@link MemberDiscoveryJob} only exists under the {@code oris} profile
-     * ({@code @OrisIntegrationComponent}); without it there is nothing to trigger.
+     * The only implementation of {@link MemberDiscoveryPort}, {@code MemberDiscoveryJob},
+     * only exists under the {@code oris} profile ({@code @OrisIntegrationComponent});
+     * without it there is nothing to trigger.
      */
     @Override
     public ResponseEntity<Void> importFromOris() {

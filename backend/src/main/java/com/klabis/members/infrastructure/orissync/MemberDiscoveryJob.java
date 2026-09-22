@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.orissync;
 
 import com.dpolach.api.orisclient.dto.ClubMember;
 import com.klabis.common.OrisIntegrationComponent;
+import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
@@ -43,10 +44,12 @@ import java.util.stream.Collectors;
  * Public (rather than package-private) solely so {@code discoverNewMembers()} can be invoked
  * from {@code MembersApi#importFromOris} (design.md D11, tasks.md section 9): the manual
  * trigger runs the exact same discovery pass the scheduler runs, rather than reimplementing it.
+ * Implements {@link MemberDiscoveryPort} so {@code MemberController} (a primary adapter) can
+ * depend on that port instead of on this {@code @Application}-classified class directly.
  */
 @OrisIntegrationComponent
 @Application
-public class MemberDiscoveryJob {
+public class MemberDiscoveryJob implements MemberDiscoveryPort {
 
     private static final Logger log = LoggerFactory.getLogger(MemberDiscoveryJob.class);
 
@@ -64,6 +67,7 @@ public class MemberDiscoveryJob {
     }
 
     @Scheduled(cron = "${klabis.members.oris-discovery-cron}")
+    @Override
     public void discoverNewMembers() {
         log.info("Starting ORIS member discovery");
 

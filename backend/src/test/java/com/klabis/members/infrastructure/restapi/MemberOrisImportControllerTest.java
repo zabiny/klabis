@@ -5,9 +5,9 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.members.application.ManagementPort;
+import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.MemberRepository;
-import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
 import com.klabis.members.infrastructure.orissync.OrisClubKeyPort;
 import com.klabis.sync.application.SynchronizationPort;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * POST /api/members/oris-import runs the exact same discovery pass
- * {@link MemberDiscoveryJob}'s own cron runs (design.md D11, tasks.md section 9.3) — it must
+ * {@code MemberDiscoveryJob}'s own cron runs (design.md D11, tasks.md section 9.3) — it must
  * invoke {@code discoverNewMembers()} rather than reimplementing the discovery algorithm.
  * Idempotency (nobody brought in twice) is guaranteed by that method's own
  * already-tested behaviour ({@code MemberDiscoveryJobTest}); this test only confirms the
@@ -54,7 +54,7 @@ class MemberOrisImportControllerTest {
     private OrisClubKeyPort orisClubKeyPort;
 
     @MockitoBean
-    private MemberDiscoveryJob memberDiscoveryJob;
+    private MemberDiscoveryPort memberDiscoveryJob;
 
     @MockitoBean
     private SynchronizationPort synchronizationPort;

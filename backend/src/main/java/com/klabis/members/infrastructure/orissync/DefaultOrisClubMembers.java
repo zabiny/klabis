@@ -17,9 +17,9 @@ import java.util.Map;
 class DefaultOrisClubMembers implements OrisClubMembers {
 
     private final OrisApiClient orisApiClient;
-    private final InMemoryOrisClubKeyAdapter clubKeyPort;
+    private final OrisClubKeyAccessor clubKeyPort;
 
-    DefaultOrisClubMembers(OrisApiClient orisApiClient, InMemoryOrisClubKeyAdapter clubKeyPort) {
+    DefaultOrisClubMembers(OrisApiClient orisApiClient, OrisClubKeyAccessor clubKeyPort) {
         this.orisApiClient = orisApiClient;
         this.clubKeyPort = clubKeyPort;
     }

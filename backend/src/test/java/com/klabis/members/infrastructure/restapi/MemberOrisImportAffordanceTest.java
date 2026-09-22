@@ -5,10 +5,10 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.members.application.ManagementPort;
+import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
-import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
 import com.klabis.members.infrastructure.orissync.MemberOrisImportAffordancePostprocessor;
 import com.klabis.members.infrastructure.orissync.OrisClubKeyPort;
 import com.klabis.sync.application.SynchronizationPort;
@@ -57,7 +57,7 @@ class MemberOrisImportAffordanceTest {
     private OrisClubKeyPort orisClubKeyPort;
 
     @MockitoBean
-    private MemberDiscoveryJob memberDiscoveryJob;
+    private MemberDiscoveryPort memberDiscoveryJob;
 
     @MockitoBean
     private SynchronizationPort synchronizationPort;
