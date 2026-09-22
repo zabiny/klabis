@@ -47,11 +47,11 @@
 
 ## 8. Discovery job
 
-- [ ] 8.1 Write a failing `MemberDiscoveryJobTest` asserting members already paired (per `SynchronizationPort.findByExternalReferences`) are skipped and only new ids reach `pullAndEnroll`; then implement the job (design.md D7)
-- [ ] 8.2 Write a failing test asserting members whose ORIS membership has lapsed are never enrolled, and that a lapsed member **already** in Klabis is left entirely alone (specs/member-synchronization, design.md D5); implement to pass
-- [ ] 8.3 Write a failing test asserting the job does nothing and makes **no ORIS call** when no club key is held, logging rather than surfacing a failure; implement to pass
-- [ ] 8.4 Write a failing test asserting one member's failure does not stop the rest of the run and is recorded; implement the per-member try/catch to pass
-- [ ] 8.5 Schedule the job on its own `klabis.members.oris-discovery-cron` property (independent of `klabis.sync.scan-cron`), externalized via an env var, gated on the `oris` profile via `@OrisIntegrationComponent`; verify it is registered via a Spring context test
+- [x] 8.1 Write a failing `MemberDiscoveryJobTest` asserting members already paired (per `SynchronizationPort.findByExternalReferences`) are skipped and only new ids reach `pullAndEnroll`; then implement the job (design.md D7)
+- [x] 8.2 Write a failing test asserting members whose ORIS membership has lapsed are never enrolled, and that a lapsed member **already** in Klabis is left entirely alone (specs/member-synchronization, design.md D5); implement to pass
+- [x] 8.3 Write a failing test asserting the job does nothing and makes **no ORIS call** when no club key is held, logging rather than surfacing a failure; implement to pass
+- [x] 8.4 Write a failing test asserting one member's failure does not stop the rest of the run and is recorded; implement the per-member try/catch to pass
+- [x] 8.5 Schedule the job on its own `klabis.members.oris-discovery-cron` property (independent of `klabis.sync.scan-cron`), externalized via an env var, gated on the `oris` profile via `@OrisIntegrationComponent`; verify it is registered via a Spring context test
 
 ## 9. Manual import trigger
 
