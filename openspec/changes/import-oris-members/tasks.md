@@ -32,11 +32,11 @@
 
 ## 6. Member projection and field mapping
 
-- [ ] 6.1 Add `SyncEntityType.MEMBER("members")` and `SyncEntityTypeParam.MEMBERS`; verify existing `SyncEntityType`-based tests still pass unchanged
-- [ ] 6.2 Write a failing unit test for `MemberProjection` asserting it carries **only** the ORIS-owned fields (design.md D2) and that no Klabis-owned field is expressible; then implement the record
-- [ ] 6.3 Write failing mapper tests covering every transformation in design.md D6 — `gender` `"M"`/`"F"`/other, `si == 0` → `null`, blank strings → `null`, birth number `RRMMDD/XXXX` passthrough, postal code with an inner space, nationality upper-casing — then implement `MemberProjectionMapper` for both directions (from ORIS `ClubMember`, from local `Member`)
-- [ ] 6.4 Write a failing test for telephone normalisation: a bare national number gains the country's dialling prefix, a number already starting `+` is untouched, and one that cannot be normalised confidently becomes `null` rather than a guess (design.md D6); implement to pass
-- [ ] 6.5 Write a test asserting the projection hashes identically for two reads of unchanged data (no phantom differences from `si`/blank-string handling)
+- [x] 6.1 Add `SyncEntityType.MEMBER("members")` and `SyncEntityTypeParam.MEMBERS`; verify existing `SyncEntityType`-based tests still pass unchanged
+- [x] 6.2 Write a failing unit test for `MemberProjection` asserting it carries **only** the ORIS-owned fields (design.md D2) and that no Klabis-owned field is expressible; then implement the record
+- [x] 6.3 Write failing mapper tests covering every transformation in design.md D6 — `gender` `"M"`/`"F"`/other, `si == 0` → `null`, blank strings → `null`, birth number `RRMMDD/XXXX` passthrough, postal code with an inner space, nationality upper-casing — then implement `MemberProjectionMapper` for both directions (from ORIS `ClubMember`, from local `Member`)
+- [x] 6.4 Write a failing test for telephone normalisation: a bare national number gains the country's dialling prefix, a number already starting `+` is untouched, and one that cannot be normalised confidently becomes `null` rather than a guess (design.md D6); implement to pass
+- [x] 6.5 Write a test asserting the projection hashes identically for two reads of unchanged data (no phantom differences from `si`/blank-string handling)
 
 ## 7. Member synchronisation adapter
 
