@@ -25,10 +25,10 @@
 
 ## 5. Member registration accepts a number issued elsewhere
 
-- [ ] 5.1 Write a failing unit test for `RegistrationPort.importMember(ImportMember)` asserting the member carries the **given** registration number and that `RegistrationNumberGenerator` is never called; then implement `ImportMember` (composing `RegisterNewMember`, design.md D4) and `importMember` in `RegistrationService`, converging both entry points onto one private path
-- [ ] 5.2 Write a failing test asserting `registerMember` still generates a number exactly as before (regression guard on the shared path) and that `RegisterNewMember`'s shape is unchanged; verify it passes
-- [ ] 5.3 Write a failing test asserting `importMember` with a registration number another member already carries is refused and creates nothing (specs/members "A registration number already in use is refused"); verify the `UNIQUE` constraint surfaces as a domain-meaningful failure rather than a raw SQL error
-- [ ] 5.4 Write a test asserting an imported member gets a `User`, a financial account and age-based training-group assignment identically to a hand-registered one (specs/member-synchronization "Registering brings its usual consequences")
+- [x] 5.1 Write a failing unit test for `RegistrationPort.importMember(ImportMember)` asserting the member carries the **given** registration number and that `RegistrationNumberGenerator` is never called; then implement `ImportMember` (composing `RegisterNewMember`, design.md D4) and `importMember` in `RegistrationService`, converging both entry points onto one private path
+- [x] 5.2 Write a failing test asserting `registerMember` still generates a number exactly as before (regression guard on the shared path) and that `RegisterNewMember`'s shape is unchanged; verify it passes
+- [x] 5.3 Write a failing test asserting `importMember` with a registration number another member already carries is refused and creates nothing (specs/members "A registration number already in use is refused"); verify the `UNIQUE` constraint surfaces as a domain-meaningful failure rather than a raw SQL error
+- [x] 5.4 Write a test asserting an imported member gets a `User`, a financial account and age-based training-group assignment identically to a hand-registered one (specs/member-synchronization "Registering brings its usual consequences")
 
 ## 6. Member projection and field mapping
 

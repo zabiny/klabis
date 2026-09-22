@@ -7,10 +7,12 @@ import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.RegistrationNumber;
+import com.klabis.members.domain.RegistrationNumberAlreadyInUseException;
 import com.klabis.members.domain.RegistrationNumberGenerator;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
@@ -70,34 +72,60 @@ public class RegistrationService implements RegistrationPort {
         log.debug("Generated registration number: {} for date of birth: {}",
                 registrationNumber.getValue(), dateOfBirth);
 
-        UserId sharedUserId = userService.createUser(
-                registrationNumber.getValue(),
-                command.email().value(),
-                Authority.getStandardUserAuthorities()
-        );
+        return register(command, registrationNumber);
+    }
 
-        log.debug("User created with shared ID: {} for username: {}",
-                sharedUserId, registrationNumber.getValue());
+    @Transactional
+    @Override
+    public Member importMember(ImportMember command) {
+        Assert.notNull(command.registrationNumber(), "Registration number must not be null");
 
-        Member.RegisterMember domainCommand = new Member.RegisterMember(
-                MemberId.fromUserId(sharedUserId),
-                registrationNumber,
-                command.personalInformation(),
-                command.address(),
-                command.email(),
-                command.phone(),
-                command.guardian(),
-                command.birthNumber(),
-                command.bankAccountNumber(),
-                command.registeredBy()
-        );
+        return register(command.details(), command.registrationNumber());
+    }
 
-        Member member = Member.register(domainCommand);
+    /**
+     * Single path both entry points converge onto once the registration number is decided -
+     * generated for a hand registration, adopted from ORIS for an import. Everything below this
+     * point (user creation, the shared-id invariant, validation and every published event) is
+     * therefore identical for both.
+     */
+    private Member register(RegisterNewMember command, RegistrationNumber registrationNumber) {
+        try {
+            UserId sharedUserId = userService.createUser(
+                    registrationNumber.getValue(),
+                    command.email().value(),
+                    Authority.getStandardUserAuthorities()
+            );
 
-        Member savedMember = memberRepository.save(member);
+            log.debug("User created with shared ID: {} for username: {}",
+                    sharedUserId, registrationNumber.getValue());
 
-        log.debug("Member created with shared ID: {}", savedMember.getId());
+            Member.RegisterMember domainCommand = new Member.RegisterMember(
+                    MemberId.fromUserId(sharedUserId),
+                    registrationNumber,
+                    command.personalInformation(),
+                    command.address(),
+                    command.email(),
+                    command.phone(),
+                    command.guardian(),
+                    command.birthNumber(),
+                    command.bankAccountNumber(),
+                    command.registeredBy()
+            );
 
-        return savedMember;
+            Member member = Member.register(domainCommand);
+
+            Member savedMember = memberRepository.save(member);
+
+            log.debug("Member created with shared ID: {}", savedMember.getId());
+
+            return savedMember;
+        } catch (DataIntegrityViolationException e) {
+            // The UNIQUE constraint on members.registration_number (and, since the registration
+            // number doubles as the username, on common.users.user_name) is what enforces
+            // "already in use" - no existence check is made beforehand, since that would just be
+            // a race between the check and this save. See design.md D4.
+            throw new RegistrationNumberAlreadyInUseException(registrationNumber, e);
+        }
     }
 }
