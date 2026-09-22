@@ -21,7 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 @Component
-@Profile("example-data")
+@Profile("example-data & !oris")
 @Order(4)
 class EventsDataBootstrap implements BootstrapDataInitializer {
 

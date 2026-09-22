@@ -14,7 +14,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("example-data")
+@Profile("example-data & !oris")
 @Order(3)
 class TrainingGroupDataBootstrap implements BootstrapDataInitializer {
 

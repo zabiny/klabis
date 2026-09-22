@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Component
-@Profile("example-data")
+@Profile("example-data & !oris")
 @Order(5)
 public class MembershipFeeTiersDataBootstrap implements BootstrapDataInitializer {
 

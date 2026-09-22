@@ -17,7 +17,7 @@ import java.time.LocalDate;
 import java.util.Set;
 
 @Component
-@Profile("example-data")
+@Profile("example-data & !oris")
 @Order(1)
 class MembersDataBootstrap implements BootstrapDataInitializer {
 
