@@ -62,6 +62,7 @@ export const labels = {
         resumeMember: 'Reaktivovat',
         updateMember: 'Upravit profil',
         registerMember: 'Registrovat člena',
+        importFromOris: 'Synchronizovat s ORIS',
         createGroup: 'Vytvořit skupinu',
         updateGroup: 'Upravit název',
         deleteGroup: 'Smazat skupinu',
@@ -128,6 +129,7 @@ export const labels = {
         syncAllUpcomingFromOris: 'Hromadná synchronizace z ORIS',
         createEvent: 'Nová akce',
         registerMember: 'Registrace nového člena',
+        importFromOris: 'Synchronizace členů s ORIS',
     },
 
     bulkSync: {

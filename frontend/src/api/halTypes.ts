@@ -1062,6 +1062,13 @@ export interface ListMembersHal {
     'registerMember'?: HalFormsTemplate;
     /** Edit template used by the table's inline row editor */
     'updateMember'?: HalFormsTemplate;
+    /**
+     * Manual ORIS import trigger. Attached at runtime by
+     * MemberOrisImportAffordancePostprocessor — only when caller holds
+     * SYNC:MANAGE AND a club key is currently held. Not declared in
+     * OpenAPI x-hal-templates.
+     */
+    'importFromOris'?: HalFormsTemplate;
   };
 }
 
@@ -1070,7 +1077,7 @@ export type ListMembersResource =
 
 export const ListMembersRels = {
   links: ['first', 'last', 'next', 'prev', 'self'] as const,
-  templates: ['registerMember', 'updateMember'] as const,
+  templates: ['registerMember', 'updateMember', 'importFromOris'] as const,
 } as const;
 
 export type ListMembersLinkRel = typeof ListMembersRels.links[number];

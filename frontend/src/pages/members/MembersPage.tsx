@@ -10,16 +10,21 @@ import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx"
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {Button, DetailRow, Modal} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
+import {SyncMembersFromOrisModal} from "../../components/members/SyncMembersFromOrisModal.tsx";
 import {Section} from "./MemberSection.tsx";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
-import {Banknote, Pencil, Shield, UserCheck, UserX} from "lucide-react";
+import {Banknote, Pencil, RefreshCw, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
 import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
 import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog.tsx";
 import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
-import {DEFAULT_MEMBER_STATUS, MembersFilterBar, type MembersFilterValue} from "../../components/members/MembersFilterBar.tsx";
+import {
+    DEFAULT_MEMBER_STATUS,
+    MembersFilterBar,
+    type MembersFilterValue
+} from "../../components/members/MembersFilterBar.tsx";
 import {useDefaultSearchParam} from "../../hooks/useDefaultSearchParam.ts";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 
@@ -44,6 +49,11 @@ export const MembersPage = (): ReactElement => {
     const [actionModal, setActionModal] = useState<MemberActionModalState | null>(null);
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
     const [transactionDialogAccount, setTransactionDialogAccount] = useState<Link | null>(null);
+    const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+
+    const importFromOrisTemplate = resourceData?._templates?.importFromOris;
+    const importFromOrisTarget = importFromOrisTemplate?.target;
+    const hasImportFromOris = !!importFromOrisTemplate;
 
     const {
         suspensionWarning,
@@ -207,6 +217,16 @@ export const MembersPage = (): ReactElement => {
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">{labels.sections.membersList}</h2>
                     <div className="flex gap-2">
+                        {hasImportFromOris && (
+                            <Button
+                                variant="ghost"
+                                startIcon={<RefreshCw className="w-4 h-4"/>}
+                                data-testid="form-template-button-importFromOris"
+                                onClick={() => setIsSyncModalOpen(true)}
+                            >
+                                {labels.templates.importFromOris}
+                            </Button>
+                        )}
                         <HalFormButton name="registerMember" modal={false}>
                             {({renderInput, renderField, hasField, hasType}: HalFormPanelRenderHelpers) => {
                                 const PERSONAL_FIELDS = ['firstName', 'lastName', 'dateOfBirth', 'gender', 'nationality', 'birthNumber'];
@@ -343,6 +363,12 @@ export const MembersPage = (): ReactElement => {
                 accountLink={transactionDialogAccount ?? {href: ''}}
                 isOpen={transactionDialogAccount !== null}
                 onClose={() => setTransactionDialogAccount(null)}
+            />
+            <SyncMembersFromOrisModal
+                isOpen={isSyncModalOpen}
+                onClose={() => setIsSyncModalOpen(false)}
+                targetUrl={importFromOrisTarget}
+                onSyncComplete={() => route.refetch()}
             />
         </div>
     );
