@@ -2,7 +2,7 @@
 
 ## 1. Upgrade the ORIS client
 
-- [ ] 1.1 Bump `com.dpolach.api:oris-client` from `0db715d9-SNAPSHOT` to `1.2.0` in `backend/build.gradle.kts` (this release carries `getClubUserList`); verify the project compiles and the existing ORIS tests (`OrisEventSyncAdapterTest`, `DisciplineSyncAdapterTest`) still pass unchanged — the upgrade also moves off a snapshot onto a release, so watch for any behaviour drift in the existing endpoints
+- [x] 1.1 Bump `com.dpolach.api:oris-client` from `0db715d9-SNAPSHOT` to `1.2.0` in `backend/build.gradle.kts` (this release carries `getClubUserList`); verify the project compiles and the existing ORIS tests (`OrisEventSyncAdapterTest`, `DisciplineSyncAdapterTest`) still pass unchanged — the upgrade also moves off a snapshot onto a release, so watch for any behaviour drift in the existing endpoints
 
 ## 2. Club key storage, hidden by construction
 
