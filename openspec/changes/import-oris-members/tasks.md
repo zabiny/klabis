@@ -6,9 +6,9 @@
 
 ## 2. Club key storage, hidden by construction
 
-- [ ] 2.1 Write a failing unit test for `OrisClubKeyPort`'s in-memory adapter asserting `isSet()` is false initially, true after `store(...)`, false again after `clear()`, and that **the port exposes no way to read the stored value back** (a compile-level guarantee — assert by the absence of a getter in the interface, not at runtime); then implement `OrisClubKeyPort` and its in-memory adapter in `members.infrastructure.orissync`
-- [ ] 2.2 Write a failing unit test asserting `store("")` and `store("   ")` are refused and leave any previously held key in force, then implement the validation
-- [ ] 2.3 Write a failing unit test for `OrisClubMembers.listClubMembers()` asserting it throws `ClubKeyNotSetException` when no key is held and **never calls `OrisApiClient`**, and that it passes the held key through to `getClubUserList` when one is set; then implement `OrisClubMembers`, its implementation and `ClubKeyNotSetException` (design.md D9)
+- [x] 2.1 Write a failing unit test for `OrisClubKeyPort`'s in-memory adapter asserting `isSet()` is false initially, true after `store(...)`, false again after `clear()`, and that **the port exposes no way to read the stored value back** (a compile-level guarantee — assert by the absence of a getter in the interface, not at runtime); then implement `OrisClubKeyPort` and its in-memory adapter in `members.infrastructure.orissync`
+- [x] 2.2 Write a failing unit test asserting `store("")` and `store("   ")` are refused and leave any previously held key in force, then implement the validation
+- [x] 2.3 Write a failing unit test for `OrisClubMembers.listClubMembers()` asserting it throws `ClubKeyNotSetException` when no key is held and **never calls `OrisApiClient`**, and that it passes the held key through to `getClubUserList` when one is set; then implement `OrisClubMembers`, its implementation and `ClubKeyNotSetException` (design.md D9)
 
 ## 3. Club key REST surface
 
