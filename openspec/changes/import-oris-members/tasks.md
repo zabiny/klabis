@@ -19,9 +19,9 @@
 
 ## 4. Member domain gains a synchronisation command
 
-- [ ] 4.1 Write a failing unit test for `Member.syncFromOris(SyncFromOris)` asserting it updates every ORIS-owned field **and leaves `identityCard`, `drivingLicenseGroup`, `medicalCourse`, `trainerLicense`, `refereeLicense`, `dietaryRestrictions`, `guardian`, `bankAccountNumber` and the whole suspension block untouched**; then implement the `SyncFromOris` command record and the method (design.md D3)
-- [ ] 4.2 Write a failing unit test asserting `syncFromOris` publishes **no** `BirthNumberAccessedEvent` even when the birth number changes (unlike `Member.update`, which needs a `UserId` a synchronisation does not have — design.md D3); verify it passes
-- [ ] 4.3 Add `ManagementPort.syncMemberFromOris(memberId, SyncFromOris)` delegating to the aggregate; write a service test asserting it loads, applies and saves, and throws `MemberNotFoundException` for an unknown id
+- [x] 4.1 Write a failing unit test for `Member.syncFromOris(SyncFromOris)` asserting it updates every ORIS-owned field **and leaves `identityCard`, `drivingLicenseGroup`, `medicalCourse`, `trainerLicense`, `refereeLicense`, `dietaryRestrictions`, `guardian`, `bankAccountNumber` and the whole suspension block untouched**; then implement the `SyncFromOris` command record and the method (design.md D3)
+- [x] 4.2 Write a failing unit test asserting `syncFromOris` publishes **no** `BirthNumberAccessedEvent` even when the birth number changes (unlike `Member.update`, which needs a `UserId` a synchronisation does not have — design.md D3); verify it passes
+- [x] 4.3 Add `ManagementPort.syncMemberFromOris(memberId, SyncFromOris)` delegating to the aggregate; write a service test asserting it loads, applies and saves, and throws `MemberNotFoundException` for an unknown id
 
 ## 5. Member registration accepts a number issued elsewhere
 
