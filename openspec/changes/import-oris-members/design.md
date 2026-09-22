@@ -4,7 +4,9 @@
 
 `com.klabis.sync` is a generic synchronisation engine (ADR-005). It has two integrations today: `OrisEventSyncAdapter` (`Event`, driven by an admin naming a specific ORIS id) and `DisciplineSyncAdapter` (`Discipline`, driven by `DisciplineDiscoveryJob` on a cron). Both are `SyncCapabilities.pullOnlyCreating()`. Per ADR-005/D2, a synced entity carries no `orisId` column — the pairing lives entirely in the engine's own `SyncRecord`.
 
-`Member` (`com.klabis.members.domain.Member`) is registered through `RegistrationPort.registerMember(RegisterNewMember)`, which creates a `User` first (to share the id), generates a registration number via `RegistrationNumberGenerator`, and saves the `Member`. Editing goes through `ManagementPort.updateMember(memberId, UpdateMember)`, where `UpdateMember` is a **full snapshot** of the intended end state — callers take `prefilledUpdateCommand(memberId)` as a baseline and overlay only what changed.
+`Member` (`com.klabis.members.domain.Member`) is registered through `RegistrationPort.registerMember(RegisterNewMember)`, which creates a `User` first (to share the id), generates a registration number via `RegistrationNumberGenerator`, and saves the `Member`. Editing goes through `ManagementPort.updateMember(memberId, UpdateMember)`, where `UpdateMember` is a **full snapshot** of the intended end state — callers take `prefilledUpdateCommand(memberId)` as a baseline and overlay only what changed — and `Member.update` publishes a birth-number audit event naming the user who made the change.
+
+`Event` already distinguishes a synchronised write from a manual one: `Event.syncFromOris(SyncFromOris)` is a separate command from `Event.update(...)`, and the two publish `EventUpdatedEvent` with `UpdateOrigin.SYNCHRONISATION` and `UpdateOrigin.MANUAL` respectively. `Member` has no equivalent today.
 
 `oris-client` exposes `getClubUserList(String clubKey)` returning `Map<String, ClubMember>` for the whole club. It is the only one of the client's eleven methods that needs a secret, it is deliberately not cached (it carries personal data), and the library explicitly leaves storing the key to the consuming application. Klabis holds no such key anywhere today.
 
@@ -18,7 +20,7 @@ New components are marked `*`; everything else already exists and is reused unch
 flowchart TB
     subgraph members["members module"]
         RP["RegistrationPort<br/>registerMember<br/>importMember *"]
-        MP["ManagementPort<br/>prefilledUpdateCommand<br/>updateMember"]
+        MP["ManagementPort<br/>updateMember<br/>syncMemberFromOris *"]
         MEM["Member aggregate"]
         RP --> MEM
         MP --> MEM
@@ -89,26 +91,27 @@ sequenceDiagram
 
 ### Applying a later ORIS change
 
-The step that protects Klabis-owned fields (D3) is the overlay onto the prefilled baseline:
+Klabis-owned fields are protected by the shape of the command (D3): they are not expressible in it.
 
 ```mermaid
 sequenceDiagram
     participant Engine as SynchronizationService
     participant Adapter as MemberSyncAdapter
     participant Mgmt as ManagementPort
+    participant Member as Member aggregate
 
     Engine->>Adapter: readExternal / readLocal
     Note over Engine: compare hashes,<br/>decide direction
     Engine->>Adapter: applyToLocal(memberId, projection)
-    Adapter->>Mgmt: prefilledUpdateCommand(memberId)
-    Mgmt-->>Adapter: UpdateMember (all current values)
-    Note over Adapter: overlay ONLY ORIS-owned fields<br/>licences, guardian, bank account<br/>keep their baseline values
-    Adapter->>Mgmt: updateMember(memberId, command)
+    Note over Adapter: build SyncFromOris<br/>ORIS-owned fields only
+    Adapter->>Mgmt: syncMemberFromOris(memberId, command)
+    Mgmt->>Member: syncFromOris(command)
+    Note over Member: licences, guardian, bank account<br/>not expressible in the command<br/>so they cannot be touched
 ```
 
 ## API Changes
 
-All three require the synchronisation permission; links and affordances are absent without it.
+All four require the synchronisation permission; links and affordances are absent without it.
 
 | Operation | Purpose | Notes |
 |---|---|---|
@@ -119,7 +122,7 @@ All three require the synchronisation permission; links and affordances are abse
 
 A member representation additionally gains a `sync` link to the engine's **existing** `GET /api/members/{id}/sync` resource (D12) — no new endpoint, and the link is absent for a member never brought in from ORIS.
 
-The club-key resource is reached by a link added to the API root by a postprocessor (D10); the import trigger is an affordance on the existing member-list response (D11). No existing response shape changes — all three are additive `_links`/`_templates` entries, so clients that ignore them are unaffected.
+The club-key resource is reached by a link added to the API root by a postprocessor (D10); the import trigger is an affordance on the existing member-list response (D11). No existing response shape changes — every addition is an extra `_links`/`_templates` entry, so clients that ignore them are unaffected.
 
 Per the project's spec-first workflow these are authored in `docs/openapi/spec/` before any controller is written, and the field-level security extensions carry the permission requirement.
 
@@ -127,7 +130,7 @@ Per the project's spec-first workflow these are authored in `docs/openapi/spec/`
 
 **Goals:**
 - Bring the club's ORIS membership into Klabis and keep the ORIS-owned personal details in step, reusing the existing engine and adapter contract unchanged.
-- Route creation through `RegistrationPort.registerMember` and updates through `ManagementPort.updateMember`, so an ORIS-sourced member is indistinguishable from a hand-registered one.
+- Give importing and synchronising each their own named entry point on the aggregate, so a machine-driven change is distinguishable from a human one — while every consequence of registering a member stays identical either way.
 - Hold the ORIS club key without ever disclosing it, behind an interface that can later gain a persistent store without touching callers.
 - Protect every Klabis-owned member field from being touched by synchronisation, by construction rather than by special-casing.
 
@@ -162,21 +165,36 @@ Everything else `Member` holds — `identityCard`, `drivingLicenseGroup`, `medic
 
 Address is flattened into four strings rather than carrying the `Address` value object, matching `OrisEventProjection`'s reasoning: projections are plain data carriers serialised directly by `SyncProjectionCodec`, and value objects serialise unpredictably without Jackson wiring the codec deliberately does not carry.
 
-### D3: `applyToLocal` overlays onto `prefilledUpdateCommand`, never constructs `UpdateMember` from scratch
+### D3: An inward write goes through `Member.syncFromOris(...)`, a dedicated domain command
 
-`UpdateMember` is a full snapshot: every field is applied unconditionally. Building one from a projection alone would set all fourteen Klabis-owned fields to `null` on every single sync pass — silently wiping trainer licences and guardians across the club. So:
+Just as creating gets its own entry point (D4), so does synchronising. `Member` gains a command mirroring what `Event` already has:
 
 ```java
-var baseline = managementPort.prefilledUpdateCommand(memberId);
-var command  = MemberUpdateMemberBuilder.builder(baseline)
-                   .email(...).phone(...).address(...)   // only ORIS-owned fields
-                   .build();
-managementPort.updateMember(memberId, command);
+record SyncFromOris(
+    RegistrationNumber registrationNumber, String firstName, String lastName,
+    LocalDate dateOfBirth, Gender gender, Nationality nationality,
+    BirthNumber birthNumber, EmailAddress email, PhoneNumber phone,
+    Address address, String chipNumber
+) {}
+
+public void syncFromOris(SyncFromOris command) { … }
 ```
 
-This is exactly the pattern `ManagementPort`'s own javadoc prescribes for REST callers. Making the adapter one more such caller keeps a single well-trodden path into the aggregate and means field-level authorisation, validation and auditing behave identically for an ORIS-driven edit and an admin-driven one.
+The command carries **exactly the ORIS-owned fields and nothing else**, so field ownership is stated once, in a type. Licences, guardian, bank account and dietary requirements are not expressible in the command at all — they cannot be cleared by a synchronisation even by mistake, which is a stronger guarantee than remembering to copy the right baseline values across.
 
-Alternative considered: a dedicated `Member.syncFromOris(...)` domain method, as `Event` once had. Rejected — it would be a second write path into the aggregate with its own field-ownership rules to keep in step with the projection, which is precisely the duplication the projection-absence rule (D2) exists to avoid.
+Three reasons this beats routing through `ManagementPort.updateMember`:
+
+**The aggregate can tell the two apart.** `Event.syncFromOris` publishes `EventUpdatedEvent` with `UpdateOrigin.SYNCHRONISATION`, while a manual edit publishes `UpdateOrigin.MANUAL`. Members have no such distinction today because they have no update event at all — but the moment one is wanted (an audit trail, "changed by ORIS" in the UI, a notification suppressed for machine edits), the information has to exist at the point of the write. Going through `updateMember` erases it irrecoverably.
+
+**`updateMember` wants a human.** `Member.update` publishes `BirthNumberAccessedEvent.modified(command.updatedBy(), …)` when the birth number changes. A synchronisation has no `UserId` to put there: it would either pass `null` — silently skipping an audit entry the method promises to write — or invent a synthetic user, recording a person who did nothing. `syncFromOris` sidesteps the question instead of answering it dishonestly. (This is the same audit gap noted in D13, now confined to one clearly-named method rather than smuggled through the manual-edit path.)
+
+**The overlay was fragile.** The earlier draft of this design took `prefilledUpdateCommand` as a baseline and overlaid the ORIS-owned fields onto it. That works, but it protects Klabis-owned fields only for as long as everyone remembers *not* to touch them: `UpdateMember` is a full snapshot, so a future field added to it is silently nulled by every sync pass until someone notices. The command type makes the same guarantee structurally.
+
+**What `syncFromOris` does and does not protect.** It cannot touch fields absent from its command — that is the protection. It does *not* make the ORIS-owned fields conditional: each is written from the command unconditionally, including when the command holds `null`. Protecting a Klabis-entered value against an empty ORIS field is the engine's job, not the aggregate's, and happens before `syncFromOris` is ever reached — see D6.
+
+The adapter calls it through a port on `ManagementPort` (`syncMemberFromOris(memberId, command)`) rather than reaching for the repository directly, keeping the application-service boundary the other adapters respect.
+
+Alternative considered: routing through `ManagementPort.updateMember` with an overlay, as an earlier draft did. Rejected for the three reasons above — chiefly that it discards the distinction between a human edit and a machine one at exactly the point where that distinction is cheapest to keep.
 
 ### D4: Importing is its own port method, composing the existing registration command
 
@@ -243,7 +261,15 @@ Two transformations are not merely renames:
 
 Blank strings from ORIS (`""`) are normalised to `null` across all optional text fields, so that "absent" has one representation on both sides of the hash.
 
-Per the spec scenario "A detail ORIS does not hold is not cleared", a `null` arriving from ORIS for a field Klabis holds is a **difference**, resolved by the engine's normal conflict rules — not an instruction to clear. This falls out of D3 automatically: the overlay sets the field to the projection's value only when the projection is the winning side, and the engine's existing "a local change is never silently overwritten" requirement governs the rest.
+**What happens when ORIS holds nothing for a field Klabis has** (the spec scenario "A detail ORIS does not hold is not cleared") deserves stating precisely, because the protection does *not* come from `syncFromOris` in D3.
+
+`applyToLocal` receives the whole external projection and passes it on unconditionally — neither it nor `syncFromOris` does field-by-field merging. The protection comes one level up, from **when the engine calls it at all**:
+
+- The member's chip number was set in Klabis after the last agreed baseline → the local side has changed. The engine reaches `CONFLICT`, writes nothing, and asks for a decision. The chip number survives.
+- Nobody touched the member in Klabis and ORIS simply never held a chip number → nothing has changed on either side since the baseline, so no write happens at all.
+- The member was brought in from ORIS without a chip, and a chip is later entered in Klabis → first case above.
+
+The only way a `null` from ORIS reaches the member is `ADOPT_EXTERNAL`, which the engine chooses exclusively when the local side is unchanged since the baseline — i.e. when there is no local value anyone would lose. This is the engine's existing "a local change is never silently overwritten" requirement doing the work; the adapter needs no condition of its own, and adding one would fight the engine's direction resolution rather than help it.
 
 ### D7: `MemberDiscoveryJob` mirrors `DisciplineDiscoveryJob`
 
@@ -252,8 +278,6 @@ Same shape as the discipline job: read the whole club once, subtract already-pai
 Two differences from the discipline job:
 - It filters on `valid` before enrolling (D5).
 - It does nothing at all when no club key is held (D9), logging that fact rather than surfacing an ORIS failure.
-
-It is disabled when the `example-data` profile is active, so it cannot collide with the sample members `ZBM9000`/`ZBM9500`.
 
 ### D8: Accepted — a member already in Klabis is not paired automatically
 
@@ -325,7 +349,7 @@ if (isEnrolled(memberId)) {
 
 where enrolment is established through `synchronizationPort.findByTarget(...)`, exactly as the event controller does.
 
-The link is **absent for a member who was never brought in from ORIS** — which is how the spec's "they are told no synchronisation exists for them" scenario is satisfied: there is nothing to follow, rather than a link that leads to an empty state. Members registered by hand therefore look exactly as they do today.
+The link is **absent for a member who was never brought in from ORIS** — which is how the spec's "A member not linked to ORIS" scenario is satisfied: no way to reach a synchronisation state is offered, rather than a link leading to an empty one. Members registered by hand therefore look exactly as they do today.
 
 No new endpoint is introduced. Everything behind the link — the state, the affordances, the per-side data and the permission that gates it — is the engine's existing `getSyncState`, which already restricts detail to users holding the synchronisation permission (`data-synchronization`'s own requirement). Consequently the birth number visible through that resource (D13) is governed by the engine's rules, not by the member module's field-level security.
 
@@ -337,13 +361,21 @@ No new endpoint is introduced. Everything behind the link — the state, the aff
 
 The engine's REST layer returns **decrypted** projections, restricted by the existing `data-synchronization` requirement that only a user with the synchronisation permission sees the data held on either side. That is the protection; the flag is not.
 
+### D14: The collision with sample data is prevented on the sample-data side, not the ORIS side
+
+Sample members (`ZBM9000`, `ZBM9500`) and ORIS-sourced members must not both populate the same database, or the import trips over registration numbers it did not create. Rather than gating every ORIS entry point on the absence of `example-data`, the **sample data stands down when ORIS is active**: the four `@Profile("example-data")` bootstrap initialisers (`MembersDataBootstrap`, `TrainingGroupDataBootstrap`, `EventsDataBootstrap`, `MembershipFeeTiersDataBootstrap`) become `@Profile({"example-data", "!oris"})`.
+
+This puts the condition in one place instead of three. Gating the ORIS side would mean remembering it on the discovery job, on the manual trigger, and on every future entry point — and forgetting it on one of them is a silent collision. Sample data has exactly one way in, so that is where the gate belongs. The `oris` profile then remains the **only** gate on anything ORIS-related, as it already is for the rest of the integration (`@OrisIntegrationComponent`).
+
+**Consequence for local development**: the default profile set is `h2,ssl,debug,metrics,oris,example-data` — both profiles at once. After this change a developer running the defaults gets **no demo data**, because `oris` is active. Getting demo data back means dropping `oris` from the active profiles. This is the intended reading of "sample data and real data are alternatives", but it does change what `./runLocalEnvironment.sh` produces out of the box, so it needs calling out in the backend `CLAUDE.md` alongside the profile table.
+
 ## Risks / Trade-offs
 
 - **The club key is forgotten on every restart** → synchronisation stops silently until someone notices and re-enters it. Mitigation: the discovery job logs the missing key on each run, and `isSet()` is queryable so a future settings page can show it plainly. A persistent encrypted store is the obvious follow-up.
 - **The first run registers the entire club at once** → a burst of password-setup e-mails to every member who has an address in ORIS, risking SMTP rate limits or reputation damage. Accepted deliberately. The blast radius is bounded by how many members have e-mail addresses in ORIS, which is typically well under the full roster.
 - **The first run also fills training groups and creates financial accounts** for every imported member, via the existing `MemberCreatedEvent` listeners. Intended, but not reversible with one action.
 - **Members already in Klabis fail every run** (D8) → repeated identical errors in the log. Bounded and creates nothing, but noisy until the engine can pair with an existing entity.
-- **Synchronisation reads birth numbers without writing `VIEW_BIRTH_NUMBER` audit entries**, unlike `getMemberAndRecordView`. Accepted: the alternative is either flooding the audit log on every scan or an audit entry with no human actor. The data stays behind the synchronisation permission.
+- **Synchronisation reads and writes birth numbers without audit entries**, unlike `getMemberAndRecordView` and `Member.update`. Accepted: the alternative is either flooding the audit log on every scan or recording a human who did nothing. Confined to `syncFromOris` (D3), so the gap is one named method rather than a hole in the manual-edit path, and the data stays behind the synchronisation permission.
 - **ORIS `gender` values beyond `M`/`F`** map to `null`, which then reads as a difference against a member who has a gender set in Klabis. Low likelihood; surfaces as a normal conflict rather than data loss.
 
 ## Migration Plan
