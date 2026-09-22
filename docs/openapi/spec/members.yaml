@@ -185,6 +185,30 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
+  /api/members/oris-import:
+    post:
+      operationId: importFromOris
+      tags: [Members]
+      summary: Run the ORIS member import once, by hand
+      description: |
+        Runs the same discovery work as the scheduled ORIS member discovery job immediately,
+        rather than waiting for its next run (design.md D11). Offered as an affordance on
+        listMembers only while a club key is held — without one the action could not do
+        anything. Running it repeatedly brings nobody in twice: an already-paired member is
+        skipped exactly as the scheduled job skips it.
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      responses:
+        '204':
+          description: Import pass completed
+          content:
+            application/prs.hal-forms+json: {}
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
   /api/members/{id}:
     get:
       operationId: getMember

@@ -12,6 +12,8 @@ import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
+import com.klabis.members.infrastructure.orissync.OrisClubKeyPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -55,6 +57,12 @@ class BirthNumberAuditControllerTest {
 
     @MockitoBean
     private RegistrationPort registrationService;
+
+    @MockitoBean
+    private MemberDiscoveryJob memberDiscoveryJob;
+
+    @MockitoBean
+    private OrisClubKeyPort orisClubKeyPort;
 
     @TestBean
     private EntityLinks entityLinks;

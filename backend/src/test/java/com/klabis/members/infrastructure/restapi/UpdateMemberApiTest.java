@@ -9,6 +9,8 @@ import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
+import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
+import com.klabis.members.infrastructure.orissync.OrisClubKeyPort;
 import com.klabis.members.domain.*;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.DrivingLicenseGroup;
@@ -77,6 +79,12 @@ class UpdateMemberApiTest {
 
     @MockitoBean
     private PagedResourcesAssembler<?> pagedResourcesAssembler;
+
+    @MockitoBean
+    private MemberDiscoveryJob memberDiscoveryJob;
+
+    @MockitoBean
+    private OrisClubKeyPort orisClubKeyPort;
 
     private final UUID testMemberId = UUID.randomUUID();
 

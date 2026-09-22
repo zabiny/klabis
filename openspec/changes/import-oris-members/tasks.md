@@ -55,9 +55,9 @@
 
 ## 9. Manual import trigger
 
-- [ ] 9.1 Author `POST /api/members/oris-import` in `docs/openapi/spec/`, gated on `SYNC:MANAGE`; regenerate the API interfaces
-- [ ] 9.2 Write a failing `@WebMvcTest` asserting the `importFromOris` affordance is present on `GET /api/members` only when the caller holds `SYNC:MANAGE` **and** a club key is held, and absent otherwise (specs/member-synchronization, design.md D11); implement the postprocessor to pass
-- [ ] 9.3 Write a failing test asserting the endpoint runs the same discovery work as the scheduled job and brings nobody in twice when run again; implement the controller to pass
+- [x] 9.1 Author `POST /api/members/oris-import` in `docs/openapi/spec/`, gated on `SYNC:MANAGE`; regenerate the API interfaces
+- [x] 9.2 Write a failing `@WebMvcTest` asserting the `importFromOris` affordance is present on `GET /api/members` only when the caller holds `SYNC:MANAGE` **and** a club key is held, and absent otherwise (specs/member-synchronization, design.md D11); implement the postprocessor to pass
+- [x] 9.3 Write a failing test asserting the endpoint runs the same discovery work as the scheduled job and brings nobody in twice when run again; implement the controller to pass
 
 ## 10. Member exposes its synchronisation state
 

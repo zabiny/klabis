@@ -39,17 +39,21 @@ import java.util.stream.Collectors;
  * Classified as {@link Application}, matching {@link MemberSyncAdapter}: this class
  * drives {@link OrisClubMembers} (the ORIS integration's own facade) while also
  * calling {@link SynchronizationPort}, {@code sync}'s primary port.
+ * <p>
+ * Public (rather than package-private) solely so {@code discoverNewMembers()} can be invoked
+ * from {@code MembersApi#importFromOris} (design.md D11, tasks.md section 9): the manual
+ * trigger runs the exact same discovery pass the scheduler runs, rather than reimplementing it.
  */
 @OrisIntegrationComponent
 @Application
-class MemberDiscoveryJob {
+public class MemberDiscoveryJob {
 
     private static final Logger log = LoggerFactory.getLogger(MemberDiscoveryJob.class);
 
     private final OrisClubMembers orisClubMembers;
     private final SynchronizationPort synchronizationPort;
 
-    MemberDiscoveryJob(OrisClubMembers orisClubMembers, SynchronizationPort synchronizationPort) {
+    public MemberDiscoveryJob(OrisClubMembers orisClubMembers, SynchronizationPort synchronizationPort) {
         this.orisClubMembers = orisClubMembers;
         this.synchronizationPort = synchronizationPort;
     }
@@ -60,7 +64,7 @@ class MemberDiscoveryJob {
     }
 
     @Scheduled(cron = "${klabis.members.oris-discovery-cron}")
-    void discoverNewMembers() {
+    public void discoverNewMembers() {
         log.info("Starting ORIS member discovery");
 
         Map<String, ClubMember> clubMembers;
