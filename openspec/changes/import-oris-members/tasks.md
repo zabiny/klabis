@@ -71,7 +71,7 @@
 
 ## 12. End-to-end verification
 
-- [ ] 12.1 Write an integration test (mirroring `OrisEventSyncScenarioIntegrationTest`) proving the full path: a club key is supplied, discovery brings in a valid ORIS member, the member appears with the ORIS registration number, and a later ORIS change reaches the member record
-- [ ] 12.2 Write an integration test proving a Klabis-only field edited by an administrator survives a subsequent sync pass untouched, and that a chip number entered in Klabis while ORIS holds none becomes a conflict rather than being cleared (design.md D6)
+- [x] 12.1 Write an integration test (mirroring `OrisEventSyncScenarioIntegrationTest`) proving the full path: a club key is supplied, discovery brings in a valid ORIS member, the member appears with the ORIS registration number, and a later ORIS change reaches the member record
+- [x] 12.2 Write an integration test proving a Klabis-only field edited by an administrator survives a subsequent sync pass untouched, and that a chip number entered in Klabis while ORIS holds none becomes a conflict rather than being cleared (design.md D6)
 - [ ] 12.3 Run the full backend test suite via the `test-runner` agent and confirm no regression in `members`, `events` or `sync`
 - [ ] 12.4 Verify the club-key admin screen and the member list's import action against a running instance per root `CLAUDE.md` (frontend on `http://localhost:3000`), confirming the affordances appear and disappear with the key's state

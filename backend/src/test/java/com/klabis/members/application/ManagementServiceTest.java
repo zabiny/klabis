@@ -656,6 +656,36 @@ class ManagementServiceTest {
     }
 
     @Nested
+    @DisplayName("Get Member Tests")
+    class GetMemberTests {
+
+        @Test
+        @DisplayName("should return member without publishing BirthNumberAccessedEvent even when member has a birth number")
+        void shouldReturnMemberWithoutPublishingAuditEvent() {
+            Member memberWithBirthNumber = MemberTestDataBuilder.aMember()
+                    .withId(testMemberId)
+                    .withNationality("CZ")
+                    .withBirthNumber("900101/1234")
+                    .build();
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(memberWithBirthNumber));
+
+            Member result = testedSubject.getMember(new MemberId(testMemberId));
+
+            assertThat(result.getId().uuid()).isEqualTo(testMemberId);
+            verify(eventPublisher, never()).publishEvent(any(BirthNumberAccessedEvent.class));
+        }
+
+        @Test
+        @DisplayName("should throw MemberNotFoundException when member does not exist")
+        void shouldThrowWhenMemberNotFound() {
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> testedSubject.getMember(new MemberId(testMemberId)))
+                    .isInstanceOf(MemberNotFoundException.class);
+        }
+    }
+
+    @Nested
     @DisplayName("Member Resume Tests")
     class MemberResumeTests {
 

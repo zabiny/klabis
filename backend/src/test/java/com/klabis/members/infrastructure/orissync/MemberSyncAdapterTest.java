@@ -190,8 +190,7 @@ class MemberSyncAdapterTest {
         @DisplayName("maps the local Member read through ManagementPort into the canonical projection")
         void mapsMemberIntoProjection() {
             Member realMember = registeredMemberWithLicenceAndGuardian();
-            when(managementPort.getMemberAndRecordView(any(MemberId.class), any(), org.mockito.ArgumentMatchers.anyBoolean()))
-                    .thenReturn(realMember);
+            when(managementPort.getMember(any(MemberId.class))).thenReturn(realMember);
 
             SyncProjection projection = adapter.readLocal(realMember.getId().value().toString());
 
@@ -204,7 +203,7 @@ class MemberSyncAdapterTest {
         @Test
         @DisplayName("throws MemberNotFoundException when the member does not exist")
         void throwsWhenMemberNotFound() {
-            when(managementPort.getMemberAndRecordView(any(MemberId.class), any(), org.mockito.ArgumentMatchers.anyBoolean()))
+            when(managementPort.getMember(any(MemberId.class)))
                     .thenThrow(new MemberNotFoundException(MEMBER_ID));
 
             assertThatThrownBy(() -> adapter.readLocal(MEMBER_UUID.toString()))
