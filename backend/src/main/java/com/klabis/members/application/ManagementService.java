@@ -54,6 +54,16 @@ public class ManagementService implements ManagementPort {
 
     @Transactional
     @Override
+    public Member syncMemberFromOris(MemberId memberId, Member.SyncFromOris command) {
+        Member member = loadMember(memberId);
+        member.syncFromOris(command);
+        Member saved = memberRepository.save(member);
+        log.info("Member synced from ORIS: memberId={}", memberId);
+        return saved;
+    }
+
+    @Transactional
+    @Override
     public Member suspendMember(MemberId memberId, Member.SuspendMembership command) {
         Member member = loadMember(memberId);
 

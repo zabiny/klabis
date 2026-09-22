@@ -19,6 +19,13 @@ public interface ManagementPort {
 
     Member updateMember(MemberId memberId, Member.UpdateMember command);
 
+    /**
+     * Applies an inward write from ORIS synchronisation to an existing member.
+     *
+     * @throws MemberNotFoundException if no member with the given id exists
+     */
+    Member syncMemberFromOris(MemberId memberId, Member.SyncFromOris command);
+
     Member suspendMember(MemberId memberId, Member.SuspendMembership command);
 
     Member resumeMember(MemberId memberId, Member.ResumeMembership command);

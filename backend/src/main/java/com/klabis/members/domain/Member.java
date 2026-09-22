@@ -198,6 +198,38 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         }
     }
 
+    /**
+     * Command carrying an inward write from ORIS synchronisation.
+     * <p>
+     * Carries exactly the fields ORIS owns — see design.md D2/D3. Licences, guardian, bank account,
+     * dietary requirements and the suspension block are not expressible here, so a synchronisation
+     * cannot touch them even by mistake. Each field is written unconditionally by
+     * {@link #syncFromOris(SyncFromOris)}, including when it is {@code null}: protecting a
+     * Klabis-entered value against an empty ORIS field is the synchronisation engine's job, decided
+     * before this method is ever reached, not this method's.
+     * <p>
+     * {@code registrationNumber} is not applied — {@link Member#registrationNumber} is set only at
+     * construction — but is checked against the target aggregate as a guard against the caller
+     * having resolved the wrong member. {@code nationality} is a validated {@link Nationality}
+     * rather than the raw code {@link UpdateMember} still takes, since the ORIS projection this
+     * command is built from has already produced one.
+     */
+    @RecordBuilder
+    public record SyncFromOris(
+            RegistrationNumber registrationNumber,
+            String firstName,
+            String lastName,
+            LocalDate dateOfBirth,
+            Gender gender,
+            Nationality nationality,
+            BirthNumber birthNumber,
+            EmailAddress email,
+            PhoneNumber phone,
+            Address address,
+            String chipNumber
+    ) {
+    }
+
     // ========== Constructors ==========
 
     private Member(
@@ -610,6 +642,39 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         if (command.updatedBy() != null && !Objects.equals(this.birthNumber, previousBirthNumber)) {
             registerEvent(BirthNumberAccessedEvent.modified(command.updatedBy(), this.id));
         }
+    }
+
+    /**
+     * Applies an inward write from ORIS synchronisation, overwriting every ORIS-owned field.
+     * <p>
+     * Distinct from {@link #update(UpdateMember)} on purpose (design.md D3): a synchronisation has
+     * no {@link UserId} to attribute a birth-number access to, so this method does not publish
+     * {@link BirthNumberAccessedEvent} even when the birth number changes. It also cannot touch
+     * licences, guardian, bank account, dietary requirements or the suspension block — those fields
+     * are simply absent from {@link SyncFromOris}. Whether ORIS's field-by-field merge protection
+     * has already run is decided by the caller before this method is invoked.
+     *
+     * @param command sync command with all ORIS-sourced fields
+     */
+    public void syncFromOris(SyncFromOris command) {
+        Assert.isTrue(Objects.equals(this.registrationNumber, command.registrationNumber()),
+                "SyncFromOris command targets a different member");
+
+        validateContactInformation(command.email(), command.phone(), this.guardian);
+
+        PersonalInformation newPersonalInfo = PersonalInformation.of(
+                command.firstName(), command.lastName(), command.dateOfBirth(),
+                command.nationality() != null ? command.nationality().code() : null,
+                command.gender());
+
+        validateBirthNumberNationality(newPersonalInfo.getNationalityCode(), command.birthNumber());
+
+        this.personalInformation = newPersonalInfo;
+        this.birthNumber = command.birthNumber();
+        this.email = command.email();
+        this.phone = command.phone();
+        this.address = command.address();
+        this.chipNumber = command.chipNumber();
     }
 
     /**

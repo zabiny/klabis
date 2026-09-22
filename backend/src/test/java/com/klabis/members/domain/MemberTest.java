@@ -4,6 +4,7 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberAssert;
+import com.klabis.members.BirthNumberAccessedEvent;
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberResumedEvent;
 import com.klabis.members.MemberSuspendedEvent;
@@ -1239,6 +1240,133 @@ class MemberTest {
             member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).build());
 
             assertThat(member.getGuardian()).isNotNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("handle(SyncFromOris) command")
+    class HandleSyncFromOris {
+
+        private Member createAdultMemberWithAllOptionalFieldsSet() {
+            Member member = aMember()
+                    .withRegistrationNumber("ZBM9001")
+                    .withName("Jan", "Novák")
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withNationality("CZ")
+                    .withGender(Gender.MALE)
+                    .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
+                    .withEmail("jan.novak@example.com")
+                    .withPhone("+420123456789")
+                    .withBirthNumber("900515/1234")
+                    .withNoGuardian()
+                    .build();
+
+            member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
+                    .chipNumber("999")
+                    .identityCard(IdentityCard.of("123456789", LocalDate.of(2030, 1, 1)))
+                    .drivingLicenseGroup(DrivingLicenseGroup.B)
+                    .medicalCourse(MedicalCourse.of(LocalDate.of(2020, 1, 1), java.util.Optional.of(LocalDate.of(2030, 1, 1))))
+                    .trainerLicense(TrainerLicense.of(TrainerLevel.T1, LocalDate.of(2030, 1, 1)))
+                    .refereeLicense(RefereeLicense.of(RefereeLevel.R1, LocalDate.of(2030, 1, 1)))
+                    .dietaryRestrictions("Vegan")
+                    .bankAccountNumber(BankAccountNumber.of("12345/5678"))
+                    .build());
+
+            UserId adminUserId = new UserId(UUID.randomUUID());
+            member.suspend(MemberSuspendMembershipBuilder.builder()
+                    .suspendedBy(adminUserId)
+                    .reason(DeactivationReason.ODHLASKA)
+                    .note("Some note")
+                    .build());
+
+            return member;
+        }
+
+        private Member.SyncFromOris syncCommandFor(Member member) {
+            return MemberSyncFromOrisBuilder.builder()
+                    .registrationNumber(member.getRegistrationNumber())
+                    .firstName("Petr")
+                    .lastName("Svoboda")
+                    .dateOfBirth(LocalDate.of(1985, 3, 20))
+                    .gender(Gender.FEMALE)
+                    .nationality(new Nationality("SK"))
+                    .birthNumber(null)
+                    .email(EmailAddress.of("petr.svoboda@example.com"))
+                    .phone(PhoneNumber.of("+420999888777"))
+                    .address(Address.of("Nová 1", "Brno", "60200", "CZ"))
+                    .chipNumber("111")
+                    .build();
+        }
+
+        @Test
+        @DisplayName("should update every ORIS-owned field")
+        void shouldUpdateEveryOrisOwnedField() {
+            Member member = createAdultMemberWithAllOptionalFieldsSet();
+            Member.SyncFromOris command = syncCommandFor(member);
+
+            member.syncFromOris(command);
+
+            assertThat(member.getFirstName()).isEqualTo("Petr");
+            assertThat(member.getLastName()).isEqualTo("Svoboda");
+            assertThat(member.getDateOfBirth()).isEqualTo(LocalDate.of(1985, 3, 20));
+            assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
+            assertThat(member.getNationality()).isEqualTo("SK");
+            assertThat(member.getBirthNumber()).isNull();
+            assertThat(member.getEmail()).isEqualTo(EmailAddress.of("petr.svoboda@example.com"));
+            assertThat(member.getPhone()).isEqualTo(PhoneNumber.of("+420999888777"));
+            assertThat(member.getAddress()).isEqualTo(Address.of("Nová 1", "Brno", "60200", "CZ"));
+            assertThat(member.getChipNumber()).isEqualTo("111");
+        }
+
+        @Test
+        @DisplayName("should leave Klabis-owned fields untouched")
+        void shouldLeaveKlabisOwnedFieldsUntouched() {
+            Member member = createAdultMemberWithAllOptionalFieldsSet();
+            Member.SyncFromOris command = syncCommandFor(member);
+
+            member.syncFromOris(command);
+
+            assertThat(member.getIdentityCard()).isEqualTo(IdentityCard.of("123456789", LocalDate.of(2030, 1, 1)));
+            assertThat(member.getDrivingLicenseGroup()).isEqualTo(DrivingLicenseGroup.B);
+            assertThat(member.getMedicalCourse()).isEqualTo(MedicalCourse.of(LocalDate.of(2020, 1, 1), java.util.Optional.of(LocalDate.of(2030, 1, 1))));
+            assertThat(member.getTrainerLicense()).isEqualTo(TrainerLicense.of(TrainerLevel.T1, LocalDate.of(2030, 1, 1)));
+            assertThat(member.getRefereeLicense()).isEqualTo(RefereeLicense.of(RefereeLevel.R1, LocalDate.of(2030, 1, 1)));
+            assertThat(member.getDietaryRestrictions()).isEqualTo("Vegan");
+            assertThat(member.getGuardian()).isNull();
+            assertThat(member.getBankAccountNumber()).isEqualTo(BankAccountNumber.of("12345/5678"));
+
+            assertThat(member.isActive()).isFalse();
+            assertThat(member.getSuspensionReason()).isEqualTo(DeactivationReason.ODHLASKA);
+            assertThat(member.getSuspensionNote()).isEqualTo("Some note");
+            assertThat(member.getSuspendedAt()).isNotNull();
+            assertThat(member.getSuspendedBy()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should not publish BirthNumberAccessedEvent even when birth number changes")
+        void shouldNotPublishBirthNumberAccessedEventEvenWhenBirthNumberChanges() {
+            Member member = createAdultMemberWithAllOptionalFieldsSet();
+            member.clearDomainEvents();
+
+            Member.SyncFromOris command = MemberSyncFromOrisBuilder.builder()
+                    .registrationNumber(member.getRegistrationNumber())
+                    .firstName(member.getFirstName())
+                    .lastName(member.getLastName())
+                    .dateOfBirth(member.getDateOfBirth())
+                    .gender(member.getGender())
+                    .nationality(new Nationality("CZ"))
+                    .birthNumber(BirthNumber.of("850320/1234"))
+                    .email(member.getEmail())
+                    .phone(member.getPhone())
+                    .address(member.getAddress())
+                    .chipNumber(member.getChipNumber())
+                    .build();
+
+            member.syncFromOris(command);
+
+            assertThat(member.getBirthNumber()).isEqualTo(BirthNumber.of("850320/1234"));
+            assertThat(member.getDomainEvents())
+                    .noneMatch(event -> event instanceof BirthNumberAccessedEvent);
         }
     }
 
