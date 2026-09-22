@@ -95,7 +95,7 @@ class MemberSyncAdapter implements SynchronizationAdapter {
 
     @Override
     public SyncProjection readLocal(String entityId) {
-        Member member = managementPort.getMemberAndRecordView(toMemberId(entityId), null, true);
+        Member member = managementPort.getMember(toMemberId(entityId));
         return MemberProjectionMapper.fromMember(member);
     }
 

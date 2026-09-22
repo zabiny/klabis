@@ -38,4 +38,12 @@ public interface ManagementPort {
      * @param canManageMembers true when the caller holds MEMBERS_MANAGE authority
      */
     Member getMemberAndRecordView(MemberId memberId, UserId viewedBy, boolean canManageMembers);
+
+    /**
+     * Plain read with no audit-event side effect — for system-triggered reads (e.g.
+     * synchronisation) that have no acting user to attribute a birth-number access to.
+     *
+     * @throws MemberNotFoundException if no member with the given id exists
+     */
+    Member getMember(MemberId memberId);
 }

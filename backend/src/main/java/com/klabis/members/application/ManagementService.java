@@ -140,6 +140,11 @@ public class ManagementService implements ManagementPort {
         return member;
     }
 
+    @Override
+    public Member getMember(MemberId memberId) {
+        return loadMember(memberId);
+    }
+
     private Member loadMember(MemberId memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
