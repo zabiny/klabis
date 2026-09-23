@@ -164,7 +164,7 @@ paths:
       security:
         - KlabisAuth: [MEMBERS]
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/FamilyGroupIdParam'
       responses:
@@ -961,7 +961,7 @@ paths:
       security:
         - KlabisAuth: [MEMBERS]
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/TrainingGroupIdParam'
       responses:

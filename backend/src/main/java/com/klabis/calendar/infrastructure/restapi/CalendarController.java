@@ -10,7 +10,7 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.events.EventId;
 import com.klabis.events.infrastructure.restapi.EventsApi;
-import com.klabis.members.ActingUser;
+import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;

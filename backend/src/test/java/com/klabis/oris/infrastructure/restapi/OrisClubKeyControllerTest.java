@@ -1,7 +1,8 @@
-package com.klabis.members.infrastructure.orissync;
+package com.klabis.oris.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
+import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import org.junit.jupiter.api.DisplayName;
@@ -18,10 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 

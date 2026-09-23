@@ -1,4 +1,4 @@
-package com.klabis.members.infrastructure.orissync;
+package com.klabis.oris.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.oris.ClubKeyStateResponse;

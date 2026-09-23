@@ -13,7 +13,7 @@ import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
-import com.klabis.members.infrastructure.orissync.OrisClubKeyPort;
+import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.sync.application.SynchronizationPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

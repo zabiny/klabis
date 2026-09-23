@@ -1,4 +1,4 @@
-package com.klabis.members.infrastructure.orissync;
+package com.klabis.common.settings;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

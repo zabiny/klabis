@@ -1,5 +1,6 @@
 package com.klabis.events.application;
 
+import com.klabis.oris.application.ImportedOrisEventsPort;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;

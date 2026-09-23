@@ -1,10 +1,13 @@
-package com.klabis.oris;
+package com.klabis.oris.infrastructure.restapi;
 
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisEventListFilter;
 import com.dpolach.api.orisclient.OrisRegion;
 import com.klabis.common.OrisIntegrationComponent;
-import com.klabis.events.application.ImportedOrisEventsPort;
+import com.klabis.oris.OrisEventSummary;
+import com.klabis.oris.OrisEventSummaryBuilder;
+import com.klabis.oris.OrisImportApi;
+import com.klabis.oris.application.ImportedOrisEventsPort;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

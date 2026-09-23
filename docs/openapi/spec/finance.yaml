@@ -41,7 +41,7 @@ paths:
       x-klabis-authority: FINANCE_MANAGE
       x-klabis-owner-visible: true
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/AccountMemberIdParam'
       responses:
@@ -94,7 +94,7 @@ paths:
       x-klabis-owner-visible: true
       x-spring-paginated: true
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/AccountMemberIdParam'
         - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
@@ -162,7 +162,7 @@ paths:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: FINANCE_MANAGE
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
       parameters:
         - $ref: '#/components/parameters/AccountMemberIdParam'
       requestBody:
@@ -206,7 +206,7 @@ paths:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: FINANCE_MANAGE
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
       parameters:
         - $ref: '#/components/parameters/AccountMemberIdParam'
       requestBody:
@@ -251,7 +251,7 @@ paths:
       x-klabis-authority: FINANCE_MANAGE
       x-klabis-owner-visible: true
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/AccountMemberIdParam'
         - $ref: '#/components/parameters/TxIdParam'
@@ -305,7 +305,7 @@ paths:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: FINANCE_MANAGE
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
       parameters:
         - $ref: '#/components/parameters/AccountMemberIdParam'
         - $ref: '#/components/parameters/TxIdParam'

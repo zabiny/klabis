@@ -5,17 +5,13 @@ import com.dpolach.api.orisclient.dto.ClubMember;
 import com.dpolach.api.orisclient.dto.ClubMemberBuilder;
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
+import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.domain.GuardianInformation;
 import com.klabis.members.domain.Member;
 import com.klabis.sync.application.SynchronizationPort;
-import com.klabis.sync.domain.ExternalReference;
-import com.klabis.sync.domain.ExternalSystem;
-import com.klabis.sync.domain.SyncEntityType;
-import com.klabis.sync.domain.SyncRecord;
-import com.klabis.sync.domain.SyncStatus;
-import com.klabis.sync.domain.SyncedEntityReference;
+import com.klabis.sync.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -75,7 +71,7 @@ class MemberOrisSyncProtectionIntegrationTest {
         regNum = "ZBM%04d".formatted(orisId % 10000);
         orisClubKeyPort.store("test-club-key");
 
-        stubClubMembers(orisClubMember(orisId, regNum, "Jan", "Novák", 0));
+        stubClubMembers(orisClubMember(orisId, regNum, "Jan", "Novák", "0"));
         memberDiscoveryJob.discoverNewMembers();
         enrolled = enrolledRecord();
         memberId = memberIdOf(enrolled);
@@ -139,7 +135,7 @@ class MemberOrisSyncProtectionIntegrationTest {
         return new MemberId(UUID.fromString(record.getTarget().entityId()));
     }
 
-    private static ClubMember orisClubMember(int id, String regNum, String firstName, String lastName, int si) {
+    private static ClubMember orisClubMember(int id, String regNum, String firstName, String lastName, String si) {
         return ClubMemberBuilder.builder()
                 .id(id)
                 .userId(1)

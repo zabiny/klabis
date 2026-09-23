@@ -47,7 +47,7 @@ paths:
       # CALENDAR:READ authority (Authority.java has CALENDAR_MANAGE alone), and the controller
       # never restricted these reads — adding one here would change behaviour, not describe it.
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - name: startDate
           in: query
@@ -292,7 +292,7 @@ paths:
       security:
         - KlabisAuth: [openid]
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
       responses:
         '200':
           description: Token state returned
@@ -332,7 +332,7 @@ paths:
       security:
         - KlabisAuth: [openid]
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
       responses:
         '200':
           description: New token generated; full subscribe URL returned once

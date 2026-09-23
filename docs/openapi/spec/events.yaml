@@ -449,7 +449,7 @@ paths:
         - KlabisAuth: [EVENTS]
       x-klabis-authority: EVENTS_MANAGE
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/DisciplineIdParam'
       responses:
@@ -488,7 +488,7 @@ paths:
       x-klabis-authority: EVENTS_READ
       x-spring-paginated: true
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
         - $ref: './_shared/pagination.yaml#/components/parameters/SizeParam'
@@ -665,7 +665,7 @@ paths:
         - KlabisAuth: [EVENTS]
       x-klabis-authority: EVENTS_READ
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/EventIdParam'
       responses:

@@ -6,7 +6,7 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.members.ActingUser;
+import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
@@ -14,8 +14,8 @@ import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
+import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.members.infrastructure.orissync.ClubKeyHeld;
-import com.klabis.members.infrastructure.orissync.OrisClubKeyPort;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncTarget;
@@ -60,7 +60,7 @@ public class MemberController implements MembersApi {
     private final ConversionService conversionService;
     private final Optional<MemberDiscoveryPort> memberDiscoveryJob;
     private final OrisClubKeyPort orisClubKeyPort;
-    private final SynchronizationPort synchronizationPort;
+    private final Optional<SynchronizationPort> synchronizationPort;
 
     public MemberController(
             ManagementPort managementService,
@@ -68,7 +68,7 @@ public class MemberController implements MembersApi {
             ConversionService conversionService,
             Optional<MemberDiscoveryPort> memberDiscoveryJob,
             OrisClubKeyPort orisClubKeyPort,
-            SynchronizationPort synchronizationPort) {
+            Optional<SynchronizationPort> synchronizationPort) {
         this.managementService = managementService;
         this.memberRepository = memberRepository;
         this.conversionService = conversionService;
@@ -231,7 +231,12 @@ public class MemberController implements MembersApi {
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
                 currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
-        boolean isEnrolled = synchronizationPort.findByTarget(targetFor(memberId)).isPresent();
+        // Held as Optional like memberDiscoveryJob above: the sync engine is absent from
+        // members-only slices (@ApplicationModuleTest without extraIncludes), where the
+        // member is simply reported as not enrolled.
+        boolean isEnrolled = synchronizationPort
+                .map(port -> port.findByTarget(targetFor(memberId)).isPresent())
+                .orElse(false);
         Set<String> enrolledIds = isEnrolled ? Set.of(memberId.uuid().toString()) : Set.of();
         HalResponseContext.setContext(new EnrolledMemberIds(enrolledIds));
 

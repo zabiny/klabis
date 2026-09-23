@@ -5,17 +5,12 @@ import com.dpolach.api.orisclient.dto.ClubMember;
 import com.dpolach.api.orisclient.dto.ClubMemberBuilder;
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
+import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.domain.Member;
 import com.klabis.sync.application.SynchronizationPort;
-import com.klabis.sync.domain.ExternalReference;
-import com.klabis.sync.domain.ExternalSystem;
-import com.klabis.sync.domain.SyncEntityType;
-import com.klabis.sync.domain.SyncRecord;
-import com.klabis.sync.domain.SyncStatus;
-import com.klabis.sync.domain.SyncTarget;
-import com.klabis.sync.domain.SyncedEntityReference;
+import com.klabis.sync.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -155,7 +150,7 @@ class MemberOrisSyncScenarioIntegrationTest {
                 .gender("M")
                 .persNum("900115/0000")
                 .nationality("CZ")
-                .si(0)
+                .si("0")
                 .build();
     }
 

@@ -38,7 +38,7 @@ paths:
       x-klabis-authority: MEMBERS_READ
       x-spring-paginated: true
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
         - $ref: './_shared/pagination.yaml#/components/parameters/SizeParam'
@@ -82,6 +82,11 @@ paths:
             registerMember:
               operation: registerMember
               description: Present only for callers with MEMBERS:MANAGE
+            importFromOris:
+              operation: importFromOris
+              description: |
+                Present only for callers with SYNC:MANAGE and only while a club key is held —
+                without one the action could not do anything (design.md D11).
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -111,7 +116,7 @@ paths:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
       requestBody:
         required: true
         x-codegen-request-body-name: request
@@ -222,7 +227,7 @@ paths:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_READ
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/MemberIdParam'
       responses:
@@ -250,6 +255,12 @@ paths:
               description: Training group the member belongs to, when there is one
             ical-token:
               description: Calendar subscription token — only on the caller's own detail
+            sync:
+              operation: getSyncState
+              description: |
+                Present when the member was brought in from ORIS and the caller has SYNC:MANAGE
+                (design.md D12) — the same authority getSyncState itself requires. Absent for a
+                member never paired with ORIS.
           x-hal-templates:
             updateMember:
               operation: updateMember
@@ -285,7 +296,7 @@ paths:
       x-klabis-authority: MEMBERS_MANAGE
       x-klabis-owner-visible: true
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
         - $ref: '#/components/parameters/MemberIdParam'
       requestBody:
@@ -326,7 +337,7 @@ paths:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
       parameters:
         - $ref: '#/components/parameters/MemberIdParam'
       requestBody:
@@ -377,7 +388,7 @@ paths:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.common.users.UserId currentUserId'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
       parameters:
         - $ref: '#/components/parameters/MemberIdParam'
       responses:

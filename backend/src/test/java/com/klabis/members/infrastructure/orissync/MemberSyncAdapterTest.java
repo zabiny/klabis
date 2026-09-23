@@ -6,17 +6,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.application.RegistrationPort;
-import com.klabis.members.domain.Address;
-import com.klabis.members.domain.BirthNumber;
-import com.klabis.members.domain.EmailAddress;
-import com.klabis.members.domain.Gender;
-import com.klabis.members.domain.GuardianInformation;
-import com.klabis.members.domain.Member;
-import com.klabis.members.domain.PersonalInformation;
-import com.klabis.members.domain.PhoneNumber;
-import com.klabis.members.domain.RegistrationNumber;
-import com.klabis.members.domain.TrainerLevel;
-import com.klabis.members.domain.TrainerLicense;
+import com.klabis.members.domain.*;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncProjection;
@@ -32,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -318,7 +307,7 @@ class MemberSyncAdapterTest {
                 .gender("M")
                 .persNum("9001151234")
                 .nationality("CZ")
-                .si(12345)
+                .si("12345")
                 .build();
     }
 
