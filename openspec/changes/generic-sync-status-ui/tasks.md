@@ -22,10 +22,10 @@
 
 ## 5. Retire the old manual-sync button
 
-- [ ] 5.1 Remove `<HalFormButton name="syncEventFromOris" .../>` from `EventDetailPage` (design.md D6 — same underlying engine action, now reachable through the overlay's `synchronizeNow`)
-- [ ] 5.2 Update/remove any now-obsolete test coverage in `EventDetailPage.test.tsx` that asserted the old button's presence/behavior
-- [ ] 5.3 Confirm no other frontend call site still references the `syncEventFromOris` affordance
-- [ ] 5.4 Run the full frontend test suite and `npm run lint`/`npm run build` (type-check) to confirm no regressions
+- [x] 5.1 Remove `<HalFormButton name="syncEventFromOris" .../>` from `EventDetailPage` (design.md D6 — same underlying engine action, now reachable through the overlay's `synchronizeNow`)
+- [x] 5.2 Update/remove any now-obsolete test coverage in `EventDetailPage.test.tsx` that asserted the old button's presence/behavior
+- [x] 5.3 Confirm no other frontend call site still references the `syncEventFromOris` affordance
+- [x] 5.4 Run the full frontend test suite and `npm run lint`/`npm run build` (type-check) to confirm no regressions
 
 ## 6. Make the sync endpoint reachable and correctly documented
 

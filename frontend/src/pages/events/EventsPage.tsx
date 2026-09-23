@@ -22,7 +22,7 @@ import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {Section} from "../members/MemberSection.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
 import {MemberName} from "../../components/members/MemberName.tsx";
-import {ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from "lucide-react";
+import {ExternalLink, Globe, Pencil, UserMinus, UserPlus, XCircle} from "lucide-react";
 import {EventsFilterBar} from "../../components/events/EventsFilterBar.tsx";
 import {EventTypeBadge} from "../../components/events/EventTypeBadge.tsx";
 import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
@@ -45,7 +45,6 @@ const ROW_ACTION_BUTTONS = [
     {name: 'updateEvent', icon: Pencil, label: labels.templates.updateEvent},
     {name: 'publishEvent', icon: Globe, label: labels.templates.publishEvent},
     {name: 'cancelEvent', icon: XCircle, label: labels.templates.cancelEvent},
-    {name: 'syncEventFromOris', icon: RefreshCw, label: labels.templates.syncEventFromOris},
     {name: 'registerForEvent', icon: UserPlus, label: labels.templates.registerForEvent},
     {name: 'unregisterFromEvent', icon: UserMinus, label: labels.templates.unregisterFromEvent},
 ];
