@@ -13,6 +13,7 @@ import {containerStyles} from '../../theme/designTokens';
 import {useToast} from '../../contexts/toastContext';
 import {useNavigate} from 'react-router-dom';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {normalizeKlabisApiPath} from '../../utils/halFormsUtils.ts';
 
 /**
  * Props for HalFormDisplay component
@@ -124,7 +125,7 @@ export const HalFormDisplay = ({
                 }
             })()
             : undefined;
-        const url = template.target || resolvedResourceUrl || '/api' + pathname;
+        const url = template.target || resolvedResourceUrl || '/api' + normalizeKlabisApiPath(pathname);
         submitForm({url, data: processed}, {
             onSuccess: async ({data: responseData, location}) => {
                 await invalidateAllCaches();

@@ -409,6 +409,99 @@ describe('HalFormDisplay Component', () => {
             });
         });
 
+        it('should not double-prefix /api when pathname already contains /api (sync sub-resource fallback)', async () => {
+            const onClose = vi.fn();
+            const user = userEvent.setup();
+
+            // Template without target — resolution falls through to resourceUrl → pathname fallback.
+            // Reproduces the sync sub-resource scenario: pathname comes from HalRouteProvider
+            // which preserves /api in targetUrl.pathname, so a naive '/api' + pathname would
+            // produce /api/api/... The handled submit URL must not duplicate the prefix.
+            const template = mockHalFormsTemplate({
+                title: 'Synchronize',
+                method: 'POST',
+                properties: [],
+                target: undefined,
+            });
+            const pageData = createMockPageData({status: 'IN_SYNC'});
+            const Wrapper = createWrapper(pageData);
+
+            fetchSpy.mockResolvedValueOnce(createMockResponse({status: 'IN_SYNC'}));
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="synchronizeNow"
+                        resourceData={{status: 'IN_SYNC'}}
+                        pathname="/api/EVENTS/abc/sync"
+                        resourceUrl="https://localhost:8443/api/EVENTS/abc/sync"
+                        onClose={onClose}
+                    />
+                </Wrapper>
+            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+            });
+
+            const submitButton = await screen.findByRole('button', {name: /odeslat/i});
+            await user.click(submitButton);
+
+            await waitFor(() => {
+                expect(fetchSpy).toHaveBeenCalled();
+            });
+            const submitUrl = fetchSpy.mock.calls[0][0] as string;
+            expect(submitUrl).not.toMatch(/\/api\/api\//);
+            expect(submitUrl).toMatch(/EVENTS\/abc\/sync/);
+        });
+
+        it('should normalize /api prefix on pathname when resourceUrl is missing', async () => {
+            const onClose = vi.fn();
+            const user = userEvent.setup();
+
+            // Bare-submit fallback path: template.target empty, resourceUrl missing.
+            // HalFormsPageLayout forwards an effective pathname that already includes /api
+            // (because the sync sub-resource's self-link is what feeds HalRouteProvider).
+            // The handler must normalize it, otherwise duplicate /api/api/ breaks submit.
+            const template = mockHalFormsTemplate({
+                title: 'Synchronize',
+                method: 'POST',
+                properties: [],
+                target: undefined,
+            });
+            const pageData = createMockPageData({status: 'IN_SYNC'});
+            const Wrapper = createWrapper(pageData);
+
+            fetchSpy.mockResolvedValueOnce(createMockResponse({status: 'IN_SYNC'}));
+
+            render(
+                <Wrapper>
+                    <HalFormDisplay
+                        template={template}
+                        templateName="synchronizeNow"
+                        resourceData={{status: 'IN_SYNC'}}
+                        pathname="/api/EVENTS/abc/sync"
+                        onClose={onClose}
+                    />
+                </Wrapper>
+            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+            });
+
+            const submitButton = await screen.findByRole('button', {name: /odeslat/i});
+            await user.click(submitButton);
+
+            await waitFor(() => {
+                expect(fetchSpy).toHaveBeenCalled();
+            });
+            const submitUrl = fetchSpy.mock.calls[0][0] as string;
+            expect(submitUrl).not.toMatch(/\/api\/api\//);
+            expect(submitUrl).toMatch(/EVENTS\/abc\/sync/);
+        });
+
         it('should not call invalidateAllCaches when submission fails', async () => {
             const onClose = vi.fn();
             const user = userEvent.setup();
