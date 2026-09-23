@@ -219,6 +219,7 @@ describe('SyncStatusOverlay', () => {
             const lastSyncSection = within(overlay).getByTestId('sync-overlay-last-sync');
             expect(lastSyncSection.textContent).not.toBe('');
             expect(lastSyncSection.textContent).not.toBe('-');
+            expect(lastSyncSection).toHaveTextContent('15. 4. 2026 12:30:00');
         });
 
         it('renders fallback "Nikdy synchronizováno" when lastSuccessfulSyncAt is null', async () => {
@@ -436,6 +437,27 @@ describe('SyncStatusOverlay', () => {
             expect(within(overlay).getByTestId('form-template-button-acknowledgeSyncConflict')).toBeInTheDocument();
             expect(within(overlay).getByTestId('form-template-button-resolveSyncConflict')).toBeInTheDocument();
             expect(within(overlay).getByTestId('form-template-button-resetSyncRecord')).toBeInTheDocument();
+        });
+
+        it('renders Czech label "Synchronizovat" for synchronizeNow button (not template.title)', async () => {
+            const user = userEvent.setup();
+            renderIndicator({
+                syncLink: buildSyncLink(),
+                mode: 'icon',
+                queryState: {
+                    isLoading: false,
+                    error: null,
+                    data: buildSyncState({
+                        status: 'IN_SYNC',
+                        _templates: {synchronizeNow: buildTemplate('Synchronize now')},
+                    }),
+                },
+            });
+
+            const overlay = await openOverlay(user);
+            const button = within(overlay).getByTestId('form-template-button-synchronizeNow');
+            expect(button).toHaveTextContent('Synchronizovat');
+            expect(button).not.toHaveTextContent('Synchronize now');
         });
     });
 

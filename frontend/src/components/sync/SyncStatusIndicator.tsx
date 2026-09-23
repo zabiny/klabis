@@ -3,7 +3,7 @@ import {AlertTriangle} from 'lucide-react';
 import {Badge, Spinner, Tooltip} from '../UI';
 import {HalRouteProvider} from '../../contexts/HalRouteContext';
 import {useHalRoute} from '../../contexts/halRouteContext';
-import {formatDate} from '../../utils/dateUtils';
+import {formatDateTimeSeconds} from '../../utils/dateUtils';
 import {getEnumLabel, labels} from '../../localization';
 import {SyncStatusOverlay} from './SyncStatusOverlay';
 import {SYNC_STATUS_MAP} from './syncStatusMap';
@@ -55,7 +55,9 @@ const SyncStatusIndicatorContent = ({mode}: {mode: 'icon' | 'icon+date'}): React
 
     const {variant, Icon} = SYNC_STATUS_MAP[syncState.status];
     const lastDate = syncState.lastSuccessfulSyncAt;
-    const dateText = lastDate ? formatDate(lastDate) : labels.sync.neverSynced;
+    const dateText = lastDate ? formatDateTimeSeconds(lastDate) : labels.sync.neverSynced;
+    const statusLabel = getEnumLabel('syncStatus', syncState.status);
+    const ariaLabel = lastDate ? `${statusLabel} — ${dateText}` : statusLabel;
     const showDateInline = mode === 'icon+date';
     const hasTemplates = syncState._templates !== undefined
         && Object.keys(syncState._templates).length > 0;
@@ -66,7 +68,7 @@ const SyncStatusIndicatorContent = ({mode}: {mode: 'icon' | 'icon+date'}): React
             size="sm"
             className={showDateInline ? 'inline-flex items-center gap-1.5' : 'inline-flex items-center justify-center'}
             data-testid={`sync-status-${syncState.status}`}
-            aria-label={getEnumLabel('syncStatus', syncState.status)}
+            aria-label={ariaLabel}
             role={hasTemplates ? 'button' : undefined}
             tabIndex={hasTemplates ? 0 : undefined}
             onClick={hasTemplates ? (e) => {

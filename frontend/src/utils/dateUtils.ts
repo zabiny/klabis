@@ -67,3 +67,18 @@ export const formatDateTime = (dateString: string) => {
         minute: '2-digit',
     }).format(date);
 };
+
+export const formatDateTimeSeconds = (dateString: string) => {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    return new Intl.DateTimeFormat('cs-CZ', {
+        timeZone: 'Europe/Prague',
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+    }).format(date);
+};

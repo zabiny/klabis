@@ -2,7 +2,7 @@ import {type ReactElement} from 'react';
 import {Badge, Modal} from '../UI';
 import {HalFormButton} from '../HalNavigator2/HalFormButton.tsx';
 import {useHalRoute} from '../../contexts/halRouteContext';
-import {formatDate, formatDateTime} from '../../utils/dateUtils';
+import {formatDateTime, formatDateTimeSeconds} from '../../utils/dateUtils';
 import {labels, getEnumLabel} from '../../localization';
 import {SYNC_STATUS_MAP} from './syncStatusMap';
 import type {GetSyncStateResource} from '../../api';
@@ -49,7 +49,7 @@ export const SyncStatusOverlay = ({isOpen, onClose}: SyncStatusOverlayProps): Re
         ? syncState.divergedFields
         : null;
     const lastSyncText = syncState.lastSuccessfulSyncAt
-        ? formatDate(syncState.lastSuccessfulSyncAt)
+        ? formatDateTimeSeconds(syncState.lastSuccessfulSyncAt)
         : labels.sync.neverSynced;
 
     return (

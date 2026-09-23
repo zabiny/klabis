@@ -109,6 +109,10 @@ export const labels = {
         closeCampaign: 'Uzavřít kampaň',
         editSnapshot: 'Upravit skupinu',
         assignMember: 'Přiřadit člena',
+        synchronizeNow: 'Synchronizovat',
+        acknowledgeSyncConflict: 'Potvrdit konflikt',
+        resolveSyncConflict: 'Vyřešit konflikt',
+        resetSyncRecord: 'Resetovat synchronizaci',
     },
 
     dialogTitles: {

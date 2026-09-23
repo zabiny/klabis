@@ -153,6 +153,41 @@ describe('SyncStatusIndicator', () => {
             });
         }
 
+        it('appends formatted lastSuccessfulSyncAt to aria-label when present', async () => {
+            renderIndicator({
+                syncLink: buildSyncLink(),
+                mode: 'icon',
+                queryState: {
+                    isLoading: false,
+                    error: null,
+                    data: buildSyncState({
+                        status: 'IN_SYNC',
+                        lastSuccessfulSyncAt: '2026-04-15T10:30:00Z',
+                    }),
+                },
+            });
+
+            const badge = await screen.findByTestId('sync-status-IN_SYNC');
+            const aria = badge.getAttribute('aria-label') ?? '';
+            expect(aria).toContain('V synchronizaci');
+            expect(aria).toContain('15. 4. 2026 12:30:00');
+        });
+
+        it('omits datetime suffix from aria-label when lastSuccessfulSyncAt is null', async () => {
+            renderIndicator({
+                syncLink: buildSyncLink(),
+                mode: 'icon',
+                queryState: {
+                    isLoading: false,
+                    error: null,
+                    data: buildSyncState({status: 'NEW', lastSuccessfulSyncAt: null}),
+                },
+            });
+
+            const badge = await screen.findByTestId('sync-status-NEW');
+            expect(badge.getAttribute('aria-label')).toBe('Nový');
+        });
+
         it('CONFLICT and FAILED share the error variant but render distinct icons', async () => {
             const conflictRender = renderIndicator({
                 syncLink: buildSyncLink(),
@@ -258,6 +293,7 @@ describe('SyncStatusIndicator', () => {
             const tooltip = await screen.findByRole('tooltip');
             expect(tooltip.textContent).not.toBe('');
             expect(tooltip.textContent).not.toBe('Nikdy synchronizováno');
+            expect(tooltip).toHaveTextContent('15. 4. 2026 12:30:00');
         });
 
         it('shows "Nikdy synchronizováno" fallback in tooltip when lastSuccessfulSyncAt is null', async () => {
@@ -304,6 +340,7 @@ describe('SyncStatusIndicator', () => {
             const date = within(badge).getByTestId('sync-last-date');
             expect(date).toBeInTheDocument();
             expect(date.textContent).not.toBe('');
+            expect(date).toHaveTextContent('15. 4. 2026 12:30:00');
         });
 
         it('shows the fallback "Nikdy synchronizováno" inline when lastSuccessfulSyncAt is null', async () => {
