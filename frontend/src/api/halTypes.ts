@@ -10,27 +10,6 @@
 import type {HalFormsTemplate, HalResourceLinks} from './types';
 import type {components} from './klabisApi';
 
-// --- PATCH /api/fee-selection-campaigns/{id}/deadline (200) ---
-
-export interface ChangeDeadlineHal {
-  _links?: {
-    /** This publication */
-    'self'?: HalResourceLinks;
-  };
-  _templates?: Record<never, never>;
-}
-
-export type ChangeDeadlineResource =
-  components['schemas']['EntityModelFeeSelectionCampaignResponse'] & ChangeDeadlineHal;
-
-export const ChangeDeadlineRels = {
-  links: ['self'] as const,
-  templates: [] as const,
-} as const;
-
-export type ChangeDeadlineLinkRel = typeof ChangeDeadlineRels.links[number];
-export type ChangeDeadlineTemplateRel = typeof ChangeDeadlineRels.templates[number];
-
 // --- GET /api/dashboard (200) ---
 
 export interface DashboardHal {
@@ -161,35 +140,39 @@ export const GetCalendarItemRels = {
 export type GetCalendarItemLinkRel = typeof GetCalendarItemRels.links[number];
 export type GetCalendarItemTemplateRel = typeof GetCalendarItemRels.templates[number];
 
-// --- GET /api/members/{memberId}/fee-choice/{year} (200) ---
+// --- GET /api/disciplines/{id} (200) ---
 
-export interface GetChoiceHal {
+export interface GetDisciplineHal {
   _links?: {
-    /** Present when the member has a current fee group choice */
-    'currentGroup'?: HalResourceLinks;
-    /** Present when a recommended tier exists for this year */
-    'recommendedLevel'?: HalResourceLinks;
-    /** This fee choice */
+    /** Back to the discipline list */
+    'collection'?: HalResourceLinks;
+    /** This discipline */
     'self'?: HalResourceLinks;
+    /** Present only when the discipline is paired to ORIS */
+    'sync'?: HalResourceLinks;
   };
   _templates?: {
-    /** Choose a fee level for this year */
-    'chooseTier'?: HalFormsTemplate;
-    /** Remove the fee level choice for this year */
-    'removeChoice'?: HalFormsTemplate;
+    /** Present only for callers with EVENTS:MANAGE and only while the discipline is active */
+    'archiveDiscipline'?: HalFormsTemplate;
+    /** Present only for callers with EVENTS:MANAGE and only while the discipline is archived */
+    'restoreDiscipline'?: HalFormsTemplate;
+    /** Present only for callers with EVENTS:MANAGE and only when the discipline is not
+paired to ORIS — code/name are ORIS-owned once paired.
+ */
+    'updateDiscipline'?: HalFormsTemplate;
   };
 }
 
-export type GetChoiceResource =
-  components['schemas']['EntityModelMemberFeeChoiceResponse'] & GetChoiceHal;
+export type GetDisciplineResource =
+  components['schemas']['EntityModelDisciplineDto'] & GetDisciplineHal;
 
-export const GetChoiceRels = {
-  links: ['currentGroup', 'recommendedLevel', 'self'] as const,
-  templates: ['chooseTier', 'removeChoice'] as const,
+export const GetDisciplineRels = {
+  links: ['collection', 'self', 'sync'] as const,
+  templates: ['archiveDiscipline', 'restoreDiscipline', 'updateDiscipline'] as const,
 } as const;
 
-export type GetChoiceLinkRel = typeof GetChoiceRels.links[number];
-export type GetChoiceTemplateRel = typeof GetChoiceRels.templates[number];
+export type GetDisciplineLinkRel = typeof GetDisciplineRels.links[number];
+export type GetDisciplineTemplateRel = typeof GetDisciplineRels.templates[number];
 
 // --- GET /api/events/{id} (200) ---
 
@@ -213,8 +196,11 @@ being offered
     'registrations'?: HalResourceLinks;
     /** This event */
     'self'?: HalResourceLinks;
-    /** Present when the event is enrolled in synchronisation and the caller has SYNC:MANAGE
-(task 8.6) — the same authority getSyncState itself requires.
+    /** Present when the event is enrolled in synchronisation. The link
+itself and the headline state returned by the sync sub-resource are
+visible to any signed-in user; only the detail fields and action
+templates (synchronizeNow, acknowledgeSyncConflict, etc.) inside
+the sync sub-resource are gated on SYNC:MANAGE.
  */
     'sync'?: HalResourceLinks;
   };
@@ -417,6 +403,36 @@ export const GetGroupRels = {
 
 export type GetGroupLinkRel = typeof GetGroupRels.links[number];
 export type GetGroupTemplateRel = typeof GetGroupRels.templates[number];
+
+// --- GET /api/members/{memberId}/fee-choice/{year} (200) ---
+
+export interface GetChoiceHal {
+  _links?: {
+    /** Present when the member has a current fee group choice */
+    'currentGroup'?: HalResourceLinks;
+    /** Present when a recommended tier exists for this year */
+    'recommendedLevel'?: HalResourceLinks;
+    /** This fee choice */
+    'self'?: HalResourceLinks;
+  };
+  _templates?: {
+    /** Choose a fee level for this year */
+    'chooseTier'?: HalFormsTemplate;
+    /** Remove the fee level choice for this year */
+    'removeChoice'?: HalFormsTemplate;
+  };
+}
+
+export type GetChoiceResource =
+  components['schemas']['EntityModelMemberFeeChoiceResponse'] & GetChoiceHal;
+
+export const GetChoiceRels = {
+  links: ['currentGroup', 'recommendedLevel', 'self'] as const,
+  templates: ['chooseTier', 'removeChoice'] as const,
+} as const;
+
+export type GetChoiceLinkRel = typeof GetChoiceRels.links[number];
+export type GetChoiceTemplateRel = typeof GetChoiceRels.templates[number];
 
 // --- GET /api/members/{id} (200) ---
 
@@ -771,6 +787,27 @@ export const GetUserPermissionsRels = {
 export type GetUserPermissionsLinkRel = typeof GetUserPermissionsRels.links[number];
 export type GetUserPermissionsTemplateRel = typeof GetUserPermissionsRels.templates[number];
 
+// --- PATCH /api/fee-selection-campaigns/{id}/deadline (200) ---
+
+export interface ChangeDeadlineHal {
+  _links?: {
+    /** This publication */
+    'self'?: HalResourceLinks;
+  };
+  _templates?: Record<never, never>;
+}
+
+export type ChangeDeadlineResource =
+  components['schemas']['EntityModelFeeSelectionCampaignResponse'] & ChangeDeadlineHal;
+
+export const ChangeDeadlineRels = {
+  links: ['self'] as const,
+  templates: [] as const,
+} as const;
+
+export type ChangeDeadlineLinkRel = typeof ChangeDeadlineRels.links[number];
+export type ChangeDeadlineTemplateRel = typeof ChangeDeadlineRels.templates[number];
+
 // --- POST /api/events/import-batch (200) ---
 
 export interface ImportEventsBatchHal {
@@ -819,6 +856,38 @@ export const ListCalendarItemsRels = {
 
 export type ListCalendarItemsLinkRel = typeof ListCalendarItemsRels.links[number];
 export type ListCalendarItemsTemplateRel = typeof ListCalendarItemsRels.templates[number];
+
+// --- GET /api/disciplines (200) ---
+
+export interface ListDisciplinesHal {
+  _links?: {
+    /** First page (present when the result is paged) */
+    'first'?: HalResourceLinks;
+    /** Last page (present when the result is paged) */
+    'last'?: HalResourceLinks;
+    /** Next page (present when one exists) */
+    'next'?: HalResourceLinks;
+    /** Previous page (present when one exists) */
+    'prev'?: HalResourceLinks;
+    /** This collection, with the current paging parameters */
+    'self'?: HalResourceLinks;
+  };
+  _templates?: {
+    /** Present only for callers with EVENTS:MANAGE */
+    'createDiscipline'?: HalFormsTemplate;
+  };
+}
+
+export type ListDisciplinesResource =
+  components['schemas']['PagedModelEntityModelDisciplineDto'] & ListDisciplinesHal;
+
+export const ListDisciplinesRels = {
+  links: ['first', 'last', 'next', 'prev', 'self'] as const,
+  templates: ['createDiscipline'] as const,
+} as const;
+
+export type ListDisciplinesLinkRel = typeof ListDisciplinesRels.links[number];
+export type ListDisciplinesTemplateRel = typeof ListDisciplinesRels.templates[number];
 
 // --- GET /api/events (200) ---
 

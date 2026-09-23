@@ -31,10 +31,10 @@
 
 Deliberately last: nothing above needs this to be buildable or testable (all tests use a mocked sync sub-resource), so it doesn't gate any of the UI work — it only needs to land before real end-to-end use.
 
-- [ ] 6.1 Add `SYNC` to `frontend/.env`'s `VITE_OAUTH_SCOPE` (and `.env.development.local.example` if it repeats the scope list there)
-- [ ] 6.2 Verify the `klabis-web` and `klabis-web-local` OAuth2 client registrations (`authorizationserver` module bootstrap) already allow the `SYNC` scope; if not, add it there too
-- [ ] 6.3 Fix the stale `sync` link description in `docs/openapi/spec/events.yaml` (currently "Present when the event is enrolled in synchronisation and the caller has SYNC:MANAGE") to describe the actual/spec'd rule: present when enrolled, visible to any signed-in user; detail fields and action templates inside the sync sub-resource are what's gated on `SYNC:MANAGE`
-- [ ] 6.4 Regenerate the FE OpenAPI bundle/types (`npm run openapi`) so the doc fix and any type impact land in `klabisApi.d.ts`/`halTypes.ts`
+- [x] 6.1 Add `SYNC` to `frontend/.env`'s `VITE_OAUTH_SCOPE` (and `.env.development.local.example` if it repeats the scope list there)
+- [x] 6.2 Verify the `klabis-web` and `klabis-web-local` OAuth2 client registrations (`authorizationserver` module bootstrap) already allow the `SYNC` scope; if not, add it there too
+- [x] 6.3 Fix the stale `sync` link description in `docs/openapi/spec/events.yaml` (currently "Present when the event is enrolled in synchronisation and the caller has SYNC:MANAGE") to describe the actual/spec'd rule: present when enrolled, visible to any signed-in user; detail fields and action templates inside the sync sub-resource are what's gated on `SYNC:MANAGE`
+- [x] 6.4 Regenerate the FE OpenAPI bundle/types (`npm run openapi`) so the doc fix and any type impact land in `klabisApi.d.ts`/`halTypes.ts`
 
 ## 7. Final verification
 

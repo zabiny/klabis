@@ -110,7 +110,8 @@ class OidcRegisteredClientsBootstrap implements BootstrapDataInitializer {
                 "profile",
                 "email",
                 Authority.MEMBERS_SCOPE,
-                Authority.EVENTS_SCOPE
+                Authority.EVENTS_SCOPE,
+                Authority.SYNC_SCOPE
         );
         String scopes = StringUtils.isNotBlank(clientProperties.getScopes()) ? clientProperties.getScopes() : defaultScopes;
         return Arrays.stream(scopes.split(","))

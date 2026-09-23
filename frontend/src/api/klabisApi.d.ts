@@ -244,6 +244,89 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/disciplines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List disciplines
+         * @description Returns a paginated list of all disciplines, active and archived, each with its archived
+         *     flag. Default: page=0, size=10.
+         *
+         */
+        get: operations["listDisciplines"];
+        put?: never;
+        /**
+         * Create a discipline
+         * @description Creates a discipline manually. Normally the local catalog is filled automatically by ORIS
+         *     discovery; this lets a manager add one by hand, e.g. before ORIS has published it.
+         *
+         */
+        post: operations["createDiscipline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/disciplines/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get discipline by ID
+         * @description Returns a single discipline.
+         */
+        get: operations["getDiscipline"];
+        /**
+         * Update a discipline
+         * @description Updates an existing discipline's code/name. Refused with 409 when the discipline is paired
+         *     to ORIS — ORIS is that discipline's sole source of truth for these fields once paired.
+         *     Normally unreachable over HTTP since updateDiscipline is not offered in that case.
+         *
+         */
+        put: operations["updateDiscipline"];
+        post?: never;
+        /**
+         * Archive a discipline
+         * @description Soft-deletes (archives) the discipline. Always succeeds, regardless of how many event types
+         *     still reference its id — unlike deleteEventType, archiving never refuses.
+         *
+         */
+        delete: operations["archiveDiscipline"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/disciplines/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore an archived discipline
+         * @description Restores an archived discipline and, if it was paired to ORIS, reactivates the sync pairing.
+         *     Refused with 409 when the discipline is not currently archived.
+         *
+         */
+        post: operations["restoreDiscipline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/event-types": {
         parameters: {
             query?: never;
@@ -2148,6 +2231,11 @@ export interface components {
             categories: string[];
             name: string;
         };
+        /** @description Discipline creation data */
+        CreateDisciplineRequest: {
+            code: string;
+            name: string;
+        };
         CreateEventCategoryRequest: {
             fee?: components["schemas"]["EntryFeeRequest"];
             name: string;
@@ -2236,6 +2324,14 @@ export interface components {
              */
             occurredAt?: string;
         };
+        /** @description Discipline catalog entry. */
+        DisciplineDto: {
+            archived?: boolean;
+            code?: string;
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+        };
         /** @enum {string} */
         DrivingLicenseGroup: "B" | "BE" | "C" | "C1" | "D" | "D1" | "T" | "AM" | "A1" | "A2" | "A";
         EditGroupSnapshotRequest: {
@@ -2299,6 +2395,7 @@ export interface components {
         EntityModelDashboardModel: {
             _links?: components["schemas"]["Links"];
         };
+        EntityModelDisciplineDto: components["schemas"]["DisciplineDto"] & components["schemas"]["EntityModel"];
         EntityModelEventDtoWithRegistrations: components["schemas"]["EventDto"] & components["schemas"]["EntityModel"] & {
             _embedded?: {
                 registrationDtoList?: components["schemas"]["RegistrationSummaryDto"][];
@@ -2833,6 +2930,11 @@ export interface components {
         PagedModel: components["schemas"]["CollectionModel"] & {
             page?: components["schemas"]["PageMetadata"];
         };
+        PagedModelEntityModelDisciplineDto: components["schemas"]["PagedModel"] & {
+            _embedded?: {
+                disciplineDtoList?: components["schemas"]["EntityModelDisciplineDto"][];
+            };
+        };
         PagedModelEntityModelEventSummaryDto: components["schemas"]["PagedModel"] & {
             _embedded?: {
                 eventSummaryDtoList?: components["schemas"]["EntityModelEventSummaryDto"][];
@@ -3086,7 +3188,7 @@ export interface components {
             groups?: components["schemas"]["LastOwnerWarning"];
         };
         /** @enum {string} */
-        SyncEntityTypeParam: "events";
+        SyncEntityTypeParam: "events" | "disciplines";
         /** @description The synchronisation state of one linked entity against one external system.
          *     Fields carrying x-klabis-authority are omitted for callers without SYNC:MANAGE;
          *     entityType, status, externalSystem and lastSuccessfulSyncAt are always visible
@@ -3206,6 +3308,11 @@ export interface components {
         };
         UpdateCategoryPresetRequest: {
             categories: string[];
+            name: string;
+        };
+        /** @description Discipline update data */
+        UpdateDisciplineRequest: {
+            code: string;
             name: string;
         };
         UpdateEventCategoryRequest: {
@@ -3389,6 +3496,8 @@ export interface components {
         CampaignYearParam: number;
         /** @description Category preset UUID */
         CategoryPresetIdParam: string;
+        /** @description Discipline UUID */
+        DisciplineIdParam: string;
         /** @description Which kind of Klabis entity this synchronisation resource addresses. */
         EntityTypeParam: components["schemas"]["SyncEntityTypeParam"];
         /** @description Event UUID */
@@ -3924,6 +4033,191 @@ export interface operations {
                 content: {
                     "application/hal+json": components["schemas"]["EntityModelDashboardModel"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelDashboardModel"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    listDisciplines: {
+        parameters: {
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: components["parameters"]["PageParam"];
+                /** @description The size of the page to be returned */
+                size?: components["parameters"]["SizeParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of disciplines */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineDto"][];
+                    "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelDisciplineDto"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    createDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDisciplineRequest"];
+            };
+        };
+        responses: {
+            /** @description Discipline created */
+            201: {
+                headers: {
+                    /** @description URI of the created discipline */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": unknown;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    getDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Discipline UUID */
+                id: components["parameters"]["DisciplineIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discipline found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelDisciplineDto"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    updateDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Discipline UUID */
+                id: components["parameters"]["DisciplineIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDisciplineRequest"];
+            };
+        };
+        responses: {
+            /** @description Discipline updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": unknown;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    archiveDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Discipline UUID */
+                id: components["parameters"]["DisciplineIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discipline archived */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": unknown;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    restoreDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Discipline UUID */
+                id: components["parameters"]["DisciplineIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discipline restored */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": unknown;
                 };
             };
             400: components["responses"]["BadRequest"];
