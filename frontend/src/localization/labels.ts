@@ -403,6 +403,7 @@ export const labels = {
         dateOfBirth: 'Datum narození',
         address: 'Adresa',
         eventType: 'Typ',
+        sync: 'Synchronizace',
     },
 
     sections: {

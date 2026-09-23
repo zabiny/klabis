@@ -11,8 +11,8 @@
 
 ## 3. Wire the icon mode into the list rows
 
-- [ ] 3.1 Add a `sync` column to `EventsPage`'s table rendering `<SyncStatusIndicator syncLink={value?.sync} mode="icon" />` per row, reading each row's own `_links.sync` (already present on `EventSummaryDto` per `EventController.java:595-598` — no backend change needed)
-- [ ] 3.2 Add/adjust `EventsPage.test.tsx` coverage: enrolled rows render the indicator (mocked), unenrolled rows render nothing in that column
+- [x] 3.1 Add a `sync` column to `EventsPage`'s table rendering `<SyncStatusIndicator syncLink={value?.sync} mode="icon" />` per row, reading each row's own `_links.sync` (already present on `EventSummaryDto` per `EventController.java:595-598` — no backend change needed)
+- [x] 3.2 Add/adjust `EventsPage.test.tsx` coverage: enrolled rows render the indicator (mocked), unenrolled rows render nothing in that column
 
 ## 4. Add the manager overlay with actions
 

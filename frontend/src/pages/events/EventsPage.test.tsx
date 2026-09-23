@@ -840,4 +840,58 @@ describe('EventsPage', () => {
             expect(screen.queryByText('Trénink')).not.toBeInTheDocument();
         });
     });
+
+    describe('sync column (I3 task 3.2)', () => {
+        const buildEnrolledEventRow = () => ({
+            id: 'evt-sync',
+            name: 'Synced event',
+            eventDate: '2026-04-15',
+            status: 'ACTIVE',
+            _links: {
+                self: {href: '/api/events/evt-sync'},
+                sync: {href: '/api/events/evt-sync/sync'},
+            },
+        });
+
+        const buildUnenrolledEventRow = () => ({
+            id: 'evt-no-sync',
+            name: 'Plain event',
+            eventDate: '2026-04-15',
+            status: 'ACTIVE',
+            _links: {self: {href: '/api/events/evt-no-sync'}},
+        });
+
+        const renderEventsWithSyncControl = (rows: unknown[]) => {
+            vi.mocked(useAuthorizedQuery).mockReturnValue({
+                data: {
+                    _links: {self: {href: '/api/events'}},
+                    _embedded: {eventSummaryDtoList: rows},
+                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
+                },
+                isLoading: false,
+                error: null,
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            return renderPage(createMockPageData({
+                _links: {self: {href: '/api/events'}},
+            }));
+        };
+
+        it('renders the Synchronizace column header', () => {
+            renderEventsWithSyncControl([buildEnrolledEventRow()]);
+            expect(screen.getByRole('columnheader', {name: 'Synchronizace'})).toBeInTheDocument();
+        });
+
+        it('renders SyncStatusIndicator for an enrolled row (has _links.sync)', () => {
+            renderEventsWithSyncControl([buildEnrolledEventRow()]);
+            // SyncStatusIndicator mounts with sync link; mocked query returns empty data so it falls through to error state.
+            expect(screen.getByTestId('sync-error')).toBeInTheDocument();
+        });
+
+        it('does not render any sync indicator for an unenrolled row (no _links.sync)', () => {
+            renderEventsWithSyncControl([buildUnenrolledEventRow()]);
+            expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
+            expect(screen.queryByTestId(/^sync-status-/)).not.toBeInTheDocument();
+        });
+    });
 });

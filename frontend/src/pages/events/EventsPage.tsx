@@ -25,6 +25,7 @@ import {MemberName} from "../../components/members/MemberName.tsx";
 import {ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from "lucide-react";
 import {EventsFilterBar} from "../../components/events/EventsFilterBar.tsx";
 import {EventTypeBadge} from "../../components/events/EventTypeBadge.tsx";
+import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
 import {useAuth} from "../../contexts/authContext";
 import {useEventTypes} from "../../hooks/useEventTypes.ts";
 import {getTodayIso} from "../../components/events/eventsFilterUtils.ts";
@@ -336,6 +337,13 @@ export const EventsPage = (): ReactElement => {
                                if (!eventType) return null;
                                return <EventTypeBadge eventType={eventType}/>;
                            }}>{labels.tables.eventType}</TableCell>
+                <TableCell column={"_links-sync"}
+                           dataRender={({item}) => {
+                               const links = item._links as Record<string, unknown> | undefined;
+                               const syncLink = links?.sync as HalResourceLinks | undefined;
+                               if (!syncLink) return null;
+                               return <SyncStatusIndicator syncLink={syncLink} mode="icon"/>;
+                           }}>{labels.tables.sync}</TableCell>
                 <TableCell column={"_actions"} dataRender={renderActionsCell}>{labels.tables.actions}</TableCell>
             </HalEmbeddedTable>
         </div>
