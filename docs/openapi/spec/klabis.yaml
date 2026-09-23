@@ -33,6 +33,8 @@ paths:
     $ref: './members.yaml#/paths/~1api~1members'
   /api/members/options:
     $ref: './members.yaml#/paths/~1api~1members~1options'
+  /api/members/oris-import:
+    $ref: './members.yaml#/paths/~1api~1members~1oris-import'
   /api/members/{id}:
     $ref: './members.yaml#/paths/~1api~1members~1{id}'
   /api/members/{id}/suspend:
