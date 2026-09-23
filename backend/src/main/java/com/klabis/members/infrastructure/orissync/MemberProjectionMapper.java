@@ -4,6 +4,7 @@ import com.dpolach.api.orisclient.dto.ClubMember;
 import com.klabis.members.domain.Address;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.Member;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Maps both sides of a {@code Member} synchronisation into the canonical
@@ -69,8 +70,8 @@ final class MemberProjectionMapper {
         return null;
     }
 
-    private static String mapChipNumber(int si) {
-        return si == 0 ? null : String.valueOf(si);
+    private static String mapChipNumber(String si) {
+        return (StringUtils.isBlank(si) || "0".equals(si)) ? null : si;
     }
 
     private static String normalizeNationality(String code) {
