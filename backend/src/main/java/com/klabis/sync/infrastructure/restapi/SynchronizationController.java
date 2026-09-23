@@ -1,8 +1,8 @@
 package com.klabis.sync.infrastructure.restapi;
 
 import com.klabis.common.ui.HalResponseContext;
-import com.klabis.members.ActingUser;
-import com.klabis.members.CurrentUserData;
+import com.klabis.common.users.ActingUser;
+import com.klabis.common.users.UserId;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncProjectionFieldReader;
@@ -48,7 +48,7 @@ public class SynchronizationController implements SyncApi {
 
     @Override
     public ResponseEntity<SyncStateResponse> synchronizeNow(@PathVariable SyncEntityTypeParam entityType, @PathVariable String id,
-                                                              @ActingUser CurrentUserData currentUser) {
+                                                              @ActingUser UserId currentUser) {
         SyncRecord existing = requireRecord(entityType, id);
         SyncRecord record = synchronizationPort.synchronizeNow(existing.getId(), actingUser(currentUser));
 
@@ -58,7 +58,7 @@ public class SynchronizationController implements SyncApi {
 
     @Override
     public ResponseEntity<SyncStateResponse> acknowledgeSyncConflict(@PathVariable SyncEntityTypeParam entityType, @PathVariable String id,
-                                                                       @ActingUser CurrentUserData currentUser) {
+                                                                       @ActingUser UserId currentUser) {
         SyncRecord existing = requireRecord(entityType, id);
         SyncRecord record = synchronizationPort.acknowledgeConflict(existing.getId(), actingUser(currentUser));
 
@@ -69,7 +69,7 @@ public class SynchronizationController implements SyncApi {
     @Override
     public ResponseEntity<SyncStateResponse> resolveSyncConflict(@PathVariable SyncEntityTypeParam entityType, @PathVariable String id,
                                                                    ResolveSyncConflictRequest request,
-                                                                   @ActingUser CurrentUserData currentUser) {
+                                                                   @ActingUser UserId currentUser) {
         SyncRecord existing = requireRecord(entityType, id);
         SyncResolution resolution = SyncResolution.valueOf(request.resolution().getValue());
         SyncRecord record = synchronizationPort.resolveConflict(existing.getId(), resolution, actingUser(currentUser));
@@ -80,7 +80,7 @@ public class SynchronizationController implements SyncApi {
 
     @Override
     public ResponseEntity<SyncStateResponse> resetSyncRecord(@PathVariable SyncEntityTypeParam entityType, @PathVariable String id,
-                                                               @ActingUser CurrentUserData currentUser) {
+                                                               @ActingUser UserId currentUser) {
         SyncRecord existing = requireRecord(entityType, id);
         SyncRecord record = synchronizationPort.reset(existing.getId(), actingUser(currentUser));
 
@@ -95,7 +95,7 @@ public class SynchronizationController implements SyncApi {
                 .orElseThrow(() -> new SyncRecordNotEnrolledException(target));
     }
 
-    private static String actingUser(CurrentUserData currentUser) {
-        return currentUser.userId().uuid().toString();
+    private static String actingUser(UserId currentUser) {
+        return currentUser.uuid().toString();
     }
 }

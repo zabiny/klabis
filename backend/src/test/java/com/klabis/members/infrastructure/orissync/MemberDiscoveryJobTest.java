@@ -3,11 +3,7 @@ package com.klabis.members.infrastructure.orissync;
 import com.dpolach.api.orisclient.dto.ClubMember;
 import com.dpolach.api.orisclient.dto.ClubMemberBuilder;
 import com.klabis.sync.application.SynchronizationPort;
-import com.klabis.sync.domain.ExternalReference;
-import com.klabis.sync.domain.ExternalSystem;
-import com.klabis.sync.domain.SyncEntityType;
-import com.klabis.sync.domain.SyncTarget;
-import com.klabis.sync.domain.SyncedEntityReference;
+import com.klabis.sync.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,10 +18,7 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MemberDiscoveryJob")
@@ -164,7 +157,7 @@ class MemberDiscoveryJobTest {
                 .city("Brno")
                 .zip("60000")
                 .country("CZ")
-                .si(0)
+                .si("0")
                 .build();
     }
 

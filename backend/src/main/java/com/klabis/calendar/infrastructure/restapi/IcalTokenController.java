@@ -4,7 +4,7 @@ import com.klabis.calendar.application.IcalTokenPort;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.users.UserId;
-import com.klabis.members.ActingUser;
+import com.klabis.common.users.ActingUser;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.hateoas.EntityModel;

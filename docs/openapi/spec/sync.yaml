@@ -88,7 +88,7 @@ paths:
         - KlabisAuth: [SYNC]
       x-klabis-authority: SYNC_MANAGE
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUser'
       parameters:
         - $ref: '#/components/parameters/EntityTypeParam'
         - $ref: '#/components/parameters/SyncEntityIdParam'
@@ -121,7 +121,7 @@ paths:
         - KlabisAuth: [SYNC]
       x-klabis-authority: SYNC_MANAGE
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUser'
       parameters:
         - $ref: '#/components/parameters/EntityTypeParam'
         - $ref: '#/components/parameters/SyncEntityIdParam'
@@ -160,7 +160,7 @@ paths:
         - KlabisAuth: [SYNC]
       x-klabis-authority: SYNC_MANAGE
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUser'
       parameters:
         - $ref: '#/components/parameters/EntityTypeParam'
         - $ref: '#/components/parameters/SyncEntityIdParam'
@@ -210,7 +210,7 @@ paths:
         - KlabisAuth: [SYNC]
       x-klabis-authority: SYNC_MANAGE
       x-spring-provide-args:
-        - '@com.klabis.members.ActingUser com.klabis.members.CurrentUserData currentUser'
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUser'
       parameters:
         - $ref: '#/components/parameters/EntityTypeParam'
         - $ref: '#/components/parameters/SyncEntityIdParam'

@@ -20,14 +20,16 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * affordance from a caller lacking SYNC:MANAGE, so this postprocessor only adds the second,
  * state-dependent condition.
  * <p>
- * Reads the key state from {@link HalResponseContext} rather than injecting {@link OrisClubKeyPort}
- * directly, mirroring {@code DisciplineController}'s {@code EnrolledDisciplineIds} (design.md D9
- * there): {@code @MvcComponent} beans are scanned into every {@code @WebMvcTest} slice in the
- * application, so a constructor dependency here would force every unrelated controller test to
- * mock {@link OrisClubKeyPort} too.
+ * Reads the key state from {@link HalResponseContext} rather than injecting
+ * {@link com.klabis.common.settings.OrisClubKeyPort} directly, mirroring {@code DisciplineController}'s
+ * {@code EnrolledDisciplineIds} (design.md D9 there): {@code @MvcComponent} beans are scanned into every
+ * {@code @WebMvcTest} slice in the application, so a constructor dependency here would force every
+ * unrelated controller test to mock the port too.
  * <p>
  * Lives in {@code orissync} rather than alongside {@code MemberListPostprocessor} in
- * {@code restapi} because it is the {@code orissync} package that owns {@link OrisClubKeyPort}.
+ * {@code restapi} because the import affordance is an ORIS-integration concern, not a plain
+ * member-listing one — only the profile already gated on {@code oris} changes the plain list
+ * shape. The port it reads the key state for now lives in {@code common.settings}.
  */
 @MvcComponent
 public class MemberOrisImportAffordancePostprocessor implements RepresentationModelProcessor<PagedModel<EntityModel<MemberSummaryResponse>>> {

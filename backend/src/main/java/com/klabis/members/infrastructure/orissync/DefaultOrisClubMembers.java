@@ -3,13 +3,14 @@ package com.klabis.members.infrastructure.orissync;
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.dto.ClubMember;
 import com.klabis.common.OrisIntegrationComponent;
+import com.klabis.common.settings.OrisClubKeyAccessor;
 import org.jmolecules.architecture.hexagonal.Application;
 
 import java.util.Map;
 
 /**
  * The only implementation of {@link OrisClubMembers} (design.md D9): reads the key
- * from {@link InMemoryOrisClubKeyAdapter} itself — never taking it as a parameter —
+ * from the shared {@link OrisClubKeyAccessor} itself — never taking it as a parameter —
  * so a caller has no way to obtain it and no way to leak it.
  */
 @OrisIntegrationComponent

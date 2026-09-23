@@ -1,4 +1,4 @@
-package com.klabis.oris;
+package com.klabis.oris.infrastructure.restapi;
 
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.dto.EventSummary;
@@ -8,7 +8,7 @@ import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
-import com.klabis.events.application.ImportedOrisEventsPort;
+import com.klabis.oris.application.ImportedOrisEventsPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

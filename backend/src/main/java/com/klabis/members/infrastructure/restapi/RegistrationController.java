@@ -1,7 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.users.UserId;
-import com.klabis.members.ActingUser;
+import com.klabis.common.users.ActingUser;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Member;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;

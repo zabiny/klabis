@@ -4,7 +4,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.members.ActingMember;
-import com.klabis.members.ActingUser;
+import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.AfterEach;

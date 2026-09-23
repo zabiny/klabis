@@ -3,7 +3,7 @@ package com.klabis.common.ui;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.users.Authority;
-import com.klabis.members.infrastructure.orissync.OrisClubKeyPort;
+import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.members.infrastructure.orissync.OrisClubKeyRootLinkProcessor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

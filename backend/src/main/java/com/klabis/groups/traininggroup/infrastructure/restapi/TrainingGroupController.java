@@ -26,7 +26,7 @@ import com.klabis.groups.infrastructure.restapi.TrainingGroupsApi;
 import com.klabis.groups.infrastructure.restapi.TrainingGroupSummaryResponse;
 import com.klabis.groups.infrastructure.restapi.TrainingGroupSummaryResponseBuilder;
 import com.klabis.groups.infrastructure.restapi.UpdateTrainingGroupRequest;
-import com.klabis.members.ActingUser;
+import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;

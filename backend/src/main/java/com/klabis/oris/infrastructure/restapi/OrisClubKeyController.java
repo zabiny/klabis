@@ -1,5 +1,6 @@
-package com.klabis.members.infrastructure.orissync;
+package com.klabis.oris.infrastructure.restapi;
 
+import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.oris.ClubKeyStateResponse;
 import com.klabis.oris.ClubKeyStateResponseBuilder;

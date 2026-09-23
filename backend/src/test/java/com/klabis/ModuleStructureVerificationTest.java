@@ -79,8 +79,10 @@ class ModuleStructureVerificationTest {
      * {@code com.klabis.oris} is declared as an {@code @ApplicationModule} (not
      * {@code OPEN}). It previously had four inbound imports from {@code events.domain}
      * plus an {@code events → oris} edge (via {@code @OrisIntegrationComponent}, then
-     * defined in {@code com.klabis.oris}); both are now gone — {@code oris}'s only
-     * outbound edge into {@code events} is {@code events.application.ImportedOrisEventsPort},
+     * defined in {@code com.klabis.oris}); both are now gone — {@code oris} has no outbound
+     * edge into {@code events} at all. The contract it needs is
+     * {@code oris.application.ImportedOrisEventsPort}, owned by {@code oris} and implemented
+     * by {@code events}, so the dependency runs {@code events → oris}, not the reverse,
      * and this test enforces that boundary rather than assuming it. The ORIS
      * synchronisation adapter that used to justify the edge now lives inside
      * {@code events.infrastructure.orissync} as a module-internal collaborator of

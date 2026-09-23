@@ -21,7 +21,7 @@ import com.klabis.groups.infrastructure.restapi.FamilyGroupSummaryResponse;
 import com.klabis.groups.infrastructure.restapi.FamilyGroupSummaryResponseBuilder;
 import com.klabis.groups.infrastructure.restapi.ParentResponse;
 import com.klabis.groups.infrastructure.restapi.ParentResponseBuilder;
-import com.klabis.members.ActingUser;
+import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;

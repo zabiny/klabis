@@ -2,6 +2,7 @@ package com.klabis.members.infrastructure.orissync;
 
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.dto.ClubMember;
+import com.klabis.common.settings.OrisClubKeyAccessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,13 +26,12 @@ class DefaultOrisClubMembersTest {
     @Mock
     private OrisApiClient orisApiClient;
 
-    private InMemoryOrisClubKeyAdapter clubKeyPort;
+    private final StubClubKeyAccessor clubKeyPort = new StubClubKeyAccessor();
 
     private OrisClubMembers orisClubMembers;
 
     @BeforeEach
     void setUp() {
-        clubKeyPort = new InMemoryOrisClubKeyAdapter();
         orisClubMembers = new DefaultOrisClubMembers(orisApiClient, clubKeyPort);
     }
 
@@ -57,5 +57,28 @@ class DefaultOrisClubMembersTest {
 
         assertThat(result).isEqualTo(members);
         verify(orisApiClient).getClubUserList("secret-club-key");
+    }
+
+    /**
+     * Minimal in-memory accessor for this test: the shared adapter is package-private to
+     * {@code common.settings}, and only its read side matters here.
+     */
+    private static final class StubClubKeyAccessor implements OrisClubKeyAccessor {
+
+        private String key;
+
+        @Override
+        public boolean isSet() {
+            return key != null;
+        }
+
+        @Override
+        public String currentKey() {
+            return key;
+        }
+
+        void store(String key) {
+            this.key = key;
+        }
     }
 }
