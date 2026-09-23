@@ -86,7 +86,7 @@ export const SyncStatusOverlay = ({isOpen, onClose}: SyncStatusOverlayProps): Re
                                 <>
                                     <dt className="text-text-secondary">{labels.sync.direction}</dt>
                                     <dd data-testid="sync-overlay-direction" className="text-text-primary">
-                                        {DIRECTION_LABEL[syncState.lastDirection]}
+                                        {DIRECTION_LABEL[syncState.lastDirection] ?? syncState.lastDirection}
                                     </dd>
                                 </>
                             )}
@@ -128,7 +128,7 @@ export const SyncStatusOverlay = ({isOpen, onClose}: SyncStatusOverlayProps): Re
                                         <td className="border-b border-border py-1 pr-3">{getFieldValue(syncState.local, field)}</td>
                                         <td className="border-b border-border py-1 pr-3">{getFieldValue(syncState.external, field)}</td>
                                         <td className="border-b border-border py-1 pr-3">{getFieldValue(syncState.baseline, field)}</td>
-                                        <td className="border-b border-border py-1">{SIDE_LABEL[syncState.changedSides?.[field] ?? 'BOTH']}</td>
+                                        <td className="border-b border-border py-1">{SIDE_LABEL[syncState.changedSides?.[field] ?? 'BOTH'] ?? syncState.changedSides?.[field] ?? 'BOTH'}</td>
                                     </tr>
                                 ))}
                             </tbody>

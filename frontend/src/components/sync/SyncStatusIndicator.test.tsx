@@ -99,12 +99,12 @@ const STATUS_TABLE: Array<{
     variant: 'info' | 'success' | 'warning' | 'error' | 'default';
     label: string;
 }> = [
-    {status: 'NEW', variant: 'info', label: 'CircleDot'},
-    {status: 'IN_SYNC', variant: 'success', label: 'Check'},
-    {status: 'RETRYING', variant: 'warning', label: 'RotateCw'},
-    {status: 'CONFLICT', variant: 'error', label: 'AlertTriangle'},
-    {status: 'FAILED', variant: 'error', label: 'XCircle'},
-    {status: 'RETIRED', variant: 'default', label: 'Archive'},
+    {status: 'NEW', variant: 'info', label: 'Nový'},
+    {status: 'IN_SYNC', variant: 'success', label: 'V synchronizaci'},
+    {status: 'RETRYING', variant: 'warning', label: 'Opakovaný pokus'},
+    {status: 'CONFLICT', variant: 'error', label: 'Konflikt'},
+    {status: 'FAILED', variant: 'error', label: 'Selhalo'},
+    {status: 'RETIRED', variant: 'default', label: 'Ukončeno'},
 ];
 
 const variantClass: Record<'info' | 'success' | 'warning' | 'error' | 'default', string> = {
@@ -136,7 +136,7 @@ describe('SyncStatusIndicator', () => {
 
     describe('status → Badge variant and icon mapping (design.md D4)', () => {
         for (const {status, variant, label} of STATUS_TABLE) {
-            it(`renders ${variant} Badge with ${label} icon for status ${status}`, async () => {
+            it(`renders ${variant} Badge with ${label} aria-label for status ${status}`, async () => {
                 renderIndicator({
                     syncLink: buildSyncLink(),
                     mode: 'icon',
@@ -149,7 +149,7 @@ describe('SyncStatusIndicator', () => {
 
                 const badge = await screen.findByTestId(`sync-status-${status}`);
                 expect(badge).toHaveClass(variantClass[variant]);
-                expect(badge).toHaveAttribute('aria-label', expect.stringMatching(new RegExp(`^${label}`)));
+                expect(badge).toHaveAttribute('aria-label', label);
             });
         }
 

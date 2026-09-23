@@ -4,7 +4,7 @@ import {Badge, Spinner, Tooltip} from '../UI';
 import {HalRouteProvider} from '../../contexts/HalRouteContext';
 import {useHalRoute} from '../../contexts/halRouteContext';
 import {formatDate} from '../../utils/dateUtils';
-import {labels} from '../../localization';
+import {getEnumLabel, labels} from '../../localization';
 import {SyncStatusOverlay} from './SyncStatusOverlay';
 import {SYNC_STATUS_MAP} from './syncStatusMap';
 import type {GetSyncStateResource, HalResourceLinks} from '../../api';
@@ -53,7 +53,7 @@ const SyncStatusIndicatorContent = ({mode}: {mode: 'icon' | 'icon+date'}): React
         );
     }
 
-    const {variant, Icon, iconName} = SYNC_STATUS_MAP[syncState.status];
+    const {variant, Icon} = SYNC_STATUS_MAP[syncState.status];
     const lastDate = syncState.lastSuccessfulSyncAt;
     const dateText = lastDate ? formatDate(lastDate) : labels.sync.neverSynced;
     const showDateInline = mode === 'icon+date';
@@ -66,13 +66,17 @@ const SyncStatusIndicatorContent = ({mode}: {mode: 'icon' | 'icon+date'}): React
             size="sm"
             className={showDateInline ? 'inline-flex items-center gap-1.5' : 'inline-flex items-center justify-center'}
             data-testid={`sync-status-${syncState.status}`}
-            aria-label={`${iconName} ${syncState.status}`}
+            aria-label={getEnumLabel('syncStatus', syncState.status)}
             role={hasTemplates ? 'button' : undefined}
             tabIndex={hasTemplates ? 0 : undefined}
-            onClick={hasTemplates ? () => setIsOpen(true) : undefined}
+            onClick={hasTemplates ? (e) => {
+                e.stopPropagation();
+                setIsOpen(true);
+            } : undefined}
             onKeyDown={hasTemplates ? (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
+                    e.stopPropagation();
                     setIsOpen(true);
                 }
             } : undefined}

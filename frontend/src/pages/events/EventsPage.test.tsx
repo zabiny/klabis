@@ -893,5 +893,56 @@ describe('EventsPage', () => {
             expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
             expect(screen.queryByTestId(/^sync-status-/)).not.toBeInTheDocument();
         });
+
+        it('does not propagate badge click to row navigation when badge has templates', async () => {
+            const user = userEvent.setup();
+            const navigateToResource = vi.fn();
+            const syncTemplate = mockHalFormsTemplate({
+                method: 'POST',
+                target: '/api/events/evt-sync/sync/synchronize',
+                title: 'Synchronize',
+                properties: [],
+            });
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: unknown) => {
+                if (typeof url === 'string' && url.includes('/sync')) {
+                    return {
+                        data: {
+                            entityType: 'events',
+                            status: 'IN_SYNC',
+                            externalSystem: 'ORIS',
+                            _links: {self: {href: '/api/events/evt-sync/sync'}},
+                            _templates: {synchronizeNow: syncTemplate},
+                        },
+                        isLoading: false,
+                        error: null,
+                    } as unknown as ReturnType<typeof useAuthorizedQuery>;
+                }
+                return {
+                    data: {
+                        _links: {self: {href: '/api/events'}},
+                        _embedded: {eventSummaryDtoList: [buildEnrolledEventRow()]},
+                        page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
+                    },
+                    isLoading: false,
+                    error: null,
+                } as unknown as ReturnType<typeof useAuthorizedQuery>;
+            });
+            renderPage(createMockPageData(
+                {_links: {self: {href: '/api/events'}}},
+                {route: {
+                    pathname: '/events',
+                    navigateToResource,
+                    refetch: async () => {},
+                    queryState: 'success' as const,
+                    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/events'}),
+                }},
+            ));
+
+            const badge = await screen.findByTestId('sync-status-IN_SYNC');
+            await user.click(badge);
+
+            expect(navigateToResource).not.toHaveBeenCalled();
+            expect(await screen.findByTestId('sync-overlay-modal')).toBeInTheDocument();
+        });
     });
 });

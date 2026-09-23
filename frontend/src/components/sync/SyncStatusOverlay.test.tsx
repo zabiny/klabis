@@ -287,6 +287,27 @@ describe('SyncStatusOverlay', () => {
             // click affordance absent ⇒ overlay never opens; sanity-assert no overlay rendered
             expect(screen.queryByTestId('sync-overlay-modal')).not.toBeInTheDocument();
         });
+
+        it('falls back to raw enum value for unknown lastDirection', async () => {
+            const user = userEvent.setup();
+            const unknownDirection = 'NEW_UNKNOWN_DIRECTION' as unknown as 'INWARD';
+            renderIndicator({
+                syncLink: buildSyncLink(),
+                mode: 'icon',
+                queryState: {
+                    isLoading: false,
+                    error: null,
+                    data: buildSyncState({
+                        status: 'RETRYING',
+                        lastDirection: unknownDirection,
+                        _templates: {synchronizeNow: buildTemplate('Synchronize')},
+                    }),
+                },
+            });
+
+            const overlay = await openOverlay(user, 'RETRYING');
+            expect(within(overlay).getByTestId('sync-overlay-direction')).toHaveTextContent('NEW_UNKNOWN_DIRECTION');
+        });
     });
 
     describe('CONFLICT diverged-fields table', () => {
@@ -338,6 +359,32 @@ describe('SyncStatusOverlay', () => {
 
             const overlay = await openOverlay(user);
             expect(within(overlay).queryByTestId('sync-overlay-divergence')).not.toBeInTheDocument();
+        });
+
+        it('falls back to raw enum value for unknown changedSides', async () => {
+            const user = userEvent.setup();
+            const unknownSides = {name: 'NEW_UNKNOWN_SIDE'} as unknown as {name: 'LOCAL'};
+            renderIndicator({
+                syncLink: buildSyncLink(),
+                mode: 'icon',
+                queryState: {
+                    isLoading: false,
+                    error: null,
+                    data: buildSyncState({
+                        status: 'CONFLICT',
+                        divergedFields: ['name'],
+                        changedSides: unknownSides,
+                        local: {name: 'Local name'},
+                        external: {name: 'Ext name'},
+                        baseline: {name: 'Base name'},
+                        _templates: {acknowledgeSyncConflict: buildTemplate('Ack')},
+                    }),
+                },
+            });
+
+            const overlay = await openOverlay(user, 'CONFLICT');
+            const divergence = within(overlay).getByTestId('sync-overlay-divergence');
+            expect(within(divergence).getByText('NEW_UNKNOWN_SIDE')).toBeInTheDocument();
         });
     });
 
