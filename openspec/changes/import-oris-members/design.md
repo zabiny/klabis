@@ -30,13 +30,16 @@ flowchart TB
         ADP["MemberSyncAdapter *"]
         JOB["MemberDiscoveryJob *"]
         PROJ["MemberProjection *"]
-        KEY["OrisClubKeyPort *<br/>in-memory adapter"]
         FACADE["OrisClubMembers *<br/>listClubMembers"]
-        FACADE --> KEY
         JOB --> FACADE
         ADP --> FACADE
         ADP --> PROJ
     end
+
+    subgraph settings["common.settings *"]
+        KEY["OrisClubKeyPort *<br/>in-memory adapter"]
+    end
+    FACADE --> KEY
 
     subgraph sync["sync engine"]
         ENGINE["SynchronizationService"]
@@ -289,9 +292,9 @@ Consequence in production: a member who exists in Klabis and also in ORIS will f
 
 Two pieces:
 
-**Storage.** A `OrisClubKeyPort` in the members module's domain with `store(String)`, `isSet()`, `clear()` — and deliberately **no getter for callers**. An in-memory adapter holds it in a field. The value is never returned to any caller outside the facade below, so no REST path can disclose it, by construction rather than by remembering to mask it.
+**Storage.** A `OrisClubKeyPort` in `com.klabis.common.settings` with `store(String)`, `isSet()`, `clear()` — and deliberately **no getter for callers**. It lives in `common.settings` rather than the members module because the concept (a cluster-wide secret held only in memory) is not specific to ORIS and other modules can hold their own secrets behind the same contract. An in-memory adapter holds it in a field. The value is never returned through the port, so no REST path can disclose it, by construction rather than by remembering to mask it.
 
-**Access.** A narrow `OrisClubMembers` interface with `listClubMembers()` — no key parameter. The implementation reads the key itself and throws `ClubKeyNotSetException` when none is held. Callers never see the key, so they cannot leak it or be tempted to log it.
+**Access.** A narrow `OrisClubMembers` interface with `listClubMembers()` — no key parameter. The implementation injects the separate `OrisClubKeyAccessor` (the read side, kept out of `OrisClubKeyPort`) and throws `ClubKeyNotSetException` when none is held. Callers of the port never see the key, so they cannot leak it or be tempted to log it; only a component that attaches the key to an outgoing request injects the accessor explicitly.
 
 This wraps only key-bearing operations, not all eleven `OrisApiClient` methods. Wrapping the whole client would mean delegating ten methods unchanged forever and re-delegating each new one. The interface is shaped to gain further key-bearing operations (entry submission is the expected next one) without becoming a general-purpose client proxy.
 
@@ -363,7 +366,7 @@ The engine's REST layer returns **decrypted** projections, restricted by the exi
 
 ### D14: The collision with sample data is prevented on the sample-data side, not the ORIS side
 
-Sample members (`ZBM9000`, `ZBM9500`) and ORIS-sourced members must not both populate the same database, or the import trips over registration numbers it did not create. Rather than gating every ORIS entry point on the absence of `example-data`, the **sample data stands down when ORIS is active**: the four `@Profile("example-data")` bootstrap initialisers (`MembersDataBootstrap`, `TrainingGroupDataBootstrap`, `EventsDataBootstrap`, `MembershipFeeTiersDataBootstrap`) become `@Profile({"example-data", "!oris"})`.
+Sample members (`ZBM9000`, `ZBM9500`) and ORIS-sourced members must not both populate the same database, or the import trips over registration numbers it did not create. Rather than gating every ORIS entry point on the absence of `example-data`, the **sample data stands down when ORIS is active**: the four `@Profile("example-data")` bootstrap initialisers (`MembersDataBootstrap`, `TrainingGroupDataBootstrap`, `EventsDataBootstrap`, `MembershipFeeTiersDataBootstrap`) become `@Profile("example-data & !oris")` — the expression form, not the array form; Spring's array-form `@Profile` is OR semantics and would not stand down when both profiles are active.
 
 This puts the condition in one place instead of three. Gating the ORIS side would mean remembering it on the discovery job, on the manual trigger, and on every future entry point — and forgetting it on one of them is a silent collision. Sample data has exactly one way in, so that is where the gate belongs. The `oris` profile then remains the **only** gate on anything ORIS-related, as it already is for the rest of the integration (`@OrisIntegrationComponent`).
 

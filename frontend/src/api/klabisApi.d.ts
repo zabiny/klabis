@@ -1234,6 +1234,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/members/oris-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run the ORIS member import once, by hand
+         * @description Runs the same discovery work as the scheduled ORIS member discovery job immediately,
+         *     rather than waiting for its next run (design.md D11). Offered as an affordance on
+         *     listMembers only while a club key is held — without one the action could not do
+         *     anything. Running it repeatedly brings nobody in twice: an already-paired member is
+         *     skipped exactly as the scheduled job skips it.
+         *
+         */
+        post: operations["importFromOris"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/members/{id}": {
         parameters: {
             query?: never;
@@ -2145,6 +2170,10 @@ export interface components {
         ChooseFeeChoiceRequest: {
             /** Format: uuid */
             membershipFeeGroupId: string;
+        };
+        /** @description Whether the ORIS club key is currently held. Never carries the key itself. */
+        ClubKeyStateResponse: {
+            isSet: boolean;
         };
         /** @description Base of the HAL-FORMS wrapper for an unpaged collection. The deriver adds the `_embedded`
          *     block naming the item relation: `allOf: [CollectionModel, {_embedded: …}]`.
@@ -3153,6 +3182,10 @@ export interface components {
              */
             occurredAt?: string;
         };
+        /** @description Supplies the ORIS club key. A blank value is refused. */
+        SetClubKeyRequest: {
+            clubKey: string;
+        };
         SetPasswordRequest: {
             /** @description Minimum 12 characters with uppercase, lowercase, number, and special character. */
             password: string;
@@ -3188,7 +3221,7 @@ export interface components {
             groups?: components["schemas"]["LastOwnerWarning"];
         };
         /** @enum {string} */
-        SyncEntityTypeParam: "events" | "disciplines";
+        SyncEntityTypeParam: "events" | "disciplines" | "members";
         /** @description The synchronisation state of one linked entity against one external system.
          *     Fields carrying x-klabis-authority are omitted for callers without SYNC:MANAGE;
          *     entityType, status, externalSystem and lastSuccessfulSyncAt are always visible
@@ -4033,6 +4066,191 @@ export interface operations {
                 content: {
                     "application/hal+json": components["schemas"]["EntityModelDashboardModel"];
                     "application/prs.hal-forms+json": components["schemas"]["EntityModelDashboardModel"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    listDisciplines: {
+        parameters: {
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: components["parameters"]["PageParam"];
+                /** @description The size of the page to be returned */
+                size?: components["parameters"]["SizeParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated list of disciplines */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineDto"][];
+                    "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelDisciplineDto"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    createDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDisciplineRequest"];
+            };
+        };
+        responses: {
+            /** @description Discipline created */
+            201: {
+                headers: {
+                    /** @description URI of the created discipline */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": unknown;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    getDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Discipline UUID */
+                id: components["parameters"]["DisciplineIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discipline found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineDto"];
+                    "application/prs.hal-forms+json": components["schemas"]["EntityModelDisciplineDto"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    updateDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Discipline UUID */
+                id: components["parameters"]["DisciplineIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDisciplineRequest"];
+            };
+        };
+        responses: {
+            /** @description Discipline updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": unknown;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    archiveDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Discipline UUID */
+                id: components["parameters"]["DisciplineIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discipline archived */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": unknown;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    restoreDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Discipline UUID */
+                id: components["parameters"]["DisciplineIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discipline restored */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": unknown;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -5978,6 +6196,28 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    importFromOris: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Import pass completed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/prs.hal-forms+json": unknown;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     getMember: {

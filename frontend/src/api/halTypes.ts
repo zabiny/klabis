@@ -452,6 +452,11 @@ export interface GetMemberHal {
     'permissions'?: HalResourceLinks;
     /** This member */
     'self'?: HalResourceLinks;
+    /** Present when the member was brought in from ORIS and the caller has SYNC:MANAGE
+(design.md D12) — the same authority getSyncState itself requires. Absent for a
+member never paired with ORIS.
+ */
+    'sync'?: HalResourceLinks;
     /** Training group the member belongs to, when there is one */
     'trainingGroup'?: HalResourceLinks;
   };
@@ -468,7 +473,7 @@ export type GetMemberResource =
   components['schemas']['EntityModelMemberDetailsResponse'] & GetMemberHal;
 
 export const GetMemberRels = {
-  links: ['account', 'collection', 'familyGroup', 'feeSummary', 'ical-token', 'permissions', 'self', 'trainingGroup'] as const,
+  links: ['account', 'collection', 'familyGroup', 'feeSummary', 'ical-token', 'permissions', 'self', 'sync', 'trainingGroup'] as const,
   templates: ['resume', 'suspend', 'updateMember'] as const,
 } as const;
 
@@ -1058,17 +1063,14 @@ export interface ListMembersHal {
     'self'?: HalResourceLinks;
   };
   _templates?: {
+    /** Present only for callers with SYNC:MANAGE and only while a club key is held —
+without one the action could not do anything (design.md D11).
+ */
+    'importFromOris'?: HalFormsTemplate;
     /** Present only for callers with MEMBERS:MANAGE */
     'registerMember'?: HalFormsTemplate;
     /** Edit template used by the table's inline row editor */
     'updateMember'?: HalFormsTemplate;
-    /**
-     * Manual ORIS import trigger. Attached at runtime by
-     * MemberOrisImportAffordancePostprocessor — only when caller holds
-     * SYNC:MANAGE AND a club key is currently held. Not declared in
-     * OpenAPI x-hal-templates.
-     */
-    'importFromOris'?: HalFormsTemplate;
   };
 }
 
@@ -1077,7 +1079,7 @@ export type ListMembersResource =
 
 export const ListMembersRels = {
   links: ['first', 'last', 'next', 'prev', 'self'] as const,
-  templates: ['registerMember', 'updateMember', 'importFromOris'] as const,
+  templates: ['importFromOris', 'registerMember', 'updateMember'] as const,
 } as const;
 
 export type ListMembersLinkRel = typeof ListMembersRels.links[number];
