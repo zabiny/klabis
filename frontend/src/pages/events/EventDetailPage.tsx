@@ -20,6 +20,7 @@ import {getActionVariant} from '../../utils/actionVariants.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
+import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
 import {AlertTriangle, Banknote, Check, ExternalLink, Globe, List, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
@@ -210,6 +211,9 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                             <Badge variant={statusVariant} size="sm">
                                 {event.status ? getEnumLabel('eventStatus', event.status) : event.status}
                             </Badge>
+                        )}
+                        {!isEditing && (
+                            <SyncStatusIndicator syncLink={resourceData._links?.sync} mode="icon+date"/>
                         )}
                         {!isEditing && event.eventTypeId && (() => {
                             const eventType = getEventTypeById(event.eventTypeId);

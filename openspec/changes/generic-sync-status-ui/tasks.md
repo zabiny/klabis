@@ -6,8 +6,8 @@
 
 ## 2. Wire the icon+date mode into the detail page
 
-- [ ] 2.1 Add `<SyncStatusIndicator syncLink={resourceData._links?.sync} mode="icon+date" />` to `EventDetailPage` next to the existing status badges
-- [ ] 2.2 Add/adjust `EventDetailPage.test.tsx` coverage for the new indicator's presence (mocked sync sub-resource), without requiring a live backend
+- [x] 2.1 Add `<SyncStatusIndicator syncLink={resourceData._links?.sync} mode="icon+date" />` to `EventDetailPage` next to the existing status badges
+- [x] 2.2 Add/adjust `EventDetailPage.test.tsx` coverage for the new indicator's presence (mocked sync sub-resource), without requiring a live backend
 
 ## 3. Wire the icon mode into the list rows
 
