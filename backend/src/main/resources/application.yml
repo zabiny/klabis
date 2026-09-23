@@ -240,7 +240,7 @@ info:
 logging:
   level:
     com.klabis: INFO
-    org.springframework.web: INFO
+    org.springframework.web: WARN
     org.springframework.modulith.events: ${KLABIS_EVENT_LOGGING_LEVEL:INFO}
 
 
