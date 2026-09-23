@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen, within} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -22,6 +22,11 @@ vi.mock('../../api/klabisUserManager', () => ({
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn(),
+    useAuthorizedMutation: vi.fn().mockReturnValue({
+        mutate: vi.fn(),
+        isPending: false,
+        error: null,
+    }),
 }));
 
 vi.mock('../../hooks/useRootNavigation', () => ({
@@ -502,6 +507,63 @@ describe('SyncStatusOverlay', () => {
             const backdrop = screen.getByTestId('modal-backdrop');
             await user.click(backdrop);
             expect(screen.queryByTestId('sync-overlay-modal')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('HalFormButton integration via HalFormsPageLayout (I9 regression)', () => {
+        it('opens the inner HalFormDisplay modal when synchronizeNow button is clicked', async () => {
+            const user = userEvent.setup();
+            renderIndicator({
+                syncLink: buildSyncLink(),
+                mode: 'icon',
+                queryState: {
+                    isLoading: false,
+                    error: null,
+                    data: buildSyncState({
+                        status: 'IN_SYNC',
+                        _templates: {synchronizeNow: buildTemplate('Synchronize')},
+                    }),
+                },
+            });
+
+            const overlay = await openOverlay(user);
+            const button = within(overlay).getByTestId('form-template-button-synchronizeNow');
+            await user.click(button);
+
+            // Inner modal rendered by HalFormsPageLayout using the captured sync resource context.
+            await waitFor(() => {
+                const titles = screen.getAllByTestId('modal-title');
+                expect(titles.map(t => t.textContent)).toContain('Synchronizovat');
+            });
+        });
+
+        it('resolves the template name from the sync resource, not from the page-level resource', async () => {
+            const user = userEvent.setup();
+            // Page-level resource has no templates; sync sub-resource has synchronizeNow.
+            const syncTemplate = buildTemplate('Synchronize');
+            renderIndicator({
+                syncLink: buildSyncLink(),
+                mode: 'icon',
+                queryState: {
+                    isLoading: false,
+                    error: null,
+                    data: buildSyncState({
+                        status: 'IN_SYNC',
+                        _templates: {synchronizeNow: syncTemplate},
+                    }),
+                },
+            });
+
+            const overlay = await openOverlay(user);
+            const button = within(overlay).getByTestId('form-template-button-synchronizeNow');
+            expect(button).toBeInTheDocument();
+
+            // Click opens the inner form modal — proves HalFormsPageLayout found the template via override.
+            await user.click(button);
+            await waitFor(() => {
+                const titles = screen.getAllByTestId('modal-title');
+                expect(titles.some(t => /Synchronizovat/.test(t.textContent ?? ''))).toBe(true);
+            });
         });
     });
 });

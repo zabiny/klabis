@@ -127,8 +127,9 @@ export const EventsPage = (): ReactElement => {
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const event = item as unknown as EventListData;
         const templates = event._templates;
-        const links = event._links as Record<string, {href: string}> | undefined;
-        const newRegLink = links?.['newRegistration'];
+        const links = event._links as Record<string, HalResourceLinks> | undefined;
+        const newRegLink = links?.['newRegistration'] ? asLinkArray(links['newRegistration'])[0] : undefined;
+        const syncLink = links?.sync ? asLinkArray(links.sync)[0] : undefined;
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -152,6 +153,7 @@ export const EventsPage = (): ReactElement => {
                         <Icon className="w-4 h-4"/>
                     </Button>
                 ))}
+                {syncLink && <SyncStatusIndicator syncLink={syncLink} mode="icon"/>}
             </div>
         );
     };
@@ -336,13 +338,6 @@ export const EventsPage = (): ReactElement => {
                                if (!eventType) return null;
                                return <EventTypeBadge eventType={eventType}/>;
                            }}>{labels.tables.eventType}</TableCell>
-                <TableCell column={"_links-sync"}
-                           dataRender={({item}) => {
-                               const links = item._links as Record<string, unknown> | undefined;
-                               const syncLink = links?.sync as HalResourceLinks | undefined;
-                               if (!syncLink) return null;
-                               return <SyncStatusIndicator syncLink={syncLink} mode="icon"/>;
-                           }}>{labels.tables.sync}</TableCell>
                 <TableCell column={"_actions"} dataRender={renderActionsCell}>{labels.tables.actions}</TableCell>
             </HalEmbeddedTable>
         </div>

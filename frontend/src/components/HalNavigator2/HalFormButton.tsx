@@ -11,11 +11,12 @@
 
 import {type ReactElement, type ReactNode} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {useHalForm} from '../../contexts/halFormContext.ts';
+import {type HalFormResourceContext, useHalForm} from '../../contexts/halFormContext.ts';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
 import type {HalFormFieldFactory} from './halforms';
 import type {HalFormPanelChildren} from './HalFormPanel';
 import {getDialogTitleLabel, getTemplateLabel} from '../../localization';
+import type {HalFormsTemplate} from '../../api';
 
 /**
  * Props for HalFormButton component
@@ -75,6 +76,11 @@ export interface HalFormButtonProps {
  * If it exists, renders a button. When clicked, requests form display via HalFormContext.
  * HalFormsPageLayout handles rendering (modal overlay or inline via HalFormPanel).
  *
+ * The button snapshots the current resource context (templates/pathname/self-link) into the
+ * form request so HalFormsPageLayout can resolve the template and render the form even when
+ * it sits outside the nested provider where the button was rendered (e.g. inside a sync
+ * sub-resource fetched via HalSubresourceProvider).
+ *
  * Note: Forms always display on the current resource page (which contains the _templates).
  * The template's target URL is only used as the submission endpoint.
  *
@@ -94,7 +100,7 @@ export interface HalFormButtonProps {
  * </HalFormButton>
  */
 export function HalFormButton({name, modal = true, label, children, fieldsFactory, className, variant, icon, dialogTitle, navigateOnSuccess, hideLabel}: HalFormButtonProps): ReactElement | null {
-    const {resourceData} = useHalPageData();
+    const {resourceData, route} = useHalPageData();
     const {displayHalForm} = useHalForm();
 
     // Check if template exists
@@ -102,11 +108,23 @@ export function HalFormButton({name, modal = true, label, children, fieldsFactor
         return null;
     }
 
-    const template = resourceData._templates[name];
+    const template: HalFormsTemplate = resourceData._templates[name];
 
     const resolvedDialogTitle = dialogTitle ?? getDialogTitleLabel(name) ?? getTemplateLabel(name) ?? template.title;
 
     const handleButtonClick = () => {
+        const resourceContext: HalFormResourceContext = {
+            templates: resourceData._templates as Record<string, HalFormsTemplate>,
+            resourceData: resourceData as Record<string, unknown>,
+            pathname: route.pathname,
+        };
+        const selfLink = resourceData._links?.self;
+        if (selfLink && !Array.isArray(selfLink) && typeof selfLink.href === 'string') {
+            resourceContext.resourceUrl = selfLink.href;
+        } else if (selfLink && Array.isArray(selfLink) && selfLink.length > 0) {
+            resourceContext.resourceUrl = selfLink[0].href;
+        }
+
         displayHalForm({
             templateName: name,
             modal: modal,
@@ -114,6 +132,7 @@ export function HalFormButton({name, modal = true, label, children, fieldsFactor
             fieldsFactory,
             dialogTitle: resolvedDialogTitle,
             navigateOnSuccess,
+            resourceContext,
         });
     };
 

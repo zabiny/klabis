@@ -841,7 +841,7 @@ describe('EventsPage', () => {
         });
     });
 
-    describe('sync column (I3 task 3.2)', () => {
+    describe('sync indicator in actions cell (I9)', () => {
         const buildEnrolledEventRow = () => ({
             id: 'evt-sync',
             name: 'Synced event',
@@ -876,22 +876,47 @@ describe('EventsPage', () => {
             }));
         };
 
-        it('renders the Synchronizace column header', () => {
+        it('does not render a separate Synchronizace column header', () => {
             renderEventsWithSyncControl([buildEnrolledEventRow()]);
-            expect(screen.getByRole('columnheader', {name: 'Synchronizace'})).toBeInTheDocument();
+            expect(screen.queryByRole('columnheader', {name: 'Synchronizace'})).not.toBeInTheDocument();
         });
 
-        it('renders SyncStatusIndicator for an enrolled row (has _links.sync)', () => {
+        it('renders SyncStatusIndicator in the actions cell for an enrolled row (has _links.sync)', () => {
             renderEventsWithSyncControl([buildEnrolledEventRow()]);
             // SyncStatusIndicator mounts with sync link; mocked query returns empty data so it falls through to error state.
             expect(screen.getByTestId('sync-error')).toBeInTheDocument();
         });
 
-        it('does not render any sync indicator for an unenrolled row (no _links.sync)', () => {
+        it('does not render any sync indicator in the actions cell for an unenrolled row (no _links.sync)', () => {
             renderEventsWithSyncControl([buildUnenrolledEventRow()]);
             expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
             expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
             expect(screen.queryByTestId(/^sync-status-/)).not.toBeInTheDocument();
+        });
+
+        it('renders the sync indicator after the action buttons in the actions cell', () => {
+            const buildEnrolledRowWithActionTemplate = () => ({
+                id: 'evt-sync-action',
+                name: 'Actionable synced event',
+                eventDate: '2026-04-15',
+                status: 'ACTIVE',
+                _links: {
+                    self: {href: '/api/events/evt-sync-action'},
+                    sync: {href: '/api/events/evt-sync-action/sync'},
+                },
+                _templates: {
+                    cancelEvent: mockHalFormsTemplate({
+                        method: 'POST',
+                        target: '/api/events/evt-sync-action/cancel',
+                        title: 'Zrušit akci',
+                    }),
+                },
+            });
+            renderEventsWithSyncControl([buildEnrolledRowWithActionTemplate()]);
+
+            const cancelButton = screen.getByTitle(labels.templates.cancelEvent);
+            const syncError = screen.getByTestId('sync-error');
+            expect(cancelButton.compareDocumentPosition(syncError) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         });
 
         it('does not propagate badge click to row navigation when badge has templates', async () => {

@@ -11,6 +11,12 @@
  * </HalFormsPageLayout>
  *
  * Forms are requested via HalFormButton (which calls useHalForm().displayHalForm()).
+ *
+ * When the originating HalFormButton was rendered inside a nested HalRouteProvider (e.g.
+ * inside a sync sub-resource fetched via HalSubresourceProvider), it captures that context
+ * into HalFormRequest.resourceContext. This layout uses the override to resolve the template
+ * and render the form, falling back to the page-level useHalPageData() when no override is
+ * provided.
  */
 
 import {type ReactElement, type ReactNode} from 'react';
@@ -19,10 +25,22 @@ import {useHalForm} from '../../contexts/halFormContext.ts';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {HalFormPanel} from './HalFormPanel.tsx';
 import {Modal} from '../UI';
+import type {HalFormsTemplate} from '../../api';
 
 interface HalFormsPageLayoutProps {
     children: ReactNode;
 }
+
+const resolveTemplate = (
+    templateName: string,
+    overrideTemplates: Record<string, HalFormsTemplate> | undefined,
+    pageTemplates: Record<string, HalFormsTemplate> | undefined,
+): HalFormsTemplate | undefined => {
+    if (overrideTemplates && overrideTemplates[templateName]) {
+        return overrideTemplates[templateName];
+    }
+    return pageTemplates?.[templateName];
+};
 
 /**
  * Wrapper component for custom pages that need to display HAL Forms
@@ -38,24 +56,28 @@ interface HalFormsPageLayoutProps {
  * - Form display and lifecycle
  */
 export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactElement {
-    const {resourceData, route} = useHalPageData();
+    const {resourceData: pageResource, route} = useHalPageData();
     const {currentFormRequest, closeForm} = useHalForm();
 
-    if (!currentFormRequest || !resourceData) {
+    const override = currentFormRequest?.resourceContext;
+    const pageTemplates = pageResource?._templates as Record<string, HalFormsTemplate> | undefined;
+    const template = currentFormRequest
+        ? resolveTemplate(currentFormRequest.templateName, override?.templates, pageTemplates)
+        : undefined;
+
+    if (!currentFormRequest || !template) {
         return <div className="space-y-6">{children}</div>;
     }
 
-    const template = resourceData._templates?.[currentFormRequest.templateName];
-
-    // If template doesn't exist, show children instead
-    if (!template) {
-        return <div className="space-y-6">{children}</div>;
-    }
+    const effectiveResourceData = (override?.resourceData ?? pageResource ?? {}) as Record<string, unknown>;
+    const effectivePathname = override?.pathname ?? route.pathname;
+    const effectiveResourceUrl = override?.resourceUrl;
 
     const formPanel = currentFormRequest.children ? (
         <HalFormPanel
-            collectionUrl={`/api${route.pathname}`}
+            collectionUrl={effectiveResourceUrl ?? `/api${effectivePathname}`}
             templateName={currentFormRequest.templateName}
+            template={template}
             fieldsFactory={currentFormRequest.fieldsFactory}
             onSuccess={closeForm}
             onCancel={closeForm}
@@ -67,8 +89,8 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
         <HalFormDisplay
             template={template}
             templateName={currentFormRequest.templateName}
-            resourceData={resourceData}
-            pathname={route.pathname}
+            resourceData={effectiveResourceData}
+            pathname={effectivePathname}
             onClose={closeForm}
             onSubmitSuccess={closeForm}
             fieldsFactory={currentFormRequest.fieldsFactory}

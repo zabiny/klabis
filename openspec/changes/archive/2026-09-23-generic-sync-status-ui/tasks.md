@@ -52,3 +52,13 @@ Deliberately last: nothing above needs this to be buildable or testable (all tes
 - [x] 8.5 Update affected component tests for 8.1, 8.2, 8.3 (full datetime strings, Czech button labels). — 6 new test cases added; total 2029 FE tests pass.
 - [x] 8.6 Run `npm run lint && npm run test && npm run build` — must stay green. — Lint 0 errors, 2029/2029 tests pass, build OK.
 
+## 9. Fix sync overlay submit + merge sync column into Akce
+
+Two regressions turned up after 8.x: the overlay's HalFormButton clicks registered a form request but never submitted (HalFormsPageLayout sits at page level and only sees the event-list/detail resource, not the sync sub-resource), and the dedicated `_links-sync` column duplicated the row's affordance surface. Both fixed together.
+
+- [x] 9.1 Add `HalFormRequest.resourceContext` (`templates`, `resourceData`, `pathname`, `resourceUrl`) to `frontend/src/contexts/halFormContext.ts`. Captures the resource the button saw at click time.
+- [x] 9.2 Have `HalFormButton` (`frontend/src/components/HalNavigator2/HalFormButton.tsx`) snapshot `useHalPageData()` + the self link into `resourceContext` on click — page-level buttons also pass it; the layout just ignores them.
+- [x] 9.3 Have `HalFormsPageLayout` (`frontend/src/components/HalNavigator2/HalFormsPageLayout.tsx`) resolve the template via `override.templates ?? pageResource._templates` and pass `override.resourceData`/`pathname`/`resourceUrl` to `HalFormDisplay` (and `HalFormPanel` via new optional `template` prop on `HalFormPanel.tsx` so inline forms inside a nested provider skip the extra collection fetch).
+- [x] 9.4 Merge the sync column into the Akce cell on `EventsPage.tsx`: drop the `<TableCell column="_links-sync">` block and append `<SyncStatusIndicator syncLink={syncLink} mode="icon"/>` as the last child of `renderActionsCell`, gated on `links?.sync` existing. Indicator stops being its own column header — the existing `labels.tables.sync` constant is no longer referenced anywhere in the page and can be removed in a follow-up.
+- [x] 9.5 Tests + validation — 5 new FE test cases (2 I9-regression in `SyncStatusOverlay.test.tsx` proving the inner form modal opens with the override template, 2 focused override tests in `HalFormsPageLayout.test.tsx`, 1 sync-in-Akce ordering test in `EventsPage.test.tsx`). Existing rendering tests for the four action buttons (`form-template-button-${name}`) untouched. Final: `npm run lint` 0 errors, 2034/2034 tests pass, `npm run build` OK.
+
