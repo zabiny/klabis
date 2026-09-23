@@ -2,3 +2,4 @@ oris:
   client:
     enabled: true
     my-club-id: 205
+    base-url: https://oris.ceskyorientak.cz
