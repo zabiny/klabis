@@ -42,7 +42,7 @@ class MemberProjectionMapperTest {
                 .gender("M")
                 .persNum("900115/0000")
                 .nationality("CZ")
-                .si(1000001);
+                .si("1000001");
         return customizer.apply(builder).build();
     }
 
@@ -124,7 +124,7 @@ class MemberProjectionMapperTest {
         @Test
         @DisplayName("si == 0 maps chip number to null, not \"0\"")
         void mapsZeroSiToNullChipNumber() {
-            var clubMember = referenceClubMember(b -> b.si(0));
+            var clubMember = referenceClubMember(b -> b.si("0"));
 
             MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
 
@@ -134,7 +134,7 @@ class MemberProjectionMapperTest {
         @Test
         @DisplayName("a non-zero si maps to its decimal string form")
         void mapsNonZeroSiToDecimalString() {
-            var clubMember = referenceClubMember(b -> b.si(1000001));
+            var clubMember = referenceClubMember(b -> b.si("1000001"));
 
             MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
 
@@ -234,7 +234,7 @@ class MemberProjectionMapperTest {
     @Test
     @DisplayName("mapping the same ORIS data twice produces an identical hash — no phantom differences from si/blank-string handling")
     void fromOrisClubMember_mappedTwice_hashesIdentically() {
-        var clubMember = referenceClubMember(b -> b.email("").si(0));
+        var clubMember = referenceClubMember(b -> b.email("").si("0"));
 
         MemberProjection first = MemberProjectionMapper.fromOrisClubMember(clubMember);
         MemberProjection second = MemberProjectionMapper.fromOrisClubMember(clubMember);
@@ -245,7 +245,7 @@ class MemberProjectionMapperTest {
     @Test
     @DisplayName("no chip number hashes the same on both sides — si=0 is not a phantom difference from a Klabis-side null")
     void fromOrisClubMember_andFromMember_withNoChipNumber_hashEqually() {
-        var clubMember = referenceClubMember(b -> b.si(0));
+        var clubMember = referenceClubMember(b -> b.si("0"));
         MemberProjection fromOris = MemberProjectionMapper.fromOrisClubMember(clubMember);
 
         Member member = referenceMember();
