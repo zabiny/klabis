@@ -16,9 +16,9 @@
 
 ## 4. Add the manager overlay with actions
 
-- [ ] 4.1 Write component tests for the overlay: not offered (no click affordance) when `_templates` absent on the fetched sync sub-resource; offered when present; each of `synchronizeNow`/`acknowledgeSyncConflict`/`resolveSyncConflict`/`resetSyncRecord` renders only when its template is present (delegated to `HalFormButton`'s existing behavior, but assert the overlay wires it up correctly per state)
-- [ ] 4.2 Implement the overlay/modal component per design.md D5: status header (state, last successful sync, direction/external id/next-attempt/failure-count for `SYNC:MANAGE` callers), diverged-fields/local-external-baseline comparison when `CONFLICT`, and the relevant `HalFormButton`s — all inside the same `HalRouteProvider` context established by `SyncStatusIndicator`
-- [ ] 4.3 Make `SyncStatusIndicator` clickable (opens the overlay) only when the fetched sync sub-resource carries `_templates`; otherwise keep it non-interactive
+- [x] 4.1 Write component tests for the overlay: not offered (no click affordance) when `_templates` absent on the fetched sync sub-resource; offered when present; each of `synchronizeNow`/`acknowledgeSyncConflict`/`resolveSyncConflict`/`resetSyncRecord` renders only when its template is present (delegated to `HalFormButton`'s existing behavior, but assert the overlay wires it up correctly per state)
+- [x] 4.2 Implement the overlay/modal component per design.md D5: status header (state, last successful sync, direction/external id/next-attempt/failure-count for `SYNC:MANAGE` callers), diverged-fields/local-external-baseline comparison when `CONFLICT`, and the relevant `HalFormButton`s — all inside the same `HalRouteProvider` context established by `SyncStatusIndicator`
+- [x] 4.3 Make `SyncStatusIndicator` clickable (opens the overlay) only when the fetched sync sub-resource carries `_templates`; otherwise keep it non-interactive
 
 ## 5. Retire the old manual-sync button
 

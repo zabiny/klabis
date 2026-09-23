@@ -136,6 +136,25 @@ export const labels = {
 
     sync: {
         neverSynced: 'Nikdy synchronizováno',
+        overlayTitle: 'Synchronizace',
+        sectionLastSync: 'Poslední úspěšná synchronizace',
+        sectionManagerDetails: 'Detaily správy',
+        externalId: 'Externí ID',
+        direction: 'Směr',
+        directionInward: 'Do Klabisu',
+        directionOutward: 'Ven z Klabisu',
+        nextAttemptDueAt: 'Plánovaný další pokus',
+        failedAttemptsSinceLastSuccess: 'Počet neúspěšných pokusů',
+        divergenceHeading: 'Rozdílná pole',
+        divergenceField: 'Pole',
+        divergenceLocal: 'Lokální',
+        divergenceExternal: 'Externí',
+        divergenceBaseline: 'Výchozí',
+        divergenceSide: 'Změněno',
+        divergenceSideLocal: 'lokálně',
+        divergenceSideExternal: 'externě',
+        divergenceSideBoth: 'oboustranně',
+        actionsHeading: 'Akce',
     },
 
     orisImport: {
@@ -288,6 +307,14 @@ export const labels = {
         feeMemberSource: {
             MEMBER_CHOICE: 'Vlastní volba',
             ADMIN_ASSIGNMENT: 'Přiřazeno adminem',
+        },
+        syncStatus: {
+            NEW: 'Nový',
+            IN_SYNC: 'V synchronizaci',
+            RETRYING: 'Opakovaný pokus',
+            CONFLICT: 'Konflikt',
+            FAILED: 'Selhalo',
+            RETIRED: 'Ukončeno',
         },
     },
 

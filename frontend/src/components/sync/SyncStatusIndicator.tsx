@@ -1,39 +1,18 @@
-import {type ReactElement} from 'react';
-import {
-    AlertTriangle,
-    Archive,
-    Check,
-    CircleDot,
-    RotateCw,
-    XCircle,
-} from 'lucide-react';
+import {type ReactElement, useState} from 'react';
+import {AlertTriangle} from 'lucide-react';
 import {Badge, Spinner, Tooltip} from '../UI';
 import {HalRouteProvider} from '../../contexts/HalRouteContext';
 import {useHalRoute} from '../../contexts/halRouteContext';
 import {formatDate} from '../../utils/dateUtils';
 import {labels} from '../../localization';
+import {SyncStatusOverlay} from './SyncStatusOverlay';
+import {SYNC_STATUS_MAP} from './syncStatusMap';
 import type {GetSyncStateResource, HalResourceLinks} from '../../api';
 
 export interface SyncStatusIndicatorProps {
     syncLink: HalResourceLinks | undefined | null;
     mode: 'icon' | 'icon+date';
 }
-
-type SyncStatus = GetSyncStateResource['status'];
-type StatusVariant = 'info' | 'success' | 'warning' | 'error' | 'default';
-
-const STATUS_MAP: Record<SyncStatus, {
-    variant: StatusVariant;
-    Icon: typeof CircleDot;
-    iconName: string;
-}> = {
-    NEW: {variant: 'info', Icon: CircleDot, iconName: 'CircleDot'},
-    IN_SYNC: {variant: 'success', Icon: Check, iconName: 'Check'},
-    RETRYING: {variant: 'warning', Icon: RotateCw, iconName: 'RotateCw'},
-    CONFLICT: {variant: 'error', Icon: AlertTriangle, iconName: 'AlertTriangle'},
-    FAILED: {variant: 'error', Icon: XCircle, iconName: 'XCircle'},
-    RETIRED: {variant: 'default', Icon: Archive, iconName: 'Archive'},
-};
 
 const ICON_CLASS = 'w-4 h-4';
 
@@ -51,6 +30,7 @@ SyncStatusIndicator.displayName = 'SyncStatusIndicator';
 const SyncStatusIndicatorContent = ({mode}: {mode: 'icon' | 'icon+date'}): ReactElement => {
     const {resourceData, isLoading, error} = useHalRoute();
     const syncState = resourceData as GetSyncStateResource | null;
+    const [isOpen, setIsOpen] = useState(false);
 
     if (isLoading) {
         return (
@@ -73,10 +53,12 @@ const SyncStatusIndicatorContent = ({mode}: {mode: 'icon' | 'icon+date'}): React
         );
     }
 
-    const {variant, Icon, iconName} = STATUS_MAP[syncState.status];
+    const {variant, Icon, iconName} = SYNC_STATUS_MAP[syncState.status];
     const lastDate = syncState.lastSuccessfulSyncAt;
     const dateText = lastDate ? formatDate(lastDate) : labels.sync.neverSynced;
     const showDateInline = mode === 'icon+date';
+    const hasTemplates = syncState._templates !== undefined
+        && Object.keys(syncState._templates).length > 0;
 
     const badge = (
         <Badge
@@ -85,17 +67,40 @@ const SyncStatusIndicatorContent = ({mode}: {mode: 'icon' | 'icon+date'}): React
             className={showDateInline ? 'inline-flex items-center gap-1.5' : 'inline-flex items-center justify-center'}
             data-testid={`sync-status-${syncState.status}`}
             aria-label={`${iconName} ${syncState.status}`}
+            role={hasTemplates ? 'button' : undefined}
+            tabIndex={hasTemplates ? 0 : undefined}
+            onClick={hasTemplates ? () => setIsOpen(true) : undefined}
+            onKeyDown={hasTemplates ? (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsOpen(true);
+                }
+            } : undefined}
         >
             <Icon className={ICON_CLASS}/>
             {showDateInline && <span data-testid="sync-last-date">{dateText}</span>}
         </Badge>
     );
 
+    const overlay = hasTemplates && isOpen
+        ? <SyncStatusOverlay isOpen={isOpen} onClose={() => setIsOpen(false)}/>
+        : null;
+
     if (showDateInline) {
-        return badge;
+        return (
+            <>
+                {badge}
+                {overlay}
+            </>
+        );
     }
 
-    return <Tooltip content={dateText}>{badge}</Tooltip>;
+    return (
+        <>
+            <Tooltip content={dateText}>{badge}</Tooltip>
+            {overlay}
+        </>
+    );
 };
 
 SyncStatusIndicatorContent.displayName = 'SyncStatusIndicatorContent';
