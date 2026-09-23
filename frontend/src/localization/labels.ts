@@ -134,6 +134,10 @@ export const labels = {
         failuresHeading: 'Chyby:',
     },
 
+    sync: {
+        neverSynced: 'Nikdy synchronizováno',
+    },
+
     orisImport: {
         dialogTitle: 'Importovat z ORIS',
         selectAll: 'Vybrat vše',

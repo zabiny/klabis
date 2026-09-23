@@ -1,8 +1,8 @@
 ## 1. Build the generic status icon component (both modes, all states)
 
-- [ ] 1.1 Write component tests for `SyncStatusIndicator` covering: no `syncLink` prop → renders nothing; each of the 6 `SyncStatus` values → correct `Badge` variant + icon (per design.md D4); loading state; fetch error state — all against a mocked sync sub-resource response, no live backend needed
-- [ ] 1.2 Write component tests for the two modes specifically: `mode="icon"` renders only the icon, with the formatted `lastSuccessfulSyncAt` appearing as a tooltip on hover (and a graceful fallback when the entity has never successfully synced); `mode="icon+date"` renders the icon and the formatted date together inline, always visible, with the same fallback when absent
-- [ ] 1.3 Implement `SyncStatusIndicator` per design.md D1/D2/D4: accepts a `syncLink` prop and a `mode: 'icon' | 'icon+date'` prop, wraps content in `HalRouteProvider routeLink={syncLink}`, reads `SyncStateResponse` via `useHalRoute()`, renders the mapped icon/color and the date per the mode's placement rule above
+- [x] 1.1 Write component tests for `SyncStatusIndicator` covering: no `syncLink` prop → renders nothing; each of the 6 `SyncStatus` values → correct `Badge` variant + icon (per design.md D4); loading state; fetch error state — all against a mocked sync sub-resource response, no live backend needed
+- [x] 1.2 Write component tests for the two modes specifically: `mode="icon"` renders only the icon, with the formatted `lastSuccessfulSyncAt` appearing as a tooltip on hover (and a graceful fallback when the entity has never successfully synced); `mode="icon+date"` renders the icon and the formatted date together inline, always visible, with the same fallback when absent
+- [x] 1.3 Implement `SyncStatusIndicator` per design.md D1/D2/D4: accepts a `syncLink` prop and a `mode: 'icon' | 'icon+date'` prop, wraps content in `HalRouteProvider routeLink={syncLink}`, reads `SyncStateResponse` via `useHalRoute()`, renders the mapped icon/color and the date per the mode's placement rule above
 
 ## 2. Wire the icon+date mode into the detail page
 

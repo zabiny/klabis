@@ -1,7 +1,7 @@
 import clsx from 'clsx'
-import type {ReactNode} from 'react'
+import type {HTMLAttributes, ReactNode} from 'react'
 
-interface BadgeProps {
+interface BadgeProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'children'> {
     children: ReactNode
     variant?: 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info' | 'orange' | 'blue'
     size?: 'sm' | 'md' | 'lg'
@@ -30,9 +30,10 @@ export const Badge = ({
                           variant = 'default',
                           size = 'md',
                           className,
+                          ...rest
                       }: BadgeProps) => {
     return (
-        <span className={clsx('inline-block', variantClasses[variant], sizeClasses[size], className)}>
+        <span className={clsx('inline-block', variantClasses[variant], sizeClasses[size], className)} {...rest}>
       {children}
     </span>
     )
