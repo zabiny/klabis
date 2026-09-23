@@ -14,7 +14,7 @@ import org.springframework.util.Assert;
 @Component
 class InMemoryOrisClubKeyAdapter implements OrisClubKeyPort, OrisClubKeyAccessor {
 
-    @Value("klabis.oris.club.key")
+    @Value("${klabis.oris.club.key}")
     private volatile String clubKey;
 
     @Override
