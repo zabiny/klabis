@@ -22,9 +22,10 @@ import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {Section} from "../members/MemberSection.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
 import {MemberName} from "../../components/members/MemberName.tsx";
-import {ExternalLink, Globe, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from "lucide-react";
+import {ExternalLink, Globe, Pencil, UserMinus, UserPlus, XCircle} from "lucide-react";
 import {EventsFilterBar} from "../../components/events/EventsFilterBar.tsx";
 import {EventTypeBadge} from "../../components/events/EventTypeBadge.tsx";
+import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
 import {useAuth} from "../../contexts/authContext";
 import {useEventTypes} from "../../hooks/useEventTypes.ts";
 import {getTodayIso} from "../../components/events/eventsFilterUtils.ts";
@@ -44,7 +45,6 @@ const ROW_ACTION_BUTTONS = [
     {name: 'updateEvent', icon: Pencil, label: labels.templates.updateEvent},
     {name: 'publishEvent', icon: Globe, label: labels.templates.publishEvent},
     {name: 'cancelEvent', icon: XCircle, label: labels.templates.cancelEvent},
-    {name: 'syncEventFromOris', icon: RefreshCw, label: labels.templates.syncEventFromOris},
     {name: 'registerForEvent', icon: UserPlus, label: labels.templates.registerForEvent},
     {name: 'unregisterFromEvent', icon: UserMinus, label: labels.templates.unregisterFromEvent},
 ];
@@ -127,8 +127,9 @@ export const EventsPage = (): ReactElement => {
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const event = item as unknown as EventListData;
         const templates = event._templates;
-        const links = event._links as Record<string, {href: string}> | undefined;
-        const newRegLink = links?.['newRegistration'];
+        const links = event._links as Record<string, HalResourceLinks> | undefined;
+        const newRegLink = links?.['newRegistration'] ? asLinkArray(links['newRegistration'])[0] : undefined;
+        const syncLink = links?.sync ? asLinkArray(links.sync)[0] : undefined;
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -152,6 +153,7 @@ export const EventsPage = (): ReactElement => {
                         <Icon className="w-4 h-4"/>
                     </Button>
                 ))}
+                {syncLink && <SyncStatusIndicator syncLink={syncLink} mode="icon"/>}
             </div>
         );
     };

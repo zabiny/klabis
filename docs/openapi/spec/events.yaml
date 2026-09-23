@@ -709,8 +709,11 @@ paths:
             sync:
               operation: getSyncState
               description: |
-                Present when the event is enrolled in synchronisation and the caller has SYNC:MANAGE
-                (task 8.6) — the same authority getSyncState itself requires.
+                Present when the event is enrolled in synchronisation. The link
+                itself and the headline state returned by the sync sub-resource are
+                visible to any signed-in user; only the detail fields and action
+                templates (synchronizeNow, acknowledgeSyncConflict, etc.) inside
+                the sync sub-resource are gated on SYNC:MANAGE.
           x-hal-templates:
             updateEvent:
               operation: updateEvent

@@ -62,4 +62,15 @@ class OidcRegisteredClientsBootstrapTest {
                 .as("klabis-web-local must not be registered when local-dev profile is inactive")
                 .isNull();
     }
+
+    @Test
+    @DisplayName("should register klabis-web with SYNC scope allowed (sync endpoints must be reachable from the SPA)")
+    void shouldRegisterKlabisWebWithSyncScope() {
+        RegisteredClient client = registeredClientRepository.findByClientId(CLIENT_ID);
+
+        assertThat(client).as("OAuth2 client '%s' should be registered", CLIENT_ID).isNotNull();
+        assertThat(client.getScopes())
+                .as("klabis-web client must allow the SYNC scope so the SPA can call /api/.../sync endpoints")
+                .contains("SYNC");
+    }
 }

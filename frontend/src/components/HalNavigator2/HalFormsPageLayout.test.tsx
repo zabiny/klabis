@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import {act} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -241,6 +241,105 @@ describe('HalFormsPageLayout', () => {
             // When inline request has no children, it falls back to HalFormDisplay (default form layout)
             expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
             expect(screen.queryByText('Test Content')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('resourceContext override (I9)', () => {
+        it('renders the form using the override template when page-level resource has no matching template', async () => {
+            const overrideTemplate = {
+                method: 'POST' as const,
+                target: '/api/events/1/sync/synchronize',
+                title: 'Synchronizovat',
+                properties: [],
+            };
+            const TriggerWithOverride = () => {
+                const {displayHalForm} = useHalForm();
+                return (
+                    <button
+                        onClick={() => displayHalForm({
+                            templateName: 'synchronizeNow',
+                            modal: true,
+                            resourceContext: {
+                                templates: {synchronizeNow: overrideTemplate},
+                                resourceData: {status: 'IN_SYNC'},
+                                pathname: '/api/events/1/sync',
+                                resourceUrl: '/api/events/1/sync',
+                            },
+                        })}
+                        data-testid="trigger"
+                    >
+                        Open Sync Form
+                    </button>
+                );
+            };
+
+            // Page-level resourceData has NO _templates; only the override carries them.
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <MemoryRouter initialEntries={['/events/1']}>
+                        <HalRouteContext.Provider value={{...baseContextValue, resourceData: {_links: {self: {href: '/api/events/1'}}}}}>
+                            <HalFormProvider>
+                                <TriggerWithOverride/>
+                                <HalFormsPageLayout>
+                                    <h1>Test Content</h1>
+                                </HalFormsPageLayout>
+                            </HalFormProvider>
+                        </HalRouteContext.Provider>
+                    </MemoryRouter>
+                </QueryClientProvider>
+            );
+
+            act(() => {
+                screen.getByTestId('trigger').click();
+            });
+
+            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+            expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
+            expect(within(screen.getByTestId('hal-form-display')).getByText('Synchronizovat')).toBeInTheDocument();
+        });
+
+        it('falls back to page-level template when override is missing the requested template', async () => {
+            const TriggerWithEmptyOverride = () => {
+                const {displayHalForm} = useHalForm();
+                return (
+                    <button
+                        onClick={() => displayHalForm({
+                            templateName: 'create',
+                            modal: true,
+                            resourceContext: {
+                                templates: {}, // override has nothing
+                                resourceData: {},
+                                pathname: '/api/elsewhere',
+                                resourceUrl: '/api/elsewhere',
+                            },
+                        })}
+                        data-testid="trigger"
+                    >
+                        Open Form
+                    </button>
+                );
+            };
+
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <MemoryRouter initialEntries={['/api/test']}>
+                        <HalRouteContext.Provider value={baseContextValue}>
+                            <HalFormProvider>
+                                <TriggerWithEmptyOverride/>
+                                <HalFormsPageLayout>
+                                    <h1>Test Content</h1>
+                                </HalFormsPageLayout>
+                            </HalFormProvider>
+                        </HalRouteContext.Provider>
+                    </MemoryRouter>
+                </QueryClientProvider>
+            );
+
+            act(() => {
+                screen.getByTestId('trigger').click();
+            });
+
+            expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
         });
     });
 });

@@ -20,8 +20,9 @@ import {getActionVariant} from '../../utils/actionVariants.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
+import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
-import {AlertTriangle, Banknote, Check, ExternalLink, Globe, List, Pencil, RefreshCw, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {AlertTriangle, Banknote, Check, ExternalLink, Globe, List, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
 import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
@@ -211,6 +212,9 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 {event.status ? getEnumLabel('eventStatus', event.status) : event.status}
                             </Badge>
                         )}
+                        {!isEditing && (
+                            <SyncStatusIndicator syncLink={resourceData._links?.sync} mode="icon+date"/>
+                        )}
                         {!isEditing && event.eventTypeId && (() => {
                             const eventType = getEventTypeById(event.eventTypeId);
                             return eventType ? <EventTypeBadge eventType={eventType}/> : null;
@@ -230,7 +234,6 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                             )}
                             <HalFormButton name="publishEvent" modal={true} icon={<Globe className="w-4 h-4"/>}/>
                             <HalFormButton name="cancelEvent" modal={true} icon={<XCircle className="w-4 h-4"/>}/>
-                            <HalFormButton name="syncEventFromOris" modal={true} icon={<RefreshCw className="w-4 h-4"/>}/>
                             {newRegistrationLink && (
                                 <Button
                                     variant={getActionVariant('registerForEvent')}

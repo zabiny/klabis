@@ -840,4 +840,134 @@ describe('EventsPage', () => {
             expect(screen.queryByText('Trénink')).not.toBeInTheDocument();
         });
     });
+
+    describe('sync indicator in actions cell (I9)', () => {
+        const buildEnrolledEventRow = () => ({
+            id: 'evt-sync',
+            name: 'Synced event',
+            eventDate: '2026-04-15',
+            status: 'ACTIVE',
+            _links: {
+                self: {href: '/api/events/evt-sync'},
+                sync: {href: '/api/events/evt-sync/sync'},
+            },
+        });
+
+        const buildUnenrolledEventRow = () => ({
+            id: 'evt-no-sync',
+            name: 'Plain event',
+            eventDate: '2026-04-15',
+            status: 'ACTIVE',
+            _links: {self: {href: '/api/events/evt-no-sync'}},
+        });
+
+        const renderEventsWithSyncControl = (rows: unknown[]) => {
+            vi.mocked(useAuthorizedQuery).mockReturnValue({
+                data: {
+                    _links: {self: {href: '/api/events'}},
+                    _embedded: {eventSummaryDtoList: rows},
+                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
+                },
+                isLoading: false,
+                error: null,
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            return renderPage(createMockPageData({
+                _links: {self: {href: '/api/events'}},
+            }));
+        };
+
+        it('does not render a separate Synchronizace column header', () => {
+            renderEventsWithSyncControl([buildEnrolledEventRow()]);
+            expect(screen.queryByRole('columnheader', {name: 'Synchronizace'})).not.toBeInTheDocument();
+        });
+
+        it('renders SyncStatusIndicator in the actions cell for an enrolled row (has _links.sync)', () => {
+            renderEventsWithSyncControl([buildEnrolledEventRow()]);
+            // SyncStatusIndicator mounts with sync link; mocked query returns empty data so it falls through to error state.
+            expect(screen.getByTestId('sync-error')).toBeInTheDocument();
+        });
+
+        it('does not render any sync indicator in the actions cell for an unenrolled row (no _links.sync)', () => {
+            renderEventsWithSyncControl([buildUnenrolledEventRow()]);
+            expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
+            expect(screen.queryByTestId(/^sync-status-/)).not.toBeInTheDocument();
+        });
+
+        it('renders the sync indicator after the action buttons in the actions cell', () => {
+            const buildEnrolledRowWithActionTemplate = () => ({
+                id: 'evt-sync-action',
+                name: 'Actionable synced event',
+                eventDate: '2026-04-15',
+                status: 'ACTIVE',
+                _links: {
+                    self: {href: '/api/events/evt-sync-action'},
+                    sync: {href: '/api/events/evt-sync-action/sync'},
+                },
+                _templates: {
+                    cancelEvent: mockHalFormsTemplate({
+                        method: 'POST',
+                        target: '/api/events/evt-sync-action/cancel',
+                        title: 'Zrušit akci',
+                    }),
+                },
+            });
+            renderEventsWithSyncControl([buildEnrolledRowWithActionTemplate()]);
+
+            const cancelButton = screen.getByTitle(labels.templates.cancelEvent);
+            const syncError = screen.getByTestId('sync-error');
+            expect(cancelButton.compareDocumentPosition(syncError) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        });
+
+        it('does not propagate badge click to row navigation when badge has templates', async () => {
+            const user = userEvent.setup();
+            const navigateToResource = vi.fn();
+            const syncTemplate = mockHalFormsTemplate({
+                method: 'POST',
+                target: '/api/events/evt-sync/sync/synchronize',
+                title: 'Synchronize',
+                properties: [],
+            });
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: unknown) => {
+                if (typeof url === 'string' && url.includes('/sync')) {
+                    return {
+                        data: {
+                            entityType: 'events',
+                            status: 'IN_SYNC',
+                            externalSystem: 'ORIS',
+                            _links: {self: {href: '/api/events/evt-sync/sync'}},
+                            _templates: {synchronizeNow: syncTemplate},
+                        },
+                        isLoading: false,
+                        error: null,
+                    } as unknown as ReturnType<typeof useAuthorizedQuery>;
+                }
+                return {
+                    data: {
+                        _links: {self: {href: '/api/events'}},
+                        _embedded: {eventSummaryDtoList: [buildEnrolledEventRow()]},
+                        page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
+                    },
+                    isLoading: false,
+                    error: null,
+                } as unknown as ReturnType<typeof useAuthorizedQuery>;
+            });
+            renderPage(createMockPageData(
+                {_links: {self: {href: '/api/events'}}},
+                {route: {
+                    pathname: '/events',
+                    navigateToResource,
+                    refetch: async () => {},
+                    queryState: 'success' as const,
+                    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/events'}),
+                }},
+            ));
+
+            const badge = await screen.findByTestId('sync-status-IN_SYNC');
+            await user.click(badge);
+
+            expect(navigateToResource).not.toHaveBeenCalled();
+            expect(await screen.findByTestId('sync-overlay-modal')).toBeInTheDocument();
+        });
+    });
 });

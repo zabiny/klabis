@@ -42,6 +42,7 @@ public enum Authority {
     public static final String EVENTS_SCOPE = "EVENTS";
     public static final String GROUPS_SCOPE = "GROUPS";
     public static final String FINANCE_SCOPE = "FINANCE";
+    public static final String SYNC_SCOPE = "SYNC";
 
     private final String value;
     private final Scope scope;

@@ -56,7 +56,6 @@ export const labels = {
         publishEvent: 'Publikovat',
         createEvent: 'Přidat akci',
         importEvent: 'Importovat z ORIS',
-        syncEventFromOris: 'Synchronizovat z ORISu',
         syncAllUpcomingFromOris: 'Synchronizovat všechny budoucí z ORIS',
         createCalendarItem: 'Přidat položku',
         suspendMember: 'Ukončit členství',
@@ -110,6 +109,10 @@ export const labels = {
         closeCampaign: 'Uzavřít kampaň',
         editSnapshot: 'Upravit skupinu',
         assignMember: 'Přiřadit člena',
+        synchronizeNow: 'Synchronizovat',
+        acknowledgeSyncConflict: 'Potvrdit konflikt',
+        resolveSyncConflict: 'Vyřešit konflikt',
+        resetSyncRecord: 'Resetovat synchronizaci',
     },
 
     dialogTitles: {
@@ -132,6 +135,29 @@ export const labels = {
         successCount: (n: number) => `${n} úspěšně synchronizováno`,
         failureCount: (n: number) => `${n} chyb`,
         failuresHeading: 'Chyby:',
+    },
+
+    sync: {
+        neverSynced: 'Nikdy synchronizováno',
+        overlayTitle: 'Synchronizace',
+        sectionLastSync: 'Poslední úspěšná synchronizace',
+        sectionManagerDetails: 'Detaily správy',
+        externalId: 'Externí ID',
+        direction: 'Směr',
+        directionInward: 'Do Klabisu',
+        directionOutward: 'Ven z Klabisu',
+        nextAttemptDueAt: 'Plánovaný další pokus',
+        failedAttemptsSinceLastSuccess: 'Počet neúspěšných pokusů',
+        divergenceHeading: 'Rozdílná pole',
+        divergenceField: 'Pole',
+        divergenceLocal: 'Lokální',
+        divergenceExternal: 'Externí',
+        divergenceBaseline: 'Výchozí',
+        divergenceSide: 'Změněno',
+        divergenceSideLocal: 'lokálně',
+        divergenceSideExternal: 'externě',
+        divergenceSideBoth: 'oboustranně',
+        actionsHeading: 'Akce',
     },
 
     orisImport: {
@@ -285,6 +311,14 @@ export const labels = {
             MEMBER_CHOICE: 'Vlastní volba',
             ADMIN_ASSIGNMENT: 'Přiřazeno adminem',
         },
+        syncStatus: {
+            NEW: 'Nový',
+            IN_SYNC: 'V synchronizaci',
+            RETRYING: 'Opakovaný pokus',
+            CONFLICT: 'Konflikt',
+            FAILED: 'Selhalo',
+            RETIRED: 'Ukončeno',
+        },
     },
 
     validation: {
@@ -399,6 +433,7 @@ export const labels = {
         dateOfBirth: 'Datum narození',
         address: 'Adresa',
         eventType: 'Typ',
+        sync: 'Synchronizace',
     },
 
     sections: {

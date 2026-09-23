@@ -138,4 +138,15 @@ class LocalDevRefreshTokenFlowTest {
         RegisteredClient client = registeredClientRepository.findByClientId(LOCAL_CLIENT_ID);
         assertThat(client).isNotNull();
     }
+
+    @Test
+    @DisplayName("should register klabis-web-local with SYNC scope allowed (sync endpoints must be reachable from the SPA on localhost)")
+    void shouldRegisterLocalDevClientWithSyncScope() {
+        RegisteredClient client = registeredClientRepository.findByClientId(LOCAL_CLIENT_ID);
+
+        assertThat(client).isNotNull();
+        assertThat(client.getScopes())
+                .as("klabis-web-local client must allow the SYNC scope so the SPA on localhost:3000 can call /api/.../sync endpoints")
+                .contains("SYNC");
+    }
 }

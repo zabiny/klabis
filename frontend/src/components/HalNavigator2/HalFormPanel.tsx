@@ -1,6 +1,6 @@
 import type {ReactElement} from 'react';
 import type {HalFormFieldFactory, RenderFormCallback, FormRenderHelpers} from './halforms';
-import type {HalResponse} from '../../api';
+import type {HalFormsTemplate, HalResponse} from '../../api';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {HalFormDisplay} from './HalFormDisplay';
 import {Alert, Spinner} from '../UI';
@@ -24,17 +24,26 @@ export interface HalFormPanelProps {
     navigateOnSuccess?: boolean;
     templateMissingMessage?: string;
     successMessage?: string;
+    /**
+     * Optional template override. When provided, the panel skips its own collection
+     * query and uses this template directly. Used by HalFormsPageLayout when the
+     * originating HalFormButton was rendered inside a nested provider (e.g. sync
+     * sub-resource) and captured the template via HalFormRequest.resourceContext.
+     */
+    template?: HalFormsTemplate;
     children: HalFormPanelChildren;
 }
 
 export function HalFormPanel({
     collectionUrl, templateName, initialData = {}, pathname,
     fieldsFactory, onSuccess, onCancel, navigateOnSuccess,
-    templateMissingMessage, successMessage, children,
+    templateMissingMessage, successMessage, template: templateOverride, children,
 }: HalFormPanelProps): ReactElement {
-    const {data: collectionData, isLoading, error} = useAuthorizedQuery<HalResponse>(collectionUrl);
+    const {data: collectionData, isLoading, error} = useAuthorizedQuery<HalResponse>(collectionUrl, {
+        enabled: templateOverride === undefined,
+    });
 
-    if (isLoading) {
+    if (!templateOverride && isLoading) {
         return (
             <div className="flex items-center gap-2">
                 <Spinner/>
@@ -42,9 +51,9 @@ export function HalFormPanel({
             </div>
         );
     }
-    if (error) return <Alert severity="error">{(error as Error).message}</Alert>;
+    if (!templateOverride && error) return <Alert severity="error">{(error as Error).message}</Alert>;
 
-    const template = collectionData?._templates?.[templateName] ?? null;
+    const template = templateOverride ?? collectionData?._templates?.[templateName] ?? null;
     if (!template) {
         return <Alert severity="error">{templateMissingMessage ?? `Template "${templateName}" není dostupný.`}</Alert>;
     }

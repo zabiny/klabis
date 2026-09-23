@@ -1459,4 +1459,28 @@ describe('EventDetailPage', () => {
             expect(screen.queryByText('200 CZK')).not.toBeInTheDocument();
         });
     });
+
+    describe('sync status indicator (I2 task 2.2)', () => {
+        it('renders SyncStatusIndicator when event._links.sync is present', () => {
+            const data = mockEventDetailData({
+                _links: {
+                    self: {href: 'http://localhost:8443/api/events/1'},
+                    sync: {href: 'http://localhost:8443/api/events/1/sync'},
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            // Behavioural coverage of SyncStatusIndicator lives in SyncStatusIndicator.test.tsx;
+            // here we only assert the indicator is mounted when the sync link is present.
+            expect(screen.getByTestId('sync-error')).toBeInTheDocument();
+        });
+
+        it('does not render SyncStatusIndicator when event._links.sync is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData()));
+
+            expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
+            expect(screen.queryByTestId(/^sync-status-/)).not.toBeInTheDocument();
+        });
+    });
 });
