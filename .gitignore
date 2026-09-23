@@ -39,3 +39,4 @@ backend/local.env
 /tools/openapi-bundle/node_modules/
 /http-client.private.env.json
 /.opencode/package-lock.json
+/opencode.jsonc
