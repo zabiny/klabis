@@ -79,6 +79,14 @@ class MemberMemento implements Persistable<UUID> {
     @Column("is_active")
     private boolean active;
 
+    /**
+     * Write-only materialisation of {@link Member#isComplete()} for the member list filter
+     * (design.md D4 of import-incomplete-members). Never read back into the domain aggregate -
+     * completeness is always recomputed from the aggregate's own state in {@link Member#missingData()}.
+     */
+    @Column("data_incomplete")
+    private boolean dataIncomplete;
+
     @Column("chip_number")
     private String chipNumber;
 
@@ -197,6 +205,7 @@ class MemberMemento implements Persistable<UUID> {
         }
 
         memento.active = member.isActive();
+        memento.dataIncomplete = !member.isComplete();
         memento.chipNumber = member.getChipNumber();
 
         IdentityCard identityCard = member.getIdentityCard();

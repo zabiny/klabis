@@ -21,8 +21,8 @@
 
 ## 4. Materialised `data_incomplete` flag and list filter
 
-- [ ] 4.1 Add `data_incomplete BOOLEAN NOT NULL DEFAULT FALSE` to `members.members` in V001. Write a failing JDBC repository test that saving an incomplete member stores `true`, and that saving it again after completion stores `false`. Implement it in `MemberMemento` as write-only (design D4).
-- [ ] 4.2 Write a failing repository test for `MemberFilter.incompleteOnly` combined with the fulltext and status filters (AND semantics). Implement the query condition.
+- [x] 4.1 Add `data_incomplete BOOLEAN NOT NULL DEFAULT FALSE` to `members.members` in V001. Write a failing JDBC repository test that saving an incomplete member stores `true`, and that saving it again after completion stores `false`. Implement it in `MemberMemento` as write-only (design D4).
+- [x] 4.2 Write a failing repository test for `MemberFilter.incompleteOnly` combined with the fulltext and status filters (AND semantics). Implement the query condition.
 
 ## 5. Import members with incomplete or unacceptable ORIS data
 

@@ -78,6 +78,10 @@ CREATE TABLE members.members
     -- Status
     is_active             BOOLEAN      NOT NULL DEFAULT TRUE,
 
+    -- Derived completeness (see Member.missingData()): materialised write-only for the member list
+    -- filter, never read back into the domain (design.md D4 of import-incomplete-members)
+    data_incomplete       BOOLEAN      NOT NULL DEFAULT FALSE,
+
     -- Member self-edit fields (from V009)
     chip_number           VARCHAR(50),
     identity_card_number  VARCHAR(50),
