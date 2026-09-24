@@ -72,7 +72,7 @@ public class RegistrationService implements RegistrationPort {
         log.debug("Generated registration number: {} for date of birth: {}",
                 registrationNumber.getValue(), dateOfBirth);
 
-        return register(command, registrationNumber);
+        return register(command, registrationNumber, false);
     }
 
     @Transactional
@@ -80,16 +80,17 @@ public class RegistrationService implements RegistrationPort {
     public Member importMember(ImportMember command) {
         Assert.notNull(command.registrationNumber(), "Registration number must not be null");
 
-        return register(command.details(), command.registrationNumber());
+        return register(command.details(), command.registrationNumber(), true);
     }
 
     /**
      * Single path both entry points converge onto once the registration number is decided -
      * generated for a hand registration, adopted from ORIS for an import. Everything below this
-     * point (user creation, the shared-id invariant, validation and every published event) is
-     * therefore identical for both.
+     * point (user creation and the shared-id invariant) is identical for both; only the domain
+     * factory differs — {@code importing} routes to {@link Member#importFromOris}, which tolerates
+     * incomplete data, instead of {@link Member#register}, which does not (design.md D5).
      */
-    private Member register(RegisterNewMember command, RegistrationNumber registrationNumber) {
+    private Member register(RegisterNewMember command, RegistrationNumber registrationNumber, boolean importing) {
         try {
             UserId sharedUserId = userService.createUser(
                     registrationNumber.getValue(),
@@ -112,7 +113,7 @@ public class RegistrationService implements RegistrationPort {
                     command.registeredBy()
             );
 
-            Member member = Member.register(domainCommand);
+            Member member = importing ? Member.importFromOris(domainCommand) : Member.register(domainCommand);
 
             Member savedMember = memberRepository.save(member);
 

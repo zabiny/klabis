@@ -106,9 +106,9 @@ public record MemberCreatedEvent(
         Objects.requireNonNull(dateOfBirth, "Date of birth is required");
         Objects.requireNonNull(nationality, "Nationality is required");
         Objects.requireNonNull(gender, "Gender is required");
-        Objects.requireNonNull(address, "Address is required");
         Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
-        // email, phone, guardian are nullable
+        // address, email, phone, guardian are nullable — an ORIS import may bring a member in
+        // with an incomplete address (design.md D5/ADDRESS)
     }
 
     /**
