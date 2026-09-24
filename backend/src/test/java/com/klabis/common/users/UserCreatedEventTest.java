@@ -11,7 +11,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("UserCreatedEvent tests")
@@ -73,8 +72,7 @@ class UserCreatedEventTest {
                     TEST_USER_ID,
                     TEST_USERNAME,
                     TEST_STATUS,
-                    TEST_TIMESTAMP,
-                    null
+                    TEST_TIMESTAMP
             );
 
             // Then
@@ -93,8 +91,7 @@ class UserCreatedEventTest {
                     TEST_USER_ID,
                     TEST_USERNAME,
                     TEST_STATUS,
-                    Instant.now(),
-                    null
+                    Instant.now()
             ))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessage("Event ID is required");
@@ -108,8 +105,7 @@ class UserCreatedEventTest {
                     (UserId) null,
                     TEST_USERNAME,
                     TEST_STATUS,
-                    Instant.now(),
-                    null
+                    Instant.now()
             ))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessage("User ID is required");
@@ -123,8 +119,7 @@ class UserCreatedEventTest {
                     TEST_USER_ID,
                     null,
                     TEST_STATUS,
-                    Instant.now(),
-                    null
+                    Instant.now()
             ))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessage("Username is required");
@@ -138,8 +133,7 @@ class UserCreatedEventTest {
                     TEST_USER_ID,
                     TEST_USERNAME,
                     null,
-                    Instant.now(),
-                    null
+                    Instant.now()
             ))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessage("Account status is required");
@@ -153,24 +147,10 @@ class UserCreatedEventTest {
                     TEST_USER_ID,
                     TEST_USERNAME,
                     TEST_STATUS,
-                    null,
                     null
             ))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessage("Occurred at timestamp is required");
-        }
-
-        @Test
-        @DisplayName("should allow null email (optional PII)")
-        void shouldAllowNullEmail() {
-            assertThatNoException().isThrownBy(() -> new UserCreatedEvent(
-                    UUID.randomUUID(),
-                    TEST_USER_ID,
-                    TEST_USERNAME,
-                    TEST_STATUS,
-                    Instant.now(),
-                    null
-            ));
         }
     }
 
@@ -193,58 +173,6 @@ class UserCreatedEventTest {
             assertThat(event.accountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
             assertThat(event.eventId()).isNotNull(); // Generated
             assertThat(event.occurredAt()).isNotNull(); // Current time
-        }
-    }
-
-    @Nested
-    @DisplayName("fromAggregateWithEmail() factory method")
-    class FromAggregateWithEmailFactoryMethod {
-
-        @Test
-        @DisplayName("should create event with email from User aggregate")
-        void shouldCreateEventWithEmailFromUser() {
-            // Given
-            User user = User.reconstruct(TEST_USER_ID, TEST_USERNAME, "hashedPassword", AccountStatus.PENDING_ACTIVATION);
-            String email = "test@example.com";
-
-            // When
-            UserCreatedEvent event = UserCreatedEvent.fromAggregateWithEmail(user, email);
-
-            // Then
-            assertThat(event.userId()).isEqualTo(TEST_USER_ID);
-            assertThat(event.username()).isEqualTo(TEST_USERNAME);
-            assertThat(event.accountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
-            assertThat(event.email()).isPresent().contains(email);
-            assertThat(event.eventId()).isNotNull(); // Generated
-            assertThat(event.occurredAt()).isNotNull(); // Current time
-        }
-    }
-
-    @Nested
-    @DisplayName("email() method")
-    class EmailMethod {
-
-        @Test
-        @DisplayName("should return Optional with email when present")
-        void shouldReturnOptionalWithEmailWhenPresent() {
-            UserCreatedEvent event = new UserCreatedEvent(
-                    UUID.randomUUID(),
-                    TEST_USER_ID,
-                    TEST_USERNAME,
-                    TEST_STATUS,
-                    Instant.now(),
-                    "test@example.com"
-            );
-
-            assertThat(event.email()).isPresent().contains("test@example.com");
-        }
-
-        @Test
-        @DisplayName("should return empty Optional when email is null")
-        void shouldReturnEmptyOptionalWhenEmailIsNull() {
-            UserCreatedEvent event = UserCreatedEvent.create(TEST_USER_ID, TEST_USERNAME, TEST_STATUS);
-
-            assertThat(event.email()).isEmpty();
         }
     }
 

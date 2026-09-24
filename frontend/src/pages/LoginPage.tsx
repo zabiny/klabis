@@ -1,5 +1,5 @@
 import {useEffect} from 'react';
-import {useNavigate, useSearchParams} from 'react-router-dom';
+import {Link, useNavigate, useSearchParams} from 'react-router-dom';
 import {ArrowRightEndOnRectangleIcon, HashtagIcon, LockClosedIcon} from '@heroicons/react/24/outline';
 import {useAuth} from '../contexts/authContext';
 import {Alert} from '../components/UI/Alert';
@@ -86,6 +86,13 @@ const LoginPage = () => {
                         Přihlásit se
                     </Button>
                 </form>
+
+                <Link
+                    to="/password-setup/request"
+                    className="text-sm text-primary hover:text-primary-light"
+                >
+                    {labels.buttons.activateAccount}
+                </Link>
             </div>
         </div>
     );

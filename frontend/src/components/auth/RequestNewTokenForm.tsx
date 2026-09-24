@@ -100,11 +100,10 @@ export const RequestNewTokenForm = ({
         <Card className="p-8 max-w-md mx-auto">
             <div className="mb-6">
                 <h2 className="text-2xl font-semibold text-text-primary mb-2">
-                    Požádat o nový token
+                    {labels.ui.requestNewTokenTitle}
                 </h2>
                 <p className="text-text-secondary">
-                    Zadejte své registrační číslo a email. Pokud je účet stále čekající na aktivaci,
-                    obdržíte nový odkaz pro nastavení hesla.
+                    {labels.ui.requestNewTokenDescription}
                 </p>
             </div>
 

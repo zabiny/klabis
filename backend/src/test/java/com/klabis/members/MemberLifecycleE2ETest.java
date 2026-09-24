@@ -161,8 +161,21 @@ class MemberLifecycleE2ETest {
         final CurrentUserData registeredMemberUserData = createCurrentUserDataFromMemberResponse(memberDetailsResult);
 
         // ========================================================================
-        // STEP 4: Get email token from email (using LoggingEmailService)
+        // STEP 4: Request an activation link (no e-mail is sent on registration any
+        // more - design.md D7) and read the token from the email (LoggingEmailService)
         // ========================================================================
+        String registrationNumber = registeredMemberUserData.userName();
+
+        mockMvc.perform(post("/api/auth/password-setup/request")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                    "registrationNumber": "%s",
+                                    "email": "jan.novak@example.com"
+                                }
+                                """.formatted(registrationNumber)))
+                .andExpect(status().isOk());
+
         String activationToken = Awaitility.waitAtMost(Duration.ofSeconds(4))
                 .until(MemberLifecycleE2ETest::findActivationTokenInSentEmail, Optional::isPresent)
                 .orElseThrow();
