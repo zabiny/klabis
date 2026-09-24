@@ -2,10 +2,10 @@
 
 ## 1. Close the activation-link takeover (independently releasable)
 
-- [ ] 1.1 Write a failing `PasswordSetupServiceImpl` unit test: `requestNewToken` with an e-mail that is **not** an activation contact of that registration number sends no e-mail and generates no token, but still completes normally with the same result as a matching request (design D1). Then declare the `ActivationContactVerifier` port in `common.users` and call it from `requestNewToken`.
-- [ ] 1.2 Write a failing test that a matching e-mail (trimmed, case-insensitive) still sends the link to the entered address, and that the rate-limit and "already active" outcomes are unchanged. Implement to pass.
-- [ ] 1.3 Write failing tests for the `members` adapter implementing `ActivationContactVerifier`: it matches the member's own e-mail, matches the guardian's e-mail, rejects any other address, and returns `false` for an unknown registration number or a member without any e-mail (design D2). Implement it in `members.infrastructure`.
-- [ ] 1.4 Write an integration test through `POST /api/auth/password-setup/request` proving a foreign e-mail gets the same response body as a matching one and receives no mail (captured via the logging e-mail service). Verify `JMoleculesArchitectureTest` and the Modulith verification still pass (no `common` → `members` dependency).
+- [x] 1.1 Write a failing `PasswordSetupServiceImpl` unit test: `requestNewToken` with an e-mail that is **not** an activation contact of that registration number sends no e-mail and generates no token, but still completes normally with the same result as a matching request (design D1). Then declare the `ActivationContactVerifier` port in `common.users` and call it from `requestNewToken`.
+- [x] 1.2 Write a failing test that a matching e-mail (trimmed, case-insensitive) still sends the link to the entered address, and that the rate-limit and "already active" outcomes are unchanged. Implement to pass.
+- [x] 1.3 Write failing tests for the `members` adapter implementing `ActivationContactVerifier`: it matches the member's own e-mail, matches the guardian's e-mail, rejects any other address, and returns `false` for an unknown registration number or a member without any e-mail (design D2). Implement it in `members.infrastructure`.
+- [x] 1.4 Write an integration test through `POST /api/auth/password-setup/request` proving a foreign e-mail gets the same response body as a matching one and receives no mail (captured via the logging e-mail service). Verify `JMoleculesArchitectureTest` and the Modulith verification still pass (no `common` → `members` dependency).
 
 ## 2. Accounts without an activation e-mail on creation
 

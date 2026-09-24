@@ -35,6 +35,9 @@ public abstract class PasswordSetupServiceTestBase {
     @Mock
     protected PerKeyRateLimiter rateLimiter;
 
+    @Mock
+    protected ActivationContactVerifier activationContactVerifier;
+
     protected PasswordSetupService createService() {
         return new PasswordSetupServiceImpl(
                 tokenRepository,
@@ -44,6 +47,7 @@ public abstract class PasswordSetupServiceTestBase {
                 passwordEncoder,
                 passwordValidator,
                 rateLimiter,
+                activationContactVerifier,
                 TestConfigurationHelper.createDefaultPasswordSetupProperties(),
                 TestConfigurationHelper.createDefaultClubProperties()
         );

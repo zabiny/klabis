@@ -32,6 +32,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordComplexityValidator passwordValidator;
     private final PerKeyRateLimiter rateLimiter;
+    private final ActivationContactVerifier activationContactVerifier;
     private final PasswordSetupProperties passwordSetupProperties;
     private final ClubProperties clubProperties;
 
@@ -43,6 +44,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
             PasswordEncoder passwordEncoder,
             PasswordComplexityValidator passwordValidator,
             PerKeyRateLimiter rateLimiter,
+            ActivationContactVerifier activationContactVerifier,
             PasswordSetupProperties passwordSetupProperties,
             ClubProperties clubProperties) {
         this.tokenRepository = tokenRepository;
@@ -52,6 +54,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
         this.passwordEncoder = passwordEncoder;
         this.passwordValidator = passwordValidator;
         this.rateLimiter = rateLimiter;
+        this.activationContactVerifier = activationContactVerifier;
         this.passwordSetupProperties = passwordSetupProperties;
         this.clubProperties = clubProperties;
     }
@@ -171,6 +174,13 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
             throw new TokenValidationException(
                     "Account is not in pending activation status. Token reissuance is only available for accounts awaiting activation."
             );
+        }
+
+        if (!activationContactVerifier.isActivationContact(registrationNumber, email)) {
+            // Neutral outcome by design (D1): never reveal whether the address matched,
+            // so the form cannot be used to enumerate members' e-mail addresses.
+            log.info("Password setup token reissue requested for user {} with an e-mail that is not an activation contact", user.getId());
+            return;
         }
 
         GeneratedTokenResult result = generateToken(user);
