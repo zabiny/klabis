@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
@@ -201,6 +202,141 @@ class MemberRepositoryTest {
             assertThat(savedMember).isNotNull();
             assertThat(savedMember.getId()).isNotNull();
             assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0003");
+        }
+    }
+
+    @Nested
+    @DisplayName("data_incomplete column")
+    class DataIncompleteFlag {
+
+        @Autowired
+        private JdbcTemplate jdbcTemplate;
+
+        private boolean dataIncompleteColumnFor(UUID memberId) {
+            Boolean value = jdbcTemplate.queryForObject(
+                    "SELECT data_incomplete FROM members.members WHERE id = ?",
+                    Boolean.class, memberId);
+            return Boolean.TRUE.equals(value);
+        }
+
+        @Test
+        @DisplayName("stores true when saving an incomplete member")
+        void shouldStoreTrueWhenSavingIncompleteMember() {
+            // a minor without a guardian is missing GUARDIAN -> incomplete
+            Member incompleteMember = aMember()
+                    .withRegistrationNumber("ZBM7001")
+                    .withNoGuardian()
+                    .build();
+
+            Member savedMember = memberRepository.save(incompleteMember);
+
+            assertThat(dataIncompleteColumnFor(savedMember.getId().uuid())).isTrue();
+        }
+
+        @Test
+        @DisplayName("stores false when saving a complete member")
+        void shouldStoreFalseWhenSavingCompleteMember() {
+            Member completeMember = aMember()
+                    .withRegistrationNumber("ZBM7002")
+                    .build();
+
+            Member savedMember = memberRepository.save(completeMember);
+
+            assertThat(dataIncompleteColumnFor(savedMember.getId().uuid())).isFalse();
+        }
+
+        @Test
+        @DisplayName("flips to false once a previously incomplete member is completed and re-saved")
+        void shouldUpdateStoredFlagToFalseAfterCompletion() {
+            Member incompleteMember = aMember()
+                    .withRegistrationNumber("ZBM7003")
+                    .withNoGuardian()
+                    .build();
+            Member savedMember = memberRepository.save(incompleteMember);
+            assertThat(dataIncompleteColumnFor(savedMember.getId().uuid())).isTrue();
+
+            savedMember.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(savedMember))
+                    .guardian(new GuardianInformation("Petr", "Novák", "Father",
+                            EmailAddress.of("petr.novak@example.com"),
+                            PhoneNumber.of("+420987654321")))
+                    .build());
+            Member resavedMember = memberRepository.save(savedMember);
+
+            assertThat(dataIncompleteColumnFor(resavedMember.getId().uuid())).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("MemberFilter.incompleteOnly")
+    class IncompleteOnlyFilterTest {
+
+        private Member completeActive;
+        private Member incompleteActive;
+        private Member incompleteInactive;
+
+        @org.junit.jupiter.api.BeforeEach
+        void setUp() {
+            completeActive = aMember()
+                    .withRegistrationNumber("ZBM7101")
+                    .withName("Filip", "Kompletní")
+                    .withActive(true)
+                    .build();
+
+            incompleteActive = aMember()
+                    .withRegistrationNumber("ZBM7102")
+                    .withName("Ivana", "Nekompletní")
+                    .withNoGuardian()
+                    .withActive(true)
+                    .build();
+
+            incompleteInactive = aMember()
+                    .withRegistrationNumber("ZBM7103")
+                    .withName("Karel", "Nekompletní")
+                    .withNoGuardian()
+                    .withActive(false)
+                    .build();
+
+            memberRepository.save(completeActive);
+            memberRepository.save(incompleteActive);
+            memberRepository.save(incompleteInactive);
+        }
+
+        @Test
+        @DisplayName("returns only incomplete members when set")
+        void shouldReturnOnlyIncompleteMembers() {
+            MemberFilter filter = MemberFilter.all().withIncompleteOnly(true);
+
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent())
+                    .extracting(m -> m.getRegistrationNumber().getValue())
+                    .containsExactlyInAnyOrder("ZBM7102", "ZBM7103");
+        }
+
+        @Test
+        @DisplayName("combines with status filter using AND semantics")
+        void shouldCombineWithStatusFilter() {
+            MemberFilter filter = MemberFilter.activeOnly().withIncompleteOnly(true);
+
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent())
+                    .extracting(m -> m.getRegistrationNumber().getValue())
+                    .containsExactly("ZBM7102");
+        }
+
+        @Test
+        @DisplayName("combines with fulltext filter using AND semantics")
+        void shouldCombineWithFulltextFilter() {
+            MemberFilter filter = MemberFilter.all()
+                    .withIncompleteOnly(true)
+                    .withFulltext("Karel");
+
+            Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
+
+            assertThat(page.getContent())
+                    .extracting(m -> m.getRegistrationNumber().getValue())
+                    .containsExactly("ZBM7103");
         }
     }
 
@@ -1292,7 +1428,7 @@ class MemberRepositoryTest {
         @Test
         @DisplayName("INACTIVE status returns only deactivated members")
         void shouldReturnOnlyInactiveMembersForInactiveStatus() {
-            MemberFilter filter = new MemberFilter(MemberFilter.StatusFilter.INACTIVE, null);
+            MemberFilter filter = new MemberFilter(MemberFilter.StatusFilter.INACTIVE, null, false);
 
             Page<Member> page = memberRepository.findAll(filter, Pageable.unpaged());
 

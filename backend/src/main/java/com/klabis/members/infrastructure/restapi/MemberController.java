@@ -182,7 +182,7 @@ public class MemberController implements MembersApi {
     private MemberFilter buildFilter(String q, String status, CurrentUserData currentUser) {
         MemberFilter.StatusFilter resolvedStatus = parseStatus(status);
 
-        MemberFilter filter = new MemberFilter(resolvedStatus, q);
+        MemberFilter filter = new MemberFilter(resolvedStatus, q, false);
 
         if (!currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
             filter = filter.withStatus(MemberFilter.StatusFilter.ACTIVE);

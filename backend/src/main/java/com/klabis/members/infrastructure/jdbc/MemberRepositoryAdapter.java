@@ -153,6 +153,10 @@ class MemberRepositoryAdapter implements MemberRepository {
             conditions.add(Criteria.where("active").isFalse());
         }
 
+        if (filter.incompleteOnly()) {
+            conditions.add(Criteria.where("dataIncomplete").isTrue());
+        }
+
         if (conditions.isEmpty()) {
             return Query.empty();
         }
