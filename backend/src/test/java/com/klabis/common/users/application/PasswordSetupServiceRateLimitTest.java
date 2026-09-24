@@ -56,6 +56,7 @@ class PasswordSetupServiceRateLimitTest extends PasswordSetupServiceTestBase {
             User user = createPendingUser(registrationNumber);
 
             when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
+            when(activationContactVerifier.isActivationContact(registrationNumber, "test@example.com")).thenReturn(true);
             when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
             when(templateRenderer.renderText(any(), any())).thenReturn("text body");
@@ -89,6 +90,8 @@ class PasswordSetupServiceRateLimitTest extends PasswordSetupServiceTestBase {
 
             when(userRepository.findByUsername(regNumber1)).thenReturn(Optional.of(user1));
             when(userRepository.findByUsername(regNumber2)).thenReturn(Optional.of(user2));
+            when(activationContactVerifier.isActivationContact(regNumber1, "test1@example.com")).thenReturn(true);
+            when(activationContactVerifier.isActivationContact(regNumber2, "test2@example.com")).thenReturn(true);
             when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
             when(templateRenderer.renderText(any(), any())).thenReturn("text body");
@@ -120,9 +123,6 @@ class PasswordSetupServiceRateLimitTest extends PasswordSetupServiceTestBase {
             User user = createPendingUser(registrationNumber);
 
             when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
-            when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
-            when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
-            when(templateRenderer.renderText(any(), any())).thenReturn("text body");
 
             // When
             passwordSetupService.requestNewToken(registrationNumber, "test@example.com");

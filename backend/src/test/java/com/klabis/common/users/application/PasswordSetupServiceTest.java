@@ -502,6 +502,28 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             // Then
             verify(emailService).send(any(EmailMessage.class));
         }
+
+        @Test
+        @DisplayName("should complete normally without sending an email when no ActivationContactVerifier is available (fail closed)")
+        void shouldSendNothingWhenVerifierIsUnavailable() {
+            // Given - a module bootstrapped without the members adapter (e.g. an isolated
+            // module test) has no ActivationContactVerifier bean at all.
+            String registrationNumber = "ZBM0101";
+            String email = "test@example.com";
+            User user = createPendingUser();
+
+            when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
+
+            PasswordSetupService serviceWithoutVerifier = createService(fixedProvider((ActivationContactVerifier) null));
+
+            // When
+            serviceWithoutVerifier.requestNewToken(registrationNumber, email);
+
+            // Then
+            verify(tokenRepository, never()).invalidateAllForUser(any());
+            verify(tokenRepository, never()).save(any(PasswordSetupToken.class));
+            verify(emailService, never()).send(any(EmailMessage.class));
+        }
     }
 
     // Helper methods

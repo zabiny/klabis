@@ -11,6 +11,7 @@ import com.klabis.common.users.domain.*;
 import com.klabis.common.users.domain.PasswordSetupTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +33,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
     private final PasswordEncoder passwordEncoder;
     private final PasswordComplexityValidator passwordValidator;
     private final PerKeyRateLimiter rateLimiter;
-    private final ActivationContactVerifier activationContactVerifier;
+    private final ObjectProvider<ActivationContactVerifier> activationContactVerifier;
     private final PasswordSetupProperties passwordSetupProperties;
     private final ClubProperties clubProperties;
 
@@ -44,7 +45,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
             PasswordEncoder passwordEncoder,
             PasswordComplexityValidator passwordValidator,
             PerKeyRateLimiter rateLimiter,
-            ActivationContactVerifier activationContactVerifier,
+            ObjectProvider<ActivationContactVerifier> activationContactVerifier,
             PasswordSetupProperties passwordSetupProperties,
             ClubProperties clubProperties) {
         this.tokenRepository = tokenRepository;
@@ -176,7 +177,13 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
             );
         }
 
-        if (!activationContactVerifier.isActivationContact(registrationNumber, email)) {
+        ActivationContactVerifier verifier = activationContactVerifier.getIfAvailable();
+        // Fail closed: a module bootstrapped without the members adapter (e.g. isolated
+        // module tests) has no verifier bean. Treat that exactly like "no match" rather
+        // than sending a link nobody could actually confirm ownership of.
+        boolean isActivationContact = verifier != null && verifier.isActivationContact(registrationNumber, email);
+
+        if (!isActivationContact) {
             // Neutral outcome by design (D1): never reveal whether the address matched,
             // so the form cannot be used to enumerate members' e-mail addresses.
             log.info("Password setup token reissue requested for user {} with an e-mail that is not an activation contact", user.getId());
