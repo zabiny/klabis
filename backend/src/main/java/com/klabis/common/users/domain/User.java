@@ -71,7 +71,8 @@ public class User extends KlabisAggregateRoot<User, UserId> {
      *
      * <p>A random placeholder password hash is generated internally so the account cannot
      * be used until the user completes the password setup. Publishes {@link UserCreatedEvent}
-     * with {@link AccountStatus#PENDING_ACTIVATION} to trigger the password setup email.
+     * with {@link AccountStatus#PENDING_ACTIVATION}. No activation e-mail is sent on creation;
+     * the user requests a setup link themselves via the password-setup request flow.
      *
      * @param username registration number (username)
      * @return new User with PENDING_ACTIVATION status and a random placeholder password hash
@@ -89,36 +90,6 @@ public class User extends KlabisAggregateRoot<User, UserId> {
         );
 
         user.registerEvent(UserCreatedEvent.fromAggregate(user));
-
-        return user;
-    }
-
-    /**
-     * Creates a new user who needs to set their password via a password setup flow,
-     * with an email included in the event for password setup coordination.
-     *
-     * <p>A random placeholder password hash is generated internally so the account cannot
-     * be used until the user completes the password setup. Publishes {@link UserCreatedEvent}
-     * with {@link AccountStatus#PENDING_ACTIVATION} and the email to trigger the password setup email.
-     *
-     * @param username registration number (username)
-     * @param email    email address for password setup (PII from Member context)
-     * @return new User with PENDING_ACTIVATION status and a random placeholder password hash
-     */
-    public static User createdUserWithEmail(String username, String email) {
-        Objects.requireNonNull(username, "Username is required");
-        Objects.requireNonNull(email, "Email is required");
-
-        String placeholderHash = UUID.randomUUID().toString();
-
-        User user = new User(
-                new UserId(UUID.randomUUID()),
-                username,
-                placeholderHash,
-                AccountStatus.PENDING_ACTIVATION
-        );
-
-        user.registerEvent(UserCreatedEvent.fromAggregateWithEmail(user, email));
 
         return user;
     }

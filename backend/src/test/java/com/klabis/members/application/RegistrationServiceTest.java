@@ -23,6 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -109,7 +110,7 @@ class RegistrationServiceTest {
      * @param sharedId       the shared ID to use for both User and Member
      */
     private void mockUserCreation(UserId sharedId) {
-        when(userService.createUser(anyString(), anyString(), any(Set.class))).thenReturn(sharedId);
+        when(userService.createUser(anyString(), any(Set.class))).thenReturn(sharedId);
     }
 
     @Nested
@@ -160,12 +161,10 @@ class RegistrationServiceTest {
 
             // Verify user creation via UserService with correct arguments
             ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> emailCaptor = ArgumentCaptor.forClass(String.class);
             ArgumentCaptor<Set> authoritiesCaptor = ArgumentCaptor.forClass(Set.class);
-            verify(userService).createUser(usernameCaptor.capture(), emailCaptor.capture(), authoritiesCaptor.capture());
+            verify(userService).createUser(usernameCaptor.capture(), authoritiesCaptor.capture());
 
             assertThat(usernameCaptor.getValue()).isEqualTo("ZBM0500");
-            assertThat(emailCaptor.getValue()).isEqualTo("jan.novak@example.com");
             assertThat(authoritiesCaptor.getValue()).isEqualTo(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
 
             // CRITICAL: Verify returned Member has the shared ID
@@ -204,12 +203,10 @@ class RegistrationServiceTest {
 
             // Then
             ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
-            ArgumentCaptor<String> emailCaptor = ArgumentCaptor.forClass(String.class);
             ArgumentCaptor<Set> authoritiesCaptor = ArgumentCaptor.forClass(Set.class);
-            verify(userService).createUser(usernameCaptor.capture(), emailCaptor.capture(), authoritiesCaptor.capture());
+            verify(userService).createUser(usernameCaptor.capture(), authoritiesCaptor.capture());
 
             assertThat(usernameCaptor.getValue()).isEqualTo("ZBM0501");
-            assertThat(emailCaptor.getValue()).isEqualTo("eva@example.com");
             assertThat(authoritiesCaptor.getValue()).isEqualTo(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
         }
 
@@ -366,7 +363,7 @@ class RegistrationServiceTest {
 
             // Then - verify member repository and user service were called
             verify(memberRepository).save(any(Member.class));
-            verify(userService).createUser(anyString(), anyString(), any(Set.class));
+            verify(userService).createUser(anyString(), any(Set.class));
         }
 
         @Test
@@ -576,6 +573,53 @@ class RegistrationServiceTest {
     }
 
     @Nested
+    @DisplayName("registerMember() with guardian-only e-mail (design D7 / NPE regression)")
+    class RegisterMemberWithGuardianOnlyEmail {
+
+        @Test
+        @DisplayName("should register a minor whose only e-mail is the guardian's and create a PENDING_ACTIVATION user")
+        void shouldRegisterMinorWithOnlyGuardianEmail() {
+            // Given
+            LocalDate dateOfBirth = LocalDate.of(2015, 4, 10);
+            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
+            Address address = Address.of("Dětská 1", "Brno", "60200", "CZ");
+            PhoneNumber phone = PhoneNumber.of("+420777333444");
+            EmailAddress guardianEmail = EmailAddress.of("guardian@example.com");
+            PhoneNumber guardianPhone = PhoneNumber.of("+420777111222");
+            GuardianInformation guardian = new GuardianInformation(
+                    "Parent", "Name", "PARENT", guardianEmail, guardianPhone
+            );
+            PersonalInformation personalInformation = PersonalInformation.of(
+                    "Child", "Minor", dateOfBirth, "CZ", Gender.MALE
+            );
+
+            // Member has no e-mail of their own - only the guardian's
+            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
+                    address,
+                    null,
+                    phone,
+                    guardian,
+                    BirthNumber.of("150410/1234"),
+                    null,
+                    null
+            );
+
+            mockUserCreation(testSharedId);
+            mockMemberCreation(testSharedId);
+
+            // When
+            Member result = service.registerMember(command);
+
+            // Then - no NPE, member registered and user created without an email
+            assertThat(result).isNotNull();
+            assertThat(result.getEmail()).isNull();
+            assertThat(result.getGuardian().getEmail()).isEqualTo(guardianEmail);
+
+            verify(userService).createUser(eq("ZBM0500"), eq(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ)));
+        }
+    }
+
+    @Nested
     @DisplayName("importMember() method")
     class ImportMemberMethod {
 
@@ -615,7 +659,7 @@ class RegistrationServiceTest {
             verify(registrationNumberGenerator, never()).generate(any(LocalDate.class));
 
             ArgumentCaptor<String> usernameCaptor = ArgumentCaptor.forClass(String.class);
-            verify(userService).createUser(usernameCaptor.capture(), anyString(), any(Set.class));
+            verify(userService).createUser(usernameCaptor.capture(), any(Set.class));
             assertThat(usernameCaptor.getValue()).isEqualTo("ZBM0099");
         }
     }

@@ -40,3 +40,11 @@ describe('LoginPage error handling', () => {
         expect(screen.getByRole('alert')).toHaveTextContent('Chyba konfigurace, kontaktujte administrátora');
     });
 });
+
+describe('LoginPage account activation link', () => {
+    it('links to the password setup request page', () => {
+        renderLoginPage();
+        const link = screen.getByRole('link', {name: 'Aktivovat účet'});
+        expect(link).toHaveAttribute('href', '/password-setup/request');
+    });
+});

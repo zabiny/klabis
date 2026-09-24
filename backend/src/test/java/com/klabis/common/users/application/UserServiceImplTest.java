@@ -44,14 +44,13 @@ class UserServiceImplTest {
     }
 
     @Nested
-    @DisplayName("createUser(username, email, authorities) method")
-    class CreateUserWithEmailMethod {
+    @DisplayName("createUser(username, authorities) method")
+    class CreateUserMethod {
 
         @Test
-        @DisplayName("should create user with PENDING_ACTIVATION status when email provided")
-        void shouldCreateUserWithPendingActivationWhenEmailProvided() {
+        @DisplayName("should create user with PENDING_ACTIVATION status")
+        void shouldCreateUserWithPendingActivationStatus() {
             // Given
-            String email = "user@example.com";
             User pendingUser = User.reconstruct(
                     testUserId,
                     testUsername,
@@ -64,7 +63,7 @@ class UserServiceImplTest {
                     .thenReturn(UserPermissions.create(testUserId, testAuthorities));
 
             // When
-            UserId result = testedSubject.createUser(testUsername, email, testAuthorities);
+            UserId result = testedSubject.createUser(testUsername, testAuthorities);
 
             // Then
             assertThat(result).isEqualTo(testUserId);
@@ -77,10 +76,9 @@ class UserServiceImplTest {
         }
 
         @Test
-        @DisplayName("should include email in UserCreatedEvent for password setup flow")
-        void shouldIncludeEmailInUserCreatedEvent() {
+        @DisplayName("should publish a UserCreatedEvent without an email, so no activation e-mail is sent")
+        void shouldPublishUserCreatedEventWithoutEmail() {
             // Given
-            String email = "user@example.com";
             User pendingUser = User.reconstruct(
                     testUserId,
                     testUsername,
@@ -93,7 +91,7 @@ class UserServiceImplTest {
                     .thenReturn(UserPermissions.create(testUserId, testAuthorities));
 
             // When
-            testedSubject.createUser(testUsername, email, testAuthorities);
+            testedSubject.createUser(testUsername, testAuthorities);
 
             // Then
             ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
@@ -101,14 +99,13 @@ class UserServiceImplTest {
             User savedUser = userCaptor.getValue();
             assertThat(savedUser.getDomainEvents()).hasSize(1);
             UserCreatedEvent event = (UserCreatedEvent) savedUser.getDomainEvents().get(0);
-            assertThat(event.email()).contains(email);
+            assertThat(event.accountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION);
         }
 
         @Test
         @DisplayName("should grant authorities on the created user")
         void shouldGrantAuthoritiesOnCreatedUser() {
             // Given
-            String email = "user@example.com";
             User pendingUser = User.reconstruct(
                     testUserId,
                     testUsername,
@@ -121,7 +118,7 @@ class UserServiceImplTest {
                     .thenReturn(UserPermissions.create(testUserId, testAuthorities));
 
             // When
-            testedSubject.createUser(testUsername, email, testAuthorities);
+            testedSubject.createUser(testUsername, testAuthorities);
 
             // Then
             ArgumentCaptor<UserPermissions> permissionsCaptor = ArgumentCaptor.forClass(UserPermissions.class);

@@ -9,9 +9,9 @@
 
 ## 2. Accounts without an activation e-mail on creation
 
-- [ ] 2.1 Write a failing `RegistrationService` test: registering a minor whose only e-mail is the guardian's succeeds and creates a `PENDING_ACTIVATION` user (the NPE regression). Then make `RegistrationService` create users through the e-mail-less `User.createdUser(username)` and drop the `email` parameter from `UserService.createUser` (design D7).
-- [ ] 2.2 Write a failing test that registering a member sends no password-setup e-mail. Remove `User.createdUserWithEmail`, the e-mail field of `UserCreatedEvent` and the e-mail-sending branch of `UserCreatedEventHandler`, and update or delete the tests that asserted the old welcome e-mail.
-- [ ] 2.3 Add an "Aktivovat účet" link on the frontend `LoginPage` leading to `/password-setup/request`. Write a component test for the link, and adjust the request-page copy so it tells the user a link arrives only if the e-mail matches the one held by the club.
+- [x] 2.1 Write a failing `RegistrationService` test: registering a minor whose only e-mail is the guardian's succeeds and creates a `PENDING_ACTIVATION` user (the NPE regression). Then make `RegistrationService` create users through the e-mail-less `User.createdUser(username)` and drop the `email` parameter from `UserService.createUser` (design D7).
+- [x] 2.2 Write a failing test that registering a member sends no password-setup e-mail. Remove `User.createdUserWithEmail`, the e-mail field of `UserCreatedEvent` and the e-mail-sending branch of `UserCreatedEventHandler`, and update or delete the tests that asserted the old welcome e-mail.
+- [x] 2.3 Add an "Aktivovat účet" link on the frontend `LoginPage` leading to `/password-setup/request`. Write a component test for the link, and adjust the request-page copy so it tells the user a link arrives only if the e-mail matches the one held by the club.
 
 ## 3. Derived completeness in the domain
 

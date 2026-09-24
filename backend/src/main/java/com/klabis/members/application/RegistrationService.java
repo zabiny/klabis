@@ -93,7 +93,6 @@ public class RegistrationService implements RegistrationPort {
         try {
             UserId sharedUserId = userService.createUser(
                     registrationNumber.getValue(),
-                    command.email().value(),
                     Authority.getStandardUserAuthorities()
             );
 

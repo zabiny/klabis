@@ -46,10 +46,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserId createUser(String username, String email, Set<Authority> authorities) {
-        log.debug("Creating user pending password setup: username={}, email={}", username, email);
+    public UserId createUser(String username, Set<Authority> authorities) {
+        log.debug("Creating user pending password setup: username={}", username);
 
-        User user = User.createdUserWithEmail(username, email);
+        User user = User.createdUser(username);
 
         User savedUser = userRepository.save(user);
         UserId userId = savedUser.getId();
