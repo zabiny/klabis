@@ -18,8 +18,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Member aggregate root.
@@ -369,14 +371,13 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         Assert.notNull(command.personalInformation(), "Personal information is required");
         Assert.notNull(command.address(), "Address is required");
 
-        // Validate contact information
-        validateContactInformation(command.email(), command.phone(), command.guardian());
+        // Consistency rule: always enforced, regardless of completeness
+        validateBirthNumberConsistency(command.personalInformation().getNationalityCode(), command.birthNumber());
 
-        // Validate guardian for minors
-        validateGuardianForMinors(command.personalInformation(), command.guardian());
-
-        // Validate birth number nationality
-        validateBirthNumberNationality(command.personalInformation().getNationalityCode(), command.birthNumber());
+        // Completeness rules: a hand-registered member must be complete (design.md D5)
+        enforceCompleteness(computeMissingData(
+                command.email(), command.phone(), command.guardian(),
+                command.personalInformation(), command.birthNumber()));
 
         Member member = new Member(
                 command.id(),
@@ -412,64 +413,17 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         return member;
     }
 
-    private static void validateContactInformation(
-            EmailAddress email,
-            PhoneNumber phone,
-            GuardianInformation guardian) {
-
-        boolean memberHasEmail = email != null;
-        boolean memberHasPhone = phone != null;
-
-        // GuardianInformation enforces non-null email and phone in its constructor
-        // Therefore, if guardian is present, it always has both email and phone
-        boolean guardianHasEmail = guardian != null; // guardian.getEmail() never null
-        boolean guardianHasPhone = guardian != null; // guardian.getPhone() never null
-
-        boolean hasEmail = memberHasEmail || guardianHasEmail;
-        boolean hasPhone = memberHasPhone || guardianHasPhone;
-
-        Assert.isTrue(hasEmail, "At least one email address is required (member or guardian)");
-        Assert.isTrue(hasPhone, "At least one phone number is required (member or guardian)");
-    }
-
     /**
-     * Validates that a guardian is provided for minor members.
-     *
-     * <p><b>Business Rule:</b> Guardian contact information is required when
-     * creating or updating a Member who is a minor (under 18) at the time of
-     * the operation. The age is calculated dynamically based on the current date.
-     *
-     * <p>Once a guardian is assigned, that relationship is permanent and does not
-     * expire when the member turns 18 later.
-     *
-     * @param dateOfBirth the member's date of birth
-     * @param guardian    the guardian information (may be null for adults)
-     * @throws IllegalArgumentException if member is under 18 and no guardian is provided
-     */
-    private static void validateGuardianForMinors(
-            PersonalInformation personalInformation,
-            GuardianInformation guardian) {
-
-        if (personalInformation.isMinor() && guardian == null) {
-            throw new BusinessRuleViolationException(
-                    "Guardian is required for minors (under 18 years)"
-            ) {
-            };
-        }
-    }
-
-    /**
-     * Validates birth number and nationality consistency.
-     *
-     * <p><b>Business Rule:</b> Birth number (rodné číslo) is required for Czech nationals
-     * and forbidden for non-Czech nationals.
+     * Validates birth number/nationality consistency: a birth number is forbidden for non-Czech
+     * nationals. This rule always holds, independent of completeness (design.md D3/D5) — unlike
+     * the requirement that a Czech national *have* a birth number, which is a completeness rule
+     * (see {@link MissingDataItem#BIRTH_NUMBER}).
      *
      * @param nationalityCode the member's nationality code (ISO 3166-1)
      * @param birthNumber     the birth number to validate (may be null)
-     * @throws BusinessRuleViolationException if birth number is provided for non-Czech nationality
-     *                                        or missing for Czech nationality
+     * @throws BusinessRuleViolationException if a birth number is provided for a non-Czech national
      */
-    private static void validateBirthNumberNationality(String nationalityCode, BirthNumber birthNumber) {
+    private static void validateBirthNumberConsistency(String nationalityCode, BirthNumber birthNumber) {
         Nationality nationality = Nationality.of(nationalityCode);
 
         if (birthNumber != null && !nationality.isCzech()) {
@@ -478,8 +432,107 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             ) {
             };
         }
+    }
 
-        if (birthNumber == null && nationality.isCzech()) {
+    /**
+     * Derives which required details this member currently lacks (design.md D3).
+     * <p>
+     * {@code EMAIL}/{@code PHONE} are satisfied by either the member or their guardian.
+     * {@code BIRTH_NUMBER} is required only for Czech nationals. {@code GUARDIAN} is required
+     * only while the member is a minor <i>today</i> — a minor imported without a guardian becomes
+     * complete on their 18th birthday without any write.
+     *
+     * @return the set of missing data items, empty when the member is complete
+     */
+    public Set<MissingDataItem> missingData() {
+        return computeMissingData(email, phone, guardian, personalInformation, birthNumber);
+    }
+
+    /**
+     * @return {@code true} when {@link #missingData()} is empty
+     */
+    public boolean isComplete() {
+        return missingData().isEmpty();
+    }
+
+    private static Set<MissingDataItem> computeMissingData(
+            EmailAddress email,
+            PhoneNumber phone,
+            GuardianInformation guardian,
+            PersonalInformation personalInformation,
+            BirthNumber birthNumber) {
+
+        Set<MissingDataItem> missing = EnumSet.noneOf(MissingDataItem.class);
+
+        // GuardianInformation enforces non-null email and phone in its constructor,
+        // so a present guardian always covers both.
+        boolean hasEmail = email != null || guardian != null;
+        boolean hasPhone = phone != null || guardian != null;
+
+        if (!hasEmail) {
+            missing.add(MissingDataItem.EMAIL);
+        }
+        if (!hasPhone) {
+            missing.add(MissingDataItem.PHONE);
+        }
+
+        if (personalInformation != null) {
+            if (personalInformation.getNationality().isCzech() && birthNumber == null) {
+                missing.add(MissingDataItem.BIRTH_NUMBER);
+            }
+            if (personalInformation.isMinor() && guardian == null) {
+                missing.add(MissingDataItem.GUARDIAN);
+            }
+        }
+
+        return missing;
+    }
+
+    /**
+     * Enforces full completeness (design.md D5) — used by {@link #register(RegisterMember)}, where
+     * every missing item is a violation. Exception types and messages match the pre-completeness
+     * validation methods this replaced, so the registration form's behaviour is unchanged.
+     */
+    private static void enforceCompleteness(Set<MissingDataItem> missing) {
+        Assert.isTrue(!missing.contains(MissingDataItem.EMAIL),
+                "At least one email address is required (member or guardian)");
+        Assert.isTrue(!missing.contains(MissingDataItem.PHONE),
+                "At least one phone number is required (member or guardian)");
+
+        if (missing.contains(MissingDataItem.GUARDIAN)) {
+            throw new BusinessRuleViolationException(
+                    "Guardian is required for minors (under 18 years)"
+            ) {
+            };
+        }
+        if (missing.contains(MissingDataItem.BIRTH_NUMBER)) {
+            throw new BusinessRuleViolationException(
+                    "Birth number is required for Czech nationals"
+            ) {
+            };
+        }
+    }
+
+    /**
+     * Enforces the never-worsen rule (design.md D5) — used by {@link #update(UpdateMember)}. Only
+     * an item that becomes missing as a result of the edit is a violation; an item that was already
+     * missing before the edit may remain missing (an incomplete member may be saved with unrelated
+     * changes, or with only some missing items filled in).
+     */
+    private static void enforceNeverWorsen(Set<MissingDataItem> before, Set<MissingDataItem> after) {
+        if (after.contains(MissingDataItem.EMAIL) && !before.contains(MissingDataItem.EMAIL)) {
+            throw new IllegalArgumentException("At least one email address is required (member or guardian)");
+        }
+        if (after.contains(MissingDataItem.PHONE) && !before.contains(MissingDataItem.PHONE)) {
+            throw new IllegalArgumentException("At least one phone number is required (member or guardian)");
+        }
+        if (after.contains(MissingDataItem.GUARDIAN) && !before.contains(MissingDataItem.GUARDIAN)) {
+            throw new BusinessRuleViolationException(
+                    "Guardian is required for minors (under 18 years)"
+            ) {
+            };
+        }
+        if (after.contains(MissingDataItem.BIRTH_NUMBER) && !before.contains(MissingDataItem.BIRTH_NUMBER)) {
             throw new BusinessRuleViolationException(
                     "Birth number is required for Czech nationals"
             ) {
@@ -608,19 +661,22 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     public void update(UpdateMember command) {
         GuardianInformation newGuardian = command.guardian();
 
-        validateContactInformation(command.email(), command.phone(), newGuardian);
-
         PersonalInformation newPersonalInfo = PersonalInformation.of(
                 command.firstName(), command.lastName(), command.dateOfBirth(),
                 command.nationality(), command.gender());
 
-        validateGuardianForMinors(newPersonalInfo, newGuardian);
-
         BirthNumber newBirthNumber = command.birthNumber();
-        if (newBirthNumber != null && !Nationality.of(newPersonalInfo.getNationalityCode()).isCzech()) {
+        if (newBirthNumber != null && !newPersonalInfo.getNationality().isCzech()) {
             newBirthNumber = null;
         }
-        validateBirthNumberNationality(newPersonalInfo.getNationalityCode(), newBirthNumber);
+        // Consistency rule: always enforced, regardless of completeness
+        validateBirthNumberConsistency(newPersonalInfo.getNationalityCode(), newBirthNumber);
+
+        // Never-worsen rule: an edit may only fill in missing data, never add to it (design.md D5)
+        Set<MissingDataItem> missingBefore = missingData();
+        Set<MissingDataItem> missingAfter = computeMissingData(
+                command.email(), command.phone(), newGuardian, newPersonalInfo, newBirthNumber);
+        enforceNeverWorsen(missingBefore, missingAfter);
 
         BirthNumber previousBirthNumber = this.birthNumber;
 
@@ -660,14 +716,27 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         Assert.isTrue(Objects.equals(this.registrationNumber, command.registrationNumber()),
                 "SyncFromOris command targets a different member");
 
-        validateContactInformation(command.email(), command.phone(), this.guardian);
+        // TODO(import-incomplete-members section 6): completeness rules will be dropped here,
+        // keeping only the consistency rule below (design.md D5) — out of scope for section 3.
+        Set<MissingDataItem> contactMissing = computeMissingData(
+                command.email(), command.phone(), this.guardian, this.personalInformation, this.birthNumber);
+        Assert.isTrue(!contactMissing.contains(MissingDataItem.EMAIL),
+                "At least one email address is required (member or guardian)");
+        Assert.isTrue(!contactMissing.contains(MissingDataItem.PHONE),
+                "At least one phone number is required (member or guardian)");
 
         PersonalInformation newPersonalInfo = PersonalInformation.of(
                 command.firstName(), command.lastName(), command.dateOfBirth(),
                 command.nationality() != null ? command.nationality().code() : null,
                 command.gender());
 
-        validateBirthNumberNationality(newPersonalInfo.getNationalityCode(), command.birthNumber());
+        validateBirthNumberConsistency(newPersonalInfo.getNationalityCode(), command.birthNumber());
+        if (command.birthNumber() == null && newPersonalInfo.getNationality().isCzech()) {
+            throw new BusinessRuleViolationException(
+                    "Birth number is required for Czech nationals"
+            ) {
+            };
+        }
 
         this.personalInformation = newPersonalInfo;
         this.birthNumber = command.birthNumber();
