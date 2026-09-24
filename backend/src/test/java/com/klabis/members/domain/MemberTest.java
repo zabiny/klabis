@@ -1394,6 +1394,41 @@ class MemberTest {
         }
 
         @Test
+        @DisplayName("update that clears address on a complete member should fail")
+        void updateClearingAddressOnCompleteMemberShouldFail() {
+            Member member = aMember()
+                    .withEmail("jan@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .build();
+
+            assertThatThrownBy(() -> member.update(
+                    MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).address(null).build()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Address is required");
+        }
+
+        @Test
+        @DisplayName("unrelated update on member already missing address should succeed (never-worsen)")
+        void unrelatedUpdateOnMemberAlreadyMissingAddressShouldSucceed() {
+            Address noAddress = null;
+            Member memberWithNoAddress = aMember()
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
+                    .withEmail("jan@example.com")
+                    .withPhone("+420123456789")
+                    .withNoGuardian()
+                    .withAddress(noAddress)
+                    .build();
+
+            memberWithNoAddress.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(memberWithNoAddress))
+                    .dietaryRestrictions("Vegan")
+                    .build());
+
+            assertThat(memberWithNoAddress.getDietaryRestrictions()).isEqualTo("Vegan");
+            assertThat(memberWithNoAddress.missingData()).containsExactly(MissingDataItem.ADDRESS);
+        }
+
+        @Test
         @DisplayName("unrelated update on member already missing email should succeed (never-worsen)")
         void unrelatedUpdateOnMemberAlreadyMissingEmailShouldSucceed() {
             EmailAddress noEmail = null;
@@ -1609,6 +1644,58 @@ class MemberTest {
             assertThat(member.getBirthNumber()).isEqualTo(BirthNumber.of("850320/1234"));
             assertThat(member.getDomainEvents())
                     .noneMatch(event -> event instanceof BirthNumberAccessedEvent);
+        }
+
+        @Test
+        @DisplayName("accepts ORIS removing the member's only phone or birth number, leaving them incomplete (design.md D5)")
+        void acceptsLosingPhoneOrBirthNumberAndBecomesIncomplete() {
+            Member member = createAdultMemberWithAllOptionalFieldsSet();
+
+            Member.SyncFromOris command = MemberSyncFromOrisBuilder.builder()
+                    .registrationNumber(member.getRegistrationNumber())
+                    .firstName(member.getFirstName())
+                    .lastName(member.getLastName())
+                    .dateOfBirth(member.getDateOfBirth())
+                    .gender(member.getGender())
+                    .nationality(new Nationality("CZ"))
+                    .birthNumber(null)
+                    .email(member.getEmail())
+                    .phone(null)
+                    .address(member.getAddress())
+                    .chipNumber(member.getChipNumber())
+                    .build();
+
+            member.syncFromOris(command);
+
+            assertThat(member.getPhone()).isNull();
+            assertThat(member.getBirthNumber()).isNull();
+            assertThat(member.missingData()).containsExactlyInAnyOrder(
+                    MissingDataItem.PHONE, MissingDataItem.BIRTH_NUMBER);
+            assertThat(member.isComplete()).isFalse();
+        }
+
+        @Test
+        @DisplayName("still refuses a birth number for a non-Czech national (consistency rule)")
+        void stillRefusesBirthNumberForNonCzechNational() {
+            Member member = createAdultMemberWithAllOptionalFieldsSet();
+
+            Member.SyncFromOris command = MemberSyncFromOrisBuilder.builder()
+                    .registrationNumber(member.getRegistrationNumber())
+                    .firstName(member.getFirstName())
+                    .lastName(member.getLastName())
+                    .dateOfBirth(member.getDateOfBirth())
+                    .gender(member.getGender())
+                    .nationality(new Nationality("SK"))
+                    .birthNumber(BirthNumber.of("850320/1234"))
+                    .email(member.getEmail())
+                    .phone(member.getPhone())
+                    .address(member.getAddress())
+                    .chipNumber(member.getChipNumber())
+                    .build();
+
+            assertThatThrownBy(() -> member.syncFromOris(command))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("Birth number is only allowed for Czech nationals");
         }
     }
 

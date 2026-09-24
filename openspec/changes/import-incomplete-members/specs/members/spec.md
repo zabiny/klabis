@@ -7,7 +7,8 @@ A member brought in from ORIS may lack details that registering by hand requires
 - neither the member nor their guardian has an e-mail address;
 - neither the member nor their guardian has a telephone number;
 - the member is a Czech national without a birth number;
-- the member is a minor without a legal guardian.
+- the member is a minor without a legal guardian;
+- the member has no complete address (street, city, postal code and country).
 
 Completeness SHALL always follow from the member's current details and SHALL never be set or cleared by hand. Only users with MEMBERS:MANAGE authority SHALL see whether a member is incomplete and what is missing.
 

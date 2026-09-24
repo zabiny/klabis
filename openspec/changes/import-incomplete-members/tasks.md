@@ -26,14 +26,16 @@
 
 ## 5. Import members with incomplete or unacceptable ORIS data
 
-- [ ] 5.1 Write a failing unit test that `Member.importFromOris` creates members missing any combination of items, while still refusing a birth number for a non-CZ nationality (consistency rule). Implement the factory and route `RegistrationPort.importMember` to it; hand registration keeps using `register` (design D5).
-- [ ] 5.2 Write failing `MemberProjectionMapper` tests: a malformed ORIS birth number maps to `null`, and a birth number for a non-CZ nationality maps to `null`, each with a WARN log naming the ORIS id and the field but **not** the value (design D6). Implement to pass.
-- [ ] 5.3 Write a failing `MemberSyncAdapter`/import integration test (mirroring `MemberOrisSyncScenarioIntegrationTest`) that an ORIS minor without a phone or birth number is brought in, is paired for synchronisation, and is reported incomplete with `GUARDIAN`, `PHONE` and `BIRTH_NUMBER` missing. Implement any remaining wiring.
-- [ ] 5.4 Write a test that importing sends no e-mail and creates a `PENDING_ACTIVATION` user, including for a member without any e-mail (specs/member-synchronization "Bringing members in sends no e-mail").
+- [x] 5.1 Write a failing unit test that `Member.importFromOris` creates members missing any combination of items, while still refusing a birth number for a non-CZ nationality (consistency rule). Implement the factory and route `RegistrationPort.importMember` to it; hand registration keeps using `register` (design D5).
+- [x] 5.2 Write failing `MemberProjectionMapper` tests: a malformed ORIS birth number maps to `null`, and a birth number for a non-CZ nationality maps to `null`, each with a WARN log naming the ORIS id and the field but **not** the value (design D6). Implement to pass.
+- [x] 5.3 Write a failing `MemberSyncAdapter`/import integration test (mirroring `MemberOrisSyncScenarioIntegrationTest`) that an ORIS minor without a phone or birth number is brought in, is paired for synchronisation, and is reported incomplete with `GUARDIAN`, `PHONE` and `BIRTH_NUMBER` missing. Implement any remaining wiring.
+- [x] 5.4 Write a test that importing sends no e-mail and creates a `PENDING_ACTIVATION` user, including for a member without any e-mail (specs/member-synchronization "Bringing members in sends no e-mail").
+
+- [x] 5.5 Write failing `MemberProjectionMapper` tests: a phone or e-mail its value object would reject maps to `null`, and an incomplete ORIS address maps to no address, each with a WARN log naming the ORIS id and field but not the value. Add `MissingDataItem.ADDRESS`: import accepts a member without address, `register` still requires it, `update` follows never-worsen. Make every consumer of `Member.getAddress()` null-safe (design D6).
 
 ## 6. Synchronisation may leave a member incomplete
 
-- [ ] 6.1 Write a failing unit test that `Member.syncFromOris` accepts removing the member's only phone or birth number (the member becomes incomplete), while still refusing a birth number for a non-CZ nationality. Drop the completeness rules from `syncFromOris` (design D5).
+- [x] 6.1 Write a failing unit test that `Member.syncFromOris` accepts removing the member's only phone or birth number (the member becomes incomplete), while still refusing a birth number for a non-CZ nationality. Drop the completeness rules from `syncFromOris` (design D5).
 - [ ] 6.2 Write an integration test: a complete member kept in step with ORIS loses their phone in ORIS, and after a synchronisation pass the record has no phone, `data_incomplete` is `true` and the sync record is `IN_SYNC` (not `FAILED`). Also test the reverse: ORIS supplies the missing birth number and the member becomes complete.
 
 ## 7. REST API (spec-first)

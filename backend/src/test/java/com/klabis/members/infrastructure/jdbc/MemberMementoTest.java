@@ -293,6 +293,23 @@ class MemberMementoTest {
         }
 
         @Test
+        @DisplayName("should preserve a null address in round-trip conversion (design.md ADDRESS)")
+        void shouldPreserveNullAddressInRoundTripConversion() {
+            // Arrange - an ORIS-imported member whose address was incomplete has no address at all
+            Member original = MemberTestDataBuilder.aMember()
+                    .withAddress(null)
+                    .build();
+
+            // Act - Convert to memento and back
+            MemberMemento memento = MemberMemento.from(original);
+            Member reconstructed = memento.toMember();
+
+            // Assert
+            assertThat(reconstructed.getAddress()).isNull();
+            assertThat(reconstructed.missingData()).contains(MissingDataItem.ADDRESS);
+        }
+
+        @Test
         @DisplayName("should preserve audit metadata in round-trip conversion")
         void shouldPreserveAuditMetadataInRoundTripConversion() {
             // Arrange

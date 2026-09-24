@@ -10,5 +10,6 @@ public enum MissingDataItem {
     EMAIL,
     PHONE,
     BIRTH_NUMBER,
-    GUARDIAN
+    GUARDIAN,
+    ADDRESS
 }

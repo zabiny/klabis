@@ -189,7 +189,15 @@ class MemberSyncAdapter implements SynchronizationAdapter {
         return new RegistrationPort.ImportMember(details, new RegistrationNumber(projection.registrationNumber()));
     }
 
+    /**
+     * {@link MemberProjectionMapper} already normalises a partial ORIS address to fully absent
+     * (design.md ADDRESS), so a {@code null} street here means all four components are null —
+     * never a partial set that would blow up {@link Address}'s all-or-nothing constructor.
+     */
     private static Address addressOf(MemberProjection projection) {
+        if (projection.street() == null) {
+            return null;
+        }
         return new Address(projection.street(), projection.city(), projection.postalCode(), projection.country());
     }
 

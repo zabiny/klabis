@@ -37,7 +37,7 @@ Outside `Member` itself and its mappers, nothing depends functionally on phone, 
 
 | Term | Meaning |
 |---|---|
-| **Missing data item** | One of `EMAIL`, `PHONE`, `BIRTH_NUMBER`, `GUARDIAN`: a detail Klabis requires of a complete member that this member lacks. |
+| **Missing data item** | One of `EMAIL`, `PHONE`, `BIRTH_NUMBER`, `GUARDIAN`, `ADDRESS`: a detail Klabis requires of a complete member that this member lacks. |
 | **Missing data** | The set of missing data items of a member, derived from its current state and today's date. |
 | **Complete / incomplete member** | A member whose missing data is empty / non-empty. |
 | **Never worsen** | The rule that an edit made in Klabis may not add an item to a member's missing data. |
@@ -76,6 +76,7 @@ ActivationContactVerifier
 | `PHONE` | neither member nor guardian has a phone |
 | `BIRTH_NUMBER` | nationality is CZ and birth number is absent |
 | `GUARDIAN` | member is a minor today and has no guardian |
+| `ADDRESS` | member has no address (only possible for an imported member whose ORIS address was incomplete) |
 
 `isComplete()` means `missingData().isEmpty()`. The three existing `validate*` methods split into two kinds of rule:
 
@@ -113,10 +114,13 @@ flowchart TD
 
 ### D6: ORIS values Klabis cannot accept are dropped in the mapper
 
-`MemberProjectionMapper.fromOrisClubMember` already maps a phone that cannot be normalised to `null` (import-oris-members D6). The same principle now applies to the birth number:
+`MemberProjectionMapper.fromOrisClubMember` already maps a phone that cannot be normalised to `null` (import-oris-members D6). The same principle now applies to the birth number, e-mail and address:
 
-- a malformed value becomes `null`;
-- a value for a non-CZ nationality becomes `null`.
+- a malformed birth number, phone or e-mail (one its value object would reject) becomes `null`;
+- a birth number for a non-CZ nationality becomes `null`;
+- an address lacking street, city, postal code or country becomes `null` as a whole, and `Member.address` is then absent (`ADDRESS` missing). Registration by hand still requires a complete address.
+
+*Added during implementation:* a run against real club data left 7 of 273 members out on phone/e-mail format and a missing street, so these were brought under the same rule.
 
 Each drop is logged at WARN with the ORIS id and the field name only, never the value (it is personal data). Because dropped values never reach the projection, the synchronisation diff never sees them either, so an unacceptable ORIS birth number does not show up as a permanent difference.
 
@@ -148,6 +152,7 @@ classDiagram
       PHONE
       BIRTH_NUMBER
       GUARDIAN
+      ADDRESS
     }
     class ActivationContactVerifier {
       <<port, common.users>>
@@ -183,7 +188,7 @@ Spec-first in `docs/openapi/spec/members.yaml`. Regenerate the backend interface
 |---|---|
 | `GET /api/members` | New query parameter `incomplete` (boolean, optional). When `true`, only incomplete members are returned. It combines with `q` and `status` using AND. Like `status`, it is silently ignored for callers without MEMBERS:MANAGE. |
 | `GET /api/members`: `MemberSummaryResponse` | New property `dataIncomplete: boolean`, `x-klabis-authority: MEMBERS_MANAGE`. Not owner-visible. |
-| `GET /api/members/{id}`: `MemberDetailsResponse` | New property `missingData: array of MissingDataItem` (`EMAIL`, `PHONE`, `BIRTH_NUMBER`, `GUARDIAN`), `x-klabis-authority: MEMBERS_MANAGE`, not owner-visible. Empty for a complete member. |
+| `GET /api/members/{id}`: `MemberDetailsResponse` | New property `missingData: array of MissingDataItem` (`EMAIL`, `PHONE`, `BIRTH_NUMBER`, `GUARDIAN`, `ADDRESS`), `x-klabis-authority: MEMBERS_MANAGE`, not owner-visible. Empty for a complete member. |
 | `POST /api/auth/password-setup/request` (`TokenRequestRequest`) | Request and response shapes unchanged; only the behaviour changes (D1). |
 
 No new HAL links or affordances. The existing `updateMember` affordance is the way to complete a member. The `self`, `first` and `next` links of the member list keep the `incomplete` parameter, in the same way they keep `status`.

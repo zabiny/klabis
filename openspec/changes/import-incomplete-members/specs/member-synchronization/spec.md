@@ -16,6 +16,12 @@ ORIS often lacks details Klabis would require of a member registered by hand, an
 - **THEN** that member is registered in Klabis without a legal guardian
 - **AND** administrators see that the guardian is missing
 
+#### Scenario: A member with an incomplete address is brought in
+
+- **WHEN** the club has a current member in ORIS whose address lacks a street, city, postal code or country
+- **THEN** that member is registered in Klabis without an address
+- **AND** administrators see that the address is missing
+
 #### Scenario: A member without any e-mail address is brought in
 
 - **WHEN** the club has a current member in ORIS with no e-mail address
@@ -24,13 +30,19 @@ ORIS often lacks details Klabis would require of a member registered by hand, an
 
 ### Requirement: Details Klabis Cannot Accept Are Left Out
 
-A detail ORIS holds may be one Klabis cannot accept, such as a birth number in an invalid format or a birth number for someone who is not a Czech national. The system SHALL leave such a detail out of the member's record and still bring the member in, rather than refusing the whole member. A detail left out this way SHALL be treated exactly as if ORIS held none.
+A detail ORIS holds may be one Klabis cannot accept, such as a birth number, telephone number or e-mail address in an invalid format, or a birth number for someone who is not a Czech national. The system SHALL leave such a detail out of the member's record and still bring the member in, rather than refusing the whole member. A detail left out this way SHALL be treated exactly as if ORIS held none.
 
 #### Scenario: A malformed birth number is left out
 
 - **WHEN** a current member in ORIS has a birth number in an invalid format
 - **THEN** the member is registered in Klabis without a birth number
 - **AND** if the member is a Czech national they are marked as incomplete
+
+#### Scenario: An invalid telephone number or e-mail address is left out
+
+- **WHEN** a current member in ORIS has a telephone number or e-mail address in a format Klabis does not accept
+- **THEN** the member is registered in Klabis without that detail
+- **AND** if no other telephone number or e-mail address is available they are marked as incomplete
 
 #### Scenario: A birth number for a non-Czech national is left out
 

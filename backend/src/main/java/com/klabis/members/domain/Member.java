@@ -365,11 +365,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     }
 
     public static Member register(RegisterMember command) {
-        // Validate required fields
-        Assert.notNull(command.id(), "Member ID is required");
-        Assert.notNull(command.registrationNumber(), "Registration number is required");
-        Assert.notNull(command.personalInformation(), "Personal information is required");
-        Assert.notNull(command.address(), "Address is required");
+        validateStructure(command);
 
         // Consistency rule: always enforced, regardless of completeness
         validateBirthNumberConsistency(command.personalInformation().getNationalityCode(), command.birthNumber());
@@ -377,8 +373,38 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         // Completeness rules: a hand-registered member must be complete (design.md D5)
         enforceCompleteness(computeMissingData(
                 command.email(), command.phone(), command.guardian(),
-                command.personalInformation(), command.birthNumber()));
+                command.personalInformation(), command.birthNumber(), command.address()));
 
+        return buildFrom(command);
+    }
+
+    /**
+     * Registers a member whose data comes from ORIS rather than a hand-filled form (design.md
+     * D5), used only by {@code RegistrationPort.importMember}. Unlike {@link #register}, no
+     * completeness rule is enforced here: ORIS never holds a guardian and often lacks contact
+     * details, and the goal is to bring every current club member in regardless. The consistency
+     * rule — a birth number is never accepted for a non-Czech national — still holds, since it is
+     * not about completeness but about a value that would otherwise be simply wrong.
+     */
+    public static Member importFromOris(RegisterMember command) {
+        validateStructure(command);
+
+        // Consistency rule: always enforced, even when completeness is not (design.md D5)
+        validateBirthNumberConsistency(command.personalInformation().getNationalityCode(), command.birthNumber());
+
+        return buildFrom(command);
+    }
+
+    private static void validateStructure(RegisterMember command) {
+        Assert.notNull(command.id(), "Member ID is required");
+        Assert.notNull(command.registrationNumber(), "Registration number is required");
+        Assert.notNull(command.personalInformation(), "Personal information is required");
+        // Address is no longer required here: an ORIS import may bring a member in without one
+        // (design.md D5/ADDRESS), and register() enforces it separately through
+        // enforceCompleteness so the exception type/message a hand registration sees is unchanged.
+    }
+
+    private static Member buildFrom(RegisterMember command) {
         Member member = new Member(
                 command.id(),
                 command.registrationNumber(),
@@ -445,7 +471,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * @return the set of missing data items, empty when the member is complete
      */
     public Set<MissingDataItem> missingData() {
-        return computeMissingData(email, phone, guardian, personalInformation, birthNumber);
+        return computeMissingData(email, phone, guardian, personalInformation, birthNumber, address);
     }
 
     /**
@@ -460,9 +486,14 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             PhoneNumber phone,
             GuardianInformation guardian,
             PersonalInformation personalInformation,
-            BirthNumber birthNumber) {
+            BirthNumber birthNumber,
+            Address address) {
 
         Set<MissingDataItem> missing = EnumSet.noneOf(MissingDataItem.class);
+
+        if (address == null) {
+            missing.add(MissingDataItem.ADDRESS);
+        }
 
         // GuardianInformation enforces non-null email and phone in its constructor,
         // so a present guardian always covers both.
@@ -498,6 +529,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 "At least one email address is required (member or guardian)");
         Assert.isTrue(!missing.contains(MissingDataItem.PHONE),
                 "At least one phone number is required (member or guardian)");
+        Assert.isTrue(!missing.contains(MissingDataItem.ADDRESS), "Address is required");
 
         if (missing.contains(MissingDataItem.GUARDIAN)) {
             throw new BusinessRuleViolationException(
@@ -525,6 +557,9 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         }
         if (after.contains(MissingDataItem.PHONE) && !before.contains(MissingDataItem.PHONE)) {
             throw new IllegalArgumentException("At least one phone number is required (member or guardian)");
+        }
+        if (after.contains(MissingDataItem.ADDRESS) && !before.contains(MissingDataItem.ADDRESS)) {
+            throw new IllegalArgumentException("Address is required");
         }
         if (after.contains(MissingDataItem.GUARDIAN) && !before.contains(MissingDataItem.GUARDIAN)) {
             throw new BusinessRuleViolationException(
@@ -675,7 +710,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         // Never-worsen rule: an edit may only fill in missing data, never add to it (design.md D5)
         Set<MissingDataItem> missingBefore = missingData();
         Set<MissingDataItem> missingAfter = computeMissingData(
-                command.email(), command.phone(), newGuardian, newPersonalInfo, newBirthNumber);
+                command.email(), command.phone(), newGuardian, newPersonalInfo, newBirthNumber, command.address());
         enforceNeverWorsen(missingBefore, missingAfter);
 
         BirthNumber previousBirthNumber = this.birthNumber;
@@ -716,27 +751,16 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         Assert.isTrue(Objects.equals(this.registrationNumber, command.registrationNumber()),
                 "SyncFromOris command targets a different member");
 
-        // TODO(import-incomplete-members section 6): completeness rules will be dropped here,
-        // keeping only the consistency rule below (design.md D5) — out of scope for section 3.
-        Set<MissingDataItem> contactMissing = computeMissingData(
-                command.email(), command.phone(), this.guardian, this.personalInformation, this.birthNumber);
-        Assert.isTrue(!contactMissing.contains(MissingDataItem.EMAIL),
-                "At least one email address is required (member or guardian)");
-        Assert.isTrue(!contactMissing.contains(MissingDataItem.PHONE),
-                "At least one phone number is required (member or guardian)");
-
         PersonalInformation newPersonalInfo = PersonalInformation.of(
                 command.firstName(), command.lastName(), command.dateOfBirth(),
                 command.nationality() != null ? command.nationality().code() : null,
                 command.gender());
 
+        // Completeness rules are dropped for ORIS-owned fields (design.md D5): ORIS is the
+        // authority, so a synchronisation may leave the member incomplete rather than being
+        // refused or holding on to a stale value. Only the consistency rule survives — a birth
+        // number is never accepted for a non-Czech national.
         validateBirthNumberConsistency(newPersonalInfo.getNationalityCode(), command.birthNumber());
-        if (command.birthNumber() == null && newPersonalInfo.getNationality().isCzech()) {
-            throw new BusinessRuleViolationException(
-                    "Birth number is required for Czech nationals"
-            ) {
-            };
-        }
 
         this.personalInformation = newPersonalInfo;
         this.birthNumber = command.birthNumber();

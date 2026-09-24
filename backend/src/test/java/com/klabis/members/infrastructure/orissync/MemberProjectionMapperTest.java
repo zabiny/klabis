@@ -7,6 +7,9 @@ import com.klabis.sync.infrastructure.SyncProjectionCodec;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -15,6 +18,7 @@ import java.util.function.UnaryOperator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("MemberProjectionMapper")
+@ExtendWith(OutputCaptureExtension.class)
 class MemberProjectionMapperTest {
 
     private static ClubMember referenceClubMember() {
@@ -193,6 +197,65 @@ class MemberProjectionMapperTest {
             assertThat(projection.nationality()).isEqualTo("SK");
             assertThat(projection.country()).isEqualTo("CZ");
             assertThat(projection.phone()).isEqualTo("+420700000001");
+        }
+
+        @Test
+        @DisplayName("a malformed birth number is dropped, logging the ORIS id and field but not the value (design.md D6)")
+        void malformedBirthNumberIsDroppedAndLogged(CapturedOutput output) {
+            var clubMember = referenceClubMember(b -> b.id(33630).persNum("not-a-birth-number"));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.birthNumber()).isNull();
+            assertThat(output).contains("33630").contains("birthNumber");
+            assertThat(output).doesNotContain("not-a-birth-number");
+        }
+
+        @Test
+        @DisplayName("a birth number for a non-Czech national is dropped, logging the ORIS id and field but not the value (design.md D6)")
+        void birthNumberForNonCzechNationalIsDroppedAndLogged(CapturedOutput output) {
+            var clubMember = referenceClubMember(b -> b.id(33630).nationality("SK").persNum("900115/0000"));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.birthNumber()).isNull();
+            assertThat(output).contains("33630").contains("birthNumber");
+            assertThat(output).doesNotContain("900115/0000");
+        }
+
+        @Test
+        @DisplayName("an unparsable ORIS phone number is dropped, logging the ORIS id and field but not the value (design.md D6)")
+        void invalidPhoneIsDroppedAndLogged(CapturedOutput output) {
+            var clubMember = referenceClubMember(b -> b.id(33630).phone("+420abc123"));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.phone()).isNull();
+            assertThat(output).contains("33630").contains("phone");
+            assertThat(output).doesNotContain("+420abc123");
+        }
+
+        @Test
+        @DisplayName("a malformed ORIS e-mail is dropped, logging the ORIS id and field but not the value (design.md D6)")
+        void invalidEmailIsDroppedAndLogged(CapturedOutput output) {
+            var clubMember = referenceClubMember(b -> b.id(33630).email("not-an-email"));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.email()).isNull();
+            assertThat(output).contains("33630").contains("email");
+            assertThat(output).doesNotContain("not-an-email");
+        }
+
+        @Test
+        @DisplayName("a missing birth number is left null without any warning")
+        void missingBirthNumberIsNullWithoutWarning(CapturedOutput output) {
+            var clubMember = referenceClubMember(b -> b.persNum(null));
+
+            MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(clubMember);
+
+            assertThat(projection.birthNumber()).isNull();
+            assertThat(output).doesNotContain("birthNumber");
         }
     }
 
