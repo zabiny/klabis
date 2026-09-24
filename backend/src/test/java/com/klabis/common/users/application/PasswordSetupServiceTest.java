@@ -407,7 +407,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
     class RequestNewTokenTests {
 
         @Test
-        @DisplayName("should generate and send new token for pending activation user")
+        @DisplayName("should generate and send new token for pending activation user when email matches activation contact")
         void shouldGenerateNewTokenForPendingActivationUser() {
             // Given
             String registrationNumber = "ZBM0101";
@@ -415,6 +415,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             User user = createPendingUser();
 
             when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
+            when(activationContactVerifier.isActivationContact(registrationNumber, email)).thenReturn(true);
             when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
             when(templateRenderer.renderText(any(), any())).thenReturn("text body");
@@ -425,7 +426,29 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             // Then
             verify(tokenRepository).invalidateAllForUser(user.getId());
             verify(tokenRepository).save(any(PasswordSetupToken.class));
-            verify(emailService).send(any(EmailMessage.class));
+            ArgumentCaptor<EmailMessage> messageCaptor = ArgumentCaptor.forClass(EmailMessage.class);
+            verify(emailService).send(messageCaptor.capture());
+            assertThat(messageCaptor.getValue().to()).isEqualTo(email);
+        }
+
+        @Test
+        @DisplayName("should complete normally without sending an email or generating a token when email does not match activation contact")
+        void shouldSendNothingWhenEmailDoesNotMatchActivationContact() {
+            // Given
+            String registrationNumber = "ZBM0101";
+            String foreignEmail = "attacker@example.com";
+            User user = createPendingUser();
+
+            when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
+            when(activationContactVerifier.isActivationContact(registrationNumber, foreignEmail)).thenReturn(false);
+
+            // When
+            passwordSetupService.requestNewToken(registrationNumber, foreignEmail);
+
+            // Then
+            verify(tokenRepository, never()).invalidateAllForUser(any());
+            verify(tokenRepository, never()).save(any(PasswordSetupToken.class));
+            verify(emailService, never()).send(any(EmailMessage.class));
         }
 
         @Test
@@ -457,6 +480,27 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             assertThatThrownBy(() -> passwordSetupService.requestNewToken(registrationNumber, email))
                     .isInstanceOf(TokenValidationException.class)
                     .hasMessageContaining("not in pending activation status");
+        }
+
+        @Test
+        @DisplayName("should match email case-insensitively and after trimming")
+        void shouldMatchEmailTrimmedAndCaseInsensitive() {
+            // Given
+            String registrationNumber = "ZBM0101";
+            String enteredEmail = "  Test@Example.com  ";
+            User user = createPendingUser();
+
+            when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
+            when(activationContactVerifier.isActivationContact(registrationNumber, enteredEmail)).thenReturn(true);
+            when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
+            when(templateRenderer.renderText(any(), any())).thenReturn("text body");
+
+            // When
+            passwordSetupService.requestNewToken(registrationNumber, enteredEmail);
+
+            // Then
+            verify(emailService).send(any(EmailMessage.class));
         }
     }
 
