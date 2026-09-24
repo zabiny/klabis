@@ -15,9 +15,9 @@
 
 ## 3. Derived completeness in the domain
 
-- [ ] 3.1 Write failing unit tests for `Member.missingData()` covering each `MissingDataItem`: `EMAIL`/`PHONE` satisfied by either member or guardian, `BIRTH_NUMBER` only for CZ nationals, `GUARDIAN` only for minors (computed against today, so an 18-year-old without a guardian is complete). Then implement `MissingDataItem`, `missingData()` and `isComplete()` (design D3).
-- [ ] 3.2 Refactor `Member.register` to enforce completeness through `missingData()`. The existing `Member` registration tests must still pass unchanged, with the same exception types and messages for each missing item.
-- [ ] 3.3 Write failing tests for the never-worsen rule in `Member.update`: a complete member cannot lose any required detail (same errors as today); an incomplete member can be saved with unrelated changes, or with only some missing items filled in; an incomplete member cannot lose an additional item (design D5). Implement to pass, and confirm the existing `update` validation tests pass unchanged.
+- [x] 3.1 Write failing unit tests for `Member.missingData()` covering each `MissingDataItem`: `EMAIL`/`PHONE` satisfied by either member or guardian, `BIRTH_NUMBER` only for CZ nationals, `GUARDIAN` only for minors (computed against today, so an 18-year-old without a guardian is complete). Then implement `MissingDataItem`, `missingData()` and `isComplete()` (design D3).
+- [x] 3.2 Refactor `Member.register` to enforce completeness through `missingData()`. The existing `Member` registration tests must still pass unchanged, with the same exception types and messages for each missing item.
+- [x] 3.3 Write failing tests for the never-worsen rule in `Member.update`: a complete member cannot lose any required detail (same errors as today); an incomplete member can be saved with unrelated changes, or with only some missing items filled in; an incomplete member cannot lose an additional item (design D5). Implement to pass, and confirm the existing `update` validation tests pass unchanged.
 
 ## 4. Materialised `data_incomplete` flag and list filter
 
