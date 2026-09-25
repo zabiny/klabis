@@ -9,6 +9,7 @@ export const DEFAULT_MEMBER_STATUS: MemberStatusFilter = 'ACTIVE';
 export type MembersFilterValue = {
     q: string;
     status: MemberStatusFilter;
+    incomplete: boolean;
 };
 
 export interface MembersFilterBarProps {
@@ -44,6 +45,19 @@ export function MembersFilterBar({
                     onChange={(status) => onChange({ ...value, status })}
                     ariaLabel={labels.membersFilter.statusLabel}
                 />
+            )}
+
+            {hasManageAuthority && (
+                <label className="inline-flex items-center gap-2 text-sm text-text-primary cursor-pointer select-none">
+                    <input
+                        type="checkbox"
+                        checked={value.incomplete}
+                        onChange={(e) => onChange({ ...value, incomplete: e.target.checked })}
+                        aria-label={labels.membersFilter.incompleteOnly}
+                        className="w-4 h-4 accent-primary"
+                    />
+                    {labels.membersFilter.incompleteOnly}
+                </label>
             )}
         </div>
     );

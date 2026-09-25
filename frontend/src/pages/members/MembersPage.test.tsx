@@ -429,6 +429,79 @@ describe('MembersPage — filter bar integration', () => {
         await user.click(screen.getByRole('button', {name: labels.membersFilter.statusAll}));
         expect(screen.getByTestId('search-string')).toHaveTextContent('status=ALL');
     });
+
+    it('clicking "Jen neúplní" updates the URL to ?incomplete=true when hasManageAuthority is true', async () => {
+        const user = userEvent.setup();
+        const resourceData: HalResponse = {
+            _links: {self: {href: '/api/members'}},
+            _templates: {
+                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
+                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
+            },
+        };
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        const pageData = createMockPageData(resourceData);
+        renderPageWithSearchReader('/members?status=ACTIVE', pageData);
+
+        await user.click(screen.getByRole('checkbox', {name: labels.membersFilter.incompleteOnly}));
+        expect(screen.getByTestId('search-string')).toHaveTextContent('incomplete=true');
+    });
+
+    it('does NOT render the "Jen neúplní" toggle when hasManageAuthority is false', () => {
+        const resourceData: HalResponse = {
+            _links: {self: {href: '/api/members'}},
+        };
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        const pageData = createMockPageData(resourceData);
+        renderPageWithSearchReader('/members?status=ACTIVE', pageData);
+
+        expect(screen.queryByRole('checkbox', {name: labels.membersFilter.incompleteOnly})).not.toBeInTheDocument();
+    });
+});
+
+describe('MembersPage — data-incomplete badge', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('shows badge on incomplete row and not on complete row, when hasManageAuthority is true', () => {
+        const resourceData: HalResponse = {
+            _links: {self: {href: 'http://localhost/api/members'}},
+            _templates: {
+                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
+                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
+            },
+            _embedded: {
+                memberSummaryResponseList: [
+                    buildMemberRow({id: 'm1', registrationNumber: 'REG-001', dataIncomplete: true}),
+                    buildMemberRow({id: 'm2', registrationNumber: 'REG-002', dataIncomplete: false}),
+                ],
+            },
+            page: {size: 10, totalElements: 2, totalPages: 1, number: 0},
+        };
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        renderPage(createMockPageData(resourceData));
+
+        const badges = screen.getAllByText(labels.membersFilter.incompleteBadge)
+            .filter((el) => el.tagName !== 'TH');
+        expect(badges).toHaveLength(1);
+    });
+
+    it('does NOT show the badge column when hasManageAuthority is false (field absent)', () => {
+        const resourceData: HalResponse = {
+            _links: {self: {href: 'http://localhost/api/members'}},
+            _embedded: {
+                memberSummaryResponseList: [
+                    buildMemberRow({id: 'm1', registrationNumber: 'REG-001'}),
+                ],
+            },
+            page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
+        };
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        renderPage(createMockPageData(resourceData));
+
+        expect(screen.queryByText(labels.membersFilter.incompleteBadge)).not.toBeInTheDocument();
+    });
 });
 
 describe('MembersPage — Banknote (finance transaction) action', () => {
