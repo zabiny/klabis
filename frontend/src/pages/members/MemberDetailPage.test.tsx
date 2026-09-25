@@ -225,6 +225,33 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('11000')).toBeInTheDocument();
     });
 
+    it('renders address section gracefully with a placeholder when member has no address (imported member)', () => {
+        renderPage(createMockPageData(mockMemberDetailData({address: undefined})));
+        expect(screen.getByText('ADRESA')).toBeInTheDocument();
+        expect(screen.queryByText('Hlavní 15')).not.toBeInTheDocument();
+    });
+
+    describe('missing data warning', () => {
+        it('shows no warning for a complete member (missingData empty or absent)', () => {
+            renderPage(createMockPageData(mockMemberDetailData({missingData: []})));
+            expect(screen.queryByText(/^Chybí:/)).not.toBeInTheDocument();
+        });
+
+        it('shows "Chybí: rodné číslo, zákonný zástupce" for an incomplete member', () => {
+            renderPage(createMockPageData(mockMemberDetailData({
+                missingData: ['BIRTH_NUMBER', 'GUARDIAN'],
+            })));
+            expect(screen.getByText('Chybí: rodné číslo, zákonný zástupce')).toBeInTheDocument();
+        });
+
+        it('shows no warning when caller lacks the field (missingData absent from response)', () => {
+            const data = mockMemberDetailData();
+            delete (data as Record<string, unknown>).missingData;
+            renderPage(createMockPageData(data));
+            expect(screen.queryByText(/^Chybí:/)).not.toBeInTheDocument();
+        });
+    });
+
     it('shows guardian section when guardian data exists', () => {
         const data = mockMemberDetailData({
             guardian: {

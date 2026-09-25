@@ -3,7 +3,7 @@ import {PermissionsDialog} from "../../components/members/PermissionsDialog";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {Badge, Button, DetailRow, Modal, Skeleton} from "../../components/UI";
+import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from "../../components/UI";
 import {ErrorPage} from "../ErrorPage.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
@@ -351,6 +351,14 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         </div>
                     )}
                 </div>
+
+                {!isEditing && member.missingData && member.missingData.length > 0 && (
+                    <Alert severity="warning">
+                        {labels.memberCompleteness.missingDataWarning(
+                            member.missingData.map((item) => getEnumLabel('missingDataItem', item)).join(', ')
+                        )}
+                    </Alert>
+                )}
 
                 <hr className="border-border"/>
 

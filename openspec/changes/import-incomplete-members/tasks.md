@@ -46,8 +46,8 @@
 
 ## 8. Frontend
 
-- [ ] 8.1 Member list: show a "Neúplné údaje" badge on rows where `dataIncomplete` is true, and add a "Jen neúplní" filter toggle (rendered only when the field or filter is available to the caller) that sets `incomplete=true`. Component tests cover both.
-- [ ] 8.2 Member detail: when `missingData` is non-empty, show a warning "Chybí: …" with Czech labels for each item (add them to `localization/labels.ts`). Component tests cover a complete member, an incomplete member and a caller without the field.
+- [x] 8.1 Member list: show a "Neúplné údaje" badge on rows where `dataIncomplete` is true, and add a "Jen neúplní" filter toggle (rendered only when the field or filter is available to the caller) that sets `incomplete=true`. Component tests cover both.
+- [x] 8.2 Member detail: when `missingData` is non-empty, show a warning "Chybí: …" with Czech labels for each item (add them to `localization/labels.ts`). Component tests cover a complete member, an incomplete member and a caller without the field.
 
 ## 9. Verification
 

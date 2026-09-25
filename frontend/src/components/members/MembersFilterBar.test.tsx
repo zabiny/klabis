@@ -10,6 +10,7 @@ import type { MembersFilterBarProps } from './MembersFilterBar';
 const defaultValue: MembersFilterValue = {
     q: '',
     status: 'ACTIVE',
+    incomplete: false,
 };
 
 const defaultProps: MembersFilterBarProps = {
@@ -117,6 +118,37 @@ describe('MembersFilterBar', () => {
             renderFilterBar({ onChange });
             await user.click(screen.getByRole('button', { name: labels.membersFilter.statusAll }));
             expect(onChange).toHaveBeenCalledWith({ ...defaultValue, status: 'ALL' });
+        });
+    });
+
+    describe('incomplete-only toggle', () => {
+        it('renders the toggle when hasManageAuthority is true', () => {
+            renderFilterBar({ hasManageAuthority: true });
+            expect(
+                screen.getByRole('checkbox', { name: labels.membersFilter.incompleteOnly }),
+            ).toBeInTheDocument();
+        });
+
+        it('hides the toggle when hasManageAuthority is false', () => {
+            renderFilterBar({ hasManageAuthority: false });
+            expect(
+                screen.queryByRole('checkbox', { name: labels.membersFilter.incompleteOnly }),
+            ).not.toBeInTheDocument();
+        });
+
+        it('is checked when value.incomplete is true', () => {
+            renderFilterBar({ value: { ...defaultValue, incomplete: true } });
+            expect(
+                screen.getByRole('checkbox', { name: labels.membersFilter.incompleteOnly }),
+            ).toBeChecked();
+        });
+
+        it('calls onChange with incomplete=true when checked', async () => {
+            const onChange = vi.fn();
+            const user = userEvent.setup();
+            renderFilterBar({ onChange });
+            await user.click(screen.getByRole('checkbox', { name: labels.membersFilter.incompleteOnly }));
+            expect(onChange).toHaveBeenCalledWith({ ...defaultValue, incomplete: true });
         });
     });
 });

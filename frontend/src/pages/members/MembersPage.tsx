@@ -8,7 +8,7 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Button, DetailRow, Modal} from "../../components/UI";
+import {Badge, Button, DetailRow, Modal} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {SyncMembersFromOrisModal} from "../../components/members/SyncMembersFromOrisModal.tsx";
 import {Section} from "./MemberSection.tsx";
@@ -67,19 +67,22 @@ export const MembersPage = (): ReactElement => {
 
     const urlStatus = searchParams.get('status');
     const urlQ = searchParams.get('q') ?? '';
+    const urlIncomplete = searchParams.get('incomplete') === 'true';
 
     useDefaultSearchParam('status', DEFAULT_MEMBER_STATUS);
 
     const filterValue: MembersFilterValue = useMemo(() => ({
         q: urlQ,
         status: (urlStatus ?? DEFAULT_MEMBER_STATUS) as MembersFilterValue['status'],
-    }), [urlQ, urlStatus]);
+        incomplete: urlIncomplete,
+    }), [urlQ, urlStatus, urlIncomplete]);
 
     const handleFilterChange = useCallback((next: MembersFilterValue) => {
         setSearchParams((prev) => {
             const params = new URLSearchParams(prev);
             params.set('status', next.status);
             if (next.q) { params.set('q', next.q); } else { params.delete('q'); }
+            if (next.incomplete) { params.set('incomplete', 'true'); } else { params.delete('incomplete'); }
             return params;
         });
     }, [setSearchParams]);
@@ -88,8 +91,9 @@ export const MembersPage = (): ReactElement => {
         const params: Record<string, string> = {};
         if (urlStatus) params.status = urlStatus;
         if (urlQ && urlQ.length >= 2) params.q = urlQ;
+        if (urlIncomplete) params.incomplete = 'true';
         return params;
-    }, [urlStatus, urlQ]);
+    }, [urlStatus, urlQ, urlIncomplete]);
 
     const openActionModal = (member: MemberSummaryData, templateName: string) => {
         const template = member._templates?.[templateName];
@@ -194,6 +198,12 @@ export const MembersPage = (): ReactElement => {
 
     const renderEmailCell = ({item}: TableCellRenderProps) => {
         return (item.email as string | null) ?? null;
+    };
+
+    const renderDataIncompleteCell = ({item}: TableCellRenderProps) => {
+        const member = item as unknown as MemberSummaryData;
+        if (!member.dataIncomplete) return null;
+        return <Badge variant="orange" size="sm">{labels.membersFilter.incompleteBadge}</Badge>;
     };
 
     const memberName = permissionsDialog
@@ -320,6 +330,9 @@ export const MembersPage = (): ReactElement => {
                     <TableCell sortable column={"lastName"}>{labels.fields.lastName}</TableCell>
                     <TableCell sortable column={"firstName"}>{labels.fields.firstName}</TableCell>
                     <TableCell column={"email"} dataRender={renderEmailCell}>{labels.fields.email}</TableCell>
+                    {hasManageAuthority && (
+                        <TableCell column={"dataIncomplete"} dataRender={renderDataIncompleteCell}>{labels.membersFilter.incompleteBadge}</TableCell>
+                    )}
                     <TableCell column={"_actions"} dataRender={renderActionsCell}>{labels.tables.actions}</TableCell>
                 </HalEmbeddedTable>
             </div>

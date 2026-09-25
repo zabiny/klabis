@@ -322,6 +322,13 @@ export const labels = {
             FAILED: 'Selhalo',
             RETIRED: 'Ukončeno',
         },
+        missingDataItem: {
+            EMAIL: 'e-mail',
+            PHONE: 'telefon',
+            BIRTH_NUMBER: 'rodné číslo',
+            GUARDIAN: 'zákonný zástupce',
+            ADDRESS: 'adresa',
+        }
     },
 
     validation: {
@@ -572,6 +579,8 @@ export const labels = {
         statusInactive: 'Neaktivní',
         statusAll: 'Vše',
         emptyState: 'Žádní členové neodpovídají zadaným filtrům.',
+        incompleteOnly: 'Jen neúplní',
+        incompleteBadge: 'Neúplné údaje',
     },
 
     suspensionWarning: {
@@ -601,6 +610,10 @@ export const labels = {
         confirmPasswordLabel: 'Potvrzení nového hesla',
         submitButton: 'Změnit heslo',
         errorIncorrectCurrentPassword: 'Zadané aktuální heslo je nesprávné.',
+    },
+
+    memberCompleteness: {
+        missingDataWarning: (items: string) => `Chybí: ${items}`,
     },
 
     memberFee: {
