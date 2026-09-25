@@ -8,6 +8,8 @@ import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MedicalCourse;
 import com.klabis.members.domain.RefereeLicense;
 import com.klabis.members.domain.TrainerLicense;
+import java.util.List;
+import java.util.Set;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValueCheckStrategy;
@@ -46,7 +48,12 @@ interface MemberDetailsConverter extends Converter<Member, MemberDetailsResponse
     @Mapping(target = "gender", source = "gender")
     @Mapping(target = "drivingLicenseGroup", source = "drivingLicenseGroup")
     @Mapping(target = "suspensionReason", source = "suspensionReason")
+    @Mapping(target = "missingData", expression = "java(missingDataToDto(member.missingData()))")
     MemberDetailsResponse convert(Member member);
+
+    List<MissingDataItem> missingDataToDto(Set<com.klabis.members.domain.MissingDataItem> missingData);
+
+    MissingDataItem missingDataItemToDto(com.klabis.members.domain.MissingDataItem missingDataItem);
 
     AddressResponse addressToResponse(Address address);
 
