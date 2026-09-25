@@ -125,7 +125,7 @@ public class MemberController implements MembersApi {
         var command = new Member.ResumeMembership(currentUserId);
         managementService.resumeMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MembersApi.class).listMembers(null, null, Pageable.unpaged(), null)).toUri())
+                .location(linkTo(methodOn(MembersApi.class).listMembers(null, null, null, Pageable.unpaged(), null)).toUri())
                 .build();
     }
 
@@ -143,7 +143,7 @@ public class MemberController implements MembersApi {
 
         managementService.suspendMember(new MemberId(id), command);
         return ResponseEntity.noContent()
-                .location(linkTo(methodOn(MembersApi.class).listMembers(null, null, Pageable.unpaged(), null)).toUri())
+                .location(linkTo(methodOn(MembersApi.class).listMembers(null, null, null, Pageable.unpaged(), null)).toUri())
                 .build();
     }
 
@@ -164,12 +164,13 @@ public class MemberController implements MembersApi {
     public ResponseEntity<Page<MemberSummaryResponse>> listMembers(
             @Valid @RequestParam(required = false) String q,
             @Valid @RequestParam(required = false) String status,
+            @Valid @RequestParam(required = false) Boolean incomplete,
             @PageableDefault(size = 10, sort = {"lastName", "firstName"}, direction = Sort.Direction.ASC) @ParameterObject Pageable pageable,
             @ActingUser CurrentUserData currentUser) {
 
         validateSortFields(pageable.getSort());
 
-        MemberFilter filter = buildFilter(q, status, currentUser);
+        MemberFilter filter = buildFilter(q, status, incomplete, currentUser);
 
         Page<Member> memberPage = memberRepository.findAll(filter, pageable);
 
@@ -179,12 +180,13 @@ public class MemberController implements MembersApi {
         return ResponseEntity.ok(memberPage.map(member -> conversionService.convert(member, MemberSummaryResponse.class)));
     }
 
-    private MemberFilter buildFilter(String q, String status, CurrentUserData currentUser) {
+    private MemberFilter buildFilter(String q, String status, Boolean incomplete, CurrentUserData currentUser) {
         MemberFilter.StatusFilter resolvedStatus = parseStatus(status);
+        boolean canManage = currentUser.hasAuthority(Authority.MEMBERS_MANAGE);
 
-        MemberFilter filter = new MemberFilter(resolvedStatus, q, false);
+        MemberFilter filter = new MemberFilter(resolvedStatus, q, canManage && Boolean.TRUE.equals(incomplete));
 
-        if (!currentUser.hasAuthority(Authority.MEMBERS_MANAGE)) {
+        if (!canManage) {
             filter = filter.withStatus(MemberFilter.StatusFilter.ACTIVE);
         }
 
@@ -270,7 +272,7 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
         MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
 
-        klabisLinkTo(methodOn(MembersApi.class).listMembers(null, null, Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(MembersApi.class).listMembers(null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
 
         UUID memberId = member.getId().uuid();
@@ -339,7 +341,7 @@ class MembersRootPostprocessor implements RepresentationModelProcessor<EntityMod
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(MembersApi.class).listMembers(null, null, Pageable.unpaged(), null))
+        klabisLinkTo(methodOn(MembersApi.class).listMembers(null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> model.add(link.withRel("members")));
         return model;
     }

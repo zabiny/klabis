@@ -55,6 +55,12 @@ paths:
           required: false
           schema:
             type: string
+        - name: incomplete
+          in: query
+          description: 'When true, restricts results to members with incomplete data. Ignored for callers without MEMBERS:MANAGE.'
+          required: false
+          schema:
+            type: boolean
       responses:
         '200':
           description: Paginated list of members retrieved successfully
@@ -547,6 +553,17 @@ components:
         suspensionNote:
           type: string
           x-klabis-authority: MEMBERS_MANAGE
+        missingData:
+          type: array
+          items:
+            $ref: '#/components/schemas/MissingDataItem'
+          x-klabis-authority: MEMBERS_MANAGE
+          description: Required details this member currently lacks (visible to admins only)
+
+    MissingDataItem:
+      type: string
+      description: A detail Klabis requires of a complete member that this member currently lacks.
+      enum: [EMAIL, PHONE, BIRTH_NUMBER, GUARDIAN, ADDRESS]
 
     MemberSummaryResponse:
       type: object
@@ -576,6 +593,10 @@ components:
           type: boolean
           x-klabis-authority: MEMBERS_MANAGE
           description: Whether the member is active (visible to admins only)
+        dataIncomplete:
+          type: boolean
+          x-klabis-authority: MEMBERS_MANAGE
+          description: Whether the member is missing required data (visible to admins only)
 
     MemberOptionResponse:
       type: object

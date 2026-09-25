@@ -2794,6 +2794,8 @@ export interface components {
             identityCard?: components["schemas"]["IdentityCardDto"];
             lastName?: string;
             medicalCourse?: components["schemas"]["MedicalCourseDto"];
+            /** @description Required details this member currently lacks (visible to admins only) */
+            missingData?: components["schemas"]["MissingDataItem"][];
             nationality?: string;
             phone?: string;
             refereeLicense?: components["schemas"]["RefereeLicenseDto"];
@@ -2855,6 +2857,8 @@ export interface components {
         MemberSummaryResponse: {
             /** @description Whether the member is active (visible to admins only) */
             active?: boolean;
+            /** @description Whether the member is missing required data (visible to admins only) */
+            dataIncomplete?: boolean;
             /** @description Member's email address (visible to admins only) */
             email?: string;
             /**
@@ -2914,6 +2918,11 @@ export interface components {
             yearlyFeeAmount?: number;
             yearlyFeeCurrency?: string;
         };
+        /**
+         * @description A detail Klabis requires of a complete member that this member currently lacks.
+         * @enum {string}
+         */
+        MissingDataItem: "EMAIL" | "PHONE" | "BIRTH_NUMBER" | "GUARDIAN" | "ADDRESS";
         MonetaryAmount: {
             /** @description Negative when the member is in debt */
             amount: number;
@@ -6112,6 +6121,8 @@ export interface operations {
                 q?: string;
                 /** @description Status filter: ACTIVE, INACTIVE, ALL. Non-MANAGE callers are silently forced to ACTIVE. */
                 status?: string;
+                /** @description When true, restricts results to members with incomplete data. Ignored for callers without MEMBERS:MANAGE. */
+                incomplete?: boolean;
             };
             header?: never;
             path?: never;

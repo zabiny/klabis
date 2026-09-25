@@ -36,13 +36,13 @@
 ## 6. Synchronisation may leave a member incomplete
 
 - [x] 6.1 Write a failing unit test that `Member.syncFromOris` accepts removing the member's only phone or birth number (the member becomes incomplete), while still refusing a birth number for a non-CZ nationality. Drop the completeness rules from `syncFromOris` (design D5).
-- [ ] 6.2 Write an integration test: a complete member kept in step with ORIS loses their phone in ORIS, and after a synchronisation pass the record has no phone, `data_incomplete` is `true` and the sync record is `IN_SYNC` (not `FAILED`). Also test the reverse: ORIS supplies the missing birth number and the member becomes complete.
+- [x] 6.2 Write an integration test: a complete member kept in step with ORIS loses their phone in ORIS, and after a synchronisation pass the record has no phone, `data_incomplete` is `true` and the sync record is `IN_SYNC` (not `FAILED`). Also test the reverse: ORIS supplies the missing birth number and the member becomes complete.
 
 ## 7. REST API (spec-first)
 
-- [ ] 7.1 In `docs/openapi/spec/members.yaml`, add the `incomplete` query parameter on `GET /api/members`, `dataIncomplete` on `MemberSummaryResponse` and `missingData` (enum `MissingDataItem`) on `MemberDetailsResponse`, both with `x-klabis-authority: MEMBERS_MANAGE` and not owner-visible (design "API Changes"). Regenerate the backend interfaces, the OpenAPI bundle and the frontend types.
-- [ ] 7.2 Write a failing `@WebMvcTest`: a MEMBERS:MANAGE caller sees `dataIncomplete` in the list and `missingData` in the detail; a caller without it, including the member viewing their own profile, sees neither. Implement the converters.
-- [ ] 7.3 Write a failing `@WebMvcTest`: `incomplete=true` filters the list for MEMBERS:MANAGE callers, is ignored for other callers, and is preserved in the collection's paging links. Implement the parameter-to-`MemberFilter` mapping.
+- [x] 7.1 In `docs/openapi/spec/members.yaml`, add the `incomplete` query parameter on `GET /api/members`, `dataIncomplete` on `MemberSummaryResponse` and `missingData` (enum `MissingDataItem`) on `MemberDetailsResponse`, both with `x-klabis-authority: MEMBERS_MANAGE` and not owner-visible (design "API Changes"). Regenerate the backend interfaces, the OpenAPI bundle and the frontend types.
+- [x] 7.2 Write a failing `@WebMvcTest`: a MEMBERS:MANAGE caller sees `dataIncomplete` in the list and `missingData` in the detail; a caller without it, including the member viewing their own profile, sees neither. Implement the converters.
+- [x] 7.3 Write a failing `@WebMvcTest`: `incomplete=true` filters the list for MEMBERS:MANAGE callers, is ignored for other callers, and is preserved in the collection's paging links. Implement the parameter-to-`MemberFilter` mapping.
 
 ## 8. Frontend
 

@@ -9,6 +9,7 @@ import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.domain.Member;
+import com.klabis.members.domain.MissingDataItem;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -57,6 +59,9 @@ class MemberOrisSyncScenarioIntegrationTest {
 
     @MockitoBean
     private OrisApiClient orisApiClient;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private static final AtomicInteger ORIS_ID_SEQUENCE = new AtomicInteger(733_000);
 
@@ -116,6 +121,52 @@ class MemberOrisSyncScenarioIntegrationTest {
         assertThat(updated.getPhone().value()).isEqualTo("+420700000002");
     }
 
+    @Test
+    @DisplayName("a complete member loses their phone in ORIS and becomes incomplete without failing the sync pass (design.md D5/6.2)")
+    void losingPhoneInOrisMakesTheMemberIncompleteWithoutFailingSync() {
+        stubClubMembers(orisClubMember(orisId, regNum, "Jan", "Novák", "700000001"));
+        memberDiscoveryJob.discoverNewMembers();
+        SyncRecord enrolled = enrolledRecord();
+        assertThat(managementPort.getMember(memberIdOf(enrolled)).isComplete()).isTrue();
+        assertThat(dataIncompleteFlagFor(enrolled)).isFalse();
+
+        stubClubMembers(orisClubMemberWithoutPhone(orisId, regNum, "Jan", "Novák"));
+        SyncRecord afterPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+        assertThat(afterPass.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+        Member updated = managementPort.getMember(memberIdOf(enrolled));
+        assertThat(updated.getPhone()).isNull();
+        assertThat(updated.missingData()).containsExactly(MissingDataItem.PHONE);
+        assertThat(dataIncompleteFlagFor(enrolled)).isTrue();
+    }
+
+    @Test
+    @DisplayName("ORIS supplying a previously missing birth number makes the member complete again (design.md D5/6.2)")
+    void orisSupplyingMissingBirthNumberMakesTheMemberComplete() {
+        stubClubMembers(orisClubMemberWithoutBirthNumber(orisId, regNum, "Jan", "Novák"));
+        memberDiscoveryJob.discoverNewMembers();
+        SyncRecord enrolled = enrolledRecord();
+        assertThat(managementPort.getMember(memberIdOf(enrolled)).missingData())
+                .containsExactly(MissingDataItem.BIRTH_NUMBER);
+        assertThat(dataIncompleteFlagFor(enrolled)).isTrue();
+
+        stubClubMembers(orisClubMember(orisId, regNum, "Jan", "Novák", "700000001"));
+        SyncRecord afterPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+        assertThat(afterPass.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+        Member updated = managementPort.getMember(memberIdOf(enrolled));
+        assertThat(updated.getBirthNumber()).isNotNull();
+        assertThat(updated.isComplete()).isTrue();
+        assertThat(dataIncompleteFlagFor(enrolled)).isFalse();
+    }
+
+    private boolean dataIncompleteFlagFor(SyncRecord record) {
+        Boolean value = jdbcTemplate.queryForObject(
+                "SELECT data_incomplete FROM members.members WHERE id = ?",
+                Boolean.class, memberIdOf(record).uuid());
+        return Boolean.TRUE.equals(value);
+    }
+
     private SyncRecord enrolledRecord() {
         SyncedEntityReference reference = synchronizationPort.findByExternalReferences(
                         SyncEntityType.MEMBER, ExternalSystem.ORIS, List.of(String.valueOf(orisId)))
@@ -149,6 +200,56 @@ class MemberOrisSyncScenarioIntegrationTest {
                 .phone(phone)
                 .gender("M")
                 .persNum("900115/0000")
+                .nationality("CZ")
+                .si("0")
+                .build();
+    }
+
+    private static ClubMember orisClubMemberWithoutPhone(int id, String regNum, String firstName, String lastName) {
+        return ClubMemberBuilder.builder()
+                .id(id)
+                .userId(1)
+                .regNum(regNum)
+                .memberFrom(LocalDate.of(2019, 8, 7))
+                .memberTo(null)
+                .valid(true)
+                .username("user" + id)
+                .firstName(firstName)
+                .lastName(lastName)
+                .email(regNum.toLowerCase() + "@example.com")
+                .street("Testovací 1")
+                .city("Brno")
+                .zip("60000")
+                .country("CZ")
+                .birthday(LocalDate.of(1990, 1, 15))
+                .phone(null)
+                .gender("M")
+                .persNum("900115/0000")
+                .nationality("CZ")
+                .si("0")
+                .build();
+    }
+
+    private static ClubMember orisClubMemberWithoutBirthNumber(int id, String regNum, String firstName, String lastName) {
+        return ClubMemberBuilder.builder()
+                .id(id)
+                .userId(1)
+                .regNum(regNum)
+                .memberFrom(LocalDate.of(2019, 8, 7))
+                .memberTo(null)
+                .valid(true)
+                .username("user" + id)
+                .firstName(firstName)
+                .lastName(lastName)
+                .email(regNum.toLowerCase() + "@example.com")
+                .street("Testovací 1")
+                .city("Brno")
+                .zip("60000")
+                .country("CZ")
+                .birthday(LocalDate.of(1990, 1, 15))
+                .phone("700000001")
+                .gender("M")
+                .persNum(null)
                 .nationality("CZ")
                 .si("0")
                 .build();

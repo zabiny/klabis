@@ -548,6 +548,80 @@ class MemberControllerApiTest {
         }
 
         @Test
+        @DisplayName("7.1 — detail endpoint serializes a member without an address (field simply omitted)")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void detailSerializesMemberWithoutAddress() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withNoGuardian()
+                    .withAddress(null)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.address").doesNotExist())
+                    .andExpect(jsonPath("$.missingData").value(org.hamcrest.Matchers.hasItem("ADDRESS")));
+        }
+
+        @Test
+        @DisplayName("7.2 — MEMBERS:MANAGE caller sees missingData on an incomplete member")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void manageCallerSeesMissingDataInDetail() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withNoGuardian()
+                    .withPhone((PhoneNumber) null)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.missingData").isArray())
+                    .andExpect(jsonPath("$.missingData[0]").value("PHONE"));
+        }
+
+        @Test
+        @DisplayName("7.2 — caller without MEMBERS:MANAGE does not see missingData")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void nonManageCallerDoesNotSeeMissingData() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withNoGuardian()
+                    .withPhone((PhoneNumber) null)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.missingData").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("7.2 — member viewing their own incomplete profile does not see missingData")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        void ownProfileDoesNotSeeMissingDataWithoutManage() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withNoGuardian()
+                    .withPhone((PhoneNumber) null)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.missingData").doesNotExist());
+        }
+
+        @Test
         @DisplayName("should include sync link for a member brought in from ORIS")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldIncludeSyncLinkForOrisLinkedMember() throws Exception {
@@ -1385,6 +1459,42 @@ class MemberControllerApiTest {
         }
 
         @Test
+        @DisplayName("7.2 — admin (MEMBERS:MANAGE) sees dataIncomplete in summary items")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void adminShouldSeeDataIncompleteInSummaryItems() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withNoGuardian()
+                    .withPhone((PhoneNumber) null)
+                    .build();
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].dataIncomplete").value(true));
+        }
+
+        @Test
+        @DisplayName("7.2 — caller without MEMBERS:MANAGE does not see dataIncomplete in summary items")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void nonManageCallerShouldNotSeeDataIncompleteInSummaryItems() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withNoGuardian()
+                    .withPhone((PhoneNumber) null)
+                    .build();
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].dataIncomplete").doesNotExist());
+        }
+
+        @Test
         @DisplayName("non-admin (only MEMBERS:READ) should not see email and active in summary items")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void nonAdminShouldNotSeeEmailAndActiveInSummaryItems() throws Exception {
@@ -1755,6 +1865,56 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("}"))))
                     .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7B"))))
                     .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("%7D"))));
+        }
+
+        @Test
+        @DisplayName("7.3 — incomplete=true filters for MEMBERS:MANAGE callers")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void incompleteTrueFiltersForManageCaller() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .param("incomplete", "true")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+
+            Mockito.verify(memberRepository).findAll(
+                    argThat(MemberFilter::incompleteOnly),
+                    any(org.springframework.data.domain.Pageable.class)
+            );
+        }
+
+        @Test
+        @DisplayName("7.3 — incomplete=true is ignored for callers without MEMBERS:MANAGE")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void incompleteTrueIsIgnoredForNonManageCaller() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .param("incomplete", "true")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+
+            Mockito.verify(memberRepository).findAll(
+                    argThat(filter -> !filter.incompleteOnly()),
+                    any(org.springframework.data.domain.Pageable.class)
+            );
+        }
+
+        @Test
+        @DisplayName("7.3 — incomplete=true is preserved in the collection's self link")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void incompleteParamPreservedInSelfLink() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members")
+                    .param("incomplete", "true")
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString("incomplete=true")));
         }
     }
 
