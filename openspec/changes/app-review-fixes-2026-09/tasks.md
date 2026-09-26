@@ -8,10 +8,10 @@
 
 ## 2. Member `active` field authorization in detail response
 
-- [ ] 2.1 Write a failing test (e.g. in `MemberControllerTest`) asserting `MemberDetailsResponse.active` is omitted from the JSON for a caller without `MEMBERS_MANAGE`, and present for a caller with it.
-- [ ] 2.2 Update `docs/openapi/spec/members.yaml`: add `x-klabis-authority: MEMBERS_MANAGE` to `MemberDetailsResponse.active`; regenerate OpenAPI sources.
-- [ ] 2.3 Run the test from 2.1 to green.
-- [ ] 2.4 Frontend: verify the "Aktivní"/"Neaktivní" badge on the member detail page (`MemberDetailPage.tsx`) naturally disappears when the field is absent from the response (should require no frontend code change — confirm with a component/integration test or manual check).
+- [x] 2.1 Write a failing test (e.g. in `MemberControllerTest`) asserting `MemberDetailsResponse.active` is omitted from the JSON for a caller without `MEMBERS_MANAGE`, and present for a caller with it.
+- [x] 2.2 Update `docs/openapi/spec/members.yaml`: add `x-klabis-authority: MEMBERS_MANAGE` to `MemberDetailsResponse.active`; regenerate OpenAPI sources.
+- [x] 2.3 Run the test from 2.1 to green.
+- [x] 2.4 Frontend: verify the "Aktivní"/"Neaktivní" badge on the member detail page (`MemberDetailPage.tsx`) naturally disappears when the field is absent from the response (should require no frontend code change — confirm with a component/integration test or manual check).
 
 ## 3. Sync status indicator in the events list + removal of `syncEventFromOris`
 

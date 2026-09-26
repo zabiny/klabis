@@ -273,7 +273,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                             <h1 className="text-3xl font-bold text-text-primary">
                                 {member.firstName} {member.lastName}
                             </h1>
-                            {!isEditing && (
+                            {!isEditing && member.active !== undefined && (
                                 <Badge variant={member.active ? 'success' : 'default'} size="sm">
                                     {member.active ? labels.enums.memberStatus.active : labels.enums.memberStatus.inactive}
                                 </Badge>

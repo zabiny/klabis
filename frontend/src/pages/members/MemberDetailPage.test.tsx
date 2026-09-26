@@ -210,6 +210,14 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('Neaktivní')).toBeInTheDocument();
     });
 
+    it('shows no active/inactive badge when caller lacks the field (active absent from response)', () => {
+        const data = mockMemberDetailData();
+        delete (data as Record<string, unknown>).active;
+        renderPage(createMockPageData(data));
+        expect(screen.queryByText('Aktivní')).not.toBeInTheDocument();
+        expect(screen.queryByText('Neaktivní')).not.toBeInTheDocument();
+    });
+
     it('shows contact section', () => {
         renderPage(createMockPageData(mockMemberDetailData()));
         expect(screen.getByText('KONTAKT')).toBeInTheDocument();

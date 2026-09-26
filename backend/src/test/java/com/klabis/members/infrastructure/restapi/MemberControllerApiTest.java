@@ -173,7 +173,7 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.email").exists())
                     .andExpect(jsonPath("$.phone").exists())
                     .andExpect(jsonPath("$.address").exists())
-                    .andExpect(jsonPath("$.active").value(true))
+                    .andExpect(jsonPath("$.active").doesNotExist())
                     // Assert HATEOAS links presence
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString(
@@ -215,6 +215,38 @@ class MemberControllerApiTest {
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("should omit active field for caller without MEMBERS:MANAGE authority")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
+        void shouldOmitActiveFieldWhenUserLacksMembersManageAuthority() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(false)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.active").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should include active field for caller with MEMBERS:MANAGE authority")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void shouldIncludeActiveFieldWhenUserHasMembersManageAuthority() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(false)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.active").value(false));
         }
 
         @Test
@@ -310,7 +342,7 @@ class MemberControllerApiTest {
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.active").value(true))
+                    .andExpect(jsonPath("$.active").doesNotExist())
                     .andExpect(jsonPath("$._links.permissions.href").value("http://localhost/api/users/" + memberId + "/permissions"));
         }
 
@@ -328,7 +360,7 @@ class MemberControllerApiTest {
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.active").value(false))
+                    .andExpect(jsonPath("$.active").doesNotExist())
                     .andExpect(jsonPath("$._links.permissions").doesNotExist());
         }
 

@@ -504,6 +504,8 @@ components:
           x-klabis-owner-visible: true
         active:
           type: boolean
+          x-klabis-authority: MEMBERS_MANAGE
+          description: Whether the member is active (visible to admins only)
         chipNumber:
           type: string
           x-klabis-authority: MEMBERS_MANAGE
