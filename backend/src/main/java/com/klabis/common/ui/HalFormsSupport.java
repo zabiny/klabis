@@ -116,15 +116,16 @@ public class HalFormsSupport {
     }
 
     /**
-     * Returns the value+prompt inline options for the named property from the current request context, or null if none are set.
+     * Returns the options definition (inline or remote) for the named property from the current request context,
+     * or null if none are set.
      */
-    static List<HalFormsInlineOption> getPromptedInlineOptionsForProperty(String propertyName) {
+    static HalFormsOptionsDef getOptionsDefForProperty(String propertyName) {
         HttpServletRequest request = currentRequest();
         if (request == null) {
             return null;
         }
         @SuppressWarnings("unchecked")
-        Map<String, List<HalFormsInlineOption>> ctx = (Map<String, List<HalFormsInlineOption>>) request.getAttribute(PROMPTED_OPTIONS_REQUEST_ATTR);
+        Map<String, HalFormsOptionsDef> ctx = (Map<String, HalFormsOptionsDef>) request.getAttribute(PROMPTED_OPTIONS_REQUEST_ATTR);
         return ctx != null ? ctx.get(propertyName) : null;
     }
 
@@ -156,7 +157,7 @@ public class HalFormsSupport {
      */
     public static List<Affordance> klabisAffordWithMixedOptions(Object invocation,
                                                                   Map<String, List<String>> propertyOptions,
-                                                                  Map<String, List<HalFormsInlineOption>> promptedOptions) {
+                                                                  Map<String, HalFormsOptionsDef> promptedOptions) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
         if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
@@ -173,7 +174,7 @@ public class HalFormsSupport {
      * The map keys are property names; values are the inline option lists carrying both a machine value and a human-readable prompt.
      * Options are stored as request attributes and are automatically scoped to the current HTTP request.
      */
-    public static List<Affordance> klabisAffordWithPromptedOptions(Object invocation, Map<String, List<HalFormsInlineOption>> promptedOptions) {
+    public static List<Affordance> klabisAffordWithPromptedOptions(Object invocation, Map<String, HalFormsOptionsDef> promptedOptions) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
         if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
@@ -263,7 +264,7 @@ public class HalFormsSupport {
      */
     private static Affordance modifyAffordanceForHalForms(Affordance affordance, LastInvocationAware invocation,
                                                            Map<String, List<String>> propertyOptions,
-                                                           Map<String, List<HalFormsInlineOption>> promptedOptions) {
+                                                           Map<String, HalFormsOptionsDef> promptedOptions) {
         // Get method metadata
         MethodInvocation methodInvocation = invocation.getLastInvocation();
         Method method = methodInvocation.getMethod();
@@ -289,7 +290,7 @@ public class HalFormsSupport {
      */
     private static Affordance createModifiedAffordance(Affordance original,
                                                         Map<String, List<String>> propertyOptions,
-                                                        Map<String, List<HalFormsInlineOption>> promptedOptions) {
+                                                        Map<String, HalFormsOptionsDef> promptedOptions) {
         Optional<AffordanceModelFactory> halFormsFactoryOpt = getHalFormsModelFactory();
 
         if (halFormsFactoryOpt.isEmpty()) {
@@ -348,7 +349,7 @@ public class HalFormsSupport {
 
         public HalFormsConfiguredAffordance(AffordanceModel delegate,
                                              Map<String, List<String>> propertyOptions,
-                                             Map<String, List<HalFormsInlineOption>> promptedOptions) {
+                                             Map<String, HalFormsOptionsDef> promptedOptions) {
             this.delegate = delegate;
             this.modifiedInput = new HalFormsInputPayloadMetadata(delegate.getInput(), propertyOptions, promptedOptions);
         }
@@ -394,11 +395,11 @@ public class HalFormsSupport {
 
         private final AffordanceModel.InputPayloadMetadata inputPayloadMetadata;
         private final Map<String, List<String>> propertyOptions;
-        private final Map<String, List<HalFormsInlineOption>> promptedOptions;
+        private final Map<String, HalFormsOptionsDef> promptedOptions;
 
         HalFormsInputPayloadMetadata(AffordanceModel.InputPayloadMetadata inputPayloadMetadata,
                                      Map<String, List<String>> propertyOptions,
-                                     Map<String, List<HalFormsInlineOption>> promptedOptions) {
+                                     Map<String, HalFormsOptionsDef> promptedOptions) {
             this.inputPayloadMetadata = inputPayloadMetadata;
             this.propertyOptions = Map.copyOf(propertyOptions);
             this.promptedOptions = Map.copyOf(promptedOptions);

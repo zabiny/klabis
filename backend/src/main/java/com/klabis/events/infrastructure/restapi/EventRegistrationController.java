@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
@@ -222,7 +223,7 @@ class RegistrationSummaryPostprocessor
                         dtoModel.add(selfLinkBuilder.withSelfRel()
                                 .andAffordances(klabisAffordWithPromptedOptions(
                                         methodOn(EventRegistrationsApi.class).editRegistration(eventId, rowMemberId, null),
-                                        Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event)))));
+                                        Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event))))));
                     } else {
                         dtoModel.add(selfLinkBuilder.withSelfRel());
                     }
@@ -292,7 +293,7 @@ class RegistrationDetailsPostprocessor
         if (EventAffordanceSupport.shouldOfferRegistration(event) && !sanctionPort.isMemberBlocked(memberId)) {
             return selfLink.andAffordances(klabisAffordWithPromptedOptions(
                     methodOn(EventRegistrationsApi.class).registerForEvent(event.getId().value(), null, null),
-                    Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))));
+                    Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))));
         }
         return selfLink;
     }
@@ -304,7 +305,7 @@ class RegistrationDetailsPostprocessor
                             methodOn(EventRegistrationsApi.class).editRegistration(event.getId().value(),
                                     memberId.value(),
                                     null),
-                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))));
+                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))));
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
             if (memberId.equals(actingMember)) {

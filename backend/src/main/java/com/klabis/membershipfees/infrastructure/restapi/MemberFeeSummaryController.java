@@ -2,6 +2,7 @@ package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsInlineOption;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.members.ActingMember;
@@ -106,7 +107,7 @@ class MemberFeeSummaryDetailsPostprocessor
                     if (info.votingOpen()) {
                         self = self.andAffordances(klabisAffordWithPromptedOptions(
                                 methodOn(MemberFeeChoiceApi.class).chooseTier(memberId, year, null, null),
-                                Map.of("membershipFeeGroupId", groupOptions)));
+                                Map.of("membershipFeeGroupId", new HalFormsOptionsDef.Inline(groupOptions))));
                     }
                     dtoModel.add(self);
                 });

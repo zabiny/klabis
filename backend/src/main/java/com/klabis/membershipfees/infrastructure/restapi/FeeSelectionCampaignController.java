@@ -2,6 +2,7 @@ package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsInlineOption;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
@@ -184,7 +185,7 @@ class FeeSelectionCampaignListPostprocessor
                 model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
                         .andAffordances(klabisAffordWithPromptedOptions(
                                 methodOn(FeeSelectionCampaignsApi.class).publishYear(null),
-                                Map.of("levelIds", levelOptions)))));
+                                Map.of("levelIds", new HalFormsOptionsDef.Inline(levelOptions))))));
         return model;
     }
 

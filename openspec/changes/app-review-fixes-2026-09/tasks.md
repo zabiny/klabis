@@ -35,11 +35,11 @@
 
 ## 5. Link-based HAL-FORMS options mechanism (`HalFormsOptionsDef`)
 
-- [ ] 5.1 Write failing unit tests for `HalFormsSupport` asserting: (a) an `Inline`-wrapped option renders as `options.inline` exactly as today, (b) a `Remote`-wrapped option renders as `options.link` pointing at the given href.
-- [ ] 5.2 Introduce the `HalFormsOptionsDef` sealed interface (`Inline`/`Remote` records) in `com.klabis.common.ui`.
-- [ ] 5.3 Change `klabisAffordWithPromptedOptions` signature to `Map<String, HalFormsOptionsDef>`; update `HalFormsInputPayloadMetadata`/`KlabisHalFormsPropertyMetadataWrapper` to switch on the variant and emit `HalFormsOptions.inline(...)` or `HalFormsOptions.remote(link)` accordingly. Run 5.1 to green.
-- [ ] 5.4 Migrate every existing caller of `klabisAffordWithPromptedOptions` (e.g. `categoryId` options in `EventController`) to wrap their inline lists as `HalFormsOptionsDef.Inline(...)` — mechanical change, no behavior difference; confirm existing tests for those call sites still pass unchanged.
-- [ ] 5.5 Full backend build/test run to confirm the signature migration didn't silently break another call site.
+- [x] 5.1 Write failing unit tests for `HalFormsSupport` asserting: (a) an `Inline`-wrapped option renders as `options.inline` exactly as today, (b) a `Remote`-wrapped option renders as `options.link` pointing at the given href.
+- [x] 5.2 Introduce the `HalFormsOptionsDef` sealed interface (`Inline`/`Remote` records) in `com.klabis.common.ui`.
+- [x] 5.3 Change `klabisAffordWithPromptedOptions` signature to `Map<String, HalFormsOptionsDef>`; update `HalFormsInputPayloadMetadata`/`KlabisHalFormsPropertyMetadataWrapper` to switch on the variant and emit `HalFormsOptions.inline(...)` or `HalFormsOptions.remote(link)` accordingly. Run 5.1 to green.
+- [x] 5.4 Migrate every existing caller of `klabisAffordWithPromptedOptions` (e.g. `categoryId` options in `EventController`) to wrap their inline lists as `HalFormsOptionsDef.Inline(...)` — mechanical change, no behavior difference; confirm existing tests for those call sites still pass unchanged.
+- [x] 5.5 Full backend build/test run to confirm the signature migration didn't silently break another call site.
 
 ## 6. Discipline options as a link (uses mechanism from #5)
 

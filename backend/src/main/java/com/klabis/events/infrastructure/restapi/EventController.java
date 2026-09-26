@@ -4,6 +4,7 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.ui.HalFormsInlineOption;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
@@ -550,12 +551,12 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, null)));
                     selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
                             methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
-                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
+                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
                     ));
                 } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
                     selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
                             methodOn(EventRegistrationsApi.class).registerForEvent(eventId, null, null),
-                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
+                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
                     ));
                     if (currentMemberId != null) {
                         klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(currentMemberId.value(), eventId, true))
@@ -630,12 +631,12 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, null)));
                     selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
                             methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
-                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
+                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
                     ));
                 } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
                     selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
                             methodOn(EventRegistrationsApi.class).registerForEvent(eventId, null, null),
-                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
+                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
                     ));
                     if (currentMemberId != null) {
                         klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(currentMemberId.value(), eventId, true))

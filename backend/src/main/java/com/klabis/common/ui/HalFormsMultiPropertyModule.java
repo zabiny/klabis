@@ -72,11 +72,17 @@ class HalFormsMultiPropertyModule extends SimpleModule {
             String propertyName = getHalFormsPropertyName(bean);
 
             if (propertyName != null) {
-                List<HalFormsInlineOption> promptedOptions = HalFormsSupport.getPromptedInlineOptionsForProperty(propertyName);
-                if (promptedOptions != null && !promptedOptions.isEmpty()) {
-                    HalFormsOptions options = HalFormsOptions.inline(promptedOptions)
+                HalFormsOptionsDef optionsDef = HalFormsSupport.getOptionsDefForProperty(propertyName);
+                if (optionsDef instanceof HalFormsOptionsDef.Inline inline && !inline.values().isEmpty()) {
+                    HalFormsOptions options = HalFormsOptions.inline(inline.values())
                             .withValueField("value")
                             .withPromptField("prompt");
+                    gen.writeName("options");
+                    prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
+                    return;
+                }
+                if (optionsDef instanceof HalFormsOptionsDef.Remote remote) {
+                    HalFormsOptions options = HalFormsOptions.remote(remote.link());
                     gen.writeName("options");
                     prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
                     return;
