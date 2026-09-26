@@ -406,7 +406,7 @@ The system SHALL display a paginated, sortable and filterable list of members. U
 
 ### Requirement: Member Detail
 
-The system SHALL display complete member details. Inactive members are not accessible to users without MEMBERS:MANAGE authority.
+The system SHALL display complete member details. Inactive members are not accessible to users without MEMBERS:MANAGE authority. The active/inactive status indicator on the detail page is only shown to users with MEMBERS:MANAGE authority.
 
 #### Scenario: Authorized user views active member detail
 
@@ -448,6 +448,16 @@ The system SHALL display complete member details. Inactive members are not acces
 
 - **WHEN** user views a suspended member's detail page
 - **THEN** no "Ukončit členství" button is shown
+
+#### Scenario: Admin sees active/inactive status indicator
+
+- **WHEN** user with MEMBERS:MANAGE authority views a member's detail page
+- **THEN** an "Aktivní" or "Neaktivní" status indicator is shown next to the member's name
+
+#### Scenario: Regular user does not see active/inactive status indicator
+
+- **WHEN** user without MEMBERS:MANAGE authority views a member's detail page
+- **THEN** no active/inactive status indicator is shown next to the member's name
 
 ### Requirement: Member Detail Page Layout
 

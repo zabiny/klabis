@@ -4,7 +4,7 @@
 - [x] 1.2 Update `docs/openapi/spec/events.yaml`: `listDisciplines` `x-klabis-authority` from `EVENTS_READ` to `EVENTS_MANAGE`; regenerate OpenAPI bundle + backend/frontend generated sources.
 - [x] 1.3 Run the test from 1.1 to green; add/adjust a `DisciplinesRootPostprocessor` test asserting the `disciplines` root link is absent for `EVENTS_READ`-only and present for `EVENTS_MANAGE`.
 - [x] 1.4 Fix the misleading comment in `DisciplineController.java` (references `klabisAfford` where `klabisLinkTo` is used).
-- [ ] 1.5 Manually verify in the running app (or an E2E/QA pass) that the "Disciplíny" menu entry disappears for a member-only test user and stays for admin.
+- [x] 1.5 Manually verify in the running app (or an E2E/QA pass) that the "Disciplíny" menu entry disappears for a member-only test user and stays for admin.
 
 ## 2. Member `active` field authorization in detail response
 
@@ -23,7 +23,7 @@
 - [x] 3.6 Remove `OrisEventController.syncEventFromOris` handler, `OrisEventImportPort.syncEventFromOris`, `OrisEventImportService.syncEventFromOris`, and `EventSyncNeedsResolutionException` (if unreferenced after the above); remove/adjust `OrisEventImportServiceTest` and `OrisEventControllerTest` accordingly.
 - [x] 3.7 Remove `POST /api/events/{id}/sync-from-oris` (`syncEventFromOris`) operation and its `x-hal-templates` entry from `docs/openapi/spec/events.yaml`; regenerate OpenAPI sources.
 - [x] 3.8 Full backend build/test run for the `events` module to confirm no dangling references remain.
-- [ ] 3.9 Manual/QA verification: events list row for an ORIS-imported event shows the sync status indicator (not a bare "Synchronizovat" button); clicking it opens the overlay and "Synchronizovat teď" triggers a sync pass.
+- [x] 3.9 Manual/QA verification: events list row for an ORIS-imported event shows the sync status indicator (not a bare "Synchronizovat" button); clicking it opens the overlay and "Synchronizovat teď" triggers a sync pass.
 
 ## 4. Sync status indicator for members (list + detail)
 
@@ -31,7 +31,7 @@
 - [x] 4.2 Add the `isEnrolled(memberId)` + `SyncApi.getSyncState` `sync` link block to `MemberSummaryPostprocessor`, mirroring `MemberDetailsPostprocessor`. Run 4.1 to green.
 - [x] 4.3 Add `SyncStatusIndicator` (`mode="icon"`) to `MembersPage.tsx`'s row actions, reading `_links.sync` per row, mirroring `EventsPage.tsx`; add/adjust a component test.
 - [x] 4.4 Add `SyncStatusIndicator` (`mode="icon+date"`) to `MemberDetailPage.tsx`, reading `resourceData._links?.sync`, mirroring `EventDetailPage.tsx`; add/adjust a component test.
-- [ ] 4.5 Manual/QA verification: an ORIS-linked member shows the sync indicator in both the list and detail page; a manually-registered member shows none.
+- [x] 4.5 Manual/QA verification: an ORIS-linked member shows the sync indicator in both the list and detail page; a manually-registered member shows none.
 
 ## 5. Link-based HAL-FORMS options mechanism (`HalFormsOptionsDef`)
 
@@ -57,7 +57,7 @@
 - [x] 7.6 Backend: every member-id field (all #7 member-picker fields) emits the explicit `MemberId` field type hint in its HAL-FORMS property (D7); tests assert it.
 - [x] 7.7 Frontend: remove the `UUID` → member picker mapping; member picker only for the `MemberId` type hint (D7).
 - [x] 7.8 Frontend: base field factory handles `multi` generically — collection of custom widgets when a custom widget exists, generic multi-select widget for options fields without one (D7); regression tests for event coordinators and event type disciplines (create + edit prefill).
-- [ ] 7.5 Manual/QA verification: every existing member-picker field (family group parent/child, training group trainer, event coordinator, etc.) still loads and functions identically.
+- [x] 7.5 Manual/QA verification: every existing member-picker field (family group parent/child, training group trainer, event coordinator, etc.) still loads and functions identically. (Membership fee group "assign member" skipped in QA — its UI is broken independently of this change.)
 
 ## 8. Final verification
 
@@ -65,4 +65,4 @@
 - [x] 8.2 Full frontend test suite + `npm run build` (`test-runner` agent / `frontend-developer` agent) green.
 - [x] 8.3 Code review (per `CLAUDE.md`: use the appropriate review agent) on the full diff before commit.
 - [x] 8.4 Run `refresh-backend-server-resources` if frontend files changed, per `frontend/CLAUDE.md`.
-- [ ] 8.5 Update `openspec/changes/app-review-fixes-2026-09/tasks.md` checkboxes to reflect final state; run `openspec archive` once verified.
+- [x] 8.5 Update `openspec/changes/app-review-fixes-2026-09/tasks.md` checkboxes to reflect final state; run `openspec archive` once verified.
