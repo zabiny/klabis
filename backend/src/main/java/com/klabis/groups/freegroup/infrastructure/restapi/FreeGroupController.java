@@ -3,6 +3,7 @@ package com.klabis.groups.freegroup.infrastructure.restapi;
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
@@ -41,10 +42,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithPromptedOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -262,8 +265,14 @@ class FreeGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<GroupRe
                 selfLink = selfLink
                         .andAffordances(klabisAfford(methodOn(GroupsApi.class).updateGroup(id, null, null)))
                         .andAffordances(klabisAfford(methodOn(GroupsApi.class).deleteGroup(id, null)))
-                        .andAffordances(klabisAfford(methodOn(GroupsApi.class).addGroupOwner(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(GroupsApi.class).inviteMember(id, null, null)));
+                        .andAffordances(klabisAffordWithPromptedOptions(
+                                methodOn(GroupsApi.class).addGroupOwner(id, null, null),
+                                Map.of("memberId", new HalFormsOptionsDef.Remote(
+                                        linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel()))))
+                        .andAffordances(klabisAffordWithPromptedOptions(
+                                methodOn(GroupsApi.class).inviteMember(id, null, null),
+                                Map.of("memberId", new HalFormsOptionsDef.Remote(
+                                        linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel()))));
             }
             dtoModel.add(selfLink);
         });

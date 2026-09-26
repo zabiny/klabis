@@ -466,7 +466,10 @@ class EventAffordanceSupport {
 
         switch (event.getStatus()) {
             case DRAFT:
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
+                        methodOn(EventsApi.class).updateEvent(eventId, null),
+                        Map.of("coordinators", new HalFormsOptionsDef.Remote(
+                                linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel()))));
                 if (canManage) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).publishEvent(eventId)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
@@ -474,7 +477,10 @@ class EventAffordanceSupport {
                 break;
 
             case ACTIVE:
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
+                        methodOn(EventsApi.class).updateEvent(eventId, null),
+                        Map.of("coordinators", new HalFormsOptionsDef.Remote(
+                                linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel()))));
                 if (canManage) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
                 }
@@ -683,7 +689,10 @@ class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<
         boolean hasManageAuthority = EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE);
 
         model.mapLink(IanaLinkRelations.SELF, selfLink -> {
-            Link link = (Link) selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).createEvent(null)));
+            Link link = (Link) selfLink.andAffordances(klabisAffordWithPromptedOptions(
+                    methodOn(EventsApi.class).createEvent(null),
+                    Map.of("coordinators", new HalFormsOptionsDef.Remote(
+                            linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel()))));
             if (orisIntegrationActive && hasManageAuthority) {
                 link = link.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).importEvent(null)));
                 link = link.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).importEventsBatch(null)));

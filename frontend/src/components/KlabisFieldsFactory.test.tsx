@@ -95,16 +95,19 @@ describe('KlabisFieldsFactory', () => {
             }
         });
 
-        it('should configure remote options pointing to /members/options endpoint', () => {
+        it('should pass through the backend-provided options.link untouched', () => {
             const mockConf = createMockConf({
-                prop: {name: 'memberId', prompt: 'Choose Member', type: 'MemberId'},
+                prop: {
+                    name: 'memberId', prompt: 'Choose Member', type: 'MemberId',
+                    options: {link: {href: 'http://localhost:8443/api/members/options'}},
+                },
             });
 
             const fieldElement = klabisFieldsFactory('MemberId', mockConf);
             render(fieldElement!);
 
             expect(screen.getByTestId('hal-forms-memberid-mock')).toBeInTheDocument();
-            expect(screen.getByTestId('select-href')).toHaveTextContent('/members/options');
+            expect(screen.getByTestId('select-href')).toHaveTextContent('http://localhost:8443/api/members/options');
         });
 
         it('should preserve the original prompt from prop', () => {
@@ -346,15 +349,33 @@ describe('KlabisFieldsFactory', () => {
             expect(screen.getByTestId('hal-forms-memberid-mock')).toBeInTheDocument();
         });
 
-        it('should configure remote options pointing to /members/options for single UUID field', () => {
+        it('should pass through the backend-provided options.link for single UUID field', () => {
             const mockConf = createMockConf({
-                prop: {name: 'memberId', prompt: 'Vyberte člena', type: 'UUID'},
+                prop: {
+                    name: 'memberId', prompt: 'Vyberte člena', type: 'UUID',
+                    options: {link: {href: 'http://localhost:8443/api/members/options'}},
+                },
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
             render(fieldElement!);
 
-            expect(screen.getByTestId('select-href')).toHaveTextContent('/members/options');
+            expect(screen.getByTestId('select-href')).toHaveTextContent('http://localhost:8443/api/members/options');
+        });
+
+        it('should render the plain select (not the member picker) when the backend sends inline options for a UUID field', () => {
+            const mockConf = createMockConf({
+                prop: {
+                    name: 'level', prompt: 'Úroveň', type: 'UUID',
+                    options: {inline: [{value: 'a', prompt: 'A'}]},
+                },
+            });
+
+            const fieldElement = klabisFieldsFactory('UUID', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('hal-select-level')).toBeInTheDocument();
+            expect(screen.queryByTestId('hal-forms-memberid-mock')).not.toBeInTheDocument();
         });
 
         it('should render one HalFormsMemberId row per item for multi UUID field (multiple: true), via HalFormsCollectionField', () => {
@@ -372,9 +393,12 @@ describe('KlabisFieldsFactory', () => {
             expect(screen.getAllByTestId('hal-forms-memberid-mock')).toHaveLength(2);
         });
 
-        it('should configure remote options pointing to /members/options for each row of a multi UUID field', () => {
+        it('should pass through the backend-provided options.link for each row of a multi UUID field', () => {
             const mockConf = createMockConf({
-                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multiple: true},
+                prop: {
+                    name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multiple: true,
+                    options: {link: {href: 'http://localhost:8443/api/members/options'}},
+                },
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
@@ -384,7 +408,7 @@ describe('KlabisFieldsFactory', () => {
                 </Formik>
             );
 
-            expect(screen.getAllByTestId('select-href')[0]).toHaveTextContent('/members/options');
+            expect(screen.getAllByTestId('select-href')[0]).toHaveTextContent('http://localhost:8443/api/members/options');
         });
 
         it('should preserve the original prompt for single UUID field', () => {
@@ -428,9 +452,12 @@ describe('KlabisFieldsFactory', () => {
             expect(screen.getAllByTestId('hal-forms-memberid-mock')).toHaveLength(2);
         });
 
-        it('should configure remote options for each row of a UUID field with backend multi:true shorthand', () => {
+        it('should pass through options.link for each row of a UUID field with backend multi:true shorthand', () => {
             const mockConf = createMockConf({
-                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true},
+                prop: {
+                    name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true,
+                    options: {link: {href: 'http://localhost:8443/api/members/options'}},
+                },
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
@@ -440,7 +467,7 @@ describe('KlabisFieldsFactory', () => {
                 </Formik>
             );
 
-            expect(screen.getAllByTestId('select-href')[0]).toHaveTextContent('/members/options');
+            expect(screen.getAllByTestId('select-href')[0]).toHaveTextContent('http://localhost:8443/api/members/options');
         });
     });
 

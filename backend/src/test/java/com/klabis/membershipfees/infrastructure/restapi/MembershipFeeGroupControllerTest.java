@@ -244,6 +244,22 @@ class MembershipFeeGroupControllerTest {
                     .andExpect(jsonPath("$._templates.assignMember.properties[?(@.name=='memberId')]").exists())
                     .andExpect(jsonPath("$._templates.assignMember.properties[?(@.name=='year')]").exists());
         }
+
+        @Test
+        @DisplayName("assignMember template should expose memberId property with an options.link pointing at the member options endpoint")
+        @WithKlabisMockUser(memberId = ADMIN_MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldExposeMemberIdOptionsLinkOnAssignMemberTemplate() throws Exception {
+            MembershipFeeGroup group = buildFrozenGroup();
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
+            when(members.findByIds(any())).thenReturn(Map.of());
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.assignMember.properties[?(@.name=='memberId')].options.link.href")
+                            .value("http://localhost/api/members/options"));
+        }
     }
 
     @Nested

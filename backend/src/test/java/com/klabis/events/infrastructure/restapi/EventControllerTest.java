@@ -692,6 +692,22 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("createEvent template should expose coordinators property with an options.link pointing at the member options endpoint")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldExposeCoordinatorsOptionsLinkOnCreateTemplate() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.createEvent.properties[?(@.name=='coordinators')].options.link.href")
+                            .value("http://localhost/api/members/options"));
+        }
+
+        @Test
         @DisplayName("regular user with EVENTS:READ only should not see DRAFT events — calls listEvents with none() and canManageEvents=false")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldExcludeDraftEventsForRegularUser() throws Exception {
@@ -898,6 +914,24 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name == 'ranking')].type").value("RankingRequest"))
                     .andExpect(jsonPath("$._templates.publishEvent.target").exists())   // PUBLISH
                     .andExpect(jsonPath("$._templates.cancelEvent.target").exists());   // CANCEL
+        }
+
+        @Test
+        @DisplayName("updateEvent template should expose coordinators property with an options.link pointing at the member options endpoint")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldExposeCoordinatorsOptionsLinkOnUpdateTemplate() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            Event event = Event.create(EventCreateEventBuilder.builder().name("Test Event").eventDate(LocalDate.of(2026, 6, 1)).location("Location").organizer("OOB").build());
+
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='coordinators')].options.link.href")
+                            .value("http://localhost/api/members/options"));
         }
 
         @Test

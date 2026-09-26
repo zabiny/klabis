@@ -50,10 +50,10 @@
 
 ## 7. Member options as a link (uses mechanism from #5)
 
-- [ ] 7.1 Write a failing test asserting the affordance(s) using `HalFormsMemberId`-style member fields expose their `options.link` pointing at `GET /api/members/options`, populated by the backend.
-- [ ] 7.2 Update the relevant controller(s) to pass `HalFormsOptionsDef.Remote(linkTo(...MembersApi.listMemberOptions...))` for those fields. Run 7.1 to green.
-- [ ] 7.3 Remove the hardcoded `{link: {href: "/members/options"}}` fallback in `KlabisFieldsFactory.tsx` (`memberIdFieldRenderer`); trust `conf.prop.options` from the backend response.
-- [ ] 7.4 Frontend test: `memberIdFieldRenderer` renders correctly using the backend-provided link, with no hardcoded fallback; regression-test the inline-options branch (`conf.prop.options?.inline`) still short-circuits correctly.
+- [x] 7.1 Write a failing test asserting the affordance(s) using `HalFormsMemberId`-style member fields expose their `options.link` pointing at `GET /api/members/options`, populated by the backend.
+- [x] 7.2 Update the relevant controller(s) to pass `HalFormsOptionsDef.Remote(linkTo(...MembersApi.listMemberOptions...))` for those fields. Run 7.1 to green.
+- [x] 7.3 Remove the hardcoded `{link: {href: "/members/options"}}` fallback in `KlabisFieldsFactory.tsx` (`memberIdFieldRenderer`); trust `conf.prop.options` from the backend response.
+- [x] 7.4 Frontend test: `memberIdFieldRenderer` renders correctly using the backend-provided link, with no hardcoded fallback; regression-test the inline-options branch (`conf.prop.options?.inline`) still short-circuits correctly.
 - [ ] 7.5 Manual/QA verification: every existing member-picker field (family group parent/child, training group trainer, event coordinator, etc.) still loads and functions identically.
 
 ## 8. Final verification

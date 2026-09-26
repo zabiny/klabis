@@ -178,19 +178,12 @@ const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFor
  * per row with multiple:false — so this never needs to special-case collections itself.
  */
 const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeIds?: string[]; includeIds?: string[]}): ReactElement => {
-    // If backend already provides inline options, respect them instead of defaulting to members list
+    // If backend already provides inline options, respect them instead of the member picker
     if (conf.prop.options?.inline) {
         return <HalFormsSelect {...conf} />;
     }
-    const propWithMemberOptions = {
-        ...conf.prop,
-        options: {
-            link: {
-                href: "/members/options"
-            }
-        }
-    };
-    return <HalFormsMemberId {...conf} prop={propWithMemberOptions} {...extraProps}/>;
+    // Backend always provides options.link for member-picker fields; trust it as-is.
+    return <HalFormsMemberId {...conf} {...extraProps}/>;
 };
 
 export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps): ReactElement | null => {

@@ -256,6 +256,24 @@ class FreeGroupControllerTest {
         }
 
         @Test
+        @DisplayName("addGroupOwner and inviteMember templates should expose memberId property with an options.link pointing at the member options endpoint")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldExposeMemberIdOptionsLinkOnOwnerAndInviteTemplates() throws Exception {
+            FreeGroup group = buildGroup(GROUP_UUID, "Sprint Team", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addGroupOwner.properties[?(@.name=='memberId')].options.link.href")
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.inviteMember.properties[?(@.name=='memberId')].options.link.href")
+                            .value("http://localhost/api/members/options"));
+        }
+
+        @Test
         @DisplayName("should NOT return owner-only affordances on self link when acting member is not owner")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
         void shouldNotReturnOwnerAffordancesForNonOwnerMember() throws Exception {

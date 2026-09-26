@@ -409,11 +409,19 @@ public class HalFormsSupport {
         public Stream<AffordanceModel.PropertyMetadata> stream() {
             HttpServletRequest request = currentRequest();
             if (request != null) {
+                // Jackson materializes every affordance's property list before it writes any of them to JSON,
+                // so multiple klabisAffordWithPromptedOptions calls on the same response all run their stream()
+                // before the first property's "options" is actually serialized. Overwriting the attribute here
+                // would make only the last-processed affordance's options visible; merging keeps all of them.
                 if (!propertyOptions.isEmpty()) {
-                    request.setAttribute(PROPERTY_OPTIONS_REQUEST_ATTR, propertyOptions);
+                    request.setAttribute(PROPERTY_OPTIONS_REQUEST_ATTR, mergeOptions(
+                            (Map<String, List<String>>) request.getAttribute(PROPERTY_OPTIONS_REQUEST_ATTR),
+                            propertyOptions));
                 }
                 if (!promptedOptions.isEmpty()) {
-                    request.setAttribute(PROMPTED_OPTIONS_REQUEST_ATTR, promptedOptions);
+                    request.setAttribute(PROMPTED_OPTIONS_REQUEST_ATTR, mergeOptions(
+                            (Map<String, HalFormsOptionsDef>) request.getAttribute(PROMPTED_OPTIONS_REQUEST_ATTR),
+                            promptedOptions));
                 }
             }
             // Modify property metadata stream based on @HalForms annotations
@@ -439,6 +447,15 @@ public class HalFormsSupport {
             }
 
             return wrapped;
+        }
+
+        private static <V> Map<String, V> mergeOptions(Map<String, V> existing, Map<String, V> additional) {
+            if (existing == null || existing.isEmpty()) {
+                return additional;
+            }
+            Map<String, V> merged = new java.util.HashMap<>(existing);
+            merged.putAll(additional);
+            return merged;
         }
 
         private boolean isPropertyDisplayed(AffordanceModel.PropertyMetadata propertyMetadata) {
