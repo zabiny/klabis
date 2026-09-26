@@ -258,7 +258,9 @@ class MembershipFeeGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.assignMember.properties[?(@.name=='memberId')].options.link.href")
-                            .value("http://localhost/api/members/options"));
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.assignMember.properties[?(@.name=='memberId')].type")
+                            .value("MemberId"));
         }
     }
 

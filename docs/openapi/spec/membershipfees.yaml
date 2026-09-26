@@ -1496,6 +1496,7 @@ components:
         memberId:
           type: string
           format: uuid
+          x-hal-input-type: MemberId
         year:
           type: integer
           format: int32

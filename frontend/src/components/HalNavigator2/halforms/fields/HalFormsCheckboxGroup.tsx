@@ -5,34 +5,7 @@ import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
 import {getFieldLabel} from '../../../../localization'
 import {normalizeArrayValue} from './normalizeArrayValue.ts'
-
-/**
- * Converts a string checkbox value to the correct submission type based on the HAL property type.
- *
- * For number-typed properties (e.g. a Set<Integer> field on backend),
- * values must be submitted as numbers — Jackson cannot deserialize string "1" into Integer.
- * For all other types (text, UUID-based trainers), string submission is correct.
- */
-function toSubmitValue(value: string, propType: string): string | number {
-    if (propType === 'number') {
-        return Number(value);
-    }
-    return value;
-}
-
-/**
- * Checks whether the array contains elements that need object/number → string normalization for UI display.
- * Pure number[] where the prop type is 'number' does NOT need normalization — they are already the correct
- * submit type and normalizeArrayValue handles string conversion for UI matching on the fly.
- */
-function needsNormalization(arr: unknown[], propType: string): boolean {
-    return arr.some((item) => {
-        if (item !== null && typeof item === 'object') return true;
-        // number items in a non-number-typed field need string normalization
-        if (typeof item === 'number' && propType !== 'number') return true;
-        return false;
-    });
-}
+import {needsNormalization, toSubmitValue} from './multiValueSubmit.ts'
 
 interface CheckboxGroupFieldProps {
     prop: HalFormsInputProps['prop'];

@@ -208,7 +208,9 @@ class FamilyGroupControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.createFamilyGroup.properties[?(@.name=='parent')].options.link.href")
-                            .value("http://localhost/api/members/options"));
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.createFamilyGroup.properties[?(@.name=='parent')].type")
+                            .value("MemberId"));
         }
 
         @Test
@@ -522,8 +524,12 @@ class FamilyGroupControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.addFamilyGroupParent.properties[?(@.name=='memberId')].options.link.href")
                             .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.addFamilyGroupParent.properties[?(@.name=='memberId')].type")
+                            .value("MemberId"))
                     .andExpect(jsonPath("$._templates.addFamilyGroupChild.properties[?(@.name=='memberId')].options.link.href")
-                            .value("http://localhost/api/members/options"));
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.addFamilyGroupChild.properties[?(@.name=='memberId')].type")
+                            .value("MemberId"));
         }
 
         @Test

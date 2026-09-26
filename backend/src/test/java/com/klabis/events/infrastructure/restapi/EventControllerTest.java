@@ -704,7 +704,9 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.createEvent.properties[?(@.name=='coordinators')].options.link.href")
-                            .value("http://localhost/api/members/options"));
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.createEvent.properties[?(@.name=='coordinators')].type")
+                            .value("MemberId"));
         }
 
         @Test
@@ -931,7 +933,9 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='coordinators')].options.link.href")
-                            .value("http://localhost/api/members/options"));
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='coordinators')].type")
+                            .value("MemberId"));
         }
 
         @Test

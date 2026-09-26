@@ -51,7 +51,20 @@ vi.mock('./HalNavigator2/halforms/fields', async () => {
             </div>
         ),
         HalFormsSelect: ({prop}: HalFormsInputProps) => (
-            <div data-testid={`hal-select-${prop.name}`}>{prop.prompt}</div>
+            <div data-testid={`hal-select-${prop.name}`}>
+                {prop.prompt}
+                {prop.options?.link?.href && (
+                    <span data-testid="select-href">{prop.options.link.href}</span>
+                )}
+            </div>
+        ),
+        HalFormsMultiSelect: ({prop}: HalFormsInputProps) => (
+            <div data-testid={`hal-multiselect-${prop.name}`}>
+                <span data-testid="multiselect-prompt">{prop.prompt}</span>
+                {prop.options?.link?.href && (
+                    <span data-testid="multiselect-href">{prop.options.link.href}</span>
+                )}
+            </div>
         ),
     };
 });
@@ -142,6 +155,60 @@ describe('KlabisFieldsFactory', () => {
             render(fieldElement!);
 
             expect(screen.getByTestId('select-name')).toHaveTextContent('testMemberId');
+        });
+
+        // D7: the base factory detects that a custom widget exists for "MemberId" (by probing
+        // with a single-value-shaped conf) and, for a multi property, renders one row per item
+        // through that same widget via HalFormsCollectionField — the member picker's options
+        // link is shared across all rows.
+        it('should render one HalFormsMemberId row per item for a multi MemberId field, via HalFormsCollectionField', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'MemberId', multiple: true},
+            });
+
+            const fieldElement = klabisFieldsFactory('MemberId', mockConf);
+            render(
+                <Formik initialValues={{memberIds: ['m1', 'm2']}} onSubmit={vi.fn()}>
+                    <Form>{fieldElement}</Form>
+                </Formik>
+            );
+
+            expect(screen.getAllByTestId('hal-forms-memberid-mock')).toHaveLength(2);
+        });
+
+        it('should pass through the backend-provided options.link to each row of a multi MemberId field', () => {
+            const mockConf = createMockConf({
+                prop: {
+                    name: 'memberIds', prompt: 'Vyberte členy', type: 'MemberId', multiple: true,
+                    options: {link: {href: 'http://localhost:8443/api/members/options'}},
+                },
+            });
+
+            const fieldElement = klabisFieldsFactory('MemberId', mockConf);
+            render(
+                <Formik initialValues={{memberIds: ['m1', 'm2']}} onSubmit={vi.fn()}>
+                    <Form>{fieldElement}</Form>
+                </Formik>
+            );
+
+            const rows = screen.getAllByTestId('hal-forms-memberid-mock');
+            expect(rows).toHaveLength(2);
+            expect(screen.getAllByTestId('select-href')[0]).toHaveTextContent('http://localhost:8443/api/members/options');
+        });
+
+        it('should preserve the original prompt as the collection header for a multi MemberId field', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'memberIds', prompt: 'Členové rodiny', type: 'MemberId', multiple: true},
+            });
+
+            const fieldElement = klabisFieldsFactory('MemberId', mockConf);
+            render(
+                <Formik initialValues={{memberIds: ['m1']}} onSubmit={vi.fn()}>
+                    <Form>{fieldElement}</Form>
+                </Formik>
+            );
+
+            expect(screen.getByText('Členové rodiny')).toBeInTheDocument();
         });
     });
 
@@ -336,20 +403,23 @@ describe('KlabisFieldsFactory', () => {
         });
     });
 
-    describe('UUID field type', () => {
+    // D7: "UUID" alone no longer implies a member picker (that regressed multi UUID fields with
+    // link options — coordinators, disciplineIds — into a single select). The member picker is
+    // used only for the explicit "MemberId" field type hint (see 'MemberId field type' above);
+    // a bare "UUID" field renders by its options/basic type instead.
+    describe('UUID field type (no member picker without the MemberId hint)', () => {
 
-        it('should render HalFormsMemberId for single UUID field (memberId)', () => {
+        it('should render nothing for a single UUID field with no options (no widget registered for bare UUID)', () => {
             const mockConf = createMockConf({
-                prop: {name: 'memberId', prompt: 'Vyberte člena', type: 'UUID'},
+                prop: {name: 'someId', prompt: 'Some Id', type: 'UUID'},
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
-            render(fieldElement!);
 
-            expect(screen.getByTestId('hal-forms-memberid-mock')).toBeInTheDocument();
+            expect(fieldElement).toBeNull();
         });
 
-        it('should pass through the backend-provided options.link for single UUID field', () => {
+        it('should render the plain select (not the member picker) for a single UUID field with options.link', () => {
             const mockConf = createMockConf({
                 prop: {
                     name: 'memberId', prompt: 'Vyberte člena', type: 'UUID',
@@ -360,7 +430,9 @@ describe('KlabisFieldsFactory', () => {
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
             render(fieldElement!);
 
+            expect(screen.getByTestId('hal-select-memberId')).toBeInTheDocument();
             expect(screen.getByTestId('select-href')).toHaveTextContent('http://localhost:8443/api/members/options');
+            expect(screen.queryByTestId('hal-forms-memberid-mock')).not.toBeInTheDocument();
         });
 
         it('should render the plain select (not the member picker) when the backend sends inline options for a UUID field', () => {
@@ -378,22 +450,13 @@ describe('KlabisFieldsFactory', () => {
             expect(screen.queryByTestId('hal-forms-memberid-mock')).not.toBeInTheDocument();
         });
 
-        it('should render one HalFormsMemberId row per item for multi UUID field (multiple: true), via HalFormsCollectionField', () => {
-            const mockConf = createMockConf({
-                prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multiple: true},
-            });
-
-            const fieldElement = klabisFieldsFactory('UUID', mockConf);
-            render(
-                <Formik initialValues={{memberIds: ['m1', 'm2']}} onSubmit={vi.fn()}>
-                    <Form>{fieldElement}</Form>
-                </Formik>
-            );
-
-            expect(screen.getAllByTestId('hal-forms-memberid-mock')).toHaveLength(2);
-        });
-
-        it('should pass through the backend-provided options.link for each row of a multi UUID field', () => {
+        // Regression test: before the fix, a multi UUID field with backend-provided
+        // options.link fell through to the single-value member picker (HalFormsMemberId),
+        // submitting a scalar instead of an array — this is exactly the coordinators/
+        // disciplineIds bug. Now, since "UUID" has no registered custom widget, it falls to
+        // the generic multi-select — per row member pickers are reserved for the "MemberId"
+        // field type hint (see 'MemberId field type' describe block above).
+        it('should render the generic multi-select (not per-row member pickers) for a multi UUID field with options.link', () => {
             const mockConf = createMockConf({
                 prop: {
                     name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multiple: true,
@@ -408,66 +471,27 @@ describe('KlabisFieldsFactory', () => {
                 </Formik>
             );
 
-            expect(screen.getAllByTestId('select-href')[0]).toHaveTextContent('http://localhost:8443/api/members/options');
+            expect(screen.getByTestId('multiselect-href')).toHaveTextContent('http://localhost:8443/api/members/options');
+            expect(screen.queryByTestId('hal-forms-memberid-mock')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('collection-item')).not.toBeInTheDocument();
         });
 
-        it('should preserve the original prompt for single UUID field', () => {
-            const mockConf = createMockConf({
-                prop: {name: 'memberId', prompt: 'Správce skupiny', type: 'UUID'},
-            });
-
-            const fieldElement = klabisFieldsFactory('UUID', mockConf);
-            render(fieldElement!);
-
-            expect(screen.getByTestId('select-prompt')).toHaveTextContent('Správce skupiny');
-        });
-
-        it('should preserve the original prompt as the collection header for multi UUID field', () => {
-            const mockConf = createMockConf({
-                prop: {name: 'memberIds', prompt: 'Členové rodiny', type: 'UUID', multiple: true},
-            });
-
-            const fieldElement = klabisFieldsFactory('UUID', mockConf);
-            render(
-                <Formik initialValues={{memberIds: ['m1']}} onSubmit={vi.fn()}>
-                    <Form>{fieldElement}</Form>
-                </Formik>
-            );
-
-            expect(screen.getByText('Členové rodiny')).toBeInTheDocument();
-        });
-
-        it('should render one HalFormsMemberId row per item for UUID field with backend multi:true shorthand', () => {
+        it('should render nothing per row for a multi UUID field without options (no widget registered for bare UUID)', () => {
             const mockConf = createMockConf({
                 prop: {name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true},
             });
 
             const fieldElement = klabisFieldsFactory('UUID', mockConf);
             render(
-                <Formik initialValues={{memberIds: ['m1', 'm2']}} onSubmit={vi.fn()}>
-                    <Form>{fieldElement}</Form>
-                </Formik>
-            );
-
-            expect(screen.getAllByTestId('hal-forms-memberid-mock')).toHaveLength(2);
-        });
-
-        it('should pass through options.link for each row of a UUID field with backend multi:true shorthand', () => {
-            const mockConf = createMockConf({
-                prop: {
-                    name: 'memberIds', prompt: 'Vyberte členy', type: 'UUID', multi: true,
-                    options: {link: {href: 'http://localhost:8443/api/members/options'}},
-                },
-            });
-
-            const fieldElement = klabisFieldsFactory('UUID', mockConf);
-            render(
                 <Formik initialValues={{memberIds: ['m1']}} onSubmit={vi.fn()}>
                     <Form>{fieldElement}</Form>
                 </Formik>
             );
 
-            expect(screen.getAllByTestId('select-href')[0]).toHaveTextContent('http://localhost:8443/api/members/options');
+            // Falls back to HalFormsCollectionField (no custom widget, no options), but each
+            // row itself has nothing to render for bare "UUID" — no member-picker mock appears.
+            expect(screen.getAllByTestId('collection-item')).toHaveLength(1);
+            expect(screen.queryByTestId('hal-forms-memberid-mock')).not.toBeInTheDocument();
         });
     });
 

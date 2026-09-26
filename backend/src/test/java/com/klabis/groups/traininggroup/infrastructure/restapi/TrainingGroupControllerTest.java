@@ -174,7 +174,9 @@ class TrainingGroupControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.createTrainingGroup.properties[?(@.name=='trainerId')].options.link.href")
-                            .value("http://localhost/api/members/options"));
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.createTrainingGroup.properties[?(@.name=='trainerId')].type")
+                            .value("MemberId"));
         }
 
         @Test
@@ -268,10 +270,16 @@ class TrainingGroupControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updateTrainingGroup.properties[?(@.name=='trainers')].options.link.href")
                             .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.updateTrainingGroup.properties[?(@.name=='trainers')].type")
+                            .value("MemberId"))
                     .andExpect(jsonPath("$._templates.addTrainingGroupMember.properties[?(@.name=='memberId')].options.link.href")
                             .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.addTrainingGroupMember.properties[?(@.name=='memberId')].type")
+                            .value("MemberId"))
                     .andExpect(jsonPath("$._templates.addTrainer.properties[?(@.name=='memberId')].options.link.href")
-                            .value("http://localhost/api/members/options"));
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.addTrainer.properties[?(@.name=='memberId')].type")
+                            .value("MemberId"));
         }
     }
 

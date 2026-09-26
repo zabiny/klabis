@@ -54,6 +54,9 @@
 - [x] 7.2 Update the relevant controller(s) to pass `HalFormsOptionsDef.Remote(linkTo(...MembersApi.listMemberOptions...))` for those fields. Run 7.1 to green.
 - [x] 7.3 Remove the hardcoded `{link: {href: "/members/options"}}` fallback in `KlabisFieldsFactory.tsx` (`memberIdFieldRenderer`); trust `conf.prop.options` from the backend response.
 - [x] 7.4 Frontend test: `memberIdFieldRenderer` renders correctly using the backend-provided link, with no hardcoded fallback; regression-test the inline-options branch (`conf.prop.options?.inline`) still short-circuits correctly.
+- [x] 7.6 Backend: every member-id field (all #7 member-picker fields) emits the explicit `MemberId` field type hint in its HAL-FORMS property (D7); tests assert it.
+- [x] 7.7 Frontend: remove the `UUID` → member picker mapping; member picker only for the `MemberId` type hint (D7).
+- [x] 7.8 Frontend: base field factory handles `multi` generically — collection of custom widgets when a custom widget exists, generic multi-select widget for options fields without one (D7); regression tests for event coordinators and event type disciplines (create + edit prefill).
 - [ ] 7.5 Manual/QA verification: every existing member-picker field (family group parent/child, training group trainer, event coordinator, etc.) still loads and functions identically.
 
 ## 8. Final verification

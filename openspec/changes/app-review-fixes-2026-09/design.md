@@ -119,6 +119,15 @@ Discovered during implementation: `GET /api/disciplines` is a paginated HAL `Pag
 
 **Alternative considered**: teach `useHalFormOptions` to unwrap `_embedded` and map `id`/`name` — rejected: default page size would truncate the list and it introduces a second, entity-specific option shape on the frontend.
 
+### D7 — Multi-value fields and explicit member-picker type hint
+
+QA of 7.5 found multi-value fields with link options (`createEvent/updateEvent.coordinators`, event type `disciplineIds`) rendered as single-value fields: the base field factory dispatched to the custom factory before considering `multi`, and the custom factory mapped every `UUID` to the single member picker.
+
+- The base field factory decides multi-ness generically from HAL-FORMS metadata (`multi`), for both custom and basic field types:
+  - multi + the custom factory has a widget for the field type → `HalFormsCollectionField` whose rows render that custom widget (e.g. member picker per row);
+  - multi + options, no custom widget → a generic multi-select widget (searchable dropdown, selected values as chips).
+- `UUID` no longer implies a member picker. The member picker is used only for fields carrying an explicit field type hint (`MemberId`). The backend emits that hint for every member-id field (all fields migrated in #7); other UUID fields render by their options/basic type.
+
 ## API Changes
 
 ### `docs/openapi/spec/events.yaml`

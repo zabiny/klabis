@@ -1818,6 +1818,7 @@ components:
           items:
             type: string
             format: uuid
+          x-hal-input-type: MemberId
         eventTypeId:
           type: string
           format: uuid
@@ -1903,6 +1904,7 @@ components:
           items:
             type: string
             format: uuid
+          x-hal-input-type: MemberId
         eventTypeId:
           type: [string, 'null']
           format: uuid
