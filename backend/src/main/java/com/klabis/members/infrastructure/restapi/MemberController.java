@@ -288,16 +288,7 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
 
         UUID memberId = member.getId().uuid();
-        if (isEnrolled(memberId)) {
-            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.MEMBERS, memberId.toString()))
-                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
-        }
-    }
-
-    static boolean isEnrolled(UUID memberId) {
-        return HalResponseContext.findContext(EnrolledMemberIds.class)
-                .map(enrolled -> enrolled.contains(memberId))
-                .orElse(false);
+        MemberSelfLinkSupport.addSyncLinkIfEnrolled(dtoModel, memberId);
     }
 }
 
@@ -309,10 +300,7 @@ class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSumm
         MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
 
         UUID memberId = member.getId().uuid();
-        if (MemberDetailsPostprocessor.isEnrolled(memberId)) {
-            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.MEMBERS, memberId.toString()))
-                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
-        }
+        MemberSelfLinkSupport.addSyncLinkIfEnrolled(dtoModel, memberId);
     }
 }
 
@@ -339,6 +327,19 @@ final class MemberSelfLinkSupport {
             }
             return (Link) self;
         }).ifPresent(dtoModel::add);
+    }
+
+    static void addSyncLinkIfEnrolled(RepresentationModel<?> dtoModel, UUID memberId) {
+        if (isEnrolled(memberId)) {
+            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.MEMBERS, memberId.toString()))
+                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
+        }
+    }
+
+    private static boolean isEnrolled(UUID memberId) {
+        return HalResponseContext.findContext(EnrolledMemberIds.class)
+                .map(enrolled -> enrolled.contains(memberId))
+                .orElse(false);
     }
 }
 

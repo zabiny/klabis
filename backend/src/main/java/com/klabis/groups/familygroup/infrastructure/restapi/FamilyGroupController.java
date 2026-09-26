@@ -217,17 +217,15 @@ class FamilyGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Famil
     @Override
     public void process(EntityModel<FamilyGroupResponse> dtoModel, FamilyGroup group) {
         UUID id = group.getId().uuid();
+        Map<String, HalFormsOptionsDef> memberIdOptions = Map.of("memberId",
+                HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()));
         klabisLinkTo(methodOn(FamilyGroupsApi.class).getFamilyGroup(id, null))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class).deleteFamilyGroup(id)))
-                        .andAffordances(klabisAffordWithPromptedOptions(
-                                methodOn(FamilyGroupsApi.class).addFamilyGroupParent(id, null),
-                                Map.of("memberId", new HalFormsOptionsDef.Remote(
-                                        linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel()))))
-                        .andAffordances(klabisAffordWithPromptedOptions(
-                                methodOn(FamilyGroupsApi.class).addFamilyGroupChild(id, null),
-                                Map.of("memberId", new HalFormsOptionsDef.Remote(
-                                        linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel())))))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(FamilyGroupsApi.class).addFamilyGroupParent(id, null), memberIdOptions))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(FamilyGroupsApi.class).addFamilyGroupChild(id, null), memberIdOptions)))
                 .ifPresent(dtoModel::add);
 
         // klabisLinkTo omits this for callers without MEMBERS:MANAGE, which is the authority
@@ -258,10 +256,9 @@ class FamilyGroupListPostprocessor
     public CollectionModel<EntityModel<FamilyGroupSummaryResponse>> process(
             CollectionModel<EntityModel<FamilyGroupSummaryResponse>> model) {
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
-                .andAffordances(klabisAffordWithPromptedOptions(
+                .andAffordances(klabisAffordWithOptions(
                         methodOn(FamilyGroupsApi.class).createFamilyGroup(null),
-                        Map.of("parent", new HalFormsOptionsDef.Remote(
-                                linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel())))));
+                        Map.of("parent", HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions())))));
         return model;
     }
 }

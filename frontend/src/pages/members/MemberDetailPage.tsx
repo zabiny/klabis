@@ -410,7 +410,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                     <CalendarFeedSection icalTokenHref={icalTokenHref}/>
                 )}
 
-                {!isEditing && member.active && feeSummaryHref && (
+                {!isEditing && member.active !== false && feeSummaryHref && (
                     <MemberFeeSection
                         feeSummaryHref={feeSummaryHref}
                         memberId={selfMemberId}

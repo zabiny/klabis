@@ -250,18 +250,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/DisciplineOptionResponse'
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
           $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/disciplines:
     get:

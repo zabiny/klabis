@@ -58,8 +58,8 @@
 
 ## 8. Final verification
 
-- [ ] 8.1 Full backend test suite (`test-runner` agent) green.
-- [ ] 8.2 Full frontend test suite + `npm run build` (`test-runner` agent / `frontend-developer` agent) green.
-- [ ] 8.3 Code review (per `CLAUDE.md`: use the appropriate review agent) on the full diff before commit.
-- [ ] 8.4 Run `refresh-backend-server-resources` if frontend files changed, per `frontend/CLAUDE.md`.
+- [x] 8.1 Full backend test suite (`test-runner` agent) green.
+- [x] 8.2 Full frontend test suite + `npm run build` (`test-runner` agent / `frontend-developer` agent) green.
+- [x] 8.3 Code review (per `CLAUDE.md`: use the appropriate review agent) on the full diff before commit.
+- [x] 8.4 Run `refresh-backend-server-resources` if frontend files changed, per `frontend/CLAUDE.md`.
 - [ ] 8.5 Update `openspec/changes/app-review-fixes-2026-09/tasks.md` checkboxes to reflect final state; run `openspec archive` once verified.

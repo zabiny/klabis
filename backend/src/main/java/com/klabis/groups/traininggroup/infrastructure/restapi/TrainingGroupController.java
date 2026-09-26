@@ -258,21 +258,19 @@ class TrainingGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Tra
     @Override
     public void process(EntityModel<TrainingGroupResponse> dtoModel, TrainingGroup group) {
         UUID id = group.getId().uuid();
+        HalFormsOptionsDef.Remote memberOptions = HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions());
         klabisLinkTo(methodOn(TrainingGroupsApi.class).getTrainingGroup(id, null))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAffordWithPromptedOptions(
+                        .andAffordances(klabisAffordWithOptions(
                                 methodOn(TrainingGroupsApi.class).updateTrainingGroup(id, null),
-                                Map.of("trainers", new HalFormsOptionsDef.Remote(
-                                        linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel()))))
+                                Map.of("trainers", memberOptions)))
                         .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class).deleteTrainingGroup(id)))
-                        .andAffordances(klabisAffordWithPromptedOptions(
+                        .andAffordances(klabisAffordWithOptions(
                                 methodOn(TrainingGroupsApi.class).addTrainingGroupMember(id, null),
-                                Map.of("memberId", new HalFormsOptionsDef.Remote(
-                                        linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel()))))
-                        .andAffordances(klabisAffordWithPromptedOptions(
+                                Map.of("memberId", memberOptions)))
+                        .andAffordances(klabisAffordWithOptions(
                                 methodOn(TrainingGroupsApi.class).addTrainer(id, null),
-                                Map.of("memberId", new HalFormsOptionsDef.Remote(
-                                        linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel())))))
+                                Map.of("memberId", memberOptions))))
                 .ifPresent(dtoModel::add);
 
         // klabisLinkTo omits this for callers without GROUPS:TRAINING, which is the authority
@@ -314,10 +312,9 @@ class TrainingGroupListPostprocessor
     public CollectionModel<EntityModel<TrainingGroupSummaryResponse>> process(
             CollectionModel<EntityModel<TrainingGroupSummaryResponse>> model) {
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
-                .andAffordances(klabisAffordWithPromptedOptions(
+                .andAffordances(klabisAffordWithOptions(
                         methodOn(TrainingGroupsApi.class).createTrainingGroup(null),
-                        Map.of("trainerId", new HalFormsOptionsDef.Remote(
-                                linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel())))));
+                        Map.of("trainerId", HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions())))));
         return model;
     }
 }

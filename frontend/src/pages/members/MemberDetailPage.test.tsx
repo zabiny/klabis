@@ -723,6 +723,18 @@ describe('MemberDetailPage', () => {
             renderPage(createMockPageData(data));
             expect(screen.queryByRole('heading', {name: /Členský příspěvek/i})).not.toBeInTheDocument();
         });
+
+        it('shows MemberFeeSection for regular user without MEMBERS_MANAGE (active absent from response) when feeSummary link is present', () => {
+            const data = mockMemberDetailData({
+                _links: {
+                    self: {href: '/api/members/123'},
+                    feeSummary: {href: '/api/members/123/fee-summary/2026'},
+                },
+            });
+            delete (data as Record<string, unknown>).active;
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('heading', {name: /Členský příspěvek/i})).toBeInTheDocument();
+        });
     });
 
     describe('calendar feed section', () => {

@@ -107,10 +107,10 @@ class EventTypeDetailsPostprocessor extends ModelWithDomainPostprocessor<EventTy
         UUID id = eventType.getId().value();
         klabisLinkTo(methodOn(EventTypesApi.class).getEventType(id)).ifPresent(link ->
                 dtoModel.add(link.withSelfRel()
-                        .andAffordances(klabisAffordWithPromptedOptions(
+                        .andAffordances(klabisAffordWithOptions(
                                 methodOn(EventTypesApi.class).updateEventType(id, null),
-                                Map.of("disciplineIds", new HalFormsOptionsDef.Remote(
-                                        linkTo(methodOn(DisciplinesApi.class).listDisciplineOptions()).withSelfRel()))))
+                                Map.of("disciplineIds", HalFormsOptionsDef.remote(
+                                        methodOn(DisciplinesApi.class).listDisciplineOptions()))))
                         .andAffordances(klabisAfford(methodOn(EventTypesApi.class).deleteEventType(id)))));
         klabisLinkTo(methodOn(EventTypesApi.class).listEventTypes())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
@@ -120,7 +120,7 @@ class EventTypeDetailsPostprocessor extends ModelWithDomainPostprocessor<EventTy
 /**
  * Adds the collection-level create affordance. The self link itself is built by
  * {@code HalResponseBodyAdvice} from the current request, so this processor only contributes the
- * affordance — which stays authorization-sensitive via {@code klabisAffordWithPromptedOptions}.
+ * affordance — which stays authorization-sensitive via {@code klabisAffordWithOptions}.
  */
 @MvcComponent
 class EventTypeListPostprocessor
@@ -130,10 +130,10 @@ class EventTypeListPostprocessor
     public CollectionModel<EntityModel<EventTypeDto>> process(
             CollectionModel<EntityModel<EventTypeDto>> model) {
         model.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                .andAffordances(klabisAffordWithPromptedOptions(
+                .andAffordances(klabisAffordWithOptions(
                         methodOn(EventTypesApi.class).createEventType(null),
-                        Map.of("disciplineIds", new HalFormsOptionsDef.Remote(
-                                linkTo(methodOn(DisciplinesApi.class).listDisciplineOptions()).withSelfRel())))));
+                        Map.of("disciplineIds", HalFormsOptionsDef.remote(
+                                methodOn(DisciplinesApi.class).listDisciplineOptions())))));
         return model;
     }
 }

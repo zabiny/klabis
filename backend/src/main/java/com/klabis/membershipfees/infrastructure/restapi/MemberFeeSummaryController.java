@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithPromptedOptions;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -105,7 +105,7 @@ class MemberFeeSummaryDetailsPostprocessor
                 .ifPresent(link -> {
                     var self = link.withSelfRel();
                     if (info.votingOpen()) {
-                        self = self.andAffordances(klabisAffordWithPromptedOptions(
+                        self = self.andAffordances(klabisAffordWithOptions(
                                 methodOn(MemberFeeChoiceApi.class).chooseTier(memberId, year, null, null),
                                 Map.of("membershipFeeGroupId", new HalFormsOptionsDef.Inline(groupOptions))));
                     }

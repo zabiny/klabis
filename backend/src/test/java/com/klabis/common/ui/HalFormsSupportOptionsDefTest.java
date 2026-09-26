@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithPromptedOptions;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Covers HalFormsOptionsDef (D3 in app-review-fixes-2026-09/design.md): klabisAffordWithPromptedOptions
+ * Covers HalFormsOptionsDef (D3 in app-review-fixes-2026-09/design.md): klabisAffordWithOptions
  * must render an Inline-wrapped option exactly as the previous plain-List signature did, and a
  * Remote-wrapped option as a HAL-FORMS options.link pointing at the given href.
  */
@@ -81,7 +81,7 @@ class OptionsDefExampleController {
         EntityModel<OptionsDefDummy> model = EntityModel.of(new OptionsDefDummy("dummy"));
         klabisLinkTo(methodOn(OptionsDefExampleController.class).getWithInlineOptions()).ifPresent(link ->
                 model.add(link.withSelfRel()
-                        .andAffordances(klabisAffordWithPromptedOptions(
+                        .andAffordances(klabisAffordWithOptions(
                                 methodOn(OptionsDefExampleController.class).edit(null),
                                 Map.of("category", new HalFormsOptionsDef.Inline(
                                         List.of(new HalFormsInlineOption("1", "Elite"))))))));
@@ -93,7 +93,7 @@ class OptionsDefExampleController {
         EntityModel<OptionsDefDummy> model = EntityModel.of(new OptionsDefDummy("dummy"));
         klabisLinkTo(methodOn(OptionsDefExampleController.class).getWithRemoteOptions()).ifPresent(link ->
                 model.add(link.withSelfRel()
-                        .andAffordances(klabisAffordWithPromptedOptions(
+                        .andAffordances(klabisAffordWithOptions(
                                 methodOn(OptionsDefExampleController.class).edit(null),
                                 Map.of("category", new HalFormsOptionsDef.Remote(
                                         org.springframework.hateoas.Link.of("/api/testOptionsDef/categories")))))));

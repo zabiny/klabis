@@ -183,7 +183,7 @@ class FeeSelectionCampaignListPostprocessor
         // deliberate guard, not an optional nicety.
         currentLevelOptions().ifPresent(levelOptions ->
                 model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                        .andAffordances(klabisAffordWithPromptedOptions(
+                        .andAffordances(klabisAffordWithOptions(
                                 methodOn(FeeSelectionCampaignsApi.class).publishYear(null),
                                 Map.of("levelIds", new HalFormsOptionsDef.Inline(levelOptions))))));
         return model;

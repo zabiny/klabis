@@ -73,24 +73,21 @@ class HalFormsMultiPropertyModule extends SimpleModule {
 
             if (propertyName != null) {
                 HalFormsOptionsDef optionsDef = HalFormsSupport.getOptionsDefForProperty(propertyName);
-                if (optionsDef instanceof HalFormsOptionsDef.Inline inline && !inline.values().isEmpty()) {
-                    HalFormsOptions options = HalFormsOptions.inline(inline.values())
-                            .withValueField("value")
-                            .withPromptField("prompt");
-                    gen.writeName("options");
-                    prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
-                    return;
-                }
-                if (optionsDef instanceof HalFormsOptionsDef.Remote remote) {
-                    HalFormsOptions options = HalFormsOptions.remote(remote.link());
-                    gen.writeName("options");
-                    prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
-                    return;
+                HalFormsOptions options = switch (optionsDef) {
+                    case HalFormsOptionsDef.Inline inline when !inline.values().isEmpty() ->
+                            HalFormsOptions.inline(inline.values()).withValueField("value").withPromptField("prompt");
+                    case HalFormsOptionsDef.Remote remote -> HalFormsOptions.remote(remote.link());
+                    case null, default -> null;
+                };
+
+                if (options == null) {
+                    List<String> inlineOptions = HalFormsSupport.getInlineOptionsForProperty(propertyName);
+                    if (inlineOptions != null && !inlineOptions.isEmpty()) {
+                        options = HalFormsOptions.inline(inlineOptions.toArray());
+                    }
                 }
 
-                List<String> inlineOptions = HalFormsSupport.getInlineOptionsForProperty(propertyName);
-                if (inlineOptions != null && !inlineOptions.isEmpty()) {
-                    HalFormsOptions options = HalFormsOptions.inline(inlineOptions.toArray());
+                if (options != null) {
                     gen.writeName("options");
                     prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
                     return;

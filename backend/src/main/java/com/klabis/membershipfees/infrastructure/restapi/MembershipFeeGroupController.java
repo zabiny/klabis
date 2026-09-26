@@ -31,7 +31,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @PrimaryAdapter
@@ -124,10 +123,9 @@ class MembershipFeeGroupDetailsPostprocessor
         klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getFeeGroup(id))
                 .map(link -> {
                     var self = link.withSelfRel()
-                            .andAffordances(klabisAffordWithPromptedOptions(
+                            .andAffordances(klabisAffordWithOptions(
                                     methodOn(MembershipFeeGroupsApi.class).assignMember(id, null, null),
-                                    Map.of("memberId", new HalFormsOptionsDef.Remote(
-                                            linkTo(methodOn(MembersApi.class).listMemberOptions()).withSelfRel()))));
+                                    Map.of("memberId", HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()))));
                     if (group.getStatus() == PublishedLevelStatus.EDITABLE) {
                         self = self.andAffordances(klabisAfford(
                                 methodOn(MembershipFeeGroupsApi.class).editSnapshot(id, null)));

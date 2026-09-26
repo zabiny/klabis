@@ -319,7 +319,7 @@ class PaymentRuleDetailsPostprocessor
         String ranking = domain.rule().rankingShortName();
         klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getRule(tierId, eventTypeId, ranking))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAffordWithOptions(
+                        .andAffordances(klabisAffordWithValueOptions(
                                 methodOn(MembershipFeeTiersApi.class).editRule(tierId,
                                         eventTypeId,
                                         ranking,
