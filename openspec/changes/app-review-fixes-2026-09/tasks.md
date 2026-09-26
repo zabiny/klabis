@@ -27,10 +27,10 @@
 
 ## 4. Sync status indicator for members (list + detail)
 
-- [ ] 4.1 Write a failing test on `MemberSummaryPostprocessor`/`MemberControllerTest` (`listMembers`) asserting a `sync` link is present for an ORIS-enrolled member row and absent for a non-enrolled one.
-- [ ] 4.2 Add the `isEnrolled(memberId)` + `SyncApi.getSyncState` `sync` link block to `MemberSummaryPostprocessor`, mirroring `MemberDetailsPostprocessor`. Run 4.1 to green.
-- [ ] 4.3 Add `SyncStatusIndicator` (`mode="icon"`) to `MembersPage.tsx`'s row actions, reading `_links.sync` per row, mirroring `EventsPage.tsx`; add/adjust a component test.
-- [ ] 4.4 Add `SyncStatusIndicator` (`mode="icon+date"`) to `MemberDetailPage.tsx`, reading `resourceData._links?.sync`, mirroring `EventDetailPage.tsx`; add/adjust a component test.
+- [x] 4.1 Write a failing test on `MemberSummaryPostprocessor`/`MemberControllerTest` (`listMembers`) asserting a `sync` link is present for an ORIS-enrolled member row and absent for a non-enrolled one.
+- [x] 4.2 Add the `isEnrolled(memberId)` + `SyncApi.getSyncState` `sync` link block to `MemberSummaryPostprocessor`, mirroring `MemberDetailsPostprocessor`. Run 4.1 to green.
+- [x] 4.3 Add `SyncStatusIndicator` (`mode="icon"`) to `MembersPage.tsx`'s row actions, reading `_links.sync` per row, mirroring `EventsPage.tsx`; add/adjust a component test.
+- [x] 4.4 Add `SyncStatusIndicator` (`mode="icon+date"`) to `MemberDetailPage.tsx`, reading `resourceData._links?.sync`, mirroring `EventDetailPage.tsx`; add/adjust a component test.
 - [ ] 4.5 Manual/QA verification: an ORIS-linked member shows the sync indicator in both the list and detail page; a manually-registered member shows none.
 
 ## 5. Link-based HAL-FORMS options mechanism (`HalFormsOptionsDef`)

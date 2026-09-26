@@ -17,6 +17,9 @@ import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/Hal
 import {Banknote, Pencil, RefreshCw, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
+import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
+import {asLinkArray} from "../../api/hateoas.ts";
+import type {HalResourceLinks} from "../../api";
 import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
 import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog.tsx";
 import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
@@ -117,6 +120,8 @@ export const MembersPage = (): ReactElement => {
         const hasAccountLink = !!member._links?.account;
         const hasSuspendTemplate = !!member._templates?.suspendMember;
         const hasResumeTemplate = !!member._templates?.resumeMember;
+        const links = member._links as Record<string, HalResourceLinks> | undefined;
+        const syncLink = links?.sync ? asLinkArray(links.sync)[0] : undefined;
 
         return (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
@@ -192,6 +197,7 @@ export const MembersPage = (): ReactElement => {
                         <UserCheck className="w-4 h-4"/>
                     </Button>
                 )}
+                {syncLink && <SyncStatusIndicator syncLink={syncLink} mode="icon"/>}
             </div>
         );
     };

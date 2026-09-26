@@ -1704,6 +1704,51 @@ class MemberControllerApiTest {
     }
 
     @Nested
+    @DisplayName("GET /api/members — list row sync link (design.md D4)")
+    class ListRowSyncLinkTests {
+
+        private static String link(String name) {
+            return "$._embedded.memberSummaryResponseList[0]._links." + name + ".href";
+        }
+
+        @Test
+        @DisplayName("ORIS-enrolled member row carries a sync link")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void enrolledRowCarriesSyncLink() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member orisMember = MemberTestDataBuilder.aMemberWithId(memberId).build();
+
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(orisMember), PageRequest.of(0, 10), 1));
+
+            SyncTarget target = new SyncTarget(SyncEntityType.MEMBER, memberId.toString());
+            com.klabis.sync.domain.SyncedEntityReference syncedReference = new com.klabis.sync.domain.SyncedEntityReference(
+                    target, new ExternalReference(ExternalSystem.ORIS, "42"));
+            when(synchronizationPort.findActiveByTargets(eq(SyncEntityType.MEMBER), any()))
+                    .thenReturn(List.of(syncedReference));
+
+            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(link("sync")).exists());
+        }
+
+        @Test
+        @DisplayName("hand-registered member row does NOT carry a sync link")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void nonEnrolledRowDoesNotCarrySyncLink() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member handRegisteredMember = MemberTestDataBuilder.aMemberWithId(memberId).build();
+
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(handRegisteredMember), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.sync").doesNotExist());
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/members — filter params")
     class ListMembersFilterTests {
 

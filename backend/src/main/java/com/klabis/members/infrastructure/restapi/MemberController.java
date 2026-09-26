@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
@@ -174,6 +175,17 @@ public class MemberController implements MembersApi {
 
         Page<Member> memberPage = memberRepository.findAll(filter, pageable);
 
+        // Same reasoning as getMember: one enrolment lookup per request, scoped to this page's
+        // member ids rather than every active MEMBER sync record, read back by the postprocessor
+        // via HalResponseContext (design.md D4).
+        List<String> pageMemberIds = memberPage.getContent().stream().map(m -> m.getId().uuid().toString()).toList();
+        Set<String> enrolledMemberIds = pageMemberIds.isEmpty() || synchronizationPort.isEmpty()
+                ? Set.of()
+                : synchronizationPort.get().findActiveByTargets(SyncEntityType.MEMBER, pageMemberIds).stream()
+                        .map(reference -> reference.target().entityId())
+                        .collect(Collectors.toSet());
+        HalResponseContext.setContext(new EnrolledMemberIds(enrolledMemberIds));
+
         HalResponseContext.setContext(new ClubKeyHeld(memberDiscoveryJob.isPresent() && orisClubKeyPort.isSet()));
         HalResponseContext.setDomainList(memberPage.getContent());
 
@@ -282,7 +294,7 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
         }
     }
 
-    private static boolean isEnrolled(UUID memberId) {
+    static boolean isEnrolled(UUID memberId) {
         return HalResponseContext.findContext(EnrolledMemberIds.class)
                 .map(enrolled -> enrolled.contains(memberId))
                 .orElse(false);
@@ -295,6 +307,12 @@ class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSumm
     @Override
     public void process(EntityModel<MemberSummaryResponse> dtoModel, Member member) {
         MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
+
+        UUID memberId = member.getId().uuid();
+        if (MemberDetailsPostprocessor.isEnrolled(memberId)) {
+            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.MEMBERS, memberId.toString()))
+                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
+        }
     }
 }
 

@@ -22,6 +22,7 @@ import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
 import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
 import {MemberFeeSection} from "./MemberFeeSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
+import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
 
 type MemberDetail = GetMemberResource;
 
@@ -277,6 +278,9 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                 <Badge variant={member.active ? 'success' : 'default'} size="sm">
                                     {member.active ? labels.enums.memberStatus.active : labels.enums.memberStatus.inactive}
                                 </Badge>
+                            )}
+                            {!isEditing && (
+                                <SyncStatusIndicator syncLink={resourceData._links?.sync} mode="icon+date"/>
                             )}
                         </div>
                         <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
