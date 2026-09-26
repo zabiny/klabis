@@ -2,4 +2,4 @@
 POST https://oris.ceskyorientak.cz/API
 Content-Type: application/x-www-form-urlencoded
 
-method=getClubUserList&format=xml&clubkey={{orisClubKey}}
+method=getClubUserList&format=json&clubkey={{orisClubKey}}
