@@ -51,6 +51,6 @@
 
 ## 9. Verification
 
-- [ ] 9.1 Run the local-only `MemberOrisImportApplicationModuleTest` (not committed; it depends on a fixture with personal data) against `.do-not-commit/zbm-members.json` and confirm all current members are imported (273/273).
-- [ ] 9.2 Run the full backend and frontend test suites via the test-runner agent, and `npm run build`, and confirm no regressions.
+- [x] 9.1 Run the local-only `MemberOrisImportApplicationModuleTest` (not committed; it depends on a fixture with personal data) against `.do-not-commit/zbm-members.json` and confirm all current members are imported (273/273).
+- [x] 9.2 Run the full backend and frontend test suites via the test-runner agent, and `npm run build`, and confirm no regressions.
 - [ ] 9.3 Verify manually on `http://localhost:3000` as `admin` with the `oris` profile: after the import, incomplete members show the badge, the filter works, the detail lists missing items, completing a member's data clears the badge, and the login page link leads to activation-link requests that send mail only to matching addresses.
