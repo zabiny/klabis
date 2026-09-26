@@ -453,7 +453,7 @@ class EventAffordanceSupport {
         return SecuritySpelEvaluator.hasAuthority(auth, authority);
     }
 
-    static Link addManagementAffordances(Link selfLink, Event event, boolean orisIntegrationActive, boolean orisEnrolled, Authentication auth) {
+    static Link addManagementAffordances(Link selfLink, Event event, Authentication auth) {
         UUID eventId = event.getId().value();
 
         boolean canManage = hasAuthority(auth, Authority.EVENTS_MANAGE);
@@ -470,18 +470,12 @@ class EventAffordanceSupport {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).publishEvent(eventId)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
                 }
-                if (orisIntegrationActive && orisEnrolled) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).syncEventFromOris(eventId)));
-                }
                 break;
 
             case ACTIVE:
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).updateEvent(eventId, null)));
                 if (canManage) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
-                }
-                if (orisIntegrationActive && orisEnrolled) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).syncEventFromOris(eventId)));
                 }
                 break;
 
@@ -533,11 +527,9 @@ class EventAffordanceSupport {
 @MvcComponent
 class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, Event> {
 
-    private final boolean orisIntegrationActive;
     private final MemberRegistrationSanctionPort sanctionPort;
 
-    EventDetailsPostprocessor(Optional<OrisEventImportPort> orisEventImportPort, MemberRegistrationSanctionPort sanctionPort) {
-        this.orisIntegrationActive = orisEventImportPort.isPresent();
+    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort) {
         this.sanctionPort = sanctionPort;
     }
 
@@ -548,10 +540,8 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
-        boolean orisEnrolled = isEnrolled(eventId);
-
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, orisEnrolled, auth);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
@@ -615,11 +605,9 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
 @MvcComponent
 class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummaryDto, Event> {
 
-    private final boolean orisIntegrationActive;
     private final MemberRegistrationSanctionPort sanctionPort;
 
-    EventSummaryPostprocessor(Optional<OrisEventImportPort> orisEventImportPort, MemberRegistrationSanctionPort sanctionPort) {
-        this.orisIntegrationActive = orisEventImportPort.isPresent();
+    EventSummaryPostprocessor(MemberRegistrationSanctionPort sanctionPort) {
         this.sanctionPort = sanctionPort;
     }
 
@@ -633,7 +621,7 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         boolean orisEnrolled = EventDetailsPostprocessor.isEnrolled(eventId);
 
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, orisEnrolled, auth);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
@@ -666,6 +654,11 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         event.getEventTypeId().ifPresent(eventTypeId ->
                 klabisLinkTo(methodOn(EventTypesApi.class).getEventType(eventTypeId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
+
+        if (orisEnrolled) {
+            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENTS, eventId.toString()))
+                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
+        }
     }
 }
 

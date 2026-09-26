@@ -2374,20 +2374,6 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("Non-ORIS DRAFT row does NOT carry syncEventFromOris affordance")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
-        void nonOrisDraftRowDoesNotCarrySyncAffordance() throws Exception {
-            Event nonOrisEvent = EventTestDataBuilder.anEvent().build();
-
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
-                    .thenReturn(new PageImpl<>(List.of(nonOrisEvent), PageRequest.of(0, 10), 1));
-
-            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath(tpl("syncEventFromOris")).doesNotExist());
-        }
-
-        @Test
         @DisplayName("FINISHED row carries no management affordances")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void finishedRowCarriesNoManagementAffordances() throws Exception {
@@ -2400,8 +2386,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(tpl("updateEvent")).doesNotExist())
                     .andExpect(jsonPath(tpl("publishEvent")).doesNotExist())
-                    .andExpect(jsonPath(tpl("cancelEvent")).doesNotExist())
-                    .andExpect(jsonPath(tpl("syncEventFromOris")).doesNotExist());
+                    .andExpect(jsonPath(tpl("cancelEvent")).doesNotExist());
         }
 
         @Test
@@ -2417,8 +2402,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(tpl("updateEvent")).doesNotExist())
                     .andExpect(jsonPath(tpl("publishEvent")).doesNotExist())
-                    .andExpect(jsonPath(tpl("cancelEvent")).doesNotExist())
-                    .andExpect(jsonPath(tpl("syncEventFromOris")).doesNotExist());
+                    .andExpect(jsonPath(tpl("cancelEvent")).doesNotExist());
         }
 
         @Test
@@ -2438,8 +2422,52 @@ class EventControllerTest {
                     .andExpect(jsonPath(tpl("registerForEvent.method")).value("POST"))
                     .andExpect(jsonPath(tpl("updateEvent")).doesNotExist())
                     .andExpect(jsonPath(tpl("publishEvent")).doesNotExist())
-                    .andExpect(jsonPath(tpl("cancelEvent")).doesNotExist())
-                    .andExpect(jsonPath(tpl("syncEventFromOris")).doesNotExist());
+                    .andExpect(jsonPath(tpl("cancelEvent")).doesNotExist());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events — list row sync link (design.md D4)")
+    class ListRowSyncLinkTests {
+
+        private static String link(String name) {
+            return "$._embedded.eventSummaryDtoList[0]._links." + name + ".href";
+        }
+
+        @Test
+        @DisplayName("ORIS-enrolled DRAFT/ACTIVE event row carries a sync link")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void enrolledRowCarriesSyncLink() throws Exception {
+            EventId eventId = EventId.generate();
+            Event orisEvent = EventTestDataBuilder.anEventWithId(eventId).build();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(orisEvent), PageRequest.of(0, 10), 1));
+
+            com.klabis.sync.domain.SyncTarget target = new com.klabis.sync.domain.SyncTarget(
+                    com.klabis.sync.domain.SyncEntityType.EVENT, eventId.value().toString());
+            com.klabis.sync.domain.SyncedEntityReference syncedReference = new com.klabis.sync.domain.SyncedEntityReference(
+                    target, new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, "42"));
+            when(synchronizationPort.findActiveByTargets(eq(com.klabis.sync.domain.SyncEntityType.EVENT), any()))
+                    .thenReturn(List.of(syncedReference));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(link("sync")).exists());
+        }
+
+        @Test
+        @DisplayName("non-ORIS event row does NOT carry a sync link")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void nonEnrolledRowDoesNotCarrySyncLink() throws Exception {
+            Event nonOrisEvent = EventTestDataBuilder.anEvent().build();
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+                    .thenReturn(new PageImpl<>(List.of(nonOrisEvent), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0]._links.sync").doesNotExist());
         }
     }
 

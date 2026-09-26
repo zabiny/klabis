@@ -726,9 +726,6 @@ paths:
             cancelEvent:
               operation: cancelEvent
               description: Present for DRAFT/ACTIVE events and callers with EVENTS:MANAGE
-            syncEventFromOris:
-              operation: syncEventFromOris
-              description: Present when ORIS integration is active and the event has an orisId
             registerForEvent:
               operation: registerForEvent
               description: |
@@ -968,40 +965,6 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
           $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/events/{id}/sync-from-oris:
-    post:
-      operationId: syncEventFromOris
-      tags: [OrisEvents]
-      summary: Sync event from ORIS
-      description: |
-        Runs one synchronisation pass for this event through the synchronisation engine (design.md
-        D18). ORIS-owned fields are written inward when only the external side changed; a local edit
-        to one of them is no longer silently overwritten and instead surfaces as a conflict on the
-        event's synchronisation resource (design.md D6). Only allowed for DRAFT and ACTIVE events
-        with an orisId.
-      security:
-        - KlabisAuth: [EVENTS]
-      x-klabis-authority: EVENTS_MANAGE
-      parameters:
-        - $ref: '#/components/parameters/EventIdParam'
-      responses:
-        '204':
-          description: Event synced from ORIS successfully
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './sync.yaml#/components/responses/NeedsDecision'
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 

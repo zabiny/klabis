@@ -1,7 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.users.HasAuthority;
-import com.klabis.events.EventId;
 import com.klabis.events.application.OrisBulkSyncPort;
 import com.klabis.events.application.OrisEventBulkImportPort;
 import com.klabis.events.application.OrisEventImportPort;
@@ -11,11 +10,8 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.UUID;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -50,14 +46,6 @@ class OrisEventController implements OrisEventsApi {
         return ResponseEntity
                 .created(linkTo(methodOn(EventsApi.class).getEvent(created.getId().value(), null)).toUri())
                 .build();
-    }
-
-    @Override
-    public ResponseEntity<Void> syncEventFromOris(
-            @PathVariable UUID id) {
-
-        orisEventImportPort.syncEventFromOris(new EventId(id));
-        return ResponseEntity.noContent().build();
     }
 
     @Override

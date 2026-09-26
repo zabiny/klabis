@@ -19,10 +19,10 @@ class EventsExceptionHandler {
     }
 
     /**
-     * design.md D18: the single-event sync endpoint refuses with a problem detail
-     * pointing at the sync resource when the record needs a decision (task 8.3). The
+     * design.md D18: importing an ORIS event whose pairing already awaits a decision
+     * refuses with a problem detail pointing at the sync resource (task 9.3). The
      * pointer itself is the message text — {@link EventSyncNeedsResolutionException}
-     * names the event; the client is expected to already know
+     * names the ORIS id; the client is expected to already know
      * {@code GET /api/events/{id}/sync} from the {@code sync} link on the event
      * resource (task 8.6).
      */

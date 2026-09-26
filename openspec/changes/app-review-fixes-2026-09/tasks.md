@@ -15,14 +15,14 @@
 
 ## 3. Sync status indicator in the events list + removal of `syncEventFromOris`
 
-- [ ] 3.1 Write a failing test on `EventSummaryPostprocessor`/`EventControllerTest` (`listEvents`) asserting a `sync` link is present for an ORIS-enrolled DRAFT/ACTIVE event row and absent for a non-enrolled one.
-- [ ] 3.2 Add the `isEnrolled(eventId)` + `SyncApi.getSyncState` `sync` link block to `EventSummaryPostprocessor`, mirroring `EventDetailsPostprocessor`. Run 3.1 to green.
-- [ ] 3.3 Frontend: verify `EventsPage.tsx` renders `SyncStatusIndicator` for the new `sync` link with no code change needed (existing `syncLink && <SyncStatusIndicator .../>` wiring); add/adjust a component test asserting the icon renders when `_links.sync` is present in a row.
-- [ ] 3.4 Write a failing test asserting `409 NeedsDecision`-equivalent behavior from `SyncApi.synchronizeNow` when the target sync record is `CONFLICT`/`FAILED` for an event — confirms the generic engine already covers what `EventSyncNeedsResolutionException` guarded, before removing it.
-- [ ] 3.5 Remove the `syncEventFromOris` affordance branches (DRAFT/ACTIVE) from `EventAffordanceSupport.addManagementAffordances`; update/remove affected assertions in `EventControllerTest`.
-- [ ] 3.6 Remove `OrisEventController.syncEventFromOris` handler, `OrisEventImportPort.syncEventFromOris`, `OrisEventImportService.syncEventFromOris`, and `EventSyncNeedsResolutionException` (if unreferenced after the above); remove/adjust `OrisEventImportServiceTest` and `OrisEventControllerTest` accordingly.
-- [ ] 3.7 Remove `POST /api/events/{id}/sync-from-oris` (`syncEventFromOris`) operation and its `x-hal-templates` entry from `docs/openapi/spec/events.yaml`; regenerate OpenAPI sources.
-- [ ] 3.8 Full backend build/test run for the `events` module to confirm no dangling references remain.
+- [x] 3.1 Write a failing test on `EventSummaryPostprocessor`/`EventControllerTest` (`listEvents`) asserting a `sync` link is present for an ORIS-enrolled DRAFT/ACTIVE event row and absent for a non-enrolled one.
+- [x] 3.2 Add the `isEnrolled(eventId)` + `SyncApi.getSyncState` `sync` link block to `EventSummaryPostprocessor`, mirroring `EventDetailsPostprocessor`. Run 3.1 to green.
+- [x] 3.3 Frontend: verify `EventsPage.tsx` renders `SyncStatusIndicator` for the new `sync` link with no code change needed (existing `syncLink && <SyncStatusIndicator .../>` wiring); add/adjust a component test asserting the icon renders when `_links.sync` is present in a row.
+- [x] 3.4 Write a failing test asserting `409 NeedsDecision`-equivalent behavior from `SyncApi.synchronizeNow` when the target sync record is `CONFLICT`/`FAILED` for an event — confirms the generic engine already covers what `EventSyncNeedsResolutionException` guarded, before removing it.
+- [x] 3.5 Remove the `syncEventFromOris` affordance branches (DRAFT/ACTIVE) from `EventAffordanceSupport.addManagementAffordances`; update/remove affected assertions in `EventControllerTest`.
+- [x] 3.6 Remove `OrisEventController.syncEventFromOris` handler, `OrisEventImportPort.syncEventFromOris`, `OrisEventImportService.syncEventFromOris`, and `EventSyncNeedsResolutionException` (if unreferenced after the above); remove/adjust `OrisEventImportServiceTest` and `OrisEventControllerTest` accordingly.
+- [x] 3.7 Remove `POST /api/events/{id}/sync-from-oris` (`syncEventFromOris`) operation and its `x-hal-templates` entry from `docs/openapi/spec/events.yaml`; regenerate OpenAPI sources.
+- [x] 3.8 Full backend build/test run for the `events` module to confirm no dangling references remain.
 - [ ] 3.9 Manual/QA verification: events list row for an ORIS-imported event shows the sync status indicator (not a bare "Synchronizovat" button); clicking it opens the overlay and "Synchronizovat teď" triggers a sync pass.
 
 ## 4. Sync status indicator for members (list + detail)

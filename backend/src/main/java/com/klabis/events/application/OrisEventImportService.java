@@ -9,8 +9,6 @@ import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
-import com.klabis.sync.domain.SyncStatus;
-import com.klabis.sync.domain.SyncTarget;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -40,9 +38,8 @@ class OrisEventImportService implements OrisEventImportPort {
      * <p>
      * A pairing already awaiting a decision (CONFLICT or FAILED) is refused by the
      * engine with {@link SyncRecordNeedsResolutionException}, translated here into
-     * {@link EventSyncNeedsResolutionException} for the same reason
-     * {@link #syncEventFromOris} does: this module's REST layer should not need to
-     * know the sync module's internal exception vocabulary.
+     * {@link EventSyncNeedsResolutionException} so this module's REST layer needs no
+     * knowledge of the sync module's internal exception vocabulary.
      * <p>
      * Deliberately NOT {@code @Transactional}: {@code pullAndEnroll} performs a
      * blocking external ORIS HTTP call and relies on {@code SyncRecordCreator} and the
@@ -65,34 +62,5 @@ class OrisEventImportService implements OrisEventImportPort {
 
         EventId eventId = new EventId(UUID.fromString(record.getTarget().entityId()));
         return eventRepository.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
-    }
-
-    /**
-     * Delegates to the synchronisation engine (design.md D18, task 8.3) instead of
-     * overwriting the event's ORIS-owned fields itself: a local edit to one of them
-     * now surfaces as a conflict rather than being silently discarded (design.md D6 —
-     * the behaviour change task 8.9 covers in the pre-existing tests that assumed the
-     * old silent-overwrite semantics).
-     * <p>
-     * Refuses up front, without claiming or attempting the record, when it is already
-     * {@code CONFLICT} or {@code FAILED} — the same guard
-     * {@link SynchronizationPort#synchronizeNow} applies, surfaced here as
-     * {@link EventSyncNeedsResolutionException} instead of the sync module's own
-     * exception type so this module's REST layer needs no knowledge of sync's
-     * internal exception vocabulary.
-     */
-    @Override
-    public void syncEventFromOris(EventId eventId) {
-        eventRepository.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
-
-        SyncTarget target = new SyncTarget(SyncEntityType.EVENT, eventId.value().toString());
-        SyncRecord record = synchronizationPort.findByTarget(target)
-                .orElseThrow(() -> new EventNotFoundException(eventId));
-
-        if (record.getStatus() == SyncStatus.CONFLICT || record.getStatus() == SyncStatus.FAILED) {
-            throw new EventSyncNeedsResolutionException(eventId);
-        }
-
-        synchronizationPort.synchronizeNow(record.getId(), null);
     }
 }

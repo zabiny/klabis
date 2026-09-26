@@ -63,8 +63,6 @@ paths:
     $ref: './events.yaml#/paths/~1api~1events~1{eventId}~1accommodation-list'
   /api/events/import:
     $ref: './events.yaml#/paths/~1api~1events~1import'
-  /api/events/{id}/sync-from-oris:
-    $ref: './events.yaml#/paths/~1api~1events~1{id}~1sync-from-oris'
   /api/events/sync-from-oris/all-upcoming:
     $ref: './events.yaml#/paths/~1api~1events~1sync-from-oris~1all-upcoming'
   /api/events/import-batch:
