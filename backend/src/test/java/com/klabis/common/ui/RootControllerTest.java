@@ -68,5 +68,23 @@ class RootControllerTest {
             mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
                     .andExpect(status().isUnauthorized());
         }
+
+        @Test
+        @WithKlabisMockUser(authorities = Authority.EVENTS_MANAGE)
+        @DisplayName("adds the disciplines link for a user with EVENTS:MANAGE")
+        void shouldAddDisciplinesLinkForEventsManage() throws Exception {
+            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.disciplines.href").exists());
+        }
+
+        @Test
+        @WithKlabisMockUser(authorities = Authority.EVENTS_READ)
+        @DisplayName("omits the disciplines link for a user with only EVENTS:READ")
+        void shouldOmitDisciplinesLinkForEventsReadOnly() throws Exception {
+            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.disciplines").doesNotExist());
+        }
     }
 }

@@ -154,7 +154,7 @@ public class DisciplineController implements DisciplinesApi {
 
 /**
  * Adds the {@code disciplines} link to root navigation.
- * Authorization gated via klabisAfford (EVENTS_MANAGE) in the actual endpoint.
+ * Authorization gated via klabisLinkTo (EVENTS_MANAGE) in the actual endpoint.
  */
 @MvcComponent
 class DisciplinesRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {

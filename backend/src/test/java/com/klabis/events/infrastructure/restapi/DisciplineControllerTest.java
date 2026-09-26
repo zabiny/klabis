@@ -73,8 +73,8 @@ class DisciplineControllerTest {
     class ListDisciplinesTests {
 
         @Test
-        @DisplayName("should return 200 with a paginated list for user with EVENTS:READ")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        @DisplayName("should return 200 with a paginated list for user with EVENTS:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
         void shouldReturnPaginatedList() throws Exception {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
             when(disciplineManagementService.list(any())).thenReturn(
@@ -91,8 +91,16 @@ class DisciplineControllerTest {
         }
 
         @Test
-        @DisplayName("should include first/last/next paging links when more than one page exists")
+        @DisplayName("should return 403 for user with only EVENTS:READ")
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void shouldReturn403ForEventsReadOnly() throws Exception {
+            mockMvc.perform(get("/api/disciplines").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should include first/last/next paging links when more than one page exists")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
         void shouldReturnPagingLinksForMultiplePages() throws Exception {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
             when(disciplineManagementService.list(any())).thenReturn(
@@ -110,7 +118,7 @@ class DisciplineControllerTest {
 
         @Test
         @DisplayName("should expose createDiscipline template on collection self link for user with EVENTS:MANAGE")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
         void shouldExposeCreateTemplate() throws Exception {
             when(disciplineManagementService.list(any())).thenReturn(new PageImpl<>(List.of()));
 
@@ -120,19 +128,8 @@ class DisciplineControllerTest {
         }
 
         @Test
-        @DisplayName("should not expose createDiscipline template for user without EVENTS:MANAGE")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
-        void shouldNotExposeCreateTemplateWithoutManageAuthority() throws Exception {
-            when(disciplineManagementService.list(any())).thenReturn(new PageImpl<>(List.of()));
-
-            mockMvc.perform(get("/api/disciplines").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.createDiscipline").doesNotExist());
-        }
-
-        @Test
         @DisplayName("should include sync link for a discipline paired to ORIS")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
         void shouldIncludeSyncLinkForPairedDiscipline() throws Exception {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
             when(disciplineManagementService.list(any())).thenReturn(
@@ -148,7 +145,7 @@ class DisciplineControllerTest {
 
         @Test
         @DisplayName("should omit sync link for a manually created discipline")
-        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
         void shouldOmitSyncLinkForUnpairedDiscipline() throws Exception {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
             when(disciplineManagementService.list(any())).thenReturn(

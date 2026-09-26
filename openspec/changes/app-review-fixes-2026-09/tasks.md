@@ -1,9 +1,9 @@
 ## 1. Disciplines menu/endpoint authority (EVENTS:MANAGE)
 
-- [ ] 1.1 Write/adjust `DisciplineControllerTest` (or equivalent authorization test) asserting `listDisciplines` returns 403 for a user with only `EVENTS_READ` and 200 for `EVENTS_MANAGE` — confirm it fails first (red).
-- [ ] 1.2 Update `docs/openapi/spec/events.yaml`: `listDisciplines` `x-klabis-authority` from `EVENTS_READ` to `EVENTS_MANAGE`; regenerate OpenAPI bundle + backend/frontend generated sources.
-- [ ] 1.3 Run the test from 1.1 to green; add/adjust a `DisciplinesRootPostprocessor` test asserting the `disciplines` root link is absent for `EVENTS_READ`-only and present for `EVENTS_MANAGE`.
-- [ ] 1.4 Fix the misleading comment in `DisciplineController.java` (references `klabisAfford` where `klabisLinkTo` is used).
+- [x] 1.1 Write/adjust `DisciplineControllerTest` (or equivalent authorization test) asserting `listDisciplines` returns 403 for a user with only `EVENTS_READ` and 200 for `EVENTS_MANAGE` — confirm it fails first (red).
+- [x] 1.2 Update `docs/openapi/spec/events.yaml`: `listDisciplines` `x-klabis-authority` from `EVENTS_READ` to `EVENTS_MANAGE`; regenerate OpenAPI bundle + backend/frontend generated sources.
+- [x] 1.3 Run the test from 1.1 to green; add/adjust a `DisciplinesRootPostprocessor` test asserting the `disciplines` root link is absent for `EVENTS_READ`-only and present for `EVENTS_MANAGE`.
+- [x] 1.4 Fix the misleading comment in `DisciplineController.java` (references `klabisAfford` where `klabisLinkTo` is used).
 - [ ] 1.5 Manually verify in the running app (or an E2E/QA pass) that the "Disciplíny" menu entry disappears for a member-only test user and stays for admin.
 
 ## 2. Member `active` field authorization in detail response

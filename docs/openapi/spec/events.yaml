@@ -233,7 +233,7 @@ paths:
         flag. Default: page=0, size=10.
       security:
         - KlabisAuth: [EVENTS]
-      x-klabis-authority: EVENTS_READ
+      x-klabis-authority: EVENTS_MANAGE
       x-spring-paginated: true
       parameters:
         - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
