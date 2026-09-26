@@ -83,7 +83,7 @@ No new domain types — `HalFormsOptionsDef` is infrastructure inside `com.klabi
 | `HalFormsSupport.klabisAffordWithPromptedOptions` | Signature changes from `Map<String, List<HalFormsInlineOption>>` to `Map<String, HalFormsOptionsDef>` |
 | `HalFormsInputPayloadMetadata` / `KlabisHalFormsPropertyMetadataWrapper` | Switch on `HalFormsOptionsDef` variant instead of assuming inline; emit `HalFormsOptions.remote(link)` for `Remote` |
 | Every existing caller of `klabisAffordWithPromptedOptions` (e.g. `categoryId` in `EventController`) | Wrap existing inline lists as `new HalFormsOptionsDef.Inline(options)` — mechanical migration, no behavior change |
-| `EventTypeController` (`disciplineIds`) | Passes `new HalFormsOptionsDef.Remote(linkTo(...listDisciplines...))` instead of an inline list |
+| `EventTypeController` (`disciplineIds`) | Passes `new HalFormsOptionsDef.Remote(linkTo(...listDisciplineOptions...))` instead of an inline list (see D6) |
 | Every controller using `HalFormsMemberId`-style member fields | Passes `new HalFormsOptionsDef.Remote(linkTo(...listMemberOptions...))` for that field |
 | `KlabisFieldsFactory.tsx` (`memberIdFieldRenderer`) | Drops the hardcoded `{link: {href: "/members/options"}}` fallback; trusts `conf.prop.options` from the backend (link or inline) exactly as it already does for the inline branch |
 
@@ -113,6 +113,12 @@ Once the events list row exposes the `sync` status indicator (D4) with its `sync
 
 **Alternative considered**: keep `syncEventFromOris` as a thin façade for backward compatibility. Rejected — no client (frontend or otherwise) uses it outside the affordance this change removes; keeping a duplicate entry point to the same underlying action only invites the two to drift apart again.
 
+### D6 — Discipline options served by a dedicated `/api/disciplines/options` endpoint
+
+Discovered during implementation: `GET /api/disciplines` is a paginated HAL `PagedModel` of `DisciplineDto` (`id`/`code`/`name`/`archived`), while the frontend link-options path (`useHalFormOptions`) expects a flat array of `{value, prompt}`. Instead of pointing `disciplineIds` at the catalog endpoint, a new `listDisciplineOptions` endpoint mirrors the existing `/api/members/options` (`listMemberOptions`) pattern: flat, non-paginated, non-archived disciplines only, `EVENTS_MANAGE`. Frontend stays unchanged.
+
+**Alternative considered**: teach `useHalFormOptions` to unwrap `_embedded` and map `id`/`name` — rejected: default page size would truncate the list and it introduces a second, entity-specific option shape on the frontend.
+
 ## API Changes
 
 ### `docs/openapi/spec/events.yaml`
@@ -120,7 +126,8 @@ Once the events list row exposes the `sync` status indicator (D4) with its `sync
 | Operation | Change |
 |---|---|
 | `listDisciplines` *(in events.yaml, discipline catalog)* | `x-klabis-authority`: `EVENTS_READ` → `EVENTS_MANAGE` |
-| `createEventType` / `updateEventType` | `disciplineIds` HAL-FORMS property: `options.inline` (list of `HalFormsInlineOption`) → `options.link` pointing at `GET /api/disciplines` |
+| `listDisciplineOptions` (`GET /api/disciplines/options`) | **New** — non-paginated `[{value, prompt}]` list of non-archived disciplines, `x-klabis-authority: EVENTS_MANAGE` (see D6) |
+| `createEventType` / `updateEventType` | `disciplineIds` HAL-FORMS property: `options.inline` (list of `HalFormsInlineOption`) → `options.link` pointing at `GET /api/disciplines/options` |
 | `syncEventFromOris` (`POST /api/events/{id}/sync-from-oris`) | **Removed** — operation and its `x-hal-templates` entry deleted |
 | `listEvents` response (`x-hal-links`) | Row-level `sync` link added for ORIS-enrolled events, mirroring `getEvent`'s existing `sync` link |
 

@@ -1,7 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
@@ -11,7 +10,6 @@ import com.klabis.events.EventTypeId;
 import com.klabis.events.application.EventTypeManagementPort;
 import com.klabis.events.domain.EventType;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -104,22 +102,15 @@ public class EventTypeController implements EventTypesApi {
 @MvcComponent
 class EventTypeDetailsPostprocessor extends ModelWithDomainPostprocessor<EventTypeDto, EventType> {
 
-    private final ObjectProvider<EventTypeManagementPort> portProvider;
-
-    EventTypeDetailsPostprocessor(ObjectProvider<EventTypeManagementPort> portProvider) {
-        this.portProvider = portProvider;
-    }
-
     @Override
     public void process(EntityModel<EventTypeDto> dtoModel, EventType eventType) {
         UUID id = eventType.getId().value();
-        EventTypeManagementPort port = portProvider.getIfAvailable();
-        List<HalFormsInlineOption> disciplineOptions = port != null ? port.listDisciplineOptions() : List.of();
         klabisLinkTo(methodOn(EventTypesApi.class).getEventType(id)).ifPresent(link ->
                 dtoModel.add(link.withSelfRel()
                         .andAffordances(klabisAffordWithPromptedOptions(
                                 methodOn(EventTypesApi.class).updateEventType(id, null),
-                                Map.of("disciplineIds", new HalFormsOptionsDef.Inline(disciplineOptions))))
+                                Map.of("disciplineIds", new HalFormsOptionsDef.Remote(
+                                        linkTo(methodOn(DisciplinesApi.class).listDisciplineOptions()).withSelfRel()))))
                         .andAffordances(klabisAfford(methodOn(EventTypesApi.class).deleteEventType(id)))));
         klabisLinkTo(methodOn(EventTypesApi.class).listEventTypes())
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
@@ -135,22 +126,14 @@ class EventTypeDetailsPostprocessor extends ModelWithDomainPostprocessor<EventTy
 class EventTypeListPostprocessor
         implements RepresentationModelProcessor<CollectionModel<EntityModel<EventTypeDto>>> {
 
-    private final ObjectProvider<EventTypeManagementPort> portProvider;
-
-    EventTypeListPostprocessor(ObjectProvider<EventTypeManagementPort> portProvider) {
-        this.portProvider = portProvider;
-    }
-
     @Override
     public CollectionModel<EntityModel<EventTypeDto>> process(
             CollectionModel<EntityModel<EventTypeDto>> model) {
-        EventTypeManagementPort port = portProvider.getIfAvailable();
-        List<HalFormsInlineOption> disciplineOptions = port != null ? port.listDisciplineOptions() : List.of();
-
         model.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
                 .andAffordances(klabisAffordWithPromptedOptions(
                         methodOn(EventTypesApi.class).createEventType(null),
-                        Map.of("disciplineIds", new HalFormsOptionsDef.Inline(disciplineOptions)))));
+                        Map.of("disciplineIds", new HalFormsOptionsDef.Remote(
+                                linkTo(methodOn(DisciplinesApi.class).listDisciplineOptions()).withSelfRel())))));
         return model;
     }
 }

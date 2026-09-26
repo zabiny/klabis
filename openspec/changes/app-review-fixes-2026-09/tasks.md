@@ -43,9 +43,10 @@
 
 ## 6. Discipline options as a link (uses mechanism from #5)
 
-- [ ] 6.1 Write a failing test asserting `createEventType`/`updateEventType` affordances expose `disciplineIds` as `options.link` (pointing at `GET /api/disciplines`) instead of an inline list.
-- [ ] 6.2 Update `EventTypeController` to pass `HalFormsOptionsDef.Remote(linkTo(...DisciplinesApi.listDisciplines...))` for `disciplineIds` instead of the inline options list. Run 6.1 to green.
-- [ ] 6.3 Frontend: verify the event type form's discipline select still loads and behaves correctly via `useHalFormOptions`'s existing link-options path (no frontend code change expected); add/adjust a component or E2E check.
+- [x] 6.1 Write a failing test asserting `createEventType`/`updateEventType` affordances expose `disciplineIds` as `options.link` (pointing at `GET /api/disciplines/options`) instead of an inline list.
+- [x] 6.1a Add `GET /api/disciplines/options` (`listDisciplineOptions`, EVENTS_MANAGE, flat `[{value, prompt}]`, non-archived) to the spec + controller, with tests (see design D6).
+- [x] 6.2 Update `EventTypeController` to pass `HalFormsOptionsDef.Remote(linkTo(...DisciplinesApi.listDisciplineOptions...))` for `disciplineIds` instead of the inline options list. Run 6.1 to green.
+- [x] 6.3 Frontend: verify the event type form's discipline select still loads and behaves correctly via `useHalFormOptions`'s existing link-options path (no frontend code change expected); add/adjust a component or E2E check.
 
 ## 7. Member options as a link (uses mechanism from #5)
 

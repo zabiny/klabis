@@ -223,6 +223,46 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
+  /api/disciplines/options:
+    get:
+      operationId: listDisciplineOptions
+      tags: [Disciplines]
+      summary: List disciplines as select options
+      description: |
+        Lightweight value/prompt pairs for discipline picker components (design.md D3 of
+        app-review-fixes-2026-09) — the link a HAL-FORMS options.link on EventType's
+        disciplineIds property points at, mirroring listMemberOptions. Archived disciplines
+        are excluded: they are not offered for assignment to new/updated event types.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      responses:
+        '200':
+          description: Discipline options retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DisciplineOptionResponse'
+            application/prs.hal-forms+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DisciplineOptionResponse'
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
   /api/disciplines:
     get:
       operationId: listDisciplines
@@ -2337,6 +2377,19 @@ components:
         archived:
           type: boolean
           x-klabis-halforms-access: READ_ONLY
+
+    DisciplineOptionResponse:
+      type: object
+      description: Discipline option for select components
+      properties:
+        value:
+          type: string
+          description: Discipline UUID
+          example: 123e4567-e89b-12d3-a456-426614174000
+        prompt:
+          type: string
+          description: Discipline name
+          example: Orientační běh
 
     CreateDisciplineRequest:
       type: object

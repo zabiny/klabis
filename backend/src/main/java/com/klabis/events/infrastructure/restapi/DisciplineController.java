@@ -85,6 +85,17 @@ public class DisciplineController implements DisciplinesApi {
     }
 
     @Override
+    public ResponseEntity<List<DisciplineOptionResponse>> listDisciplineOptions() {
+        List<DisciplineOptionResponse> options = disciplineManagementService.listActiveOptions().stream()
+                .map(discipline -> DisciplineOptionResponseBuilder.builder()
+                        .value(discipline.getId().value().toString())
+                        .prompt(discipline.getName())
+                        .build())
+                .toList();
+        return ResponseEntity.ok(options);
+    }
+
+    @Override
     public ResponseEntity<Void> createDiscipline(
             CreateDisciplineRequest request) {
 

@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -169,6 +170,51 @@ class DisciplineControllerTest {
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(get("/api/disciplines").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/disciplines/options")
+    class ListDisciplineOptionsTests {
+
+        @Test
+        @DisplayName("should return 200 with value/prompt options for non-archived disciplines for user with EVENTS:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturnOptionsForActiveDisciplines() throws Exception {
+            Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
+            when(disciplineManagementService.listActiveOptions()).thenReturn(List.of(discipline));
+
+            mockMvc.perform(get("/api/disciplines/options").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].value").value(discipline.getId().value().toString()))
+                    .andExpect(jsonPath("$[0].prompt").value("Orientační běh"));
+        }
+
+        @Test
+        @DisplayName("should exclude archived disciplines")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        void shouldExcludeArchivedDisciplines() throws Exception {
+            when(disciplineManagementService.listActiveOptions()).thenReturn(List.of());
+
+            mockMvc.perform(get("/api/disciplines/options").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$").isArray())
+                    .andExpect(jsonPath("$", hasSize(0)));
+        }
+
+        @Test
+        @DisplayName("should return 403 for user with only EVENTS:READ")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void shouldReturn403ForEventsReadOnly() throws Exception {
+            mockMvc.perform(get("/api/disciplines/options").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 401 when unauthenticated")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            mockMvc.perform(get("/api/disciplines/options").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isUnauthorized());
         }
     }
 

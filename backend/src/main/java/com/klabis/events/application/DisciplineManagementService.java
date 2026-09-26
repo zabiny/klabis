@@ -14,6 +14,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
  * CRUD + archive/restore application service for {@link Discipline}, mirroring {@code
  * EventTypeManagementService} (design.md D7 of {@code sync-oris-disciplines}).
@@ -103,6 +105,14 @@ class DisciplineManagementService implements DisciplineManagementPort {
     @Override
     public Page<Discipline> list(Pageable pageable) {
         return disciplineRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<Discipline> listActiveOptions() {
+        return disciplineRepository.findAllSorted().stream()
+                .filter(discipline -> !discipline.isArchived())
+                .toList();
     }
 
     private static SyncTarget targetFor(DisciplineId id) {

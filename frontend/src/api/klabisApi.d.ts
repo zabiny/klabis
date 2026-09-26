@@ -272,6 +272,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/disciplines/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List disciplines as select options
+         * @description Lightweight value/prompt pairs for discipline picker components (design.md D3 of
+         *     app-review-fixes-2026-09) — the link a HAL-FORMS options.link on EventType's
+         *     disciplineIds property points at, mirroring listMemberOptions. Archived disciplines
+         *     are excluded: they are not offered for assignment to new/updated event types.
+         *
+         */
+        get: operations["listDisciplineOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/disciplines/{id}": {
         parameters: {
             query?: never;
@@ -2336,6 +2360,19 @@ export interface components {
             id?: string;
             name?: string;
         };
+        /** @description Discipline option for select components */
+        DisciplineOptionResponse: {
+            /**
+             * @description Discipline name
+             * @example Orientační běh
+             */
+            prompt?: string;
+            /**
+             * @description Discipline UUID
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            value?: string;
+        };
         /** @enum {string} */
         DrivingLicenseGroup: "B" | "BE" | "C" | "C1" | "D" | "D1" | "T" | "AM" | "A1" | "A2" | "A";
         EditGroupSnapshotRequest: {
@@ -4115,6 +4152,33 @@ export interface operations {
                 };
                 content: {
                     "application/prs.hal-forms+json": unknown;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    listDisciplineOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discipline options retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineOptionResponse"][];
+                    "application/prs.hal-forms+json": components["schemas"]["DisciplineOptionResponse"][];
                 };
             };
             400: components["responses"]["BadRequest"];
