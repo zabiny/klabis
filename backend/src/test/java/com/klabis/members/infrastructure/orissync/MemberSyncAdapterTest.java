@@ -287,8 +287,15 @@ class MemberSyncAdapterTest {
     }
 
     private static ClubMember orisClubMember(String id, String regNum, String firstName, String lastName) {
+        final int parsedId;
+        try {
+            parsedId = Integer.parseInt(id);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid club member id: " + id, e);
+        }
+
         return ClubMemberBuilder.builder()
-                .id(Integer.parseInt(id))
+                .id(parsedId)
                 .userId(1)
                 .regNum(regNum)
                 .memberFrom(LocalDate.of(2019, 8, 7))
