@@ -2,6 +2,64 @@ import type {SelectOption} from '../components/UI/forms';
 import type {HalFormsOption, HalFormsOptionType} from '../api';
 import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
 import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
+import {getEnumLabel, labels} from '../localization';
+
+/**
+ * Minimal HAL-FORMS property context needed to choose the translation group for
+ * option values. The name/type pair identifies enum-backed properties whose
+ * backend options carry values only (the enum codes), not localised prompts.
+ */
+export interface EnumOptionContext {
+    name?: string;
+    type?: string;
+}
+
+const ENUM_GROUP_BY_TYPE: Record<string, string> = {
+    Gender: 'gender',
+    UpdateMemberRequestGender: 'gender',
+    DeactivationReason: 'deactivationReason',
+    ResolveSyncConflictRequestResolution: 'resolution',
+};
+
+const ENUM_GROUP_BY_NAME: Record<string, string> = {
+    gender: 'gender',
+    reason: 'deactivationReason',
+    resolution: 'resolution',
+};
+
+const AUTHORITY_GROUP = 'authority';
+
+function resolveEnumGroup(prop?: EnumOptionContext): string | undefined {
+    if (!prop) return undefined;
+    const byType = prop.type ? ENUM_GROUP_BY_TYPE[prop.type] : undefined;
+    if (byType) return byType;
+    if (prop.type === 'Authority') return AUTHORITY_GROUP;
+    if (prop.name) {
+        const byName = ENUM_GROUP_BY_NAME[prop.name];
+        if (byName) return byName;
+        if (prop.name === 'authorities') return AUTHORITY_GROUP;
+    }
+    return undefined;
+}
+
+function localizeLabel(group: string, value: string): string {
+    if (group === AUTHORITY_GROUP) {
+        const permission = (labels.permissions as Record<string, { label: string } | undefined>)[value];
+        return permission?.label ?? getEnumLabel('authority', value);
+    }
+    return getEnumLabel(group, value);
+}
+
+/**
+ * Replaces option labels with the localised enum label when the property is a known
+ * enum and the backend sent values only. Unmapped properties and option values fall
+ * back to the label produced by {@link convertToSelectOptions} (the raw value).
+ */
+export function localizeEnumOptions(options: SelectOption[], prop?: EnumOptionContext): SelectOption[] {
+    const group = resolveEnumGroup(prop);
+    if (!group) return options;
+    return options.map(option => ({...option, label: localizeLabel(group, String(option.value))}));
+}
 
 interface UseHalFormOptionsResult {
     options: SelectOption[];
@@ -30,7 +88,10 @@ interface UseHalFormOptionsResult {
  *   link: {href: '/api/form-options'}
  * });
  */
-export function useHalFormOptions(optionDef: HalFormsOption | undefined): UseHalFormOptionsResult {
+export function useHalFormOptions(
+    optionDef: HalFormsOption | undefined,
+    prop?: EnumOptionContext
+): UseHalFormOptionsResult {
     const optionsHref = (optionDef?.link?.href && normalizeKlabisApiPath(optionDef?.link?.href)) ?? '';
 
     const linkOptions = useAuthorizedQuery(optionsHref, {
@@ -42,14 +103,14 @@ export function useHalFormOptions(optionDef: HalFormsOption | undefined): UseHal
     // Handle inline options - no fetching needed
     if (optionDef?.inline) {
         return {
-            options: convertToSelectOptions(optionDef.inline),
+            options: localizeEnumOptions(convertToSelectOptions(optionDef.inline), prop),
             isLoading: false,
             error: null,
         };
     }
 
     return {
-        options: linkOptions.data ?? [],
+        options: localizeEnumOptions(linkOptions.data ?? [], prop),
         isLoading: linkOptions.isLoading,
         error: linkOptions.error
     };

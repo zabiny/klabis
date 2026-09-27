@@ -197,52 +197,6 @@ export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, 
         case "MemberId": {
             return memberIdFieldRenderer(conf);
         }
-        case "Gender": {
-            const propWithGenderOptions = {
-                ...conf.prop,
-                options: {
-                    inline: [
-                        {value: "MALE", prompt: "Muž"},
-                        {value: "FEMALE", prompt: "Žena"},
-                    ]
-                }
-            };
-            return <HalFormsSelect {...conf} prop={propWithGenderOptions}/>;
-        }
-        case "DrivingLicenseGroup": {
-            const propWithDrivingOptions = {
-                ...conf.prop,
-                options: {
-                    inline: [
-                        {value: "AM", prompt: "AM"},
-                        {value: "A1", prompt: "A1"},
-                        {value: "A2", prompt: "A2"},
-                        {value: "A", prompt: "A"},
-                        {value: "B", prompt: "B"},
-                        {value: "BE", prompt: "BE"},
-                        {value: "C", prompt: "C"},
-                        {value: "C1", prompt: "C1"},
-                        {value: "D", prompt: "D"},
-                        {value: "D1", prompt: "D1"},
-                        {value: "T", prompt: "T"},
-                    ]
-                }
-            };
-            return <HalFormsSelect {...conf} prop={propWithDrivingOptions}/>;
-        }
-        case "DeactivationReason": {
-            const propWithDeactivationOptions = {
-                ...conf.prop,
-                options: {
-                    inline: [
-                        {value: "ODHLASKA", prompt: "Odhlášení"},
-                        {value: "PRESTUP", prompt: "Přestup"},
-                        {value: "OTHER", prompt: "Jiný důvod"},
-                    ]
-                }
-            };
-            return <HalFormsSelect {...conf} prop={propWithDeactivationOptions}/>;
-        }
         case "RankingRequest":
             return renderCompositeField(conf, [
                 {key: "levelId", attr: "levelId", prompt: "ID žebříčku", type: "number"},

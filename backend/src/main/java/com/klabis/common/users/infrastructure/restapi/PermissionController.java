@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -172,8 +173,11 @@ class PermissionsDetailsPostprocessor extends ModelWithDomainPostprocessor<Permi
     public void process(EntityModel<PermissionsResponse> dtoModel, UserPermissions permissions) {
         klabisLinkTo(methodOn(PermissionsApi.class).getUserPermissions(permissions.getUserId().uuid()))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(PermissionsApi.class)
-                                .updatePermissions(permissions.getUserId().uuid(), null))))
+                        .andAffordances(klabisAffordWithValueOptions(
+                                methodOn(PermissionsApi.class).updatePermissions(permissions.getUserId().uuid(), null),
+                                Map.of("authorities", Authority.assignableAuthorities().stream()
+                                        .map(Authority::getValue)
+                                        .toList()))))
                 .ifPresent(dtoModel::add);
     }
 }

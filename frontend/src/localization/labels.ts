@@ -306,6 +306,16 @@ export const labels = {
             PRESTUP: 'Přestup',
             OTHER: 'Jiný důvod',
         },
+        resolution: {
+            INWARD: 'Převzít z externího systému',
+            OUTWARD: 'Zapsat do externího systému',
+            ACCEPT_DIVERGENCE: 'Ponechat obě verze',
+        },
+        // Authority labels not shown in the permissions dialog catalogue; the dialog's
+        // own labels live under `permissions`. Used when translating HAL-FORMS option values.
+        authority: {
+            'SYNC:MANAGE': 'Správa synchronizace',
+        },
         feeGroupStatus: {
             EDITABLE: 'Editovatelná',
             FROZEN: 'Zmrazená',

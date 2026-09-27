@@ -692,7 +692,7 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("createEvent template should expose coordinators property with an options.link pointing at the member options endpoint")
+        @DisplayName("createEvent template should expose coordinators as MemberId and categories as CategoryRequest")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldExposeCoordinatorsOptionsLinkOnCreateTemplate() throws Exception {
             when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
@@ -706,7 +706,11 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._templates.createEvent.properties[?(@.name=='coordinators')].options.link.href")
                             .value("http://localhost/api/members/options"))
                     .andExpect(jsonPath("$._templates.createEvent.properties[?(@.name=='coordinators')].type")
-                            .value("MemberId"));
+                            .value("MemberId"))
+                    // x-hal-input-type maps the generated CreateEventCategoryRequest element type to
+                    // the frontend category-row factory record.
+                    .andExpect(jsonPath("$._templates.createEvent.properties[?(@.name=='categories')].type")
+                            .value("CategoryRequest"));
         }
 
         @Test
@@ -914,6 +918,7 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._templates.updateEvent.method").value("PATCH"))  // EDIT
                     .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name == 'ranking')].type").value("RankingRequest"))
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name == 'categories')].type").value("CategoryRequest"))
                     .andExpect(jsonPath("$._templates.publishEvent.target").exists())   // PUBLISH
                     .andExpect(jsonPath("$._templates.cancelEvent.target").exists());   // CANCEL
         }

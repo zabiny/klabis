@@ -114,6 +114,26 @@ class PermissionControllerTest {
         }
 
         @Test
+        @DisplayName("should offer manageable authorities as inline options in the updatePermissions template")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
+        void shouldExposeManageableAuthoritiesAsInlineOptions() throws Exception {
+            // Given
+            when(permissionService.getUserPermissions(any(UserId.class)))
+                    .thenReturn(UserPermissions.create(USER_ID, Set.of(Authority.MEMBERS_MANAGE)));
+
+            // When & Then — values only (the frontend localises labels); the catalogue is every
+            // assignable authority (not the target user's current set) minus the standard reads
+            // and the internal-only DEVELOPER.
+            mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[?(@.name=='authorities')].options.inline[?(@=='MEMBERS:MANAGE')]").exists())
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[?(@.name=='authorities')].options.inline[?(@=='EVENTS:MANAGE')]").exists())
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[?(@.name=='authorities')].options.inline[?(@=='DEVELOPER')]").isEmpty())
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[?(@.name=='authorities')].options.inline[?(@=='MEMBERS:READ')]").isEmpty())
+                    .andExpect(jsonPath("$._templates.updatePermissions.properties[?(@.name=='authorities')].options.inline[?(@=='EVENTS:READ')]").isEmpty());
+        }
+
+        @Test
         @DisplayName("should return 404 when user not found")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
         void shouldReturn404WhenUserNotFound() throws Exception {

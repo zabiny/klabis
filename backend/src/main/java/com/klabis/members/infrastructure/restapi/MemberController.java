@@ -40,12 +40,14 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithValueOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -311,6 +313,14 @@ class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSumm
  */
 final class MemberSelfLinkSupport {
 
+    // Values only — the frontend localises the enum labels (labels.enums.gender / deactivationReason).
+    static final List<String> GENDER_VALUES = List.of("MALE", "FEMALE");
+
+    static final List<String> DRIVING_LICENSE_GROUP_VALUES = List.of(
+            "AM", "A1", "A2", "A", "B", "BE", "C", "C1", "D", "D1", "T");
+
+    static final List<String> DEACTIVATION_REASON_VALUES = List.of("ODHLASKA", "PRESTUP", "OTHER");
+
     private MemberSelfLinkSupport() {
     }
 
@@ -319,9 +329,14 @@ final class MemberSelfLinkSupport {
 
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId, null)).map(link -> {
             var self = link.withSelfRel()
-                    .andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(memberId, null, null)));
+                    .andAffordances(klabisAffordWithValueOptions(
+                            methodOn(MembersApi.class).updateMember(memberId, null, null),
+                            Map.of("gender", GENDER_VALUES,
+                                    "drivingLicenseGroup", DRIVING_LICENSE_GROUP_VALUES)));
             if (member.isActive()) {
-                self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).suspendMember(memberId, null, null)));
+                self = self.andAffordances(klabisAffordWithValueOptions(
+                        methodOn(MembersApi.class).suspendMember(memberId, null, null),
+                        Map.of("reason", DEACTIVATION_REASON_VALUES)));
             } else {
                 self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).resumeMember(memberId, null)));
             }
@@ -349,8 +364,13 @@ class MemberListPostprocessor implements RepresentationModelProcessor<PagedModel
     @Override
     public PagedModel<EntityModel<MemberSummaryResponse>> process(PagedModel<EntityModel<MemberSummaryResponse>> pagedModel) {
         pagedModel.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                .andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(null, null, null)))
-                .andAffordances(klabisAfford(methodOn(RegistrationApi.class).registerMember(null, null))));
+                .andAffordances(klabisAffordWithValueOptions(
+                        methodOn(MembersApi.class).updateMember(null, null, null),
+                        Map.of("gender", MemberSelfLinkSupport.GENDER_VALUES,
+                                "drivingLicenseGroup", MemberSelfLinkSupport.DRIVING_LICENSE_GROUP_VALUES)))
+                .andAffordances(klabisAffordWithValueOptions(
+                        methodOn(RegistrationApi.class).registerMember(null, null),
+                        Map.of("gender", MemberSelfLinkSupport.GENDER_VALUES))));
         return pagedModel;
     }
 }

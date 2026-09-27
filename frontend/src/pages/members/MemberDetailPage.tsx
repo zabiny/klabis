@@ -54,10 +54,6 @@ const MaskedBirthNumber = ({value}: { value: string }) => {
     );
 };
 
-const MEMBER_FIELD_TYPES: Record<string, string> = {
-    gender: 'Gender',
-};
-
 export const MemberDetailPage = (): ReactElement => {
     const {resourceData, isLoading, error, hasLink, route} = useHalPageData<MemberDetail>();
     const location = useLocation();
@@ -133,10 +129,13 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
     const {isEditing, enrichedTemplate, enrichedFieldNames, startEditing, cancelEditing, postprocessPayload} =
         useInlineEditing(template, resourceData as Record<string, unknown>, {
             initialEditing,
-            fieldTypeOverrides: MEMBER_FIELD_TYPES,
             onCancel: initialEditing ? () => navigate(-1) : undefined,
         });
 
+
+    // Gender is authority-gated: a self-editing member's template has no gender property and it
+    // is synthesised as a read-only field, so it must stay a localised value rather than an input.
+    const genderEditable = isEditing && !!template?.properties.some(p => p.name === 'gender');
 
     const renderContent = (helpers?: FormRenderHelpers) => {
         const ri = (name: string): ReactNode =>
@@ -151,7 +150,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         <DetailRow label={labels.fields.firstName}>{ri('firstName') ?? val(member.firstName)}</DetailRow>
                         <DetailRow label={labels.fields.lastName}>{ri('lastName') ?? val(member.lastName)}</DetailRow>
                         <DetailRow label={labels.fields.dateOfBirth}>{ri('dateOfBirth') ?? val(member.dateOfBirth && formatDate(member.dateOfBirth))}</DetailRow>
-                        <DetailRow label={labels.fields.gender}>{ri('gender') ?? val(member.gender && getEnumLabel('gender', member.gender))}</DetailRow>
+                        <DetailRow label={labels.fields.gender}>{genderEditable && helpers ? helpers.renderInput('gender') : val(member.gender && getEnumLabel('gender', member.gender))}</DetailRow>
                         <DetailRow label={labels.fields.nationality}>{ri('nationality') ?? val(member.nationality)}</DetailRow>
                         {isEditing
                             ? enrichedFieldNames.has('birthNumber') && <BirthNumberConditionalField renderInput={ri}/>

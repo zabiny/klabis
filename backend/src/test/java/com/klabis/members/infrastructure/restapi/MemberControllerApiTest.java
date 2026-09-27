@@ -388,6 +388,43 @@ class MemberControllerApiTest {
         }
 
         @Test
+        @DisplayName("HAL+FORMS: updateMember affordance carries inline gender and drivingLicenseGroup options")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void updateMemberAffordanceCarriesGenderAndDrivingLicenseInlineOptions() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='gender')].options.inline[0]").value("MALE"))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='gender')].options.inline[1]").value("FEMALE"))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].options.inline[0]").value("AM"))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].options.inline[10]").value("T"));
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: suspendMember affordance carries inline deactivation reason options")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void suspendMemberAffordanceCarriesDeactivationReasonInlineOptions() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].options.inline[0]").value("ODHLASKA"))
+                    .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].options.inline[1]").value("PRESTUP"))
+                    .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].options.inline[2]").value("OTHER"));
+        }
+
+        @Test
         @DisplayName("HAL+FORMS: user with MEMBERS_MANAGE authority: should include update and resume affordances for suspended member")
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void suspendedMemberShouldReturnUpdateAndResumeAffordances() throws Exception {
@@ -1445,6 +1482,33 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.registerMember").exists())
                     .andExpect(jsonPath("$._templates.registerMember.method").value("POST"));
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: registerMember template carries inline gender options")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void registerMemberTemplateCarriesGenderInlineOptions() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.registerMember.properties[?(@.name=='gender')].options.inline[0]").value("MALE"))
+                    .andExpect(jsonPath("$._templates.registerMember.properties[?(@.name=='gender')].options.inline[1]").value("FEMALE"));
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: collection updateMember template carries inline gender and drivingLicenseGroup options")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void collectionUpdateMemberTemplateCarriesGenderAndDrivingLicenseInlineOptions() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='gender')].options.inline[0]").value("MALE"))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].options.inline[0]").value("AM"))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].options.inline[10]").value("T"));
         }
 
         @Test

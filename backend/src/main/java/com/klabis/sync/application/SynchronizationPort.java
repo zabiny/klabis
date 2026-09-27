@@ -13,6 +13,7 @@ import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The engine's entry point (design.md, Target Domain Model). Consumed by the REST
@@ -192,6 +193,18 @@ public interface SynchronizationPort {
      * @throws UnsupportedResolutionException     if the requested direction is not supported by the integration
      */
     SyncRecord resolveConflict(SyncRecordId id, SyncResolution resolution, String actingUser);
+
+    /**
+     * The conflict resolutions the integration backing this record actually offers
+     * (design.md D3, D6): always {@link SyncResolution#ACCEPT_DIVERGENCE};
+     * {@link SyncResolution#INWARD} only when the adapter writes the local side, and
+     * {@link SyncResolution#OUTWARD} only when it writes the external side. The
+     * resolve-conflict affordance must offer nothing else — a direction the external
+     * system does not allow is never offered.
+     *
+     * @throws SyncRecordNotFoundException if the entity is not enrolled
+     */
+    Set<SyncResolution> supportedResolutions(SyncRecordId id);
 
     /**
      * A manager restarts a terminally failed record (design.md D10): appends a

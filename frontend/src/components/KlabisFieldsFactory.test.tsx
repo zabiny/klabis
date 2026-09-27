@@ -4,7 +4,6 @@ import {Form, Formik} from 'formik';
 import {vi} from 'vitest';
 import {createMemberFilteredFactory, klabisFieldsFactory} from './KlabisFieldsFactory';
 import type {HalFormsInputProps} from './HalNavigator2/halforms';
-import type {HalFormsOptionValue, HalFormsProperty, OptionItem} from '../api/types';
 
 vi.mock('../hooks/useEventTypes', () => ({
     useEventTypes: () => ({
@@ -353,53 +352,6 @@ describe('KlabisFieldsFactory', () => {
 
             expect(mockSubElementProps).toHaveBeenCalledWith('level', {prompt: 'Stupeň'});
             expect(mockSubElementProps).toHaveBeenCalledWith('validityDate', {prompt: 'Platnost', type: 'date'});
-        });
-    });
-
-    describe('DeactivationReason field type', () => {
-
-        it('should render a select field for DeactivationReason type', () => {
-            const mockConf = createMockConf({
-                prop: {name: 'reason', prompt: 'Důvod ukončení', type: 'DeactivationReason'},
-            });
-
-            const result = klabisFieldsFactory('DeactivationReason', mockConf);
-            expect(result).not.toBeNull();
-
-            render(result!);
-            expect(screen.getByTestId('hal-select-reason')).toBeInTheDocument();
-        });
-
-        it('should include ODHLASKA option', () => {
-            const mockConf = createMockConf({
-                prop: {name: 'reason', prompt: 'Důvod', type: 'DeactivationReason'},
-            });
-
-            const result = klabisFieldsFactory('DeactivationReason', mockConf);
-            render(result!);
-
-            const select = screen.getByTestId('hal-select-reason');
-            expect(select).toBeInTheDocument();
-        });
-
-        it('should pass inline options with all three DeactivationReason values', () => {
-            const mockConf = createMockConf({
-                prop: {name: 'reason', prompt: 'Důvod', type: 'DeactivationReason'},
-            });
-
-            const result = klabisFieldsFactory('DeactivationReason', mockConf);
-            expect(result).not.toBeNull();
-
-            const capturedProp = (result as unknown as React.ReactElement<{prop: HalFormsProperty}>).props.prop;
-
-            expect(capturedProp.options).toBeDefined();
-            expect(capturedProp.options!.inline).toBeDefined();
-
-            const values = (capturedProp.options!.inline as Array<OptionItem | HalFormsOptionValue>)
-                .map((o) => (typeof o === 'object' && 'value' in o) ? o.value : o);
-            expect(values).toContain('ODHLASKA');
-            expect(values).toContain('PRESTUP');
-            expect(values).toContain('OTHER');
         });
     });
 
