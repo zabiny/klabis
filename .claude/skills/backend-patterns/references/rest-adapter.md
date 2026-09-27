@@ -210,7 +210,8 @@ class MemberListPostprocessor implements RepresentationModelProcessor<PagedModel
 
 ## HATEOAS Rules (NON-NEGOTIABLE)
 
-Use `klabisLinkTo()` (returns `Optional<WebMvcLinkBuilder>`) and `klabisAfford()` — not standard Spring HATEOAS helpers.
+Use `klabisLinkTo()` (returns `Optional<WebMvcLinkBuilder>`), `klabisAfford()` and — when a property
+needs a non-default option set — `klabisAffordWithOptions()`; never the standard Spring HATEOAS helpers.
 
 - **`methodOn(...)` takes the generated `*Api` interface, never the controller class.** Write
   `methodOn(MembersApi.class)`, not `methodOn(MemberController.class)`. Java does not inherit
@@ -242,6 +243,39 @@ HV000151`), and it compares the parameter list as a whole. So removing `@Request
 whose sibling parameter still carries `@NotNull` produces a signature that differs from the
 interface's and fails **at request time**, not at compile time. Either the override declares the
 interface's full constraint set, or none of it. Prefer none.
+
+## HAL-FORMS options
+
+Enum-typed request properties get their options **automatically** — never hand-write them.
+`EnumOptionsAutoConfiguration` (ADR-007) scans records in `*.infrastructure.restapi` and registers
+every enum property (also inside `JsonNullable`/`Optional`/collections) via
+`HalFormsConfiguration.withOptions(payloadType, property, …)`. Values are the `@JsonValue` strings
+in enum declaration order, serialized as value-only `options.inline: ["A","B"]`; the frontend
+localises them (see `x-hal-input-type` in `klabis-api-spec`).
+
+Use explicit options only when the offered set is **not** "all enum constants" — a filtered subset
+or data-driven values. The single entry point is `klabisAffordWithOptions`:
+
+```java
+klabisAffordWithOptions(
+        methodOn(PermissionsApi.class).updatePermissions(id, null),
+        Map.of("authorities", HalFormsOptionsDef.values(assignableAuthorities)));
+```
+
+| `HalFormsOptionsDef` | Wire format | Use for |
+|---|---|---|
+| `values(Collection<String>)` | `inline: ["A","B"]` | enum subset — frontend translates the values |
+| `new Inline(List<HalFormsInlineOption>)` | `inline: [{value, prompt}]` | server-provided labels (e.g. tier names) |
+| `remote(methodOn(...))` | `link: {href}` | large or lazily loaded sets (member pickers) |
+
+Rules:
+- Explicit options override the auto-registered ones for that property; an **empty** `values`/`Inline`
+  list falls back to them (it does not mean "no options").
+- Options are bound to the one affordance built in that call — they never leak into other templates.
+- Data needed for the options (ports, repositories) may be injected straight into the postprocessor —
+  see `@MvcComponent` and `@WebMvcTest` below. Real examples: `PermissionController` (assignable
+  authorities), `SyncStatePostprocessor` (`SynchronizationPort.supportedResolutions`),
+  `MembershipFeeTierController` (`Inline`).
 
 ## Root Navigation Postprocessors
 
@@ -371,7 +405,11 @@ class MvcConfiguration implements WebMvcConfigurer { ... }
 **Consequences for tests:**
 - `@WebMvcTest` auto-loads `MvcConfiguration`, which then scans **all `com.klabis.**` packages** and picks up every `@MvcComponent` bean — cross-package, cross-module.
 - **Do NOT** list postprocessors or `@MvcComponent` beans in `@WebMvcTest(controllers = {...})` or `@Import({...})` — it is redundant. They are discovered automatically.
-- If a postprocessor's constructor depends on a non-MVC bean (e.g. a JDBC `SomeRepository`), the test must provide it via `@MockitoBean SomeRepository someRepository;`. Do NOT work around this with `@Lazy` on the constructor parameter — `@Lazy` only defers resolution, it doesn't supply the missing bean at runtime.
+- If a postprocessor's constructor depends on a non-MVC bean (port, repository), add a `@MockitoBean`
+  for it to `WithPostprocessors` (`backend/src/test/.../common/WithPostprocessors.java`) — the scan is
+  global, so a per-test mock would leave every other `@WebMvcTest` slice broken. Tests that need to
+  stub it use `@Autowired`, not a second `@MockitoBean`. Do NOT work around this with `@Lazy` —
+  it only defers resolution, it doesn't supply the missing bean at runtime.
 
 **Consequences for production code:**
 - `@MvcComponent` is the correct annotation for anything in `infrastructure/restapi/` — controllers, postprocessors (`ModelWithDomainPostprocessor`, plain `RepresentationModelProcessor`), Jackson modules, HAL helpers.

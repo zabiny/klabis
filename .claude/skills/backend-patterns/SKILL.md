@@ -1,8 +1,8 @@
 ---
 name: backend-patterns
-description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), spec-first REST controllers implementing generated *Api interfaces, HAL/HATEOAS wiring (HalResponseContext, ModelWithDomainPostprocessor, klabisLinkTo/klabisAfford), DTO↔domain mapping via ConversionService Converters, JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, JsonNullable), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
+description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), spec-first REST controllers implementing generated *Api interfaces, HAL/HATEOAS wiring (HalResponseContext, ModelWithDomainPostprocessor, klabisLinkTo/klabisAfford/klabisAffordWithOptions, HAL-FORMS options), DTO↔domain mapping via ConversionService Converters, JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, JsonNullable), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
 user-invocable: false
-version: 0.9.0
+version: 0.10.0
 ---
 
 # Klabis Backend Patterns

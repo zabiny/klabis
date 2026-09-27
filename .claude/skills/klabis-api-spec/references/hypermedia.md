@@ -340,7 +340,7 @@ match that: **the key equals the `operation:` value** for the primary affordance
 other. If a `_templates.<name>` read on the frontend has no matching key in the generated `*Hal`,
 that is the spec being wrong, not the read.
 
-### The template property `type` for composite fields — `x-hal-input-type`
+### The template property `type` — `x-hal-input-type`
 
 The backend types every HAL-FORMS template property with the Java class simple name
 (`HalFormsSupport.getTypeFromClass`), and the frontend field factory switches on that name — so a
@@ -360,6 +360,24 @@ record component — `@HalForms` is not `@Repeatable`, so two separate annotatio
 The deriver strips the key from the bundle like every codegen directive. Never spell it as
 `@HalForms(formInputType = ...)` inside `x-field-extra-annotation`: `validate.mjs` rejects that,
 and inside a composition it would be stripped anyway.
+
+#### Enum-backed properties
+
+Enum options arrive as bare values (`inline: ["MALE","FEMALE"]`); the frontend translates them in
+`localizeEnumOptions`, choosing the label group **by the property `type` only**
+(`ENUM_GROUP_BY_TYPE` in `useHalFormOptions.ts`). So every enum request property that the UI shows
+must pin its type:
+
+```yaml
+gender:
+  $ref: '#/components/schemas/Gender'
+  x-hal-input-type: Gender
+```
+
+Current set: `Gender`, `DrivingLicenseGroup`, `DeactivationReason`, `SyncResolution`, `Authority`.
+A new enum needs both the spec key and a mapping and labels group in the frontend. Values without a
+translation fall back to the raw value, so a missing mapping shows the enum constants rather than
+failing.
 
 ### What the frontend gets from them
 
