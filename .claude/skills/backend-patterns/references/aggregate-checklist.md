@@ -28,13 +28,13 @@ Walk the layers in order when adding a new aggregate or Spring Modulith module. 
 - [ ] Paths, request/response schemas, `x-klabis-authority`, field-security extensions
 - [ ] Regenerate backend `*Api` interface and frontend types
 
-## 4. REST Adapter — `rest-adapter.md`
+## 4. REST Adapter
 
-- [ ] Controller `implements <X>Api` — only the annotations listed in "Spec-First"
-- [ ] `Converter<S,T>` per DTO↔domain conversion
-- [ ] PATCH: hand-written `toCommand(request, prefilled, …)` overlay mapper
-- [ ] `HalResponseContext.setDomain(...)` + `ModelWithDomainPostprocessor` with state-driven affordances
-- [ ] Collection-level affordances / root navigation postprocessors, if needed
+- [ ] Controller `implements <X>Api` — only the annotations listed in "Spec-First" (`rest-controller.md`)
+- [ ] PATCH: hand-written `toCommand(request, prefilled, …)` overlay mapper (`rest-controller.md`)
+- [ ] `Converter<S,T>` per DTO↔domain conversion (`dto-mapping.md`)
+- [ ] `HalResponseContext.setDomain(...)` + `ModelWithDomainPostprocessor` with state-driven affordances (`hateoas.md`)
+- [ ] Collection-level affordances / root navigation postprocessors, if needed (`hateoas.md`)
 - [ ] Field-level visibility and write authorization — `field-security.md`
 
 ## 5. JDBC Adapter — `jdbc-adapter.md`

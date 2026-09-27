@@ -27,7 +27,7 @@ record MemberDetailResponse(
 ) {}
 ```
 
-Controller returns a plain record — no proxy call needed. Field security applies during Jackson serialization regardless of when in the response pipeline the DTO gets wrapped into `EntityModel` (see `rest-adapter.md`, "HATEOAS"):
+Controller returns a plain record — no proxy call needed. Field security applies during Jackson serialization regardless of when in the response pipeline the DTO gets wrapped into `EntityModel` (see `hateoas.md`):
 
 ```java
 @Override

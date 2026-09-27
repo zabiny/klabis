@@ -119,7 +119,7 @@ class MemberControllerApiTest {
 
 Slice-context rules:
 - `@MvcComponent` beans (postprocessors) are picked up by a global scan — never list them in `controllers = {...}` or `@Import`.
-- `Converter<S,T>` beans are always included by `WebMvcTypeExcludeFilter` — never `@Import` or mock a converter. The same visibility is why a `Converter` must have no module-specific constructor dependencies and no `uses = <PlainMapper>` (see `rest-adapter.md`, "DTO ↔ Domain Mapping").
+- `Converter<S,T>` beans are always included by `WebMvcTypeExcludeFilter` — never `@Import` or mock a converter. The same visibility is why a `Converter` must have no module-specific constructor dependencies and no `uses = <PlainMapper>` (see `dto-mapping.md`).
 - A postprocessor that gains a new dependency (port, repository) → add its type to `@WithPostprocessors`, not a per-test `@MockitoBean`; a per-test mock leaves every other slice broken. Tests that stub it inject it with `@Autowired` — a second `@MockitoBean` fails with a duplicate-mock error. Do not work around this with `@Lazy`.
 - Never add a feature-flag bean (injected as `Optional<T>`) to `@WithPostprocessors` — its presence would switch the feature on in every slice.
 - `@TestBean EntityLinks` via `HateoasTestingSupport.createModuleEntityLinks(Controller.class)` only when the controller under test uses `EntityLinks`.

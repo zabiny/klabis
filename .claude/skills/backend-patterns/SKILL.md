@@ -1,8 +1,8 @@
 ---
 name: backend-patterns
-description: Backend implementation patterns. Use this skill proactively whenever implementing, modifying, or fixing any backend Java code in this project — including aggregates, domain commands, application services (ports), spec-first REST controllers implementing generated *Api interfaces, HAL/HATEOAS wiring (HalResponseContext, ModelWithDomainPostprocessor, klabisLinkTo/klabisAfford/klabisAffordWithOptions, HAL-FORMS options), DTO↔domain mapping via ConversionService Converters, JDBC persistence (memento pattern, repository adapters), domain events and listeners, field-level authorization (@OwnerVisible, @HasAuthority, JsonNullable), or adding new modules. This is the authoritative source for how Klabis backend code should be structured.
+description: This skill should be used when implementing, modifying or fixing any backend Java code in the Klabis project — e.g. "add an aggregate", "new REST endpoint", "implement the generated *Api interface", "add a postprocessor / affordance / HAL-FORMS options", "PATCH endpoint with JsonNullable", "map DTO to domain", "add a memento / repository adapter", "publish or listen to a domain event", "hide a field for non-admins", "write a @WebMvcTest", "add a sync adapter", or "create a new module". It is the authoritative source for Klabis-specific backend structure (HalResponseContext, klabisAfford, ConversionService converters, @OwnerVisible/@HasAuthority, memento pattern).
 user-invocable: false
-version: 0.10.0
+version: 0.11.0
 ---
 
 # Klabis Backend Patterns
@@ -13,12 +13,14 @@ For generic framework knowledge, use the `developer:*` skills. This skill covers
 
 ## Which reference to read
 
-The layer you are touching decides what to load. Read the matching file **before** writing code — each one is the authoritative source for its layer, and the patterns differ enough between layers that guessing from a neighbouring layer produces wrong code.
+The layer being changed decides what to load. Read the matching file **before** writing code — each one is the authoritative source for its layer, and the patterns differ enough between layers that guessing from a neighbouring layer produces wrong code.
 
 | Working on | Read |
 |---|---|
 | Aggregates, value objects, type-safe IDs, application services/ports, exceptions | `references/domain-layer.md` |
-| Controllers, generated `*Api` interfaces, HAL links/affordances, postprocessors, DTO↔domain converters, `@MvcComponent` | `references/rest-adapter.md` |
+| Controllers, generated `*Api` interfaces, PATCH endpoints, `@ActingUser`/`@ActingMember`, `@MvcComponent` | `references/rest-controller.md` |
+| HAL links/affordances, `HalResponseContext`, postprocessors, HAL-FORMS options | `references/hateoas.md` |
+| DTO↔domain `Converter`s, `ConversionService`, Jackson 3 annotations | `references/dto-mapping.md` |
 | Mementos, repository adapters, Spring Data repositories | `references/jdbc-adapter.md` |
 | Publishing or consuming domain events, cross-module listeners | `references/domain-events.md` |
 | Hiding/masking response fields, authorizing PATCH request fields | `references/field-security.md` |
@@ -27,6 +29,8 @@ The layer you are touching decides what to load. Read the matching file **before
 | Writing tests for any of the above | `references/testing-guide.md` |
 
 Adding a REST endpoint also means editing the OpenAPI spec — the `klabis-api-spec` skill covers that side.
+
+Before writing any PATCH endpoint, always read `references/field-security.md` too: `JsonNullable` fields handled the wrong way silently bypass field-level authorization.
 
 ## Module Package Structure
 
@@ -85,14 +89,6 @@ Canonical examples: `events.application` (`EventDataProvider`, `EventScheduleQue
 **A module depends only on another module's PRIMARY port — never on a foreign repository or any other secondary port.** Reach for the other module's `@PrimaryPort` application service; do not inject its `<Aggregate>Repository`. Example: `KlabisUserDetailsService` consumes `com.klabis.common.users.application.PermissionService` (a primary port), not `UserPermissionsRepository` (a secondary port). The Modulith `ModuleStructureVerificationTest` enforces these named-interface boundaries.
 
 ## Coding Conventions
-
-### Jackson 3 Annotation Changes (Spring Boot 4)
-
-Spring Boot 4 uses Jackson 3, which moved some packages — but Spring Boot wrapper annotations changed names too:
-- `@JsonComponent` → `@JacksonComponent` (Spring Boot annotation)
-- `@JsonMixin` → `@JacksonMixin` (Spring Boot annotation)
-- Core/databind packages: `tools.jackson.core`, `tools.jackson.databind`
-- **Exception**: `@JsonCreator`, `@JsonValue`, `@JsonInclude` stay in `com.fasterxml.jackson.annotation` — NOT moved
 
 ### General
 

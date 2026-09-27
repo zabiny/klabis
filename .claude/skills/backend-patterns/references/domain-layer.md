@@ -43,7 +43,7 @@ In `reconstruct()`, pass the stored `AuditMetadata` and call `group.updateAuditM
 Key rules:
 - No Spring annotations in domain classes (exception: `org.springframework.util.Assert` is allowed in command records for validation)
 - Commands are nested records in the aggregate, holding **plain domain types only** — never `JsonNullable` or any other adapter/wire type.
-- A PATCH command carries a full end-state snapshot: `update(cmd)` applies every field unconditionally, no per-field "was it set?" branching. It ships a `.from(Aggregate)` factory returning every field at its current value (the baseline). The REST adapter overlays the changed fields onto that baseline — see rest-adapter.md, "PATCH endpoints".
+- A PATCH command carries a full end-state snapshot: `update(cmd)` applies every field unconditionally, no per-field "was it set?" branching. It ships a `.from(Aggregate)` factory returning every field at its current value (the baseline). The REST adapter overlays the changed fields onto that baseline — see `rest-controller.md`, "PATCH endpoints".
 - Separate business factory method (`register()`, `create()`, etc) methods (with validations) and `reconstruct()` (bypass validation, used for loading from DB) factory methods
 - Domain events registered via `registerEvent()` inherited from `KlabisAggregateRoot`
 
