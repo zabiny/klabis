@@ -2374,7 +2374,7 @@ export interface components {
             value?: string;
         };
         /** @enum {string} */
-        DrivingLicenseGroup: "B" | "BE" | "C" | "C1" | "D" | "D1" | "T" | "AM" | "A1" | "A2" | "A";
+        DrivingLicenseGroup: "AM" | "A1" | "A2" | "A" | "B" | "BE" | "C" | "C1" | "D" | "D1" | "T";
         EditGroupSnapshotRequest: {
             rules?: components["schemas"]["PaymentRuleRequest"][];
             yearlyFeeAmount: number;

@@ -226,3 +226,19 @@ static Clock clock() {                       // factory name matches the field n
 - A test opts in explicitly with a `@TestBean` field plus its static factory method; being on the classpath does nothing.
 
 **References:** OpenSpec change `sync-followup-clock-injection`, ADR-005 (the `sync` module this seam serves).
+
+## ADR-007: Enum HAL-FORMS options are registered per request type via `HalFormsConfiguration.withOptions`
+
+**Context:**
+
+Enum-typed request properties (gender, driving licence group, deactivation reason, …) used to get their HAL-FORMS `options` from value lists hand-written in controllers and passed to `klabisAffordWithValueOptions`. The lists drifted from the generated enums. The explicit-options helpers in `HalFormsSupport` store options in request attributes keyed by property **name** only, merged across all affordances of one response. Feeding automatically computed options through that channel leaks them into an unrelated affordance that has a property with the same name.
+
+**Decision:**
+
+`EnumOptionsAutoConfiguration` (`common.ui`, an `@MvcComponent`) scans the `*.infrastructure.restapi` packages (where the generated request DTOs live) for record classes at startup, finds enum-typed components (unwrapping `JsonNullable`, `Optional` and collections), and registers their `@JsonValue` values in declaration order through `HalFormsConfiguration#withOptions(Class, String, Function)`. Spring HATEOAS keys that registry by `(payload type, property name)`, so the options cannot collide across affordances. Per-request explicit options still take priority for filtered subsets (assignable authorities, adapter-supported sync resolutions).
+
+**Consequences:**
+
+- A new enum-typed request property gets inline options with no controller code. The frontend localises the values (see `x-hal-input-type`).
+- Option order follows enum declaration order in the API spec, so the spec orders enum values for display.
+- The record scan runs once per application context. `@MvcComponent` makes it part of every `@WebMvcTest` slice without an `@Import`.

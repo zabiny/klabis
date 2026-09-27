@@ -92,6 +92,9 @@ class HalFormsMultiPropertyModule extends SimpleModule {
                     prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
                     return;
                 }
+
+                // No explicit (request-scoped) options: fall through to the bean's own "options"
+                // field, already populated for auto-detected enums by EnumOptionsAutoConfiguration.
             }
 
             super.serializeAsProperty(bean, gen, prov);

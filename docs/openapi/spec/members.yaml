@@ -971,5 +971,5 @@ components:
 
     DrivingLicenseGroup:
       type: string
-      enum: [B, BE, C, C1, D, D1, T, AM, A1, A2, A]
+      enum: [AM, A1, A2, A, B, BE, C, C1, D, D1, T]
 
