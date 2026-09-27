@@ -152,7 +152,8 @@ class SynchronizationControllerTest {
                     .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[0]").value("INWARD"))
                     .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[1]").value("ACCEPT_DIVERGENCE"))
                     // A pull-only integration must never offer sending Klabis values onward.
-                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[?(@=='OUTWARD')]").isEmpty());
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[?(@=='OUTWARD')]").isEmpty())
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].type").value("SyncResolution"));
         }
 
         @Test

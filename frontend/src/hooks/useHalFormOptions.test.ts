@@ -113,7 +113,7 @@ describe('useHalFormOptions', () => {
     describe('Enum option localisation (backend sends values only)', () => {
         it('should localise Gender values via labels.enums.gender', () => {
             const {result} = renderHook(
-                () => useHalFormOptions({inline: ['MALE', 'FEMALE']}, {name: 'gender', type: 'Gender'}),
+                () => useHalFormOptions({inline: ['MALE', 'FEMALE']}, {type: 'Gender'}),
                 {wrapper: createWrapper()},
             );
 
@@ -123,18 +123,9 @@ describe('useHalFormOptions', () => {
             ]);
         });
 
-        it('should localise the updateMember inline gender enum type', () => {
+        it('should localise DeactivationReason via the property type', () => {
             const {result} = renderHook(
-                () => useHalFormOptions({inline: ['MALE', 'FEMALE']}, {name: 'gender', type: 'UpdateMemberRequestGender'}),
-                {wrapper: createWrapper()},
-            );
-
-            expect(result.current.options.map(o => o.label)).toEqual(['Muž', 'Žena']);
-        });
-
-        it('should localise DeactivationReason via the reason property name and type', () => {
-            const {result} = renderHook(
-                () => useHalFormOptions({inline: ['ODHLASKA', 'PRESTUP', 'OTHER']}, {name: 'reason', type: 'DeactivationReason'}),
+                () => useHalFormOptions({inline: ['ODHLASKA', 'PRESTUP', 'OTHER']}, {type: 'DeactivationReason'}),
                 {wrapper: createWrapper()},
             );
 
@@ -145,7 +136,7 @@ describe('useHalFormOptions', () => {
             const {result} = renderHook(
                 () => useHalFormOptions(
                     {inline: ['INWARD', 'OUTWARD', 'ACCEPT_DIVERGENCE']},
-                    {name: 'resolution', type: 'ResolveSyncConflictRequestResolution'},
+                    {type: 'SyncResolution'},
                 ),
                 {wrapper: createWrapper()},
             );
@@ -161,7 +152,7 @@ describe('useHalFormOptions', () => {
             const {result} = renderHook(
                 () => useHalFormOptions(
                     {inline: ['MEMBERS:MANAGE', 'SYNC:MANAGE', 'DEVELOPER']},
-                    {name: 'authorities', type: 'Authority'},
+                    {type: 'Authority'},
                 ),
                 {wrapper: createWrapper()},
             );
@@ -175,7 +166,7 @@ describe('useHalFormOptions', () => {
 
         it('should leave values without a translation mapping untouched', () => {
             const {result} = renderHook(
-                () => useHalFormOptions({inline: ['AM', 'A1', 'B']}, {name: 'drivingLicenseGroup', type: 'DrivingLicenseGroup'}),
+                () => useHalFormOptions({inline: ['AM', 'A1', 'B']}, {type: 'DrivingLicenseGroup'}),
                 {wrapper: createWrapper()},
             );
 
@@ -190,7 +181,7 @@ describe('useHalFormOptions', () => {
             const {result} = renderHook(
                 () => useHalFormOptions(
                     {inline: [{value: 'X', prompt: 'Server text'}]},
-                    {name: 'reason', type: 'DeactivationReason'},
+                    {type: 'DeactivationReason'},
                 ),
                 {wrapper: createWrapper()},
             );
@@ -198,6 +189,15 @@ describe('useHalFormOptions', () => {
             expect(result.current.options).toEqual([
                 {value: 'X', label: 'Server text'},
             ]);
+        });
+
+        it('should not localise options of a non-enum type', () => {
+            const {result} = renderHook(
+                () => useHalFormOptions({inline: ['MALE', 'OTHER']}, {type: 'text'}),
+                {wrapper: createWrapper()},
+            );
+
+            expect(result.current.options.map(o => o.label)).toEqual(['MALE', 'OTHER']);
         });
 
         it('should not touch options when the property context is absent', () => {
@@ -331,7 +331,7 @@ describe('useHalFormOptions', () => {
             };
 
             const {result} = renderHook(
-                () => useHalFormOptions(linkOptions, {name: 'reason', type: 'DeactivationReason'}),
+                () => useHalFormOptions(linkOptions, {type: 'DeactivationReason'}),
                 {wrapper: createWrapper()},
             );
 

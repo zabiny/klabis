@@ -6,40 +6,24 @@ import {getPermissionInfo, labels} from '../localization';
 
 /**
  * Minimal HAL-FORMS property context needed to choose the translation group for
- * option values. The name/type pair identifies enum-backed properties whose
- * backend options carry values only (the enum codes), not localised prompts.
+ * option values. The backend sends enum options as values only and pins the property
+ * `type` via `x-hal-input-type` in the API spec, so the type alone selects the group.
  */
 export interface EnumOptionContext {
-    name?: string;
     type?: string;
 }
 
-const ENUM_GROUP_BY_TYPE: Record<string, string> = {
-    Gender: 'gender',
-    UpdateMemberRequestGender: 'gender',
-    DeactivationReason: 'deactivationReason',
-    ResolveSyncConflictRequestResolution: 'resolution',
-};
-
-const ENUM_GROUP_BY_NAME: Record<string, string> = {
-    gender: 'gender',
-    reason: 'deactivationReason',
-    resolution: 'resolution',
-};
-
 const AUTHORITY_GROUP = 'authority';
 
+const ENUM_GROUP_BY_TYPE: Record<string, string> = {
+    Gender: 'gender',
+    DeactivationReason: 'deactivationReason',
+    SyncResolution: 'resolution',
+    Authority: AUTHORITY_GROUP,
+};
+
 function resolveEnumGroup(prop?: EnumOptionContext): string | undefined {
-    if (!prop) return undefined;
-    const byType = prop.type ? ENUM_GROUP_BY_TYPE[prop.type] : undefined;
-    if (byType) return byType;
-    if (prop.type === 'Authority') return AUTHORITY_GROUP;
-    if (prop.name) {
-        const byName = ENUM_GROUP_BY_NAME[prop.name];
-        if (byName) return byName;
-        if (prop.name === 'authorities') return AUTHORITY_GROUP;
-    }
-    return undefined;
+    return prop?.type ? ENUM_GROUP_BY_TYPE[prop.type] : undefined;
 }
 
 function lookupTranslation(group: string, value: string): string | undefined {

@@ -403,7 +403,11 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='gender')].options.inline[0]").value("MALE"))
                     .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='gender')].options.inline[1]").value("FEMALE"))
                     .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].options.inline[0]").value("AM"))
-                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].options.inline[10]").value("T"));
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].options.inline[10]").value("T"))
+                    // x-hal-input-type pins a codegen-independent type: without it this would be
+                    // the generated inline enum class name (UpdateMemberRequestGender).
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='gender')].type").value("Gender"))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='drivingLicenseGroup')].type").value("DrivingLicenseGroup"));
         }
 
         @Test
@@ -421,7 +425,8 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].options.inline[0]").value("ODHLASKA"))
                     .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].options.inline[1]").value("PRESTUP"))
-                    .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].options.inline[2]").value("OTHER"));
+                    .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].options.inline[2]").value("OTHER"))
+                    .andExpect(jsonPath("$._templates.suspendMember.properties[?(@.name=='reason')].type").value("DeactivationReason"));
         }
 
         @Test
@@ -1494,7 +1499,8 @@ class MemberControllerApiTest {
             mockMvc.perform(getApiMembers())
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.registerMember.properties[?(@.name=='gender')].options.inline[0]").value("MALE"))
-                    .andExpect(jsonPath("$._templates.registerMember.properties[?(@.name=='gender')].options.inline[1]").value("FEMALE"));
+                    .andExpect(jsonPath("$._templates.registerMember.properties[?(@.name=='gender')].options.inline[1]").value("FEMALE"))
+                    .andExpect(jsonPath("$._templates.registerMember.properties[?(@.name=='gender')].type").value("Gender"));
         }
 
         @Test
