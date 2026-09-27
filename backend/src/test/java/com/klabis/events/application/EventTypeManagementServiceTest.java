@@ -1,10 +1,7 @@
 package com.klabis.events.application;
 
-import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.domain.Discipline;
-import com.klabis.events.domain.DisciplineRepository;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
 import com.klabis.events.domain.OrisDisciplineAlreadyMappedException;
@@ -16,11 +13,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -32,14 +27,11 @@ class EventTypeManagementServiceTest {
     @Mock
     private EventTypeRepository eventTypeRepository;
 
-    @Mock
-    private DisciplineRepository disciplineRepository;
-
     private EventTypeManagementService service;
 
     @BeforeEach
     void setUp() {
-        service = new EventTypeManagementService(eventTypeRepository, disciplineRepository);
+        service = new EventTypeManagementService(eventTypeRepository);
     }
 
     @Nested
@@ -125,38 +117,6 @@ class EventTypeManagementServiceTest {
             when(eventTypeRepository.save(any())).thenReturn(eventType);
 
             service.updateEventType(id, command);
-        }
-    }
-
-    @Nested
-    @DisplayName("listDisciplineOptions()")
-    class ListDisciplineOptionsTests {
-
-        @Test
-        @DisplayName("should map local disciplines to value+prompt pairs, preserving repository order")
-        void shouldReturnLocalDisciplinesAsOptions() {
-            Discipline lob = Discipline.create(new Discipline.CreateDiscipline("LOB", "Lyžařský orientační běh"));
-            Discipline ob = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
-            Discipline sprint = Discipline.create(new Discipline.CreateDiscipline("SPR", "Sprintová orientace"));
-            when(disciplineRepository.findAllSorted()).thenReturn(List.of(lob, ob, sprint));
-
-            List<HalFormsInlineOption> options = service.listDisciplineOptions();
-
-            assertThat(options).containsExactly(
-                    new HalFormsInlineOption(lob.getId().value().toString(), "Lyžařský orientační běh"),
-                    new HalFormsInlineOption(ob.getId().value().toString(), "Orientační běh"),
-                    new HalFormsInlineOption(sprint.getId().value().toString(), "Sprintová orientace")
-            );
-        }
-
-        @Test
-        @DisplayName("should return empty list when no local disciplines exist")
-        void shouldReturnEmptyListWhenNoDisciplines() {
-            when(disciplineRepository.findAllSorted()).thenReturn(List.of());
-
-            List<HalFormsInlineOption> options = service.listDisciplineOptions();
-
-            assertThat(options).isEmpty();
         }
     }
 }

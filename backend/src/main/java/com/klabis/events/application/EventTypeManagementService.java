@@ -1,6 +1,5 @@
 package com.klabis.events.application;
 
-import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.*;
@@ -16,11 +15,9 @@ class EventTypeManagementService implements EventTypeManagementPort {
     private static final int MAX_AFFECTED_EVENTS_IN_ERROR = 5;
 
     private final EventTypeRepository eventTypeRepository;
-    private final DisciplineRepository disciplineRepository;
 
-    EventTypeManagementService(EventTypeRepository eventTypeRepository, DisciplineRepository disciplineRepository) {
+    EventTypeManagementService(EventTypeRepository eventTypeRepository) {
         this.eventTypeRepository = eventTypeRepository;
-        this.disciplineRepository = disciplineRepository;
     }
 
     @Transactional
@@ -91,15 +88,4 @@ class EventTypeManagementService implements EventTypeManagementPort {
         return eventTypeRepository.findAllSorted();
     }
 
-    @Transactional(readOnly = true)
-    @Override
-    public List<HalFormsInlineOption> listDisciplineOptions() {
-        return disciplineRepository.findAllSorted().stream()
-                .map(EventTypeManagementService::toInlineOption)
-                .toList();
-    }
-
-    private static HalFormsInlineOption toInlineOption(Discipline discipline) {
-        return new HalFormsInlineOption(discipline.getId().value().toString(), discipline.getName());
-    }
 }

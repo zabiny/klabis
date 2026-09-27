@@ -26,10 +26,6 @@ describe('getActionVariant', () => {
         expect(getActionVariant('updateEvent')).toBe('ghost');
     });
 
-    it('maps syncEventFromOris to ghost', () => {
-        expect(getActionVariant('syncEventFromOris')).toBe('ghost');
-    });
-
     it('falls back to ghost for unknown affordance names', () => {
         expect(getActionVariant('totallyUnknown')).toBe('ghost');
     });

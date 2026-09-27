@@ -22,6 +22,7 @@ import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
 import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
 import {MemberFeeSection} from "./MemberFeeSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
+import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
 
 type MemberDetail = GetMemberResource;
 
@@ -273,10 +274,13 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                             <h1 className="text-3xl font-bold text-text-primary">
                                 {member.firstName} {member.lastName}
                             </h1>
-                            {!isEditing && (
+                            {!isEditing && member.active !== undefined && (
                                 <Badge variant={member.active ? 'success' : 'default'} size="sm">
                                     {member.active ? labels.enums.memberStatus.active : labels.enums.memberStatus.inactive}
                                 </Badge>
+                            )}
+                            {!isEditing && (
+                                <SyncStatusIndicator syncLink={resourceData._links?.sync} mode="icon+date"/>
                             )}
                         </div>
                         <span className="text-sm text-text-secondary">{member.registrationNumber}</span>
@@ -406,7 +410,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                     <CalendarFeedSection icalTokenHref={icalTokenHref}/>
                 )}
 
-                {!isEditing && member.active && feeSummaryHref && (
+                {!isEditing && member.active !== false && feeSummaryHref && (
                     <MemberFeeSection
                         feeSummaryHref={feeSummaryHref}
                         memberId={selfMemberId}

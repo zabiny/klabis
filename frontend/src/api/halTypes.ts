@@ -219,8 +219,6 @@ wantsSharedTransport / wantsSharedAccommodation properties are included only for
 the offers the event has enabled.
  */
     'registerForEvent'?: HalFormsTemplate;
-    /** Present when ORIS integration is active and the event has an orisId */
-    'syncEventFromOris'?: HalFormsTemplate;
     /** Present when registrations are open and the caller is registered */
     'unregisterFromEvent'?: HalFormsTemplate;
     /** Present for the event coordinator or callers with EVENTS:MANAGE. Includes the
@@ -235,7 +233,7 @@ export type GetEventResource =
 
 export const GetEventRels = {
   links: ['accommodation-list', 'collection', 'coordinator', 'event-type', 'newRegistration', 'registrations', 'self', 'sync'] as const,
-  templates: ['cancelEvent', 'editRegistration', 'publishEvent', 'registerForEvent', 'syncEventFromOris', 'unregisterFromEvent', 'updateEvent'] as const,
+  templates: ['cancelEvent', 'editRegistration', 'publishEvent', 'registerForEvent', 'unregisterFromEvent', 'updateEvent'] as const,
 } as const;
 
 export type GetEventLinkRel = typeof GetEventRels.links[number];

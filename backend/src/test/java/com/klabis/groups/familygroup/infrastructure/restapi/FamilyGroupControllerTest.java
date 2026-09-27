@@ -197,6 +197,23 @@ class FamilyGroupControllerTest {
         }
 
         @Test
+        @DisplayName("createFamilyGroup template should expose parent property with an options.link pointing at the member options endpoint")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldExposeParentOptionsLinkOnCreateTemplate() throws Exception {
+            when(familyGroupManagementService.listFamilyGroups()).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/family-groups")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.createFamilyGroup.properties[?(@.name=='parent')].options.link.href")
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.createFamilyGroup.properties[?(@.name=='parent')].type")
+                            .value("MemberId"));
+        }
+
+        @Test
         @DisplayName("should return 401 when unauthenticated")
         void shouldReturn401WhenUnauthenticated() throws Exception {
             mockMvc.perform(
@@ -491,6 +508,28 @@ class FamilyGroupControllerTest {
                     .andExpect(jsonPath("$._templates.deleteFamilyGroup").exists())
                     .andExpect(jsonPath("$._templates.addFamilyGroupParent").exists())
                     .andExpect(jsonPath("$._templates.addFamilyGroupChild").exists());
+        }
+
+        @Test
+        @DisplayName("addFamilyGroupParent and addFamilyGroupChild templates should expose memberId property with an options.link pointing at the member options endpoint")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldExposeMemberIdOptionsLinkOnParentAndChildTemplates() throws Exception {
+            FamilyGroup group = buildFamilyGroup(GROUP_UUID, "Novákovi", MEMBER_ID);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/family-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.addFamilyGroupParent.properties[?(@.name=='memberId')].options.link.href")
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.addFamilyGroupParent.properties[?(@.name=='memberId')].type")
+                            .value("MemberId"))
+                    .andExpect(jsonPath("$._templates.addFamilyGroupChild.properties[?(@.name=='memberId')].options.link.href")
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.addFamilyGroupChild.properties[?(@.name=='memberId')].type")
+                            .value("MemberId"));
         }
 
         @Test

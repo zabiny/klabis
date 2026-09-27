@@ -171,33 +171,30 @@ const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFor
 }
 
 /**
- * Renders a single MemberId/UUID field — read/write dropdown or, when readOnly,
- * the resolved member name. Used both for a standalone field and as the per-row
- * renderer when the property is multi: the base factory's `multi` branch always
- * routes the array to HalFormsCollectionField first (D2), which recurses back here
- * per row with multiple:false — so this never needs to special-case collections itself.
+ * Renders a single MemberId field — read/write dropdown or, when readOnly, the resolved
+ * member name. Used both for a standalone field and as the per-row renderer when the
+ * property is multi: the base factory's `multi` branch detects that this widget exists for
+ * "MemberId" and routes the array through HalFormsCollectionField (D7), which recurses back
+ * here per row with multiple:false — so this never needs to special-case collections itself.
+ *
+ * Only the explicit "MemberId" field type hint triggers the picker (D7) — a plain "UUID"
+ * field is NOT assumed to be a member reference (it renders by its options/basic type
+ * instead), since that assumption is exactly what caused multi UUID fields with link options
+ * (coordinators, disciplineIds) to silently render as a single select.
  */
 const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeIds?: string[]; includeIds?: string[]}): ReactElement => {
-    // If backend already provides inline options, respect them instead of defaulting to members list
+    // If backend already provides inline options, respect them instead of the member picker
     if (conf.prop.options?.inline) {
         return <HalFormsSelect {...conf} />;
     }
-    const propWithMemberOptions = {
-        ...conf.prop,
-        options: {
-            link: {
-                href: "/members/options"
-            }
-        }
-    };
-    return <HalFormsMemberId {...conf} prop={propWithMemberOptions} {...extraProps}/>;
+    // Backend always provides options.link for member-picker fields; trust it as-is.
+    return <HalFormsMemberId {...conf} {...extraProps}/>;
 };
 
 export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
     switch (fieldType) {
         case "range": return <HalFormsInput {...changeTypeOfProperty(conf, 'text')}/>;
-        case "MemberId":
-        case "UUID": {
+        case "MemberId": {
             return memberIdFieldRenderer(conf);
         }
         case "Gender": {
@@ -301,7 +298,7 @@ export const createMemberFilteredFactory = (
     if (!hasFilter) return klabisFieldsFactory;
 
     return expandHalFormsFieldFactory((fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
-        if (fieldType === 'MemberId' || fieldType === 'UUID') {
+        if (fieldType === 'MemberId') {
             return memberIdFieldRenderer(conf, {excludeIds, includeIds});
         }
         return null;

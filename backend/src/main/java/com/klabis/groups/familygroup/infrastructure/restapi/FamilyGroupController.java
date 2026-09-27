@@ -2,6 +2,7 @@ package com.klabis.groups.familygroup.infrastructure.restapi;
 
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
@@ -35,6 +36,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -215,11 +217,15 @@ class FamilyGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Famil
     @Override
     public void process(EntityModel<FamilyGroupResponse> dtoModel, FamilyGroup group) {
         UUID id = group.getId().uuid();
+        Map<String, HalFormsOptionsDef> memberIdOptions = Map.of("memberId",
+                HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()));
         klabisLinkTo(methodOn(FamilyGroupsApi.class).getFamilyGroup(id, null))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class).deleteFamilyGroup(id)))
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class).addFamilyGroupParent(id, null)))
-                        .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class).addFamilyGroupChild(id, null))))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(FamilyGroupsApi.class).addFamilyGroupParent(id, null), memberIdOptions))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(FamilyGroupsApi.class).addFamilyGroupChild(id, null), memberIdOptions)))
                 .ifPresent(dtoModel::add);
 
         // klabisLinkTo omits this for callers without MEMBERS:MANAGE, which is the authority
@@ -250,7 +256,9 @@ class FamilyGroupListPostprocessor
     public CollectionModel<EntityModel<FamilyGroupSummaryResponse>> process(
             CollectionModel<EntityModel<FamilyGroupSummaryResponse>> model) {
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
-                .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class).createFamilyGroup(null))));
+                .andAffordances(klabisAffordWithOptions(
+                        methodOn(FamilyGroupsApi.class).createFamilyGroup(null),
+                        Map.of("parent", HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions())))));
         return model;
     }
 }

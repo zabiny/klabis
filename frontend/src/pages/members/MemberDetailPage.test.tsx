@@ -63,13 +63,17 @@ vi.mock('../../api/klabisUserManager', () => ({
     },
 }));
 
-vi.mock('../../api/hateoas', () => ({
-    submitHalFormsData: vi.fn(),
-    isFormValidationError: vi.fn((error) => {
-        return error && typeof error === 'object' && 'validationErrors' in error;
-    }),
-    toFormValidationError: vi.fn((error) => error),
-}));
+vi.mock('../../api/hateoas', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../api/hateoas')>();
+    return {
+        ...actual,
+        submitHalFormsData: vi.fn(),
+        isFormValidationError: vi.fn((error) => {
+            return error && typeof error === 'object' && 'validationErrors' in error;
+        }),
+        toFormValidationError: vi.fn((error) => error),
+    };
+});
 
 vi.mock('../../components/UI/Modal.tsx', () => ({
     Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
@@ -208,6 +212,14 @@ describe('MemberDetailPage', () => {
     it('renders "Neaktivní" badge when member is inactive', () => {
         renderPage(createMockPageData(mockMemberDetailData({active: false})));
         expect(screen.getByText('Neaktivní')).toBeInTheDocument();
+    });
+
+    it('shows no active/inactive badge when caller lacks the field (active absent from response)', () => {
+        const data = mockMemberDetailData();
+        delete (data as Record<string, unknown>).active;
+        renderPage(createMockPageData(data));
+        expect(screen.queryByText('Aktivní')).not.toBeInTheDocument();
+        expect(screen.queryByText('Neaktivní')).not.toBeInTheDocument();
     });
 
     it('shows contact section', () => {
@@ -711,6 +723,18 @@ describe('MemberDetailPage', () => {
             renderPage(createMockPageData(data));
             expect(screen.queryByRole('heading', {name: /Členský příspěvek/i})).not.toBeInTheDocument();
         });
+
+        it('shows MemberFeeSection for regular user without MEMBERS_MANAGE (active absent from response) when feeSummary link is present', () => {
+            const data = mockMemberDetailData({
+                _links: {
+                    self: {href: '/api/members/123'},
+                    feeSummary: {href: '/api/members/123/fee-summary/2026'},
+                },
+            });
+            delete (data as Record<string, unknown>).active;
+            renderPage(createMockPageData(data));
+            expect(screen.getByRole('heading', {name: /Členský příspěvek/i})).toBeInTheDocument();
+        });
     });
 
     describe('calendar feed section', () => {
@@ -786,6 +810,30 @@ describe('MemberDetailPage', () => {
             expect(screen.getByDisplayValue('Hlavní 15')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Praha')).toBeInTheDocument();
             expect(screen.getByDisplayValue('11000')).toBeInTheDocument();
+        });
+    });
+
+    describe('sync status indicator (4.4)', () => {
+        it('renders SyncStatusIndicator when member._links.sync is present', () => {
+            const data = mockMemberDetailData({
+                _links: {
+                    self: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000'},
+                    sync: {href: '/api/members/123e4567-e89b-12d3-a456-426614174000/sync'},
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            // Behavioural coverage of SyncStatusIndicator lives in SyncStatusIndicator.test.tsx;
+            // here we only assert the indicator is mounted when the sync link is present.
+            expect(screen.getByTestId('sync-error')).toBeInTheDocument();
+        });
+
+        it('does not render SyncStatusIndicator when member._links.sync is absent', () => {
+            renderPage(createMockPageData(mockMemberDetailData()));
+
+            expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
+            expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
+            expect(screen.queryByTestId(/^sync-status-/)).not.toBeInTheDocument();
         });
     });
 });

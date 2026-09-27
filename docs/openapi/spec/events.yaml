@@ -223,6 +223,38 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
+  /api/disciplines/options:
+    get:
+      operationId: listDisciplineOptions
+      tags: [Disciplines]
+      summary: List disciplines as select options
+      description: |
+        Lightweight value/prompt pairs for discipline picker components (design.md D3 of
+        app-review-fixes-2026-09) — the link a HAL-FORMS options.link on EventType's
+        disciplineIds property points at, mirroring listMemberOptions. Archived disciplines
+        are excluded: they are not offered for assignment to new/updated event types.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_MANAGE
+      responses:
+        '200':
+          description: Discipline options retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DisciplineOptionResponse'
+            application/prs.hal-forms+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DisciplineOptionResponse'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
   /api/disciplines:
     get:
       operationId: listDisciplines
@@ -233,7 +265,7 @@ paths:
         flag. Default: page=0, size=10.
       security:
         - KlabisAuth: [EVENTS]
-      x-klabis-authority: EVENTS_READ
+      x-klabis-authority: EVENTS_MANAGE
       x-spring-paginated: true
       parameters:
         - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
@@ -726,9 +758,6 @@ paths:
             cancelEvent:
               operation: cancelEvent
               description: Present for DRAFT/ACTIVE events and callers with EVENTS:MANAGE
-            syncEventFromOris:
-              operation: syncEventFromOris
-              description: Present when ORIS integration is active and the event has an orisId
             registerForEvent:
               operation: registerForEvent
               description: |
@@ -968,40 +997,6 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
           $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/events/{id}/sync-from-oris:
-    post:
-      operationId: syncEventFromOris
-      tags: [OrisEvents]
-      summary: Sync event from ORIS
-      description: |
-        Runs one synchronisation pass for this event through the synchronisation engine (design.md
-        D18). ORIS-owned fields are written inward when only the external side changed; a local edit
-        to one of them is no longer silently overwritten and instead surfaces as a conflict on the
-        event's synchronisation resource (design.md D6). Only allowed for DRAFT and ACTIVE events
-        with an orisId.
-      security:
-        - KlabisAuth: [EVENTS]
-      x-klabis-authority: EVENTS_MANAGE
-      parameters:
-        - $ref: '#/components/parameters/EventIdParam'
-      responses:
-        '204':
-          description: Event synced from ORIS successfully
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './sync.yaml#/components/responses/NeedsDecision'
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
@@ -1823,6 +1818,7 @@ components:
           items:
             type: string
             format: uuid
+          x-hal-input-type: MemberId
         eventTypeId:
           type: string
           format: uuid
@@ -1908,6 +1904,7 @@ components:
           items:
             type: string
             format: uuid
+          x-hal-input-type: MemberId
         eventTypeId:
           type: [string, 'null']
           format: uuid
@@ -2374,6 +2371,19 @@ components:
         archived:
           type: boolean
           x-klabis-halforms-access: READ_ONLY
+
+    DisciplineOptionResponse:
+      type: object
+      description: Discipline option for select components
+      properties:
+        value:
+          type: string
+          description: Discipline UUID
+          example: 123e4567-e89b-12d3-a456-426614174000
+        prompt:
+          type: string
+          description: Discipline name
+          example: Orientační běh
 
     CreateDisciplineRequest:
       type: object

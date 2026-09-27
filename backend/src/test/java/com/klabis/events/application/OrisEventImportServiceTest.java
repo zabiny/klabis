@@ -18,10 +18,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -130,72 +128,6 @@ class OrisEventImportServiceTest {
 
             assertThatThrownBy(() -> service.importEventFromOris(orisId))
                     .isInstanceOf(EventNotFoundException.class);
-        }
-    }
-
-    @Nested
-    @DisplayName("syncEventFromOris()")
-    class SyncEventFromOrisMethod {
-
-        @Test
-        @DisplayName("should throw EventNotFoundException when event does not exist")
-        void shouldThrowWhenEventNotFound() {
-            EventId eventId = EventId.generate();
-            when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> service.syncEventFromOris(eventId))
-                    .isInstanceOf(EventNotFoundException.class);
-        }
-
-        @Test
-        @DisplayName("should throw EventNotFoundException when event is not enrolled for synchronisation")
-        void shouldThrowWhenEventNotEnrolled() {
-            EventId eventId = EventId.generate();
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .name("Race").eventDate(LocalDate.of(2026, 8, 1))
-                    .location("Forest").organizer("OOB").build());
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> service.syncEventFromOris(eventId))
-                    .isInstanceOf(EventNotFoundException.class);
-        }
-
-        @Test
-        @DisplayName("should delegate to the synchronisation engine when the record is enrolled and not stuck (task 8.3)")
-        void shouldDelegateToSynchronizationEngine() {
-            EventId eventId = EventId.generate();
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .name("Race").eventDate(LocalDate.of(2026, 8, 1))
-                    .location("Forest").organizer("OOB").build());
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-
-            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, eventId.value().toString());
-            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), target,
-                    new ExternalReference(ExternalSystem.ORIS, "9876"));
-            when(synchronizationPort.findByTarget(target)).thenReturn(Optional.of(record));
-
-            service.syncEventFromOris(eventId);
-
-            verify(synchronizationPort).synchronizeNow(record.getId(), null);
-        }
-
-        @Test
-        @DisplayName("should refuse with EventSyncNeedsResolutionException when the record is in conflict")
-        void shouldRefuseWhenRecordInConflict() {
-            EventId eventId = EventId.generate();
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .name("Race").eventDate(LocalDate.of(2026, 8, 1))
-                    .location("Forest").organizer("OOB").build());
-            when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
-
-            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, eventId.value().toString());
-            SyncRecord record = Mockito.mock(SyncRecord.class);
-            when(record.getStatus()).thenReturn(SyncStatus.CONFLICT);
-            when(synchronizationPort.findByTarget(target)).thenReturn(Optional.of(record));
-
-            assertThatThrownBy(() -> service.syncEventFromOris(eventId))
-                    .isInstanceOf(EventSyncNeedsResolutionException.class);
         }
     }
 }

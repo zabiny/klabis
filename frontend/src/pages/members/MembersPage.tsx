@@ -17,6 +17,7 @@ import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/Hal
 import {Banknote, Pencil, RefreshCw, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
+import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
 import {SuspensionWarningDialog} from "./SuspensionWarningDialog.tsx";
 import {NegativeBalanceSuspensionDialog} from "./NegativeBalanceSuspensionDialog.tsx";
 import {useSuspendMemberAction} from "./useSuspendMemberAction.ts";
@@ -192,6 +193,7 @@ export const MembersPage = (): ReactElement => {
                         <UserCheck className="w-4 h-4"/>
                     </Button>
                 )}
+                <SyncStatusIndicator syncLink={member._links?.sync} mode="icon"/>
             </div>
         );
     };

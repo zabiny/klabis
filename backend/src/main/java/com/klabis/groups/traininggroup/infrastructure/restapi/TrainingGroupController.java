@@ -2,6 +2,7 @@ package com.klabis.groups.traininggroup.infrastructure.restapi;
 
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
@@ -40,6 +41,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -256,12 +258,19 @@ class TrainingGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Tra
     @Override
     public void process(EntityModel<TrainingGroupResponse> dtoModel, TrainingGroup group) {
         UUID id = group.getId().uuid();
+        HalFormsOptionsDef.Remote memberOptions = HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions());
         klabisLinkTo(methodOn(TrainingGroupsApi.class).getTrainingGroup(id, null))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class).updateTrainingGroup(id, null)))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(TrainingGroupsApi.class).updateTrainingGroup(id, null),
+                                Map.of("trainers", memberOptions)))
                         .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class).deleteTrainingGroup(id)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class).addTrainingGroupMember(id, null)))
-                        .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class).addTrainer(id, null))))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(TrainingGroupsApi.class).addTrainingGroupMember(id, null),
+                                Map.of("memberId", memberOptions)))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(TrainingGroupsApi.class).addTrainer(id, null),
+                                Map.of("memberId", memberOptions))))
                 .ifPresent(dtoModel::add);
 
         // klabisLinkTo omits this for callers without GROUPS:TRAINING, which is the authority
@@ -303,7 +312,9 @@ class TrainingGroupListPostprocessor
     public CollectionModel<EntityModel<TrainingGroupSummaryResponse>> process(
             CollectionModel<EntityModel<TrainingGroupSummaryResponse>> model) {
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
-                .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class).createTrainingGroup(null))));
+                .andAffordances(klabisAffordWithOptions(
+                        methodOn(TrainingGroupsApi.class).createTrainingGroup(null),
+                        Map.of("trainerId", HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions())))));
         return model;
     }
 }

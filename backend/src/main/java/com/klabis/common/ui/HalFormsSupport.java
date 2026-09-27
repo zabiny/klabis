@@ -100,7 +100,7 @@ public class HalFormsSupport {
     }
 
     private static final String PROPERTY_OPTIONS_REQUEST_ATTR = HalFormsSupport.class.getName() + ".propertyOptions";
-    private static final String PROMPTED_OPTIONS_REQUEST_ATTR = HalFormsSupport.class.getName() + ".promptedOptions";
+    private static final String OPTIONS_DEF_REQUEST_ATTR = HalFormsSupport.class.getName() + ".optionsDef";
 
     /**
      * Returns the value-only inline options for the named property from the current request context, or null if none are set.
@@ -110,22 +110,31 @@ public class HalFormsSupport {
         if (request == null) {
             return null;
         }
-        @SuppressWarnings("unchecked")
-        Map<String, List<String>> ctx = (Map<String, List<String>>) request.getAttribute(PROPERTY_OPTIONS_REQUEST_ATTR);
+        Map<String, List<String>> ctx = getPropertyOptionsContext(request);
         return ctx != null ? ctx.get(propertyName) : null;
     }
 
     /**
-     * Returns the value+prompt inline options for the named property from the current request context, or null if none are set.
+     * Returns the options definition (inline or remote) for the named property from the current request context,
+     * or null if none are set.
      */
-    static List<HalFormsInlineOption> getPromptedInlineOptionsForProperty(String propertyName) {
+    static HalFormsOptionsDef getOptionsDefForProperty(String propertyName) {
         HttpServletRequest request = currentRequest();
         if (request == null) {
             return null;
         }
-        @SuppressWarnings("unchecked")
-        Map<String, List<HalFormsInlineOption>> ctx = (Map<String, List<HalFormsInlineOption>>) request.getAttribute(PROMPTED_OPTIONS_REQUEST_ATTR);
+        Map<String, HalFormsOptionsDef> ctx = getOptionsDefContext(request);
         return ctx != null ? ctx.get(propertyName) : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, List<String>> getPropertyOptionsContext(HttpServletRequest request) {
+        return (Map<String, List<String>>) request.getAttribute(PROPERTY_OPTIONS_REQUEST_ATTR);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, HalFormsOptionsDef> getOptionsDefContext(HttpServletRequest request) {
+        return (Map<String, HalFormsOptionsDef>) request.getAttribute(OPTIONS_DEF_REQUEST_ATTR);
     }
 
     private static HttpServletRequest currentRequest() {
@@ -138,7 +147,7 @@ public class HalFormsSupport {
      * The map keys are property names; values are the inline option lists (value strings only).
      * Options are stored as request attributes and are automatically scoped to the current HTTP request.
      */
-    public static List<Affordance> klabisAffordWithOptions(Object invocation, Map<String, List<String>> propertyOptions) {
+    public static List<Affordance> klabisAffordWithValueOptions(Object invocation, Map<String, List<String>> propertyOptions) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
         if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
@@ -151,12 +160,12 @@ public class HalFormsSupport {
     }
 
     /**
-     * Like {@link #klabisAffordWithPromptedOptions}, but also accepts plain string options for some properties.
-     * Use when a single affordance needs both value+prompt pairs (prompted) and plain-value options (propertyOptions) for different fields.
+     * Like {@link #klabisAffordWithValueOptions}, but also accepts a value/prompt or remote-link options
+     * def for some properties. Use when a single affordance needs both kinds for different fields.
      */
     public static List<Affordance> klabisAffordWithMixedOptions(Object invocation,
                                                                   Map<String, List<String>> propertyOptions,
-                                                                  Map<String, List<HalFormsInlineOption>> promptedOptions) {
+                                                                  Map<String, HalFormsOptionsDef> optionsDef) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
         if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
@@ -164,16 +173,16 @@ public class HalFormsSupport {
         }
 
         Affordance result = afford(lastInvocationAware);
-        Affordance modifiedResult = modifyAffordanceForHalForms(result, lastInvocationAware, propertyOptions, promptedOptions);
+        Affordance modifiedResult = modifyAffordanceForHalForms(result, lastInvocationAware, propertyOptions, optionsDef);
         return List.of(modifiedResult);
     }
 
     /**
-     * Like {@link #klabisAfford}, but injects inline HAL-FORMS options with value+prompt pairs for the given properties.
-     * The map keys are property names; values are the inline option lists carrying both a machine value and a human-readable prompt.
+     * Like {@link #klabisAfford}, but injects HAL-FORMS options for the given properties — either inline
+     * value+prompt pairs or a link the client follows to fetch options separately (see {@link HalFormsOptionsDef}).
      * Options are stored as request attributes and are automatically scoped to the current HTTP request.
      */
-    public static List<Affordance> klabisAffordWithPromptedOptions(Object invocation, Map<String, List<HalFormsInlineOption>> promptedOptions) {
+    public static List<Affordance> klabisAffordWithOptions(Object invocation, Map<String, HalFormsOptionsDef> optionsDef) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
         if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
@@ -181,7 +190,7 @@ public class HalFormsSupport {
         }
 
         Affordance result = afford(lastInvocationAware);
-        Affordance modifiedResult = modifyAffordanceForHalForms(result, lastInvocationAware, Map.of(), promptedOptions);
+        Affordance modifiedResult = modifyAffordanceForHalForms(result, lastInvocationAware, Map.of(), optionsDef);
         return List.of(modifiedResult);
     }
 
@@ -263,7 +272,7 @@ public class HalFormsSupport {
      */
     private static Affordance modifyAffordanceForHalForms(Affordance affordance, LastInvocationAware invocation,
                                                            Map<String, List<String>> propertyOptions,
-                                                           Map<String, List<HalFormsInlineOption>> promptedOptions) {
+                                                           Map<String, HalFormsOptionsDef> optionsDef) {
         // Get method metadata
         MethodInvocation methodInvocation = invocation.getLastInvocation();
         Method method = methodInvocation.getMethod();
@@ -276,7 +285,7 @@ public class HalFormsSupport {
 
                 // Check if it's a record
                 if (requestBodyType.isRecord()) {
-                    return createModifiedAffordance(affordance, propertyOptions, promptedOptions);
+                    return createModifiedAffordance(affordance, propertyOptions, optionsDef);
                 }
             }
         }
@@ -289,7 +298,7 @@ public class HalFormsSupport {
      */
     private static Affordance createModifiedAffordance(Affordance original,
                                                         Map<String, List<String>> propertyOptions,
-                                                        Map<String, List<HalFormsInlineOption>> promptedOptions) {
+                                                        Map<String, HalFormsOptionsDef> optionsDef) {
         Optional<AffordanceModelFactory> halFormsFactoryOpt = getHalFormsModelFactory();
 
         if (halFormsFactoryOpt.isEmpty()) {
@@ -309,7 +318,7 @@ public class HalFormsSupport {
 
             // For HAL-FORMS models, use our modified version
             if (model.getClass().getSimpleName().contains("HalForms")) {
-                ConfiguredAffordance configured = new HalFormsConfiguredAffordance(model, propertyOptions, promptedOptions);
+                ConfiguredAffordance configured = new HalFormsConfiguredAffordance(model, propertyOptions, optionsDef);
                 AffordanceModel newModel = halFormsFactory.getAffordanceModel(configured);
                 newModels.put(mediaType, newModel);
             } else {
@@ -348,9 +357,9 @@ public class HalFormsSupport {
 
         public HalFormsConfiguredAffordance(AffordanceModel delegate,
                                              Map<String, List<String>> propertyOptions,
-                                             Map<String, List<HalFormsInlineOption>> promptedOptions) {
+                                             Map<String, HalFormsOptionsDef> optionsDef) {
             this.delegate = delegate;
-            this.modifiedInput = new HalFormsInputPayloadMetadata(delegate.getInput(), propertyOptions, promptedOptions);
+            this.modifiedInput = new HalFormsInputPayloadMetadata(delegate.getInput(), propertyOptions, optionsDef);
         }
 
         @Override
@@ -394,25 +403,31 @@ public class HalFormsSupport {
 
         private final AffordanceModel.InputPayloadMetadata inputPayloadMetadata;
         private final Map<String, List<String>> propertyOptions;
-        private final Map<String, List<HalFormsInlineOption>> promptedOptions;
+        private final Map<String, HalFormsOptionsDef> optionsDef;
 
         HalFormsInputPayloadMetadata(AffordanceModel.InputPayloadMetadata inputPayloadMetadata,
                                      Map<String, List<String>> propertyOptions,
-                                     Map<String, List<HalFormsInlineOption>> promptedOptions) {
+                                     Map<String, HalFormsOptionsDef> optionsDef) {
             this.inputPayloadMetadata = inputPayloadMetadata;
             this.propertyOptions = Map.copyOf(propertyOptions);
-            this.promptedOptions = Map.copyOf(promptedOptions);
+            this.optionsDef = Map.copyOf(optionsDef);
         }
 
         @Override
         public Stream<AffordanceModel.PropertyMetadata> stream() {
             HttpServletRequest request = currentRequest();
             if (request != null) {
+                // Jackson materializes every affordance's property list before it writes any of them to JSON,
+                // so multiple klabisAffordWithOptions calls on the same response all run their stream()
+                // before the first property's "options" is actually serialized. Overwriting the attribute here
+                // would make only the last-processed affordance's options visible; merging keeps all of them.
                 if (!propertyOptions.isEmpty()) {
-                    request.setAttribute(PROPERTY_OPTIONS_REQUEST_ATTR, propertyOptions);
+                    request.setAttribute(PROPERTY_OPTIONS_REQUEST_ATTR, mergeOptions(
+                            getPropertyOptionsContext(request), propertyOptions));
                 }
-                if (!promptedOptions.isEmpty()) {
-                    request.setAttribute(PROMPTED_OPTIONS_REQUEST_ATTR, promptedOptions);
+                if (!optionsDef.isEmpty()) {
+                    request.setAttribute(OPTIONS_DEF_REQUEST_ATTR, mergeOptions(
+                            getOptionsDefContext(request), optionsDef));
                 }
             }
             // Modify property metadata stream based on @HalForms annotations
@@ -438,6 +453,15 @@ public class HalFormsSupport {
             }
 
             return wrapped;
+        }
+
+        private static <V> Map<String, V> mergeOptions(Map<String, V> existing, Map<String, V> additional) {
+            if (existing == null || existing.isEmpty()) {
+                return additional;
+            }
+            Map<String, V> merged = new HashMap<>(existing);
+            merged.putAll(additional);
+            return merged;
         }
 
         private boolean isPropertyDisplayed(AffordanceModel.PropertyMetadata propertyMetadata) {
@@ -531,7 +555,7 @@ public class HalFormsSupport {
 
         @Override
         public AffordanceModel.InputPayloadMetadata withMediaTypes(List<MediaType> mediaTypes) {
-            return new HalFormsInputPayloadMetadata(inputPayloadMetadata.withMediaTypes(mediaTypes), propertyOptions, promptedOptions);
+            return new HalFormsInputPayloadMetadata(inputPayloadMetadata.withMediaTypes(mediaTypes), propertyOptions, optionsDef);
         }
 
         @Override

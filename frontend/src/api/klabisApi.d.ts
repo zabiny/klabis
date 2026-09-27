@@ -272,6 +272,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/disciplines/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List disciplines as select options
+         * @description Lightweight value/prompt pairs for discipline picker components (design.md D3 of
+         *     app-review-fixes-2026-09) — the link a HAL-FORMS options.link on EventType's
+         *     disciplineIds property points at, mirroring listMemberOptions. Archived disciplines
+         *     are excluded: they are not offered for assignment to new/updated event types.
+         *
+         */
+        get: operations["listDisciplineOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/disciplines/{id}": {
         parameters: {
             query?: never;
@@ -638,31 +662,6 @@ export interface paths {
          * @description Transitions event from DRAFT to ACTIVE status.
          */
         post: operations["publishEvent"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/events/{id}/sync-from-oris": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sync event from ORIS
-         * @description Runs one synchronisation pass for this event through the synchronisation engine (design.md
-         *     D18). ORIS-owned fields are written inward when only the external side changed; a local edit
-         *     to one of them is no longer silently overwritten and instead surfaces as a conflict on the
-         *     event's synchronisation resource (design.md D6). Only allowed for DRAFT and ACTIVE events
-         *     with an orisId.
-         *
-         */
-        post: operations["syncEventFromOris"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2361,6 +2360,19 @@ export interface components {
             id?: string;
             name?: string;
         };
+        /** @description Discipline option for select components */
+        DisciplineOptionResponse: {
+            /**
+             * @description Discipline name
+             * @example Orientační běh
+             */
+            prompt?: string;
+            /**
+             * @description Discipline UUID
+             * @example 123e4567-e89b-12d3-a456-426614174000
+             */
+            value?: string;
+        };
         /** @enum {string} */
         DrivingLicenseGroup: "B" | "BE" | "C" | "C1" | "D" | "D1" | "T" | "AM" | "A1" | "A2" | "A";
         EditGroupSnapshotRequest: {
@@ -2776,6 +2788,7 @@ export interface components {
          *     themselves.
          *      */
         MemberDetailsResponse: {
+            /** @description Whether the member is active (visible to admins only) */
             active?: boolean;
             address?: components["schemas"]["AddressResponse"];
             bankAccountNumber?: string;
@@ -4149,189 +4162,27 @@ export interface operations {
             422: components["responses"]["UnprocessableEntity"];
         };
     };
-    getDiscipline: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Discipline UUID */
-                id: components["parameters"]["DisciplineIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Discipline found */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DisciplineDto"];
-                    "application/prs.hal-forms+json": components["schemas"]["EntityModelDisciplineDto"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            422: components["responses"]["UnprocessableEntity"];
-        };
-    };
-    updateDiscipline: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Discipline UUID */
-                id: components["parameters"]["DisciplineIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateDisciplineRequest"];
-            };
-        };
-        responses: {
-            /** @description Discipline updated */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/prs.hal-forms+json": unknown;
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            422: components["responses"]["UnprocessableEntity"];
-        };
-    };
-    archiveDiscipline: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Discipline UUID */
-                id: components["parameters"]["DisciplineIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Discipline archived */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/prs.hal-forms+json": unknown;
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            422: components["responses"]["UnprocessableEntity"];
-        };
-    };
-    restoreDiscipline: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Discipline UUID */
-                id: components["parameters"]["DisciplineIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Discipline restored */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/prs.hal-forms+json": unknown;
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            422: components["responses"]["UnprocessableEntity"];
-        };
-    };
-    listDisciplines: {
-        parameters: {
-            query?: {
-                /** @description Zero-based page index (0..N) */
-                page?: components["parameters"]["PageParam"];
-                /** @description The size of the page to be returned */
-                size?: components["parameters"]["SizeParam"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Paginated list of disciplines */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DisciplineDto"][];
-                    "application/prs.hal-forms+json": components["schemas"]["PagedModelEntityModelDisciplineDto"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            422: components["responses"]["UnprocessableEntity"];
-        };
-    };
-    createDiscipline: {
+    listDisciplineOptions: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateDisciplineRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Discipline created */
-            201: {
+            /** @description Discipline options retrieved successfully */
+            200: {
                 headers: {
-                    /** @description URI of the created discipline */
-                    Location?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/prs.hal-forms+json": unknown;
+                    "application/json": components["schemas"]["DisciplineOptionResponse"][];
+                    "application/prs.hal-forms+json": components["schemas"]["DisciplineOptionResponse"][];
                 };
             };
-            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            422: components["responses"]["UnprocessableEntity"];
         };
     };
     getDiscipline: {
@@ -5150,35 +5001,6 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
-            422: components["responses"]["UnprocessableEntity"];
-        };
-    };
-    syncEventFromOris: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Event UUID */
-                id: components["parameters"]["EventIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Event synced from ORIS successfully */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/prs.hal-forms+json": unknown;
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["NeedsDecision"];
             422: components["responses"]["UnprocessableEntity"];
         };
     };

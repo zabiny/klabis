@@ -575,3 +575,29 @@ describe('MembersPage — Banknote (finance transaction) action', () => {
         expect(screen.queryByRole('button', {name: labels.finance.openMemberAccount})).not.toBeInTheDocument();
     });
 });
+
+describe('MembersPage — sync status indicator in actions cell (4.3)', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('renders SyncStatusIndicator in the actions cell when row has _links.sync', () => {
+        const member = buildMemberRow({
+            _links: {
+                self: {href: '/api/members/member-1'},
+                sync: {href: '/api/members/member-1/sync'},
+            },
+        });
+        renderPageWithMembers([member]);
+        // Behavioural coverage of SyncStatusIndicator lives in SyncStatusIndicator.test.tsx;
+        // here we only assert the indicator is mounted when the sync link is present.
+        expect(screen.getByTestId('sync-error')).toBeInTheDocument();
+    });
+
+    it('does not render a sync indicator when row has no _links.sync', () => {
+        renderPageWithMembers([buildMemberRow()]);
+        expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
+        expect(screen.queryByTestId(/^sync-status-/)).not.toBeInTheDocument();
+    });
+});

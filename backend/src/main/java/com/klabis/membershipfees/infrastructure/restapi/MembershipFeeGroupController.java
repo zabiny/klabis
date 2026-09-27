@@ -1,12 +1,14 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
+import com.klabis.members.infrastructure.restapi.MembersApi;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
@@ -121,8 +123,9 @@ class MembershipFeeGroupDetailsPostprocessor
         klabisLinkTo(methodOn(MembershipFeeGroupsApi.class).getFeeGroup(id))
                 .map(link -> {
                     var self = link.withSelfRel()
-                            .andAffordances(klabisAfford(
-                                    methodOn(MembershipFeeGroupsApi.class).assignMember(id, null, null)));
+                            .andAffordances(klabisAffordWithOptions(
+                                    methodOn(MembershipFeeGroupsApi.class).assignMember(id, null, null),
+                                    Map.of("memberId", HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()))));
                     if (group.getStatus() == PublishedLevelStatus.EDITABLE) {
                         self = self.andAffordances(klabisAfford(
                                 methodOn(MembershipFeeGroupsApi.class).editSnapshot(id, null)));
