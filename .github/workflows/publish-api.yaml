@@ -1,11 +1,7 @@
 name: Publish OpenAPI docs
 run-name: ${{ github.actor }} changed API
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'docs/openapi/spec/**'
+  workflow_dispatch:
 jobs:
   publish-changes:
     runs-on: ubuntu-latest
