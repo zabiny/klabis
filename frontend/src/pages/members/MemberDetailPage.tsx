@@ -126,20 +126,18 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
     const template: HalFormsTemplate | null = resourceData?._templates?.updateMember ?? null;
     const hasEditTemplate = template !== null;
 
-    const {isEditing, enrichedTemplate, enrichedFieldNames, startEditing, cancelEditing, postprocessPayload} =
+    const {isEditing, enrichedTemplate, enrichedFieldNames, editableFieldNames, startEditing, cancelEditing, postprocessPayload} =
         useInlineEditing(template, resourceData as Record<string, unknown>, {
             initialEditing,
             onCancel: initialEditing ? () => navigate(-1) : undefined,
         });
 
-
-    // Gender is authority-gated: a self-editing member's template has no gender property and it
-    // is synthesised as a read-only field, so it must stay a localised value rather than an input.
-    const genderEditable = isEditing && !!template?.properties.some(p => p.name === 'gender');
-
     const renderContent = (helpers?: FormRenderHelpers) => {
+        // Only fields editable in the original template render as inputs; fields synthesised
+        // as read-only (e.g. gender for a self-editing member without MEMBERS:MANAGE) fall
+        // through to the caller's `?? val(...)` formatted display branch.
         const ri = (name: string): ReactNode =>
-            isEditing && enrichedFieldNames.has(name) && helpers
+            isEditing && editableFieldNames.has(name) && helpers
                 ? helpers.renderInput(name)
                 : null;
 
@@ -150,10 +148,15 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         <DetailRow label={labels.fields.firstName}>{ri('firstName') ?? val(member.firstName)}</DetailRow>
                         <DetailRow label={labels.fields.lastName}>{ri('lastName') ?? val(member.lastName)}</DetailRow>
                         <DetailRow label={labels.fields.dateOfBirth}>{ri('dateOfBirth') ?? val(member.dateOfBirth && formatDate(member.dateOfBirth))}</DetailRow>
-                        <DetailRow label={labels.fields.gender}>{genderEditable && helpers ? helpers.renderInput('gender') : val(member.gender && getEnumLabel('gender', member.gender))}</DetailRow>
+                        <DetailRow label={labels.fields.gender}>{ri('gender') ?? val(member.gender && getEnumLabel('gender', member.gender))}</DetailRow>
                         <DetailRow label={labels.fields.nationality}>{ri('nationality') ?? val(member.nationality)}</DetailRow>
                         {isEditing
-                            ? enrichedFieldNames.has('birthNumber') && <BirthNumberConditionalField renderInput={ri}/>
+                            ? enrichedFieldNames.has('birthNumber') && (
+                                <BirthNumberConditionalField
+                                    renderInput={ri}
+                                    fallback={val(member.birthNumber && <MaskedBirthNumber value={member.birthNumber}/>)}
+                                />
+                            )
                             : (isCzNationality(member.nationality) && member.birthNumber && (
                                 <DetailRow label={labels.fields.birthNumber}>
                                     <MaskedBirthNumber value={member.birthNumber}/>
@@ -161,7 +164,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                             ))
                         }
                         {isEditing && (
-                            <DetailRow label={labels.fields.registrationNumber}>{ri('registrationNumber')}</DetailRow>
+                            <DetailRow label={labels.fields.registrationNumber}>{ri('registrationNumber') ?? val(member.registrationNumber)}</DetailRow>
                         )}
                     </Section>
                 )}
