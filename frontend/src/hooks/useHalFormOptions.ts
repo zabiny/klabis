@@ -2,7 +2,7 @@ import type {SelectOption} from '../components/UI/forms';
 import type {HalFormsOption, HalFormsOptionType} from '../api';
 import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
 import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
-import {getEnumLabel, labels} from '../localization';
+import {getPermissionInfo, labels} from '../localization';
 
 /**
  * Minimal HAL-FORMS property context needed to choose the translation group for
@@ -42,23 +42,27 @@ function resolveEnumGroup(prop?: EnumOptionContext): string | undefined {
     return undefined;
 }
 
-function localizeLabel(group: string, value: string): string {
+function lookupTranslation(group: string, value: string): string | undefined {
     if (group === AUTHORITY_GROUP) {
-        const permission = (labels.permissions as Record<string, { label: string } | undefined>)[value];
-        return permission?.label ?? getEnumLabel('authority', value);
+        return getPermissionInfo(value)?.label;
     }
-    return getEnumLabel(group, value);
+    const enumGroups = labels.enums as Record<string, Record<string, string> | undefined>;
+    return enumGroups[group]?.[value];
 }
 
 /**
  * Replaces option labels with the localised enum label when the property is a known
- * enum and the backend sent values only. Unmapped properties and option values fall
- * back to the label produced by {@link convertToSelectOptions} (the raw value).
+ * enum and a translation exists for that value. Unmapped properties and untranslated
+ * values keep the label produced by {@link convertToSelectOptions} (the server-provided
+ * prompt, or the raw value when no prompt was sent).
  */
 export function localizeEnumOptions(options: SelectOption[], prop?: EnumOptionContext): SelectOption[] {
     const group = resolveEnumGroup(prop);
     if (!group) return options;
-    return options.map(option => ({...option, label: localizeLabel(group, String(option.value))}));
+    return options.map(option => {
+        const translation = lookupTranslation(group, String(option.value));
+        return translation !== undefined ? {...option, label: translation} : option;
+    });
 }
 
 interface UseHalFormOptionsResult {

@@ -311,11 +311,6 @@ export const labels = {
             OUTWARD: 'Zapsat do externího systému',
             ACCEPT_DIVERGENCE: 'Ponechat obě verze',
         },
-        // Authority labels not shown in the permissions dialog catalogue; the dialog's
-        // own labels live under `permissions`. Used when translating HAL-FORMS option values.
-        authority: {
-            'SYNC:MANAGE': 'Správa synchronizace',
-        },
         feeGroupStatus: {
             EDITABLE: 'Editovatelná',
             FROZEN: 'Zmrazená',
@@ -538,6 +533,7 @@ export const labels = {
         'GROUPS:TRAINING': {label: 'Správa tréninkových skupin', description: 'Umožňuje vytvářet a spravovat tréninkové skupiny a jejich členy.'},
         'EVENTS:REGISTRATIONS': {label: 'Správa přihlášek', description: 'Editace přihlášek ostatních členů na akce'},
         'FINANCE:MANAGE': {label: 'Správa financí', description: 'Vklady, strhávání a storno transakcí na účtech členů'},
+        'SYNC:MANAGE': {label: 'Správa synchronizace', description: 'Řešení konfliktů a řízení synchronizace s externími systémy'},
     },
 
     links: {
@@ -696,6 +692,10 @@ export function getDialogTitleLabel(templateName: string): string | undefined {
 export function getNavLabel(rel: string): string {
     const navLabels = labels.nav as Record<string, string>;
     return navLabels[rel] ?? rel;
+}
+
+export function getPermissionInfo(authority: string): { label: string; description: string } | undefined {
+    return (labels.permissions as Record<string, { label: string; description: string } | undefined>)[authority];
 }
 
 export function getEnumLabel(enumType: string, value: string): string {

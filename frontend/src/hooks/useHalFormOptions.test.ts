@@ -186,6 +186,20 @@ describe('useHalFormOptions', () => {
             ]);
         });
 
+        it('should keep the server-provided prompt for an inline option with no translation', () => {
+            const {result} = renderHook(
+                () => useHalFormOptions(
+                    {inline: [{value: 'X', prompt: 'Server text'}]},
+                    {name: 'reason', type: 'DeactivationReason'},
+                ),
+                {wrapper: createWrapper()},
+            );
+
+            expect(result.current.options).toEqual([
+                {value: 'X', label: 'Server text'},
+            ]);
+        });
+
         it('should not touch options when the property context is absent', () => {
             const {result} = renderHook(
                 () => useHalFormOptions({inline: ['MALE', 'FEMALE']}),
@@ -306,6 +320,28 @@ describe('useHalFormOptions', () => {
 
             // Should still only have been called once (cache hit)
             expect(fetchSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should keep the server-provided prompt for a link option with no translation', async () => {
+            const mockData = [{value: 'X', prompt: 'Server text'}];
+            fetchSpy.mockResolvedValueOnce(createMockResponse(mockData));
+
+            const linkOptions: HalFormsOption = {
+                link: {href: '/api/deactivation-reasons'},
+            };
+
+            const {result} = renderHook(
+                () => useHalFormOptions(linkOptions, {name: 'reason', type: 'DeactivationReason'}),
+                {wrapper: createWrapper()},
+            );
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            expect(result.current.options).toEqual([
+                {value: 'X', label: 'Server text'},
+            ]);
         });
 
         it('should fetch options again when URL changes', async () => {

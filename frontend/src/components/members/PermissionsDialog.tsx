@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {Alert, Button, Modal, Spinner} from '../UI';
-import {labels} from '../../localization';
+import {getPermissionInfo, labels} from '../../localization';
 import {resolvePermissionErrorMessage} from '../../hooks/usePermissionsEditor';
 
 export interface PermissionsDialogProps {
@@ -9,6 +9,7 @@ export interface PermissionsDialogProps {
     memberName: string;
     memberRegistrationNumber?: string;
     permissions: string[] | undefined;
+    assignableAuthorities: string[];
     isLoading: boolean;
     isSaving: boolean;
     error: Error | null | undefined;
@@ -23,14 +24,23 @@ const PERMISSION_COLORS: Record<string, string> = {
     'GROUPS:TRAINING':       'bg-orange-100 text-orange-600',
     'EVENTS:REGISTRATIONS':  'bg-purple-100 text-purple-600',
     'FINANCE:MANAGE':        'bg-yellow-100 text-yellow-600',
+    'SYNC:MANAGE':           'bg-blue-100 text-blue-600',
 };
 
-const PERMISSION_LABELS: Record<string, { label: string; description: string; color: string }> = Object.fromEntries(
-    Object.entries(labels.permissions).map(([key, value]) => [
-        key,
-        {label: value.label, description: value.description, color: PERMISSION_COLORS[key] ?? 'bg-gray-100 text-gray-600'},
-    ])
-);
+interface PermissionInfo {
+    label: string;
+    description: string;
+    color: string;
+}
+
+function resolvePermissionInfo(authority: string): PermissionInfo {
+    const known = getPermissionInfo(authority);
+    return {
+        label: known?.label ?? authority,
+        description: known?.description ?? '',
+        color: PERMISSION_COLORS[authority] ?? 'bg-gray-100 text-gray-600',
+    };
+}
 
 const PermissionIcon = ({color}: { color: string }) => (
     <div className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${color}`}>
@@ -60,7 +70,7 @@ const Toggle = ({checked, onChange, disabled, label}: { checked: boolean; onChan
     </button>
 );
 
-export const PermissionsDialog = ({isOpen, onClose, memberName, memberRegistrationNumber, permissions, isLoading, isSaving, error, onSave}: PermissionsDialogProps) => {
+export const PermissionsDialog = ({isOpen, onClose, memberName, memberRegistrationNumber, permissions, assignableAuthorities, isLoading, isSaving, error, onSave}: PermissionsDialogProps) => {
     const [selectedAuthorities, setSelectedAuthorities] = useState<Set<string>>(new Set());
 
     useEffect(() => {
@@ -135,21 +145,26 @@ export const PermissionsDialog = ({isOpen, onClose, memberName, memberRegistrati
                         </Alert>
                     )}
                     <div className="divide-y divide-border">
-                        {Object.entries(PERMISSION_LABELS).map(([authority, info]) => (
-                            <div key={authority} className="flex items-center gap-4 py-3">
-                                <PermissionIcon color={info.color}/>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-text-primary">{info.label}</p>
-                                    <p className="text-xs text-text-secondary">{info.description}</p>
+                        {assignableAuthorities.map((authority) => {
+                            const info = resolvePermissionInfo(authority);
+                            return (
+                                <div key={authority} className="flex items-center gap-4 py-3">
+                                    <PermissionIcon color={info.color}/>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-text-primary">{info.label}</p>
+                                        {info.description && (
+                                            <p className="text-xs text-text-secondary">{info.description}</p>
+                                        )}
+                                    </div>
+                                    <Toggle
+                                        label={info.label}
+                                        checked={selectedAuthorities.has(authority)}
+                                        onChange={() => toggleAuthority(authority)}
+                                        disabled={isLoading || isSaving}
+                                    />
                                 </div>
-                                <Toggle
-                                    label={info.label}
-                                    checked={selectedAuthorities.has(authority)}
-                                    onChange={() => toggleAuthority(authority)}
-                                    disabled={isLoading || isSaving}
-                                />
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}

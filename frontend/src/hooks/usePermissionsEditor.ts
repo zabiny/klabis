@@ -1,22 +1,24 @@
 import {useToast} from '../contexts/toastContext';
 import {useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
 import {FetchError} from '../api/authorizedFetch';
+import {toHref} from '../api/hateoas';
+import type {GetUserPermissionsResource} from '../api';
 import {labels} from '../localization';
 import {useFormCacheInvalidation} from './useFormCacheInvalidation';
 
-interface PermissionsResponse {
-    authorities: string[];
-    _links?: {
-        self?: { href: string };
-    };
-}
-
 export interface UsePermissionsEditorResult {
     permissions: string[] | undefined;
+    assignableAuthorities: string[];
     isLoading: boolean;
     onSave: (authorities: string[]) => void;
     isSaving: boolean;
     error: Error | null | undefined;
+}
+
+function extractAssignableAuthorities(resource: GetUserPermissionsResource | undefined): string[] {
+    const authoritiesProperty = resource?._templates?.updatePermissions?.properties
+        ?.find(property => property.name === 'authorities');
+    return authoritiesProperty?.options?.inline?.map(String) ?? [];
 }
 
 export interface UsePermissionsEditorOptions {
@@ -38,12 +40,12 @@ export function usePermissionsEditor(
     const {addToast} = useToast();
     const {invalidateAllCaches} = useFormCacheInvalidation();
 
-    const {data, isLoading} = useAuthorizedQuery<PermissionsResponse>(permissionsUrl ?? '', {
+    const {data, isLoading} = useAuthorizedQuery<GetUserPermissionsResource>(permissionsUrl ?? '', {
         enabled: (options?.enabled ?? true) && !!permissionsUrl,
         staleTime: 60_000,
     });
 
-    const putUrl = data?._links?.self?.href ?? permissionsUrl ?? '';
+    const putUrl = (data?._links?.self && toHref(data._links.self)) ?? permissionsUrl ?? '';
 
     const {mutate, isPending, error: mutationError} = useAuthorizedMutation({
         method: 'PUT',
@@ -65,6 +67,7 @@ export function usePermissionsEditor(
 
     return {
         permissions: data?.authorities,
+        assignableAuthorities: extractAssignableAuthorities(data),
         isLoading,
         onSave,
         isSaving: isPending,
