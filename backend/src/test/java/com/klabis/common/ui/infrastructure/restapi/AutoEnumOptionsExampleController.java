@@ -1,6 +1,7 @@
 package com.klabis.common.ui.infrastructure.restapi;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -11,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
-import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithValueOptions;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -56,9 +57,9 @@ public class AutoEnumOptionsExampleController {
         EntityModel<AutoEnumOptionsDummy> model = EntityModel.of(new AutoEnumOptionsDummy("dummy"));
         klabisLinkTo(methodOn(AutoEnumOptionsExampleController.class).getExplicit()).ifPresent(link ->
                 model.add(link.withSelfRel()
-                        .andAffordances(klabisAffordWithValueOptions(
+                        .andAffordances(klabisAffordWithOptions(
                                 methodOn(AutoEnumOptionsExampleController.class).editPlain(null),
-                                Map.of("status", java.util.List.of("ACTIVE"))))));
+                                Map.of("status", HalFormsOptionsDef.values(java.util.List.of("ACTIVE")))))));
         return ResponseEntity.ok(model);
     }
 

@@ -1,6 +1,7 @@
 package com.klabis.sync.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncRecord;
@@ -12,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
-import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithValueOptions;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -67,9 +68,9 @@ class SyncStatePostprocessor extends ModelWithDomainPostprocessor<SyncStateRespo
                     .map(SyncResolution::name)
                     .toList();
             return self.andAffordances(
-                    klabisAffordWithValueOptions(
+                    klabisAffordWithOptions(
                             methodOn(SyncApi.class).resolveSyncConflict(entityType, id, null, null),
-                            Map.of("resolution", resolutions)));
+                            Map.of("resolution", HalFormsOptionsDef.values(resolutions))));
         }
         return self.andAffordances(
                 klabisAfford(methodOn(SyncApi.class).acknowledgeSyncConflict(entityType, id, null)));

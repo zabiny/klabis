@@ -319,12 +319,12 @@ class PaymentRuleDetailsPostprocessor
         String ranking = domain.rule().rankingShortName();
         klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getRule(tierId, eventTypeId, ranking))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAffordWithValueOptions(
+                        .andAffordances(klabisAffordWithOptions(
                                 methodOn(MembershipFeeTiersApi.class).editRule(tierId,
                                         eventTypeId,
                                         ranking,
                                         null),
-                                Map.of("ruleType", RULE_TYPE_OPTIONS)))
+                                Map.of("ruleType", HalFormsOptionsDef.values(RULE_TYPE_OPTIONS))))
                         .andAffordances(klabisAfford(
                                 methodOn(MembershipFeeTiersApi.class).removeRule(tierId, eventTypeId, ranking))))
                 .ifPresent(dtoModel::add);
@@ -363,10 +363,10 @@ class MembershipFeeTierListRulesPostprocessor
         Optional<RuleOptions> options = currentOptions();
         if (tierId.isPresent() && options.isPresent()) {
             model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, link -> (Link) link
-                    .andAffordances(klabisAffordWithMixedOptions(
+                    .andAffordances(klabisAffordWithOptions(
                             methodOn(MembershipFeeTiersApi.class).addRule(tierId.get(), null),
-                            Map.of("ruleType", List.of("PERCENTAGE", "FIXED_AMOUNT")),
-                            Map.of("rankingShortName", new HalFormsOptionsDef.Inline(options.get().rankingOptions()),
+                            Map.of("ruleType", HalFormsOptionsDef.values(List.of("PERCENTAGE", "FIXED_AMOUNT")),
+                                    "rankingShortName", new HalFormsOptionsDef.Inline(options.get().rankingOptions()),
                                     "eventTypeId", new HalFormsOptionsDef.Inline(options.get().eventTypeOptions())))));
         }
         return model;

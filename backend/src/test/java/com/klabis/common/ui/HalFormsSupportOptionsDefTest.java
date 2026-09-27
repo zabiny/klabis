@@ -27,8 +27,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Covers HalFormsOptionsDef (D3 in app-review-fixes-2026-09/design.md): klabisAffordWithOptions
- * must render an Inline-wrapped option exactly as the previous plain-List signature did, and a
- * Remote-wrapped option as a HAL-FORMS options.link pointing at the given href.
+ * must render a Values-wrapped option as a plain value-only inline list (the wire format the
+ * frontend localises), an Inline-wrapped option as value/prompt pairs, and a Remote-wrapped
+ * option as a HAL-FORMS options.link pointing at the given href.
  */
 @ApplicationModuleTest
 @AutoConfigureMockMvc
@@ -38,6 +39,20 @@ class HalFormsSupportOptionsDefTest {
 
     @Autowired
     MockMvc mockMvc;
+
+    @WithKlabisMockUser(username = "Tester")
+    @Test
+    @DisplayName("Values-wrapped option renders as a plain value-only options.inline list")
+    void valuesOptionRendersAsPlainInlineOptions() throws Exception {
+        mockMvc.perform(get("/api/testOptionsDef/values")
+                        .contentType(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._templates.edit.properties[?(@.name == 'category')].options.inline").isArray())
+                .andExpect(jsonPath("$._templates.edit.properties[?(@.name == 'category')].options.inline[0]").value("Elite"))
+                .andExpect(jsonPath("$._templates.edit.properties[?(@.name == 'category')].options.inline[0].value").doesNotExist())
+                .andExpect(jsonPath("$._templates.edit.properties[?(@.name == 'category')].options.link").doesNotExist());
+    }
 
     @WithKlabisMockUser(username = "Tester")
     @Test
@@ -75,6 +90,17 @@ record OptionsDefDummy(String value) {
 @RestController
 @RequestMapping("/api/testOptionsDef")
 class OptionsDefExampleController {
+
+    @GetMapping(value = "/values", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+    public ResponseEntity<EntityModel<OptionsDefDummy>> getWithValueOptions() {
+        EntityModel<OptionsDefDummy> model = EntityModel.of(new OptionsDefDummy("dummy"));
+        klabisLinkTo(methodOn(OptionsDefExampleController.class).getWithValueOptions()).ifPresent(link ->
+                model.add(link.withSelfRel()
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(OptionsDefExampleController.class).edit(null),
+                                Map.of("category", HalFormsOptionsDef.values(List.of("Elite")))))));
+        return ResponseEntity.ok(model);
+    }
 
     @GetMapping(value = "/inline", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
     public ResponseEntity<EntityModel<OptionsDefDummy>> getWithInlineOptions() {

@@ -231,7 +231,7 @@ static Clock clock() {                       // factory name matches the field n
 
 **Context:**
 
-Enum-typed request properties (gender, driving licence group, deactivation reason, …) used to get their HAL-FORMS `options` from value lists hand-written in controllers and passed to `klabisAffordWithValueOptions`. The lists drifted from the generated enums. The explicit-options helpers in `HalFormsSupport` store options in request attributes keyed by property **name** only, merged across all affordances of one response. Feeding automatically computed options through that channel leaks them into an unrelated affordance that has a property with the same name.
+Enum-typed request properties (gender, driving licence group, deactivation reason, …) used to get their HAL-FORMS `options` from value lists hand-written in controllers. The lists drifted from the generated enums. The explicit per-request options (`klabisAffordWithOptions`) are stored in request attributes keyed by property **name** only, merged across all affordances of one response. Feeding automatically computed options through that channel leaks them into an unrelated affordance that has a property with the same name.
 
 **Decision:**
 

@@ -74,18 +74,13 @@ class HalFormsMultiPropertyModule extends SimpleModule {
             if (propertyName != null) {
                 HalFormsOptionsDef optionsDef = HalFormsSupport.getOptionsDefForProperty(propertyName);
                 HalFormsOptions options = switch (optionsDef) {
+                    case HalFormsOptionsDef.Values values when !values.values().isEmpty() ->
+                            HalFormsOptions.inline(values.values().toArray());
                     case HalFormsOptionsDef.Inline inline when !inline.values().isEmpty() ->
                             HalFormsOptions.inline(inline.values()).withValueField("value").withPromptField("prompt");
                     case HalFormsOptionsDef.Remote remote -> HalFormsOptions.remote(remote.link());
                     case null, default -> null;
                 };
-
-                if (options == null) {
-                    List<String> inlineOptions = HalFormsSupport.getInlineOptionsForProperty(propertyName);
-                    if (inlineOptions != null && !inlineOptions.isEmpty()) {
-                        options = HalFormsOptions.inline(inlineOptions.toArray());
-                    }
-                }
 
                 if (options != null) {
                     gen.writeName("options");
