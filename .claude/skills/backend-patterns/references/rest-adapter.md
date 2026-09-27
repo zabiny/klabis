@@ -49,9 +49,9 @@ For spec'd endpoints you do not write it — set `x-klabis-authority: MEMBERS_RE
 
 Reach for a hand-written `@PreAuthorize` on the override only when you need boolean logic, parameter access, or context-specific rules that a single authority cannot express — that is the one authorization concern the spec cannot carry.
 
-## Field-Level Authorization on Controller Methods
+## PATCH controller method
 
-Field-level authorization on the request DTO (`@HasAuthority`, `@OwnerVisible` on `JsonNullable<T>` components) is enforced by `RequestBodyFieldAuthorizationAdvice`. Single command path — no role-based branching in the controller. On a generated DTO these come from the spec's `x-klabis-authority` / `x-klabis-owner-visible` field extensions; the `@OwnerId` marker on the path variable is declared in the spec too.
+Field-level write authorization on the request DTO is enforced before the controller runs — see `field-security.md`. The controller has a single command path, no role-based branching:
 
 ```java
 @Override
@@ -273,7 +273,7 @@ Rules:
   list falls back to them (it does not mean "no options").
 - Options are bound to the one affordance built in that call — they never leak into other templates.
 - Data needed for the options (ports, repositories) may be injected straight into the postprocessor —
-  see `@MvcComponent` and `@WebMvcTest` below. Real examples: `PermissionController` (assignable
+  register the dependency in `@WithPostprocessors` (`testing-guide.md`). Real examples: `PermissionController` (assignable
   authorities), `SyncStatePostprocessor` (`SynchronizationPort.supportedResolutions`),
   `MembershipFeeTierController` (`Inline`).
 
@@ -388,7 +388,11 @@ interface BulkSyncResultConverter extends Converter<com.klabis.events.applicatio
 }
 ```
 
-## `@MvcComponent` and `@WebMvcTest`
+### Pitfall: no module-specific constructor dependencies on a `Converter`
+
+For the same reason, a `Converter` bean must take no constructor dependencies a foreign slice lacks (ports, repositories). `MemberIdToUuidConverter` and `RegisterNewMemberConverter` are safe because they have none. A mapper that needs such dependencies stays a plain class constructed by its controller — see `SyncStateResponseConverter`.
+
+## `@MvcComponent`
 
 `@MvcComponent` (`com.klabis.common.mvc.MvcComponent`) is a project-specific marker for presentation-layer beans (postprocessors, link processors, MVC helpers). It is meta-annotated `@Component`, but it is NOT a generic alias — `MvcConfiguration` wires it up via a targeted component scan:
 
@@ -402,15 +406,8 @@ interface BulkSyncResultConverter extends Converter<com.klabis.events.applicatio
 class MvcConfiguration implements WebMvcConfigurer { ... }
 ```
 
-**Consequences for tests:**
-- `@WebMvcTest` auto-loads `MvcConfiguration`, which then scans **all `com.klabis.**` packages** and picks up every `@MvcComponent` bean — cross-package, cross-module.
-- **Do NOT** list postprocessors or `@MvcComponent` beans in `@WebMvcTest(controllers = {...})` or `@Import({...})` — it is redundant. They are discovered automatically.
-- If a postprocessor's constructor depends on a non-MVC bean (port, repository), add a `@MockitoBean`
-  for it to `WithPostprocessors` (`backend/src/test/.../common/WithPostprocessors.java`) — the scan is
-  global, so a per-test mock would leave every other `@WebMvcTest` slice broken. Tests that need to
-  stub it use `@Autowired`, not a second `@MockitoBean`. Do NOT work around this with `@Lazy` —
-  it only defers resolution, it doesn't supply the missing bean at runtime.
+Test-slice consequences (global scan, `@WithPostprocessors`) are in `testing-guide.md`, "Controller Tests".
 
 **Consequences for production code:**
-- `@MvcComponent` is the correct annotation for anything in `infrastructure/restapi/` — controllers, postprocessors (`ModelWithDomainPostprocessor`, plain `RepresentationModelProcessor`), Jackson modules, HAL helpers.
+- `@MvcComponent` is the correct annotation for presentation-layer beans in `infrastructure/restapi/` — postprocessors (`ModelWithDomainPostprocessor`, plain `RepresentationModelProcessor`), Jackson modules, HAL helpers. Controllers keep `@RestController`.
 - Cross-module postprocessors (e.g. a `groups.familygroup` postprocessor enriching a `Member` response) live in the consuming module and still just need `@MvcComponent`; the central scan finds them regardless of package.

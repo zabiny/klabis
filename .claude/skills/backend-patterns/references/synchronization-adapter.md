@@ -191,11 +191,9 @@ The `sync` module's one controller already serves every entity type uniformly at
 - **Add the entity type's wire value to `docs/openapi/spec/sync.yaml`** (the `SyncEntityTypeParam` enum) — this is what step 1's `SyncEntityType` addition is regenerated from.
 - **Add a `sync` link on the entity's own resource**, the way `GET /api/events/{id}` gains one when an event is enrolled: the owning module's controller/postprocessor calls `SynchronizationPort` (a primary port, per ADR-001) to check enrolment and, if enrolled, adds a link to the sync sub-resource. See `EventController`'s postprocessor for the exact wiring.
 
-### Trap: never register a mapping `Converter` bean with module-specific dependencies
+### Trap: `SyncStateResponseConverter` is deliberately not a `Converter` bean
 
-`SyncStateResponseConverter` (mapping `SyncRecord` → the response DTO) is **deliberately not** a Spring `Converter<S,T>` bean, even though that is the usual mapping pattern elsewhere in this codebase (`rest-adapter.md`). Its dependencies (`SyncProjectionFieldReader`, `SynchronizationPort`) are sync-module-specific — but any class implementing `org.springframework.core.convert.converter.Converter` and annotated as a Spring bean is picked up by Boot's MVC auto-configuration into the **global** `mvcConversionService`, which every `@WebMvcTest` slice in the whole application constructs. A converter with module-specific constructor dependencies then breaks every unrelated slice test that doesn't have those beans available.
-
-`MemberIdToUuidConverter` and `RegisterNewMemberConverter` get away with being `Converter` beans because they take **no constructor dependencies at all**. `StringToSyncEntityTypeParamConverter` (the path-variable binder from step 1/6) is safe for the same reason — deliberately stateless. The moment a mapper needs dependencies, either keep it a plain class constructed directly by its controller (as `SyncStateResponseConverter` is), or verify it truly has zero constructor dependencies before making it a `Converter` bean.
+Its dependencies (`SyncProjectionFieldReader`, `SynchronizationPort`) are sync-specific, and every `Converter<S,T>` bean lands in the global `mvcConversionService` of every `@WebMvcTest` slice. A mapper with module-specific dependencies stays a plain class constructed by its controller (see `rest-adapter.md`, "DTO ↔ Domain Mapping").
 
 ## 7. Test it
 

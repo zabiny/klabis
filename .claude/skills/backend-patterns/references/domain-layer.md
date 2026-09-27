@@ -93,7 +93,7 @@ public interface RegistrationPort {
 
 ```java
 @Service
-class RegistrationService implements RegistrationPort {
+class ManagementService implements ManagementPort {
 
     private final MemberRepository memberRepository;
     private final UserService userService;  // Cross-module dependency
@@ -119,12 +119,11 @@ Key rules:
 
 ## Exception Hierarchy
 
-Domain and application exceptions extend `BusinessRuleViolationException` (abstract, unchecked):
+Two unchecked base classes in `com.klabis.common.exceptions`, each mapped globally by `MvcExceptionHandler`:
 
-```java
-// Domain exception — thrown inside aggregate or domain service
-public class MemberNotFoundException extends BusinessRuleViolationException { ... }
-public class DuplicateRegistrationException extends BusinessRuleViolationException { ... }
-```
+| Base class | HTTP | Example |
+|---|---|---|
+| `BusinessRuleViolationException` | 400 (subclasses may get their own handler, e.g. 409) | `DuplicateRegistrationException` |
+| `ResourceNotFoundException` | 404 | `MemberNotFoundException` |
 
-`MvcExceptionHandler` catches `BusinessRuleViolationException` globally → HTTP 400. Individual subclasses can be caught separately for different HTTP status codes (e.g., 404, 409). No manual conversion in service layer — exceptions propagate naturally.
+No manual conversion in the service layer — exceptions propagate to the handler.

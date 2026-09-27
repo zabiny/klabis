@@ -7,22 +7,22 @@ published by the memento during save.
 ## Event Structure
 
 ```java
-@DomainEvent
-public class MemberCreatedEvent {
-    private final UUID eventId;        // Always include for idempotency
-    private final MemberId memberId;
-    private final Instant occurredAt;
-    // ... domain-relevant data (denormalized for listener convenience)
-
-    public static MemberCreatedEvent fromMember(Member member) { ... }
+public record MemberCreatedEvent(
+        UUID eventId,             // always include — idempotency
+        MemberId memberId,
+        // ... domain-relevant data, denormalized for listener convenience
+        Instant occurredAt
+) {
+    public static MemberCreatedEvent fromAggregate(Member member) { ... }
 
     @Override
-    public String toString() {
-        // Exclude PII fields (GDPR compliance)
+    public String toString() {    // exclude PII fields (GDPR)
         return "MemberCreatedEvent{eventId=" + eventId + ", memberId=" + memberId + "}";
     }
 }
 ```
+
+Events consumed by other modules live in the module root package (public API); module-internal events may stay in `domain/`.
 
 ## Cross-Module Event Listeners
 
