@@ -1832,6 +1832,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CreateEventCategoryRequest'
+          # The generated element type (CreateEventCategoryRequest) has no frontend factory
+          # record; "CategoryRequest" is the key the event form's category-row renderer switches on.
+          x-hal-input-type: CategoryRequest
         sharedTransportEnabled:
           type: boolean
           default: false
@@ -1918,6 +1921,8 @@ components:
           type: [array, 'null']
           items:
             $ref: '#/components/schemas/UpdateEventCategoryRequest'
+          # See CreateEventRequest.categories — same frontend factory key for the per-row renderer.
+          x-hal-input-type: CategoryRequest
         ranking:
           $ref: '#/components/schemas/UpdateEventRankingRequest'
           x-klabis-nullable: true

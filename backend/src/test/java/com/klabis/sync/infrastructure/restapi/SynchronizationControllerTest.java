@@ -8,6 +8,7 @@ import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.application.*;
 import com.klabis.sync.domain.*;
 import com.klabis.sync.fixtures.TestSyncProjection;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -44,7 +46,7 @@ class SynchronizationControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private SynchronizationPort synchronizationPort;
 
     @MockitoBean
@@ -79,6 +81,13 @@ class SynchronizationControllerTest {
         SyncRecord record = inSyncRecord();
         record.recordTerminalFailure(5, "boom", Instant.now());
         return record;
+    }
+
+    @BeforeEach
+    void defaultResolutions() {
+        // Mirrors today's pull-only ORIS adapters: Klabis values cannot be pushed outward.
+        when(synchronizationPort.supportedResolutions(any(SyncRecord.class)))
+                .thenReturn(EnumSet.of(SyncResolution.INWARD, SyncResolution.ACCEPT_DIVERGENCE));
     }
 
     @Nested
@@ -128,6 +137,40 @@ class SynchronizationControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.resolveSyncConflict").exists())
                     .andExpect(jsonPath("$._templates.acknowledgeSyncConflict").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("resolveSyncConflict affordance offers only adapter-supported resolutions (values only)")
+        @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+        void resolveAffordanceCarriesResolutionInlineOptions() throws Exception {
+            when(fieldReader.fields(any())).thenReturn(java.util.Map.of("name", "Local"));
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(acknowledgedConflictedRecord()));
+            when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
+
+            mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[0]").value("INWARD"))
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[1]").value("ACCEPT_DIVERGENCE"))
+                    // A pull-only integration must never offer sending Klabis values onward.
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[?(@=='OUTWARD')]").isEmpty())
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].type").value("SyncResolution"));
+        }
+
+        @Test
+        @DisplayName("resolveSyncConflict offers OUTWARD when the adapter can write externally")
+        @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+        void resolveAffordanceOffersOutwardForBidirectionalAdapters() throws Exception {
+            when(fieldReader.fields(any())).thenReturn(java.util.Map.of("name", "Local"));
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(acknowledgedConflictedRecord()));
+            when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
+            when(synchronizationPort.supportedResolutions(any(SyncRecord.class)))
+                    .thenReturn(EnumSet.of(SyncResolution.INWARD, SyncResolution.OUTWARD, SyncResolution.ACCEPT_DIVERGENCE));
+
+            mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[0]").value("INWARD"))
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[1]").value("OUTWARD"))
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[2]").value("ACCEPT_DIVERGENCE"));
         }
 
         @Test
@@ -317,6 +360,25 @@ class SynchronizationControllerTest {
                     .andExpect(status().isOk());
 
             verify(synchronizationPort).synchronizeNow(eq(enrolled.getId()), any());
+        }
+
+        @Test
+        @DisplayName("resolveSyncConflict affordance carries resolution options even from this non-GET response")
+        @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+        void resultingConflictCarriesResolutionOptionsToo() throws Exception {
+            when(fieldReader.fields(any())).thenReturn(java.util.Map.of());
+            SyncRecord existing = inSyncRecord();
+            SyncRecord acknowledgedConflict = acknowledgedConflictedRecord();
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(existing));
+            when(synchronizationPort.synchronizeNow(eq(existing.getId()), any())).thenReturn(acknowledgedConflict);
+            when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
+            when(synchronizationPort.supportedResolutions(any(SyncRecord.class)))
+                    .thenReturn(EnumSet.of(SyncResolution.INWARD, SyncResolution.ACCEPT_DIVERGENCE));
+
+            mockMvc.perform(post("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[0]").value("INWARD"))
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[1]").value("ACCEPT_DIVERGENCE"));
         }
 
         @Test

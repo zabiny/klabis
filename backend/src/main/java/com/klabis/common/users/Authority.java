@@ -124,6 +124,19 @@ public enum Authority {
         return filtered;
     }
 
+    /**
+     * The authorities that may be granted through the permissions API: every authority
+     * except the standard user authorities (held by every user) and the internal-only
+     * {@link #DEVELOPER}. Used to offer the assignable catalogue in HAL-FORMS options —
+     * not the target user's current authorities.
+     */
+    public static Set<Authority> assignableAuthorities() {
+        EnumSet<Authority> assignable = EnumSet.allOf(Authority.class);
+        assignable.removeAll(getStandardUserAuthorities());
+        assignable.remove(DEVELOPER);
+        return assignable;
+    }
+
     public static boolean isKnownAuthority(String value) {
         for (Authority authority : values()) {
             if (authority.value.equals(value)) {

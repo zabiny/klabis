@@ -6,6 +6,8 @@ enforced during Jackson serialization and by a request-body advice respectively.
 
 Filter individual response fields and HAL+FORMS template properties based on the authenticated user's authorities. Implemented via a custom Jackson 3 `ValueSerializerModifier` — annotations go directly on record components, no interface needed.
 
+On generated request/response DTOs these annotations are emitted from the spec's `x-klabis-authority` / `x-klabis-owner-visible` field extensions (see `klabis-api-spec`) — never add them by hand to generated code. The records below show the resulting shape.
+
 ## Pattern: Annotated Record (no interface)
 
 Security annotations are placed directly on record components. `FieldSecurityBeanSerializerModifier` (extends `ValueSerializerModifier`) evaluates them during Jackson serialization. This avoids the need for a separate interface — records are final so Spring Security's `AuthorizationAdvisorProxyFactory` (JDK proxy) would require an interface, which is unnecessary boilerplate. Module registered via `@JacksonComponent` on `FieldSecurityJacksonModule`.
@@ -25,7 +27,7 @@ record MemberDetailResponse(
 ) {}
 ```
 
-Controller returns a plain record — no proxy call needed. Field security applies during Jackson serialization regardless of when in the response pipeline the DTO gets wrapped into `EntityModel` (see the HATEOAS section above):
+Controller returns a plain record — no proxy call needed. Field security applies during Jackson serialization regardless of when in the response pipeline the DTO gets wrapped into `EntityModel` (see `hateoas.md`):
 
 ```java
 @Override

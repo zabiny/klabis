@@ -1,6 +1,7 @@
 package com.klabis.common.users.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -172,8 +174,11 @@ class PermissionsDetailsPostprocessor extends ModelWithDomainPostprocessor<Permi
     public void process(EntityModel<PermissionsResponse> dtoModel, UserPermissions permissions) {
         klabisLinkTo(methodOn(PermissionsApi.class).getUserPermissions(permissions.getUserId().uuid()))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(methodOn(PermissionsApi.class)
-                                .updatePermissions(permissions.getUserId().uuid(), null))))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(PermissionsApi.class).updatePermissions(permissions.getUserId().uuid(), null),
+                                Map.of("authorities", HalFormsOptionsDef.values(Authority.assignableAuthorities().stream()
+                                        .map(Authority::getValue)
+                                        .toList())))))
                 .ifPresent(dtoModel::add);
     }
 }

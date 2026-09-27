@@ -20,7 +20,7 @@ import {needsNormalization, toSubmitValue} from './multiValueSubmit.ts'
  * this factory's dispatch).
  */
 export const HalFormsMultiSelect = ({prop, errorText, renderMode = 'field'}: HalFormsInputProps): ReactElement => {
-    const {options, isLoading} = useHalFormOptions(prop.options)
+    const {options, isLoading} = useHalFormOptions(prop.options, prop)
     const [field, , helpers] = useField<unknown>(prop.name)
     const [query, setQuery] = useState('')
     const [isOpen, setIsOpen] = useState(false)

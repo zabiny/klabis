@@ -110,6 +110,109 @@ describe('useHalFormOptions', () => {
         });
     });
 
+    describe('Enum option localisation (backend sends values only)', () => {
+        it('should localise Gender values via labels.enums.gender', () => {
+            const {result} = renderHook(
+                () => useHalFormOptions({inline: ['MALE', 'FEMALE']}, {type: 'Gender'}),
+                {wrapper: createWrapper()},
+            );
+
+            expect(result.current.options).toEqual([
+                {value: 'MALE', label: 'Muž'},
+                {value: 'FEMALE', label: 'Žena'},
+            ]);
+        });
+
+        it('should localise DeactivationReason via the property type', () => {
+            const {result} = renderHook(
+                () => useHalFormOptions({inline: ['ODHLASKA', 'PRESTUP', 'OTHER']}, {type: 'DeactivationReason'}),
+                {wrapper: createWrapper()},
+            );
+
+            expect(result.current.options.map(o => o.label)).toEqual(['Odhlášení', 'Přestup', 'Jiný důvod']);
+        });
+
+        it('should localise resolution via labels.enums.resolution', () => {
+            const {result} = renderHook(
+                () => useHalFormOptions(
+                    {inline: ['INWARD', 'OUTWARD', 'ACCEPT_DIVERGENCE']},
+                    {type: 'SyncResolution'},
+                ),
+                {wrapper: createWrapper()},
+            );
+
+            expect(result.current.options.map(o => o.label)).toEqual([
+                'Převzít z externího systému',
+                'Zapsat do externího systému',
+                'Ponechat obě verze',
+            ]);
+        });
+
+        it('should localise authorities via labels.permissions and fall back to the raw value', () => {
+            const {result} = renderHook(
+                () => useHalFormOptions(
+                    {inline: ['MEMBERS:MANAGE', 'SYNC:MANAGE', 'DEVELOPER']},
+                    {type: 'Authority'},
+                ),
+                {wrapper: createWrapper()},
+            );
+
+            expect(result.current.options).toEqual([
+                {value: 'MEMBERS:MANAGE', label: 'Správa členů'},
+                {value: 'SYNC:MANAGE', label: 'Správa synchronizace'},
+                {value: 'DEVELOPER', label: 'DEVELOPER'},
+            ]);
+        });
+
+        it('should leave values without a translation mapping untouched', () => {
+            const {result} = renderHook(
+                () => useHalFormOptions({inline: ['AM', 'A1', 'B']}, {type: 'DrivingLicenseGroup'}),
+                {wrapper: createWrapper()},
+            );
+
+            expect(result.current.options).toEqual([
+                {value: 'AM', label: 'AM'},
+                {value: 'A1', label: 'A1'},
+                {value: 'B', label: 'B'},
+            ]);
+        });
+
+        it('should keep the server-provided prompt for an inline option with no translation', () => {
+            const {result} = renderHook(
+                () => useHalFormOptions(
+                    {inline: [{value: 'X', prompt: 'Server text'}]},
+                    {type: 'DeactivationReason'},
+                ),
+                {wrapper: createWrapper()},
+            );
+
+            expect(result.current.options).toEqual([
+                {value: 'X', label: 'Server text'},
+            ]);
+        });
+
+        it('should not localise options of a non-enum type', () => {
+            const {result} = renderHook(
+                () => useHalFormOptions({inline: ['MALE', 'OTHER']}, {type: 'text'}),
+                {wrapper: createWrapper()},
+            );
+
+            expect(result.current.options.map(o => o.label)).toEqual(['MALE', 'OTHER']);
+        });
+
+        it('should not touch options when the property context is absent', () => {
+            const {result} = renderHook(
+                () => useHalFormOptions({inline: ['MALE', 'FEMALE']}),
+                {wrapper: createWrapper()},
+            );
+
+            expect(result.current.options).toEqual([
+                {value: 'MALE', label: 'MALE'},
+                {value: 'FEMALE', label: 'FEMALE'},
+            ]);
+        });
+    });
+
     describe('Link Options', () => {
         it('should fetch options from link successfully', async () => {
             const mockData = ['Option 1', 'Option 2'];
@@ -217,6 +320,28 @@ describe('useHalFormOptions', () => {
 
             // Should still only have been called once (cache hit)
             expect(fetchSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should keep the server-provided prompt for a link option with no translation', async () => {
+            const mockData = [{value: 'X', prompt: 'Server text'}];
+            fetchSpy.mockResolvedValueOnce(createMockResponse(mockData));
+
+            const linkOptions: HalFormsOption = {
+                link: {href: '/api/deactivation-reasons'},
+            };
+
+            const {result} = renderHook(
+                () => useHalFormOptions(linkOptions, {type: 'DeactivationReason'}),
+                {wrapper: createWrapper()},
+            );
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            expect(result.current.options).toEqual([
+                {value: 'X', label: 'Server text'},
+            ]);
         });
 
         it('should fetch options again when URL changes', async () => {

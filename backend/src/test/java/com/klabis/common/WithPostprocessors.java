@@ -6,6 +6,7 @@ import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.membershipfees.application.EventTypeOptionsPort;
 import com.klabis.membershipfees.application.RankingOptionsPort;
+import com.klabis.sync.application.SynchronizationPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -32,6 +33,12 @@ import java.lang.annotation.Target;
  * <p>
  * Beans treated as feature flags via {@code Optional<T>} injection (e.g. {@code OrisEventImportPort})
  * must NOT be added here — the mere presence of the mock would activate the feature in every test.
+ * <p>
+ * {@link SynchronizationPort} is required by {@code SyncStatePostprocessor} (renders the
+ * resolve-conflict affordance's options). A test that also needs to stub its behaviour
+ * (e.g. any {@code @WebMvcTest} covering a controller whose response can carry a sync link)
+ * must inject it with {@code @Autowired}, not {@code @MockitoBean} — declaring it twice fails
+ * context bootstrap with a duplicate-mock error.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
@@ -43,7 +50,8 @@ import java.lang.annotation.Target;
         UserDetailsService.class,
         RankingOptionsPort.class,
         EventTypeOptionsPort.class,
-        MemberRegistrationSanctionPort.class
+        MemberRegistrationSanctionPort.class,
+        SynchronizationPort.class
 })
 public @interface WithPostprocessors {
 }

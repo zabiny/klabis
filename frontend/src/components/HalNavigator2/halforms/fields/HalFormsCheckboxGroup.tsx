@@ -56,7 +56,7 @@ const CheckboxGroupField = ({prop, errorText, renderMode, options, isLoading}: C
  * and link-based options with automatic React Query caching.
  */
 export const HalFormsCheckboxGroup = ({prop, errorText, renderMode = 'field'}: HalFormsInputProps): ReactElement => {
-    const {options, isLoading} = useHalFormOptions(prop.options)
+    const {options, isLoading} = useHalFormOptions(prop.options, prop)
 
     return (
         <Field name={prop.name} validate={() => undefined}>

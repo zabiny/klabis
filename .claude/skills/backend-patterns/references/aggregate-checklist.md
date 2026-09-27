@@ -1,95 +1,60 @@
-# New Module Implementation Checklist
+# New Aggregate / Module Checklist
 
-Use this checklist when adding a new Spring Modulith module or new Aggregate to Klabis backend.
+Walk the layers in order when adding a new aggregate or Spring Modulith module. Each item names
+*what* to create; the linked reference is the only place that says *how* — read it before the step.
 
-## 1. Domain Layer
+## 1. Domain Layer — `domain-layer.md`
 
-- [ ] Create `<Aggregate>Id` record implementing `Identifier`
-- [ ] Create aggregate root extending `KlabisAggregateRoot<A, ID>`
-  - [ ] Add command records as nested types inside aggregate
-  - [ ] Add factory method(s) which creates new instance of aggregate root (validates, publishes events)
-  - [ ] Add `reconstruct()` factory method (bypasses validation, used when aggregate root loaded from DB)
-  - [ ] Add methods for each command
-- [ ] Create value objects as records with compact constructor validation
-- [ ] Create `<Aggregate>Repository` interface annotated `@Port` with jMolecules
-- [ ] Create domain event classes for significant state changes
-  - [ ] Include `UUID eventId` and `Instant occurredAt`
-  - [ ] Include `fromAggregate()` factory method
-  - [ ] Override `toString()` excluding PII fields
+- [ ] `<Aggregate>Id` record implementing `Identifier` (root package if other modules reference it)
+- [ ] Aggregate root extending `KlabisAggregateRoot<A, ID>`
+  - [ ] Nested `@RecordBuilder` command records
+  - [ ] Business factory method(s) + `reconstruct()`
+  - [ ] One method per command
+  - [ ] PATCH: `UpdateX.from(Aggregate)` baseline factory
+- [ ] Value objects as records with compact-constructor validation
+- [ ] `<Aggregate>Repository` interface annotated `@Port`
+- [ ] Domain exceptions under the right base class (400 vs 404)
+- [ ] Domain events for significant state changes — `domain-events.md`
 
-## 2. Application Layer
+## 2. Application Layer — `domain-layer.md`
 
-- [ ] Create service interface with `@PrimaryPort`
-- [ ] Create nested command record(s) in interface if service operation coordinates across multiple aggregates or crosses module boundary (e.g., creating both User and Member atomically)
-- [ ] Create `@Service` implementation
-  - [ ] Constructor injection only
-  - [ ] `@Transactional` on implementation
-  - [ ] Cross-aggregate coordination in single transaction
-  - [ ] Convert `BusinessRuleViolationException` → application exception
-- [ ] Create `<Module>Configuration.java` for `@Bean` definitions
-- [ ] Create cross-module read DTO if other modules need to query this aggregate
+- [ ] `@PrimaryPort` interface (+ nested command record when the operation spans aggregates/modules)
+- [ ] `@Service` implementation, `@Transactional` methods
+- [ ] PATCH: `prefilledUpdateCommand(<Aggregate>Id)` on the port
+- [ ] Port consumed by another module → `<module>.application` named interface (`SKILL.md`)
 
-## 3. Infrastructure — REST API
+## 3. OpenAPI Spec — `klabis-api-spec` skill
 
-- [ ] Create controller with `@PrimaryAdapter @RestController`
-  - [ ] `produces = MediaTypes.HAL_FORMS_JSON_VALUE`
-  - [ ] `@ExposesResourceFor(<Aggregate>.class)`
-  - [ ] `@SecurityRequirement(name = "KlabisAuth", scopes = {...})`
-- [ ] Convert UUID path variables to typed IDs at controller boundary: `new <Aggregate>Id(uuid)`
-- [ ] Add state-driven HATEOAS affordances using `klabisLinkTo()` / `klabisAfford()`, passing the
-      generated `*Api` interface to `methodOn(...)` — never the controller class, or the template
-      loses its input metadata (see references/rest-adapter.md, "HATEOAS Rules")
-- [ ] Leave `@RequestBody` and Bean Validation constraints on the interface; the override declares
-      only `@Parameter` / `@Operation` for springdoc
-- [ ] Create MapStruct `Converter<S,T>` per conversion for simple DTO mapping (see rest-adapter.md,
-      "DTO ↔ Domain Mapping")
-- [ ] For PATCH: expose `prefilledUpdateCommand(<Aggregate>Id)` on the port, a `from(<Aggregate>)`
-      baseline factory on the domain command (plain types, no `JsonNullable`), and a hand-written
-      `toCommand(request, prefilled, updatedBy)` mapper that overlays only present request fields
-      (see rest-adapter.md, "PATCH endpoints")
+- [ ] Paths, request/response schemas, `x-klabis-authority`, field-security extensions
+- [ ] Regenerate backend `*Api` interface and frontend types
 
-## 4. Infrastructure — JDBC
+## 4. REST Adapter
 
-- [ ] Create `<Aggregate>Memento` implementing `Persistable<UUID>`
-  - [ ] `@Table("table_name")` annotation
-  - [ ] Flatten all value objects to flat columns
-  - [ ] `@CreatedDate`, `@LastModifiedDate`, `@Version` audit columns
-  - [ ] `@Transient Member member` for domain event delegation
-  - [ ] `@Transient boolean isNew` for INSERT/UPDATE detection
-  - [ ] Static `from(Aggregate)` method for save path
-  - [ ] `toAggregate()` method using `reconstruct()` for load path
-  - [ ] `@DomainEvents` and `@AfterDomainEventPublication` delegating to domain object
-- [ ] Create `<Aggregate>JdbcRepository` extending `CrudRepository` + `PagingAndSortingRepository`
-- [ ] Create `<Aggregate>RepositoryAdapter` annotated `@SecondaryAdapter @Repository`
+- [ ] Controller `implements <X>Api` — only the annotations listed in "Spec-First" (`rest-controller.md`)
+- [ ] PATCH: hand-written `toCommand(request, prefilled, …)` overlay mapper (`rest-controller.md`)
+- [ ] `Converter<S,T>` per DTO↔domain conversion (`dto-mapping.md`)
+- [ ] `HalResponseContext.setDomain(...)` + `ModelWithDomainPostprocessor` with state-driven affordances (`hateoas.md`)
+- [ ] Collection-level affordances / root navigation postprocessors, if needed (`hateoas.md`)
+- [ ] Field-level visibility and write authorization — `field-security.md`
 
-## 5. Database Migration
+## 5. JDBC Adapter — `jdbc-adapter.md`
 
-Do NOT create new migration files. Update the most fitting existing file:
-- `V001__domain.sql` — add new table DDL here
-- `V002__oauth2.sql` — OAuth2 related tables only
-- `V003__modulith.sql` — Spring Modulith tables only
+- [ ] `<Aggregate>Memento` (`@Table`, `Persistable<UUID>`, event delegation)
+- [ ] `<Aggregate>JdbcRepository`
+- [ ] `<Aggregate>RepositoryAdapter` (`@SecondaryAdapter @Repository`)
+- [ ] Table DDL added to the existing `V001__initial_schema.sql` — do not create new migration files
 
-## 6. Cross-Module Events (if needed)
+## 6. Cross-Module Integration (if needed) — `domain-events.md`
 
-- [ ] Place domain events in module root package (accessible to other modules)
-- [ ] Create `@Component` listener in consuming module's `infrastructure/listeners/`
-- [ ] Use `@ApplicationModuleListener` annotation
+- [ ] Consumed events in the module root package
+- [ ] `@ApplicationModuleListener` in the consumer's `infrastructure/listeners/`
+- [ ] Aggregate sharing identity with `User` (1:0-1): create the user first, derive `<Aggregate>Id` via `fromUserId(...)`
 
-## 7. Shared ID Pattern for 1:0-1 relation (for example Member = User)
+## 7. Tests — `testing-guide.md`
 
-Only applicable when aggregate shares identity with User:
-1. Create User via `userService.createUser(...)` → get `UserId`
-2. Convert: `<Aggregate>Id.from(userId)` → get `<Aggregate>Id`
-3. Register aggregate using that ID
-
-## Common Mistakes
-
-| Mistake | Correct Approach |
-|---------|-----------------|
-| Spring annotations in domain class | Domain layer: no Spring imports |
-| Field injection `@Autowired` | Constructor injection only |
-| Raw UUID between aggregates | Use typed ID records |
-| Sharing `@Table` class directly with domain | Use Memento pattern |
-| New migration script for every change | Update existing V001/V002/V003 |
-| PII in `toString()` of events | Exclude PII, keep only IDs and technical fields |
-| Returning `void` from commands | Return updated aggregate for HATEOAS response building |
+- [ ] `<Aggregate>TestDataBuilder` and `<Aggregate>Assert`
+- [ ] Domain unit tests, service unit tests
+- [ ] Memento round-trip test, repository test
+- [ ] `@WebMvcTest` with `@WithPostprocessors` (incl. affordances in the response)
+- [ ] Converter tests
+- [ ] Integration test (happy path) and one E2E lifecycle test

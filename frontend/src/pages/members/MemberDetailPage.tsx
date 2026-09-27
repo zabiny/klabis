@@ -54,10 +54,6 @@ const MaskedBirthNumber = ({value}: { value: string }) => {
     );
 };
 
-const MEMBER_FIELD_TYPES: Record<string, string> = {
-    gender: 'Gender',
-};
-
 export const MemberDetailPage = (): ReactElement => {
     const {resourceData, isLoading, error, hasLink, route} = useHalPageData<MemberDetail>();
     const location = useLocation();
@@ -130,17 +126,18 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
     const template: HalFormsTemplate | null = resourceData?._templates?.updateMember ?? null;
     const hasEditTemplate = template !== null;
 
-    const {isEditing, enrichedTemplate, enrichedFieldNames, startEditing, cancelEditing, postprocessPayload} =
+    const {isEditing, enrichedTemplate, enrichedFieldNames, editableFieldNames, startEditing, cancelEditing, postprocessPayload} =
         useInlineEditing(template, resourceData as Record<string, unknown>, {
             initialEditing,
-            fieldTypeOverrides: MEMBER_FIELD_TYPES,
             onCancel: initialEditing ? () => navigate(-1) : undefined,
         });
 
-
     const renderContent = (helpers?: FormRenderHelpers) => {
+        // Only fields editable in the original template render as inputs; fields synthesised
+        // as read-only (e.g. gender for a self-editing member without MEMBERS:MANAGE) fall
+        // through to the caller's `?? val(...)` formatted display branch.
         const ri = (name: string): ReactNode =>
-            isEditing && enrichedFieldNames.has(name) && helpers
+            isEditing && editableFieldNames.has(name) && helpers
                 ? helpers.renderInput(name)
                 : null;
 
@@ -154,7 +151,12 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                         <DetailRow label={labels.fields.gender}>{ri('gender') ?? val(member.gender && getEnumLabel('gender', member.gender))}</DetailRow>
                         <DetailRow label={labels.fields.nationality}>{ri('nationality') ?? val(member.nationality)}</DetailRow>
                         {isEditing
-                            ? enrichedFieldNames.has('birthNumber') && <BirthNumberConditionalField renderInput={ri}/>
+                            ? enrichedFieldNames.has('birthNumber') && (
+                                <BirthNumberConditionalField
+                                    renderInput={ri}
+                                    fallback={val(member.birthNumber && <MaskedBirthNumber value={member.birthNumber}/>)}
+                                />
+                            )
                             : (isCzNationality(member.nationality) && member.birthNumber && (
                                 <DetailRow label={labels.fields.birthNumber}>
                                     <MaskedBirthNumber value={member.birthNumber}/>
@@ -162,7 +164,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                             ))
                         }
                         {isEditing && (
-                            <DetailRow label={labels.fields.registrationNumber}>{ri('registrationNumber')}</DetailRow>
+                            <DetailRow label={labels.fields.registrationNumber}>{ri('registrationNumber') ?? val(member.registrationNumber)}</DetailRow>
                         )}
                     </Section>
                 )}

@@ -56,7 +56,7 @@ class DisciplineControllerTest {
     @MockitoBean
     private DisciplineManagementPort disciplineManagementService;
 
-    @MockitoBean
+    @Autowired
     private SynchronizationPort synchronizationPort;
 
     @BeforeEach

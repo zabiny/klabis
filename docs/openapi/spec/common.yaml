@@ -508,6 +508,7 @@ components:
           uniqueItems: true
           items:
             $ref: '#/components/schemas/Authority'
+          x-hal-input-type: Authority
 
     # Mapped onto com.klabis.common.users.Authority via schemaMappings. The enum values are the
     # colon-separated wire format produced by Authority's @JsonValue, not the Java constant names.

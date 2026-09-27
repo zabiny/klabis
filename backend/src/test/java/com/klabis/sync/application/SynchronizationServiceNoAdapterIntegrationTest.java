@@ -2,9 +2,11 @@ package com.klabis.sync.application;
 
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
+import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncTarget;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,17 @@ class SynchronizationServiceNoAdapterIntegrationTest {
         ExternalReference externalReference = new ExternalReference(ExternalSystem.ORIS, "8100");
 
         assertThatThrownBy(() -> synchronizationPort.enroll(target, externalReference))
+                .isInstanceOf(UnknownSyncEntityTypeException.class);
+    }
+
+    @Test
+    @DisplayName("supportedResolutions is rejected when no adapter is registered for the record's entity type and external system")
+    void supportedResolutionsRejectedWithNoAdapter() {
+        SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-1");
+        ExternalReference externalReference = new ExternalReference(ExternalSystem.ORIS, "8100");
+        SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), target, externalReference);
+
+        assertThatThrownBy(() -> synchronizationPort.supportedResolutions(record))
                 .isInstanceOf(UnknownSyncEntityTypeException.class);
     }
 }

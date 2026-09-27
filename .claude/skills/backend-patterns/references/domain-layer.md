@@ -43,7 +43,7 @@ In `reconstruct()`, pass the stored `AuditMetadata` and call `group.updateAuditM
 Key rules:
 - No Spring annotations in domain classes (exception: `org.springframework.util.Assert` is allowed in command records for validation)
 - Commands are nested records in the aggregate, holding **plain domain types only** — never `JsonNullable` or any other adapter/wire type.
-- A PATCH command carries a full end-state snapshot: `update(cmd)` applies every field unconditionally, no per-field "was it set?" branching. It ships a `.from(Aggregate)` factory returning every field at its current value (the baseline). The REST adapter overlays the changed fields onto that baseline — see rest-adapter.md, "PATCH endpoints".
+- A PATCH command carries a full end-state snapshot: `update(cmd)` applies every field unconditionally, no per-field "was it set?" branching. It ships a `.from(Aggregate)` factory returning every field at its current value (the baseline). The REST adapter overlays the changed fields onto that baseline — see `rest-controller.md`, "PATCH endpoints".
 - Separate business factory method (`register()`, `create()`, etc) methods (with validations) and `reconstruct()` (bypass validation, used for loading from DB) factory methods
 - Domain events registered via `registerEvent()` inherited from `KlabisAggregateRoot`
 
@@ -93,7 +93,7 @@ public interface RegistrationPort {
 
 ```java
 @Service
-class RegistrationService implements RegistrationPort {
+class ManagementService implements ManagementPort {
 
     private final MemberRepository memberRepository;
     private final UserService userService;  // Cross-module dependency
@@ -119,12 +119,11 @@ Key rules:
 
 ## Exception Hierarchy
 
-Domain and application exceptions extend `BusinessRuleViolationException` (abstract, unchecked):
+Two unchecked base classes in `com.klabis.common.exceptions`, each mapped globally by `MvcExceptionHandler`:
 
-```java
-// Domain exception — thrown inside aggregate or domain service
-public class MemberNotFoundException extends BusinessRuleViolationException { ... }
-public class DuplicateRegistrationException extends BusinessRuleViolationException { ... }
-```
+| Base class | HTTP | Example |
+|---|---|---|
+| `BusinessRuleViolationException` | 400 (subclasses may get their own handler, e.g. 409) | `DuplicateRegistrationException` |
+| `ResourceNotFoundException` | 404 | `MemberNotFoundException` |
 
-`MvcExceptionHandler` catches `BusinessRuleViolationException` globally → HTTP 400. Individual subclasses can be caught separately for different HTTP status codes (e.g., 404, 409). No manual conversion in service layer — exceptions propagate naturally.
+No manual conversion in the service layer — exceptions propagate to the handler.

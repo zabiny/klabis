@@ -321,7 +321,8 @@ final class MemberSelfLinkSupport {
             var self = link.withSelfRel()
                     .andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(memberId, null, null)));
             if (member.isActive()) {
-                self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).suspendMember(memberId, null, null)));
+                self = self.andAffordances(klabisAfford(
+                        methodOn(MembersApi.class).suspendMember(memberId, null, null)));
             } else {
                 self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).resumeMember(memberId, null)));
             }

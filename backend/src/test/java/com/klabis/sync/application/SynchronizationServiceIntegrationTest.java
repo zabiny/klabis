@@ -587,4 +587,57 @@ class SynchronizationServiceIntegrationTest {
             return synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
         }
     }
+
+    @Nested
+    @DisplayName("supportedResolutions: which directions the adapter's declared capabilities allow")
+    class SupportedResolutions {
+
+        @Test
+        @DisplayName("ACCEPT_DIVERGENCE only for an adapter that writes neither side")
+        void writesNeitherSideOffersOnlyAcceptDivergence() {
+            adapter.withCapabilities(new SyncCapabilities(true, true, false, false, false, false, false));
+            SyncRecord enrolled = enrollRecord("event-121", "8121");
+
+            assertThat(synchronizationPort.supportedResolutions(enrolled))
+                    .containsExactly(SyncResolution.ACCEPT_DIVERGENCE);
+        }
+
+        @Test
+        @DisplayName("adds INWARD when the adapter writes the local side (design.md D3 pull-only shape)")
+        void writesLocalAddsInward() {
+            adapter.withCapabilities(SyncCapabilities.pullOnly());
+            SyncRecord enrolled = enrollRecord("event-122", "8122");
+
+            assertThat(synchronizationPort.supportedResolutions(enrolled))
+                    .containsExactly(SyncResolution.INWARD, SyncResolution.ACCEPT_DIVERGENCE);
+        }
+
+        @Test
+        @DisplayName("adds OUTWARD when the adapter writes the external side")
+        void writesExternalAddsOutward() {
+            adapter.withCapabilities(new SyncCapabilities(true, true, false, true, false, false, false));
+            SyncRecord enrolled = enrollRecord("event-123", "8123");
+
+            assertThat(synchronizationPort.supportedResolutions(enrolled))
+                    .containsExactly(SyncResolution.OUTWARD, SyncResolution.ACCEPT_DIVERGENCE);
+        }
+
+        @Test
+        @DisplayName("offers every direction for a bidirectional adapter, in declaration order")
+        void bidirectionalOffersEveryDirection() {
+            adapter.withCapabilities(SyncCapabilities.bidirectional());
+            SyncRecord enrolled = enrollRecord("event-124", "8124");
+
+            assertThat(synchronizationPort.supportedResolutions(enrolled))
+                    .containsExactly(SyncResolution.INWARD, SyncResolution.OUTWARD, SyncResolution.ACCEPT_DIVERGENCE);
+        }
+
+        private SyncRecord enrollRecord(String entityId, String externalId) {
+            adapter.withExternalState(externalId, new TestSyncProjection("Sprint", "Brno"));
+            adapter.withLocalState(entityId, new TestSyncProjection("Sprint", "Brno"));
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT, entityId);
+            ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, externalId);
+            return synchronizationPort.enroll(target, externalRef);
+        }
+    }
 }

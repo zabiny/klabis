@@ -5,9 +5,12 @@ import {isCzNationality} from './isCzNationality';
 
 interface BirthNumberConditionalFieldProps {
     renderInput: (name: string) => ReactNode;
+    // Used when birthNumber is visible but not editable (e.g. self-editing member without
+    // MEMBERS:MANAGE) — renderInput then returns null and the masked value is shown instead.
+    fallback?: ReactNode;
 }
 
-export const BirthNumberConditionalField = ({renderInput}: BirthNumberConditionalFieldProps): ReactElement | null => {
+export const BirthNumberConditionalField = ({renderInput, fallback}: BirthNumberConditionalFieldProps): ReactElement | null => {
     const {values, setFieldValue} = useFormikContext<Record<string, unknown>>();
     const isCz = isCzNationality(values.nationality);
 
@@ -21,7 +24,7 @@ export const BirthNumberConditionalField = ({renderInput}: BirthNumberConditiona
 
     return (
         <DetailRow label="Rodné číslo">
-            {renderInput('birthNumber')}
+            {renderInput('birthNumber') ?? fallback}
         </DetailRow>
     );
 };

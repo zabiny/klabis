@@ -9,8 +9,10 @@ import org.springframework.util.Assert;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Orchestrates one synchronisation pass (design.md D9, "How a pass runs"): the
@@ -362,6 +364,21 @@ class SynchronizationService implements SynchronizationPort {
         };
 
         return outcomeWriter.persistResolution(written, scheduleEffect, now, resolutionDirection(resolution), freshLocal.hash(), freshExternal.hash(), actingUser);
+    }
+
+    @Override
+    public Set<SyncResolution> supportedResolutions(SyncRecord record) {
+        SynchronizationAdapter adapter = adapterRegistry.find(record.getTarget().entityType(), record.getExternalReference().system())
+                .orElseThrow(() -> new UnknownSyncEntityTypeException(record.getTarget().entityType(), record.getExternalReference().system()));
+
+        EnumSet<SyncResolution> resolutions = EnumSet.of(SyncResolution.ACCEPT_DIVERGENCE);
+        if (adapter.capabilities().writesLocal()) {
+            resolutions.add(SyncResolution.INWARD);
+        }
+        if (adapter.capabilities().writesExternal()) {
+            resolutions.add(SyncResolution.OUTWARD);
+        }
+        return resolutions;
     }
 
     @Override

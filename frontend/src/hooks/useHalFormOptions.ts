@@ -2,6 +2,52 @@ import type {SelectOption} from '../components/UI/forms';
 import type {HalFormsOption, HalFormsOptionType} from '../api';
 import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
 import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
+import {getPermissionInfo, labels} from '../localization';
+
+/**
+ * Minimal HAL-FORMS property context needed to choose the translation group for
+ * option values. The backend sends enum options as values only and pins the property
+ * `type` via `x-hal-input-type` in the API spec, so the type alone selects the group.
+ */
+export interface EnumOptionContext {
+    type?: string;
+}
+
+const AUTHORITY_GROUP = 'authority';
+
+const ENUM_GROUP_BY_TYPE: Record<string, string> = {
+    Gender: 'gender',
+    DeactivationReason: 'deactivationReason',
+    SyncResolution: 'resolution',
+    Authority: AUTHORITY_GROUP,
+};
+
+function resolveEnumGroup(prop?: EnumOptionContext): string | undefined {
+    return prop?.type ? ENUM_GROUP_BY_TYPE[prop.type] : undefined;
+}
+
+function lookupTranslation(group: string, value: string): string | undefined {
+    if (group === AUTHORITY_GROUP) {
+        return getPermissionInfo(value)?.label;
+    }
+    const enumGroups = labels.enums as Record<string, Record<string, string> | undefined>;
+    return enumGroups[group]?.[value];
+}
+
+/**
+ * Replaces option labels with the localised enum label when the property is a known
+ * enum and a translation exists for that value. Unmapped properties and untranslated
+ * values keep the label produced by {@link convertToSelectOptions} (the server-provided
+ * prompt, or the raw value when no prompt was sent).
+ */
+export function localizeEnumOptions(options: SelectOption[], prop?: EnumOptionContext): SelectOption[] {
+    const group = resolveEnumGroup(prop);
+    if (!group) return options;
+    return options.map(option => {
+        const translation = lookupTranslation(group, String(option.value));
+        return translation !== undefined ? {...option, label: translation} : option;
+    });
+}
 
 interface UseHalFormOptionsResult {
     options: SelectOption[];
@@ -30,7 +76,10 @@ interface UseHalFormOptionsResult {
  *   link: {href: '/api/form-options'}
  * });
  */
-export function useHalFormOptions(optionDef: HalFormsOption | undefined): UseHalFormOptionsResult {
+export function useHalFormOptions(
+    optionDef: HalFormsOption | undefined,
+    prop?: EnumOptionContext
+): UseHalFormOptionsResult {
     const optionsHref = (optionDef?.link?.href && normalizeKlabisApiPath(optionDef?.link?.href)) ?? '';
 
     const linkOptions = useAuthorizedQuery(optionsHref, {
@@ -42,14 +91,14 @@ export function useHalFormOptions(optionDef: HalFormsOption | undefined): UseHal
     // Handle inline options - no fetching needed
     if (optionDef?.inline) {
         return {
-            options: convertToSelectOptions(optionDef.inline),
+            options: localizeEnumOptions(convertToSelectOptions(optionDef.inline), prop),
             isLoading: false,
             error: null,
         };
     }
 
     return {
-        options: linkOptions.data ?? [],
+        options: localizeEnumOptions(linkOptions.data ?? [], prop),
         isLoading: linkOptions.isLoading,
         error: linkOptions.error
     };

@@ -87,22 +87,17 @@ Notes:
 
 ## Controller Tests (@WebMvcTest)
 
-**Critical**: `ResourceServerSecurityConfiguration` depends on `UserService` (via `AccountStatusValidationFilter`) — always mock it:
+Every `@WebMvcTest` carries `@WithPostprocessors` (`com.klabis.common`) — a meta-annotation holding `@MockitoBean`s for security infra (`UserService`, `UserDetailsService`) and for every dependency of an `@MvcComponent` postprocessor:
 
 ```java
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
-@Import({MemberMapperImpl.class})
-@MockitoBean(types = {UserService.class, UserDetailsService.class})  // REQUIRED
+@Import(HalFormsSupport.class)
+@WithPostprocessors
 class MemberControllerApiTest {
 
-    @MockitoBean ManagementService managementService;
+    @MockitoBean ManagementPort managementService;
     @MockitoBean MemberRepository memberRepository;
-
-    @TestBean EntityLinks entityLinks;  // Use HateoasTestingSupport
-
-    static EntityLinks entityLinks() {
-        return HateoasTestingSupport.createModuleEntityLinks(MemberController.class);
-    }
+    @Autowired SynchronizationPort synchronizationPort;   // already mocked by @WithPostprocessors
 
     @Autowired MockMvc mockMvc;
 
@@ -110,10 +105,10 @@ class MemberControllerApiTest {
     @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
     void shouldReturnMemberDetails() throws Exception {
         UUID id = UUID.randomUUID();
-        when(memberRepository.findById(new MemberId(id)))
-            .thenReturn(Optional.of(MemberTestDataBuilder.aMemberWithId(id).build()));
+        when(managementService.getMemberAndRecordView(eq(new MemberId(id)), any(), anyBoolean()))
+            .thenReturn(MemberTestDataBuilder.aMemberWithId(id).build());
 
-        mockMvc.perform(get("/api/members/{id}", id)
+        mockMvc.perform(get(MembersApi.PATH_GET_MEMBER, id)
                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.firstName").value("Jan"))
@@ -121,6 +116,13 @@ class MemberControllerApiTest {
     }
 }
 ```
+
+Slice-context rules:
+- `@MvcComponent` beans (postprocessors) are picked up by a global scan — never list them in `controllers = {...}` or `@Import`.
+- `Converter<S,T>` beans are always included by `WebMvcTypeExcludeFilter` — never `@Import` or mock a converter. The same visibility is why a `Converter` must have no module-specific constructor dependencies and no `uses = <PlainMapper>` (see `dto-mapping.md`).
+- A postprocessor that gains a new dependency (port, repository) → add its type to `@WithPostprocessors`, not a per-test `@MockitoBean`; a per-test mock leaves every other slice broken. Tests that stub it inject it with `@Autowired` — a second `@MockitoBean` fails with a duplicate-mock error. Do not work around this with `@Lazy`.
+- Never add a feature-flag bean (injected as `Optional<T>`) to `@WithPostprocessors` — its presence would switch the feature on in every slice.
+- `@TestBean EntityLinks` via `HateoasTestingSupport.createModuleEntityLinks(Controller.class)` only when the controller under test uses `EntityLinks`.
 
 ## Integration Tests (@ApplicationModuleTest)
 
@@ -211,33 +213,23 @@ void memberCanUpdateOwnProfile() { }
 
 Never use `@WithMockUser` — it creates a generic principal incompatible with `KlabisJwtAuthenticationToken`.
 
-## Mapper Tests
+## Converter Tests
 
-Test Domain → ResponseDTO mappers as standalone unit tests (no Spring context):
+Test `Converter<S,T>` implementations with a plain Spring context importing only the generated impls — no MVC slice:
 
 ```java
-@DisplayName("MemberMapper Tests")
-class MemberMapperTest {
+@ExtendWith(SpringExtension.class)
+@Import({MemberDetailsConverterImpl.class})
+class MemberMappingTests {
 
-    private final MemberMapper mapper = Mappers.getMapper(MemberMapper.class);
-
-    @Test
-    void shouldMapActiveAdultMemberToDetailsResponse() {
-        Member member = MemberTestDataBuilder.aMember().withAllOptionalFields().build();
-        MemberDetailsResponse response = mapper.toDetailsResponse(member);
-
-        assertThat(response.firstName()).isEqualTo(member.getFirstName());
-        assertThat(response.email()).isEqualTo(member.getEmail().value());
-        assertThat(response.guardian()).isNull();
-    }
+    @Autowired MemberDetailsConverter detailsConverter;
 
     @Test
     void shouldMapMinorMemberWithGuardian() {
         Member member = MemberTestDataBuilder.aMember().withGuardian(...).build();
-        MemberDetailsResponse response = mapper.toDetailsResponse(member);
+        MemberDetailsResponse response = detailsConverter.convert(member);
 
         assertThat(response.guardian()).isNotNull();
-        assertThat(response.guardian().email()).isEqualTo(...);
     }
 }
 ```
@@ -321,9 +313,10 @@ Use `@CleanupTestData` on E2E tests — tests share a single H2 instance.
 
 | Problem | Solution |
 |---------|----------|
-| `@WebMvcTest` fails with `UnsatisfiedDependencyException` | Add `@MockitoBean(types = {UserService.class, UserDetailsService.class})` |
+| `@WebMvcTest` fails with `UnsatisfiedDependencyException` | Missing `@WithPostprocessors`, or a postprocessor dependency not yet listed in it |
 | Domain events not fired in E2E test | Add `SyncTaskExecutor` `@TestConfiguration` |
 | `@DataJdbcTest` doesn't find custom repos | Add `includeFilters = @Filter(type = ANNOTATION, value = Repository.class)` |
 | Tests interfere with each other in H2 | Use `@CleanupTestData` or `@Sql(statements = "DELETE FROM ...")` |
 | `EntityLinks` not available in `@WebMvcTest` | Provide `@TestBean EntityLinks` via `HateoasTestingSupport.createModuleEntityLinks()` |
+| Duplicate-mock error on context bootstrap | Type already mocked by `@WithPostprocessors` — use `@Autowired` |
 | `@WithMockUser` causes ClassCastException | Replace with `@WithKlabisMockUser` |

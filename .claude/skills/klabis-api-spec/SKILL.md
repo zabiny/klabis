@@ -257,11 +257,15 @@ for any authenticated user, `@ActingMember` + `MemberId` to require a member pro
   well-formed Java file with no constants and no body, and every reference fails to compile. An
   enum only works when `schemaMappings` points it at an existing domain enum. With no such enum,
   use `type: string`; the domain's own `valueOf`/`switch` still rejects bad values.
+  A request property typed with an enum (generated inline or via `schemaMappings`) gets HAL-FORMS
+  options automatically (ADR-007) — option order is the Java enum's declaration order, so order the
+  spec `enum:` list the way the UI should offer it. Add `x-hal-input-type: <EnumName>` so the
+  frontend picks the right translation group.
 - Stripping `@RequestBody` off a generated-interface override because the interface already
   declares it. `HalFormsSupport` looks for it on the *concrete* method resolved via
   `methodOn(Controller.class)`, and Java does not inherit parameter annotations across an
   interface boundary — unlike `@HasAuthority`, nothing bridges this. Binding and authorization
-  still work, so it compiles and passes; the inline options from `klabisAffordWith*Options`
+  still work, so it compiles and passes; explicit options from `klabisAffordWithOptions`
   silently vanish from `_templates` while `properties[]` and `target` stay correct.
 - Gating a `RepresentationModelProcessor<CollectionModel<EntityModel<X>>>` on a request attribute
   *for fear of cross-contamination*. Spring HATEOAS's `RepresentationModelProcessorInvoker` resolves
@@ -271,10 +275,12 @@ for any authenticated user, `@ActingMember` + `MemberId` to require a member pro
   cannot carry: `EventRegistrationController.RegistrationListPostprocessor` reads `eventId` from a
   request attribute because an *empty* registration list has no item to recover it from, which is a
   different problem from type dispatch.
-- Injecting a new port into an `@MvcComponent` postprocessor — the scan is global, not scoped to a
-  slice's `controllers=`, so every unrelated `@WebMvcTest` breaks unless `WithPostprocessors` also
-  mocks it. Compute port-derived data in the controller, which already holds the port, and pass it
-  through a request attribute.
+- Injecting a new port into an `@MvcComponent` postprocessor **without** adding it to
+  `WithPostprocessors`. The scan is global, not scoped to a slice's `controllers=`, so every
+  unrelated `@WebMvcTest` fails to start. Injecting the port is the right design (the postprocessor
+  owns the affordance logic — e.g. `SyncStatePostprocessor` → `SynchronizationPort`); passing
+  port-derived data from the controller through a request attribute is the old workaround, don't
+  reintroduce it. Slice tests stub the shared mock via `@Autowired`.
 - Putting `x-klabis-authority` / `x-klabis-owner-visible` on a property that uses `oneOf` or
   `allOf`. Composition strips property-level vendor extensions, and `allOf` additionally yields a
   bare type rather than `JsonNullable<T>` — which `RequestBodyFieldAuthorizationAdvice` skips, so

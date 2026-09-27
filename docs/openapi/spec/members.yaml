@@ -649,6 +649,7 @@ components:
           maxLength: 2
         gender:
           $ref: '#/components/schemas/Gender'
+          x-hal-input-type: Gender
         email:
           type: string
           format: email
@@ -726,6 +727,7 @@ components:
           type: ['string', 'null']
           enum: ['MALE', 'FEMALE', null]
           x-klabis-authority: MEMBERS_MANAGE
+          x-hal-input-type: Gender
         chipNumber:
           type: ['string', 'null']
           maxLength: 50
@@ -749,6 +751,7 @@ components:
         drivingLicenseGroup:
           $ref: '#/components/schemas/DrivingLicenseGroup'
           x-klabis-nullable: true
+          x-hal-input-type: DrivingLicenseGroup
         dietaryRestrictions:
           type: ['string', 'null']
           maxLength: 500
@@ -769,6 +772,7 @@ components:
       properties:
         reason:
           $ref: '#/components/schemas/DeactivationReason'
+          x-hal-input-type: DeactivationReason
         note:
           type: string
           maxLength: 500
@@ -967,5 +971,5 @@ components:
 
     DrivingLicenseGroup:
       type: string
-      enum: [B, BE, C, C1, D, D1, T, AM, A1, A2, A]
+      enum: [AM, A1, A2, A, B, BE, C, C1, D, D1, T]
 

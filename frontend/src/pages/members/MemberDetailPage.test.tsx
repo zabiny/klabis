@@ -120,6 +120,17 @@ const selfEditTemplate: HalFormsTemplate = {
     ],
 };
 
+const adminEditTemplateWithGender: HalFormsTemplate = {
+    method: 'PUT',
+    target: '/api/members/123e4567-e89b-12d3-a456-426614174000',
+    properties: [
+        {name: 'firstName', type: 'text', prompt: 'Jméno'},
+        {name: 'lastName', type: 'text', prompt: 'Příjmení'},
+        {name: 'gender', type: 'Gender', prompt: 'Pohlaví', options: {inline: ['MALE', 'FEMALE']}},
+        {name: 'email', type: 'email', prompt: 'E-mail'},
+    ],
+};
+
 const mockMemberDetailData = (overrides?: Partial<HalResponse & Record<string, unknown>>): HalResponse => ({
     id: '123e4567-e89b-12d3-a456-426614174000',
     registrationNumber: 'SKI2601',
@@ -596,6 +607,21 @@ describe('MemberDetailPage', () => {
 
             expect(screen.getByText('Žena')).toBeInTheDocument();
             expect(screen.queryByText('FEMALE')).not.toBeInTheDocument();
+        });
+
+        it('shows a gender select when the edit template includes gender (admin)', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                gender: 'MALE',
+                _templates: {updateMember: adminEditTemplateWithGender},
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            const genderSelect = document.querySelector('select[name="gender"]');
+            expect(genderSelect).toBeInTheDocument();
+            expect(genderSelect).toHaveValue('MALE');
         });
 
         describe('birth number conditional on nationality in edit mode', () => {

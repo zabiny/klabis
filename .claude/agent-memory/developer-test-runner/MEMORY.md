@@ -1,11 +1,23 @@
 # Test Runner Agent Memory
 
+- [Backend test run (2026-09-26) full rerun verify](backend_test_run_2026_09_26_full_rerun_verify.md) — 3780/3780 passed, 14 skipped with --rerun-tasks + SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true
+- [Frontend test run (2026-09-26) full final rerun](frontend_test_run_2026_09_26_full_final_rerun.md) — 2058/2058 passed; build succeeded 9.44s Vite run
+- [Frontend test run (2026-09-26) reviewchanges two files](frontend_test_run_2026_09_26_reviewchanges.md) — 92/92 passed (MemberDetailPage.test.tsx 56/56, MembersPage.test.tsx 36/36)
+- [Backend test run (2026-09-26) full final rerun](backend_test_run_2026_09_26_full_final_rerun.md) — 3770/3770 passed, 14 skipped with --rerun-tasks + SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true
+- [Frontend test run (2026-09-26) full final](frontend_test_run_2026_09_26_full_final.md) — 2055/2055 passed; build succeeded with 8.36s Vite run
+- [Frontend test run (2026-09-26) members three files](frontend_test_run_2026_09_26_members_three_files.md) — 96/97 passed; MemberDetailPage.groups.test.tsx failure in SyncStatusIndicator mock (toHref export missing)
+- [Backend test run (2026-09-26) events module — sync link + endpoint removal](backend_test_run_2026_09_26_reviewchanges.md) — 202/202 passed (events + sync tests); new ListRowSyncLinkTests passing
 - [buildSrc test runner quirk](buildsrc_test_runner_quirk.md) — `--module :buildSrc` may report "No fresh JUnit XML" despite a green run; check XML mtimes, re-parse with --skip-run
+- [Backend test run (2026-09-26) rerun + modulith skip (final)](backend_test_run_2026_09_26_full_rerun_with_modulith_skip.md) — 3766/3766 passed, 14 skipped with --rerun-tasks + SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true
+- [Frontend test run (2026-09-26)](frontend_test_run_2026_09_26.md) — 2052/2052 passed; member-synchronization feature adds 29 tests; build clean
 - [Frontend test run I1 (2026-09-23)](frontend_test_run_i1.md) — 2004/2004 passed; SyncStatusIndicator introduced
 - [Frontend test run I2 (2026-09-23)](frontend_test_run_i2.md) — 2006/2006 passed; SyncStatusIndicator wired into EventDetailPage
 - [Frontend test run I4 (2026-09-23)](frontend_test_run_i4.md) — 2023/2023 passed; SyncStatusOverlay added
 - [Frontend test run I5 (2026-09-23)](frontend_test_run_i5.md) — 2023/2023 passed; SYNC:MANAGE overlay added; lint+build clean
 - [Frontend test run I6 (2026-09-23)](frontend_test_run_i6.md) — 2023/2023 passed; post-feature passes (env/scope, spec regen, type regen restoring missing disciplines endpoints); lint+build clean
+- [Backend test run (2026-09-26)](backend_test_run_2026_09_26.md) — 3772/3772 passed on feature/member-synchronization-reviewchanges; 140 new tests
+- [Backend test run (2026-09-26) full rerun](backend_test_run_2026_09_26_full.md) — 3765/3765 passed with --rerun-tasks; MemberControllerApiTest 104/104 skipped (module unchanged)
+- [Backend test run (2026-09-26) modulith skip](backend_test_run_2026_09_26_modulith_skip.md) — 3765/3765 passed with SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true
 - [Backend test run (2026-09-23)](backend_test_run_2026_09_23.md) — 3632/3632 passed after I6-BE OAuth2 SYNC scope registration; 37/37 in authorization-server package
 - [Backend test run (2026-09-17)](backend_test_run_2026_09_17.md) — 3502/3502 passed after OrisEventFieldsGatewayService folded into OrisEventSyncAdapter
 - [Backend test run (2026-09-04)](backend_test_run_2026_09_04.md) — 3399/3399 passed after sync/oris.eventsync/events cleanup

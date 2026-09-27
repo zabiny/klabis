@@ -367,3 +367,4 @@ components:
         resolution:
           type: string
           enum: [INWARD, OUTWARD, ACCEPT_DIVERGENCE]
+          x-hal-input-type: SyncResolution
