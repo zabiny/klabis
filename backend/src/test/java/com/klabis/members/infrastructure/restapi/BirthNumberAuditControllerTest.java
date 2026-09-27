@@ -65,7 +65,7 @@ class BirthNumberAuditControllerTest {
     @MockitoBean
     private OrisClubKeyPort orisClubKeyPort;
 
-    @MockitoBean
+    @Autowired
     private SynchronizationPort synchronizationPort;
 
     @TestBean

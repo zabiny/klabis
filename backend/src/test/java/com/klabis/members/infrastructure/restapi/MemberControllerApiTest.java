@@ -107,7 +107,7 @@ class MemberControllerApiTest {
     @MockitoBean
     private OrisClubKeyPort orisClubKeyPort;
 
-    @MockitoBean
+    @Autowired
     private SynchronizationPort synchronizationPort;
 
     @BeforeEach

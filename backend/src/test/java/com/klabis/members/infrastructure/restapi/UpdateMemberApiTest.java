@@ -87,7 +87,7 @@ class UpdateMemberApiTest {
     @MockitoBean
     private OrisClubKeyPort orisClubKeyPort;
 
-    @MockitoBean
+    @Autowired
     private SynchronizationPort synchronizationPort;
 
     private final UUID testMemberId = UUID.randomUUID();

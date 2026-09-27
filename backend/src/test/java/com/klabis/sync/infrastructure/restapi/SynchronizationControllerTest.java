@@ -46,7 +46,7 @@ class SynchronizationControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private SynchronizationPort synchronizationPort;
 
     @MockitoBean
@@ -86,7 +86,7 @@ class SynchronizationControllerTest {
     @BeforeEach
     void defaultResolutions() {
         // Mirrors today's pull-only ORIS adapters: Klabis values cannot be pushed outward.
-        when(synchronizationPort.supportedResolutions(any()))
+        when(synchronizationPort.supportedResolutions(any(SyncRecord.class)))
                 .thenReturn(EnumSet.of(SyncResolution.INWARD, SyncResolution.ACCEPT_DIVERGENCE));
     }
 
@@ -162,7 +162,7 @@ class SynchronizationControllerTest {
             when(fieldReader.fields(any())).thenReturn(java.util.Map.of("name", "Local"));
             when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(acknowledgedConflictedRecord()));
             when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
-            when(synchronizationPort.supportedResolutions(any()))
+            when(synchronizationPort.supportedResolutions(any(SyncRecord.class)))
                     .thenReturn(EnumSet.of(SyncResolution.INWARD, SyncResolution.OUTWARD, SyncResolution.ACCEPT_DIVERGENCE));
 
             mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
@@ -359,6 +359,25 @@ class SynchronizationControllerTest {
                     .andExpect(status().isOk());
 
             verify(synchronizationPort).synchronizeNow(eq(enrolled.getId()), any());
+        }
+
+        @Test
+        @DisplayName("resolveSyncConflict affordance carries resolution options even from this non-GET response")
+        @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+        void resultingConflictCarriesResolutionOptionsToo() throws Exception {
+            when(fieldReader.fields(any())).thenReturn(java.util.Map.of());
+            SyncRecord existing = inSyncRecord();
+            SyncRecord acknowledgedConflict = acknowledgedConflictedRecord();
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(existing));
+            when(synchronizationPort.synchronizeNow(eq(existing.getId()), any())).thenReturn(acknowledgedConflict);
+            when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
+            when(synchronizationPort.supportedResolutions(any(SyncRecord.class)))
+                    .thenReturn(EnumSet.of(SyncResolution.INWARD, SyncResolution.ACCEPT_DIVERGENCE));
+
+            mockMvc.perform(post("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[0]").value("INWARD"))
+                    .andExpect(jsonPath("$._templates.resolveSyncConflict.properties[?(@.name=='resolution')].options.inline[1]").value("ACCEPT_DIVERGENCE"));
         }
 
         @Test

@@ -77,7 +77,7 @@ class EventControllerTest {
     @MockitoBean
     private AccommodationListCsvRenderer csvRenderer;
 
-    @MockitoBean
+    @Autowired
     private SynchronizationPort synchronizationPort;
 
     @Autowired

@@ -80,7 +80,7 @@ class OrisEventControllerTest {
     @MockitoBean
     private AccommodationListCsvRenderer csvRenderer;
 
-    @MockitoBean
+    @Autowired
     private SynchronizationPort synchronizationPort;
 
     @BeforeEach

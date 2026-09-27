@@ -367,8 +367,7 @@ class SynchronizationService implements SynchronizationPort {
     }
 
     @Override
-    public Set<SyncResolution> supportedResolutions(SyncRecordId id) {
-        SyncRecord record = getOrThrow(id);
+    public Set<SyncResolution> supportedResolutions(SyncRecord record) {
         SynchronizationAdapter adapter = adapterRegistry.find(record.getTarget().entityType(), record.getExternalReference().system())
                 .orElseThrow(() -> new UnknownSyncEntityTypeException(record.getTarget().entityType(), record.getExternalReference().system()));
 

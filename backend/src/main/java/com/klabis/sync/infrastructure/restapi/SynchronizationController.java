@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 /**
  * One controller for every synchronisable entity type (design.md D14) — the
  * {@code {entityType}} path segment is translated to {@link SyncEntityType} by
@@ -45,7 +43,6 @@ public class SynchronizationController implements SyncApi {
         SyncRecord record = requireRecord(entityType, id);
 
         HalResponseContext.setDomain(record);
-        publishSupportedResolutions(record);
         return ResponseEntity.ok(responseConverter.convert(record));
     }
 
@@ -66,7 +63,6 @@ public class SynchronizationController implements SyncApi {
         SyncRecord record = synchronizationPort.acknowledgeConflict(existing.getId(), actingUser(currentUser));
 
         HalResponseContext.setDomain(record);
-        publishSupportedResolutions(record);
         return ResponseEntity.ok(responseConverter.convert(record));
     }
 
@@ -97,17 +93,6 @@ public class SynchronizationController implements SyncApi {
         SyncTarget target = new SyncTarget(entityType, id);
         return synchronizationPort.findByTarget(target)
                 .orElseThrow(() -> new SyncRecordNotEnrolledException(target));
-    }
-
-    /**
-     * The conflict resolutions the record's integration actually offers, for
-     * {@code SyncStatePostprocessor} to render as the resolve-conflict affordance's options.
-     * Published for the two responses that can carry an acknowledged conflict (the state read
-     * and the acknowledgement); a direction the external system does not allow is never offered.
-     */
-    private void publishSupportedResolutions(SyncRecord record) {
-        HalResponseContext.setContext(new SupportedSyncResolutions(
-                List.copyOf(synchronizationPort.supportedResolutions(record.getId()))));
     }
 
     private static String actingUser(UserId currentUser) {

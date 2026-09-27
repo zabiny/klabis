@@ -59,7 +59,7 @@ class MemberOrisImportAffordanceTest {
     @MockitoBean
     private MemberDiscoveryPort memberDiscoveryJob;
 
-    @MockitoBean
+    @Autowired
     private SynchronizationPort synchronizationPort;
 
     @Test

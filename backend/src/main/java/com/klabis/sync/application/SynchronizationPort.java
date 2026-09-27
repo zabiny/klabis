@@ -201,10 +201,14 @@ public interface SynchronizationPort {
      * {@link SyncResolution#OUTWARD} only when it writes the external side. The
      * resolve-conflict affordance must offer nothing else — a direction the external
      * system does not allow is never offered.
+     * <p>
+     * Takes the record itself rather than its id — every caller already holds it, so
+     * this never reloads.
      *
-     * @throws SyncRecordNotFoundException if the entity is not enrolled
+     * @throws UnknownSyncEntityTypeException if no adapter is registered for the
+     *                                         record's entity type and external system
      */
-    Set<SyncResolution> supportedResolutions(SyncRecordId id);
+    Set<SyncResolution> supportedResolutions(SyncRecord record);
 
     /**
      * A manager restarts a terminally failed record (design.md D10): appends a
