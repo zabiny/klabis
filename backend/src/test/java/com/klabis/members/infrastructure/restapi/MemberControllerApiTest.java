@@ -173,7 +173,7 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.email").exists())
                     .andExpect(jsonPath("$.phone").exists())
                     .andExpect(jsonPath("$.address").exists())
-                    .andExpect(jsonPath("$.active").value(true))
+                    .andExpect(jsonPath("$.active").doesNotExist())
                     // Assert HATEOAS links presence
                     .andExpect(jsonPath("$._links.self.href").exists())
                     .andExpect(jsonPath("$._links.self.href").value(org.hamcrest.Matchers.containsString(
@@ -215,6 +215,38 @@ class MemberControllerApiTest {
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("should omit active field for caller without MEMBERS:MANAGE authority")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
+        void shouldOmitActiveFieldWhenUserLacksMembersManageAuthority() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(false)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.active").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should include active field for caller with MEMBERS:MANAGE authority")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void shouldIncludeActiveFieldWhenUserHasMembersManageAuthority() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(false)
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.active").value(false));
         }
 
         @Test
@@ -310,7 +342,7 @@ class MemberControllerApiTest {
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.active").value(true))
+                    .andExpect(jsonPath("$.active").doesNotExist())
                     .andExpect(jsonPath("$._links.permissions.href").value("http://localhost/api/users/" + memberId + "/permissions"));
         }
 
@@ -328,7 +360,7 @@ class MemberControllerApiTest {
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.active").value(false))
+                    .andExpect(jsonPath("$.active").doesNotExist())
                     .andExpect(jsonPath("$._links.permissions").doesNotExist());
         }
 
@@ -1668,6 +1700,51 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.memberSummaryResponseList.length()").value(2))
                     .andExpect(jsonPath("$.page.totalElements").value(2));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/members — list row sync link (design.md D4)")
+    class ListRowSyncLinkTests {
+
+        private static String link(String name) {
+            return "$._embedded.memberSummaryResponseList[0]._links." + name + ".href";
+        }
+
+        @Test
+        @DisplayName("ORIS-enrolled member row carries a sync link")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void enrolledRowCarriesSyncLink() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member orisMember = MemberTestDataBuilder.aMemberWithId(memberId).build();
+
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(orisMember), PageRequest.of(0, 10), 1));
+
+            SyncTarget target = new SyncTarget(SyncEntityType.MEMBER, memberId.toString());
+            com.klabis.sync.domain.SyncedEntityReference syncedReference = new com.klabis.sync.domain.SyncedEntityReference(
+                    target, new ExternalReference(ExternalSystem.ORIS, "42"));
+            when(synchronizationPort.findActiveByTargets(eq(SyncEntityType.MEMBER), any()))
+                    .thenReturn(List.of(syncedReference));
+
+            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath(link("sync")).exists());
+        }
+
+        @Test
+        @DisplayName("hand-registered member row does NOT carry a sync link")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void nonEnrolledRowDoesNotCarrySyncLink() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member handRegisteredMember = MemberTestDataBuilder.aMemberWithId(memberId).build();
+
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(handRegisteredMember), PageRequest.of(0, 10), 1));
+
+            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.sync").doesNotExist());
         }
     }
 

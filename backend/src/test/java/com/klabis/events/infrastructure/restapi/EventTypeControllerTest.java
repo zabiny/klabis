@@ -3,7 +3,6 @@ package com.klabis.events.infrastructure.restapi;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.events.DisciplineId;
@@ -13,7 +12,6 @@ import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeInUseException;
 import com.klabis.events.domain.EventTypeNotFoundException;
 import com.klabis.events.domain.OrisDisciplineAlreadyMappedException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,11 +46,6 @@ class EventTypeControllerTest {
 
     @MockitoBean
     private EventTypeManagementPort eventTypeManagementService;
-
-    @BeforeEach
-    void stubDisciplineOptions() {
-        when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.<HalFormsInlineOption>of());
-    }
 
     @Nested
     @DisplayName("GET /api/event-types")
@@ -103,28 +96,16 @@ class EventTypeControllerTest {
         }
 
         @Test
-        @DisplayName("createEventType template should include disciplineIds property with inline value+prompt options from the local catalog")
+        @DisplayName("createEventType template should expose disciplineIds property with an options.link pointing at the discipline options endpoint")
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
-        void shouldIncludeDisciplineIdsWithInlineOptionsInCreateTemplate() throws Exception {
+        void shouldIncludeDisciplineIdsWithLinkOptionsInCreateTemplate() throws Exception {
             when(eventTypeManagementService.listAllSorted()).thenReturn(List.of());
-            when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.of(
-                    new HalFormsInlineOption("1", "Orientační běh"),
-                    new HalFormsInlineOption("3", "Lyžařský OB"),
-                    new HalFormsInlineOption("7", "Sprint")
-            ));
 
             mockMvc.perform(get("/api/event-types").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')]").exists())
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')].options.inline").isArray())
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')].options.inline[0].value").value("1"))
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')].options.inline[0].prompt").value("Orientační běh"))
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')].options.inline[1].value").value("3"))
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')].options.inline[1].prompt").value("Lyžařský OB"))
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')].options.inline[2].value").value("7"))
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')].options.inline[2].prompt").value("Sprint"))
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')].options.promptField").value("prompt"))
-                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')].options.valueField").value("value"));
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')].options.link.href").value("http://localhost/api/disciplines/options"))
+                    .andExpect(jsonPath("$._templates.createEventType.properties[?(@.name=='disciplineIds')].options.inline").doesNotExist());
         }
 
         @Test
@@ -204,27 +185,18 @@ class EventTypeControllerTest {
         }
 
         @Test
-        @DisplayName("updateEventType template should include disciplineIds property with inline value+prompt options from the local catalog")
+        @DisplayName("updateEventType template should expose disciplineIds property with an options.link pointing at the discipline options endpoint")
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
-        void shouldIncludeDisciplineIdsWithInlineOptionsInUpdateTemplate() throws Exception {
+        void shouldIncludeDisciplineIdsWithLinkOptionsInUpdateTemplate() throws Exception {
             UUID id = UUID.randomUUID();
             EventType eventType = EventType.create(new EventType.CreateEventType("Závod", null, 1, null), 1);
             when(eventTypeManagementService.getEventType(any(EventTypeId.class))).thenReturn(eventType);
-            when(eventTypeManagementService.listDisciplineOptions()).thenReturn(List.of(
-                    new HalFormsInlineOption("1", "Orientační běh"),
-                    new HalFormsInlineOption("3", "Lyžařský OB")
-            ));
 
             mockMvc.perform(get("/api/event-types/{id}", id).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='disciplineIds')]").exists())
-                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='disciplineIds')].options.inline").isArray())
-                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='disciplineIds')].options.inline[0].value").value("1"))
-                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='disciplineIds')].options.inline[0].prompt").value("Orientační běh"))
-                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='disciplineIds')].options.inline[1].value").value("3"))
-                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='disciplineIds')].options.inline[1].prompt").value("Lyžařský OB"))
-                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='disciplineIds')].options.promptField").value("prompt"))
-                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='disciplineIds')].options.valueField").value("value"));
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='disciplineIds')].options.link.href").value("http://localhost/api/disciplines/options"))
+                    .andExpect(jsonPath("$._templates.updateEventType.properties[?(@.name=='disciplineIds')].options.inline").doesNotExist());
         }
 
         @Test

@@ -85,6 +85,17 @@ public class DisciplineController implements DisciplinesApi {
     }
 
     @Override
+    public ResponseEntity<List<DisciplineOptionResponse>> listDisciplineOptions() {
+        List<DisciplineOptionResponse> options = disciplineManagementService.listActiveOptions().stream()
+                .map(discipline -> DisciplineOptionResponseBuilder.builder()
+                        .value(discipline.getId().value().toString())
+                        .prompt(discipline.getName())
+                        .build())
+                .toList();
+        return ResponseEntity.ok(options);
+    }
+
+    @Override
     public ResponseEntity<Void> createDiscipline(
             CreateDisciplineRequest request) {
 
@@ -154,7 +165,7 @@ public class DisciplineController implements DisciplinesApi {
 
 /**
  * Adds the {@code disciplines} link to root navigation.
- * Authorization gated via klabisAfford (EVENTS_MANAGE) in the actual endpoint.
+ * Authorization gated via klabisLinkTo (EVENTS_MANAGE) in the actual endpoint.
  */
 @MvcComponent
 class DisciplinesRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {

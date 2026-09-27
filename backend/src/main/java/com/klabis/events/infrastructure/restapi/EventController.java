@@ -4,6 +4,7 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.ui.HalFormsInlineOption;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
@@ -453,7 +454,7 @@ class EventAffordanceSupport {
         return SecuritySpelEvaluator.hasAuthority(auth, authority);
     }
 
-    static Link addManagementAffordances(Link selfLink, Event event, boolean orisIntegrationActive, boolean orisEnrolled, Authentication auth) {
+    static Link addManagementAffordances(Link selfLink, Event event, Authentication auth) {
         UUID eventId = event.getId().value();
 
         boolean canManage = hasAuthority(auth, Authority.EVENTS_MANAGE);
@@ -463,25 +464,24 @@ class EventAffordanceSupport {
             return selfLink;
         }
 
+        Map<String, HalFormsOptionsDef> coordinatorsOptions = Map.of("coordinators",
+                HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()));
+
         switch (event.getStatus()) {
             case DRAFT:
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAffordWithOptions(
+                        methodOn(EventsApi.class).updateEvent(eventId, null), coordinatorsOptions));
                 if (canManage) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).publishEvent(eventId)));
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
                 }
-                if (orisIntegrationActive && orisEnrolled) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).syncEventFromOris(eventId)));
-                }
                 break;
 
             case ACTIVE:
-                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).updateEvent(eventId, null)));
+                selfLink = selfLink.andAffordances(klabisAffordWithOptions(
+                        methodOn(EventsApi.class).updateEvent(eventId, null), coordinatorsOptions));
                 if (canManage) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
-                }
-                if (orisIntegrationActive && orisEnrolled) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).syncEventFromOris(eventId)));
                 }
                 break;
 
@@ -528,16 +528,27 @@ class EventAffordanceSupport {
                 .map(category -> new HalFormsInlineOption(category.id().toString(), category.name()))
                 .toList();
     }
+
+    static void addSyncLinkIfEnrolled(RepresentationModel<?> dtoModel, UUID eventId) {
+        if (isEnrolled(eventId)) {
+            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENTS, eventId.toString()))
+                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
+        }
+    }
+
+    private static boolean isEnrolled(UUID eventId) {
+        return HalResponseContext.findContext(EnrolledEventIds.class)
+                .map(enrolled -> enrolled.contains(eventId))
+                .orElse(false);
+    }
 }
 
 @MvcComponent
 class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, Event> {
 
-    private final boolean orisIntegrationActive;
     private final MemberRegistrationSanctionPort sanctionPort;
 
-    EventDetailsPostprocessor(Optional<OrisEventImportPort> orisEventImportPort, MemberRegistrationSanctionPort sanctionPort) {
-        this.orisIntegrationActive = orisEventImportPort.isPresent();
+    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort) {
         this.sanctionPort = sanctionPort;
     }
 
@@ -548,24 +559,22 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
-        boolean orisEnrolled = isEnrolled(eventId);
-
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, orisEnrolled, auth);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, null)));
-                    selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
+                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
-                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
+                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
                     ));
                 } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
-                    selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
+                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationsApi.class).registerForEvent(eventId, null, null),
-                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
+                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
                     ));
                     if (currentMemberId != null) {
                         klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(currentMemberId.value(), eventId, true))
@@ -599,27 +608,16 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
 
-        if (isEnrolled(eventId)) {
-            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENTS, eventId.toString()))
-                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
-        }
-    }
-
-    static boolean isEnrolled(UUID eventId) {
-        return HalResponseContext.findContext(EnrolledEventIds.class)
-                .map(enrolled -> enrolled.contains(eventId))
-                .orElse(false);
+        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId);
     }
 }
 
 @MvcComponent
 class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummaryDto, Event> {
 
-    private final boolean orisIntegrationActive;
     private final MemberRegistrationSanctionPort sanctionPort;
 
-    EventSummaryPostprocessor(Optional<OrisEventImportPort> orisEventImportPort, MemberRegistrationSanctionPort sanctionPort) {
-        this.orisIntegrationActive = orisEventImportPort.isPresent();
+    EventSummaryPostprocessor(MemberRegistrationSanctionPort sanctionPort) {
         this.sanctionPort = sanctionPort;
     }
 
@@ -630,24 +628,22 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
-        boolean orisEnrolled = EventDetailsPostprocessor.isEnrolled(eventId);
-
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, orisIntegrationActive, orisEnrolled, auth);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, auth);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
                     selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, null)));
-                    selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
+                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
-                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
+                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
                     ));
                 } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
-                    selfLink = selfLink.andAffordances(klabisAffordWithPromptedOptions(
+                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationsApi.class).registerForEvent(eventId, null, null),
-                            Map.of("categoryId", EventAffordanceSupport.categoryInlineOptions(event))
+                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
                     ));
                     if (currentMemberId != null) {
                         klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(currentMemberId.value(), eventId, true))
@@ -666,6 +662,8 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         event.getEventTypeId().ifPresent(eventTypeId ->
                 klabisLinkTo(methodOn(EventTypesApi.class).getEventType(eventTypeId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
+
+        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId);
     }
 }
 
@@ -689,7 +687,9 @@ class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<
         boolean hasManageAuthority = EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE);
 
         model.mapLink(IanaLinkRelations.SELF, selfLink -> {
-            Link link = (Link) selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).createEvent(null)));
+            Link link = (Link) selfLink.andAffordances(klabisAffordWithOptions(
+                    methodOn(EventsApi.class).createEvent(null),
+                    Map.of("coordinators", HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()))));
             if (orisIntegrationActive && hasManageAuthority) {
                 link = link.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).importEvent(null)));
                 link = link.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).importEventsBatch(null)));

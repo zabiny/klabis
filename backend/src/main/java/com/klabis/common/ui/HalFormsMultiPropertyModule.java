@@ -72,19 +72,22 @@ class HalFormsMultiPropertyModule extends SimpleModule {
             String propertyName = getHalFormsPropertyName(bean);
 
             if (propertyName != null) {
-                List<HalFormsInlineOption> promptedOptions = HalFormsSupport.getPromptedInlineOptionsForProperty(propertyName);
-                if (promptedOptions != null && !promptedOptions.isEmpty()) {
-                    HalFormsOptions options = HalFormsOptions.inline(promptedOptions)
-                            .withValueField("value")
-                            .withPromptField("prompt");
-                    gen.writeName("options");
-                    prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
-                    return;
+                HalFormsOptionsDef optionsDef = HalFormsSupport.getOptionsDefForProperty(propertyName);
+                HalFormsOptions options = switch (optionsDef) {
+                    case HalFormsOptionsDef.Inline inline when !inline.values().isEmpty() ->
+                            HalFormsOptions.inline(inline.values()).withValueField("value").withPromptField("prompt");
+                    case HalFormsOptionsDef.Remote remote -> HalFormsOptions.remote(remote.link());
+                    case null, default -> null;
+                };
+
+                if (options == null) {
+                    List<String> inlineOptions = HalFormsSupport.getInlineOptionsForProperty(propertyName);
+                    if (inlineOptions != null && !inlineOptions.isEmpty()) {
+                        options = HalFormsOptions.inline(inlineOptions.toArray());
+                    }
                 }
 
-                List<String> inlineOptions = HalFormsSupport.getInlineOptionsForProperty(propertyName);
-                if (inlineOptions != null && !inlineOptions.isEmpty()) {
-                    HalFormsOptions options = HalFormsOptions.inline(inlineOptions.toArray());
+                if (options != null) {
                     gen.writeName("options");
                     prov.findValueSerializer(options.getClass()).serialize(options, gen, prov);
                     return;

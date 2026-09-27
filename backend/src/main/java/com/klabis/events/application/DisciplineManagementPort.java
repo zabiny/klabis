@@ -6,6 +6,8 @@ import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 @PrimaryPort
 public interface DisciplineManagementPort {
 
@@ -29,4 +31,12 @@ public interface DisciplineManagementPort {
     void restore(DisciplineId id, String actingUser);
 
     Page<Discipline> list(Pageable pageable);
+
+    /**
+     * Active (non-archived) disciplines for lightweight option pickers (design.md D3 of
+     * app-review-fixes-2026-09) — backs {@code GET /api/disciplines/options}, mirroring {@code
+     * MemberController#listMemberOptions}. Archived disciplines are excluded: they should not be
+     * offered for assignment to new/updated event types.
+     */
+    List<Discipline> listActiveOptions();
 }

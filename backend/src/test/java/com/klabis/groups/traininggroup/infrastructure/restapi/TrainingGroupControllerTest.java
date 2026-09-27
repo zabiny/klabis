@@ -163,6 +163,23 @@ class TrainingGroupControllerTest {
         }
 
         @Test
+        @DisplayName("createTrainingGroup template should expose trainerId property with an options.link pointing at the member options endpoint")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldExposeTrainerIdOptionsLinkOnCreateTemplate() throws Exception {
+            when(trainingGroupManagementService.listTrainingGroups()).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/training-groups")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.createTrainingGroup.properties[?(@.name=='trainerId')].options.link.href")
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.createTrainingGroup.properties[?(@.name=='trainerId')].type")
+                            .value("MemberId"));
+        }
+
+        @Test
         @DisplayName("should return 401 when unauthenticated")
         void shouldReturn401WhenUnauthenticated() throws Exception {
             mockMvc.perform(
@@ -237,6 +254,32 @@ class TrainingGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("updateTrainingGroup, addTrainingGroupMember and addTrainer templates should expose member fields with an options.link pointing at the member options endpoint")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ, Authority.GROUPS_TRAINING})
+        void shouldExposeMemberOptionsLinkOnTemplates() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.getTrainingGroup(any(TrainingGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/training-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateTrainingGroup.properties[?(@.name=='trainers')].options.link.href")
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.updateTrainingGroup.properties[?(@.name=='trainers')].type")
+                            .value("MemberId"))
+                    .andExpect(jsonPath("$._templates.addTrainingGroupMember.properties[?(@.name=='memberId')].options.link.href")
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.addTrainingGroupMember.properties[?(@.name=='memberId')].type")
+                            .value("MemberId"))
+                    .andExpect(jsonPath("$._templates.addTrainer.properties[?(@.name=='memberId')].options.link.href")
+                            .value("http://localhost/api/members/options"))
+                    .andExpect(jsonPath("$._templates.addTrainer.properties[?(@.name=='memberId')].type")
+                            .value("MemberId"));
         }
     }
 

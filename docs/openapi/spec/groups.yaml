@@ -1264,6 +1264,7 @@ components:
         parent:
           type: string
           format: uuid
+          x-hal-input-type: MemberId
 
     AddMemberRequest:
       type: object
@@ -1272,6 +1273,7 @@ components:
         memberId:
           type: string
           format: uuid
+          x-hal-input-type: MemberId
 
     FamilyGroupSummaryResponse:
       type: object
@@ -1356,6 +1358,7 @@ components:
         memberId:
           type: string
           format: uuid
+          x-hal-input-type: MemberId
 
     InviteMemberRequest:
       type: object
@@ -1364,6 +1367,7 @@ components:
         memberId:
           type: string
           format: uuid
+          x-hal-input-type: MemberId
 
     CancelInvitationRequest:
       type: object
@@ -1457,6 +1461,7 @@ components:
         trainerId:
           type: string
           format: uuid
+          x-hal-input-type: MemberId
         minAge:
           type: integer
           format: int32
@@ -1477,6 +1482,7 @@ components:
         memberId:
           type: string
           format: uuid
+          x-hal-input-type: MemberId
 
     AddTrainerRequest:
       type: object
@@ -1485,6 +1491,7 @@ components:
         memberId:
           type: string
           format: uuid
+          x-hal-input-type: MemberId
 
     AgeRangeRequest:
       type: object
@@ -1519,6 +1526,7 @@ components:
           items:
             type: string
             format: uuid
+          x-hal-input-type: MemberId
 
     TrainingGroupSummaryResponse:
       type: object

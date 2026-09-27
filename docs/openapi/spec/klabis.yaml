@@ -45,6 +45,8 @@ paths:
     $ref: './events.yaml#/paths/~1api~1event-types'
   /api/event-types/{id}:
     $ref: './events.yaml#/paths/~1api~1event-types~1{id}'
+  /api/disciplines/options:
+    $ref: './events.yaml#/paths/~1api~1disciplines~1options'
   /api/disciplines:
     $ref: './events.yaml#/paths/~1api~1disciplines'
   /api/disciplines/{id}:
@@ -63,8 +65,6 @@ paths:
     $ref: './events.yaml#/paths/~1api~1events~1{eventId}~1accommodation-list'
   /api/events/import:
     $ref: './events.yaml#/paths/~1api~1events~1import'
-  /api/events/{id}/sync-from-oris:
-    $ref: './events.yaml#/paths/~1api~1events~1{id}~1sync-from-oris'
   /api/events/sync-from-oris/all-upcoming:
     $ref: './events.yaml#/paths/~1api~1events~1sync-from-oris~1all-upcoming'
   /api/events/import-batch:

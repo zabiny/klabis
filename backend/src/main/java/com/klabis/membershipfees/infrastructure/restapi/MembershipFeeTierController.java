@@ -3,6 +3,7 @@ package com.klabis.membershipfees.infrastructure.restapi;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.ui.HalFormsInlineOption;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
@@ -318,7 +319,7 @@ class PaymentRuleDetailsPostprocessor
         String ranking = domain.rule().rankingShortName();
         klabisLinkTo(methodOn(MembershipFeeTiersApi.class).getRule(tierId, eventTypeId, ranking))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAffordWithOptions(
+                        .andAffordances(klabisAffordWithValueOptions(
                                 methodOn(MembershipFeeTiersApi.class).editRule(tierId,
                                         eventTypeId,
                                         ranking,
@@ -365,8 +366,8 @@ class MembershipFeeTierListRulesPostprocessor
                     .andAffordances(klabisAffordWithMixedOptions(
                             methodOn(MembershipFeeTiersApi.class).addRule(tierId.get(), null),
                             Map.of("ruleType", List.of("PERCENTAGE", "FIXED_AMOUNT")),
-                            Map.of("rankingShortName", options.get().rankingOptions(),
-                                    "eventTypeId", options.get().eventTypeOptions()))));
+                            Map.of("rankingShortName", new HalFormsOptionsDef.Inline(options.get().rankingOptions()),
+                                    "eventTypeId", new HalFormsOptionsDef.Inline(options.get().eventTypeOptions())))));
         }
         return model;
     }
