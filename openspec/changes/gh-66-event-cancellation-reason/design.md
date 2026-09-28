@@ -18,6 +18,7 @@ Decisions already locked in the proposal: detail access stays open for every aut
 - Struck-through event name in the list for cancelled rows (for every viewer who can see the row).
 - Detail page: struck-through name, prominent "Zrušeno" badge (already exists), reason directly under the name.
 - Remove the list tooltip and the bottom detail banner (superseded).
+- Drop `cancellationReason` from `EventSummaryDto` once the tooltip is gone — the reason is a detail-page signal, and leaving it on every list row would keep shipping a field no consumer can act on.
 - Ungate `status` on `EventSummaryDto` (review decision) so every viewer can tell a cancelled row apart. Visibility of the status *column* is unchanged — still `EVENTS:MANAGE` only — but the frontend must now gate it explicitly (D5).
 
 **Non-Goals:**
@@ -137,6 +138,21 @@ const canManageEvents = Boolean(resourceData?._templates?.createEvent);
 
 **Alternative considered:** `useIsAdmin()` (presence of the root `admin` link) — rejected: that is System Admin, strictly narrower than `EVENTS:MANAGE`, so a coordinator with manage rights but no system-admin role would lose the column.
 
+### D5a: The struck name carries an accessible, reason-free state label
+
+`line-through` is a purely visual convention, and a non-manager sees no status column — so after D4 the struck name would be the *only* cancellation signal on such a row, and screen-reader users would get none. The struck name therefore repeats the state as visually hidden text:
+
+```tsx
+<span className="line-through opacity-60">
+    {name}
+    <span className="sr-only"> — {getEnumLabel('eventStatus', 'CANCELLED')}</span>
+</span>
+```
+
+Only the state, never the reason: the reason is a detail-page signal per D5, so a `title`/label carrying it would reintroduce exactly the leak D5 closes. The pattern matches existing `sr-only` usage in the repo (`Spinner.tsx:35`).
+
+**Alternative considered:** `aria-label` on the cell — rejected: it replaces the cell's accessible name rather than extending it, so the name itself would no longer be announced as text.
+
 ### D6: Frontend detail — struck name + reason under the name, banner removed
 
 `EventDetailPage.tsx`:
@@ -191,6 +207,7 @@ No new endpoints, parameters, response fields, HAL links, or HAL+FORMS affordanc
 | Item | Change |
 |---|---|
 | `GET /api/events` response — `EventSummaryDto.status` | **field-security change** — `x-klabis-authority: EVENTS_MANAGE` removed, so status is returned to every authenticated caller. No new response fields. The status column in the UI stays manager-only (frontend gate, D5) |
+| `GET /api/events` response — `EventSummaryDto.cancellationReason` | **field removed** — D5 removes the list tooltip, so nothing reads the reason from a summary row. It stays on `EventDto`, where the detail page shows it under the name (D6). Dropping it keeps the list payload free of a field no consumer can act on, and it is the one place a cancelled row's reason could otherwise leak to any viewer |
 | `GET /api/events` result set | **behavioural** — for callers without `EVENTS:MANAGE`: CANCELLED events excluded unless the caller's member has a registration for the event (callers without a member profile never see them) |
 | `GET /api/events/{id}` | unchanged (access and payload) |
 | `POST /api/events/{id}/cancel` | unchanged |

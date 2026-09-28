@@ -1281,31 +1281,57 @@ describe('EventDetailPage', () => {
         });
     });
 
-    describe('cancellation section (6.3)', () => {
-        it('shows cancellation block for CANCELLED event', () => {
-            renderPage(createMockPageData(mockEventDetailData({status: 'CANCELLED'})));
-            expect(screen.getByText('AKCE BYLA ZRUŠENA')).toBeInTheDocument();
-        });
-
-        it('does not show cancellation block for non-CANCELLED event', () => {
+    describe('cancelled event marking in the header (D6)', () => {
+        it('leaves a non-cancelled event unmarked', () => {
             renderPage(createMockPageData(mockEventDetailData({status: 'ACTIVE'})));
-            expect(screen.queryByText('AKCE BYLA ZRUŠENA')).not.toBeInTheDocument();
+
+            expect(screen.getByRole('heading', {level: 1, name: 'Jarní závod 2025'})).not.toHaveClass('line-through');
         });
 
-        it('shows cancellation reason when provided', () => {
+        it('strikes through the name and keeps the prominent Zrušeno badge', () => {
             renderPage(createMockPageData(mockEventDetailData({
                 status: 'CANCELLED',
                 cancellationReason: 'Zrušeno kvůli počasí',
             })));
-            expect(screen.getByText('Zrušeno kvůli počasí')).toBeInTheDocument();
+
+            expect(screen.getByRole('heading', {level: 1, name: 'Jarní závod 2025'})).toHaveClass('line-through');
+            expect(screen.getByText('Zrušeno')).toBeInTheDocument();
         });
 
-        it('does not show reason text when cancellationReason is absent', () => {
+        it('renders the cancellation reason under the name, inside the header block', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                status: 'CANCELLED',
+                cancellationReason: 'Zrušeno kvůli počasí',
+            })));
+
+            const heading = screen.getByRole('heading', {level: 1, name: 'Jarní závod 2025'});
+            const reason = screen.getByText('Zrušeno kvůli počasí');
+            // The reason must be a sibling of the row carrying the name, which is what
+            // "directly under the name" means structurally. A bottom banner would put a
+            // Card in between and fail this without depending on any particular divider.
+            expect(reason.previousElementSibling).toContainElement(heading);
+        });
+
+        it('shows the struck name and the badge but no reason text when no reason was given', () => {
             renderPage(createMockPageData(mockEventDetailData({
                 status: 'CANCELLED',
                 cancellationReason: undefined,
             })));
-            expect(screen.getByText('AKCE BYLA ZRUŠENA')).toBeInTheDocument();
+
+            expect(screen.getByRole('heading', {level: 1, name: 'Jarní závod 2025'})).toHaveClass('line-through');
+            expect(screen.getByText('Zrušeno')).toBeInTheDocument();
+        });
+
+        it('drops the bottom cancellation banner and shows the reason exactly once', () => {
+            const {container} = renderPage(createMockPageData(mockEventDetailData({
+                status: 'CANCELLED',
+                cancellationReason: 'Zrušeno kvůli počasí',
+            })));
+
+            expect(screen.getAllByText('Zrušeno kvůli počasí')).toHaveLength(1);
+            // The banner was the only error-bordered Card on the page; asserting the class
+            // is gone holds even though the label it carried was deleted with it.
+            expect(container.querySelector('.border-error')).not.toBeInTheDocument();
         });
     });
 

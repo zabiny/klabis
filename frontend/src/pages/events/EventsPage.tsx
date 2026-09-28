@@ -268,7 +268,21 @@ export const EventsPage = (): ReactElement => {
             >
                 <TableCell sortable column={"eventDate"}
                            dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>{labels.tables.date}</TableCell>
-                <TableCell sortable column={"name"}>{labels.fields.name}</TableCell>
+                <TableCell sortable column={"name"}
+                           dataRender={({value, item}) => {
+                               const name = typeof value === 'string' ? value : null;
+                               const event = item as unknown as EventListData;
+                               if (!name || event.status !== 'CANCELLED') return name;
+                               // The strikethrough is the only cancellation signal a non-manager
+                               // gets — the status column is hidden for them — so the state is
+                               // repeated for screen readers. The reason stays out of the list.
+                               return (
+                                   <span className="line-through opacity-60">
+                                       {name}
+                                       <span className="sr-only"> — {getEnumLabel('eventStatus', 'CANCELLED')}</span>
+                                   </span>
+                               );
+                           }}>{labels.fields.name}</TableCell>
                 <TableCell sortable column={"location"}
                            dataRender={({value}) => (value as string | null) ?? null}>{labels.fields.location}</TableCell>
                 <TableCell sortable column={"organizer"}>{labels.fields.organizer}</TableCell>
@@ -328,14 +342,7 @@ export const EventsPage = (): ReactElement => {
                            }}>{labels.tables.coordinator}</TableCell>
                 <TableCell sortable column={"status"}
                            hidden={!canManageEvents}
-                           dataRender={({value, item}) => {
-                               const label = typeof value === 'string' ? getEnumLabel('eventStatus', value) : '';
-                               const event = item as unknown as EventListData;
-                               if (event.status === 'CANCELLED' && event.cancellationReason) {
-                                   return <span title={event.cancellationReason}>{label}</span>;
-                               }
-                               return label;
-                           }}>{labels.tables.status}</TableCell>
+                           dataRender={({value}) => typeof value === 'string' ? getEnumLabel('eventStatus', value) : ''}>{labels.tables.status}</TableCell>
                 <TableCell column={"eventTypeId"}
                            dataRender={({item}) => {
                                const event = item as unknown as EventListData;

@@ -28,19 +28,20 @@ Test entry points: `EventFilterE2ETest` for list-visibility combinations end-to-
 
 ## 3. Slice: struck-through name in the list
 
-- [ ] 3.1 Failing test first (`EventsPage.test.tsx`): a row with `status: 'CANCELLED'` renders its name with a strikethrough; `ACTIVE` / `FINISHED` / `DRAFT` rows render the plain name; the row's action buttons remain present and clickable in the cancelled case.
-- [ ] 3.2 `EventsPage.tsx`: add a `dataRender` to the `name` `TableCell` — `status === 'CANCELLED'` → `<span className="line-through …">`, otherwise the plain value; column stays sortable.
-- [ ] 3.3 Failing test first (`EventsPage.test.tsx`): the status cell no longer carries a `title` attribute with the cancellation reason (the tooltip is removed per the delta spec).
-- [ ] 3.4 `EventsPage.tsx`: remove the status-cell tooltip branch (currently `if (event.status === 'CANCELLED' && event.cancellationReason) return <span title={…}>`).
-- [ ] 3.5 Update the existing `EventsPage.test.tsx` expectations that assert the tooltip; run frontend tests, commit.
+- [x] 3.1 Failing test first (`EventsPage.test.tsx`): a row with `status: 'CANCELLED'` renders its name with a strikethrough; `ACTIVE` / `FINISHED` / `DRAFT` rows render the plain name; the row's action buttons remain present and clickable in the cancelled case.
+- [x] 3.2 `EventsPage.tsx`: add a `dataRender` to the `name` `TableCell` — `status === 'CANCELLED'` → `<span className="line-through …">`, otherwise the plain value; column stays sortable.
+- [x] 3.3 Failing test first (`EventsPage.test.tsx`): the status cell no longer carries a `title` attribute (the tooltip is removed per the delta spec). Note the fixture cannot supply a reason any more once 3.4a lands, so assert the absence of the attribute rather than of a reason string.
+- [x] 3.4 `EventsPage.tsx`: remove the status-cell tooltip branch (currently `if (event.status === 'CANCELLED' && event.cancellationReason) return <span title={…}>`).
+- [x] 3.4a **API follow-up decided in review.** With the tooltip gone, `EventSummaryDto.cancellationReason` has no consumer and would ship on every row — including the one place a cancelled reason would reach viewers who should not see it. Remove it from `docs/openapi/spec/events.yaml`, drop the `@Mapping` from `EventSummaryDtoConverter`, re-run `npm run openapi` and `./gradlew compileJava`. `EventDto` keeps the field (the detail page shows it under the name). Design D5a records why the struck name also repeats the state as `sr-only` text: for a non-manager the strikethrough is the only signal, and `line-through` alone is invisible to screen readers.
+- [x] 3.5 Update the existing `EventsPage.test.tsx` expectations that assert the tooltip; run frontend tests, commit.
 
 ## 4. Slice: detail page — struck name, "Zrušeno" badge, reason under the name
 
-- [ ] 4.1 Failing test first (`EventDetailPage.test.tsx`): for a cancelled event with a reason — the name is struck through, the "Zrušeno" badge is present, and the reason text is rendered **within the header block, under the name**; for a cancelled event without a reason — struck name and badge present, no reason text.
-- [ ] 4.2 `EventDetailPage.tsx`: add `line-through` to the `<h1>` when `event.status === 'CANCELLED'`; render `event.cancellationReason` directly under the name in the header block (error-coloured, small text) when present. Reuse the existing badge (`STATUS_VARIANT.CANCELLED = 'error'` + `getEnumLabel('eventStatus', …)` → "Zrušeno") — no new badge markup.
-- [ ] 4.3 Failing test first (`EventDetailPage.test.tsx`): the bottom "AKCE BYLA ZRUŠENA" banner is gone — no element with the `sections.eventCancelled` text; the reason appears exactly once, under the name.
-- [ ] 4.4 `EventDetailPage.tsx`: delete the bottom cancellation `Card` (currently rendered for `status === 'CANCELLED'`) and remove the now-unused `sections.eventCancelled` label from `frontend/src/localization/labels.ts`; update the tests that assert the banner (4 of them).
-- [ ] 4.5 Run frontend tests, commit.
+- [x] 4.1 Failing test first (`EventDetailPage.test.tsx`): for a cancelled event with a reason — the name is struck through, the "Zrušeno" badge is present, and the reason text is rendered **within the header block, under the name**; for a cancelled event without a reason — struck name and badge present, no reason text.
+- [x] 4.2 `EventDetailPage.tsx`: add `line-through` to the `<h1>` when `event.status === 'CANCELLED'`; render `event.cancellationReason` directly under the name in the header block (error-coloured, small text) when present. Reuse the existing badge (`STATUS_VARIANT.CANCELLED = 'error'` + `getEnumLabel('eventStatus', …)` → "Zrušeno") — no new badge markup.
+- [x] 4.3 Failing test first (`EventDetailPage.test.tsx`): the bottom "AKCE BYLA ZRUŠENA" banner is gone — no element with the `sections.eventCancelled` text; the reason appears exactly once, under the name.
+- [x] 4.4 `EventDetailPage.tsx`: delete the bottom cancellation `Card` (currently rendered for `status === 'CANCELLED'`) and remove the now-unused `sections.eventCancelled` label from `frontend/src/localization/labels.ts`; update the tests that assert the banner (4 of them).
+- [x] 4.5 Run frontend tests, commit.
 
 ## 5. Close-out: spec sync, full test run, review
 

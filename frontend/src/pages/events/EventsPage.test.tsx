@@ -1013,4 +1013,84 @@ describe('EventsPage', () => {
             expect(await screen.findByTestId('sync-overlay-modal')).toBeInTheDocument();
         });
     });
+
+    describe('cancelled row marking (D5)', () => {
+        const buildEventRow = (overrides: Record<string, unknown> = {}) => ({
+            id: 'evt-cancelled',
+            name: 'Zrušený závod',
+            location: 'Jihlava',
+            eventDate: '2026-06-01',
+            status: 'CANCELLED',
+            _links: {self: {href: '/api/events/evt-cancelled'}},
+            ...overrides,
+        });
+
+        const renderRows = (
+            rows: unknown[],
+            resourceData: HalResponse = {_links: {self: {href: '/api/events'}}},
+            overrides?: Partial<UseHalPageDataReturn>,
+        ) => {
+            vi.mocked(useAuthorizedQuery).mockReturnValue({
+                data: {
+                    _links: {self: {href: '/api/events'}},
+                    _embedded: {eventSummaryDtoList: rows},
+                    page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
+                },
+                isLoading: false,
+                error: null,
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            return renderPage(createMockPageData(resourceData, overrides));
+        };
+
+        it('strikes through the name of a cancelled event', () => {
+            renderRows([buildEventRow()]);
+
+            expect(screen.getByText('Zrušený závod', {exact: false})).toHaveClass('line-through');
+        });
+
+        it('repeats the cancelled state for screen readers', () => {
+            renderRows([buildEventRow()]);
+
+            expect(screen.getByText('— Zrušeno')).toBeInTheDocument();
+        });
+
+        it('renders the plain name for ACTIVE, FINISHED and DRAFT events', () => {
+            renderRows([
+                buildEventRow({id: 'evt-active', name: 'Aktivní závod', status: 'ACTIVE'}),
+                buildEventRow({id: 'evt-finished', name: 'Ukončený závod', status: 'FINISHED'}),
+                buildEventRow({id: 'evt-draft', name: 'Koncept závodu', status: 'DRAFT'}),
+            ]);
+
+            expect(screen.getByText('Aktivní závod')).not.toHaveClass('line-through');
+            expect(screen.getByText('Ukončený závod')).not.toHaveClass('line-through');
+            expect(screen.getByText('Koncept závodu')).not.toHaveClass('line-through');
+        });
+
+        it('strikes only the name, leaving the other cells of the row normal', () => {
+            renderRows([buildEventRow()]);
+
+            expect(screen.getByText('Zrušený závod', {exact: false})).toHaveClass('line-through');
+            expect(screen.getByText('Jihlava')).not.toHaveClass('line-through');
+        });
+
+        it('renders no struck span when a cancelled event has no name', () => {
+            const {container} = renderRows([buildEventRow({name: undefined})]);
+
+            expect(container.querySelector('.line-through')).not.toBeInTheDocument();
+        });
+
+        it('renders no tooltip on the status cell of a cancelled event', () => {
+            renderRows(
+                [buildEventRow()],
+                {
+                    _links: {self: {href: '/api/events'}},
+                    _templates: {createEvent: mockHalFormsTemplate({method: 'POST', title: 'Přidat závod'})},
+                },
+            );
+
+            // Managers see the status column, but it must carry no title: the reason is a
+            // detail-page signal, and the struck name is the list marker (D5).
+            expect(screen.getByText('Zrušeno')).not.toHaveAttribute('title');
+        });
+    });
 });

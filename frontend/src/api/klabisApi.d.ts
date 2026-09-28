@@ -2535,10 +2535,10 @@ export interface components {
         EventStatus: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
         /** @description Event summary for list views. The status field is returned to every authenticated
          *     caller; the events list renders it in a column only for callers with EVENTS:MANAGE
-         *     authority.
+         *     authority. The cancellation reason is not part of the summary — it is shown on the
+         *     event detail instead.
          *      */
         EventSummaryDto: {
-            cancellationReason?: string;
             categories?: components["schemas"]["EventCategoryDto"][];
             coordinators?: string[];
             deadlines?: string[];
