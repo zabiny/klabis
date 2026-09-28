@@ -57,11 +57,6 @@ The system SHALL show a paginated event list. DRAFT events are only visible to u
 - **WHEN** user filters the event list by a coordinator member
 - **THEN** only events where that member appears anywhere in the coordinators collection are shown
 
-#### Scenario: Event status visible only to manager in list
-
-- **WHEN** user without EVENTS:MANAGE permission views the event list
-- **THEN** the event status is not shown
-
 #### Scenario: Default view shows only upcoming events
 
 - **WHEN** a user opens the events list without any explicit time filter

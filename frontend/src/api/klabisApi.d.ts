@@ -2533,8 +2533,9 @@ export interface components {
         };
         /** @enum {string} */
         EventStatus: "DRAFT" | "ACTIVE" | "FINISHED" | "CANCELLED";
-        /** @description Event summary for list views. The status field is only visible to callers with
-         *     EVENTS:MANAGE authority.
+        /** @description Event summary for list views. The status field is returned to every authenticated
+         *     caller; the events list renders it in a column only for callers with EVENTS:MANAGE
+         *     authority.
          *      */
         EventSummaryDto: {
             cancellationReason?: string;

@@ -110,6 +110,10 @@ export const EventsPage = (): ReactElement => {
     const importTemplate = resourceData?._templates?.importEvent;
     const activeImportTemplate = importBatchTemplate ?? importTemplate;
     const bulkSyncTemplate = resourceData?._templates?.syncAllUpcomingFromOris;
+    // The status column stays manager-only. Since the API stopped omitting `status` for
+    // non-managers, the backend authority signal is the only way left to know whether to
+    // show the column — `_templates.createEvent` is present exactly for EVENTS:MANAGE.
+    const canManageEvents = Boolean(resourceData?._templates?.createEvent);
     const showRegisteredByMeToggle = Boolean(getUser()?.memberId);
 
     const orisImport = useOrisEventImport(
@@ -323,6 +327,7 @@ export const EventsPage = (): ReactElement => {
                                return <CoordinatorCellContent coordinatorLinks={coordinatorLinks}/>;
                            }}>{labels.tables.coordinator}</TableCell>
                 <TableCell sortable column={"status"}
+                           hidden={!canManageEvents}
                            dataRender={({value, item}) => {
                                const label = typeof value === 'string' ? getEnumLabel('eventStatus', value) : '';
                                const event = item as unknown as EventListData;

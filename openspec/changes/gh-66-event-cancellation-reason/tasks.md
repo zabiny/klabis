@@ -20,11 +20,11 @@ Test entry points: `EventFilterE2ETest` for list-visibility combinations end-to-
 
 ## 2. Slice: ungate `status` on the summary + explicit status-column gate in the table
 
-- [ ] 2.1 `docs/openapi/spec/events.yaml`: remove `x-klabis-authority: EVENTS_MANAGE` from `EventSummaryDto.status`; then `./gradlew openapiBundle` (from `backend/`) and `npm run openapi` (from `frontend/`) to regenerate the bundle and the frontend types. No new fields.
-- [ ] 2.2 Failing test first (`EventControllerTest`): `GET /api/events` as a member without `EVENTS:MANAGE` returns `status` for each row (previously masked); the `EVENTS:MANAGE` case keeps returning it; assert the existing `_links`/`_templates` parity of the list is unchanged. Then make it pass.
-- [ ] 2.3 Failing test first (`EventsPage.test.tsx`): the status column is **not** rendered for a user whose list response has no `_templates.createEvent`, and **is** rendered when that template is present — both cases include `status` in the row payload (so the test fails without the explicit gate, proving the implicit `hideEmptyColumns` route is gone).
-- [ ] 2.4 `EventsPage.tsx`: gate the status column explicitly — `const canManageEvents = Boolean(resourceData?._templates?.createEvent);` and `hidden={!canManageEvents}` on the status `TableCell` (design D5). Keep `hideEmptyColumns={true}` for the other optional columns.
-- [ ] 2.5 Run backend + frontend tests, commit. (Ship together with slice 1's release — see ordering note.)
+- [x] 2.1 `docs/openapi/spec/events.yaml`: remove `x-klabis-authority: EVENTS_MANAGE` from `EventSummaryDto.status`; then `./gradlew openapiBundle` (from `backend/`) and `npm run openapi` (from `frontend/`) to regenerate the bundle and the frontend types. No new fields.
+- [x] 2.2 Failing test first (`EventControllerTest`): `GET /api/events` as a member without `EVENTS:MANAGE` returns `status` for each row (previously masked); the `EVENTS:MANAGE` case keeps returning it; assert the existing `_links`/`_templates` parity of the list is unchanged. Then make it pass.
+- [x] 2.3 Failing test first (`EventsPage.test.tsx`): the status column is **not** rendered for a user whose list response has no `_templates.createEvent`, and **is** rendered when that template is present — both cases include `status` in the row payload (so the test fails without the explicit gate, proving the implicit `hideEmptyColumns` route is gone).
+- [x] 2.4 `EventsPage.tsx`: gate the status column explicitly — `const canManageEvents = Boolean(resourceData?._templates?.createEvent);` and `hidden={!canManageEvents}` on the status `TableCell` (design D5). Keep `hideEmptyColumns={true}` for the other optional columns.
+- [x] 2.5 Run backend + frontend tests, commit. (Ship together with slice 1's release — see ordering note.)
 
 ## 3. Slice: struck-through name in the list
 
@@ -44,7 +44,7 @@ Test entry points: `EventFilterE2ETest` for list-visibility combinations end-to-
 
 ## 5. Close-out: spec sync, full test run, review
 
-- [ ] 5.1 Verify the delta spec is the implemented behaviour: re-read `openspec/changes/gh-66-event-cancellation-reason/specs/events/spec.md` against the code for all five MODIFIED requirements (including the two dropped scenarios: the list tooltip scenario and "Status column hidden when not returned by API").
+- [ ] 5.1 Verify the delta spec is the implemented behaviour: re-read `openspec/changes/gh-66-event-cancellation-reason/specs/events/spec.md` against the code for all five MODIFIED requirements. Confirm these three removals/fixes are in place: (a) the list status-cell tooltip scenario, (b) "Status column hidden when not returned by API" (status is now always returned, so the column gate lives in the frontend), and (c) the "Event status visible only to manager in list" scenario — dropped in slice 2 because the field is now returned to every caller; the manager-only rule is carried by the `Events Table Display` requirement text and its "Manager views events table with status column" scenario. Also amend the D3 snippet in `design.md` from `Criteria.where("status").isNot("CANCELLED")` to `.not(EventStatus.CANCELLED.name())` — spring-data-relational 4.0.4 has no `isNot`.
 - [ ] 5.2 Run the full backend test suite (Modulith verification + architecture tests included) and the full frontend suite; refactor anything the new code duplicated (e.g. if the `cancelled`-aware name renderer ends up needed in more than one place, extract it).
 - [ ] 5.3 Manual verification on `http://localhost:3000` as `admin` and as the club member (`ZBM9500`):
   - cancel an ACTIVE event **with** a reason → struck name in the list, badge + reason under the name on the detail; the reason is no longer a list tooltip

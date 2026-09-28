@@ -728,8 +728,7 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").doesNotExist());
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray());
 
             verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(false), any());
         }
@@ -808,7 +807,7 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("should filter by status — status field hidden for regular user")
+        @DisplayName("should filter by status")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldFilterEventsByStatus() throws Exception {
             Event event = Event.create(EventCreateEventBuilder.builder().name("Active Event").eventDate(LocalDate.of(2026, 6, 1)).location("Location").organizer("OOB").build());
@@ -823,7 +822,9 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").doesNotExist());
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"));
+
+            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.ACTIVE)), any(), eq(false), any());
         }
     }
 
@@ -2176,9 +2177,9 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("status field hidden for regular users without EVENTS:MANAGE")
+        @DisplayName("status field returned for regular users without EVENTS:MANAGE — ungated since D4")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
-        void shouldHideStatusFieldForRegularUsers() throws Exception {
+        void shouldShowStatusFieldForRegularUsers() throws Exception {
             Event event = EventTestDataBuilder.anEvent().buildPublished();
 
             when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
@@ -2188,7 +2189,13 @@ class EventControllerTest {
                             get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").doesNotExist());
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"))
+                    // The ungated status field must not change the list envelope, and the frontend
+                    // still needs an authority signal to gate the status column (design D5).
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray())
+                    .andExpect(jsonPath("$.page").exists())
+                    .andExpect(jsonPath("$._links.self.href").exists())
+                    .andExpect(jsonPath("$._templates.createEvent").doesNotExist());
         }
 
         @Test
@@ -2204,7 +2211,9 @@ class EventControllerTest {
                             get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"));
+                    .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"))
+                    .andExpect(jsonPath("$._links.self.href").exists())
+                    .andExpect(jsonPath("$._templates.createEvent.method").value("POST"));
         }
     }
 
