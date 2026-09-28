@@ -471,7 +471,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(EventFilter.none(), pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.none(), pageable, true);
+            Page<Event> result = service.listEvents(EventFilter.none(), pageable, true, null);
 
             // Then
             assertThat(result.getContent()).hasSize(2);
@@ -480,8 +480,8 @@ class EventManagementServiceTest {
         }
 
         @Test
-        @DisplayName("non-manager sees events excluding DRAFT when filter is none()")
-        void shouldExcludeDraftEventsForNonManager() {
+        @DisplayName("non-manager without a member profile sees events excluding DRAFT and CANCELLED when filter is none()")
+        void shouldExcludeDraftAndCancelledEventsForNonManagerWithoutMemberProfile() {
             // Given
             Pageable pageable = PageRequest.of(0, 10);
             Event activeEvent = Event.create(EventCreateEventBuilder.builder()
@@ -489,12 +489,12 @@ class EventManagementServiceTest {
                     .location("Location").organizer("OOB").build());
             activeEvent.publish();
 
-            EventFilter expectedFilter = EventFilter.byNotHavingStatus(EventStatus.DRAFT);
+            EventFilter expectedFilter = EventFilter.byNotHavingStatus(EventStatus.DRAFT, EventStatus.CANCELLED);
             Page<Event> eventPage = new PageImpl<>(List.of(activeEvent), pageable, 1);
             when(eventRepository.findAll(expectedFilter, pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.none(), pageable, false);
+            Page<Event> result = service.listEvents(EventFilter.none(), pageable, false, null);
 
             // Then
             assertThat(result.getContent()).hasSize(1);
@@ -508,7 +508,7 @@ class EventManagementServiceTest {
             Pageable pageable = PageRequest.of(0, 10);
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, false);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, false, null);
 
             // Then
             assertThat(result.getContent()).isEmpty();
@@ -528,7 +528,7 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(EventFilter.byStatus(EventStatus.DRAFT), pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, true);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, true, null);
 
             // Then
             assertThat(result.getContent()).hasSize(1);
@@ -549,11 +549,158 @@ class EventManagementServiceTest {
             when(eventRepository.findAll(EventFilter.byStatus(EventStatus.ACTIVE), pageable)).thenReturn(eventPage);
 
             // When
-            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.ACTIVE), pageable, false);
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.ACTIVE), pageable, false, null);
 
             // Then
             assertThat(result.getContent()).hasSize(1);
             assertThat(result.getContent().get(0).getStatus()).isEqualTo(EventStatus.ACTIVE);
+        }
+
+        @Test
+        @DisplayName("non-manager with a member profile gets cancelled events narrowed to their registrations")
+        void shouldNarrowCancelledEventsToViewerRegistrations() {
+            // Given
+            Pageable pageable = PageRequest.of(0, 10);
+            MemberId viewer = new MemberId(UUID.randomUUID());
+            Event cancelledEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Cancelled Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
+            cancelledEvent.cancel(Event.CancelEvent.withoutReason());
+
+            EventFilter expectedFilter = EventFilter.byNotHavingStatus(EventStatus.DRAFT)
+                    .withCancelledVisibleTo(viewer);
+            when(eventRepository.findAll(expectedFilter, pageable))
+                    .thenReturn(new PageImpl<>(List.of(cancelledEvent), pageable, 1));
+
+            // When
+            Page<Event> result = service.listEvents(EventFilter.none(), pageable, false, viewer);
+
+            // Then
+            verify(eventRepository).findAll(expectedFilter, pageable);
+            assertThat(result.getContent()).hasSize(1);
+            assertThat(result.getContent().get(0).getStatus()).isEqualTo(EventStatus.CANCELLED);
+        }
+
+        @Test
+        @DisplayName("non-manager without a member profile gets CANCELLED events excluded entirely")
+        void shouldExcludeCancelledEventsForViewerWithoutMemberProfile() {
+            // Given
+            Pageable pageable = PageRequest.of(0, 10);
+            EventFilter expectedFilter = EventFilter.byNotHavingStatus(EventStatus.DRAFT, EventStatus.CANCELLED);
+            when(eventRepository.findAll(expectedFilter, pageable))
+                    .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+            // When
+            Page<Event> result = service.listEvents(EventFilter.none(), pageable, false, null);
+
+            // Then
+            verify(eventRepository).findAll(expectedFilter, pageable);
+            assertThat(result.getTotalElements()).isZero();
+        }
+
+        @Test
+        @DisplayName("viewer without a member profile filtering CANCELLED only gets an empty page — no repository call")
+        void shouldReturnEmptyPageWhenViewerWithoutMemberProfileRequestsCancelledOnly() {
+            // Given
+            Pageable pageable = PageRequest.of(0, 10);
+
+            // When
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.CANCELLED), pageable, false, null);
+
+            // Then
+            verify(eventRepository, never()).findAll(any(), any());
+            assertThat(result.getContent()).isEmpty();
+            assertThat(result.getTotalElements()).isZero();
+        }
+
+        @Test
+        @DisplayName("viewer with a member profile filtering CANCELLED only gets their own cancelled events")
+        void shouldNarrowCancelledOnlyRequestForMemberViewer() {
+            // Given
+            Pageable pageable = PageRequest.of(0, 10);
+            MemberId viewer = new MemberId(UUID.randomUUID());
+            Event cancelledEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Cancelled Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
+            cancelledEvent.cancel(Event.CancelEvent.withoutReason());
+
+            EventFilter expectedFilter = EventFilter.byStatus(EventStatus.CANCELLED).withCancelledVisibleTo(viewer);
+            when(eventRepository.findAll(expectedFilter, pageable))
+                    .thenReturn(new PageImpl<>(List.of(cancelledEvent), pageable, 1));
+
+            // When
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.CANCELLED), pageable, false, viewer);
+
+            // Then
+            verify(eventRepository).findAll(expectedFilter, pageable);
+            assertThat(result.getContent()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("manager keeps every cancelled event — viewer member id is ignored")
+        void shouldIgnoreViewerMemberIdForManager() {
+            // Given
+            Pageable pageable = PageRequest.of(0, 10);
+            MemberId viewer = new MemberId(UUID.randomUUID());
+            EventFilter requested = EventFilter.byStatus(EventStatus.CANCELLED);
+            when(eventRepository.findAll(requested, pageable))
+                    .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+            // When
+            service.listEvents(requested, pageable, true, viewer);
+
+            // Then
+            verify(eventRepository).findAll(requested, pageable);
+        }
+
+        @Test
+        @DisplayName("member viewer requesting DRAFT status explicitly gets empty page — the DRAFT guard precedes the cancelled rule")
+        void shouldReturnEmptyPageWhenMemberViewerRequestsDraftOnly() {
+            // Given
+            Pageable pageable = PageRequest.of(0, 10);
+            MemberId viewer = new MemberId(UUID.randomUUID());
+
+            // When
+            Page<Event> result = service.listEvents(EventFilter.byStatus(EventStatus.DRAFT), pageable, false, viewer);
+
+            // Then
+            verify(eventRepository, never()).findAll(any(), any());
+            assertThat(result.getContent()).isEmpty();
+            assertThat(result.getTotalElements()).isZero();
+        }
+
+        @Test
+        @DisplayName("a status set that already excludes DRAFT but allows CANCELLED still gets the cancelled rule applied")
+        void shouldApplyCancelledRuleWhenFilterAlreadyExcludesDraft() {
+            // Given: {ACTIVE, CANCELLED} — DRAFT cannot appear, CANCELLED still can
+            Pageable pageable = PageRequest.of(0, 10);
+            MemberId viewer = new MemberId(UUID.randomUUID());
+            EventFilter requested = EventFilter.byStatus(EventStatus.ACTIVE, EventStatus.CANCELLED);
+            EventFilter expectedFilter = requested.withCancelledVisibleTo(viewer);
+            when(eventRepository.findAll(expectedFilter, pageable))
+                    .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+            // When
+            service.listEvents(requested, pageable, false, viewer);
+
+            // Then
+            verify(eventRepository).findAll(expectedFilter, pageable);
+        }
+
+        @Test
+        @DisplayName("non-manager without a member profile requesting {DRAFT, CANCELLED} gets an empty page — guards the empty-status-set collapse")
+        void shouldReturnEmptyPageWhenNonManagerRequestsDraftAndCancelledOnly() {
+            // Given
+            Pageable pageable = PageRequest.of(0, 10);
+
+            // When
+            Page<Event> result = service.listEvents(
+                    EventFilter.byStatus(EventStatus.DRAFT, EventStatus.CANCELLED), pageable, false, null);
+
+            // Then
+            verify(eventRepository, never()).findAll(any(), any());
+            assertThat(result.getContent()).isEmpty();
+            assertThat(result.getTotalElements()).isZero();
         }
     }
 

@@ -1003,6 +1003,246 @@ class EventJdbcRepositoryTest {
     }
 
     @Nested
+    @DisplayName("Filter by cancelledVisibleTo — cancelled visibility rule")
+    class FilterByCancelledVisibleTo {
+
+        @Test
+        @DisplayName("should return the member's cancelled event and every non-cancelled event, hiding others' cancelled ones")
+        void shouldReturnOnlyOwnCancelledEventPlusNonCancelledEvents() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+
+            Event ownCancelled = Event.create(EventCreateEventBuilder.builder()
+                    .name("Own Cancelled")
+                    .eventDate(LocalDate.now().plusDays(30))
+                    .organizer("OOB")
+                    .build());
+            ownCancelled.publish();
+            ownCancelled.registerMember(member, new SiCardNumber("111111"), null);
+            ownCancelled.cancel();
+            eventRepository.save(ownCancelled);
+
+            Event someoneElsesCancelled = Event.create(EventCreateEventBuilder.builder()
+                    .name("Someone Elses Cancelled")
+                    .eventDate(LocalDate.now().plusDays(31))
+                    .organizer("OOB")
+                    .build());
+            someoneElsesCancelled.publish();
+            someoneElsesCancelled.registerMember(new MemberId(TEST_MEMBER_2_ID), new SiCardNumber("222222"), null);
+            someoneElsesCancelled.cancel();
+            eventRepository.save(someoneElsesCancelled);
+
+            Event activeEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active Event")
+                    .eventDate(LocalDate.now().plusDays(32))
+                    .organizer("OOB")
+                    .build());
+            activeEvent.publish();
+            eventRepository.save(activeEvent);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withCancelledVisibleTo(member),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent())
+                    .extracting(Event::getName)
+                    .containsExactlyInAnyOrder("Own Cancelled", "Active Event");
+        }
+
+        @Test
+        @DisplayName("should count only the visible rows so the page total matches the content")
+        void shouldCountOnlyVisibleRows() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+
+            Event ownCancelled = Event.create(EventCreateEventBuilder.builder()
+                    .name("Own Cancelled")
+                    .eventDate(LocalDate.now().plusDays(30))
+                    .organizer("OOB")
+                    .build());
+            ownCancelled.publish();
+            ownCancelled.registerMember(member, new SiCardNumber("111111"), null);
+            ownCancelled.cancel();
+            eventRepository.save(ownCancelled);
+
+            Event someoneElsesCancelled = Event.create(EventCreateEventBuilder.builder()
+                    .name("Someone Elses Cancelled")
+                    .eventDate(LocalDate.now().plusDays(31))
+                    .organizer("OOB")
+                    .build());
+            someoneElsesCancelled.publish();
+            someoneElsesCancelled.registerMember(new MemberId(TEST_MEMBER_2_ID), new SiCardNumber("222222"), null);
+            someoneElsesCancelled.cancel();
+            eventRepository.save(someoneElsesCancelled);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withCancelledVisibleTo(member),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getTotalElements()).isEqualTo(1);
+            assertThat(result.getContent()).extracting(Event::getName).containsExactly("Own Cancelled");
+        }
+
+        @Test
+        @DisplayName("should return no cancelled events when the member has none registered — empty id list branch")
+        void shouldExcludeAllCancelledEventsWhenMemberHasNoCancelledRegistrations() {
+            MemberId member = new MemberId(TEST_MEMBER_3_ID);
+
+            Event cancelledEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Cancelled Event")
+                    .eventDate(LocalDate.now().plusDays(30))
+                    .organizer("OOB")
+                    .build());
+            cancelledEvent.publish();
+            cancelledEvent.registerMember(new MemberId(TEST_MEMBER_1_ID), new SiCardNumber("111111"), null);
+            cancelledEvent.cancel();
+            eventRepository.save(cancelledEvent);
+
+            Event activeEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active Event")
+                    .eventDate(LocalDate.now().plusDays(31))
+                    .organizer("OOB")
+                    .build());
+            activeEvent.publish();
+            eventRepository.save(activeEvent);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withCancelledVisibleTo(member),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).extracting(Event::getName).containsExactly("Active Event");
+        }
+
+        @Test
+        @DisplayName("should AND the visibility rule with the fulltext pre-filter")
+        void shouldCombineWithFulltextPreFilter() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+
+            Event ownCancelledMatching = Event.create(EventCreateEventBuilder.builder()
+                    .name("Praha Cup")
+                    .eventDate(LocalDate.now().plusDays(30))
+                    .organizer("OOB")
+                    .build());
+            ownCancelledMatching.publish();
+            ownCancelledMatching.registerMember(member, new SiCardNumber("111111"), null);
+            ownCancelledMatching.cancel();
+            eventRepository.save(ownCancelledMatching);
+
+            Event ownCancelledNotMatching = Event.create(EventCreateEventBuilder.builder()
+                    .name("Brno Cup")
+                    .eventDate(LocalDate.now().plusDays(31))
+                    .organizer("OOB")
+                    .build());
+            ownCancelledNotMatching.publish();
+            ownCancelledNotMatching.registerMember(member, new SiCardNumber("222222"), null);
+            ownCancelledNotMatching.cancel();
+            eventRepository.save(ownCancelledNotMatching);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.none().withFulltext("Praha").withCancelledVisibleTo(member),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).extracting(Event::getName).containsExactly("Praha Cup");
+        }
+
+        @Test
+        @DisplayName("should AND the visibility disjunction with a non-empty status set — the disjunction must stay a nested group")
+        void shouldAndVisibilityDisjunctionWithStatusSetOnOrganizer() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+
+            Event orgACancelled = Event.create(EventCreateEventBuilder.builder()
+                    .name("Org A Cancelled")
+                    .eventDate(LocalDate.now().plusDays(30))
+                    .organizer("OrgA")
+                    .build());
+            orgACancelled.publish();
+            orgACancelled.registerMember(member, new SiCardNumber("111111"), null);
+            orgACancelled.cancel();
+            eventRepository.save(orgACancelled);
+
+            Event orgBCancelled = Event.create(EventCreateEventBuilder.builder()
+                    .name("Org B Cancelled")
+                    .eventDate(LocalDate.now().plusDays(31))
+                    .organizer("OrgB")
+                    .build());
+            orgBCancelled.publish();
+            orgBCancelled.registerMember(member, new SiCardNumber("222222"), null);
+            orgBCancelled.cancel();
+            eventRepository.save(orgBCancelled);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.byStatus(EventStatus.CANCELLED).withOrganizer("OrgA").withCancelledVisibleTo(member),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).extracting(Event::getName).containsExactly("Org A Cancelled");
+            assertThat(result.getTotalElements()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("should AND the visibility disjunction with a date range — the disjunction must stay a nested group")
+        void shouldAndVisibilityDisjunctionWithDateRange() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+            LocalDate today = LocalDate.now();
+
+            Event inWindowCancelled = Event.create(EventCreateEventBuilder.builder()
+                    .name("In Window Cancelled")
+                    .eventDate(today.plusDays(10))
+                    .organizer("OOB")
+                    .build());
+            inWindowCancelled.publish();
+            inWindowCancelled.registerMember(member, new SiCardNumber("111111"), null);
+            inWindowCancelled.cancel();
+            eventRepository.save(inWindowCancelled);
+
+            Event outOfWindowCancelled = Event.create(EventCreateEventBuilder.builder()
+                    .name("Out Of Window Cancelled")
+                    .eventDate(today.plusDays(20))
+                    .organizer("OOB")
+                    .build());
+            outOfWindowCancelled.publish();
+            outOfWindowCancelled.registerMember(member, new SiCardNumber("222222"), null);
+            outOfWindowCancelled.cancel();
+            eventRepository.save(outOfWindowCancelled);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.byStatus(EventStatus.CANCELLED)
+                            .withDateRange(today.plusDays(9), today.plusDays(11))
+                            .withCancelledVisibleTo(member),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).extracting(Event::getName).containsExactly("In Window Cancelled");
+            assertThat(result.getTotalElements()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("byStatus(ACTIVE) yields no rows even when cancelledVisibleTo is set")
+        void shouldReturnNothingWhenFilterExcludesCancelled() {
+            MemberId member = new MemberId(TEST_MEMBER_1_ID);
+
+            Event cancelledEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Cancelled Event")
+                    .eventDate(LocalDate.now().plusDays(30))
+                    .organizer("OOB")
+                    .build());
+            cancelledEvent.publish();
+            cancelledEvent.registerMember(member, new SiCardNumber("111111"), null);
+            cancelledEvent.cancel();
+            eventRepository.save(cancelledEvent);
+
+            Page<Event> result = eventRepository.findAll(
+                    EventFilter.byStatus(EventStatus.ACTIVE).withCancelledVisibleTo(member),
+                    PageRequest.of(0, 10)
+            );
+
+            assertThat(result.getContent()).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("Filter by deadlineWithin — nearest future deadline in window")
     class FilterByDeadlineWithin {
 

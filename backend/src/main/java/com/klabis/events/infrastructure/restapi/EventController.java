@@ -212,7 +212,8 @@ public class EventController implements EventsApi {
             HalResponseContext.setDomainList(List.of());
             return ResponseEntity.ok(empty.map(e -> conversionService.convert(e, EventSummaryDto.class)));
         }
-        Page<Event> page = eventManagementService.listEvents(filter, pageable, EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE));
+        Page<Event> page = eventManagementService.listEvents(filter, pageable,
+                EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE), currentUser.memberId());
 
         // Same reasoning as getEvent (task 8.6): one enrolment lookup per request, scoped to this
         // page's event ids rather than every active EVENT sync record, read back by the

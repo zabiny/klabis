@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.time.Period;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -247,6 +248,7 @@ class EventFilterTest {
                     null,
                     null,
                     null,
+                    null,
                     null
             );
             EventFilter result = base.withExcludedStatus(EventStatus.DRAFT);
@@ -254,6 +256,74 @@ class EventFilterTest {
             assertThat(result.dateFrom()).isEqualTo(java.time.LocalDate.of(2026, 1, 1));
             assertThat(result.dateTo()).isEqualTo(java.time.LocalDate.of(2026, 12, 31));
             assertThat(result.statuses()).containsExactly(EventStatus.ACTIVE);
+        }
+    }
+
+    @Nested
+    @DisplayName("withCancelledVisibleTo()")
+    class WithCancelledVisibleToTests {
+
+        @Test
+        @DisplayName("sets the member and leaves the status set untouched")
+        void setsMemberAndLeavesStatusesUntouched() {
+            MemberId member = new MemberId(UUID.randomUUID());
+            EventFilter result = EventFilter.byStatus(EventStatus.CANCELLED).withCancelledVisibleTo(member);
+            assertThat(result.cancelledVisibleTo()).isEqualTo(member);
+            assertThat(result.statuses()).containsExactly(EventStatus.CANCELLED);
+        }
+
+        @Test
+        @DisplayName("null clears the restriction")
+        void nullClearsTheRestriction() {
+            MemberId member = new MemberId(UUID.randomUUID());
+            EventFilter filter = EventFilter.none().withCancelledVisibleTo(member).withCancelledVisibleTo(null);
+            assertThat(filter.cancelledVisibleTo()).isNull();
+        }
+
+        @Test
+        @DisplayName("preserves every other filter dimension")
+        void preservesOtherDimensions() {
+            MemberId member = new MemberId(UUID.randomUUID());
+            EventFilter base = EventFilter.byStatus(EventStatus.ACTIVE, EventStatus.CANCELLED)
+                    .withOrganizer("OOB")
+                    .withDateRange(java.time.LocalDate.of(2026, 1, 1), java.time.LocalDate.of(2026, 12, 31))
+                    .withFulltext("jihlava")
+                    .withRegisteredBy(member)
+                    .withDeadlineWithin(Period.ofDays(7))
+                    .withEventTypeIds(List.of());
+
+            EventFilter result = base.withCancelledVisibleTo(member);
+
+            assertThat(result.organizer()).isEqualTo("OOB");
+            assertThat(result.dateFrom()).isEqualTo(java.time.LocalDate.of(2026, 1, 1));
+            assertThat(result.dateTo()).isEqualTo(java.time.LocalDate.of(2026, 12, 31));
+            assertThat(result.fulltextQuery()).isEqualTo("jihlava");
+            assertThat(result.registeredBy()).isEqualTo(member);
+            assertThat(result.deadlineWithin()).isEqualTo(Period.ofDays(7));
+            assertThat(result.statuses()).containsExactlyInAnyOrder(EventStatus.ACTIVE, EventStatus.CANCELLED);
+        }
+
+        @Test
+        @DisplayName("every other copy-factory preserves an already-set member")
+        void otherCopyFactoriesPreserveTheMember() {
+            MemberId member = new MemberId(UUID.randomUUID());
+            EventFilter base = EventFilter.none().withCancelledVisibleTo(member);
+
+            assertThat(base.withExcludedStatus(EventStatus.DRAFT).cancelledVisibleTo()).isEqualTo(member);
+            assertThat(base.withFulltext("jihlava").cancelledVisibleTo()).isEqualTo(member);
+            assertThat(base.withOrganizer("OOB").cancelledVisibleTo()).isEqualTo(member);
+            assertThat(base.withRegisteredBy(member).cancelledVisibleTo()).isEqualTo(member);
+            assertThat(base.withCoordinator(member).cancelledVisibleTo()).isEqualTo(member);
+            assertThat(base.withDeadlineWithin(Period.ofDays(7)).cancelledVisibleTo()).isEqualTo(member);
+            assertThat(base.withNotRegisteredBy(member).cancelledVisibleTo()).isEqualTo(member);
+            assertThat(base.withEventTypeIds(List.of()).cancelledVisibleTo()).isEqualTo(member);
+            assertThat(base.withDateRange(java.time.LocalDate.of(2026, 1, 1), null).cancelledVisibleTo()).isEqualTo(member);
+        }
+
+        @Test
+        @DisplayName("none-filter has null cancelledVisibleTo by default")
+        void noneFilterHasNullCancelledVisibleTo() {
+            assertThat(EventFilter.none().cancelledVisibleTo()).isNull();
         }
     }
 }

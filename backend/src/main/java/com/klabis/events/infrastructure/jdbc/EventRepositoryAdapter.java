@@ -104,11 +104,25 @@ class EventRepositoryAdapter implements EventRepository {
             return new PageImpl<>(List.of(), pageable, 0);
         }
 
+        List<UUID> cancelledRegisteredIds = resolveCancelledRegisteredIds(filter);
+
         if (preFilteredIds != null) {
-            return findAllWithMatchingIds(filter, pageable, preFilteredIds);
+            return findAllWithMatchingIds(filter, pageable, preFilteredIds, cancelledRegisteredIds);
         }
 
-        return executeQuery(buildCriteriaQuery(filter), pageable);
+        return executeQuery(buildCriteriaQuery(filter, cancelledRegisteredIds), pageable);
+    }
+
+    /**
+     * Returns the CANCELLED events the filter's {@code cancelledVisibleTo} member is registered for,
+     * or null when the visibility rule does not apply (no member set, or the filter already excludes
+     * CANCELLED so the pre-fetch would pay for nothing).
+     */
+    private List<UUID> resolveCancelledRegisteredIds(EventFilter filter) {
+        if (filter.cancelledVisibleTo() == null || filter.excludesStatus(EventStatus.CANCELLED)) {
+            return null;
+        }
+        return findIdsByCancelledAndRegistered(filter.cancelledVisibleTo());
     }
 
     /**
@@ -158,10 +172,11 @@ class EventRepositoryAdapter implements EventRepository {
                 .orElse(List.of());
     }
 
-    private Page<Event> findAllWithMatchingIds(EventFilter filter, Pageable pageable, List<UUID> matchingIds) {
+    private Page<Event> findAllWithMatchingIds(EventFilter filter, Pageable pageable, List<UUID> matchingIds,
+                                              List<UUID> cancelledRegisteredIds) {
         List<Criteria> conditions = new ArrayList<>();
         conditions.add(Criteria.where("id").in(matchingIds));
-        conditions.addAll(buildNonFulltextConditions(filter));
+        conditions.addAll(buildNonFulltextConditions(filter, cancelledRegisteredIds));
 
         Criteria combined = conditions.stream().reduce(Criteria::and).orElseThrow();
         return executeQuery(Query.query(combined), pageable);
@@ -184,8 +199,8 @@ class EventRepositoryAdapter implements EventRepository {
      * Builds a Criteria-based query from EventFilter (excluding fulltext — handled separately).
      * Pagination is applied separately so the same query can be reused for counting.
      */
-    private Query buildCriteriaQuery(EventFilter filter) {
-        List<Criteria> conditions = buildNonFulltextConditions(filter);
+    private Query buildCriteriaQuery(EventFilter filter, List<UUID> cancelledRegisteredIds) {
+        List<Criteria> conditions = buildNonFulltextConditions(filter, cancelledRegisteredIds);
 
         if (conditions.isEmpty()) {
             return Query.empty();
@@ -196,11 +211,12 @@ class EventRepositoryAdapter implements EventRepository {
     }
 
     /**
-     * Returns the Criteria conditions for filter dimensions handled by the Spring Data Criteria API.
-     * Fulltext and registeredBy cannot be expressed via Criteria (require raw SQL) and are
-     * resolved separately via a pre-fetch of matching IDs.
+     * Returns the Criteria conditions for every filter dimension that a Criteria query can carry:
+     * the plain property restrictions plus the CANCELLED-visibility rule, which is assembled here
+     * so no query path can forget it. Fulltext and registeredBy cannot be expressed via Criteria
+     * (they require raw SQL) and are resolved separately via a pre-fetch of matching IDs.
      */
-    private List<Criteria> buildNonFulltextConditions(EventFilter filter) {
+    private List<Criteria> buildNonFulltextConditions(EventFilter filter, List<UUID> cancelledRegisteredIds) {
         List<Criteria> conditions = new ArrayList<>();
 
         Set<EventStatus> statuses = filter.statuses();
@@ -228,7 +244,27 @@ class EventRepositoryAdapter implements EventRepository {
             conditions.add(Criteria.where("event_type_id").in(typeIdValues));
         }
 
+        addCancelledVisibilityCondition(conditions, cancelledRegisteredIds);
+
         return conditions;
+    }
+
+    /**
+     * Adds the CANCELLED-visibility condition: a CANCELLED event is part of the result only when
+     * it is in {@code cancelledRegisteredIds}. Being a disjunction it cannot be folded into
+     * {@link #resolvePreFilteredIds}'s intersection, so it is kept as its own condition — and it
+     * lives in the same Criteria query {@link #executeQuery} reuses for counting, so the page total
+     * reflects it.
+     */
+    private void addCancelledVisibilityCondition(List<Criteria> conditions, List<UUID> cancelledRegisteredIds) {
+        if (cancelledRegisteredIds == null) {
+            return;
+        }
+        // An empty id list would produce invalid `id IN ()`, so it degenerates to the status-only branch.
+        conditions.add(cancelledRegisteredIds.isEmpty()
+                ? Criteria.where("status").not(EventStatus.CANCELLED.name())
+                : Criteria.where("status").not(EventStatus.CANCELLED.name())
+                        .or(Criteria.where("id").in(cancelledRegisteredIds)));
     }
 
     /**
@@ -273,6 +309,25 @@ class EventRepositoryAdapter implements EventRepository {
         String sql = """
                 SELECT id FROM events.events e
                 WHERE EXISTS (
+                    SELECT 1 FROM events.event_registrations er
+                    WHERE er.event_id = e.id AND er.member_id = :memberId
+                )
+                """;
+        MapSqlParameterSource params = new MapSqlParameterSource("memberId", memberId.uuid());
+        return namedJdbc.query(sql, params, (rs, rowNum) -> rs.getObject(1, UUID.class));
+    }
+
+    /**
+     * Returns the IDs of CANCELLED events the given member has a registration for.
+     * The status restriction is what makes this narrower than
+     * {@link #findIdsByRegisteredMember(MemberId)} — only the cancelled subset is needed
+     * for the visibility disjunction.
+     */
+    private List<UUID> findIdsByCancelledAndRegistered(MemberId memberId) {
+        String sql = """
+                SELECT id FROM events.events e
+                WHERE e.status = 'CANCELLED'
+                  AND EXISTS (
                     SELECT 1 FROM events.event_registrations er
                     WHERE er.event_id = e.id AND er.member_id = :memberId
                 )

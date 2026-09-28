@@ -679,7 +679,7 @@ class EventControllerTest {
             Event event2 = Event.create(EventCreateEventBuilder.builder().name("Event 2").eventDate(LocalDate.of(2026, 7, 1)).location("Location 2").organizer("PRG").build());
             event2.publish();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(event1, event2), PageRequest.of(0, 10), 2));
 
             mockMvc.perform(
@@ -695,7 +695,7 @@ class EventControllerTest {
         @DisplayName("createEvent template should expose coordinators as MemberId and categories as CategoryRequest")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldExposeCoordinatorsOptionsLinkOnCreateTemplate() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -720,7 +720,7 @@ class EventControllerTest {
             Event activeEvent = EventTestDataBuilder.anEvent().build();
             activeEvent.publish();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(activeEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -731,7 +731,7 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").doesNotExist());
 
-            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(false));
+            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(false), any());
         }
 
         @Test
@@ -741,7 +741,7 @@ class EventControllerTest {
             Event draftEvent = EventTestDataBuilder.anEvent().build();
             Event activeEvent = EventTestDataBuilder.anEvent().buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(draftEvent, activeEvent), PageRequest.of(0, 10), 2));
 
             mockMvc.perform(
@@ -751,14 +751,14 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray());
 
-            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(true));
+            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(true), any());
         }
 
         @Test
         @DisplayName("should NOT include importFromOris affordance when oris profile is inactive")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldNotIncludeImportAffordanceWhenOrisInactive() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -773,7 +773,7 @@ class EventControllerTest {
         @DisplayName("regular user filtering by DRAFT status should get empty results — service called with canManageEvents=false")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldReturnEmptyForDraftStatusFilterWithoutManageAuthority() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -784,7 +784,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.page.totalElements").value(0));
 
-            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.DRAFT)), any(), eq(false));
+            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.DRAFT)), any(), eq(false), any());
         }
 
         @Test
@@ -793,7 +793,7 @@ class EventControllerTest {
         void shouldReturnDraftEventsForDraftStatusFilterWithManageAuthority() throws Exception {
             Event draftEvent = EventTestDataBuilder.anEvent().build();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(draftEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -804,7 +804,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("DRAFT"));
 
-            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.DRAFT)), any(), eq(true));
+            verify(eventManagementService).listEvents(eq(EventFilter.byStatus(EventStatus.DRAFT)), any(), eq(true), any());
         }
 
         @Test
@@ -814,7 +814,7 @@ class EventControllerTest {
             Event event = Event.create(EventCreateEventBuilder.builder().name("Active Event").eventDate(LocalDate.of(2026, 6, 1)).location("Location").organizer("OOB").build());
             event.publish();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -2026,7 +2026,7 @@ class EventControllerTest {
                     .withRegistrationDeadline(deadline)
                     .buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -2046,7 +2046,7 @@ class EventControllerTest {
                     .withCoordinator(coordinatorId)
                     .buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -2067,7 +2067,7 @@ class EventControllerTest {
                     .withCoordinators(new LinkedHashSet<>(List.of(coordA, coordB)))
                     .buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -2087,7 +2087,7 @@ class EventControllerTest {
         void shouldNotIncludeCoordinatorLinkWhenNoCoordinator() throws Exception {
             Event event = EventTestDataBuilder.anEvent().buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -2106,7 +2106,7 @@ class EventControllerTest {
                     .withDate(LocalDate.now().plusDays(30))
                     .buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -2126,7 +2126,7 @@ class EventControllerTest {
                     .withDate(LocalDate.now().plusDays(30))
                     .buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -2145,7 +2145,7 @@ class EventControllerTest {
                     .withDate(LocalDate.now().minusDays(5))
                     .buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(pastEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -2165,7 +2165,7 @@ class EventControllerTest {
                     .withRegistrationDeadline(LocalDate.now().minusDays(1))
                     .buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(eventWithPastDeadline), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -2181,7 +2181,7 @@ class EventControllerTest {
         void shouldHideStatusFieldForRegularUsers() throws Exception {
             Event event = EventTestDataBuilder.anEvent().buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -2197,7 +2197,7 @@ class EventControllerTest {
         void shouldShowStatusFieldForManagers() throws Exception {
             Event event = EventTestDataBuilder.anEvent().buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(event), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(
@@ -2216,7 +2216,7 @@ class EventControllerTest {
         @DisplayName("q param is passed to service as EventFilter.fulltextQuery")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void qParamIsPassedAsFulltextQuery() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -2227,14 +2227,14 @@ class EventControllerTest {
                     .andExpect(status().isOk());
 
             verify(eventManagementService).listEvents(
-                    eq(EventFilter.none().withFulltext("jihlava")), any(), anyBoolean());
+                    eq(EventFilter.none().withFulltext("jihlava")), any(), anyBoolean(), any());
         }
 
         @Test
         @DisplayName("organizer param is passed to service as EventFilter.organizer")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void organizerParamIsPassedToFilter() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -2245,7 +2245,7 @@ class EventControllerTest {
                     .andExpect(status().isOk());
 
             verify(eventManagementService).listEvents(
-                    eq(EventFilter.byOrganizer("OOB")), any(), anyBoolean());
+                    eq(EventFilter.byOrganizer("OOB")), any(), anyBoolean(), any());
         }
 
         @Test
@@ -2255,7 +2255,7 @@ class EventControllerTest {
             UUID coordinatorUuid = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
             MemberId coordinatorId = new MemberId(coordinatorUuid);
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -2266,7 +2266,7 @@ class EventControllerTest {
                     .andExpect(status().isOk());
 
             verify(eventManagementService).listEvents(
-                    eq(EventFilter.none().withCoordinator(coordinatorId)), any(), anyBoolean());
+                    eq(EventFilter.none().withCoordinator(coordinatorId)), any(), anyBoolean(), any());
         }
 
         @Test
@@ -2276,7 +2276,7 @@ class EventControllerTest {
         void registeredByMeIsResolvedToCurrentMemberId() throws Exception {
             MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -2287,7 +2287,36 @@ class EventControllerTest {
                     .andExpect(status().isOk());
 
             verify(eventManagementService).listEvents(
-                    eq(EventFilter.none().withRegisteredBy(memberId)), any(), anyBoolean());
+                    eq(EventFilter.none().withRegisteredBy(memberId)), any(), anyBoolean(), eq(memberId));
+        }
+
+        @Test
+        @DisplayName("viewer's MemberId is passed to the service for the cancelled-visibility rule")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042",
+                authorities = {Authority.EVENTS_READ})
+        void viewerMemberIdIsPassedToService() throws Exception {
+            MemberId memberId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
+
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+
+            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(false), eq(memberId));
+        }
+
+        @Test
+        @DisplayName("a user without a member profile passes a null MemberId to the service")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void nullMemberIdIsPassedForUserWithoutMemberProfile() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+
+            verify(eventManagementService).listEvents(eq(EventFilter.none()), any(), eq(false), isNull());
         }
 
         @Test
@@ -2315,14 +2344,14 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.page.totalElements").value(0));
 
-            verify(eventManagementService, never()).listEvents(any(), any(), anyBoolean());
+            verify(eventManagementService, never()).listEvents(any(), any(), anyBoolean(), any());
         }
 
         @Test
         @DisplayName("dateFrom param is passed to service as EventFilter.dateFrom")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void dateFromParamIsPassedToFilter() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -2333,14 +2362,14 @@ class EventControllerTest {
                     .andExpect(status().isOk());
 
             verify(eventManagementService).listEvents(
-                    eq(EventFilter.none().withDateRange(LocalDate.of(2026, 6, 1), null)), any(), anyBoolean());
+                    eq(EventFilter.none().withDateRange(LocalDate.of(2026, 6, 1), null)), any(), anyBoolean(), any());
         }
 
         @Test
         @DisplayName("dateTo param is passed to service as EventFilter.dateTo")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void dateToParamIsPassedToFilter() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -2351,14 +2380,14 @@ class EventControllerTest {
                     .andExpect(status().isOk());
 
             verify(eventManagementService).listEvents(
-                    eq(EventFilter.none().withDateRange(null, LocalDate.of(2026, 8, 31))), any(), anyBoolean());
+                    eq(EventFilter.none().withDateRange(null, LocalDate.of(2026, 8, 31))), any(), anyBoolean(), any());
         }
 
         @Test
         @DisplayName("dateFrom and dateTo params together are passed as EventFilter date range")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void dateFromAndDateToParamsArePassedToFilter() throws Exception {
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
 
             mockMvc.perform(
@@ -2371,7 +2400,7 @@ class EventControllerTest {
 
             verify(eventManagementService).listEvents(
                     eq(EventFilter.none().withDateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31))),
-                    any(), anyBoolean());
+                    any(), anyBoolean(), any());
         }
     }
 
@@ -2389,7 +2418,7 @@ class EventControllerTest {
         void draftRowCarriesEditPublishCancelAffordances() throws Exception {
             Event draftEvent = EventTestDataBuilder.anEvent().build();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(draftEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -2405,7 +2434,7 @@ class EventControllerTest {
         void activeRowCarriesEditCancelButNotFinishAffordances() throws Exception {
             Event activeEvent = EventTestDataBuilder.anEvent().buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(activeEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -2422,7 +2451,7 @@ class EventControllerTest {
         void finishedRowCarriesNoManagementAffordances() throws Exception {
             Event finishedEvent = EventTestDataBuilder.anEvent().buildFinished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(finishedEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -2438,7 +2467,7 @@ class EventControllerTest {
         void cancelledRowCarriesNoManagementAffordances() throws Exception {
             Event cancelledEvent = EventTestDataBuilder.anEvent().buildCancelled();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(cancelledEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -2457,7 +2486,7 @@ class EventControllerTest {
                     .withDate(LocalDate.now().plusDays(30))
                     .buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(activeEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -2484,7 +2513,7 @@ class EventControllerTest {
             EventId eventId = EventId.generate();
             Event orisEvent = EventTestDataBuilder.anEventWithId(eventId).build();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(orisEvent), PageRequest.of(0, 10), 1));
 
             com.klabis.sync.domain.SyncTarget target = new com.klabis.sync.domain.SyncTarget(
@@ -2505,7 +2534,7 @@ class EventControllerTest {
         void nonEnrolledRowDoesNotCarrySyncLink() throws Exception {
             Event nonOrisEvent = EventTestDataBuilder.anEvent().build();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(nonOrisEvent), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -3245,7 +3274,7 @@ class EventControllerTest {
                     .withDate(LocalDate.now().plusDays(30))
                     .buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(activeEvent), PageRequest.of(0, 10), 1));
             when(memberRegistrationSanctionPort.isMemberBlocked(memberId)).thenReturn(true);
 
@@ -3266,7 +3295,7 @@ class EventControllerTest {
                     .withDate(LocalDate.now().plusDays(30))
                     .buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(activeEvent), PageRequest.of(0, 10), 1));
             when(memberRegistrationSanctionPort.isMemberBlocked(memberId)).thenReturn(false);
 
@@ -3285,7 +3314,7 @@ class EventControllerTest {
             Event event1 = EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(30)).buildPublished();
             Event event2 = EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(60)).buildPublished();
 
-            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean()))
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(event1, event2), PageRequest.of(0, 10), 2));
             when(memberRegistrationSanctionPort.isMemberBlocked(memberId)).thenReturn(false);
 
