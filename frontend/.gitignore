@@ -25,3 +25,7 @@ dist-ssr
 
 # Test run artifacts
 .tmp
+
+# Generated from docs/openapi/spec/ via `npm run openapi`
+src/api/klabisApi.d.ts
+src/api/halTypes.ts

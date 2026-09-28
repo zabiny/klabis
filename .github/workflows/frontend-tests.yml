@@ -27,6 +27,10 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Install OpenAPI bundle tool dependencies
+        working-directory: tools/openapi-bundle
+        run: npm ci
+
       - name: Lint
         working-directory: frontend
         run: npm run lint
