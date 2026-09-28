@@ -25,6 +25,10 @@ jobs:
         cache: 'npm'
         cache-dependency-path: frontend/package-lock.json
 
+    - name: Install OpenAPI bundle tool dependencies
+      working-directory: tools/openapi-bundle
+      run: npm ci
+
     - name: Build frontend
       working-directory: frontend
       run: |
