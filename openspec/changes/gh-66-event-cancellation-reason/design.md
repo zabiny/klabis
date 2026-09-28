@@ -50,17 +50,23 @@ Page<Event> listEvents(EventFilter filter, Pageable pageable,
 Service policy for `!canManageEvents`:
 
 ```java
-if (filter.requestsOnlyStatus(DRAFT))      return Page.empty(pageable);   // existing guard
-filter = filter.withExcludedStatus(DRAFT);                                 // existing rule
-if (viewerMemberId == null) {
-    if (filter.requestsOnlyStatus(CANCELLED)) return Page.empty(pageable); // new guard, see below
-    filter = filter.withExcludedStatus(CANCELLED);
-} else {
-    filter = filter.withCancelledVisibleTo(viewerMemberId);                // new dimension (D2)
+if (canManageEvents) {
+    return eventRepository.findAll(filter, pageable);
 }
+if (filter.requestsOnlyStatus(DRAFT)) return Page.empty(pageable);           // existing guard
+EventFilter visible = filter.withExcludedStatus(DRAFT);                       // existing rule
+if (viewerMemberId == null) {
+    if (visible.requestsOnlyStatus(CANCELLED)) return Page.empty(pageable);  // new guard, see below
+    visible = visible.withExcludedStatus(CANCELLED);
+} else {
+    visible = visible.withCancelledVisibleTo(viewerMemberId);                 // new dimension (D2)
+}
+return eventRepository.findAll(visible, pageable);
 ```
 
-The `requestsOnlyStatus(CANCELLED)` guard is required because `withExcludedStatus` on a single-status filter collapses to an *empty* status set, which means "no restriction" — a viewer without a member profile filtering by CANCELLED would otherwise see **all** events. (Same trap the existing DRAFT guard handles.) With `cancelledVisibleTo` set, no collapse happens: the status set is untouched and the registration condition (D3) narrows it, correctly yielding "only their own cancelled events" — and an empty page for a member registered for none.
+The pre-existing `if (canManageEvents || filter.excludesStatus(DRAFT))` short-circuit is **removed**; only `canManageEvents` remains. The `excludesStatus(DRAFT)` half is unsound here: a status set like `{ACTIVE, CANCELLED}` excludes DRAFT yet still admits CANCELLED, so the fast path would hand every cancelled event to non-managers. Where the filter already excludes DRAFT, `withExcludedStatus(DRAFT)` returns an equal record, so dropping the shortcut costs one allocation and no behaviour change.
+
+The `requestsOnlyStatus(CANCELLED)` guard is required because `withExcludedStatus` on a single-status filter collapses to an *empty* status set, which means "no restriction" — a viewer without a member profile filtering by CANCELLED would otherwise see **all** events. (Same trap the existing DRAFT guard handles.) The guard tests the post-DRAFT-exclusion filter, which is strictly safer: it also catches an original `{DRAFT, CANCELLED}` request, collapsing to a single CANCELLED after the DRAFT step. With `cancelledVisibleTo` set, no collapse happens: the status set is untouched and the registration condition (D3) narrows it, correctly yielding "only their own cancelled events" — and an empty page for a member registered for none.
 
 `EventController.listEvents` already has both inputs: `EventAffordanceSupport.hasAuthority(auth, EVENTS_MANAGE)` and `CurrentUserData` (`isMember()` / `memberId()`).
 
@@ -84,11 +90,11 @@ List<UUID> cancelledRegisteredIds = findIdsByCancelledAndRegistered(filter.cance
 //                    WHERE er.event_id = e.id AND er.member_id = :memberId)
 
 Criteria visibility = ids.isEmpty()
-        ? Criteria.where("status").isNot("CANCELLED")
-        : Criteria.where("status").isNot("CANCELLED").or(Criteria.where("id").in(ids));
+        ? Criteria.where("status").not(EventStatus.CANCELLED.name())
+        : Criteria.where("status").not(EventStatus.CANCELLED.name()).or(Criteria.where("id").in(ids));
 ```
 
-The empty-list branch avoids generating `id IN ()` (invalid SQL). The pre-fetch is skipped entirely when the filter already excludes CANCELLED (e.g. explicit `status=ACTIVE`), so the common case pays nothing. The set is tiny in practice — a member's cancelled registrations.
+The empty-list branch avoids generating `id IN ()` (invalid SQL). The pre-fetch is skipped entirely when the filter already excludes CANCELLED (e.g. explicit `status=ACTIVE`), so the common case pays nothing. The set is tiny in practice — a member's cancelled registrations. The condition is assembled inside `buildNonFulltextConditions`, so both the pre-filtered and the plain query path carry it and no future path can forget it.
 
 Pagination/counting keep working because the condition is part of the same Criteria query (`buildCriteriaQuery` / `findAllWithMatchingIds`), which `executeQuery` reuses for the count.
 
