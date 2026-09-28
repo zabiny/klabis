@@ -2,13 +2,28 @@
 
 GitHub issue #66 ("Chci mít možnost viditelně škrtnout akci se zveřejněním důvodu zrušení", milestone `core`, labels `Events`, `přihlašovatel`, `question`) asks for the ability to cancel an event *with a visible reason* — so that members who were about to register, or who are already registered, understand why the event is no longer happening.
 
-Today the `events` spec supports cancellation as a status transition (`Event Status Lifecycle`: DRAFT → CANCELLED and ACTIVE → CANCELLED) and preserves existing registrations for records (`Manager cancels an ACTIVE event` scenario). The list and detail pages show the CANCELLED status (via the status column visible to managers, and presumably a visual marker for regular members — currently underspecified). However:
+The **cancellation reason capture** part of this issue is already delivered: the archived change `2026-05-10-review-1-4-event-cancellation-and-multiple-deadlines` added the optional `cancellationReason` (max 500 chars) to the cancel command, persisted it (`events.cancellation_reason`), exposed it on `EventDto`/`EventSummaryDto`, and the `events` spec (`Event Status Lifecycle`) already records it. The detail page shows the reason in a bottom "Akce byla zrušena" banner; the list shows it only as a tooltip on the (manager-only) status cell.
 
-- **No cancellation reason is captured.** There is no text field on the cancel command. Members see "zrušeno" with no explanation.
-- **Visibility is not specified.** The `Events Table Display` spec explicitly states "Status column visible only to manager in list". Regular members may not see that the event is cancelled at all unless the visual treatment in the list/detail is already implemented (not in the spec today).
-- **Members with existing registrations are not explicitly informed** beyond whatever implicit UI signal the cancelled status gives them.
+Two pieces of the original request remain **unimplemented**, and this reworked proposal covers exactly those:
 
-The feature request has two parts: (1) capture a cancellation reason, and (2) make sure cancelled events — and the reason — are visibly communicated to all relevant personas.
+- **A — Visibility.** Today every authenticated user sees CANCELLED events in the events list (only DRAFT is hidden for non-managers), but with no marking, because the `status` column is gated to `EVENTS:MANAGE`. The issue's intent ("viditelně škrtnout") is that a cancelled event is clearly visible to the right audience and hidden from everyone else: managers and the members who actually registered for it.
+
+- **B — Visual marking.** There is no strikethrough/badge treatment. The list shows the reason only as a tooltip on the manager-only status cell; the detail shows it in a bottom banner rather than next to the name. The issue title literally asks to "škrtnout" (strike through) the event.
+
+### Target behaviour
+
+- A cancelled event is visible in the events list to users with `EVENTS:MANAGE` and to members registered for that event. A regular user who is **not** registered does not see it in the list at all.
+- In the events list, a cancelled event's **name is struck through** (name only).
+- In the event detail, the **name is struck through**, a prominent **"Zrušeno" badge** is shown, and the **cancellation reason is displayed directly under the name**.
+
+## What Changes
+
+- **List visibility (backend).** For callers without `EVENTS:MANAGE`, CANCELLED events are excluded from the list result **unless the caller is registered for that event**. This is a per-row condition (status = CANCELLED AND a registration exists for the caller's member id), not the simple status exclusion used today for DRAFT. The existing `"Moje přihlášky"` behaviour (registered members see their cancelled events) is preserved and becomes the default for registered members regardless of that toggle.
+- **Status field on the list payload (backend).** `EventSummaryDto.status` loses its `EVENTS:MANAGE` gate, so the status is returned to every authenticated caller. This gives every viewer of a row a reliable "is cancelled" signal without introducing a derived duplicate field (review decision: status is not secret — users know it from other displayed information anyway). Visibility of the status **column** is unchanged (manager-only); the frontend gates it explicitly because the implicit payload-driven hiding no longer applies.
+- **List rendering (frontend).** The event **name** is struck through when the row is a cancelled event (name only — the rest of the row stays normal and its actions remain usable), driven by `status === 'CANCELLED'`. The status column is hidden explicitly for users without `EVENTS:MANAGE`.
+- **Detail rendering (frontend).** The event name is struck through, a prominent "Zrušeno" badge is shown in the header, and the cancellation reason moves to directly under the name. This supersedes the current bottom "Akce byla zrušena" banner.
+- **Detail access (backend).** Unchanged: a cancelled event's detail **stays open** — reachable by any authenticated user who has the link (only DRAFT detail is blocked for non-managers today). The rendering changes above apply whenever the detail is shown.
+- **Spec.** The `events` capability is updated to describe the new cancelled-event visibility and the strikethrough/badge/reason-under-name treatment.
 
 ## Capabilities
 
@@ -18,54 +33,42 @@ The feature request has two parts: (1) capture a cancellation reason, and (2) ma
 
 ### Modified Capabilities
 
-- `events`: extend `Event Status Lifecycle` (capturing the reason at cancellation time), `Get Event Detail` and `Event Detail Page` (showing the reason to all viewers), `Events Table Display` and `List Events` (making cancellation visible to regular members too).
+- `events`:
+  - `List Events` — cancelled events are shown only to `EVENTS:MANAGE` holders and to members registered for the event; hidden from all other users.
+  - `Events Table Display` — a cancelled event's name is rendered struck through. The status column stays manager-only (unchanged); the "status column hidden when the API omits the field" scenario is dropped because the field is now always returned.
+  - `Event Detail Page` — a cancelled event shows a struck-through name, a "Zrušeno" badge, and the cancellation reason under the name (replacing the bottom banner).
+  - `Event Status Lifecycle` — the "cancellation reason is shown on the cancelled event row in the list" scenario is restated in terms of the strikethrough name (the reason itself is no longer surfaced as a list tooltip; it is shown in the detail under the name).
+  - `Get Event Detail` — cancelled event detail stays accessible to every authenticated user (locks Resolved Decision 1: the list-level hiding does not extend to the detail page).
 
 ## Impact
 
 **Affected specs:**
-- `openspec/specs/events/spec.md` — `Event Status Lifecycle` gains a "cancel with reason" scenario where the manager must (or may) provide a text reason. `Event Detail Page` and `Get Event Detail` gain scenarios where the cancellation reason is displayed for cancelled events. `Events Table Display` gains a scenario for how cancelled events are rendered to regular members (e.g., strikethrough / disabled row / dedicated badge) — this is the "viditelně škrtnout" part of the title.
-- Possibly `openspec/specs/event-registrations/spec.md` — registered members whose event is cancelled should see the cancellation reason on their own registration view too.
-- Possibly `openspec/specs/calendar-items/spec.md` — today calendar items are *deleted* on cancellation (per the archived calendar sync change). We should consider whether to keep them and mark them cancelled instead, so that the cancellation is visible from the calendar.
+- `openspec/specs/events/spec.md` — `List Events`, `Events Table Display`, `Event Detail Page`, `Event Status Lifecycle`, `Get Event Detail`.
 
-**Affected code (backend, events module):** the cancel command gains a `reason` parameter (string, potentially with a minimum length). The `Event` aggregate stores the reason on the cancelled status. The HAL representation exposes the reason for cancelled events.
+**Affected code (backend, events module):**
+- `EventManagementService.listEvents` / `EventFilter` — add the "exclude CANCELLED for non-managers unless registered by the caller" rule. The caller's member id must reach the filter; this cannot be expressed as a plain `withExcludedStatus(CANCELLED)` because registered members must still see their cancelled events.
+- `docs/openapi/spec/events.yaml` — remove `x-klabis-authority: EVENTS_MANAGE` from `EventSummaryDto.status` (review decision: no derived `cancelled` duplicate; status is not secret). Because the list rule guarantees non-managers never receive rows they are not entitled to see, returning the status is safe. No new response fields.
 
-**Affected code (frontend):** the "Zrušit akci" action opens a modal that asks for the reason. The detail page displays the reason in a prominent banner for cancelled events. The list table strikes through / visually demotes cancelled rows (today: unclear, may already be partially there). Registered members' own registration view surfaces the cancellation reason.
+**Affected code (frontend):**
+- `frontend/src/pages/events/EventsPage.tsx` — strike through the name cell for cancelled rows (replacing the current status-cell tooltip); hide the status column explicitly for users without `EVENTS:MANAGE`.
+- `frontend/src/pages/events/EventDetailPage.tsx` — strike through the name, render a prominent "Zrušeno" badge, show the reason under the name; remove/replace the bottom "Akce byla zrušena" banner.
+- `frontend/src/localization/labels.ts` — labels for the badge/reason placement if new strings are needed.
 
-**APIs (REST):** additive — new field on the cancel command body, new field on the event detail response for cancelled events.
+**APIs (REST):** behavioural — the list result set changes for non-registered users (cancelled events no longer returned). Field-security change: `EventSummaryDto.status` is returned to all authenticated callers; no new fields, no new endpoints, no changed HAL links or affordances. Detail endpoint access is unchanged.
+
+**Data:** none — `cancellation_reason` column already exists.
 
 **Dependencies:** none.
 
-**Data:** new nullable column on the events table (`cancellation_reason`).
+**Out of scope (explicitly not part of this rework):**
+- E-mail/notification of registered members on cancellation (still TODO / #28). The reason is stored so a future template can use it.
+- Editing the cancellation reason after the event is cancelled (cancelled events remain immutable).
+- Calendar-item treatment on cancellation (remains as-is: linked calendar items are deleted).
 
-## Open Questions
+## Resolved Decisions
 
-All questions below MUST be answered before the next OpenSpec artifacts (specs, design, tasks) are created for this change.
+1. **Detail access stays open.** A cancelled event's detail remains reachable by any authenticated user with the link (only DRAFT detail is blocked for non-managers). The list visibility rule does not extend to the detail endpoint.
 
-1. **Is the reason required or optional?**
-   - Option A: required on cancel (min length 1, max e.g. 500). Forces managers to explain. Simpler for members — they always see *something*.
-   - Option B: optional. Quick cancellations stay quick; reason is exposed only when provided.
+2. **Cancelled signal in the list = the struck-through name.** The row communicates cancellation through the struck-through event name. Per review, the signal is the summary's `status` field with its `EVENTS:MANAGE` gate removed — no derived `cancelled` duplicate is introduced. Visibility of the status column itself is unchanged (manager-only), gated explicitly by the frontend.
 
-2. **Who sees the reason?** Recommend: everyone who can see the event (so every authenticated member, guest, etc.). Confirm.
-
-3. **"Viditelně škrtnout" — what does that mean visually?**
-   - Option A: strikethrough on the event name + a "Zrušeno" badge (row still in the list).
-   - Option B: hidden from the default list and shown only when the user filters for CANCELLED status (already possible for managers today).
-   - Option C: shown on a separate "Zrušené akce" section at the bottom of the list.
-
-   Recommend: Option A (row with strikethrough + badge + cancellation reason tooltip or inline).
-
-4. **Are cancelled events still visible to regular members in the events list at all today?** The spec `Regular user does not see DRAFT events` is explicit. For CANCELLED there is no equivalent. This proposal needs to commit: "Regular members see cancelled events with visible marking" — yes/no.
-
-5. **Calendar interaction.** Currently, cancellation deletes all event-linked calendar items (per the archived change). Options:
-   - Keep the current behavior — calendar items disappear on cancellation; members see only the strikethrough event in the events list.
-   - Change to: calendar items are marked cancelled (kept but with a "zrušeno" label and struck through). More intrusive change — affects `calendar-items` spec.
-
-   Recommend: keep current behavior for this proposal; a follow-up may revisit calendar cancellation visibility.
-
-6. **Registration holders:** should the system actively notify members whose registration was affected (email notification)? That is a notifications topic (currently TODO / #28). Recommend: out of scope here — but capture that the cancellation reason is stored so a future email template can use it.
-
-7. **Is the reason editable after cancellation?** E.g., the manager initially writes "rušíme" and later expands to include alternatives ("přesunuto na 10.5."). Recommend: yes — managers with `EVENTS:MANAGE` can edit the cancellation reason on a cancelled event. Otherwise, cancelled events are otherwise immutable per `Cancelled event cannot be edited`. Confirm.
-
-8. **Character limit and formatting.** Plain text? Markdown? URLs auto-linked? Recommend: plain text, max 500 characters, no markdown.
-
-9. **What about events already cancelled before this change ships (migration)?** Project uses H2 in-memory — no data migration needed. Confirm assumption.
+3. **Strikethrough scope = name only.** Only the event name is struck through in the list; the rest of the row and its actions stay normal.
