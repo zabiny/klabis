@@ -15,9 +15,9 @@
 
 ## 3. Add and remove parent by userId (vertical slice)
 
-- [ ] 3.1 Spec: add `AddParentRequest{userId}` (`AddMemberRequest` stays for children), remove-parent path `{userId}`; regenerate bundle and frontend types
-- [ ] 3.2 Write failing controller tests: add non-member parent, remove parent, reject removing last parent, promote existing child to parent keeps single entry
-- [ ] 3.3 Update `addFamilyGroupParent` / `removeFamilyGroupParent` in `FamilyGroupController`, affordances for `addFamilyGroupParent` (field `userId`, options `listMemberOptions`)
+- [x] 3.1 Spec: add `AddParentRequest{userId}` (`AddMemberRequest` stays for children), remove-parent path `{userId}`; regenerate bundle and frontend types
+- [x] 3.2 Write failing controller tests: add non-member parent, remove parent, reject removing last parent, promote existing child to parent keeps single entry
+- [x] 3.3 Update `addFamilyGroupParent` / `removeFamilyGroupParent` in `FamilyGroupController`, affordances for `addFamilyGroupParent` (field `userId`, options `listMemberOptions`)
 
 ## 4. Group detail: parents without member link, access by userId (vertical slice)
 

@@ -13,6 +13,7 @@ import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.application.MemberAlreadyInFamilyGroupException;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
+import com.klabis.groups.infrastructure.restapi.FamilyGroupsApi;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -31,6 +32,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItems;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -45,6 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class FamilyGroupControllerTest {
 
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    private static final String CHILD_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
     private static final String NON_MEMBER_USER_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
     private static final UUID GROUP_UUID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
 
@@ -367,7 +370,7 @@ class FamilyGroupControllerTest {
     class AddFamilyGroupParentTests {
 
         @Test
-        @DisplayName("should return 204 when admin adds a parent")
+        @DisplayName("should return 204 and pass the userId to the service when admin adds a parent")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn204WhenAddingParent() throws Exception {
             mockMvc.perform(
@@ -375,10 +378,62 @@ class FamilyGroupControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"memberId": "%s"}
-                                            """.formatted(UUID.randomUUID()))
+                                            {"userId": "%s"}
+                                            """.formatted(MEMBER_ID))
                     )
                     .andExpect(status().isNoContent());
+
+            verify(familyGroupManagementService)
+                    .addParent(new FamilyGroupId(GROUP_UUID), new UserId(UUID.fromString(MEMBER_ID)));
+        }
+
+        @Test
+        @DisplayName("should return 204 and pass the userId to the service when admin adds a parent without a member profile")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn204WhenAddingParentWithoutMemberProfile() throws Exception {
+            mockMvc.perform(
+                            post("/api/family-groups/{id}/parents", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"userId": "%s"}
+                                            """.formatted(NON_MEMBER_USER_ID))
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(familyGroupManagementService)
+                    .addParent(new FamilyGroupId(GROUP_UUID), new UserId(UUID.fromString(NON_MEMBER_USER_ID)));
+        }
+
+        @Test
+        @DisplayName("should pass the userId of an existing child to the service so it can be promoted in place")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldPassUserIdOfExistingChildWhenPromotingToParent() throws Exception {
+            mockMvc.perform(
+                            post("/api/family-groups/{id}/parents", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"userId": "%s"}
+                                            """.formatted(CHILD_ID))
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(familyGroupManagementService)
+                    .addParent(new FamilyGroupId(GROUP_UUID), new UserId(UUID.fromString(CHILD_ID)));
+        }
+
+        @Test
+        @DisplayName("should return 400 when userId is missing")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenUserIdIsMissing() throws Exception {
+            mockMvc.perform(
+                            post("/api/family-groups/{id}/parents", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{}")
+                    )
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
@@ -390,7 +445,7 @@ class FamilyGroupControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"memberId": "%s"}
+                                            {"userId": "%s"}
                                             """.formatted(UUID.randomUUID()))
                     )
                     .andExpect(status().isForbidden());
@@ -398,18 +453,42 @@ class FamilyGroupControllerTest {
     }
 
     @Nested
-    @DisplayName("DELETE /api/family-groups/{id}/parents/{memberId}")
+    @DisplayName("DELETE /api/family-groups/{id}/parents/{userId}")
     class RemoveFamilyGroupParentTests {
 
         @Test
-        @DisplayName("should return 204 when admin removes a parent")
+        @DisplayName("should expose the remove-parent path with a userId parameter")
+        void shouldExposeRemoveParentPathWithUserIdParameter() {
+            assertThat(FamilyGroupsApi.PATH_REMOVE_FAMILY_GROUP_PARENT)
+                    .isEqualTo("/api/family-groups/{id}/parents/{userId}");
+        }
+
+        @Test
+        @DisplayName("should return 204 and pass the path userId to the service when admin removes a parent")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn204WhenRemovingParent() throws Exception {
             mockMvc.perform(
-                            delete("/api/family-groups/{id}/parents/{memberId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
+                            delete("/api/family-groups/{id}/parents/{userId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isNoContent());
+
+            verify(familyGroupManagementService)
+                    .removeParent(new FamilyGroupId(GROUP_UUID), new UserId(UUID.fromString(MEMBER_ID)));
+        }
+
+        @Test
+        @DisplayName("should return 204 when admin removes a parent that has no member profile")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn204WhenRemovingParentWithoutMemberProfile() throws Exception {
+            mockMvc.perform(
+                            delete("/api/family-groups/{id}/parents/{userId}", GROUP_UUID, UUID.fromString(NON_MEMBER_USER_ID))
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(familyGroupManagementService)
+                    .removeParent(new FamilyGroupId(GROUP_UUID), new UserId(UUID.fromString(NON_MEMBER_USER_ID)));
         }
 
         @Test
@@ -417,13 +496,11 @@ class FamilyGroupControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn422WhenRemovingLastParent() throws Exception {
             MemberId lastParentMemberId = new MemberId(UUID.fromString(MEMBER_ID));
-            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class)))
-                    .thenReturn(buildFamilyGroup(GROUP_UUID, "Novákovi", MEMBER_ID));
-            org.mockito.Mockito.doThrow(new CannotRemoveLastOwnerException(lastParentMemberId))
+            doThrow(new CannotRemoveLastOwnerException(lastParentMemberId))
                     .when(familyGroupManagementService).removeParent(any(FamilyGroupId.class), any(UserId.class));
 
             mockMvc.perform(
-                            delete("/api/family-groups/{id}/parents/{memberId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
+                            delete("/api/family-groups/{id}/parents/{userId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().is(422));
@@ -434,7 +511,7 @@ class FamilyGroupControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(
-                            delete("/api/family-groups/{id}/parents/{memberId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
+                            delete("/api/family-groups/{id}/parents/{userId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isForbidden());
@@ -444,8 +521,6 @@ class FamilyGroupControllerTest {
     @Nested
     @DisplayName("POST /api/family-groups/{id}/children")
     class AddFamilyGroupChildTests {
-
-        private static final String CHILD_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
 
         @Test
         @DisplayName("should return 204 when admin adds a child")
@@ -500,8 +575,6 @@ class FamilyGroupControllerTest {
     @DisplayName("DELETE /api/family-groups/{id}/children/{memberId}")
     class RemoveFamilyGroupChildTests {
 
-        private static final String CHILD_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
-
         @Test
         @DisplayName("should return 204 when admin removes a child")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
@@ -547,9 +620,9 @@ class FamilyGroupControllerTest {
         }
 
         @Test
-        @DisplayName("addFamilyGroupParent and addFamilyGroupChild templates should expose memberId property with an options.link pointing at the member options endpoint")
+        @DisplayName("addFamilyGroupParent template should expose userId property with an options.link pointing at the member options endpoint, addFamilyGroupChild should keep memberId")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldExposeMemberIdOptionsLinkOnParentAndChildTemplates() throws Exception {
+        void shouldExposeUserIdOptionsLinkOnParentTemplateAndMemberIdOnChildTemplate() throws Exception {
             FamilyGroup group = buildFamilyGroup(GROUP_UUID, "Novákovi", MEMBER_ID);
             when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
 
@@ -558,14 +631,38 @@ class FamilyGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.addFamilyGroupParent.properties[?(@.name=='memberId')].options.link.href")
+                    .andExpect(jsonPath("$._templates.addFamilyGroupParent.properties[?(@.name=='userId')].options.link.href")
                             .value("http://localhost/api/members/options"))
-                    .andExpect(jsonPath("$._templates.addFamilyGroupParent.properties[?(@.name=='memberId')].type")
-                            .value("MemberId"))
+                    .andExpect(jsonPath("$._templates.addFamilyGroupParent.properties[?(@.name=='userId')].type")
+                            .value("UserId"))
+                    .andExpect(jsonPath("$._templates.addFamilyGroupParent.properties[?(@.name=='memberId')]")
+                            .doesNotExist())
                     .andExpect(jsonPath("$._templates.addFamilyGroupChild.properties[?(@.name=='memberId')].options.link.href")
                             .value("http://localhost/api/members/options"))
                     .andExpect(jsonPath("$._templates.addFamilyGroupChild.properties[?(@.name=='memberId')].type")
-                            .value("MemberId"));
+                            .value("MemberId"))
+                    .andExpect(jsonPath("$._templates.addFamilyGroupChild.properties[?(@.name=='userId')]")
+                            .doesNotExist());
+        }
+
+        @Test
+        @DisplayName("parent rows should expose a self link and a removeFamilyGroupParent affordance, including a parent without a member profile")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldExposeRemoveParentAffordanceOnUserIdPath() throws Exception {
+            FamilyGroup group = FamilyGroup.reconstruct(new FamilyGroupId(GROUP_UUID), "Novákovi",
+                    Set.of(new UserId(UUID.fromString(MEMBER_ID)), new UserId(UUID.fromString(NON_MEMBER_USER_ID))),
+                    Set.of(), null);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/family-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.parents[*]._templates.removeFamilyGroupParent.method").value(hasItems("DELETE")))
+                    .andExpect(jsonPath("$.parents[*]._links.self.href").value(hasItems(
+                            "http://localhost/api/family-groups/" + GROUP_UUID + "/parents/" + MEMBER_ID,
+                            "http://localhost/api/family-groups/" + GROUP_UUID + "/parents/" + NON_MEMBER_USER_ID)));
         }
 
         @Test

@@ -282,6 +282,7 @@ class FamilyGroupTest {
             assertThat(group.getParents()).containsExactlyInAnyOrder(PARENT_A, MEMBER_A.toUserId());
             assertThat(group.hasMember(MEMBER_A.toUserId())).isTrue();
             assertThat(group.getMembers()).hasSize(membersBefore);
+            assertThat(group.getChildren()).isEmpty();
         }
     }
 

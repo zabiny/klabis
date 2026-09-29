@@ -228,7 +228,9 @@ paths:
       operationId: addFamilyGroupParent
       tags: [FamilyGroups]
       summary: Add a parent to family group
-      description: Adds a parent to the family group. Requires MEMBERS:MANAGE.
+      description: |
+        Adds a parent to the family group. The parent is a user of the system and need not be a
+        club member, so the body carries a user id and not a member id. Requires MEMBERS:MANAGE.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
@@ -240,7 +242,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddMemberRequest'
+              $ref: '#/components/schemas/AddParentRequest'
       responses:
         '204':
           description: Parent added
@@ -259,21 +261,23 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
-  /api/family-groups/{id}/parents/{memberId}:
+  /api/family-groups/{id}/parents/{userId}:
     delete:
       operationId: removeFamilyGroupParent
       tags: [FamilyGroups]
       summary: Remove a parent from family group
-      description: Removes a parent from the family group. Requires MEMBERS:MANAGE.
+      description: |
+        Removes a parent from the family group. The parent is identified by user id, since a
+        parent need not be a club member. Requires MEMBERS:MANAGE.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       parameters:
         - $ref: '#/components/parameters/FamilyGroupIdParam'
-        - name: memberId
+        - name: userId
           in: path
           required: true
-          description: Parent member UUID
+          description: Parent user UUID
           schema:
             type: string
             format: uuid
@@ -1268,6 +1272,23 @@ components:
           type: string
           minLength: 1
         parent:
+          type: string
+          format: uuid
+          description: UUID of the parent user. Any user qualifies, with or without a member profile.
+          x-hal-input-type: UserId
+
+    # AddParentRequest, not AddMemberRequest — a parent is a user of the system who need not be a
+    # club member, so the field is a user id. AddMemberRequest stays for addFamilyGroupChild, whose
+    # children are always club members.
+    AddParentRequest:
+      type: object
+      description: |
+        Designates a user as a parent of the family group. The parent may be any user of the
+        system, with or without a member profile, so the field is a user id and not a member id.
+        The parent options still come from listMemberOptions, whose UUIDs are the same.
+      required: [userId]
+      properties:
+        userId:
           type: string
           format: uuid
           description: UUID of the parent user. Any user qualifies, with or without a member profile.
