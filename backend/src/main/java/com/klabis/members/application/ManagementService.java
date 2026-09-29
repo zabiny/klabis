@@ -5,8 +5,8 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.BirthNumberAccessedEvent;
 import com.klabis.members.MemberId;
-import com.klabis.members.MemberSuspensionRequestedEvent;
 import com.klabis.members.MonetaryAmount;
+import com.klabis.members.OwnedGroup;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import org.jmolecules.ddd.annotation.Service;
@@ -16,6 +16,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,14 +28,17 @@ public class ManagementService implements ManagementPort {
     private final UserService userService;
     private final ApplicationEventPublisher eventPublisher;
     private final MemberFinancialStatePort memberFinancialStatePort;
+    private final List<MemberOwnedGroupsPort> memberOwnedGroupsPorts;
 
     public ManagementService(MemberRepository memberRepository, UserService userService,
                              ApplicationEventPublisher eventPublisher,
-                             Optional<MemberFinancialStatePort> memberFinancialStatePort) {
+                             Optional<MemberFinancialStatePort> memberFinancialStatePort,
+                             List<MemberOwnedGroupsPort> memberOwnedGroupsPorts) {
         this.memberRepository = memberRepository;
         this.userService = userService;
         this.eventPublisher = eventPublisher;
         this.memberFinancialStatePort = memberFinancialStatePort.orElseGet(NoOpMemberFinancialStatePort::new);
+        this.memberOwnedGroupsPorts = memberOwnedGroupsPorts;
     }
 
     @Override
@@ -67,17 +71,17 @@ public class ManagementService implements ManagementPort {
     public Member suspendMember(MemberId memberId, Member.SuspendMembership command) {
         Member member = loadMember(memberId);
 
-        // TODO: refactor - this should be some kind of "callback" (port) in members implemented from groups - can't take data from event later here as event may be processed asynchronously!!
-        MemberSuspensionRequestedEvent event = new MemberSuspensionRequestedEvent(memberId);
-        eventPublisher.publishEvent(event);
+        List<OwnedGroup> blockingGroups = memberOwnedGroupsPorts.stream()
+                .flatMap(port -> port.findGroupsBlockingSuspension(memberId).stream())
+                .toList();
 
         MemberFinancialStatePort.MemberFinancialSnapshot snapshot = memberFinancialStatePort.getFinancialSnapshot(memberId);
 
-        boolean hasBlockingGroups = !event.blockingGroups().isEmpty();
+        boolean hasBlockingGroups = !blockingGroups.isEmpty();
         boolean hasOutstandingDebt = snapshot.hasOutstandingDebt();
         if (hasBlockingGroups || hasOutstandingDebt) {
             throw new SuspensionBlockedException(
-                    event.blockingGroups(),
+                    blockingGroups,
                     hasOutstandingDebt ? snapshot : null);
         }
 
