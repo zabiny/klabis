@@ -1,6 +1,6 @@
 package com.klabis.groups.freegroup.application;
 
-import com.klabis.groups.common.domain.GroupNotFoundException;
+import com.klabis.common.groups.domain.GroupNotFoundException;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.FreeGroupFilter;

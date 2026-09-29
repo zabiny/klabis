@@ -1,6 +1,6 @@
 package com.klabis.groups.freegroup.infrastructure.listeners;
 
-import com.klabis.groups.common.domain.GroupMembership;
+import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.FreeGroupFilter;

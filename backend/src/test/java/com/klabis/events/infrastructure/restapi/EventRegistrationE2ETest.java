@@ -1,6 +1,5 @@
 package com.klabis.events.infrastructure.restapi;
 
-import tools.jackson.databind.ObjectMapper;
 import com.klabis.E2ETest;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.security.JwtParams;
@@ -8,6 +7,7 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegisterCommandBuilder;
+import com.klabis.members.familygroup.domain.FamilyGroupRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +19,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -54,7 +55,7 @@ class EventRegistrationE2ETest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
+    private FamilyGroupRepository familyGroupRepository;
 
     @Autowired
     private MockMvc mockMvc;

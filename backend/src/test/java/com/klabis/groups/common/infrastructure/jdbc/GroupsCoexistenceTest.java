@@ -1,9 +1,6 @@
-package com.klabis.groups.common.infrastructure.jdbc;
+package com.klabis.common.groups.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
-import com.klabis.groups.familygroup.domain.FamilyGroup;
-import com.klabis.groups.familygroup.domain.FamilyGroupFilter;
-import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.FreeGroupFilter;
@@ -13,6 +10,9 @@ import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
+import com.klabis.members.familygroup.domain.FamilyGroup;
+import com.klabis.members.familygroup.domain.FamilyGroupFilter;
+import com.klabis.members.familygroup.domain.FamilyGroupRepository;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

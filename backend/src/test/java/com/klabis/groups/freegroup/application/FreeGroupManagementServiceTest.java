@@ -1,8 +1,8 @@
 package com.klabis.groups.freegroup.application;
 
-import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
-import com.klabis.groups.common.domain.GroupMembership;
-import com.klabis.groups.common.domain.GroupNotFoundException;
+import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
+import com.klabis.common.groups.domain.GroupMembership;
+import com.klabis.common.groups.domain.GroupNotFoundException;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.*;
 import com.klabis.members.MemberId;

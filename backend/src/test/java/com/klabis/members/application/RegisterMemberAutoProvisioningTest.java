@@ -5,6 +5,7 @@ import com.klabis.common.users.domain.User;
 import com.klabis.common.users.domain.UserRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
+import com.klabis.members.familygroup.domain.FamilyGroupRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +39,7 @@ class RegisterMemberAutoProvisioningTest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
+    private FamilyGroupRepository familyGroupRepository;
 
     @Autowired
     private RegistrationPort memberService;

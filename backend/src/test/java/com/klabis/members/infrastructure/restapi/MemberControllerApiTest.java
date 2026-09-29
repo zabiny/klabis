@@ -7,7 +7,6 @@ import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.groups.familygroup.domain.FamilyGroupFilter;
 import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
@@ -17,6 +16,11 @@ import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.Gender;
+import com.klabis.members.familygroup.FamilyGroupId;
+import com.klabis.members.familygroup.domain.FamilyGroup;
+import com.klabis.members.familygroup.domain.FamilyGroupFilter;
+import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.familygroup.infrastructure.restapi.MemberFamilyGroupLinkProcessor;
 import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.application.SynchronizationPort;
@@ -73,7 +77,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class, MembersExceptionHandler.class})
 @Import({MemberMapperImpl.class, HalFormsSupport.class,
         com.klabis.groups.traininggroup.infrastructure.restapi.MemberTrainingGroupLinkProcessor.class,
-        com.klabis.groups.familygroup.infrastructure.restapi.MemberFamilyGroupLinkProcessor.class,
+        MemberFamilyGroupLinkProcessor.class,
         com.klabis.calendar.infrastructure.restapi.IcalTokenMemberDetailLinkProcessor.class})
 @WithPostprocessors
 class MemberControllerApiTest {
@@ -111,7 +115,7 @@ class MemberControllerApiTest {
     private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
     @Autowired
-    private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
+    private FamilyGroupRepository familyGroupRepository;
 
     @TestBean
     private EntityLinks entityLinks;
@@ -544,10 +548,10 @@ class MemberControllerApiTest {
                     .thenReturn(member);
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
-            com.klabis.groups.familygroup.domain.FamilyGroup mockFamilyGroup =
-                    Mockito.mock(com.klabis.groups.familygroup.domain.FamilyGroup.class);
+            FamilyGroup mockFamilyGroup =
+                    Mockito.mock(FamilyGroup.class);
             Mockito.when(mockFamilyGroup.getId())
-                    .thenReturn(new com.klabis.groups.familygroup.FamilyGroupId(groupId));
+                    .thenReturn(new FamilyGroupId(groupId));
             when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
                     .thenReturn(java.util.Optional.of(mockFamilyGroup));
 

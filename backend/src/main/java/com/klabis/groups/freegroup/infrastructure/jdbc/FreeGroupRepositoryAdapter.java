@@ -1,16 +1,11 @@
 package com.klabis.groups.freegroup.infrastructure.jdbc;
 
-import com.klabis.groups.common.infrastructure.jdbc.GroupJdbcRepository;
-import com.klabis.groups.common.infrastructure.jdbc.GroupMemento;
-import com.klabis.groups.common.infrastructure.jdbc.GroupInvitationMemento;
-import com.klabis.groups.freegroup.domain.Invitation;
-import com.klabis.groups.freegroup.domain.InvitationId;
-import com.klabis.groups.freegroup.domain.InvitationStatus;
-import com.klabis.members.MemberId;
+import com.klabis.common.groups.infrastructure.jdbc.GroupInvitationMemento;
+import com.klabis.common.groups.infrastructure.jdbc.GroupJdbcRepository;
+import com.klabis.common.groups.infrastructure.jdbc.GroupMemento;
 import com.klabis.groups.freegroup.FreeGroupId;
-import com.klabis.groups.freegroup.domain.FreeGroup;
-import com.klabis.groups.freegroup.domain.FreeGroupFilter;
-import com.klabis.groups.freegroup.domain.FreeGroupRepository;
+import com.klabis.groups.freegroup.domain.*;
+import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.jdbc.core.JdbcAggregateTemplate;

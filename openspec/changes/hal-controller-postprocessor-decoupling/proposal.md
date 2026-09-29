@@ -25,7 +25,7 @@ Every response body — links, `_templates`, `_embedded`, status codes and paylo
 
 ## Impact
 
-- **Modules:** `common/ui` (`HalResponseContext`, `HalResponseBodyAdvice`), `members`, `events`, `membershipfees`, `finance`, `groups/freegroup`, `groups/familygroup`, `groups/traininggroup`, `calendar`, `sync`, `oris`.
+- **Modules:** `common/ui` (`HalResponseContext`, `HalResponseBodyAdvice`), `members`, `events`, `membershipfees`, `finance`, `groups/freegroup`, `members/familygroup`, `groups/traininggroup`, `calendar`, `sync`, `oris`.
 - **Code:** the ~14 controllers and ~25 postprocessors listed in `design.md`; removal of `InvitationModelBuilder`.
 - **Tests:** existing `@WebMvcTest`/E2E assertions must pass unchanged; `common/WithPostprocessors` may need new mock entries for ports the postprocessors take over.
 - **No build/tooling, spec, API-contract or frontend changes.**

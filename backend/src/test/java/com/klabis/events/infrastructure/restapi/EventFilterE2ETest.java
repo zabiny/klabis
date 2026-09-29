@@ -5,6 +5,7 @@ import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.events.application.EventManagementPort;
+import com.klabis.members.familygroup.domain.FamilyGroupRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +25,7 @@ import java.util.UUID;
 
 import static com.klabis.common.security.JwtParams.member;
 import static com.klabis.common.security.KlabisMvcRequestBuilders.klabisAuthentication;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -59,7 +58,7 @@ class EventFilterE2ETest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
+    private FamilyGroupRepository familyGroupRepository;
 
     @Autowired
     private MockMvc mockMvc;
