@@ -1,5 +1,6 @@
 package com.klabis.groups.familygroup.application;
 
+import com.klabis.common.users.UserId;
 import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.common.domain.GroupNotFoundException;
@@ -32,8 +33,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class FamilyGroupManagementServiceTest {
 
-    private static final MemberId PARENT_A = new MemberId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
-    private static final MemberId PARENT_B = new MemberId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+    private static final UserId PARENT_A = new UserId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+    private static final UserId PARENT_B = new UserId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+    private static final UserId PARENT_WITHOUT_MEMBER_PROFILE =
+            new UserId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"));
     private static final MemberId MEMBER_A = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static final FamilyGroupId GROUP_ID = new FamilyGroupId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"));
 
@@ -66,6 +69,19 @@ class FamilyGroupManagementServiceTest {
         }
 
         @Test
+        @DisplayName("should create group with a parent that has no member profile")
+        void shouldCreateGroupWithParentWithoutMemberProfile() {
+            FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
+                    "Novákovi", PARENT_WITHOUT_MEMBER_PROFILE);
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.empty());
+            when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            FamilyGroup result = service.createFamilyGroup(command);
+
+            assertThat(result.getParents()).containsExactly(PARENT_WITHOUT_MEMBER_PROFILE);
+        }
+
+        @Test
         @DisplayName("should validate exclusive membership for parent")
         void shouldRejectParentAlreadyInAnotherFamilyGroup() {
             FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A);
@@ -86,7 +102,7 @@ class FamilyGroupManagementServiceTest {
         @DisplayName("should return all family groups")
         void shouldReturnAllFamilyGroups() {
             FamilyGroup group1 = FamilyGroup.reconstruct(GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(), null);
-            FamilyGroupId otherId = new FamilyGroupId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"));
+            FamilyGroupId otherId = new FamilyGroupId(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"));
             FamilyGroup group2 = FamilyGroup.reconstruct(otherId, "Svobodovi", Set.of(PARENT_B), Set.of(), null);
             when(familyGroupRepository.findAll(any(FamilyGroupFilter.class))).thenReturn(List.of(group1, group2));
 
@@ -181,6 +197,23 @@ class FamilyGroupManagementServiceTest {
         }
 
         @Test
+        @DisplayName("should add a parent that has no member profile")
+        void shouldAddParentWithoutMemberProfile() {
+            FamilyGroup group = FamilyGroup.reconstruct(
+                    GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(), null);
+            when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.empty());
+            when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.addParent(GROUP_ID, PARENT_WITHOUT_MEMBER_PROFILE);
+
+            ArgumentCaptor<FamilyGroup> captor = ArgumentCaptor.forClass(FamilyGroup.class);
+            verify(familyGroupRepository).save(captor.capture());
+            assertThat(captor.getValue().getParents())
+                    .containsExactlyInAnyOrder(PARENT_A, PARENT_WITHOUT_MEMBER_PROFILE);
+        }
+
+        @Test
         @DisplayName("should throw GroupNotFoundException when group does not exist")
         void shouldThrowWhenGroupNotFound() {
             when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());
@@ -219,8 +252,8 @@ class FamilyGroupManagementServiceTest {
 
             ArgumentCaptor<FamilyGroup> captor = ArgumentCaptor.forClass(FamilyGroup.class);
             verify(familyGroupRepository).save(captor.capture());
-            assertThat(captor.getValue().hasMember(MEMBER_A)).isTrue();
-            assertThat(captor.getValue().getParents()).doesNotContain(MEMBER_A);
+            assertThat(captor.getValue().hasMember(MEMBER_A.toUserId())).isTrue();
+            assertThat(captor.getValue().getParents()).doesNotContain(MEMBER_A.toUserId());
         }
 
         @Test
@@ -245,7 +278,7 @@ class FamilyGroupManagementServiceTest {
         void shouldRemoveChildAndSave() {
             FamilyGroup group = FamilyGroup.reconstruct(
                     GROUP_ID, "Novákovi", Set.of(PARENT_A),
-                    Set.of(GroupMembership.of(PARENT_A), GroupMembership.of(MEMBER_A)), null);
+                    Set.of(GroupMembership.of(PARENT_A), GroupMembership.of(MEMBER_A.toUserId())), null);
             when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -253,7 +286,7 @@ class FamilyGroupManagementServiceTest {
 
             ArgumentCaptor<FamilyGroup> captor = ArgumentCaptor.forClass(FamilyGroup.class);
             verify(familyGroupRepository).save(captor.capture());
-            assertThat(captor.getValue().hasMember(MEMBER_A)).isFalse();
+            assertThat(captor.getValue().hasMember(MEMBER_A.toUserId())).isFalse();
         }
 
         @Test

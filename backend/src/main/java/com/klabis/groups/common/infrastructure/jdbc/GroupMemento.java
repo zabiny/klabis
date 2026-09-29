@@ -90,7 +90,7 @@ public class GroupMemento implements Persistable<UUID> {
 
     public <M> Set<M> ownerIds(Function<UUID, M> uuidToMemberId) {
         return owners.stream()
-                .map(o -> uuidToMemberId.apply(o.getMemberId()))
+                .map(o -> uuidToMemberId.apply(o.getOwnerId()))
                 .collect(Collectors.toSet());
     }
 

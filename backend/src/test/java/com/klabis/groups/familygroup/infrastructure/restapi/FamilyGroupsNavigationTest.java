@@ -6,6 +6,7 @@ import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.common.users.Authority;
+import com.klabis.common.users.UserId;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
@@ -54,8 +55,8 @@ class FamilyGroupsNavigationTest {
     @DisplayName("should include family-groups collection link for MEMBERS:MANAGE users")
     @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
     void shouldIncludeFamilyGroupsLinkForAdmin() throws Exception {
-        MemberId adminMember = new MemberId(UUID.fromString(ADMIN_ID));
-        FamilyGroup group = FamilyGroup.reconstruct(new FamilyGroupId(GROUP_UUID), "Novákovi", Set.of(adminMember), Set.of(), null);
+        UserId adminParent = new UserId(UUID.fromString(ADMIN_ID));
+        FamilyGroup group = FamilyGroup.reconstruct(new FamilyGroupId(GROUP_UUID), "Novákovi", Set.of(adminParent), Set.of(), null);
         when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
 
         mockMvc.perform(
@@ -71,8 +72,8 @@ class FamilyGroupsNavigationTest {
     @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ})
     void shouldNotIncludeFamilyGroupsLinkForNonAdmin() throws Exception {
         MemberId member = new MemberId(UUID.fromString(MEMBER_ID));
-        GroupMembership membership = GroupMembership.of(member);
-        MemberId parent = new MemberId(UUID.fromString(ADMIN_ID));
+        GroupMembership<UserId> membership = GroupMembership.of(member.toUserId());
+        UserId parent = new UserId(UUID.fromString(ADMIN_ID));
         FamilyGroup group = FamilyGroup.reconstruct(new FamilyGroupId(GROUP_UUID), "Novákovi", Set.of(parent), Set.of(membership), null);
         when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
 

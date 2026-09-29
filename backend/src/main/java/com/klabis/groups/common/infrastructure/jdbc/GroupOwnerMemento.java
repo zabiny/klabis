@@ -8,17 +8,17 @@ import java.util.UUID;
 @Table(schema = "groups", value = "user_group_owners")
 class GroupOwnerMemento {
 
-    @Column("member_id")
-    private UUID memberId;
+    @Column("owner_id")
+    private UUID ownerId;
 
     protected GroupOwnerMemento() {
     }
 
-    GroupOwnerMemento(UUID memberId) {
-        this.memberId = memberId;
+    GroupOwnerMemento(UUID ownerId) {
+        this.ownerId = ownerId;
     }
 
-    UUID getMemberId() {
-        return memberId;
+    UUID getOwnerId() {
+        return ownerId;
     }
 }
