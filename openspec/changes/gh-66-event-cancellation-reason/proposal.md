@@ -40,11 +40,14 @@ Two pieces of the original request remain **unimplemented**, and this reworked p
   - `Event Detail Page` — a cancelled event shows a struck-through name, a "Zrušeno" badge, and the cancellation reason under the name (replacing the bottom banner).
   - `Event Status Lifecycle` — the "cancellation reason is shown on the cancelled event row in the list" scenario is restated in terms of the strikethrough name (the reason itself is no longer surfaced as a list tooltip; it is shown in the detail under the name).
   - `Get Event Detail` — cancelled event detail stays accessible to every authenticated user (locks Resolved Decision 1: the list-level hiding does not extend to the detail page).
+- `dashboard`:
+  - `Upcoming Registrations Widget` — lists only ACTIVE events, so a cancelled event the member is registered to no longer appears in "Moje nadcházející akce" (the "Končící přihlášky" widget already requires ACTIVE).
 
 ## Impact
 
 **Affected specs:**
 - `openspec/specs/events/spec.md` — `List Events`, `Events Table Display`, `Event Detail Page`, `Event Status Lifecycle`, `Get Event Detail`.
+- `openspec/specs/dashboard/spec.md` — `Upcoming Registrations Widget`.
 
 **Affected code (backend, events module):**
 - `EventManagementService.listEvents` / `EventFilter` — add the "exclude CANCELLED for non-managers unless registered by the caller" rule. The caller's member id must reach the filter; this cannot be expressed as a plain `withExcludedStatus(CANCELLED)` because registered members must still see their cancelled events.

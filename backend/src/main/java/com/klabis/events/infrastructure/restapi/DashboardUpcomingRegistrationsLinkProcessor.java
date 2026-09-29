@@ -29,6 +29,7 @@ class DashboardUpcomingRegistrationsLinkProcessor implements RepresentationModel
         }
 
         String href = UriComponentsBuilder.fromPath("/api/events")
+                .queryParam("status", "ACTIVE")
                 .queryParam("registeredBy", "me")
                 .queryParam("dateFrom", LocalDate.now())
                 .queryParam("sort", "eventDate,ASC")

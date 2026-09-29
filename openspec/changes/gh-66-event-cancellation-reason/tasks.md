@@ -43,11 +43,15 @@ Test entry points: `EventFilterE2ETest` for list-visibility combinations end-to-
 - [x] 4.4 `EventDetailPage.tsx`: delete the bottom cancellation `Card` (currently rendered for `status === 'CANCELLED'`) and remove the now-unused `sections.eventCancelled` label from `frontend/src/localization/labels.ts`; update the tests that assert the banner (4 of them).
 - [x] 4.5 Run frontend tests, commit.
 
+## 4b. Dashboard widget
+
+- [x] 4b.1 `DashboardUpcomingRegistrationsLinkProcessor`: add `status=ACTIVE` to the `upcomingRegistrations` link so cancelled events drop out of "Moje nadcházející akce"; extend `DashboardUpcomingRegistrationsLinkProcessorTest`.
+
 ## 5. Close-out: spec sync, full test run, review
 
-- [ ] 5.1 Verify the delta spec is the implemented behaviour: re-read `openspec/changes/gh-66-event-cancellation-reason/specs/events/spec.md` against the code for all five MODIFIED requirements. Confirm these three removals/fixes are in place: (a) the list status-cell tooltip scenario, (b) "Status column hidden when not returned by API" (status is now always returned, so the column gate lives in the frontend), and (c) the "Event status visible only to manager in list" scenario — dropped in slice 2 because the field is now returned to every caller; the manager-only rule is carried by the `Events Table Display` requirement text and its "Manager views events table with status column" scenario. Also amend the D3 snippet in `design.md` from `Criteria.where("status").isNot("CANCELLED")` to `.not(EventStatus.CANCELLED.name())` — spring-data-relational 4.0.4 has no `isNot`.
+- [x] 5.1 Verify the delta spec is the implemented behaviour: re-read `openspec/changes/gh-66-event-cancellation-reason/specs/events/spec.md` against the code for all five MODIFIED requirements. Confirm these three removals/fixes are in place: (a) the list status-cell tooltip scenario, (b) "Status column hidden when not returned by API" (status is now always returned, so the column gate lives in the frontend), and (c) the "Event status visible only to manager in list" scenario — dropped in slice 2 because the field is now returned to every caller; the manager-only rule is carried by the `Events Table Display` requirement text and its "Manager views events table with status column" scenario. Also amend the D3 snippet in `design.md` from `Criteria.where("status").isNot("CANCELLED")` to `.not(EventStatus.CANCELLED.name())` — spring-data-relational 4.0.4 has no `isNot`.
 - [ ] 5.2 Run the full backend test suite (Modulith verification + architecture tests included) and the full frontend suite; refactor anything the new code duplicated (e.g. if the `cancelled`-aware name renderer ends up needed in more than one place, extract it).
-- [ ] 5.3 Manual verification on `http://localhost:3000` as `admin` and as the club member (`ZBM9500`):
+- [x] 5.3 Manual verification on `http://localhost:3000` as `admin` and as the club member (`ZBM9500`):
   - cancel an ACTIVE event **with** a reason → struck name in the list, badge + reason under the name on the detail; the reason is no longer a list tooltip
   - the registered member still sees that cancelled event in their list (struck name), and can open the detail
   - a member **not** registered for a second cancelled event does not see it in the list
