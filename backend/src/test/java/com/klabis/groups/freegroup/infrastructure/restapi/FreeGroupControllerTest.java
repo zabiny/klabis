@@ -4,7 +4,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.WithPostprocessors;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
-import com.klabis.groups.common.domain.CannotPromoteNonMemberToOwnerException;
+import com.klabis.groups.freegroup.domain.CannotPromoteNonMemberToOwnerException;
 import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.freegroup.domain.InvitationId;

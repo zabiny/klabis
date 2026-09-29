@@ -180,7 +180,7 @@ class FamilyGroupController implements FamilyGroupsApi {
                 .build();
     }
 
-    private EntityModel<FamilyGroupMembershipResponse> buildChildModel(GroupMembership membership, UUID groupUuid, boolean hasMembersManage) {
+    private EntityModel<FamilyGroupMembershipResponse> buildChildModel(GroupMembership<MemberId> membership, UUID groupUuid, boolean hasMembersManage) {
         MemberId memberId = membership.memberId();
         FamilyGroupMembershipResponse response = FamilyGroupMembershipResponseBuilder.builder()
                 .memberId(memberId.uuid())
