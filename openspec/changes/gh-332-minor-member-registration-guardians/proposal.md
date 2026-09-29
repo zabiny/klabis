@@ -6,7 +6,7 @@ Covers GitHub issues #332, #333 and #334.
 
 Registering a minor today treats the legal guardian as a single set of contact details stored on the child's profile. The guardian cannot log in, only one guardian can be recorded, and the registration form does not tell adults and minors apart. In practice a child has one or two guardians, the guardians are the ones who act for the child in the club, and the child should not receive login credentials until someone deliberately gives them.
 
-This change builds on `import-incomplete-members` (no welcome e-mail on registration, self-service activation, incomplete member data). That change should be archived first so its deltas are in the main specs.
+This change builds on the archived `import-incomplete-members` change (no welcome e-mail on registration, self-service activation, incomplete member data).
 
 ## What Changes
 
