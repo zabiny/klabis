@@ -27,13 +27,13 @@
 
 ## 5. Frontend
 
-- [ ] 5.1 Adapt `FamilyGroupDetailPage` and `FamilyGroupsPage` (parents list by `userId`, no member link for parents, add-parent form field `userId`); update `FamilyGroupDetailPage.parents.test.tsx`, `FamilyGroupDetailPage.addMember.test.tsx`, related tests and labels
-- [ ] 5.2 Run frontend tests and `npm run build`
+- [x] 5.1 Adapt `FamilyGroupDetailPage` and `FamilyGroupsPage` (parents list by `userId`, no member link for parents, add-parent form field `userId`); update `FamilyGroupDetailPage.parents.test.tsx`, `FamilyGroupDetailPage.addMember.test.tsx`, related tests and labels
+- [x] 5.2 Run frontend tests and `npm run build`
 
 ## 6. Children and member profile integration (vertical slice)
 
-- [ ] 6.1 Verify child add/remove flow (`MemberId` API) and family group link on member detail (`MemberFamilyGroupLinkProcessor`) by tests, incl. child already in another group and parent-vs-child role conflict
-- [ ] 6.2 Verify member suspension blockers for family group with a member parent (last parent) and that a non-member parent does not affect suspension
+- [x] 6.1 Verify child add/remove flow (`MemberId` API) and family group link on member detail (`MemberFamilyGroupLinkProcessor`) by tests, incl. child already in another group and parent-vs-child role conflict
+- [x] 6.2 Verify member suspension blockers for family group with a member parent (last parent) and that a non-member parent does not affect suspension
 
 ## 7. Specification and finalization
 
