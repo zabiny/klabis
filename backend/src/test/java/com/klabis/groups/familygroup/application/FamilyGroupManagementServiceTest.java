@@ -26,6 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -286,6 +287,37 @@ class FamilyGroupManagementServiceTest {
             assertThatThrownBy(() -> service.addChild(GROUP_ID, MEMBER_A))
                     .isInstanceOf(MemberAlreadyInFamilyGroupException.class);
         }
+
+        @Test
+        @DisplayName("should resolve the child's group through its user id, not the member id alone")
+        void shouldLookUpExistingFamilyGroupByChildUserId() {
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.empty());
+            when(familyGroupRepository.findById(GROUP_ID))
+                    .thenReturn(Optional.of(FamilyGroup.reconstruct(
+                            GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(), null)));
+            when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.addChild(GROUP_ID, MEMBER_A);
+
+            ArgumentCaptor<FamilyGroupFilter> filter = ArgumentCaptor.forClass(FamilyGroupFilter.class);
+            verify(familyGroupRepository).findOne(filter.capture());
+            assertThat(filter.getValue().memberOrParentIs()).isEqualTo(MEMBER_A.toUserId());
+        }
+
+        @Test
+        @DisplayName("should reject a child that is already a parent of the same group")
+        void shouldRejectChildWhoIsAlreadyParentOfSameGroup() {
+            // The parent is already in this very family group, so the exclusive-membership check
+            // rejects the child before the aggregate is even loaded.
+            FamilyGroup group = FamilyGroup.reconstruct(
+                    GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(), null);
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
+                    .thenReturn(Optional.of(group));
+
+            assertThatThrownBy(() -> service.addChild(GROUP_ID, MemberId.fromUserId(PARENT_A)))
+                    .isInstanceOf(MemberAlreadyInFamilyGroupException.class);
+            verify(familyGroupRepository, never()).save(any());
+        }
     }
 
     @Nested
@@ -306,6 +338,24 @@ class FamilyGroupManagementServiceTest {
             ArgumentCaptor<FamilyGroup> captor = ArgumentCaptor.forClass(FamilyGroup.class);
             verify(familyGroupRepository).save(captor.capture());
             assertThat(captor.getValue().hasMember(MEMBER_A.toUserId())).isFalse();
+        }
+
+        @Test
+        @DisplayName("should leave the parent in place when a child is removed")
+        void shouldKeepParentWhenChildRemoved() {
+            FamilyGroup group = FamilyGroup.reconstruct(
+                    GROUP_ID, "Novákovi", Set.of(PARENT_A),
+                    Set.of(GroupMembership.of(PARENT_A), GroupMembership.of(MEMBER_A.toUserId())), null);
+            when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.removeChild(GROUP_ID, MEMBER_A);
+
+            ArgumentCaptor<FamilyGroup> captor = ArgumentCaptor.forClass(FamilyGroup.class);
+            verify(familyGroupRepository).save(captor.capture());
+            assertThat(captor.getValue().getParents()).containsExactly(PARENT_A);
+            assertThat(captor.getValue().hasMember(PARENT_A)).isTrue();
+            assertThat(captor.getValue().getChildren()).isEmpty();
         }
 
         @Test

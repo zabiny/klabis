@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
@@ -308,6 +309,22 @@ class FamilyGroupTest {
             assertThat(group.getChildren())
                     .extracting(GroupMembership::memberId)
                     .containsExactlyInAnyOrder(MEMBER_A, MEMBER_B);
+        }
+
+        @Test
+        @DisplayName("should preserve joinedAt of each child when re-wrapping members as MemberId")
+        void shouldPreserveJoinedAt() {
+            Instant joinedAt = Instant.parse("2026-01-15T10:00:00Z");
+            FamilyGroup group = FamilyGroup.reconstruct(
+                    new FamilyGroupId(UUID.randomUUID()), "Novákovi", Set.of(PARENT_A),
+                    Set.of(new GroupMembership<>(MEMBER_A.toUserId(), joinedAt)), null);
+
+            assertThat(group.getChildren())
+                    .singleElement()
+                    .satisfies(child -> {
+                        assertThat(child.memberId()).isEqualTo(MEMBER_A);
+                        assertThat(child.joinedAt()).isEqualTo(joinedAt);
+                    });
         }
 
         @Test
