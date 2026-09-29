@@ -214,6 +214,25 @@ class FamilyGroupManagementServiceTest {
         }
 
         @Test
+        @DisplayName("should promote an existing child to parent and save them as a single group entry")
+        void shouldPromoteExistingChildToParentWithoutDuplicatingMembership() {
+            FamilyGroup group = FamilyGroup.reconstruct(GROUP_ID, "Novákovi", Set.of(PARENT_A),
+                    Set.of(GroupMembership.of(PARENT_A), GroupMembership.of(MEMBER_A.toUserId())), null);
+            when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.empty());
+            when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            service.addParent(GROUP_ID, MEMBER_A.toUserId());
+
+            ArgumentCaptor<FamilyGroup> captor = ArgumentCaptor.forClass(FamilyGroup.class);
+            verify(familyGroupRepository).save(captor.capture());
+            FamilyGroup saved = captor.getValue();
+            assertThat(saved.getParents()).containsExactlyInAnyOrder(PARENT_A, MEMBER_A.toUserId());
+            assertThat(saved.getMembers()).hasSize(2);
+            assertThat(saved.getChildren()).isEmpty();
+        }
+
+        @Test
         @DisplayName("should throw GroupNotFoundException when group does not exist")
         void shouldThrowWhenGroupNotFound() {
             when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.empty());

@@ -137,8 +137,8 @@ paths:
     $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}'
   /api/family-groups/{id}/parents:
     $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1parents'
-  /api/family-groups/{id}/parents/{memberId}:
-    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1parents~1{memberId}'
+  /api/family-groups/{id}/parents/{userId}:
+    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1parents~1{userId}'
   /api/family-groups/{id}/children:
     $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1children'
   /api/family-groups/{id}/children/{memberId}:
