@@ -67,6 +67,7 @@ public class ManagementService implements ManagementPort {
     public Member suspendMember(MemberId memberId, Member.SuspendMembership command) {
         Member member = loadMember(memberId);
 
+        // TODO: refactor - this should be some kind of "callback" (port) in members implemented from groups - can't take data from event later here as event may be processed asynchronously!!
         MemberSuspensionRequestedEvent event = new MemberSuspensionRequestedEvent(memberId);
         eventPublisher.publishEvent(event);
 

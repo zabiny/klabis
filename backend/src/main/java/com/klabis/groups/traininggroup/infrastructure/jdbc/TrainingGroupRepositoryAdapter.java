@@ -1,11 +1,11 @@
 package com.klabis.groups.traininggroup.infrastructure.jdbc;
 
-import com.klabis.groups.common.domain.AgeRangeOverlap;
-import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.groups.common.infrastructure.jdbc.GroupJdbcRepository;
 import com.klabis.groups.common.infrastructure.jdbc.GroupMemento;
 import com.klabis.groups.traininggroup.TrainingGroupId;
+import com.klabis.groups.traininggroup.domain.AgeRangeOverlap;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
+import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;

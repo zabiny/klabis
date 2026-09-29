@@ -2,13 +2,13 @@ package com.klabis.groups.traininggroup.application;
 
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.common.domain.GroupNotFoundException;
-import com.klabis.members.ActiveMembersByAgeProvider;
-import com.klabis.members.MemberId;
-import com.klabis.groups.common.domain.TrainingGroupFilter;
+import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
-import com.klabis.groups.traininggroup.TrainingGroupId;
+import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
+import com.klabis.members.ActiveMembersByAgeProvider;
+import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,7 +18,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

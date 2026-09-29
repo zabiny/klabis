@@ -1,12 +1,8 @@
 package com.klabis.groups.traininggroup.application;
 
 import com.klabis.groups.common.domain.GroupNotFoundException;
-import com.klabis.groups.common.domain.AgeRangeOverlap;
-import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.TrainingGroupId;
-import com.klabis.groups.traininggroup.domain.AgeRange;
-import com.klabis.groups.traininggroup.domain.TrainingGroup;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
+import com.klabis.groups.traininggroup.domain.*;
 import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;

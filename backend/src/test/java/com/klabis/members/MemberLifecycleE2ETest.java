@@ -86,10 +86,6 @@ class MemberLifecycleE2ETest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.groups.application.LastOwnershipCheckerImpl lastOwnershipCheckerImpl;
-
-    @MockitoBean
-    @SuppressWarnings("unused")
     private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
     @MockitoBean
