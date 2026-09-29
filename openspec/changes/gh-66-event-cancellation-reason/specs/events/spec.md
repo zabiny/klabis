@@ -270,7 +270,7 @@ The system SHALL display the events list as a table with key columns and a filte
 
 ### Requirement: Event Detail Page
 
-The application SHALL display the event detail page with location and registration deadline (when set) and categories (when defined), and allow managers to edit them inline. The registrations section and the link to the registrations list SHALL only be shown for events that are not in DRAFT status. For a cancelled event the detail page SHALL render the event name struck through, show a prominent "Zrušeno" badge, and display the cancellation reason directly under the name when a reason was provided. The struck name SHALL also repeat the cancelled state as visually hidden text, so a screen reader announces it — the state, never the reason.
+The application SHALL display the event detail page with location and registration deadline (when set) and categories (when defined), and allow managers to edit them inline. The registrations section and the link to the registrations list SHALL only be shown for events that are not in DRAFT status. For a cancelled event the detail page SHALL render the event name struck through, show a prominent "Zrušeno" badge, and display the cancellation reason directly under the name when a reason was provided.
 
 #### Scenario: Event detail shows location when set
 
