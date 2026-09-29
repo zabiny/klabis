@@ -1,17 +1,12 @@
-# Groups module — the API surface of FamilyGroupController, FreeGroupController,
-# PendingInvitationsController and TrainingGroupController (groups module).
+# Groups module — the API surface of FreeGroupController, PendingInvitationsController and
+# TrainingGroupController (groups module). Family groups belong to the members module and live in
+# members.yaml.
 #
-# Three Java packages share this one spec file: groups.familygroup.infrastructure.restapi,
-# groups.freegroup.infrastructure.restapi and groups.traininggroup.infrastructure.restapi.
-# openApiModule(...) in build.gradle.kts registers THREE separate codegen tasks against this single
-# file (groupsFamily / groupsFree / groupsTraining), one per package, each scoped to its own tags —
-# see klabis-api-spec skill: "Registering a module for codegen".
-#
-# getFamilyGroup, getGroup and getTrainingGroup return the payload DTO, like every other operation.
+# getGroup and getTrainingGroup return the payload DTO, like every other operation.
 # Each response declares only its application/json payload; the bundler derives the
 # application/prs.hal-forms+json envelope into klabis-full.json.
 #
-# FamilyGroupResponse, GroupResponse and TrainingGroupResponse are ALL fully generated. Their
+# GroupResponse and TrainingGroupResponse are both fully generated. Their
 # collection fields (parents/members/owners/pendingInvitations/trainers) resolve to
 # List<EntityModel<Item>> — each item may carry its own _links/_templates, which ones depending on
 # the caller's authorization (e.g. removeGroupOwner appears on an owner row only for an owner). Each such array
@@ -22,17 +17,16 @@
 #
 # Three different authorization patterns coexist in this module — transcribed here exactly as found,
 # never normalized:
-#   a) Declarative — FamilyGroupController (MEMBERS_MANAGE) and TrainingGroupController
-#      (GROUPS_TRAINING) carry @HasAuthority on most operations -> x-klabis-authority.
+#   a) Declarative — TrainingGroupController (GROUPS_TRAINING) carries @HasAuthority on most
+#      operations -> x-klabis-authority.
 #   b) Authorization inside the domain service — every FreeGroupController operation (Groups tag)
 #      passes @ActingMember into FreeGroupManagementPort and the ownership rule (owner-only /
 #      member-only) is enforced down in FreeGroup itself. The controller carries NO @HasAuthority.
 #      These 13 operations get NO x-klabis-authority / x-klabis-owner-visible — the check is neither
 #      an authority nor an owner-id-vs-caller comparison the framework can express, it is "is the
 #      caller a member of THIS group's owner/member set", which only the aggregate can answer.
-#   c) Imperative in the method body — FamilyGroupController.getFamilyGroup and
-#      TrainingGroupController.getTrainingGroup throw InsufficientAuthorityException unless the
-#      caller has the module's MANAGE/TRAINING authority OR is a member of the specific group.
+#   c) Imperative in the method body — TrainingGroupController.getTrainingGroup throws
+#      InsufficientAuthorityException unless the caller has GROUPS:TRAINING OR is a member of the specific group.
 #      x-klabis-authority alone would lock out those members, and pairing it with
 #      x-klabis-owner-visible (which does OR with an authority) cannot help either: group
 #      membership is a set stored on the group, not an owner ID this spec can name as a parameter.
@@ -40,12 +34,11 @@
 #      no annotation either — it always acts on the caller's own invitations, via @ActingMember, so
 #      there is nothing to authorize beyond authentication.
 #
-# _embedded keys on the four collection responses come from the deriver (Decision 5): the payload's
+# _embedded keys on the three collection responses come from the deriver (Decision 5): the payload's
 # x-klabis-relation.collectionRelation where declared, else Spring HATEOAS's uncapitalize(name)+"List"
 # default. Cross-checked against @Relation on each payload class (grep across groups/ found only
 # GroupSummaryResponse and PendingInvitationResponse annotated; both match the default, so no
 # divergence):
-#   FamilyGroupSummaryResponse (no @Relation) -> familyGroupSummaryResponseList (default)
 #   GroupSummaryResponse       @Relation(collectionRelation = "groupSummaryResponseList") (= default)
 #   TrainingGroupSummaryResponse (no @Relation) -> trainingGroupSummaryResponseList (default)
 #   PendingInvitationResponse  @Relation(collectionRelation = "pendingInvitationResponseList") (= default)
@@ -69,307 +62,6 @@ servers:
     description: Production server
 
 paths:
-
-  # ---------------------------------------------------------------------------------------------
-  # FamilyGroups (FamilyGroupController, /api/family-groups) — 8 operations
-  # ---------------------------------------------------------------------------------------------
-
-  /api/family-groups:
-    get:
-      operationId: listFamilyGroups
-      tags: [FamilyGroups]
-      summary: List all family groups
-      description: Returns all family groups. Requires MEMBERS:MANAGE.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      responses:
-        '200':
-          description: List of family groups retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FamilyGroupSummaryResponse'
-          x-hal-links:
-            self:
-              description: This collection
-          x-hal-templates:
-            createFamilyGroup:
-              operation: createFamilyGroup
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-    post:
-      operationId: createFamilyGroup
-      tags: [FamilyGroups]
-      summary: Create a family group
-      description: |
-        Creates a new family group with a single parent. The parent is any user of the system and
-        need not be a club member. Requires MEMBERS:MANAGE.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      requestBody:
-        required: true
-        x-codegen-request-body-name: request
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateFamilyGroupRequest'
-      responses:
-        '201':
-          description: Family group created
-          headers:
-            Location:
-              description: URI of the created family group
-              schema:
-                type: string
-                format: uri
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/family-groups/{id}:
-    get:
-      operationId: getFamilyGroup
-      tags: [FamilyGroups]
-      summary: Get family group details
-      # Imperative check in FamilyGroupController.getFamilyGroup: MEMBERS:MANAGE OR family-group
-      # membership, which no extension can express — group membership is not an owner ID nameable
-      # as a parameter. See module header comment (pattern c).
-      description: |
-        Returns family group details including parents and children with their own hypermedia links.
-        Requires MEMBERS:MANAGE, or the caller must be a member (parent or child) of this group.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-spring-provide-args:
-        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
-      parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
-      responses:
-        '200':
-          description: Family group found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FamilyGroupResponse'
-          x-hal-links:
-            self:
-              description: This family group
-            collection:
-              operation: listFamilyGroups
-              description: Present only for callers with MEMBERS:MANAGE
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-    delete:
-      operationId: deleteFamilyGroup
-      tags: [FamilyGroups]
-      summary: Delete a family group
-      description: Deletes a family group. Requires MEMBERS:MANAGE.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
-      responses:
-        '204':
-          description: Family group deleted
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/family-groups/{id}/parents:
-    post:
-      operationId: addFamilyGroupParent
-      tags: [FamilyGroups]
-      summary: Add a parent to family group
-      description: |
-        Adds a parent to the family group. The parent is a user of the system and need not be a
-        club member, so the body carries a user id and not a member id. Requires MEMBERS:MANAGE.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
-      requestBody:
-        required: true
-        x-codegen-request-body-name: request
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddParentRequest'
-      responses:
-        '204':
-          description: Parent added
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/family-groups/{id}/parents/{userId}:
-    delete:
-      operationId: removeFamilyGroupParent
-      tags: [FamilyGroups]
-      summary: Remove a parent from family group
-      description: |
-        Removes a parent from the family group. The parent is identified by user id, since a
-        parent need not be a club member. Requires MEMBERS:MANAGE.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
-        - name: userId
-          in: path
-          required: true
-          description: Parent user UUID
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Parent removed
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/family-groups/{id}/children:
-    post:
-      operationId: addFamilyGroupChild
-      tags: [FamilyGroups]
-      summary: Add a child to family group
-      description: Adds a child to the family group. Requires MEMBERS:MANAGE.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
-      requestBody:
-        required: true
-        x-codegen-request-body-name: request
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddMemberRequest'
-      responses:
-        '204':
-          description: Child added
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/family-groups/{id}/children/{memberId}:
-    delete:
-      operationId: removeFamilyGroupChild
-      tags: [FamilyGroups]
-      summary: Remove a child from family group
-      description: Removes a child from the family group. Requires MEMBERS:MANAGE.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
-        - name: memberId
-          in: path
-          required: true
-          description: Child member UUID
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Child removed
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   # ---------------------------------------------------------------------------------------------
   # Groups (FreeGroupController, /api/groups) — 13 operations
@@ -1220,15 +912,6 @@ components:
             SYNC: Synchronisation
 
   parameters:
-    FamilyGroupIdParam:
-      name: id
-      in: path
-      required: true
-      description: Family group UUID
-      schema:
-        type: string
-        format: uuid
-
     FreeGroupIdParam:
       name: id
       in: path
@@ -1257,110 +940,6 @@ components:
         format: uuid
 
   schemas:
-
-    # === FamilyGroups ============================================================================
-
-    CreateFamilyGroupRequest:
-      type: object
-      description: |
-        Designates a single parent for a new family group. The parent is a user of the system and
-        need not be a club member, so `parent` is a user id and not a member id. The parent options
-        still come from listMemberOptions, whose UUIDs are the same.
-      required: [name, parent]
-      properties:
-        name:
-          type: string
-          minLength: 1
-        parent:
-          type: string
-          format: uuid
-          description: UUID of the parent user. Any user qualifies, with or without a member profile.
-          x-hal-input-type: UserId
-
-    # AddParentRequest, not AddMemberRequest — a parent is a user of the system who need not be a
-    # club member, so the field is a user id. AddMemberRequest stays for addFamilyGroupChild, whose
-    # children are always club members.
-    AddParentRequest:
-      type: object
-      description: |
-        Designates a user as a parent of the family group. The parent may be any user of the
-        system, with or without a member profile, so the field is a user id and not a member id.
-        The parent options still come from listMemberOptions, whose UUIDs are the same.
-      required: [userId]
-      properties:
-        userId:
-          type: string
-          format: uuid
-          description: UUID of the parent user. Any user qualifies, with or without a member profile.
-          x-hal-input-type: UserId
-
-    AddMemberRequest:
-      type: object
-      required: [memberId]
-      properties:
-        memberId:
-          type: string
-          format: uuid
-          x-hal-input-type: MemberId
-
-    FamilyGroupSummaryResponse:
-      type: object
-      x-klabis-relation:
-        collectionRelation: familyGroupSummaryResponseList
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        memberCount:
-          type: integer
-          format: int32
-
-    # getFamilyGroup's payload. parents/members are arrays of HAL-wrapped items (each carrying its
-    # own _links/_templates at runtime), so the Java record fields resolve to List<EntityModel<X>>.
-    # x-hal-entity-items: true on each array declares that: the bundler derives an EntityModel<X>
-    # item schema, KlabisSpringCodegen.fromProperty reads the same marker and maps the property onto
-    # org.springframework.hateoas.EntityModel<X>. The response-level HAL envelope is derived too.
-    FamilyGroupResponse:
-      type: object
-      description: Family group detail with parents and children as independently linked items.
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        parents:
-          type: array
-          x-hal-entity-items: true
-          items:
-            $ref: '#/components/schemas/ParentResponse'
-        members:
-          type: array
-          x-hal-entity-items: true
-          items:
-            $ref: '#/components/schemas/FamilyGroupMembershipResponse'
-
-    # A parent is a user of the system and need not have a member profile, so the row is keyed on
-    # the user id and carries no "member" link. Children below stay on memberId, since a child is
-    # always a club member.
-    ParentResponse:
-      type: object
-      properties:
-        userId:
-          type: string
-          format: uuid
-
-    FamilyGroupMembershipResponse:
-      type: object
-      properties:
-        memberId:
-          type: string
-          format: uuid
-        joinedAt:
-          type: string
-          format: date-time
 
     # === Groups (FreeGroup) ======================================================================
 
@@ -1418,8 +997,9 @@ components:
         name:
           type: string
 
-    # getGroup's payload — see FamilyGroupResponse for why owners/members/pendingInvitations resolve
-    # to List<EntityModel<X>> via x-hal-entity-items.
+    # getGroup's payload. owners/members/pendingInvitations are arrays of HAL-wrapped items (each
+    # carrying its own _links/_templates at runtime), so x-hal-entity-items: true resolves them to
+    # List<EntityModel<X>>; the bundler derives the matching EntityModel<X> item schema.
     GroupResponse:
       type: object
       description: Free group detail with owners, members and invitations as independently linked items.
@@ -1502,7 +1082,7 @@ components:
           format: int32
           minimum: 0
 
-    # TrainingGroupAddMemberRequest, not AddMemberRequest — a same-named FamilyGroups schema already
+    # TrainingGroupAddMemberRequest, not AddMemberRequest — a same-named FamilyGroups schema (members.yaml)
     # occupies that name in this one global component namespace after bundling (both wrap a single
     # memberId field but are unrelated types); see klabis-api-spec skill: "Component names are global
     # once bundled" / "Prefix module-owned components rather than reaching for the generic name".
@@ -1579,7 +1159,7 @@ components:
           type: integer
           format: int32
 
-    # getTrainingGroup's payload — see FamilyGroupResponse for why trainers/members resolve to
+    # getTrainingGroup's payload — see GroupResponse for why trainers/members resolve to
     # List<EntityModel<X>> via x-hal-entity-items. ageRange and members are omitted
     # (JsonInclude.NON_NULL) in the reduced response returned to callers without GROUPS:TRAINING —
     # see the description on getTrainingGroup.
@@ -1631,3 +1211,4 @@ components:
         joinedAt:
           type: string
           format: date-time
+

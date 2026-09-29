@@ -132,17 +132,17 @@ paths:
   /api/members/{memberId}/fee-history:
     $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-history'
   /api/family-groups:
-    $ref: './groups.yaml#/paths/~1api~1family-groups'
+    $ref: './members.yaml#/paths/~1api~1family-groups'
   /api/family-groups/{id}:
-    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}'
+    $ref: './members.yaml#/paths/~1api~1family-groups~1{id}'
   /api/family-groups/{id}/parents:
-    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1parents'
+    $ref: './members.yaml#/paths/~1api~1family-groups~1{id}~1parents'
   /api/family-groups/{id}/parents/{userId}:
-    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1parents~1{userId}'
+    $ref: './members.yaml#/paths/~1api~1family-groups~1{id}~1parents~1{userId}'
   /api/family-groups/{id}/children:
-    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1children'
+    $ref: './members.yaml#/paths/~1api~1family-groups~1{id}~1children'
   /api/family-groups/{id}/children/{memberId}:
-    $ref: './groups.yaml#/paths/~1api~1family-groups~1{id}~1children~1{memberId}'
+    $ref: './members.yaml#/paths/~1api~1family-groups~1{id}~1children~1{memberId}'
   /api/groups:
     $ref: './groups.yaml#/paths/~1api~1groups'
   /api/groups/{id}:
