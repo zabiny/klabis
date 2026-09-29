@@ -1,6 +1,7 @@
 package com.klabis.groups.familygroup.domain;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.users.UserId;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.common.domain.MemberAlreadyInGroupException;
 import com.klabis.groups.common.domain.MemberGroup;
@@ -16,14 +17,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @AggregateRoot
-public class FamilyGroup extends MemberGroup<FamilyGroup, FamilyGroupId, MemberId> {
+public class FamilyGroup extends MemberGroup<FamilyGroup, FamilyGroupId, UserId> {
 
     public static final String TYPE_DISCRIMINATOR = "FAMILY";
 
     @Identity
     private final FamilyGroupId id;
 
-    private FamilyGroup(FamilyGroupId id, String name, Set<MemberId> parents, Set<GroupMembership<MemberId>> members) {
+    private FamilyGroup(FamilyGroupId id, String name, Set<UserId> parents, Set<GroupMembership<UserId>> members) {
         super(name, parents, members);
         Assert.notNull(id, "FamilyGroupId is required");
         this.id = id;
@@ -32,8 +33,10 @@ public class FamilyGroup extends MemberGroup<FamilyGroup, FamilyGroupId, MemberI
     // Parents are the semantic concept for owners in a family group context.
     // parent = owner + member: adding a parent grants ownership and membership,
     // removing a parent withdraws both ownership and membership entirely.
+    // A parent is a user of the system and need not have a member profile,
+    // hence UserId internally; children are always club members, hence MemberId on the public API.
     @RecordBuilder
-    public record CreateFamilyGroup(String name, MemberId parent) {
+    public record CreateFamilyGroup(String name, UserId parent) {
         public CreateFamilyGroup {
             Assert.hasText(name, "Group name is required");
             Assert.notNull(parent, "Parent is required");
@@ -47,8 +50,8 @@ public class FamilyGroup extends MemberGroup<FamilyGroup, FamilyGroupId, MemberI
                 Set.of(GroupMembership.of(command.parent())));
     }
 
-    public static FamilyGroup reconstruct(FamilyGroupId id, String name, Set<MemberId> parents,
-                                          Set<GroupMembership<MemberId>> members, AuditMetadata auditMetadata) {
+    public static FamilyGroup reconstruct(FamilyGroupId id, String name, Set<UserId> parents,
+                                          Set<GroupMembership<UserId>> members, AuditMetadata auditMetadata) {
         FamilyGroup group = new FamilyGroup(id, name, parents, members);
         group.updateAuditMetadata(auditMetadata);
         return group;
@@ -59,23 +62,24 @@ public class FamilyGroup extends MemberGroup<FamilyGroup, FamilyGroupId, MemberI
         return id;
     }
 
-    public Set<MemberId> getParents() {
+    public Set<UserId> getParents() {
         return getOwners();
     }
 
     public Set<GroupMembership<MemberId>> getChildren() {
-        Set<MemberId> parents = getParents();
+        Set<UserId> parents = getParents();
         return getMembers().stream()
                 .filter(m -> !parents.contains(m.memberId()))
+                .map(m -> new GroupMembership<>(MemberId.fromUserId(m.memberId()), m.joinedAt()))
                 .collect(Collectors.toUnmodifiableSet());
     }
 
-    public boolean isLastParent(MemberId memberId) {
-        return isLastOwner(memberId);
+    public boolean isLastParent(UserId userId) {
+        return isLastOwner(userId);
     }
 
-    public void addParent(MemberId parent) {
-        Assert.notNull(parent, "Parent MemberId is required");
+    public void addParent(UserId parent) {
+        Assert.notNull(parent, "Parent UserId is required");
         addOwner(parent);
         // If already a member (was a child), skip adding membership to avoid duplicate
         if (!hasMember(parent)) {
@@ -83,8 +87,8 @@ public class FamilyGroup extends MemberGroup<FamilyGroup, FamilyGroupId, MemberI
         }
     }
 
-    public void removeParent(MemberId parent) {
-        Assert.notNull(parent, "Parent MemberId is required");
+    public void removeParent(UserId parent) {
+        Assert.notNull(parent, "Parent UserId is required");
         // Remove from owners first so the subsequent removeMember call is not blocked by the owner guard
         removeOwner(parent);
         removeMember(parent);
@@ -92,14 +96,15 @@ public class FamilyGroup extends MemberGroup<FamilyGroup, FamilyGroupId, MemberI
 
     public void addChild(MemberId child) {
         Assert.notNull(child, "Child MemberId is required");
-        if (isOwner(child)) {
+        UserId childUserId = child.toUserId();
+        if (isOwner(childUserId)) {
             throw new MemberAlreadyInGroupException(child);
         }
-        addMember(child);
+        addMember(childUserId);
     }
 
     public void removeChild(MemberId child) {
         Assert.notNull(child, "Child MemberId is required");
-        removeMember(child);
+        removeMember(child.toUserId());
     }
 }

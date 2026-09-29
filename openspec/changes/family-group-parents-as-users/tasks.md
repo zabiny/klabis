@@ -1,11 +1,11 @@
 ## 1. Domain and persistence on UserId (refactor slice, existing behavior preserved)
 
-- [ ] 1.1 Update `FamilyGroupTest` to `UserId` parents / `MemberId` children API (red), incl. role exclusivity, last parent, duplicate membership
-- [ ] 1.2 Change `FamilyGroup` to `MemberGroup<FamilyGroup, FamilyGroupId, UserId>`: `create`/`addParent`/`removeParent`/`isLastParent` take `UserId`, `addChild`/`removeChild` take `MemberId` (converted via `toUserId()`), `getParents(): Set<UserId>`, `getChildren()` exposes `MemberId`
-- [ ] 1.3 Rename `user_group_owners.member_id` to `owner_id` directly in `V001__initial_schema.sql` (column, PK, index); update `GroupOwnerMemento` and `GroupJdbcRepository` queries; verify `GroupsCoexistenceTest` for Free/Training groups
-- [ ] 1.4 Switch `FamilyGroupRepositoryAdapter` to `UserId::uuid` / `UserId::new`; `FamilyGroupFilter.memberOrParentIs` to `UserId`; `MemberAlreadyInFamilyGroupException` to `UserId`; update `FamilyGroupPersistenceTest`
-- [ ] 1.5 Adapt `FamilyGroupManagementPort`/`FamilyGroupManagementService` (`addParent`/`removeParent` with `UserId`, `validateNoExistingFamilyGroup` over `UserId`) and `FamilyGroupManagementServiceTest`
-- [ ] 1.6 Adapt `FamilyGroupSuspensionBlockersAdapter` and `MemberFamilyGroupLinkProcessor` to map `MemberId.toUserId()`; update their tests
+- [x] 1.1 Update `FamilyGroupTest` to `UserId` parents / `MemberId` children API (red), incl. role exclusivity, last parent, duplicate membership
+- [x] 1.2 Change `FamilyGroup` to `MemberGroup<FamilyGroup, FamilyGroupId, UserId>`: `create`/`addParent`/`removeParent`/`isLastParent` take `UserId`, `addChild`/`removeChild` take `MemberId` (converted via `toUserId()`), `getParents(): Set<UserId>`, `getChildren()` exposes `MemberId`
+- [x] 1.3 Rename `user_group_owners.member_id` to `owner_id` directly in `V001__initial_schema.sql` (column, PK, index); update `GroupOwnerMemento` and `GroupJdbcRepository` queries; verify `GroupsCoexistenceTest` for Free/Training groups
+- [x] 1.4 Switch `FamilyGroupRepositoryAdapter` to `UserId::uuid` / `UserId::new`; `FamilyGroupFilter.memberOrParentIs` to `UserId`; `MemberAlreadyInFamilyGroupException` to `UserId`; update `FamilyGroupPersistenceTest`
+- [x] 1.5 Adapt `FamilyGroupManagementPort`/`FamilyGroupManagementService` (`addParent`/`removeParent` with `UserId`, `validateNoExistingFamilyGroup` over `UserId`) and `FamilyGroupManagementServiceTest`
+- [x] 1.6 Adapt `FamilyGroupSuspensionBlockersAdapter` and `MemberFamilyGroupLinkProcessor` to map `MemberId.toUserId()`; update their tests
 
 ## 2. Create family group with a non-member parent (vertical slice)
 

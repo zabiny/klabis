@@ -1,10 +1,10 @@
 package com.klabis.groups.familygroup.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.users.UserId;
 import com.klabis.groups.familygroup.domain.FamilyGroupFilter;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.infrastructure.restapi.FamilyGroupsApi;
-import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
@@ -23,8 +23,8 @@ public class    MemberFamilyGroupLinkProcessor implements RepresentationModelPro
 
     @Override
     public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
-        MemberId memberId = new MemberId(model.getContent().id());
-        familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(memberId))
+        UserId userId = new UserId(model.getContent().id());
+        familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(userId))
                 .ifPresent(group -> klabisLinkTo(methodOn(FamilyGroupsApi.class).getFamilyGroup(group.getId().uuid(), null))
                         .map(link -> link.withRel("familyGroup"))
                         .ifPresent(model::add));

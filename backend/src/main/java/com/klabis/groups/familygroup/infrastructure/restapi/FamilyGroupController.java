@@ -7,6 +7,7 @@ import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
+import com.klabis.common.users.UserId;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
@@ -60,7 +61,7 @@ class FamilyGroupController implements FamilyGroupsApi {
     public ResponseEntity<Void> createFamilyGroup(CreateFamilyGroupRequest request) {
 
         FamilyGroup.CreateFamilyGroup command = new FamilyGroup.CreateFamilyGroup(
-                request.name(), new MemberId(request.parent()));
+                request.name(), new UserId(request.parent()));
         FamilyGroup group = familyGroupManagementService.createFamilyGroup(command);
 
         return ResponseEntity.created(
@@ -90,7 +91,9 @@ class FamilyGroupController implements FamilyGroupsApi {
         FamilyGroup group = familyGroupManagementService.getFamilyGroup(groupId);
 
         boolean hasMembersManage = currentUser.hasAuthority(Authority.MEMBERS_MANAGE);
-        boolean isMember = currentUser.isMemberOf(group::hasMember);
+        // Deliberately keyed on the token's memberId, not userId: a parent without a member profile
+        // cannot exist yet, and the switch to group.hasMember(currentUser.userId()) is task 4.3.
+        boolean isMember = currentUser.isMemberOf(memberId -> group.hasMember(memberId.toUserId()));
 
         if (!hasMembersManage && !isMember) {
             throw new InsufficientAuthorityException("MEMBERS:MANAGE or family group membership required");
@@ -112,7 +115,7 @@ class FamilyGroupController implements FamilyGroupsApi {
     public ResponseEntity<Void> addFamilyGroupParent(UUID id, AddMemberRequest request) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
-        familyGroupManagementService.addParent(groupId, new MemberId(request.memberId()));
+        familyGroupManagementService.addParent(groupId, new UserId(request.memberId()));
         return ResponseEntity.noContent().build();
     }
 
@@ -120,7 +123,7 @@ class FamilyGroupController implements FamilyGroupsApi {
     public ResponseEntity<Void> removeFamilyGroupParent(UUID id, UUID memberId) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
-        MemberId parentToRemove = new MemberId(memberId);
+        UserId parentToRemove = new UserId(memberId);
         familyGroupManagementService.removeParent(groupId, parentToRemove);
         return ResponseEntity.noContent().build();
     }
@@ -151,7 +154,7 @@ class FamilyGroupController implements FamilyGroupsApi {
 
     private FamilyGroupResponse toFamilyGroupResponse(FamilyGroup group, boolean hasMembersManage) {
         UUID groupUuid = group.getId().uuid();
-        Set<MemberId> parentIds = group.getParents();
+        Set<UserId> parentIds = group.getParents();
         List<EntityModel<ParentResponse>> parentModels = parentIds.stream()
                 .map(parentId -> {
                     EntityModel<ParentResponse> model = EntityModel.of(ParentResponseBuilder.builder().memberId(parentId.uuid()).build());

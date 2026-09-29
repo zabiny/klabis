@@ -1,6 +1,7 @@
 package com.klabis.groups.familygroup.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
+import com.klabis.common.users.UserId;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
 import com.klabis.groups.familygroup.domain.FamilyGroupFilter;
@@ -42,8 +43,11 @@ class FamilyGroupPersistenceTest {
     @Autowired
     private FamilyGroupRepository familyGroupRepository;
 
-    private static final MemberId PARENT_A = new MemberId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
-    private static final MemberId PARENT_B = new MemberId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+    private static final UserId PARENT_A = new UserId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+    private static final UserId PARENT_B = new UserId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+    // No row in members.users or members.members — a parent need not have a member profile.
+    private static final UserId PARENT_WITHOUT_MEMBER_PROFILE =
+            new UserId(UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"));
     private static final MemberId CHILD_A = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
 
     @Nested
@@ -68,6 +72,19 @@ class FamilyGroupPersistenceTest {
         }
 
         @Test
+        @DisplayName("should save and retrieve a parent who has no member profile")
+        void shouldSaveAndRetrieveParentWithoutMemberProfile() {
+            FamilyGroup group = FamilyGroup.create(
+                    new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_WITHOUT_MEMBER_PROFILE));
+
+            FamilyGroup saved = familyGroupRepository.save(group);
+            Optional<FamilyGroup> found = familyGroupRepository.findById(saved.getId());
+
+            assertThat(found).isPresent();
+            assertThat(found.get().getParents()).containsExactly(PARENT_WITHOUT_MEMBER_PROFILE);
+        }
+
+        @Test
         @DisplayName("should save and retrieve family group with a child member added after creation")
         void shouldSaveAndRetrieveFamilyGroupWithChild() {
             FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
@@ -77,7 +94,21 @@ class FamilyGroupPersistenceTest {
             Optional<FamilyGroup> found = familyGroupRepository.findById(saved.getId());
 
             assertThat(found).isPresent();
-            assertThat(found.get().hasMember(CHILD_A)).isTrue();
+            assertThat(found.get().hasMember(CHILD_A.toUserId())).isTrue();
+        }
+
+        @Test
+        @DisplayName("should return children as MemberId after round-trip")
+        void shouldReturnChildrenAsMemberId() {
+            FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A));
+            group.addChild(CHILD_A);
+
+            FamilyGroup saved = familyGroupRepository.save(group);
+            FamilyGroup retrieved = familyGroupRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(retrieved.getChildren())
+                    .extracting(m -> m.memberId())
+                    .containsExactly(CHILD_A);
         }
 
         @Test
@@ -119,7 +150,7 @@ class FamilyGroupPersistenceTest {
 
         @Test
         @DisplayName("should return empty list when no groups exist")
-        void shouldReturnEmptyListWhenNoGroups() {
+        void shouldReturnEmptyWhenNoGroups() {
             List<FamilyGroup> result = familyGroupRepository.findAll(FamilyGroupFilter.all());
 
             assertThat(result).isEmpty();
@@ -150,7 +181,20 @@ class FamilyGroupPersistenceTest {
             familyGroupRepository.save(group);
 
             Optional<FamilyGroup> found = familyGroupRepository.findOne(
-                    FamilyGroupFilter.all().withMemberOrParentIs(CHILD_A));
+                    FamilyGroupFilter.all().withMemberOrParentIs(CHILD_A.toUserId()));
+
+            assertThat(found).isPresent();
+            assertThat(found.get().getName()).isEqualTo("Novákovi");
+        }
+
+        @Test
+        @DisplayName("should find group by parent without member profile")
+        void shouldFindGroupByParentWithoutMemberProfile() {
+            familyGroupRepository.save(FamilyGroup.create(
+                    new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_WITHOUT_MEMBER_PROFILE)));
+
+            Optional<FamilyGroup> found = familyGroupRepository.findOne(
+                    FamilyGroupFilter.all().withMemberOrParentIs(PARENT_WITHOUT_MEMBER_PROFILE));
 
             assertThat(found).isPresent();
             assertThat(found.get().getName()).isEqualTo("Novákovi");
@@ -202,6 +246,20 @@ class FamilyGroupPersistenceTest {
         }
 
         @Test
+        @DisplayName("should persist added parent who has no member profile")
+        void shouldPersistAddedParentWithoutMemberProfile() {
+            FamilyGroup group = familyGroupRepository.save(
+                    FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Novákovi", PARENT_A)));
+
+            group.addParent(PARENT_WITHOUT_MEMBER_PROFILE);
+            familyGroupRepository.save(group);
+
+            FamilyGroup retrieved = familyGroupRepository.findById(group.getId()).orElseThrow();
+            assertThat(retrieved.getParents())
+                    .containsExactlyInAnyOrder(PARENT_A, PARENT_WITHOUT_MEMBER_PROFILE);
+        }
+
+        @Test
         @DisplayName("should persist removed parent — removed from both parents and members tables")
         void shouldPersistRemovedParent() {
             FamilyGroup group = familyGroupRepository.save(
@@ -246,7 +304,7 @@ class FamilyGroupPersistenceTest {
             familyGroupRepository.save(
                     FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Family One", PARENT_A)));
             FamilyGroup group2 = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Family Two", PARENT_B));
-            group2.addChild(PARENT_A);
+            group2.addChild(MemberId.fromUserId(PARENT_A));
             familyGroupRepository.save(group2);
 
             assertThatThrownBy(() ->

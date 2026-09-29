@@ -610,13 +610,13 @@ COMMENT ON COLUMN groups.user_groups.age_range_max IS 'Maximum age (inclusive) â
 CREATE TABLE groups.user_group_owners
 (
     user_group_id UUID NOT NULL REFERENCES groups.user_groups (id) ON DELETE CASCADE,
-    member_id     UUID NOT NULL,
-    PRIMARY KEY (user_group_id, member_id)
+    owner_id      UUID NOT NULL,
+    PRIMARY KEY (user_group_id, owner_id)
 );
 
 -- Indexes for user_group_owners
 CREATE INDEX idx_user_group_owners_group_id ON groups.user_group_owners (user_group_id);
-CREATE INDEX idx_user_group_owners_member_id ON groups.user_group_owners (member_id);
+CREATE INDEX idx_user_group_owners_owner_id ON groups.user_group_owners (owner_id);
 
 -- Comments for user_group_owners
 COMMENT ON TABLE groups.user_group_owners IS 'Owners/trainers/parents per group â€” interpretation depends on the group type';

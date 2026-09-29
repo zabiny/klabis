@@ -23,8 +23,8 @@ class FamilyGroupSuspensionBlockersAdapter implements MemberOwnedGroupsPort {
 
     @Override
     public List<OwnedGroup> findGroupsBlockingSuspension(MemberId memberId) {
-        return repository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(memberId))
-                .filter(group -> group.isLastParent(memberId))
+        return repository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(memberId.toUserId()))
+                .filter(group -> group.isLastParent(memberId.toUserId()))
                 .map(FamilyGroupSuspensionBlockersAdapter::toOwnedGroup)
                 .stream().toList();
     }

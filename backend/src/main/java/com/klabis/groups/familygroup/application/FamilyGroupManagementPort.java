@@ -1,5 +1,6 @@
 package com.klabis.groups.familygroup.application;
 
+import com.klabis.common.users.UserId;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
 import com.klabis.members.MemberId;
@@ -18,9 +19,9 @@ public interface FamilyGroupManagementPort {
 
     void deleteFamilyGroup(FamilyGroupId id);
 
-    void addParent(FamilyGroupId id, MemberId parent);
+    void addParent(FamilyGroupId id, UserId parent);
 
-    void removeParent(FamilyGroupId id, MemberId parent);
+    void removeParent(FamilyGroupId id, UserId parent);
 
     void addChild(FamilyGroupId id, MemberId child);
 

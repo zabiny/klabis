@@ -89,7 +89,7 @@ class GroupsCoexistenceTest {
         saveFamilyGroupWithMember();
 
         var result = familyGroupRepository.findOne(
-                FamilyGroupFilter.all().withMemberOrParentIs(SHARED_MEMBER));
+                FamilyGroupFilter.all().withMemberOrParentIs(SHARED_MEMBER.toUserId()));
 
         assertThat(result).isPresent();
         assertThat(result.get().getName()).isEqualTo("Family Group");
@@ -133,7 +133,7 @@ class GroupsCoexistenceTest {
     }
 
     private void saveFamilyGroupWithMember() {
-        FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Family Group", OWNER));
+        FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Family Group", OWNER.toUserId()));
         group.addChild(SHARED_MEMBER);
         familyGroupRepository.save(group);
     }
