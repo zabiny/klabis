@@ -13,6 +13,7 @@ import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
 import com.klabis.groups.infrastructure.restapi.AddMemberRequest;
+import com.klabis.groups.infrastructure.restapi.AddParentRequest;
 import com.klabis.groups.infrastructure.restapi.CreateFamilyGroupRequest;
 import com.klabis.groups.infrastructure.restapi.FamilyGroupMembershipResponse;
 import com.klabis.groups.infrastructure.restapi.FamilyGroupMembershipResponseBuilder;
@@ -112,18 +113,18 @@ class FamilyGroupController implements FamilyGroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> addFamilyGroupParent(UUID id, AddMemberRequest request) {
+    public ResponseEntity<Void> addFamilyGroupParent(UUID id, AddParentRequest request) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
-        familyGroupManagementService.addParent(groupId, new UserId(request.memberId()));
+        familyGroupManagementService.addParent(groupId, new UserId(request.userId()));
         return ResponseEntity.noContent().build();
     }
 
     @Override
-    public ResponseEntity<Void> removeFamilyGroupParent(UUID id, UUID memberId) {
+    public ResponseEntity<Void> removeFamilyGroupParent(UUID id, UUID userId) {
 
         FamilyGroupId groupId = new FamilyGroupId(id);
-        UserId parentToRemove = new UserId(memberId);
+        UserId parentToRemove = new UserId(userId);
         familyGroupManagementService.removeParent(groupId, parentToRemove);
         return ResponseEntity.noContent().build();
     }
@@ -220,15 +221,20 @@ class FamilyGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<Famil
     @Override
     public void process(EntityModel<FamilyGroupResponse> dtoModel, FamilyGroup group) {
         UUID id = group.getId().uuid();
-        Map<String, HalFormsOptionsDef> memberIdOptions = Map.of("memberId",
+        // A parent need not be a club member, so the add-parent form is keyed on userId. The options
+        // still come from listMemberOptions — offering non-member users is a later step, and their
+        // UUIDs are the same either way.
+        Map<String, HalFormsOptionsDef> parentUserIdOptions = Map.of("userId",
+                HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()));
+        Map<String, HalFormsOptionsDef> childMemberIdOptions = Map.of("memberId",
                 HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()));
         klabisLinkTo(methodOn(FamilyGroupsApi.class).getFamilyGroup(id, null))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(FamilyGroupsApi.class).deleteFamilyGroup(id)))
                         .andAffordances(klabisAffordWithOptions(
-                                methodOn(FamilyGroupsApi.class).addFamilyGroupParent(id, null), memberIdOptions))
+                                methodOn(FamilyGroupsApi.class).addFamilyGroupParent(id, null), parentUserIdOptions))
                         .andAffordances(klabisAffordWithOptions(
-                                methodOn(FamilyGroupsApi.class).addFamilyGroupChild(id, null), memberIdOptions)))
+                                methodOn(FamilyGroupsApi.class).addFamilyGroupChild(id, null), childMemberIdOptions)))
                 .ifPresent(dtoModel::add);
 
         // klabisLinkTo omits this for callers without MEMBERS:MANAGE, which is the authority
