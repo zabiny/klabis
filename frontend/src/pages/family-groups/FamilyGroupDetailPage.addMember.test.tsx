@@ -13,7 +13,13 @@ vi.mock('../../hooks/useHalPageData', () => ({
 }));
 
 vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: () => <div data-testid="hal-form-display"/>,
+    HalFormDisplay: ({template}: {template: {properties?: {name: string; type?: string}[]}}) => (
+        <div data-testid="hal-form-display">
+            {(template.properties ?? []).map(p => (
+                <span key={p.name} data-testid={`hal-form-field-${p.name}`} data-type={p.type}/>
+            ))}
+        </div>
+    ),
 }));
 
 vi.mock('../../components/UI', async (importOriginal) => {
@@ -100,6 +106,34 @@ const buildChild = (overrides?: Record<string, unknown>) => ({
     ...overrides,
 });
 
+// A parent is a user of the system, so the add-parent form is keyed on userId (not memberId) and
+// the options still come from listMemberOptions — non-member users are a later step.
+const addParentTemplate = () => mockHalFormsTemplate({
+    title: 'Přidat rodiče',
+    method: 'POST',
+    target: '/api/family-groups/fg-1/parents',
+    properties: [{
+        name: 'userId',
+        prompt: 'Rodič',
+        type: 'UserId',
+        required: true,
+        options: {link: {href: '/api/members/options'}},
+    }],
+});
+
+const addChildTemplate = () => mockHalFormsTemplate({
+    title: 'Přidat dítě',
+    method: 'POST',
+    target: '/api/family-groups/fg-1/children',
+    properties: [{
+        name: 'memberId',
+        prompt: 'Dítě',
+        type: 'MemberId',
+        required: true,
+        options: {link: {href: '/api/members/options'}},
+    }],
+});
+
 describe('FamilyGroupDetailPage — unified Add member button (task 10.x)', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -107,7 +141,7 @@ describe('FamilyGroupDetailPage — unified Add member button (task 10.x)', () =
 
     it('shows "Přidat člena" button when addFamilyGroupParent template exists', () => {
         const resourceData = buildFamilyGroupDetail({
-            _templates: {addFamilyGroupParent: mockHalFormsTemplate({title: 'Přidat rodiče', method: 'POST'})},
+            _templates: {addFamilyGroupParent: addParentTemplate()},
         });
         renderPage(createMockPageData(resourceData));
         expect(screen.getByRole('button', {name: /přidat člena/i})).toBeInTheDocument();
@@ -115,7 +149,7 @@ describe('FamilyGroupDetailPage — unified Add member button (task 10.x)', () =
 
     it('shows "Přidat člena" button when addFamilyGroupChild template exists', () => {
         const resourceData = buildFamilyGroupDetail({
-            _templates: {addFamilyGroupChild: mockHalFormsTemplate({title: 'Přidat dítě', method: 'POST'})},
+            _templates: {addFamilyGroupChild: addChildTemplate()},
         });
         renderPage(createMockPageData(resourceData));
         expect(screen.getByRole('button', {name: /přidat člena/i})).toBeInTheDocument();
@@ -128,7 +162,7 @@ describe('FamilyGroupDetailPage — unified Add member button (task 10.x)', () =
 
     it('does NOT show old "Přidat rodiče" button as a standalone button', () => {
         const resourceData = buildFamilyGroupDetail({
-            _templates: {addFamilyGroupParent: mockHalFormsTemplate({title: 'Přidat rodiče', method: 'POST'})},
+            _templates: {addFamilyGroupParent: addParentTemplate()},
         });
         renderPage(createMockPageData(resourceData));
         expect(screen.queryByRole('button', {name: /^přidat rodiče$/i})).not.toBeInTheDocument();
@@ -137,8 +171,8 @@ describe('FamilyGroupDetailPage — unified Add member button (task 10.x)', () =
     it('clicking "Přidat člena" opens role picker modal', () => {
         const resourceData = buildFamilyGroupDetail({
             _templates: {
-                addFamilyGroupParent: mockHalFormsTemplate({title: 'Přidat rodiče', method: 'POST'}),
-                addFamilyGroupChild: mockHalFormsTemplate({title: 'Přidat dítě', method: 'POST'}),
+                addFamilyGroupParent: addParentTemplate(),
+                addFamilyGroupChild: addChildTemplate(),
             },
         });
         renderPage(createMockPageData(resourceData));
@@ -149,7 +183,7 @@ describe('FamilyGroupDetailPage — unified Add member button (task 10.x)', () =
     it('role picker shows "Rodič" option when addFamilyGroupParent template exists', () => {
         const resourceData = buildFamilyGroupDetail({
             _templates: {
-                addFamilyGroupParent: mockHalFormsTemplate({title: 'Přidat rodiče', method: 'POST'}),
+                addFamilyGroupParent: addParentTemplate(),
             },
         });
         renderPage(createMockPageData(resourceData));
@@ -160,7 +194,7 @@ describe('FamilyGroupDetailPage — unified Add member button (task 10.x)', () =
     it('role picker shows "Dítě" option when addFamilyGroupChild template exists', () => {
         const resourceData = buildFamilyGroupDetail({
             _templates: {
-                addFamilyGroupChild: mockHalFormsTemplate({title: 'Přidat dítě', method: 'POST'}),
+                addFamilyGroupChild: addChildTemplate(),
             },
         });
         renderPage(createMockPageData(resourceData));
@@ -171,7 +205,7 @@ describe('FamilyGroupDetailPage — unified Add member button (task 10.x)', () =
     it('role picker does NOT show "Rodič" option when addFamilyGroupParent template is absent', () => {
         const resourceData = buildFamilyGroupDetail({
             _templates: {
-                addFamilyGroupChild: mockHalFormsTemplate({title: 'Přidat dítě', method: 'POST'}),
+                addFamilyGroupChild: addChildTemplate(),
             },
         });
         renderPage(createMockPageData(resourceData));
@@ -182,8 +216,8 @@ describe('FamilyGroupDetailPage — unified Add member button (task 10.x)', () =
     it('selecting "Rodič" in role picker shows HalFormDisplay', () => {
         const resourceData = buildFamilyGroupDetail({
             _templates: {
-                addFamilyGroupParent: mockHalFormsTemplate({title: 'Přidat rodiče', method: 'POST'}),
-                addFamilyGroupChild: mockHalFormsTemplate({title: 'Přidat dítě', method: 'POST'}),
+                addFamilyGroupParent: addParentTemplate(),
+                addFamilyGroupChild: addChildTemplate(),
             },
         });
         renderPage(createMockPageData(resourceData));
@@ -195,14 +229,35 @@ describe('FamilyGroupDetailPage — unified Add member button (task 10.x)', () =
     it('selecting "Dítě" in role picker shows HalFormDisplay', () => {
         const resourceData = buildFamilyGroupDetail({
             _templates: {
-                addFamilyGroupParent: mockHalFormsTemplate({title: 'Přidat rodiče', method: 'POST'}),
-                addFamilyGroupChild: mockHalFormsTemplate({title: 'Přidat dítě', method: 'POST'}),
+                addFamilyGroupParent: addParentTemplate(),
+                addFamilyGroupChild: addChildTemplate(),
             },
         });
         renderPage(createMockPageData(resourceData));
         fireEvent.click(screen.getByRole('button', {name: /přidat člena/i}));
         fireEvent.click(screen.getByRole('button', {name: /dítě/i}));
         expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
+    });
+
+    it('add-parent form asks for a userId, not a memberId', () => {
+        const resourceData = buildFamilyGroupDetail({
+            _templates: {addFamilyGroupParent: addParentTemplate()},
+        });
+        renderPage(createMockPageData(resourceData));
+        fireEvent.click(screen.getByRole('button', {name: /přidat člena/i}));
+        fireEvent.click(screen.getByRole('button', {name: /rodič/i}));
+        expect(screen.getByTestId('hal-form-field-userId')).toHaveAttribute('data-type', 'UserId');
+        expect(screen.queryByTestId('hal-form-field-memberId')).not.toBeInTheDocument();
+    });
+
+    it('add-child form still asks for a memberId', () => {
+        const resourceData = buildFamilyGroupDetail({
+            _templates: {addFamilyGroupChild: addChildTemplate()},
+        });
+        renderPage(createMockPageData(resourceData));
+        fireEvent.click(screen.getByRole('button', {name: /přidat člena/i}));
+        fireEvent.click(screen.getByRole('button', {name: /dítě/i}));
+        expect(screen.getByTestId('hal-form-field-memberId')).toHaveAttribute('data-type', 'MemberId');
     });
 
     it('shows children section with "DĚTI" label when members array has entries', () => {
