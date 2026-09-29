@@ -1,11 +1,7 @@
 package com.klabis.sync.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.sync.application.ConflictNotAcknowledgedException;
-import com.klabis.sync.application.SyncRecordNeedsResolutionException;
-import com.klabis.sync.application.SyncRecordNotFailedException;
-import com.klabis.sync.application.SyncRecordNotInConflictException;
-import com.klabis.sync.application.UnsupportedResolutionException;
+import com.klabis.sync.application.*;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,7 +21,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
  * right for every other module's business-rule violations but wrong here: all five of
  * these mean "resolve/reset it first", the textbook shape of a 409. Kept local to the
  * sync module rather than changing the shared handler's mapping for everyone, mirroring
- * {@code groups.common.infrastructure.restapi.GroupsExceptionHandler}.
+ * {@code common.groups.infrastructure.restapi.GroupsExceptionHandler}.
  * <p>
  * Scoped to {@link SynchronizationController} via {@code assignableTypes} — unlike
  * {@code GroupsExceptionHandler}, this advice also handles

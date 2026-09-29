@@ -1,10 +1,10 @@
 package com.klabis.groups.traininggroup.domain;
 
 import com.klabis.common.domain.AuditMetadata;
+import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
+import com.klabis.common.groups.domain.GroupMembership;
+import com.klabis.common.groups.domain.MemberGroup;
 import com.klabis.groups.MemberAssignedToTrainingGroupEvent;
-import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
-import com.klabis.groups.common.domain.GroupMembership;
-import com.klabis.groups.common.domain.MemberGroup;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;

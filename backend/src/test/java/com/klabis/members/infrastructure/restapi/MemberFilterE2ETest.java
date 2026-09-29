@@ -4,6 +4,7 @@ import com.klabis.E2ETest;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
+import com.klabis.members.familygroup.domain.FamilyGroupRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +45,7 @@ class MemberFilterE2ETest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private com.klabis.groups.familygroup.domain.FamilyGroupRepository familyGroupRepository;
+    private FamilyGroupRepository familyGroupRepository;
 
     @Autowired
     private MockMvc mockMvc;

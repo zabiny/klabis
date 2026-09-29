@@ -1,0 +1,108 @@
+package com.klabis.common.groups.infrastructure.jdbc;
+
+import org.springframework.data.jdbc.repository.query.Modifying;
+import org.springframework.data.jdbc.repository.query.Query;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> {
+
+    @Query("SELECT * FROM groups.user_groups WHERE id = :id AND type = :type")
+    Optional<GroupMemento> findByIdAndType(@Param("id") UUID id, @Param("type") String type);
+
+    @Query("SELECT EXISTS (SELECT 1 FROM groups.user_groups WHERE id = :id AND type = :type)")
+    boolean existsByIdAndType(@Param("id") UUID id, @Param("type") String type);
+
+    @Query("DELETE FROM groups.user_groups WHERE id = :id AND type = :type")
+    @Modifying
+    void deleteByIdAndType(@Param("id") UUID id, @Param("type") String type);
+
+    @Query("""
+            SELECT ug.* FROM groups.user_groups ug
+            WHERE ug.type = :type
+              AND (
+                EXISTS (
+                    SELECT 1 FROM groups.user_group_owners ugo
+                    WHERE ugo.user_group_id = ug.id AND ugo.owner_id = :memberId
+                ) OR EXISTS (
+                    SELECT 1 FROM groups.user_group_members ugm
+                    WHERE ugm.user_group_id = ug.id AND ugm.member_id = :memberId
+                )
+              )
+            """)
+    List<GroupMemento> findOwnersOrMembersByType(@Param("memberId") UUID memberId, @Param("type") String type);
+
+    @Query("""
+            SELECT DISTINCT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_invitations ugi ON ugi.user_group_id = ug.id
+            WHERE ug.type = :type
+              AND ugi.invited_member_id = :memberId
+              AND ugi.status = 'PENDING'
+            """)
+    List<GroupMemento> findWithPendingInvitationsByType(@Param("memberId") UUID memberId, @Param("type") String type);
+
+    @Query("""
+            SELECT ug.* FROM groups.user_groups ug
+            WHERE ug.type = :type
+              AND (
+                EXISTS (
+                    SELECT 1 FROM groups.user_group_owners ugo
+                    WHERE ugo.user_group_id = ug.id AND ugo.owner_id = :memberId
+                ) OR EXISTS (
+                    SELECT 1 FROM groups.user_group_members ugm
+                    WHERE ugm.user_group_id = ug.id AND ugm.member_id = :memberId
+                )
+              )
+            LIMIT 2
+            """)
+    List<GroupMemento> findFirst2OwnersOrMembersByType(@Param("memberId") UUID memberId, @Param("type") String type);
+
+    @Query("""
+            SELECT DISTINCT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_invitations ugi ON ugi.user_group_id = ug.id
+            WHERE ug.type = :type
+              AND ugi.invited_member_id = :memberId
+              AND ugi.status = 'PENDING'
+            LIMIT 2
+            """)
+    List<GroupMemento> findFirst2WithPendingInvitationsByType(@Param("memberId") UUID memberId, @Param("type") String type);
+
+    @Query("""
+            SELECT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_members ugm ON ug.id = ugm.user_group_id
+            WHERE ug.type = :type
+              AND ugm.member_id = :memberId
+            """)
+    List<GroupMemento> findByMemberIdAndType(@Param("memberId") UUID memberId, @Param("type") String type);
+
+    @Query("""
+            SELECT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_members ugm ON ug.id = ugm.user_group_id
+            WHERE ug.type = :type
+              AND ugm.member_id = :memberId
+            LIMIT 2
+            """)
+    List<GroupMemento> findFirst2ByMemberIdAndType(@Param("memberId") UUID memberId, @Param("type") String type);
+
+    @Query("""
+            SELECT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_owners ugo ON ug.id = ugo.user_group_id
+            WHERE ug.type = :type
+              AND ugo.owner_id = :trainerId
+            """)
+    List<GroupMemento> findByTrainerIdAndType(@Param("trainerId") UUID trainerId, @Param("type") String type);
+
+    @Query("""
+            SELECT ug.* FROM groups.user_groups ug
+            JOIN groups.user_group_owners ugo ON ug.id = ugo.user_group_id
+            WHERE ug.type = :type
+              AND ugo.owner_id = :trainerId
+            LIMIT 2
+            """)
+    List<GroupMemento> findFirst2ByTrainerIdAndType(@Param("trainerId") UUID trainerId, @Param("type") String type);
+
+}

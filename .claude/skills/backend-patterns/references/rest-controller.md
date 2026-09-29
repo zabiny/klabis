@@ -188,4 +188,4 @@ Test-slice consequences (global scan, `@WithPostprocessors`) are in `testing-gui
 
 **Consequences for production code:**
 - `@MvcComponent` is the correct annotation for presentation-layer beans in `infrastructure/restapi/` — postprocessors (`ModelWithDomainPostprocessor`, plain `RepresentationModelProcessor`), Jackson modules, HAL helpers. Controllers keep `@RestController`.
-- Cross-module postprocessors (e.g. a `groups.familygroup` postprocessor enriching a `Member` response) live in the consuming module and still just need `@MvcComponent`; the central scan finds them regardless of package.
+- Cross-module postprocessors (e.g. a `groups.traininggroup` postprocessor enriching a `Member` response) live in the consuming module and still just need `@MvcComponent`; the central scan finds them regardless of package.

@@ -1,9 +1,9 @@
 package com.klabis.groups.freegroup.domain;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.groups.common.domain.DirectMemberAdditionNotAllowedException;
-import com.klabis.groups.common.domain.GroupMembership;
-import com.klabis.groups.common.domain.MemberGroup;
+import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
+import com.klabis.common.groups.domain.GroupMembership;
+import com.klabis.common.groups.domain.MemberGroup;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.FreeGroupInvitationCancelledEvent;
 import com.klabis.members.MemberId;

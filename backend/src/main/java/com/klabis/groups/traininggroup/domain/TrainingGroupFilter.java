@@ -1,6 +1,6 @@
 package com.klabis.groups.traininggroup.domain;
 
-import com.klabis.groups.common.domain.GroupFilter;
+import com.klabis.common.groups.domain.GroupFilter;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.ValueObject;
 

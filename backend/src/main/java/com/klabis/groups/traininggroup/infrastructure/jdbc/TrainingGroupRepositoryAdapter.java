@@ -1,15 +1,10 @@
 package com.klabis.groups.traininggroup.infrastructure.jdbc;
 
-import com.klabis.groups.common.infrastructure.jdbc.GroupJdbcRepository;
-import com.klabis.groups.common.infrastructure.jdbc.GroupMemento;
+import com.klabis.common.groups.infrastructure.jdbc.GroupJdbcRepository;
+import com.klabis.common.groups.infrastructure.jdbc.GroupMemento;
 import com.klabis.groups.traininggroup.TrainingGroupId;
-import com.klabis.groups.traininggroup.domain.AgeRange;
+import com.klabis.groups.traininggroup.domain.*;
 import com.klabis.members.MemberId;
-import com.klabis.groups.traininggroup.TrainingGroupId;
-import com.klabis.groups.traininggroup.domain.AgeRangeOverlap;
-import com.klabis.groups.traininggroup.domain.TrainingGroup;
-import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;
 import org.springframework.data.jdbc.core.JdbcAggregateTemplate;

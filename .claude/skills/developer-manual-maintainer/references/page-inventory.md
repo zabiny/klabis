@@ -87,7 +87,7 @@ Onboarding pro vývojáře bez Spring/DDD znalostí. Žádný projektový kód �
 - `TemplateRenderer`, `Template`, `ThymeleafTemplateRenderer`
 - Hierarchie doménových výjimek (`BusinessRuleViolationException`, `InvalidDataException`, `AuthorizationException`, `InsufficientAuthorityException`, `ResourceNotFoundException`, `MemberProfileRequiredException`)
 
-**Zdroj:** `backend/src/main/java/com/klabis/common/usergroup/`, `common/email/`, `common/templating/`, `common/exceptions/`
+**Zdroj:** `backend/src/main/java/com/klabis/common/groups/`, `common/email/`, `common/templating/`, `common/exceptions/`
 
 ### `08-modules.html` — Spring Modulith a moduly
 - Publikace eventu (`registerEvent`)

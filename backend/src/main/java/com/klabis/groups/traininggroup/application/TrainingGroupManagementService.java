@@ -1,6 +1,6 @@
 package com.klabis.groups.traininggroup.application;
 
-import com.klabis.groups.common.domain.GroupNotFoundException;
+import com.klabis.common.groups.domain.GroupNotFoundException;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.groups.traininggroup.domain.*;
 import com.klabis.members.ActiveMembersByAgeProvider;

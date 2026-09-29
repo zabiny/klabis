@@ -166,8 +166,8 @@ outright in OpenAPI 3.0 and honoured inconsistently by 3.1 tooling, so each of
 `validate.mjs` restricts it to `type: array` with a `$ref` items schema; a singular HAL-wrapped
 property is refused until a real case appears.
 
-All 7 uses are in `groups.yaml` — the `parents`/`members`/`owners`/`pendingInvitations`/`trainers`
-collections of the three group responses, whose rows carry per-row affordances like
+All 7 uses are on the three group responses — `owners`/`members`/`pendingInvitations`/`trainers` in
+`groups.yaml`, family group `parents`/`members` in `members.yaml` — whose rows carry per-row affordances like
 `removeGroupOwner` and `cancelInvitation`.
 
 ## `x-hal-embedded` — a nested collection assembled at runtime
