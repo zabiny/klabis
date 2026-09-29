@@ -98,29 +98,16 @@ public class EventManagementService implements EventManagementPort {
         return event;
     }
 
-    /**
-     * Both visibility rules run for every non-manager: a filter that already excludes DRAFT may
-     * still allow CANCELLED, so it must not short-circuit.
-     */
     @Override
     @Transactional(readOnly = true)
     public Page<Event> listEvents(EventFilter filter, Pageable pageable, boolean canManageEvents, MemberId viewerMemberId) {
         if (canManageEvents) {
             return eventRepository.findAll(filter, pageable);
         }
-        if (filter.requestsOnlyStatus(EventStatus.DRAFT)) {
-            return Page.empty(pageable);
-        }
         EventFilter visible = filter.withExcludedStatus(EventStatus.DRAFT);
-        if (viewerMemberId == null) {
-            // withExcludedStatus would collapse a CANCELLED-only filter to "no restriction".
-            if (visible.requestsOnlyStatus(EventStatus.CANCELLED)) {
-                return Page.empty(pageable);
-            }
-            visible = visible.withExcludedStatus(EventStatus.CANCELLED);
-        } else {
-            visible = visible.withCancelledVisibleTo(viewerMemberId);
-        }
+        visible = viewerMemberId == null
+                ? visible.withExcludedStatus(EventStatus.CANCELLED)
+                : visible.withCancelledVisibleTo(viewerMemberId);
         return eventRepository.findAll(visible, pageable);
     }
 }

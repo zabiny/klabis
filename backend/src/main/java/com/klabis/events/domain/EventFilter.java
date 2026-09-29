@@ -7,6 +7,7 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -14,7 +15,8 @@ import java.util.Set;
 /**
  * Encapsulates query criteria for filtering events.
  * <p>
- * All fields are optional — null or empty means "no filter on this dimension".
+ * All fields are optional — null means "no filter on this dimension". For {@code statuses},
+ * null means all statuses, while an explicitly empty set matches no event.
  * Factory methods cover the most common filtering scenarios.
  */
 @ValueObject
@@ -33,7 +35,7 @@ public record EventFilter(
 ) {
 
     public EventFilter {
-        statuses = statuses == null ? Set.of() : Set.copyOf(statuses);
+        statuses = Collections.unmodifiableSet(statuses == null ? EnumSet.allOf(EventStatus.class) : copyOf(statuses));
         if (fulltextQuery != null) {
             fulltextQuery = fulltextQuery.trim().isEmpty() ? null : fulltextQuery.trim();
         }
@@ -44,7 +46,7 @@ public record EventFilter(
      * No filtering — returns all events.
      */
     public static EventFilter none() {
-        return new EventFilter(Set.of(), null, null, null, null, null, null, null, null, null, null);
+        return new EventFilter(null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
@@ -56,46 +58,27 @@ public record EventFilter(
 
     /**
      * Filter to events whose status is NOT any of the given statuses.
-     * Uses {@link EnumSet#complementOf} to compute the allowed set.
      */
     public static EventFilter byNotHavingStatus(EventStatus... excluded) {
-        EnumSet<EventStatus> excludedSet = EnumSet.copyOf(Arrays.asList(excluded));
-        EnumSet<EventStatus> allowed = EnumSet.complementOf(excludedSet);
+        EnumSet<EventStatus> allowed = EnumSet.allOf(EventStatus.class);
+        allowed.removeAll(Arrays.asList(excluded));
         return new EventFilter(allowed, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
-     * Returns true when the filter's status set explicitly contains this status
-     * and no others — i.e., caller is asking for only this status.
-     */
-    public boolean requestsOnlyStatus(EventStatus status) {
-        return statuses.size() == 1 && statuses.contains(status);
-    }
-
-    /**
-     * Returns true when the filter already guarantees this status cannot appear in results —
-     * i.e., the filter has an explicit include-set that does not contain this status.
-     * A none-filter (empty set) returns false because it imposes no restriction yet.
+     * Returns true when the filter guarantees this status cannot appear in results.
      */
     public boolean excludesStatus(EventStatus status) {
-        return !statuses.isEmpty() && !statuses.contains(status);
+        return !statuses.contains(status);
     }
 
     /**
      * Returns a new filter identical to this one but with the given status removed
-     * from the allowed set.  When the filter had no status restriction (empty set),
-     * the complement of the excluded status is used instead.
+     * from the allowed set. The result may allow no status at all, i.e. match no event.
      */
     public EventFilter withExcludedStatus(EventStatus excluded) {
-        if (statuses.isEmpty()) {
-            EnumSet<EventStatus> allowed = EnumSet.complementOf(EnumSet.of(excluded));
-            return new EventFilter(allowed, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo);
-        }
-        EnumSet<EventStatus> remaining = EnumSet.copyOf(statuses);
+        EnumSet<EventStatus> remaining = copyOf(statuses);
         remaining.remove(excluded);
-        if (remaining.isEmpty()) {
-            return new EventFilter(Set.of(), organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo);
-        }
         return new EventFilter(remaining, organizer, dateFrom, dateTo, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo);
     }
 
@@ -178,11 +161,11 @@ public record EventFilter(
     }
 
     public static EventFilter byOrganizer(String organizer) {
-        return new EventFilter(Set.of(), organizer, null, null, null, null, null, null, null, null, null);
+        return new EventFilter(null, organizer, null, null, null, null, null, null, null, null, null);
     }
 
     public static EventFilter byDateRange(LocalDate from, LocalDate to) {
-        return new EventFilter(Set.of(), null, from, to, null, null, null, null, null, null, null);
+        return new EventFilter(null, null, from, to, null, null, null, null, null, null, null);
     }
 
     /**
@@ -191,5 +174,11 @@ public record EventFilter(
      */
     public EventFilter withDateRange(LocalDate from, LocalDate to) {
         return new EventFilter(statuses, organizer, from, to, fulltextQuery, registeredBy, coordinator, deadlineWithin, notRegisteredBy, eventTypeIds, cancelledVisibleTo);
+    }
+
+    private static EnumSet<EventStatus> copyOf(Set<EventStatus> statuses) {
+        EnumSet<EventStatus> copy = EnumSet.noneOf(EventStatus.class);
+        copy.addAll(statuses);
+        return copy;
     }
 }

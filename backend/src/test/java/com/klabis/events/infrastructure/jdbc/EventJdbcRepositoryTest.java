@@ -341,6 +341,22 @@ class EventJdbcRepositoryTest {
             assertThat(draftPage.getContent()).hasSize(1);
             assertThat(draftPage.getContent().get(0).getName()).isEqualTo("Draft Event");
         }
+
+        @Test
+        @DisplayName("should return empty page when filter allows no status")
+        void shouldReturnEmptyPageWhenFilterAllowsNoStatus() {
+            // Given
+            eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Draft Event").eventDate(LocalDate.of(2026, 6, 10))
+                    .location("Location A").organizer("OOB").build()));
+
+            // When
+            Page<Event> page = eventRepository.findAll(EventFilter.byStatus(), PageRequest.of(0, 10));
+
+            // Then
+            assertThat(page.getContent()).isEmpty();
+            assertThat(page.getTotalElements()).isZero();
+        }
     }
 
     @Nested

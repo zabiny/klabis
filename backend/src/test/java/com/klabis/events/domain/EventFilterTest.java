@@ -10,36 +10,41 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("EventFilter")
 class EventFilterTest {
 
     @Nested
-    @DisplayName("requestsOnlyStatus()")
-    class RequestsOnlyStatusTests {
+    @DisplayName("statuses normalization")
+    class StatusesNormalizationTests {
 
         @Test
-        @DisplayName("returns true when filter has exactly that one status")
-        void returnsTrueForSingleMatchingStatus() {
-            assertThat(EventFilter.byStatus(EventStatus.DRAFT).requestsOnlyStatus(EventStatus.DRAFT)).isTrue();
+        @DisplayName("none() allows all statuses")
+        void noneAllowsAllStatuses() {
+            assertThat(EventFilter.none().statuses()).containsExactlyInAnyOrder(EventStatus.values());
         }
 
         @Test
-        @DisplayName("returns false when filter has multiple statuses")
-        void returnsFalseForMultipleStatuses() {
-            assertThat(EventFilter.byStatus(EventStatus.DRAFT, EventStatus.ACTIVE).requestsOnlyStatus(EventStatus.DRAFT)).isFalse();
+        @DisplayName("null statuses in canonical constructor mean all statuses")
+        void nullMeansAllStatuses() {
+            EventFilter filter = new EventFilter(null, null, null, null, null, null, null, null, null, null, null);
+            assertThat(filter.statuses()).containsExactlyInAnyOrder(EventStatus.values());
         }
 
         @Test
-        @DisplayName("returns false for none-filter (empty set)")
-        void returnsFalseForNoneFilter() {
-            assertThat(EventFilter.none().requestsOnlyStatus(EventStatus.DRAFT)).isFalse();
+        @DisplayName("explicitly empty statuses stay empty")
+        void emptyStaysEmpty() {
+            EventFilter filter = new EventFilter(java.util.Set.of(), null, null, null, null, null, null, null, null, null, null);
+            assertThat(filter.statuses()).isEmpty();
         }
 
         @Test
-        @DisplayName("returns false when filter has single different status")
-        void returnsFalseForDifferentStatus() {
-            assertThat(EventFilter.byStatus(EventStatus.ACTIVE).requestsOnlyStatus(EventStatus.DRAFT)).isFalse();
+        @DisplayName("statuses are immutable")
+        void statusesAreImmutable() {
+            EventFilter filter = EventFilter.none();
+            assertThatThrownBy(() -> filter.statuses().remove(EventStatus.DRAFT))
+                    .isInstanceOf(UnsupportedOperationException.class);
         }
     }
 
@@ -60,9 +65,15 @@ class EventFilterTest {
         }
 
         @Test
-        @DisplayName("returns false for none-filter (no restriction applied yet)")
+        @DisplayName("returns false for none-filter (all statuses allowed)")
         void returnsFalseForNoneFilter() {
             assertThat(EventFilter.none().excludesStatus(EventStatus.DRAFT)).isFalse();
+        }
+
+        @Test
+        @DisplayName("returns true for a filter with empty statuses")
+        void returnsTrueForEmptyStatuses() {
+            assertThat(EventFilter.byStatus().excludesStatus(EventStatus.DRAFT)).isTrue();
         }
 
         @Test
@@ -130,7 +141,7 @@ class EventFilterTest {
             EventFilter base = EventFilter.byOrganizer("OOB");
             EventFilter result = base.withFulltext("jihlava");
             assertThat(result.organizer()).isEqualTo("OOB");
-            assertThat(result.statuses()).isEmpty();
+            assertThat(result.statuses()).containsExactlyInAnyOrder(EventStatus.values());
             assertThat(result.dateFrom()).isNull();
             assertThat(result.dateTo()).isNull();
         }
@@ -225,6 +236,13 @@ class EventFilterTest {
         void noneFilterBecomesComplement() {
             EventFilter result = EventFilter.none().withExcludedStatus(EventStatus.DRAFT);
             assertThat(result).isEqualTo(EventFilter.byNotHavingStatus(EventStatus.DRAFT));
+        }
+
+        @Test
+        @DisplayName("excluding the last remaining status yields empty statuses (matches nothing)")
+        void excludingLastStatusYieldsEmpty() {
+            EventFilter result = EventFilter.byStatus(EventStatus.DRAFT).withExcludedStatus(EventStatus.DRAFT);
+            assertThat(result.statuses()).isEmpty();
         }
 
         @Test

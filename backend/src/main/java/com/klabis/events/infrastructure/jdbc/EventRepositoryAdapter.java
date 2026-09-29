@@ -98,6 +98,10 @@ class EventRepositoryAdapter implements EventRepository {
 
     @Override
     public Page<Event> findAll(EventFilter filter, Pageable pageable) {
+        if (filter.statuses().isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
         List<UUID> preFilteredIds = resolvePreFilteredIds(filter);
 
         if (preFilteredIds != null && preFilteredIds.isEmpty()) {
@@ -218,7 +222,7 @@ class EventRepositoryAdapter implements EventRepository {
         List<Criteria> conditions = new ArrayList<>();
 
         Set<EventStatus> statuses = filter.statuses();
-        if (!statuses.isEmpty()) {
+        if (statuses.size() < EventStatus.values().length) {
             List<String> statusNames = statuses.stream().map(EventStatus::name).toList();
             conditions.add(Criteria.where("status").in(statusNames));
         }
