@@ -1,9 +1,8 @@
 package com.klabis.groups.familygroup.infrastructure.jdbc;
 
+import com.klabis.common.users.UserId;
 import com.klabis.groups.common.infrastructure.jdbc.GroupJdbcRepository;
 import com.klabis.groups.common.infrastructure.jdbc.GroupMemento;
-import com.klabis.groups.familygroup.FamilyGroupId;
-import com.klabis.members.MemberId;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
 import com.klabis.groups.familygroup.domain.FamilyGroupFilter;
@@ -99,7 +98,7 @@ class FamilyGroupRepositoryAdapter implements FamilyGroupRepository {
     private List<GroupMemento> findAllMementosByComplexFilter(FamilyGroupFilter filter) {
         if (filter.memberOrParentIs() != null) {
             return jdbcRepository.findOwnersOrMembersByType(
-                    filter.memberOrParentIs().value(), FamilyGroup.TYPE_DISCRIMINATOR);
+                    filter.memberOrParentIs().uuid(), FamilyGroup.TYPE_DISCRIMINATOR);
         }
         throw new IllegalStateException("Unexpected empty complex filter — should have used buildSimpleCriteriaQuery path");
     }
@@ -111,17 +110,17 @@ class FamilyGroupRepositoryAdapter implements FamilyGroupRepository {
     private List<GroupMemento> findFirst2MementosByComplexFilter(FamilyGroupFilter filter) {
         if (filter.memberOrParentIs() != null) {
             return jdbcRepository.findFirst2OwnersOrMembersByType(
-                    filter.memberOrParentIs().value(), FamilyGroup.TYPE_DISCRIMINATOR);
+                    filter.memberOrParentIs().uuid(), FamilyGroup.TYPE_DISCRIMINATOR);
         }
         throw new IllegalStateException("Unexpected empty complex filter — should have used buildSimpleCriteriaQuery path");
     }
 
     private GroupMemento fromDomain(FamilyGroup group) {
-        return GroupMemento.from(group, group.getId().value(), FamilyGroup.TYPE_DISCRIMINATOR, MemberId::value);
+        return GroupMemento.from(group, group.getId().value(), FamilyGroup.TYPE_DISCRIMINATOR, UserId::uuid);
     }
 
     private FamilyGroup toDomain(GroupMemento memento) {
         return FamilyGroup.reconstruct(new FamilyGroupId(memento.getId()), memento.getName(),
-                memento.ownerIds(MemberId::new), memento.memberships(MemberId::new), memento.auditMetadata());
+                memento.ownerIds(UserId::new), memento.memberships(UserId::new), memento.auditMetadata());
     }
 }

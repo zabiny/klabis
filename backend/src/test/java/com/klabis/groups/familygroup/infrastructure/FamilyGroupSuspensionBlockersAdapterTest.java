@@ -39,7 +39,7 @@ class FamilyGroupSuspensionBlockersAdapterTest {
     @Test
     @DisplayName("reports group when member is its last parent")
     void reportsGroupWhenMemberIsLast() {
-        FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Rodina", MEMBER));
+        FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Rodina", MEMBER.toUserId()));
         when(repository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.of(group));
 
         assertThat(adapter.findGroupsBlockingSuspension(MEMBER))
@@ -49,7 +49,7 @@ class FamilyGroupSuspensionBlockersAdapterTest {
     @Test
     @DisplayName("does not report group when member is not its last parent")
     void ignoresGroupWhenMemberIsNotLast() {
-        FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Rodina", OTHER));
+        FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Rodina", OTHER.toUserId()));
         when(repository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.of(group));
 
         assertThat(adapter.findGroupsBlockingSuspension(MEMBER)).isEmpty();

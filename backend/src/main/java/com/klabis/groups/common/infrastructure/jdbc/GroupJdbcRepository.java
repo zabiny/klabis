@@ -27,7 +27,7 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
               AND (
                 EXISTS (
                     SELECT 1 FROM groups.user_group_owners ugo
-                    WHERE ugo.user_group_id = ug.id AND ugo.member_id = :memberId
+                    WHERE ugo.user_group_id = ug.id AND ugo.owner_id = :memberId
                 ) OR EXISTS (
                     SELECT 1 FROM groups.user_group_members ugm
                     WHERE ugm.user_group_id = ug.id AND ugm.member_id = :memberId
@@ -51,7 +51,7 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
               AND (
                 EXISTS (
                     SELECT 1 FROM groups.user_group_owners ugo
-                    WHERE ugo.user_group_id = ug.id AND ugo.member_id = :memberId
+                    WHERE ugo.user_group_id = ug.id AND ugo.owner_id = :memberId
                 ) OR EXISTS (
                     SELECT 1 FROM groups.user_group_members ugm
                     WHERE ugm.user_group_id = ug.id AND ugm.member_id = :memberId
@@ -92,7 +92,7 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
             SELECT ug.* FROM groups.user_groups ug
             JOIN groups.user_group_owners ugo ON ug.id = ugo.user_group_id
             WHERE ug.type = :type
-              AND ugo.member_id = :trainerId
+              AND ugo.owner_id = :trainerId
             """)
     List<GroupMemento> findByTrainerIdAndType(@Param("trainerId") UUID trainerId, @Param("type") String type);
 
@@ -100,7 +100,7 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
             SELECT ug.* FROM groups.user_groups ug
             JOIN groups.user_group_owners ugo ON ug.id = ugo.user_group_id
             WHERE ug.type = :type
-              AND ugo.member_id = :trainerId
+              AND ugo.owner_id = :trainerId
             LIMIT 2
             """)
     List<GroupMemento> findFirst2ByTrainerIdAndType(@Param("trainerId") UUID trainerId, @Param("type") String type);

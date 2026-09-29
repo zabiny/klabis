@@ -1,7 +1,7 @@
 package com.klabis.groups.familygroup.domain;
 
+import com.klabis.common.users.UserId;
 import com.klabis.groups.common.domain.GroupFilter;
-import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 /**
@@ -10,14 +10,14 @@ import org.jmolecules.ddd.annotation.ValueObject;
  */
 @ValueObject
 public record FamilyGroupFilter(
-        MemberId memberOrParentIs
+        UserId memberOrParentIs
 ) implements GroupFilter {
 
     public static FamilyGroupFilter all() {
         return new FamilyGroupFilter(null);
     }
 
-    public FamilyGroupFilter withMemberOrParentIs(MemberId memberId) {
-        return new FamilyGroupFilter(memberId);
+    public FamilyGroupFilter withMemberOrParentIs(UserId userId) {
+        return new FamilyGroupFilter(userId);
     }
 }

@@ -8,6 +8,7 @@ import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.common.domain.MemberAlreadyInGroupException;
 import com.klabis.common.users.Authority;
+import com.klabis.common.users.UserId;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.application.FamilyGroupManagementPort;
 import com.klabis.groups.familygroup.application.MemberAlreadyInFamilyGroupException;
@@ -49,14 +50,14 @@ class FamilyGroupControllerTest {
     private FamilyGroupManagementPort familyGroupManagementService;
 
     private FamilyGroup buildFamilyGroup(UUID groupUuid, String name, String ownerUuidStr) {
-        MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
+        UserId owner = new UserId(UUID.fromString(ownerUuidStr));
         return FamilyGroup.reconstruct(new FamilyGroupId(groupUuid), name, Set.of(owner), Set.of(), null);
     }
 
     private FamilyGroup buildFamilyGroupWithChild(UUID groupUuid, String name, String ownerUuidStr, String childUuidStr) {
-        MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
+        UserId owner = new UserId(UUID.fromString(ownerUuidStr));
         MemberId child = new MemberId(UUID.fromString(childUuidStr));
-        GroupMembership childMembership = GroupMembership.of(child);
+        GroupMembership<UserId> childMembership = GroupMembership.of(child.toUserId());
         return FamilyGroup.reconstruct(new FamilyGroupId(groupUuid), name, Set.of(owner), Set.of(childMembership), null);
     }
 
@@ -153,7 +154,7 @@ class FamilyGroupControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn409WhenMemberAlreadyInFamilyGroup() throws Exception {
             when(familyGroupManagementService.createFamilyGroup(any(FamilyGroup.CreateFamilyGroup.class)))
-                    .thenThrow(new MemberAlreadyInFamilyGroupException(new MemberId(UUID.randomUUID())));
+                    .thenThrow(new MemberAlreadyInFamilyGroupException(new UserId(UUID.randomUUID())));
 
             mockMvc.perform(
                             post("/api/family-groups")
@@ -384,7 +385,7 @@ class FamilyGroupControllerTest {
             when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class)))
                     .thenReturn(buildFamilyGroup(GROUP_UUID, "Novákovi", MEMBER_ID));
             org.mockito.Mockito.doThrow(new CannotRemoveLastOwnerException(lastParentMemberId))
-                    .when(familyGroupManagementService).removeParent(any(FamilyGroupId.class), any(MemberId.class));
+                    .when(familyGroupManagementService).removeParent(any(FamilyGroupId.class), any(UserId.class));
 
             mockMvc.perform(
                             delete("/api/family-groups/{id}/parents/{memberId}", GROUP_UUID, UUID.fromString(MEMBER_ID))

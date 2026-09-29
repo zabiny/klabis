@@ -1,5 +1,6 @@
 package com.klabis.groups.familygroup.application;
 
+import com.klabis.common.users.UserId;
 import com.klabis.groups.common.domain.GroupNotFoundException;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
@@ -49,7 +50,7 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
 
     @Transactional
     @Override
-    public void addParent(FamilyGroupId id, MemberId parent) {
+    public void addParent(FamilyGroupId id, UserId parent) {
         validateNoExistingFamilyGroup(parent);
         FamilyGroup group = loadGroup(id);
         group.addParent(parent);
@@ -58,7 +59,7 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
 
     @Transactional
     @Override
-    public void removeParent(FamilyGroupId id, MemberId parent) {
+    public void removeParent(FamilyGroupId id, UserId parent) {
         FamilyGroup group = loadGroup(id);
         group.removeParent(parent);
         familyGroupRepository.save(group);
@@ -67,7 +68,7 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
     @Transactional
     @Override
     public void addChild(FamilyGroupId id, MemberId child) {
-        validateNoExistingFamilyGroup(child);
+        validateNoExistingFamilyGroup(child.toUserId());
         FamilyGroup group = loadGroup(id);
         group.addChild(child);
         familyGroupRepository.save(group);
@@ -86,9 +87,9 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
                 .orElseThrow(() -> new GroupNotFoundException("Family", id));
     }
 
-    private void validateNoExistingFamilyGroup(MemberId memberId) {
-        familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(memberId)).ifPresent(existing -> {
-            throw new MemberAlreadyInFamilyGroupException(memberId);
+    private void validateNoExistingFamilyGroup(UserId userId) {
+        familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(userId)).ifPresent(existing -> {
+            throw new MemberAlreadyInFamilyGroupException(userId);
         });
     }
 }
