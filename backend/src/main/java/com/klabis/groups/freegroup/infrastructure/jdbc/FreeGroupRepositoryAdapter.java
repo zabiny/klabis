@@ -1,10 +1,10 @@
 package com.klabis.groups.freegroup.infrastructure.jdbc;
 
-import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.common.infrastructure.jdbc.GroupJdbcRepository;
 import com.klabis.groups.common.infrastructure.jdbc.GroupMemento;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
+import com.klabis.groups.freegroup.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.domain.FreeGroupRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;

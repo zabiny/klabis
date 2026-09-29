@@ -1,10 +1,10 @@
 package com.klabis.groups.familygroup.infrastructure.jdbc;
 
-import com.klabis.groups.common.domain.FamilyGroupFilter;
 import com.klabis.groups.common.infrastructure.jdbc.GroupJdbcRepository;
 import com.klabis.groups.common.infrastructure.jdbc.GroupMemento;
 import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
+import com.klabis.groups.familygroup.domain.FamilyGroupFilter;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import org.jmolecules.architecture.hexagonal.SecondaryAdapter;
 import org.jmolecules.ddd.annotation.Repository;

@@ -1,9 +1,9 @@
 package com.klabis.groups.traininggroup.infrastructure.bootstrap;
 
 import com.klabis.common.bootstrap.BootstrapDataInitializer;
-import com.klabis.groups.common.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
+import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;

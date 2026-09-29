@@ -1,8 +1,6 @@
 package com.klabis.groups.freegroup.domain;
 
-import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.FreeGroupId;
-import com.klabis.groups.freegroup.domain.FreeGroup;
 
 import java.util.List;
 import java.util.Optional;

@@ -1,5 +1,6 @@
-package com.klabis.groups.common.domain;
+package com.klabis.groups.freegroup.domain;
 
+import com.klabis.groups.common.domain.GroupFilter;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.ValueObject;
 

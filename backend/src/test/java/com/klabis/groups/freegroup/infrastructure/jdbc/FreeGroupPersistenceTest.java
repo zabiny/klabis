@@ -2,15 +2,9 @@ package com.klabis.groups.freegroup.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.groups.common.domain.GroupMembership;
-import com.klabis.groups.freegroup.domain.Invitation;
-import com.klabis.groups.freegroup.domain.InvitationId;
-import com.klabis.groups.freegroup.domain.InvitationStatus;
-import com.klabis.members.MemberId;
-import com.klabis.groups.common.domain.FreeGroupFilter;
-import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.FreeGroupId;
-import com.klabis.groups.freegroup.domain.FreeGroupRepository;
-
+import com.klabis.groups.freegroup.domain.*;
+import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -4,7 +4,6 @@ import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
-import com.klabis.groups.application.LastOwnershipCheckerImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Import;
@@ -24,10 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // need users for Security configuration, common for EmailService
 @Import(TestApplicationConfiguration.class)
 class MemberControllerSecurityTest extends SecurityTestBase {
-
-    @MockitoBean
-    @SuppressWarnings("unused")
-    private LastOwnershipCheckerImpl lastOwnershipCheckerImpl;
 
     @Test
     @DisplayName("POST /api/members without authentication should return 401")

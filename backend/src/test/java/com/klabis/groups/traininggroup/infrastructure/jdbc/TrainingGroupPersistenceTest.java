@@ -2,13 +2,9 @@ package com.klabis.groups.traininggroup.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.groups.MemberAssignedToTrainingGroupEvent;
-import com.klabis.members.MemberId;
-import com.klabis.groups.common.domain.AgeRangeOverlap;
-import com.klabis.groups.common.domain.TrainingGroupFilter;
-import com.klabis.groups.traininggroup.domain.AgeRange;
-import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.groups.traininggroup.TrainingGroupId;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
+import com.klabis.groups.traininggroup.domain.*;
+import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

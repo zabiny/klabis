@@ -1,10 +1,10 @@
 package com.klabis.groups.freegroup.infrastructure.listeners;
 
 import com.klabis.CleanupTestData;
-import com.klabis.groups.freegroup.domain.InvitationStatus;
-import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.domain.FreeGroup;
+import com.klabis.groups.freegroup.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.domain.FreeGroupRepository;
+import com.klabis.groups.freegroup.domain.InvitationStatus;
 import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberSuspendedEvent;

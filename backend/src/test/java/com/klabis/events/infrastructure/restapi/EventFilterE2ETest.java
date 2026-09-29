@@ -5,7 +5,6 @@ import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.events.application.EventManagementPort;
-import com.klabis.groups.application.LastOwnershipCheckerImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,10 +52,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @DisplayName("Event Filter E2E Tests")
 class EventFilterE2ETest {
-
-    @MockitoBean
-    @SuppressWarnings("unused")
-    private LastOwnershipCheckerImpl lastOwnershipCheckerImpl;
 
     @MockitoBean
     @SuppressWarnings("unused")
