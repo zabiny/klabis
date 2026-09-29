@@ -49,6 +49,8 @@ Viz kapitola API. Pole rodiče se přejmenuje (BREAKING), dětská pole zůstáv
 
 `ParentResponse` odkaz `member` již neobsahuje (rodič nemusí být člen). Odkaz `user` na základní detaily uživatele se přidá v další fázi s novým users API.
 
+*Mezikročí, které je nutné vědět:* bez odkazu `user` nemá řádek rodiče nic, co by šlo zobrazit ani kam navigovat — rozlišovací znak `userId` odkazuje na uživatele, ne na člena, takže odkaz `member` by u nečlenského rodiče vedl na 404. Frontend proto řádek rodiče renderuje jako samotné UUID (`UserIdRowWithRemove`), místo aby se pokoušel členovou vazbu rozřesit. To je zhoršení oproti předchozímu stavu, kdy se rodič zobrazoval jako člen se jménem, a je to vědomý ústupek do doby, než dorazí users API s odkazem `user`. Bezpečnostně je to v pořádku — jméno člena je osobní údaj a nečlenský rodič ho nemá.
+
 ## Domain model
 
 ```mermaid
@@ -107,6 +109,8 @@ HAL odkazy: `self`, `collection`, `family-groups` (root) beze změny; položka r
 - [Předpoklad `MemberId` ≡ `UserId`] → už je dokumentovaný invariant (`UserId` javadoc, `Member.getUserId()`); převody jsou centralizované v `MemberId.toUserId()` / `fromUserId()`.
 - [Přejmenování sloupce v sdílené tabulce zasahuje Free/Training] → jen názvy sloupců v mementu a dotazech; pokrývá `GroupsCoexistenceTest`.
 - [Výběr rodiče stále nabízí jen členy] → vědomě odloženo (Non-Goal); nečlenského rodiče zatím přidá jen klient znající `userId`.
+- [`userId` bez odkazu `user` proti HATEOOS pravidlu "ID jiného objektu ⇒ `_links` na něj"] → vědomé výjimky: odkaz `member` by na nečlenského rodiče vedl na 404. Řádek rodiče proto zatím nese jen `userId` a v UI se zobrazí jako surové UUID (viz D6); odkaz `user` doplní users API.
+- [`UserId` v HAL-FORMS vykresluje členský picker] → dnes bezpečné, protože `x-hal-input-type: UserId` má zatím jen rodičská pole rodinné skupiny a možnosti stále pocházejí z `listMemberOptions` (stejné UUID). Zkontrolovat, až přibude users-options endpoint.
 
 ## Migration Plan
 

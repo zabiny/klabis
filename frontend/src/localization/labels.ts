@@ -211,6 +211,7 @@ export const labels = {
         memberId: 'Člen',
         memberIds: 'Členové',
         userId: 'Uživatel',
+        parent: 'Rodič',
         parentIds: 'Rodiče',
         trainerId: 'Trenér',
         minAge: 'Min. věk',
