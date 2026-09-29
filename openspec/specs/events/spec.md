@@ -222,7 +222,7 @@ The system SHALL expose row-level management actions for events directly in the 
 
 ### Requirement: Events Table Display
 
-The system SHALL display the events list as a table with key columns and a filter bar. The status column is only shown to users with EVENTS:MANAGE permission. The filter bar exposes fulltext search, a time window selector (Budoucí / Proběhlé / Vše), and — for users with a member profile — a "Moje přihlášky" toggle. The default sort order depends on the active time window: upcoming events are sorted by event date ascending (nearest first), past and all events are sorted by event date descending (most recent first).
+The system SHALL display the events list as a table with key columns and a filter bar. The status column is only shown to users with EVENTS:MANAGE permission. The name of a cancelled event SHALL be rendered struck through for every user who can see the row; the rest of the row, including its actions, is displayed normally. The filter bar exposes fulltext search, a time window selector (Budoucí / Proběhlé / Vše), and — for users with a member profile — a "Moje přihlášky" toggle. The default sort order depends on the active time window: upcoming events are sorted by event date ascending (nearest first), past and all events are sorted by event date descending (most recent first).
 
 #### Scenario: Regular member views events table
 
@@ -233,6 +233,13 @@ The system SHALL display the events list as a table with key columns and a filte
 
 - **WHEN** user with EVENTS:MANAGE permission views the events list page
 - **THEN** the table additionally shows the event status column
+
+#### Scenario: Cancelled event name is struck through in the table
+
+- **WHEN** a user who is allowed to see a cancelled event views the events list
+- **THEN** the event name in that row is rendered struck through
+- **AND** the struck name also carries the cancelled state as visually hidden text, so a screen reader announces it
+- **AND** the rest of the row is displayed normally
 
 #### Scenario: Website link shown as clickable icon
 
@@ -292,11 +299,6 @@ The system SHALL display the events list as a table with key columns and a filte
 - **AND** the current user has no management actions available for that row
 - **THEN** the action column is empty for that row
 
-#### Scenario: Status column hidden when not returned by API
-
-- **WHEN** the API response does not include the status field (field-level security)
-- **THEN** the status column is not displayed in the table
-
 #### Scenario: Filter bar is visible on the events list
 
 - **WHEN** a user opens the events list page
@@ -337,7 +339,7 @@ The system SHALL display the events list as a table with key columns and a filte
 
 ### Requirement: Event Detail Page
 
-The application SHALL display the event detail page with location and registration deadline (when set) and categories (when defined), and allow managers to edit them inline. The registrations section and the link to the registrations list SHALL only be shown for events that are not in DRAFT status.
+The application SHALL display the event detail page with location and registration deadline (when set) and categories (when defined), and allow managers to edit them inline. The registrations section and the link to the registrations list SHALL only be shown for events that are not in DRAFT status. For a cancelled event the detail page SHALL render the event name struck through, show a prominent "Zrušeno" badge, and display the cancellation reason directly under the name when a reason was provided.
 
 #### Scenario: Event detail shows location when set
 
@@ -394,6 +396,20 @@ The application SHALL display the event detail page with location and registrati
 
 - **WHEN** user views the detail page for an event in ACTIVE status
 - **THEN** the registrations section is shown with the link to the registrations list
+
+#### Scenario: Cancelled event detail shows struck-through name, badge and reason
+
+- **WHEN** a user views the detail page of a cancelled event that has a cancellation reason
+- **THEN** the event name is rendered struck through
+- **AND** a prominent "Zrušeno" badge is shown next to the name
+- **AND** the cancellation reason is displayed directly under the name
+
+#### Scenario: Cancelled event detail without a reason
+
+- **WHEN** a user views the detail page of a cancelled event that has no cancellation reason
+- **THEN** the event name is rendered struck through
+- **AND** the "Zrušeno" badge is shown next to the name
+- **AND** no reason text is displayed
 
 ### Requirement: Create Event
 
@@ -495,7 +511,7 @@ The system SHALL allow users with EVENTS:MANAGE permission OR any member in the 
 
 The system SHALL manage event status transitions: DRAFT → ACTIVE → FINISHED or CANCELLED. The transition from ACTIVE to FINISHED is performed exclusively by the automatic completion process; there is no manual "finish" action available to managers.
 
-When cancelling an event, the manager MAY provide an optional cancellation reason (free text, up to 500 characters). The reason SHALL be stored with the event and SHALL be displayed to viewers of the cancelled event detail; if a reason is set, summary views (e.g. event list) SHALL surface it as supplementary text on the cancelled row.
+When cancelling an event, the manager MAY provide an optional cancellation reason (free text, up to 500 characters). The reason SHALL be stored with the event and SHALL be displayed to viewers of the cancelled event detail directly under the event name. In summary views (e.g. the event list) a cancelled event is marked by its struck-through name.
 
 #### Scenario: Manager publishes a DRAFT event
 
@@ -512,20 +528,20 @@ When cancelling an event, the manager MAY provide an optional cancellation reaso
 
 - **WHEN** user with EVENTS:MANAGE permission cancels a DRAFT event and provides a cancellation reason
 - **THEN** the event becomes CANCELLED with the reason recorded
-- **AND** the cancellation reason is shown on the event detail page
+- **AND** the cancellation reason is shown on the event detail page under the event name
 
 #### Scenario: Manager cancels an ACTIVE event with a reason
 
 - **WHEN** user with EVENTS:MANAGE permission cancels an ACTIVE event and provides a cancellation reason
 - **THEN** the event becomes CANCELLED with the reason recorded
 - **AND** existing registrations are preserved for records
-- **AND** the cancellation reason is shown on the event detail page
+- **AND** the cancellation reason is shown on the event detail page under the event name
 
-#### Scenario: Cancellation reason is shown on the cancelled event row in the list
+#### Scenario: Cancelled event is marked in the event list
 
-- **GIVEN** a cancelled event with a recorded cancellation reason
-- **WHEN** a user views the event list
-- **THEN** the cancelled status indicator on that row exposes the reason as a tooltip or supplementary text
+- **GIVEN** an event has been cancelled
+- **WHEN** a user who is allowed to see that event views the event list
+- **THEN** the event name on that row is rendered struck through
 
 #### Scenario: Invalid status transition shows error
 
@@ -549,12 +565,24 @@ The system SHALL automatically transition ACTIVE events to FINISHED status after
 
 ### Requirement: List Events
 
-The system SHALL show a paginated event list. DRAFT events are only visible to users with EVENTS:MANAGE permission. By default the list shows only upcoming events (events whose date is today or later). The list can be filtered by status, organizer, date range, coordinator, fulltext (event name and location), and registered-by-me. Multiple filters combine with AND semantics.
+The system SHALL show a paginated event list. DRAFT events are only visible to users with EVENTS:MANAGE permission. CANCELLED events are only visible to users with EVENTS:MANAGE permission and to members registered for that event — every other user does not see them in the list at all. By default the list shows only upcoming events (events whose date is today or later). The list can be filtered by status, organizer, date range, coordinator, fulltext (event name and location), and registered-by-me. Multiple filters combine with AND semantics.
 
 #### Scenario: Regular user does not see DRAFT events
 
 - **WHEN** user without EVENTS:MANAGE permission views the event list
 - **THEN** no DRAFT events are shown
+
+#### Scenario: Regular user does not see CANCELLED events
+
+- **WHEN** user without EVENTS:MANAGE permission views the event list
+- **AND** the user is not registered for a cancelled event
+- **THEN** that cancelled event is not shown
+
+#### Scenario: Registered member sees a cancelled event they are registered for
+
+- **WHEN** a member without EVENTS:MANAGE permission views the event list
+- **AND** an event the member is registered for has been cancelled
+- **THEN** that cancelled event is shown in the list, subject to the other active filters
 
 #### Scenario: Manager sees all events including DRAFT
 
@@ -571,6 +599,12 @@ The system SHALL show a paginated event list. DRAFT events are only visible to u
 - **WHEN** user without EVENTS:MANAGE permission filters events by DRAFT status
 - **THEN** the list is empty and no DRAFT events are disclosed
 
+#### Scenario: Regular user filtering by CANCELLED sees only their own cancelled events
+
+- **WHEN** user without EVENTS:MANAGE permission filters events by CANCELLED status
+- **THEN** only cancelled events the user is registered for are shown
+- **AND** a user not registered for any cancelled event sees no results
+
 #### Scenario: User can filter events by organizer
 
 - **WHEN** user filters the event list by organizer code
@@ -585,11 +619,6 @@ The system SHALL show a paginated event list. DRAFT events are only visible to u
 
 - **WHEN** user filters the event list by a coordinator member
 - **THEN** only events where that member appears anywhere in the coordinators collection are shown
-
-#### Scenario: Event status visible only to manager in list
-
-- **WHEN** user without EVENTS:MANAGE permission views the event list
-- **THEN** the event status is not shown
 
 #### Scenario: Default view shows only upcoming events
 
@@ -687,7 +716,7 @@ The system SHALL show a paginated event list. DRAFT events are only visible to u
 
 ### Requirement: Get Event Detail
 
-The system SHALL display complete event detail including categories. DRAFT events are only visible to users with EVENTS:MANAGE permission.
+The system SHALL display complete event detail including categories. DRAFT events are only visible to users with EVENTS:MANAGE permission. CANCELLED events remain accessible to every authenticated user — hiding cancelled events applies to the events list only, not to the detail page.
 
 #### Scenario: User views event detail
 
@@ -704,6 +733,11 @@ The system SHALL display complete event detail including categories. DRAFT event
 
 - **WHEN** user without EVENTS:MANAGE permission navigates to a DRAFT event's detail page
 - **THEN** the page shows not found
+
+#### Scenario: Any authenticated user can open a cancelled event detail
+
+- **WHEN** an authenticated user without EVENTS:MANAGE permission opens the detail page of a cancelled event, even without being registered for it
+- **THEN** the detail page is displayed with the cancelled treatment (struck-through name, "Zrušeno" badge, and the reason when provided)
 
 #### Scenario: Manager views DRAFT event detail
 

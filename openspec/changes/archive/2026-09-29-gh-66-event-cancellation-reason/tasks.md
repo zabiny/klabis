@@ -57,7 +57,7 @@ Test entry points: `EventFilterE2ETest` for list-visibility combinations end-to-
   - a member **not** registered for a second cancelled event does not see it in the list
   - the status column is visible for `admin` and absent for the plain member (explicit gate, not the payload)
   - the `"Moje přihlášky"` filter still lists cancelled events with an existing registration
-- [ ] 5.4 Code review, then commit; when merged, sync the delta into `openspec/specs/events/spec.md` (`openspec-sync-specs`) and archive the change.
+- [x] 5.4 Code review, then commit; when merged, sync the delta into `openspec/specs/events/spec.md` (`openspec-sync-specs`) and archive the change.
 
 ## Out of scope (unchanged from the proposal)
 
