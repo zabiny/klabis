@@ -40,3 +40,6 @@ backend/local.env
 /http-client.private.env.json
 /.opencode/package-lock.json
 /opencode.jsonc
+
+# scratch space for local logs and throwaway scripts
+/.tmp/
