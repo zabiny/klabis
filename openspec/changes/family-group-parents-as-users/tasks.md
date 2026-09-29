@@ -21,9 +21,9 @@
 
 ## 4. Group detail: parents without member link, access by userId (vertical slice)
 
-- [ ] 4.1 Spec: `ParentResponse{userId}`; regenerate bundle and types
-- [ ] 4.2 Write failing tests: parent without member profile views group detail (200), non-participant denied (403), `MEMBERS:MANAGE` allowed, parents listed as `userId` without `member` link, children keep `memberId`
-- [ ] 4.3 Update `getFamilyGroup` authorization to `MEMBERS:MANAGE` or `group.hasMember(currentUser.userId())`; remove `member` link from parent items in `toFamilyGroupResponse`
+- [x] 4.1 Spec: `ParentResponse{userId}`; regenerate bundle and types
+- [x] 4.2 Write failing tests: parent without member profile views group detail (200), non-participant denied (403), `MEMBERS:MANAGE` allowed, parents listed as `userId` without `member` link, children keep `memberId`
+- [x] 4.3 Update `getFamilyGroup` authorization to `MEMBERS:MANAGE` or `group.hasMember(currentUser.userId())`; remove `member` link from parent items in `toFamilyGroupResponse`
 
 ## 5. Frontend
 

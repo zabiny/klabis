@@ -79,10 +79,10 @@ class FamilyGroupController implements FamilyGroupsApi {
         return ResponseEntity.ok(groups.stream().map(this::toSummaryResponse).toList());
     }
 
-    // The FamilyGroupResponse record itself is hand-written because parents/members are
-    // List<EntityModel<X>> — each item carries its own _links/_templates (a "member" link, plus a
-    // self link with a DELETE affordance when the caller may remove it), which the generator cannot
-    // express. The interface's payload type still comes from the spec.
+    // The FamilyGroupResponse record is generated, but its parents/members arrays are
+    // List<EntityModel<X>> and each item carries its own _links/_templates at runtime — children a
+    // "member" link, parent rows a self link with a DELETE affordance when the caller may remove the
+    // parent — which the generator cannot express on the payload. The controller assembles them.
     @Override
     public ResponseEntity<FamilyGroupResponse> getFamilyGroup(
             UUID id,
@@ -92,9 +92,7 @@ class FamilyGroupController implements FamilyGroupsApi {
         FamilyGroup group = familyGroupManagementService.getFamilyGroup(groupId);
 
         boolean hasMembersManage = currentUser.hasAuthority(Authority.MEMBERS_MANAGE);
-        // Deliberately keyed on the token's memberId, not userId: a parent without a member profile
-        // cannot exist yet, and the switch to group.hasMember(currentUser.userId()) is task 4.3.
-        boolean isMember = currentUser.isMemberOf(memberId -> group.hasMember(memberId.toUserId()));
+        boolean isMember = group.hasMember(currentUser.userId());
 
         if (!hasMembersManage && !isMember) {
             throw new InsufficientAuthorityException("MEMBERS:MANAGE or family group membership required");
@@ -158,10 +156,7 @@ class FamilyGroupController implements FamilyGroupsApi {
         Set<UserId> parentIds = group.getParents();
         List<EntityModel<ParentResponse>> parentModels = parentIds.stream()
                 .map(parentId -> {
-                    EntityModel<ParentResponse> model = EntityModel.of(ParentResponseBuilder.builder().memberId(parentId.uuid()).build());
-                    klabisLinkTo(methodOn(MembersApi.class).getMember(parentId.uuid(), null))
-                            .map(link -> link.withRel("member"))
-                            .ifPresent(model::add);
+                    EntityModel<ParentResponse> model = EntityModel.of(ParentResponseBuilder.builder().userId(parentId.uuid()).build());
                     if (hasMembersManage && parentIds.size() > 1) {
                         klabisLinkTo(methodOn(FamilyGroupsApi.class).removeFamilyGroupParent(groupUuid, parentId.uuid()))
                                 .ifPresent(link -> model.add(link.withSelfRel()

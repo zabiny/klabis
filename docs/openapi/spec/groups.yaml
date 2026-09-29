@@ -1342,10 +1342,13 @@ components:
           items:
             $ref: '#/components/schemas/FamilyGroupMembershipResponse'
 
+    # A parent is a user of the system and need not have a member profile, so the row is keyed on
+    # the user id and carries no "member" link. Children below stay on memberId, since a child is
+    # always a club member.
     ParentResponse:
       type: object
       properties:
-        memberId:
+        userId:
           type: string
           format: uuid
 
