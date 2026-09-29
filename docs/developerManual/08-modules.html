@@ -189,7 +189,7 @@ class MemberFinancialStateAdapter implements MemberFinancialStatePort {
     stavu: zavolá <code>port.getFinancialSnapshot(id)</code>, a pokud má člen dluh, vyhodí
     <code>MemberHasOutstandingDebtException</code> → controller vrátí <strong>HTTP 409</strong>
     s tělem <code>{ balance, accountLink }</code>. Stejný vzor používá také
-    <code>LastOwnershipCheckerImpl</code> (groups → members) pro kontrolu, že po suspendu zůstane
+    <code>MemberOwnedGroupsPort</code> (implementují ho adaptéry v modulu groups) pro kontrolu, že po suspendu zůstane
     každé skupině alespoň jeden vlastník.
 </p>
 

@@ -18,6 +18,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,13 +44,16 @@ class ManagementServiceTest {
     @Mock
     private MemberFinancialStatePort memberFinancialStatePort;
 
+    @Mock
+    private MemberOwnedGroupsPort memberOwnedGroupsPort;
+
     private ManagementPort testedSubject;
     private UUID testMemberId;
     private Member testMember;
 
     @BeforeEach
     void setUp() {
-        testedSubject = new ManagementService(memberRepository, userService, eventPublisher, Optional.of(memberFinancialStatePort));
+        testedSubject = new ManagementService(memberRepository, userService, eventPublisher, Optional.of(memberFinancialStatePort), List.of(memberOwnedGroupsPort));
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()
@@ -266,12 +270,9 @@ class ManagementServiceTest {
             @DisplayName("should throw SuspensionBlockedException when member is the sole owner of a group")
             void shouldThrowWhenMemberIsLastGroupOwner() {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
-                doAnswer(inv -> {
-                    MemberSuspensionRequestedEvent event = inv.getArgument(0);
-                    event.addBlockingGroup("group-id-1", "Trail Runners", "FREE");
-                    event.addBlockingGroup("group-id-2", "Juniors", "TRAINING");
-                    return null;
-                }).when(eventPublisher).publishEvent(any(MemberSuspensionRequestedEvent.class));
+                when(memberOwnedGroupsPort.findGroupsBlockingSuspension(new MemberId(testMemberId))).thenReturn(List.of(
+                        new OwnedGroup("group-id-1", "Trail Runners", "FREE"),
+                        new OwnedGroup("group-id-2", "Juniors", "TRAINING")));
 
                 var command = MemberSuspendMembershipBuilder.builder()
                         .suspendedBy(new UserId(adminUserId))
@@ -396,11 +397,8 @@ class ManagementServiceTest {
             @DisplayName("should report both blockers when member is last group owner AND has outstanding debt")
             void shouldReportBothBlockersWhenBothConditionsApply() {
                 when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testActiveMember));
-                doAnswer(inv -> {
-                    MemberSuspensionRequestedEvent event = inv.getArgument(0);
-                    event.addBlockingGroup("group-id-1", "Trail Runners", "FREE");
-                    return null;
-                }).when(eventPublisher).publishEvent(any(MemberSuspensionRequestedEvent.class));
+                when(memberOwnedGroupsPort.findGroupsBlockingSuspension(new MemberId(testMemberId))).thenReturn(List.of(
+                        new OwnedGroup("group-id-1", "Trail Runners", "FREE")));
                 var snapshot = new MemberFinancialStatePort.MemberFinancialSnapshot(
                         new MemberId(testMemberId),
                         new MonetaryAmount(new BigDecimal("-250"), "CZK"),
