@@ -3,17 +3,24 @@ package com.klabis.groups;
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.UUID;
+
+import static com.klabis.common.security.KlabisMvcRequestBuilders.klabisAuthentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(classes = {TestApplicationConfiguration.class})
@@ -26,6 +33,8 @@ public class GroupCreationIntegrationTest {
     private static final String MEMBER_UUID = "11111111-1111-1111-1111-111111111111";
     private static final String ADMIN_UUID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
     private static final String TRAINER_UUID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+    // A user without a member profile: the JWT carries user_id only, no member_id.
+    private static final String NON_MEMBER_USER_UUID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
 
     @Autowired
     private MockMvc mockMvc;
@@ -52,6 +61,29 @@ public class GroupCreationIntegrationTest {
                                 {"name": "Test family", "parent": "%s"}
                                 """.formatted(ADMIN_UUID)))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("admin creates FamilyGroup with a non-member parent, who can then view its detail by userId")
+    void shouldCreateFamilyGroupWithNonMemberParentWhoCanViewIt() throws Exception {
+        String location = mockMvc.perform(post("/api/family-groups")
+                        .with(klabisAuthentication(JwtParams.jwtTokenParams("ZBM9000", UUID.fromString(ADMIN_UUID))
+                                .withMemberId(UUID.fromString(ADMIN_UUID))
+                                .withAuthorities(Authority.MEMBERS_MANAGE)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "Guardian family", "parent": "%s"}
+                                """.formatted(NON_MEMBER_USER_UUID)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getHeader("Location");
+
+        mockMvc.perform(get(location)
+                        .with(klabisAuthentication(JwtParams.jwtTokenParams("guardian", UUID.fromString(NON_MEMBER_USER_UUID))
+                                .withAuthorities(Authority.MEMBERS_READ)))
+                        .accept(MediaTypes.HAL_FORMS_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.parents[0].userId").value(NON_MEMBER_USER_UUID))
+                .andExpect(jsonPath("$.parents[0]._links.member").doesNotExist());
     }
 
     @Test

@@ -109,7 +109,7 @@ HAL odkazy: `self`, `collection`, `family-groups` (root) beze změny; položka r
 - [Předpoklad `MemberId` ≡ `UserId`] → už je dokumentovaný invariant (`UserId` javadoc, `Member.getUserId()`); převody jsou centralizované v `MemberId.toUserId()` / `fromUserId()`.
 - [Přejmenování sloupce v sdílené tabulce zasahuje Free/Training] → jen názvy sloupců v mementu a dotazech; pokrývá `GroupsCoexistenceTest`.
 - [Výběr rodiče stále nabízí jen členy] → vědomě odloženo (Non-Goal); nečlenského rodiče zatím přidá jen klient znající `userId`.
-- [`userId` bez odkazu `user` proti HATEOOS pravidlu "ID jiného objektu ⇒ `_links` na něj"] → vědomé výjimky: odkaz `member` by na nečlenského rodiče vedl na 404. Řádek rodiče proto zatím nese jen `userId` a v UI se zobrazí jako surové UUID (viz D6); odkaz `user` doplní users API.
+- [`userId` bez odkazu `user` proti HATEOAS pravidlu "ID jiného objektu ⇒ `_links` na něj"] → vědomá výjimka: odkaz `member` by na nečlenského rodiče vedl na 404. Řádek rodiče proto zatím nese jen `userId` a v UI se zobrazí jako surové UUID (viz D6); odkaz `user` doplní users API.
 - [`UserId` v HAL-FORMS vykresluje členský picker] → dnes bezpečné, protože `x-hal-input-type: UserId` má zatím jen rodičská pole rodinné skupiny a možnosti stále pocházejí z `listMemberOptions` (stejné UUID). Zkontrolovat, až přibude users-options endpoint.
 
 ## Migration Plan
