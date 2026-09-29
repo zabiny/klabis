@@ -1,11 +1,11 @@
 package com.klabis.groups.freegroup.application;
 
 import com.klabis.groups.common.domain.GroupNotFoundException;
-import com.klabis.groups.freegroup.domain.InvitationId;
-import com.klabis.groups.common.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
+import com.klabis.groups.freegroup.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.domain.FreeGroupRepository;
+import com.klabis.groups.freegroup.domain.InvitationId;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;

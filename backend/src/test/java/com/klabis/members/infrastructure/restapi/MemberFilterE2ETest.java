@@ -4,7 +4,6 @@ import com.klabis.E2ETest;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.groups.application.LastOwnershipCheckerImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,10 +37,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Sql(scripts = "/sql/test-members-filter-setup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @DisplayName("Member Filter E2E Tests")
 class MemberFilterE2ETest {
-
-    @MockitoBean
-    @SuppressWarnings("unused")
-    private LastOwnershipCheckerImpl lastOwnershipCheckerImpl;
 
     @MockitoBean
     @SuppressWarnings("unused")

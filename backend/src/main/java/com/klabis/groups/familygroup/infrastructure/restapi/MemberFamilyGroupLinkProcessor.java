@@ -1,7 +1,7 @@
 package com.klabis.groups.familygroup.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.groups.common.domain.FamilyGroupFilter;
+import com.klabis.groups.familygroup.domain.FamilyGroupFilter;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
 import com.klabis.groups.infrastructure.restapi.FamilyGroupsApi;
 import com.klabis.members.MemberId;
@@ -13,7 +13,7 @@ import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @MvcComponent
-public class MemberFamilyGroupLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberDetailsResponse>> {
+public class    MemberFamilyGroupLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberDetailsResponse>> {
 
     private final FamilyGroupRepository familyGroupRepository;
 
