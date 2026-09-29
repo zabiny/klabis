@@ -69,6 +69,14 @@ class FamilyGroupControllerTest {
         return FamilyGroup.reconstruct(new FamilyGroupId(groupUuid), name, Set.of(owner), Set.of(childMembership), null);
     }
 
+    // A parent is always also a member of the group, which is what lets a single
+    // group.hasMember(currentUser.userId()) check cover both parents and children.
+    private FamilyGroup buildFamilyGroupWithParent(UUID groupUuid, String name, String parentUuidStr) {
+        UserId parent = new UserId(UUID.fromString(parentUuidStr));
+        GroupMembership<UserId> parentMembership = GroupMembership.of(parent);
+        return FamilyGroup.reconstruct(new FamilyGroupId(groupUuid), name, Set.of(parent), Set.of(parentMembership), null);
+    }
+
     @Nested
     @DisplayName("POST /api/family-groups")
     class CreateFamilyGroupTests {
@@ -315,6 +323,88 @@ class FamilyGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 200 when the caller is a parent without a member profile")
+        @WithKlabisMockUser(userId = PARENT_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldReturnGroupDetailsForParentWithoutMemberProfile() throws Exception {
+            FamilyGroup group = buildFamilyGroupWithParent(GROUP_UUID, "Novákovi", PARENT_ID);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/family-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("Novákovi"));
+        }
+
+        @Test
+        @DisplayName("should return 200 when the caller is a parent with a member profile")
+        @WithKlabisMockUser(memberId = PARENT_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldReturnGroupDetailsForParentWithMemberProfile() throws Exception {
+            FamilyGroup group = buildFamilyGroupWithParent(GROUP_UUID, "Novákovi", PARENT_ID);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/family-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("Novákovi"));
+        }
+
+        @Test
+        @DisplayName("should return 403 when a user without a member profile is not a parent of the group")
+        @WithKlabisMockUser(userId = NON_MEMBER_USER_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldReturn403ForNonParticipantWithoutMemberProfile() throws Exception {
+            FamilyGroup group = buildFamilyGroupWithParent(GROUP_UUID, "Novákovi", PARENT_ID);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/family-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 200 with MEMBERS:MANAGE for a user who is not a participant in the group")
+        @WithKlabisMockUser(userId = NON_MEMBER_USER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn200ForManagerWithoutMemberProfileWhoIsNotAParticipant() throws Exception {
+            FamilyGroup group = buildFamilyGroupWithParent(GROUP_UUID, "Novákovi", PARENT_ID);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/family-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("Novákovi"));
+        }
+
+        @Test
+        @DisplayName("should list a parent by userId with no member link, children keep memberId with a member link")
+        @WithKlabisMockUser(userId = NON_MEMBER_USER_ID, authorities = {Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ})
+        void shouldListParentsByUserIdAndChildrenByMemberId() throws Exception {
+            UserId parent = new UserId(UUID.fromString(PARENT_ID));
+            MemberId child = new MemberId(UUID.fromString(MEMBER_ID));
+            FamilyGroup group = FamilyGroup.reconstruct(new FamilyGroupId(GROUP_UUID), "Novákovi",
+                    Set.of(parent), Set.of(GroupMembership.of(parent), GroupMembership.of(child.toUserId())), null);
+            when(familyGroupManagementService.getFamilyGroup(any(FamilyGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/family-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.parents[0].userId").value(PARENT_ID))
+                    .andExpect(jsonPath("$.parents[0].memberId").doesNotExist())
+                    .andExpect(jsonPath("$.parents[0]._links.member").doesNotExist())
+                    .andExpect(jsonPath("$.members[0].memberId").value(MEMBER_ID))
+                    .andExpect(jsonPath("$.members[0]._links.member.href")
+                            .value("http://localhost/api/members/" + MEMBER_ID));
         }
 
         @Test
