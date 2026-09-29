@@ -17,6 +17,7 @@ import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -28,8 +29,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -41,6 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class FamilyGroupControllerTest {
 
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+    private static final String NON_MEMBER_USER_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
     private static final UUID GROUP_UUID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
 
     @Autowired
@@ -98,6 +103,35 @@ class FamilyGroupControllerTest {
                     )
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"));
+
+            ArgumentCaptor<FamilyGroup.CreateFamilyGroup> command = ArgumentCaptor.forClass(FamilyGroup.CreateFamilyGroup.class);
+            verify(familyGroupManagementService).createFamilyGroup(command.capture());
+            assertThat(command.getValue().name()).isEqualTo("Novákovi");
+            assertThat(command.getValue().parent()).isEqualTo(new UserId(UUID.fromString(MEMBER_ID)));
+        }
+
+        @Test
+        @DisplayName("should create family group when parent is a user without a member profile")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldCreateFamilyGroupWithParentThatIsNotAMember() throws Exception {
+            UserId parentWithoutProfile = new UserId(UUID.fromString(NON_MEMBER_USER_ID));
+            when(familyGroupManagementService.createFamilyGroup(any(FamilyGroup.CreateFamilyGroup.class)))
+                    .thenReturn(buildFamilyGroup(GROUP_UUID, "Novákovi", NON_MEMBER_USER_ID));
+
+            mockMvc.perform(
+                            post("/api/family-groups")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name": "Novákovi", "parent": "%s"}
+                                            """.formatted(NON_MEMBER_USER_ID))
+                    )
+                    .andExpect(status().isCreated())
+                    .andExpect(header().string("Location", containsString("/api/family-groups/" + GROUP_UUID)));
+
+            ArgumentCaptor<FamilyGroup.CreateFamilyGroup> command = ArgumentCaptor.forClass(FamilyGroup.CreateFamilyGroup.class);
+            verify(familyGroupManagementService).createFamilyGroup(command.capture());
+            assertThat(command.getValue().parent()).isEqualTo(parentWithoutProfile);
         }
 
         @Test
@@ -150,11 +184,11 @@ class FamilyGroupControllerTest {
         }
 
         @Test
-        @DisplayName("should return 409 when parent is already in a family group")
+        @DisplayName("should return 409 when the designated parent user already belongs to a family group")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturn409WhenMemberAlreadyInFamilyGroup() throws Exception {
+        void shouldReturn409WhenParentUserAlreadyInFamilyGroup() throws Exception {
             when(familyGroupManagementService.createFamilyGroup(any(FamilyGroup.CreateFamilyGroup.class)))
-                    .thenThrow(new MemberAlreadyInFamilyGroupException(new UserId(UUID.randomUUID())));
+                    .thenThrow(new MemberAlreadyInFamilyGroupException(new UserId(UUID.fromString(MEMBER_ID))));
 
             mockMvc.perform(
                             post("/api/family-groups")
@@ -164,7 +198,8 @@ class FamilyGroupControllerTest {
                                             {"name": "Novákovi", "parent": "%s"}
                                             """.formatted(MEMBER_ID))
                     )
-                    .andExpect(status().isConflict());
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.title").value("Member Already In Family Group"));
         }
     }
 
@@ -211,7 +246,7 @@ class FamilyGroupControllerTest {
                     .andExpect(jsonPath("$._templates.createFamilyGroup.properties[?(@.name=='parent')].options.link.href")
                             .value("http://localhost/api/members/options"))
                     .andExpect(jsonPath("$._templates.createFamilyGroup.properties[?(@.name=='parent')].type")
-                            .value("MemberId"));
+                            .value("UserId"));
         }
 
         @Test
