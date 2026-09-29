@@ -3,6 +3,9 @@ package com.klabis.groups.traininggroup.infrastructure.jdbc;
 import com.klabis.groups.common.infrastructure.jdbc.GroupJdbcRepository;
 import com.klabis.groups.common.infrastructure.jdbc.GroupMemento;
 import com.klabis.groups.traininggroup.TrainingGroupId;
+import com.klabis.groups.traininggroup.domain.AgeRange;
+import com.klabis.members.MemberId;
+import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.groups.traininggroup.domain.AgeRangeOverlap;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
@@ -31,20 +34,20 @@ class TrainingGroupRepositoryAdapter implements TrainingGroupRepository {
 
     @Override
     public TrainingGroup save(TrainingGroup group) {
-        return jdbcRepository.save(GroupMemento.fromTrainingGroup(group)).toTrainingGroup();
+        return toDomain(jdbcRepository.save(fromDomain(group)));
     }
 
     @Override
     public Optional<TrainingGroup> findById(TrainingGroupId id) {
         return jdbcRepository.findByIdAndType(id.value(), TrainingGroup.TYPE_DISCRIMINATOR)
-                .map(GroupMemento::toTrainingGroup);
+                .map(this::toDomain);
     }
 
     @Override
     public List<TrainingGroup> findAll(TrainingGroupFilter filter) {
         return buildSimpleCriteriaQuery(filter)
                 .map(query -> jdbcAggregateTemplate.findAll(query, GroupMemento.class)
-                        .stream().map(GroupMemento::toTrainingGroup).toList())
+                        .stream().map(this::toDomain).toList())
                 .orElseGet(() -> findAllByComplexFilter(filter));
     }
 
@@ -58,7 +61,7 @@ class TrainingGroupRepositoryAdapter implements TrainingGroupRepository {
             throw new IllegalStateException(
                     "findOne expected at most 1 result but filter matched " + results.size() + " rows");
         }
-        return results.stream().findFirst().map(GroupMemento::toTrainingGroup);
+        return results.stream().findFirst().map(this::toDomain);
     }
 
     @Override
@@ -102,7 +105,7 @@ class TrainingGroupRepositoryAdapter implements TrainingGroupRepository {
 
     private List<TrainingGroup> findAllByComplexFilter(TrainingGroupFilter filter) {
         return findAllMementosByComplexFilter(filter)
-                .stream().map(GroupMemento::toTrainingGroup).toList();
+                .stream().map(this::toDomain).toList();
     }
 
     /**
@@ -140,5 +143,16 @@ class TrainingGroupRepositoryAdapter implements TrainingGroupRepository {
             return jdbcRepository.findFirst2ByTrainerIdAndType(filter.trainerIs().value(), TrainingGroup.TYPE_DISCRIMINATOR);
         }
         throw new IllegalStateException("Unexpected empty complex filter — should have used buildSimpleCriteriaQuery path");
+    }
+
+    private GroupMemento fromDomain(TrainingGroup group) {
+        return GroupMemento.from(group, group.getId().value(), TrainingGroup.TYPE_DISCRIMINATOR, MemberId::value)
+                .withAgeRange(group.getAgeRange().minAge(), group.getAgeRange().maxAge());
+    }
+
+    private TrainingGroup toDomain(GroupMemento memento) {
+        return TrainingGroup.reconstruct(new TrainingGroupId(memento.getId()), memento.getName(),
+                memento.ownerIds(MemberId::new), memento.memberships(MemberId::new),
+                new AgeRange(memento.getAgeRangeMin(), memento.getAgeRangeMax()), memento.auditMetadata());
     }
 }

@@ -16,14 +16,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @AggregateRoot
-public class FamilyGroup extends MemberGroup<FamilyGroup, FamilyGroupId> {
+public class FamilyGroup extends MemberGroup<FamilyGroup, FamilyGroupId, MemberId> {
 
     public static final String TYPE_DISCRIMINATOR = "FAMILY";
 
     @Identity
     private final FamilyGroupId id;
 
-    private FamilyGroup(FamilyGroupId id, String name, Set<MemberId> parents, Set<GroupMembership> members) {
+    private FamilyGroup(FamilyGroupId id, String name, Set<MemberId> parents, Set<GroupMembership<MemberId>> members) {
         super(name, parents, members);
         Assert.notNull(id, "FamilyGroupId is required");
         this.id = id;
@@ -48,7 +48,7 @@ public class FamilyGroup extends MemberGroup<FamilyGroup, FamilyGroupId> {
     }
 
     public static FamilyGroup reconstruct(FamilyGroupId id, String name, Set<MemberId> parents,
-                                          Set<GroupMembership> members, AuditMetadata auditMetadata) {
+                                          Set<GroupMembership<MemberId>> members, AuditMetadata auditMetadata) {
         FamilyGroup group = new FamilyGroup(id, name, parents, members);
         group.updateAuditMetadata(auditMetadata);
         return group;
@@ -63,7 +63,7 @@ public class FamilyGroup extends MemberGroup<FamilyGroup, FamilyGroupId> {
         return getOwners();
     }
 
-    public Set<GroupMembership> getChildren() {
+    public Set<GroupMembership<MemberId>> getChildren() {
         Set<MemberId> parents = getParents();
         return getMembers().stream()
                 .filter(m -> !parents.contains(m.memberId()))

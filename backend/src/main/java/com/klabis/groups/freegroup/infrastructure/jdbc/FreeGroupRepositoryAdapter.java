@@ -2,6 +2,11 @@ package com.klabis.groups.freegroup.infrastructure.jdbc;
 
 import com.klabis.groups.common.infrastructure.jdbc.GroupJdbcRepository;
 import com.klabis.groups.common.infrastructure.jdbc.GroupMemento;
+import com.klabis.groups.common.infrastructure.jdbc.GroupInvitationMemento;
+import com.klabis.groups.freegroup.domain.Invitation;
+import com.klabis.groups.freegroup.domain.InvitationId;
+import com.klabis.groups.freegroup.domain.InvitationStatus;
+import com.klabis.members.MemberId;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.FreeGroupFilter;
@@ -14,6 +19,8 @@ import org.springframework.data.relational.core.query.Query;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @SecondaryAdapter
 @Repository
@@ -30,20 +37,20 @@ class FreeGroupRepositoryAdapter implements FreeGroupRepository {
 
     @Override
     public FreeGroup save(FreeGroup group) {
-        return jdbcRepository.save(GroupMemento.fromFreeGroup(group)).toFreeGroup();
+        return toDomain(jdbcRepository.save(fromDomain(group)));
     }
 
     @Override
     public Optional<FreeGroup> findById(FreeGroupId id) {
         return jdbcRepository.findByIdAndType(id.value(), FreeGroup.TYPE_DISCRIMINATOR)
-                .map(GroupMemento::toFreeGroup);
+                .map(this::toDomain);
     }
 
     @Override
     public List<FreeGroup> findAll(FreeGroupFilter filter) {
         return buildQuery(filter)
                 .map(query -> jdbcAggregateTemplate.findAll(query, GroupMemento.class)
-                        .stream().map(GroupMemento::toFreeGroup).toList())
+                        .stream().map(this::toDomain).toList())
                 .orElseGet(() -> findAllByComplexFilter(filter));
     }
 
@@ -57,7 +64,7 @@ class FreeGroupRepositoryAdapter implements FreeGroupRepository {
             throw new IllegalStateException(
                     "findOne expected at most 1 result but filter matched " + results.size() + " rows");
         }
-        return results.stream().findFirst().map(GroupMemento::toFreeGroup);
+        return results.stream().findFirst().map(this::toDomain);
     }
 
     @Override
@@ -92,7 +99,7 @@ class FreeGroupRepositoryAdapter implements FreeGroupRepository {
 
     private List<FreeGroup> findAllByComplexFilter(FreeGroupFilter filter) {
         return findAllMementosByComplexFilter(filter)
-                .stream().map(GroupMemento::toFreeGroup).toList();
+                .stream().map(this::toDomain).toList();
     }
 
     /**
@@ -135,5 +142,37 @@ class FreeGroupRepositoryAdapter implements FreeGroupRepository {
                     filter.pendingInvitationFor().value(), FreeGroup.TYPE_DISCRIMINATOR);
         }
         throw new IllegalStateException("Unexpected empty complex filter — should have used buildQuery path");
+    }
+
+    private GroupMemento fromDomain(FreeGroup group) {
+        return GroupMemento.from(group, group.getId().value(), FreeGroup.TYPE_DISCRIMINATOR, MemberId::value)
+                .withInvitations(group.getInvitations().stream()
+                        .map(inv -> new GroupInvitationMemento(
+                                inv.getId().value(),
+                                inv.getInvitedMember().value(),
+                                inv.getInvitedBy().value(),
+                                inv.getStatus().name(),
+                                inv.getCreatedAt(),
+                                inv.getCancelledAt().orElse(null),
+                                inv.getCancelledBy().map(MemberId::value).orElse(null),
+                                inv.getCancellationReason().orElse(null)))
+                        .collect(Collectors.toSet()));
+    }
+
+    private FreeGroup toDomain(GroupMemento memento) {
+        Set<Invitation> invitations = memento.getInvitations().stream()
+                .map(inv -> Invitation.reconstruct(
+                        new InvitationId(inv.getId()),
+                        new MemberId(inv.getInvitedMemberId()),
+                        new MemberId(inv.getInvitedByMemberId()),
+                        InvitationStatus.valueOf(inv.getStatus()),
+                        inv.getCreatedAt(),
+                        inv.getCancelledAt(),
+                        inv.getCancelledBy() != null ? new MemberId(inv.getCancelledBy()) : null,
+                        inv.getCancellationReason()))
+                .collect(Collectors.toSet());
+        return FreeGroup.reconstruct(new FreeGroupId(memento.getId()), memento.getName(),
+                memento.ownerIds(MemberId::new), memento.memberships(MemberId::new), invitations,
+                memento.auditMetadata());
     }
 }

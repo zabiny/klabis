@@ -1,7 +1,6 @@
 package com.klabis.groups.freegroup.domain;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.groups.common.domain.CannotPromoteNonMemberToOwnerException;
 import com.klabis.groups.common.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.groups.common.domain.GroupMembership;
 import com.klabis.groups.common.domain.MemberGroup;
@@ -17,7 +16,7 @@ import java.time.Instant;
 import java.util.*;
 
 @AggregateRoot
-public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId> implements WithInvitations {
+public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> implements WithInvitations {
 
     public static final String TYPE_DISCRIMINATOR = "FREE";
 
@@ -26,7 +25,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId> implements Wi
     private final Set<Invitation> invitations;
 
     private FreeGroup(FreeGroupId id, String name, Set<MemberId> owners,
-                      Set<GroupMembership> members, Set<Invitation> invitations) {
+                      Set<GroupMembership<MemberId>> members, Set<Invitation> invitations) {
         super(name, owners, members);
         Assert.notNull(id, "FreeGroupId is required");
         Assert.notNull(invitations, "Invitations set is required");
@@ -49,7 +48,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId> implements Wi
     }
 
     public static FreeGroup reconstruct(FreeGroupId id, String name, Set<MemberId> owners,
-                                        Set<GroupMembership> members, Set<Invitation> invitations,
+                                        Set<GroupMembership<MemberId>> members, Set<Invitation> invitations,
                                         AuditMetadata auditMetadata) {
         FreeGroup group = new FreeGroup(id, name, owners, members, invitations);
         group.updateAuditMetadata(auditMetadata);
