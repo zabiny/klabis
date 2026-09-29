@@ -109,10 +109,11 @@ npm run openapi
 # Outputs: ./src/api/klabisApi.d.ts, ./src/api/halTypes.ts
 ```
 
-**Important:** `docs/openapi/spec/` is the source of truth; `klabis-full.json` is a gitignored
-build artifact bundled from it. `npm run openapi` regenerates the bundle automatically before
-generating types, so a single command is always enough — no separate `./gradlew openapiBundle`
-step needed.
+**Important:** `docs/openapi/spec/` is the source of truth; `klabis-full.json`, `klabisApi.d.ts`
+and `halTypes.ts` are all gitignored build artifacts. `npm run openapi` regenerates the bundle
+and both type files in one command — no separate `./gradlew openapiBundle` step needed. It also
+runs automatically as a `pre*` hook before `dev`, `build`, `test` and `lint`, so a fresh checkout
+works without a manual step.
 
 ### API Setup
 
