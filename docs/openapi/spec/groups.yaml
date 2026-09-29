@@ -115,7 +115,9 @@ paths:
       operationId: createFamilyGroup
       tags: [FamilyGroups]
       summary: Create a family group
-      description: Creates a new family group with a single parent. Requires MEMBERS:MANAGE.
+      description: |
+        Creates a new family group with a single parent. The parent is any user of the system and
+        need not be a club member. Requires MEMBERS:MANAGE.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
@@ -1256,6 +1258,10 @@ components:
 
     CreateFamilyGroupRequest:
       type: object
+      description: |
+        Designates a single parent for a new family group. The parent is a user of the system and
+        need not be a club member, so `parent` is a user id and not a member id. The parent options
+        still come from listMemberOptions, whose UUIDs are the same.
       required: [name, parent]
       properties:
         name:
@@ -1264,7 +1270,8 @@ components:
         parent:
           type: string
           format: uuid
-          x-hal-input-type: MemberId
+          description: UUID of the parent user. Any user qualifies, with or without a member profile.
+          x-hal-input-type: UserId
 
     AddMemberRequest:
       type: object

@@ -9,9 +9,9 @@
 
 ## 2. Create family group with a non-member parent (vertical slice)
 
-- [ ] 2.1 Update `docs/openapi/spec/groups.yaml`: `CreateFamilyGroupRequest.parent` with `x-hal-input-type: UserId`; regenerate bundle (`klabis-full.json`) and frontend types
-- [ ] 2.2 Write failing `FamilyGroupControllerTest` cases: create with member parent, create with user without member profile, create with parent already in a family group (409)
-- [ ] 2.3 Update `FamilyGroupController.createFamilyGroup` to use `UserId`; verify tests green
+- [x] 2.1 Update `docs/openapi/spec/groups.yaml`: `CreateFamilyGroupRequest.parent` with `x-hal-input-type: UserId`; regenerate bundle (`klabis-full.json`) and frontend types
+- [x] 2.2 Write failing `FamilyGroupControllerTest` cases: create with member parent, create with user without member profile, create with parent already in a family group (409)
+- [x] 2.3 Update `FamilyGroupController.createFamilyGroup` to use `UserId`; verify tests green
 
 ## 3. Add and remove parent by userId (vertical slice)
 
