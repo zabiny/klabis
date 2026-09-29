@@ -210,6 +210,7 @@ export const labels = {
         drivingLicenseGroup: 'Řidičský průkaz',
         memberId: 'Člen',
         memberIds: 'Členové',
+        userId: 'Uživatel',
         parentIds: 'Rodiče',
         trainerId: 'Trenér',
         minAge: 'Min. věk',

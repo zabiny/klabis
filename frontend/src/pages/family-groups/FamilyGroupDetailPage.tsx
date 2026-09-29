@@ -8,12 +8,14 @@ import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {labels} from '../../localization';
 import {Trash2, UserPlus} from 'lucide-react';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
-import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
+import {UserIdRowWithRemove} from '../../components/groups/UserIdRowWithRemove.tsx';
 
+// A parent is a user of the system and need not have a member profile, so the row is keyed on the
+// user id and carries no "member" link — the only link it can have is the "self" link with the
+// remove affordance.
 interface FamilyGroupParent {
-    memberId: string;
+    userId: string;
     _links: {
-        member: HalResourceLinks;
         self?: { href: string };
     };
     _templates?: Record<string, HalFormsTemplate>;
@@ -30,7 +32,7 @@ interface FamilyGroupChild {
 }
 
 // GetFamilyGroupResource types name / _templates from the spec. Its parents/members arrays
-// carry per-row _links / _templates added at runtime (member link, removeFamilyGroupParent,
+// carry per-row _links / _templates added at runtime (self link, removeFamilyGroupParent,
 // removeFamilyGroupChild) that the generated schema does not describe, so those rows keep the
 // view types above.
 type FamilyGroupDetail = Omit<GetFamilyGroupResource, 'parents' | 'members'> & {
@@ -63,7 +65,7 @@ const FamilyGroupDetailContent = ({resourceData}: {resourceData: FamilyGroupDeta
     const children: FamilyGroupChild[] = resourceData.members ?? [];
 
     const allCurrentMemberIds = useMemo(
-        () => [...parents.map(p => p.memberId), ...children.map(c => c.memberId)],
+        () => [...parents.map(p => p.userId), ...children.map(c => c.memberId)],
         [parents, children]
     );
 
@@ -126,10 +128,9 @@ const FamilyGroupDetailContent = ({resourceData}: {resourceData: FamilyGroupDeta
                             const removeParentTpl = parent._templates?.removeFamilyGroupParent;
                             const selfHref = parent._links?.self?.href ?? '';
                             return (
-                                <MemberRowWithRemove
-                                    key={parent.memberId}
-                                    memberId={parent.memberId}
-                                    memberLink={parent._links.member}
+                                <UserIdRowWithRemove
+                                    key={parent.userId}
+                                    userId={parent.userId}
                                     removeAriaLabel={labels.templates.removeFamilyGroupParent}
                                     onRemove={removeParentTpl ? () => setRemoveParentModal({template: removeParentTpl, parentSelfHref: selfHref}) : undefined}
                                 />
