@@ -134,7 +134,7 @@ const addChildTemplate = () => mockHalFormsTemplate({
     }],
 });
 
-describe('FamilyGroupDetailPage — unified Add member button (task 10.x)', () => {
+describe('FamilyGroupDetailPage — unified Add member button', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
