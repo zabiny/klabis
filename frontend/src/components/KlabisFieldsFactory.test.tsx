@@ -30,13 +30,15 @@ vi.mock('./HalNavigator2/halforms/fields', async () => {
         HalFormsInput: ({prop}: HalFormsInputProps) => (
             <div data-testid={`hal-input-${prop.name}`}>{prop.prompt}</div>
         ),
-        HalFormsMemberId: ({prop, errorText}: HalFormsInputProps) => (
+        HalFormsMemberId: ({prop, errorText, excludeIds, includeIds}: HalFormsInputProps & {excludeIds?: string[]; includeIds?: string[]}) => (
             <div data-testid="hal-forms-memberid-mock">
                 <span data-testid="select-name">{prop.name}</span>
                 <span data-testid="select-prompt">{prop.prompt}</span>
                 {prop.options?.link?.href && (
                     <span data-testid="select-href">{prop.options.link.href}</span>
                 )}
+                {excludeIds && <span data-testid="select-excluded">{excludeIds.join(',')}</span>}
+                {includeIds && <span data-testid="select-included">{includeIds.join(',')}</span>}
                 {errorText && <span data-testid="select-error">{errorText}</span>}
             </div>
         ),
@@ -211,8 +213,53 @@ describe('KlabisFieldsFactory', () => {
         });
     });
 
-    describe('AddressRequest field type', () => {
+    // A family group parent is a user of the system and need not be a club member, so the API
+    // types the add-parent / create-group field as "UserId" instead of "MemberId". The options
+    // still come from listMemberOptions (whose UUIDs are identical), so the member picker — not a
+    // plain select — is what the field needs.
+    describe('UserId field type', () => {
 
+        it('should render the member picker for a UserId field', () => {
+            const mockConf = createMockConf({
+                prop: {
+                    name: 'userId', prompt: 'Rodič', type: 'UserId',
+                    options: {link: {href: 'http://localhost:8443/api/members/options'}},
+                },
+            });
+
+            const fieldElement = klabisFieldsFactory('UserId', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('hal-forms-memberid-mock')).toBeInTheDocument();
+            expect(screen.getByTestId('select-href')).toHaveTextContent('http://localhost:8443/api/members/options');
+        });
+
+        it('should preserve the original field name and prompt', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'userId', prompt: 'Rodič', type: 'UserId'},
+            });
+
+            const fieldElement = klabisFieldsFactory('UserId', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('select-name')).toHaveTextContent('userId');
+            expect(screen.getByTestId('select-prompt')).toHaveTextContent('Rodič');
+        });
+
+        it('should respect inline options instead of the member picker', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'userId', prompt: 'Rodič', type: 'UserId', options: {inline: [{value: 'u1', prompt: 'Jana'}]}},
+            });
+
+            const fieldElement = klabisFieldsFactory('UserId', mockConf);
+            render(fieldElement!);
+
+            expect(screen.getByTestId('hal-select-userId')).toBeInTheDocument();
+            expect(screen.queryByTestId('hal-forms-memberid-mock')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('AddressRequest field type', () => {
         it('should call subElementProps with "street" (not "streetAndNumber")', () => {
             const mockSubElementProps = createMockSubElementProps();
             const mockConf = createMockConf({
@@ -591,6 +638,7 @@ describe('KlabisFieldsFactory', () => {
             render(result!);
 
             expect(screen.getByTestId('hal-forms-memberid-mock')).toBeInTheDocument();
+            expect(screen.getByTestId('select-excluded')).toHaveTextContent('1');
         });
 
         it('applies excludeIds per row when the property is multi, via HalFormsCollectionField', () => {
@@ -607,6 +655,20 @@ describe('KlabisFieldsFactory', () => {
             );
 
             expect(screen.getAllByTestId('hal-forms-memberid-mock')).toHaveLength(2);
+        });
+
+        it('applies the filter to a UserId field as well, so already-in-group parents are hidden', () => {
+            const factory = createMemberFilteredFactory(['1']);
+            const mockConf = createMockConf({
+                prop: {name: 'userId', prompt: 'Rodič', type: 'UserId'},
+            });
+
+            const result = factory('UserId', mockConf);
+            expect(result).not.toBeNull();
+            render(result!);
+
+            expect(screen.getByTestId('hal-forms-memberid-mock')).toBeInTheDocument();
+            expect(screen.getByTestId('select-excluded')).toHaveTextContent('1');
         });
     });
 });

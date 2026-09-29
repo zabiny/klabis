@@ -93,10 +93,27 @@ const buildFamilyGroupDetail = (overrides?: Record<string, unknown>): HalRespons
     ...overrides,
 });
 
+// A parent is a user of the system, not necessarily a club member: the row carries only the user
+// id and has no "member" link. The "self" link with the remove affordance is added by the backend
+// only when the caller may manage members and the group has more than one parent.
+const PARENT_USER_ID = '6f1a0f9c-2b0a-4a1c-9d3e-0a1b2c3d4e5f';
+
 const buildParent = (overrides?: Record<string, unknown>) => ({
-    memberId: 'parent-1',
-    _links: {member: {href: '/api/members/parent-1'}},
+    userId: PARENT_USER_ID,
+    _links: {},
     ...overrides,
+});
+
+const buildRemovableParent = () => ({
+    ...buildParent(),
+    _links: {self: {href: `/api/family-groups/fg-1/parents/${PARENT_USER_ID}`}},
+    _templates: {
+        removeFamilyGroupParent: mockHalFormsTemplate({
+            title: 'Odebrat rodiče',
+            method: 'DELETE',
+            target: `/api/family-groups/fg-1/parents/${PARENT_USER_ID}`,
+        }),
+    },
 });
 
 describe('FamilyGroupDetailPage — parent management', () => {
@@ -139,15 +156,7 @@ describe('FamilyGroupDetailPage — parent management', () => {
     });
 
     it('shows "Odebrat rodiče" button per parent when removeFamilyGroupParent template and self link exist on parent', () => {
-        const parentWithTemplate = {
-            ...buildParent(),
-            _links: {
-                member: {href: '/api/members/parent-1'},
-                self: {href: '/api/groups/fg-1/parents/parent-1'},
-            },
-            _templates: {removeFamilyGroupParent: mockHalFormsTemplate({title: 'Odebrat rodiče', method: 'DELETE', target: '/api/groups/fg-1/parents/parent-1'})},
-        };
-        const resourceData = buildFamilyGroupDetail({parents: [parentWithTemplate]});
+        const resourceData = buildFamilyGroupDetail({parents: [buildRemovableParent()]});
         renderPage(createMockPageData(resourceData));
         expect(screen.getByRole('button', {name: /odebrat rodiče/i})).toBeInTheDocument();
     });
@@ -159,17 +168,33 @@ describe('FamilyGroupDetailPage — parent management', () => {
     });
 
     it('clicking "Odebrat rodiče" opens confirmation modal', () => {
-        const parentWithTemplate = {
-            ...buildParent(),
-            _links: {
-                member: {href: '/api/members/parent-1'},
-                self: {href: '/api/groups/fg-1/parents/parent-1'},
-            },
-            _templates: {removeFamilyGroupParent: mockHalFormsTemplate({title: 'Odebrat rodiče', method: 'DELETE', target: '/api/groups/fg-1/parents/parent-1'})},
-        };
-        const resourceData = buildFamilyGroupDetail({parents: [parentWithTemplate]});
+        const resourceData = buildFamilyGroupDetail({parents: [buildRemovableParent()]});
         renderPage(createMockPageData(resourceData));
         fireEvent.click(screen.getByRole('button', {name: /odebrat rodiče/i}));
         expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+    });
+
+    // A parent need not have a member profile, so the row has no "member" link and there is nothing
+    // to resolve to a name: the raw user id is what the user sees.
+    it('lists a parent by raw user id when the row has no member link', () => {
+        const resourceData = buildFamilyGroupDetail({parents: [buildParent()]});
+        renderPage(createMockPageData(resourceData));
+        expect(screen.getByText(PARENT_USER_ID)).toBeInTheDocument();
+    });
+
+    it('does not resolve a parent row through a member profile link', () => {
+        const resourceData = buildFamilyGroupDetail({parents: [buildParent()]});
+        renderPage(createMockPageData(resourceData));
+        expect(screen.queryByText(/Jana Rodičová/)).not.toBeInTheDocument();
+    });
+
+    it('lists every parent by its own user id', () => {
+        const secondParentId = '11111111-2222-3333-4444-555555555555';
+        const resourceData = buildFamilyGroupDetail({
+            parents: [buildParent(), buildParent({userId: secondParentId})],
+        });
+        renderPage(createMockPageData(resourceData));
+        expect(screen.getByText(PARENT_USER_ID)).toBeInTheDocument();
+        expect(screen.getByText(secondParentId)).toBeInTheDocument();
     });
 });

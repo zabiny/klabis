@@ -171,14 +171,24 @@ const changeTypeOfProperty = (prop: HalFormsInputProps, newType: string): HalFor
 }
 
 /**
- * Renders a single MemberId field — read/write dropdown or, when readOnly, the resolved
+ * Field types whose value identifies a person and therefore renders as the member picker.
+ * "MemberId" is a club member; "UserId" is any user of the system (a family group parent need not
+ * have a member profile) — both get their options from listMemberOptions today, since user and
+ * member identities share one UUID.
+ */
+const MEMBER_PICKER_FIELD_TYPES = ['MemberId', 'UserId'];
+
+const isMemberPickerFieldType = (fieldType: string): boolean => MEMBER_PICKER_FIELD_TYPES.includes(fieldType);
+
+/**
+ * Renders a single member/user picker field — read/write dropdown or, when readOnly, the resolved
  * member name. Used both for a standalone field and as the per-row renderer when the
  * property is multi: the base factory's `multi` branch detects that this widget exists for
- * "MemberId" and routes the array through HalFormsCollectionField (D7), which recurses back
+ * the field type and routes the array through HalFormsCollectionField (D7), which recurses back
  * here per row with multiple:false — so this never needs to special-case collections itself.
  *
- * Only the explicit "MemberId" field type hint triggers the picker (D7) — a plain "UUID"
- * field is NOT assumed to be a member reference (it renders by its options/basic type
+ * Only the explicit "MemberId"/"UserId" field type hint triggers the picker (D7) — a plain "UUID"
+ * field is NOT assumed to be a person reference (it renders by its options/basic type
  * instead), since that assumption is exactly what caused multi UUID fields with link options
  * (coordinators, disciplineIds) to silently render as a single select.
  */
@@ -194,7 +204,8 @@ const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeId
 export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
     switch (fieldType) {
         case "range": return <HalFormsInput {...changeTypeOfProperty(conf, 'text')}/>;
-        case "MemberId": {
+        case "MemberId":
+        case "UserId": {
             return memberIdFieldRenderer(conf);
         }
         case "RankingRequest":
@@ -239,7 +250,9 @@ export const klabisFieldsFactory = expandHalFormsFieldFactory(klabisCustomFieldF
 /**
  * Creates a variant of klabisFieldsFactory that applies member-ID filtering.
  * Use when the caller already holds the group's current member/owner list and wants
- * to prevent the user from picking someone already in the group.
+ * to prevent the user from picking someone already in the group. Both picker field types
+ * are filtered — a parent is identified by user id, a child by member id, and the two
+ * share one UUID, so the same already-in-group list covers both.
  *
  * @param excludeIds - IDs to hide from the picker (already-in-group members)
  * @param includeIds - When set, only these IDs are shown (whitelist for promote-to-owner)
@@ -252,7 +265,7 @@ export const createMemberFilteredFactory = (
     if (!hasFilter) return klabisFieldsFactory;
 
     return expandHalFormsFieldFactory((fieldType: string, conf: HalFormsInputProps): ReactElement | null => {
-        if (fieldType === 'MemberId') {
+        if (isMemberPickerFieldType(fieldType)) {
             return memberIdFieldRenderer(conf, {excludeIds, includeIds});
         }
         return null;
