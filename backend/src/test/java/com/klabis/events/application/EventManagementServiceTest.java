@@ -449,6 +449,26 @@ class EventManagementServiceTest {
             // Then
             assertThat(result.getStatus()).isEqualTo(EventStatus.ACTIVE);
         }
+
+        @Test
+        @DisplayName("should return CANCELLED event to non-manager — list hiding does not apply to detail")
+        void shouldReturnCancelledEventForNonManager() {
+            // Given
+            EventId eventId = EventId.generate();
+            Event cancelledEvent = Event.create(EventCreateEventBuilder.builder()
+                    .name("Cancelled Event").eventDate(LocalDate.of(2026, 6, 1))
+                    .location("Location").organizer("OOB").build());
+            cancelledEvent.publish();
+            cancelledEvent.cancel(Event.CancelEvent.withoutReason());
+
+            when(eventRepository.findById(eventId)).thenReturn(Optional.of(cancelledEvent));
+
+            // When
+            Event result = service.getEvent(eventId, false);
+
+            // Then
+            assertThat(result.getStatus()).isEqualTo(EventStatus.CANCELLED);
+        }
     }
 
     @Nested
