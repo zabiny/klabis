@@ -21,11 +21,11 @@ class MemberGroupTest {
     /**
      * Minimal concrete subclass used only for testing the abstract MemberGroup.
      */
-    static class TestGroup extends MemberGroup<TestGroup, MemberId> {
+    static class TestGroup extends MemberGroup<TestGroup, MemberId, MemberId> {
 
         private final MemberId id;
 
-        private TestGroup(MemberId id, String name, Set<MemberId> owners, Set<GroupMembership> members) {
+        private TestGroup(MemberId id, String name, Set<MemberId> owners, Set<GroupMembership<MemberId>> members) {
             super(name, owners, members);
             this.id = id;
         }
@@ -39,7 +39,7 @@ class MemberGroupTest {
             );
         }
 
-        static TestGroup reconstruct(String name, Set<MemberId> owners, Set<GroupMembership> members) {
+        static TestGroup reconstruct(String name, Set<MemberId> owners, Set<GroupMembership<MemberId>> members) {
             return new TestGroup(new MemberId(UUID.randomUUID()), name, owners, members);
         }
 
@@ -375,6 +375,37 @@ class MemberGroupTest {
 
             assertThatThrownBy(() -> group.getMembers().add(GroupMembership.of(MEMBER)))
                     .isInstanceOf(UnsupportedOperationException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("generic member id type")
+    class GenericMemberIdType {
+
+        static class StringKeyedGroup extends MemberGroup<StringKeyedGroup, String, String> {
+
+            StringKeyedGroup(String owner) {
+                super("Users", Set.of(owner), Set.of(GroupMembership.of(owner)));
+            }
+
+            @Override
+            public String getId() {
+                return "id";
+            }
+
+            void add(String member) {
+                addMember(member);
+            }
+        }
+
+        @Test
+        @DisplayName("should support member id type other than MemberId")
+        void shouldSupportOtherMemberIdType() {
+            StringKeyedGroup group = new StringKeyedGroup("user-1");
+            group.add("user-2");
+
+            assertThat(group.isLastOwner("user-1")).isTrue();
+            assertThat(group.hasMember("user-2")).isTrue();
         }
     }
 }

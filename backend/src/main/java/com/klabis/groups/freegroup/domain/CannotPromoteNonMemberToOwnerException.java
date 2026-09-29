@@ -1,4 +1,4 @@
-package com.klabis.groups.common.domain;
+package com.klabis.groups.freegroup.domain;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.members.MemberId;

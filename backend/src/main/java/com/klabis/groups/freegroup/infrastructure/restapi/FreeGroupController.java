@@ -222,7 +222,7 @@ class FreeGroupController implements GroupsApi {
     }
 
     private EntityModel<FreeGroupMembershipResponse> buildMemberModel(
-            GroupMembership membership, UUID groupUuid, boolean isOwner, Set<MemberId> ownerIds) {
+            GroupMembership<MemberId> membership, UUID groupUuid, boolean isOwner, Set<MemberId> ownerIds) {
 
         MemberId memberId = membership.memberId();
         FreeGroupMembershipResponse response = FreeGroupMembershipResponseBuilder.builder()

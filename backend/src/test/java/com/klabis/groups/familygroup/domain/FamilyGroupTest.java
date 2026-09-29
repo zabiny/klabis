@@ -77,7 +77,7 @@ class FamilyGroupTest {
         @DisplayName("should reconstruct group with existing members and owners")
         void shouldReconstructWithMembersAndOwners() {
             FamilyGroupId id = new FamilyGroupId(UUID.randomUUID());
-            Set<GroupMembership> memberships = Set.of(GroupMembership.of(MEMBER_A));
+            Set<GroupMembership<MemberId>> memberships = Set.of(GroupMembership.of(MEMBER_A));
 
             FamilyGroup group = FamilyGroup.reconstruct(id, "Novákovi", Set.of(PARENT_A), memberships, null);
 

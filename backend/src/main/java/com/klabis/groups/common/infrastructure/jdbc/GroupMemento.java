@@ -2,17 +2,8 @@ package com.klabis.groups.common.infrastructure.jdbc;
 
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
-import com.klabis.groups.freegroup.domain.Invitation;
-import com.klabis.groups.freegroup.domain.InvitationId;
-import com.klabis.groups.freegroup.domain.InvitationStatus;
-import com.klabis.members.MemberId;
-import com.klabis.groups.familygroup.FamilyGroupId;
-import com.klabis.groups.familygroup.domain.FamilyGroup;
-import com.klabis.groups.freegroup.FreeGroupId;
-import com.klabis.groups.freegroup.domain.FreeGroup;
-import com.klabis.groups.traininggroup.TrainingGroupId;
-import com.klabis.groups.traininggroup.domain.AgeRange;
-import com.klabis.groups.traininggroup.domain.TrainingGroup;
+import com.klabis.groups.common.domain.GroupMembership;
+import com.klabis.groups.common.domain.MemberGroup;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.AfterDomainEventPublication;
 import org.springframework.data.domain.DomainEvents;
@@ -26,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Table(schema = "groups", value = "user_groups")
@@ -85,62 +77,58 @@ public class GroupMemento implements Persistable<UUID> {
     protected GroupMemento() {
     }
 
-    public static GroupMemento fromFreeGroup(FreeGroup group) {
-        GroupMemento memento = initWithMembers(group, group.getId().value(), group.getName(),
-                FreeGroup.TYPE_DISCRIMINATOR, group.getOwners(), group.getMembers());
-        memento.invitations = group.getInvitations().stream()
-                .map(inv -> new GroupInvitationMemento(
-                        inv.getId().value(),
-                        inv.getInvitedMember().value(),
-                        inv.getInvitedBy().value(),
-                        inv.getStatus().name(),
-                        inv.getCreatedAt(),
-                        inv.getCancelledAt().orElse(null),
-                        inv.getCancelledBy().map(MemberId::value).orElse(null),
-                        inv.getCancellationReason().orElse(null)))
+    public static <M> GroupMemento from(MemberGroup<?, ?, M> group, UUID id, String type, Function<M, UUID> memberIdToUuid) {
+        GroupMemento memento = initCommon(group, id, group.getName(), type);
+        memento.owners = group.getOwners().stream()
+                .map(owner -> new GroupOwnerMemento(memberIdToUuid.apply(owner)))
+                .collect(Collectors.toSet());
+        memento.members = group.getMembers().stream()
+                .map(m -> new GroupMemberMemento(memberIdToUuid.apply(m.memberId()), m.joinedAt()))
                 .collect(Collectors.toSet());
         return memento;
     }
 
-    public static GroupMemento fromTrainingGroup(TrainingGroup group) {
-        GroupMemento memento = initWithMembers(group, group.getId().value(), group.getName(),
-                TrainingGroup.TYPE_DISCRIMINATOR, group.getTrainers(), group.getMembers());
-        memento.ageRangeMin = group.getAgeRange().minAge();
-        memento.ageRangeMax = group.getAgeRange().maxAge();
-        return memento;
-    }
-
-    public static GroupMemento fromFamilyGroup(FamilyGroup group) {
-        return initWithMembers(group, group.getId().value(), group.getName(),
-                FamilyGroup.TYPE_DISCRIMINATOR, group.getParents(), group.getMembers());
-    }
-
-    public FreeGroup toFreeGroup() {
-        Set<Invitation> invitationSet = invitations.stream()
-                .map(inv -> Invitation.reconstruct(
-                        new InvitationId(inv.getId()),
-                        new MemberId(inv.getInvitedMemberId()),
-                        new MemberId(inv.getInvitedByMemberId()),
-                        InvitationStatus.valueOf(inv.getStatus()),
-                        inv.getCreatedAt(),
-                        inv.getCancelledAt(),
-                        inv.getCancelledBy() != null ? new MemberId(inv.getCancelledBy()) : null,
-                        inv.getCancellationReason()))
+    public <M> Set<M> ownerIds(Function<UUID, M> uuidToMemberId) {
+        return owners.stream()
+                .map(o -> uuidToMemberId.apply(o.getMemberId()))
                 .collect(Collectors.toSet());
-
-        return FreeGroup.reconstruct(new FreeGroupId(this.id), this.name,
-                mapOwnerIds(), mapMembershipsForMemberGroup(), invitationSet, buildAuditMetadata());
     }
 
-    public TrainingGroup toTrainingGroup() {
-        return TrainingGroup.reconstruct(new TrainingGroupId(this.id), this.name,
-                mapOwnerIds(), mapMembershipsForMemberGroup(),
-                new AgeRange(this.ageRangeMin, this.ageRangeMax), buildAuditMetadata());
+    public <M> Set<GroupMembership<M>> memberships(Function<UUID, M> uuidToMemberId) {
+        return members.stream()
+                .map(m -> new GroupMembership<>(uuidToMemberId.apply(m.getMemberId()), m.getJoinedAt()))
+                .collect(Collectors.toSet());
     }
 
-    public FamilyGroup toFamilyGroup() {
-        return FamilyGroup.reconstruct(new FamilyGroupId(this.id), this.name,
-                mapOwnerIds(), mapMembershipsForMemberGroup(), buildAuditMetadata());
+    public String getName() {
+        return name;
+    }
+
+    public Integer getAgeRangeMin() {
+        return ageRangeMin;
+    }
+
+    public Integer getAgeRangeMax() {
+        return ageRangeMax;
+    }
+
+    public GroupMemento withAgeRange(Integer min, Integer max) {
+        this.ageRangeMin = min;
+        this.ageRangeMax = max;
+        return this;
+    }
+
+    public Set<GroupInvitationMemento> getInvitations() {
+        return invitations;
+    }
+
+    public GroupMemento withInvitations(Set<GroupInvitationMemento> invitations) {
+        this.invitations = invitations;
+        return this;
+    }
+
+    public AuditMetadata auditMetadata() {
+        return buildAuditMetadata();
     }
 
     @DomainEvents
@@ -165,14 +153,6 @@ public class GroupMemento implements Persistable<UUID> {
         return isNew;
     }
 
-    private static GroupMemento initWithMembers(KlabisAggregateRoot<?, ?> group, UUID id, String name, String type,
-                                               Set<MemberId> owners, Set<com.klabis.groups.common.domain.GroupMembership> members) {
-        GroupMemento memento = initCommon(group, id, name, type);
-        memento.owners = mapOwners(owners);
-        memento.members = mapMemberGroupMembershipsToMementa(members);
-        return memento;
-    }
-
     private static GroupMemento initCommon(KlabisAggregateRoot<?, ?> group, UUID id, String name, String type) {
         GroupMemento memento = new GroupMemento();
         memento.id = id;
@@ -182,30 +162,6 @@ public class GroupMemento implements Persistable<UUID> {
         memento.isNew = (group.getAuditMetadata() == null);
         memento.applyAudit(group.getAuditMetadata());
         return memento;
-    }
-
-    private Set<MemberId> mapOwnerIds() {
-        return owners.stream()
-                .map(o -> new MemberId(o.getMemberId()))
-                .collect(Collectors.toSet());
-    }
-
-    private Set<com.klabis.groups.common.domain.GroupMembership> mapMembershipsForMemberGroup() {
-        return members.stream()
-                .map(m -> new com.klabis.groups.common.domain.GroupMembership(new MemberId(m.getMemberId()), m.getJoinedAt()))
-                .collect(Collectors.toSet());
-    }
-
-    private static Set<GroupOwnerMemento> mapOwners(Set<MemberId> source) {
-        return source.stream()
-                .map(memberId -> new GroupOwnerMemento(memberId.value()))
-                .collect(Collectors.toSet());
-    }
-
-    private static Set<GroupMemberMemento> mapMemberGroupMembershipsToMementa(Set<com.klabis.groups.common.domain.GroupMembership> source) {
-        return source.stream()
-                .map(m -> new GroupMemberMemento(m.memberId().value(), m.joinedAt()))
-                .collect(Collectors.toSet());
     }
 
     private void applyAudit(AuditMetadata auditMetadata) {

@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @AggregateRoot
-public class TrainingGroup extends MemberGroup<TrainingGroup, TrainingGroupId> {
+public class TrainingGroup extends MemberGroup<TrainingGroup, TrainingGroupId, MemberId> {
 
     public static final String TYPE_DISCRIMINATOR = "TRAINING";
 
@@ -27,7 +27,7 @@ public class TrainingGroup extends MemberGroup<TrainingGroup, TrainingGroupId> {
     private final TrainingGroupId id;
     private AgeRange ageRange;
 
-    private TrainingGroup(TrainingGroupId id, String name, Set<MemberId> trainers, Set<GroupMembership> members, AgeRange ageRange) {
+    private TrainingGroup(TrainingGroupId id, String name, Set<MemberId> trainers, Set<GroupMembership<MemberId>> members, AgeRange ageRange) {
         super(name, trainers, members);
         Assert.notNull(id, "TrainingGroupId is required");
         Assert.notNull(ageRange, "AgeRange is required");
@@ -51,7 +51,7 @@ public class TrainingGroup extends MemberGroup<TrainingGroup, TrainingGroupId> {
     }
 
     public static TrainingGroup reconstruct(TrainingGroupId id, String name, Set<MemberId> trainers,
-                                            Set<GroupMembership> members, AgeRange ageRange,
+                                            Set<GroupMembership<MemberId>> members, AgeRange ageRange,
                                             AuditMetadata auditMetadata) {
         TrainingGroup group = new TrainingGroup(id, name, trainers, members, ageRange);
         group.updateAuditMetadata(auditMetadata);

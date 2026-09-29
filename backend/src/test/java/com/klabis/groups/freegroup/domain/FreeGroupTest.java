@@ -195,7 +195,7 @@ class FreeGroupTest {
             int memberCountBefore = group.getMembers().size();
 
             assertThatThrownBy(() -> group.addOwner(OTHER_MEMBER, CREATOR))
-                    .isInstanceOf(com.klabis.groups.common.domain.CannotPromoteNonMemberToOwnerException.class);
+                    .isInstanceOf(com.klabis.groups.freegroup.domain.CannotPromoteNonMemberToOwnerException.class);
             assertThat(group.getMembers()).hasSize(memberCountBefore);
         }
 

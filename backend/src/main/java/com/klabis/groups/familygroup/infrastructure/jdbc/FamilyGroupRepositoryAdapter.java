@@ -3,6 +3,8 @@ package com.klabis.groups.familygroup.infrastructure.jdbc;
 import com.klabis.groups.common.infrastructure.jdbc.GroupJdbcRepository;
 import com.klabis.groups.common.infrastructure.jdbc.GroupMemento;
 import com.klabis.groups.familygroup.FamilyGroupId;
+import com.klabis.members.MemberId;
+import com.klabis.groups.familygroup.FamilyGroupId;
 import com.klabis.groups.familygroup.domain.FamilyGroup;
 import com.klabis.groups.familygroup.domain.FamilyGroupFilter;
 import com.klabis.groups.familygroup.domain.FamilyGroupRepository;
@@ -30,20 +32,20 @@ class FamilyGroupRepositoryAdapter implements FamilyGroupRepository {
 
     @Override
     public FamilyGroup save(FamilyGroup group) {
-        return jdbcRepository.save(GroupMemento.fromFamilyGroup(group)).toFamilyGroup();
+        return toDomain(jdbcRepository.save(fromDomain(group)));
     }
 
     @Override
     public Optional<FamilyGroup> findById(FamilyGroupId id) {
         return jdbcRepository.findByIdAndType(id.value(), FamilyGroup.TYPE_DISCRIMINATOR)
-                .map(GroupMemento::toFamilyGroup);
+                .map(this::toDomain);
     }
 
     @Override
     public List<FamilyGroup> findAll(FamilyGroupFilter filter) {
         return buildSimpleCriteriaQuery(filter)
                 .map(query -> jdbcAggregateTemplate.findAll(query, GroupMemento.class)
-                        .stream().map(GroupMemento::toFamilyGroup).toList())
+                        .stream().map(this::toDomain).toList())
                 .orElseGet(() -> findAllByComplexFilter(filter));
     }
 
@@ -57,7 +59,7 @@ class FamilyGroupRepositoryAdapter implements FamilyGroupRepository {
             throw new IllegalStateException(
                     "findOne expected at most 1 result but filter matched " + results.size() + " rows");
         }
-        return results.stream().findFirst().map(GroupMemento::toFamilyGroup);
+        return results.stream().findFirst().map(this::toDomain);
     }
 
     @Override
@@ -86,7 +88,7 @@ class FamilyGroupRepositoryAdapter implements FamilyGroupRepository {
 
     private List<FamilyGroup> findAllByComplexFilter(FamilyGroupFilter filter) {
         return findAllMementosByComplexFilter(filter)
-                .stream().map(GroupMemento::toFamilyGroup).toList();
+                .stream().map(this::toDomain).toList();
     }
 
     /**
@@ -112,5 +114,14 @@ class FamilyGroupRepositoryAdapter implements FamilyGroupRepository {
                     filter.memberOrParentIs().value(), FamilyGroup.TYPE_DISCRIMINATOR);
         }
         throw new IllegalStateException("Unexpected empty complex filter — should have used buildSimpleCriteriaQuery path");
+    }
+
+    private GroupMemento fromDomain(FamilyGroup group) {
+        return GroupMemento.from(group, group.getId().value(), FamilyGroup.TYPE_DISCRIMINATOR, MemberId::value);
+    }
+
+    private FamilyGroup toDomain(GroupMemento memento) {
+        return FamilyGroup.reconstruct(new FamilyGroupId(memento.getId()), memento.getName(),
+                memento.ownerIds(MemberId::new), memento.memberships(MemberId::new), memento.auditMetadata());
     }
 }

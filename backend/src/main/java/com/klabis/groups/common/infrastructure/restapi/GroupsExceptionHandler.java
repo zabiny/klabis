@@ -1,7 +1,6 @@
 package com.klabis.groups.common.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.groups.common.domain.CannotPromoteNonMemberToOwnerException;
 import com.klabis.groups.common.domain.CannotRemoveLastOwnerException;
 import com.klabis.groups.common.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.groups.common.domain.OwnerCannotBeRemovedFromGroupException;
@@ -48,21 +47,6 @@ class GroupsExceptionHandler {
     public ErrorResponse handleDirectMemberAdditionNotAllowed(DirectMemberAdditionNotAllowedException ex) {
         return ErrorResponse.builder(ex, HttpStatusCode.valueOf(422), ex.getMessage())
                 .title("Direct Member Addition Not Allowed")
-                .build();
-    }
-
-    @ExceptionHandler(CannotPromoteNonMemberToOwnerException.class)
-    @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - cannot promote a non-member to owner",
-            content = @Content(
-                    mediaType = "application/problem+json",
-                    schema = @Schema(implementation = ProblemDetail.class)
-            )
-    )
-    public ErrorResponse handleCannotPromoteNonMemberToOwner(CannotPromoteNonMemberToOwnerException ex) {
-        return ErrorResponse.builder(ex, HttpStatusCode.valueOf(409), ex.getMessage())
-                .title("Cannot Promote Non-Member to Owner")
                 .build();
     }
 

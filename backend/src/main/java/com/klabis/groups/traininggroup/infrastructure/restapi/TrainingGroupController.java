@@ -227,7 +227,7 @@ class TrainingGroupController implements TrainingGroupsApi {
     }
 
     private EntityModel<GroupMembershipResponse> buildMemberModel(
-            GroupMembership membership, UUID groupUuid, boolean hasTrainingAuthority, Set<MemberId> trainerIds) {
+            GroupMembership<MemberId> membership, UUID groupUuid, boolean hasTrainingAuthority, Set<MemberId> trainerIds) {
 
         MemberId memberId = membership.memberId();
         GroupMembershipResponse response = GroupMembershipResponseBuilder.builder()

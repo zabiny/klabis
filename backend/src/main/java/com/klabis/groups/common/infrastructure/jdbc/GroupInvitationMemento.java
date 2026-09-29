@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Table(schema = "groups", value = "user_group_invitations")
-class GroupInvitationMemento {
+public class GroupInvitationMemento {
 
     @Id
     @Column("id")
@@ -38,7 +38,7 @@ class GroupInvitationMemento {
     protected GroupInvitationMemento() {
     }
 
-    GroupInvitationMemento(UUID id, UUID invitedMemberId, UUID invitedByMemberId,
+    public GroupInvitationMemento(UUID id, UUID invitedMemberId, UUID invitedByMemberId,
                            String status, Instant createdAt,
                            Instant cancelledAt, UUID cancelledBy, String cancellationReason) {
         this.id = id;
@@ -51,35 +51,35 @@ class GroupInvitationMemento {
         this.cancellationReason = cancellationReason;
     }
 
-    UUID getId() {
+    public UUID getId() {
         return id;
     }
 
-    UUID getInvitedMemberId() {
+    public UUID getInvitedMemberId() {
         return invitedMemberId;
     }
 
-    UUID getInvitedByMemberId() {
+    public UUID getInvitedByMemberId() {
         return invitedByMemberId;
     }
 
-    String getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    Instant getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    Instant getCancelledAt() {
+    public Instant getCancelledAt() {
         return cancelledAt;
     }
 
-    UUID getCancelledBy() {
+    public UUID getCancelledBy() {
         return cancelledBy;
     }
 
-    String getCancellationReason() {
+    public String getCancellationReason() {
         return cancellationReason;
     }
 }
