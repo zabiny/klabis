@@ -100,13 +100,14 @@ public class EventManagementService implements EventManagementPort {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Event> listEvents(EventFilter filter, Pageable pageable, boolean canManageEvents) {
-        if (canManageEvents || filter.excludesStatus(EventStatus.DRAFT)) {
+    public Page<Event> listEvents(EventFilter filter, Pageable pageable, boolean canManageEvents, MemberId viewerMemberId) {
+        if (canManageEvents) {
             return eventRepository.findAll(filter, pageable);
         }
-        if (filter.requestsOnlyStatus(EventStatus.DRAFT)) {
-            return Page.empty(pageable);
-        }
-        return eventRepository.findAll(filter.withExcludedStatus(EventStatus.DRAFT), pageable);
+        EventFilter visible = filter.withExcludedStatus(EventStatus.DRAFT);
+        visible = viewerMemberId == null
+                ? visible.withExcludedStatus(EventStatus.CANCELLED)
+                : visible.withCancelledVisibleTo(viewerMemberId);
+        return eventRepository.findAll(visible, pageable);
     }
 }

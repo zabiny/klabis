@@ -30,7 +30,6 @@ interface EventSummaryDtoConverter extends Converter<Event, EventSummaryDto> {
     @Override
     @Mapping(target = "id", source = "id.value")
     @Mapping(target = "eventTypeId", source = "eventTypeId")
-    @Mapping(target = "cancellationReason", source = "cancellationReason")
     @Mapping(target = "deadlines", source = "registrationDeadlines")
     EventSummaryDto convert(Event event);
 

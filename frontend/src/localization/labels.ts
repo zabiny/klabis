@@ -461,7 +461,6 @@ export const labels = {
         eventInfo: 'INFORMACE O AKCI',
         registrations: 'Přihlášky',
         deadlines: 'UZÁVĚRKY PŘIHLÁŠEK',
-        eventCancelled: 'AKCE BYLA ZRUŠENA',
         accommodationList: 'Seznam pro ubytování',
         sharedServices: 'SPOLEČNÉ SLUŽBY',
         personalInfo: 'OSOBNÍ ÚDAJE',

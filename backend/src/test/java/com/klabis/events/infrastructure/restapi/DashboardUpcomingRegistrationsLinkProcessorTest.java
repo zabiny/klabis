@@ -47,6 +47,7 @@ class DashboardUpcomingRegistrationsLinkProcessorTest {
         assertThat(link).isPresent();
 
         String href = link.get().getHref();
+        assertThat(href).contains("status=ACTIVE");
         assertThat(href).contains("registeredBy=me");
         assertThat(href).contains("dateFrom=" + LocalDate.now());
         assertThat(href).contains("sort=eventDate,ASC");

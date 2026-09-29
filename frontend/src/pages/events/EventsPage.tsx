@@ -110,6 +110,8 @@ export const EventsPage = (): ReactElement => {
     const importTemplate = resourceData?._templates?.importEvent;
     const activeImportTemplate = importBatchTemplate ?? importTemplate;
     const bulkSyncTemplate = resourceData?._templates?.syncAllUpcomingFromOris;
+    // `status` is returned to everyone; `_templates.createEvent` is present exactly for EVENTS:MANAGE.
+    const canManageEvents = Boolean(resourceData?._templates?.createEvent);
     const showRegisteredByMeToggle = Boolean(getUser()?.memberId);
 
     const orisImport = useOrisEventImport(
@@ -264,7 +266,18 @@ export const EventsPage = (): ReactElement => {
             >
                 <TableCell sortable column={"eventDate"}
                            dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>{labels.tables.date}</TableCell>
-                <TableCell sortable column={"name"}>{labels.fields.name}</TableCell>
+                <TableCell sortable column={"name"}
+                           dataRender={({value, item}) => {
+                               const event = item as unknown as EventListData;
+                               if (event.status !== 'CANCELLED') return value as string;
+                               // Non-managers see no status column, so the state is repeated for screen readers.
+                               return (
+                                   <span className="line-through opacity-60">
+                                       {value as string}
+                                       <span className="sr-only"> — {getEnumLabel('eventStatus', 'CANCELLED')}</span>
+                                   </span>
+                               );
+                           }}>{labels.fields.name}</TableCell>
                 <TableCell sortable column={"location"}
                            dataRender={({value}) => (value as string | null) ?? null}>{labels.fields.location}</TableCell>
                 <TableCell sortable column={"organizer"}>{labels.fields.organizer}</TableCell>
@@ -323,14 +336,8 @@ export const EventsPage = (): ReactElement => {
                                return <CoordinatorCellContent coordinatorLinks={coordinatorLinks}/>;
                            }}>{labels.tables.coordinator}</TableCell>
                 <TableCell sortable column={"status"}
-                           dataRender={({value, item}) => {
-                               const label = typeof value === 'string' ? getEnumLabel('eventStatus', value) : '';
-                               const event = item as unknown as EventListData;
-                               if (event.status === 'CANCELLED' && event.cancellationReason) {
-                                   return <span title={event.cancellationReason}>{label}</span>;
-                               }
-                               return label;
-                           }}>{labels.tables.status}</TableCell>
+                           hidden={!canManageEvents}
+                           dataRender={({value}) => typeof value === 'string' ? getEnumLabel('eventStatus', value) : ''}>{labels.tables.status}</TableCell>
                 <TableCell column={"eventTypeId"}
                            dataRender={({item}) => {
                                const event = item as unknown as EventListData;

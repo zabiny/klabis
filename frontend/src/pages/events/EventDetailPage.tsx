@@ -22,7 +22,7 @@ import {labels, getEnumLabel} from '../../localization';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
 import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
-import {AlertTriangle, Banknote, Check, ExternalLink, Globe, List, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {Banknote, Check, ExternalLink, Globe, List, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
 import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
@@ -181,6 +181,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
 
     const event = resourceData;
     const statusVariant = event.status ? (STATUS_VARIANT[event.status] ?? 'default') : 'default';
+    const isCancelled = event.status === 'CANCELLED';
 
     const newRegistrationLink = asLinkArray(resourceData._links?.newRegistration)[0];
 
@@ -205,20 +206,25 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                 </div>
 
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex items-center gap-4 flex-wrap">
-                        <h1 className="text-3xl font-bold text-text-primary">{event.name}</h1>
-                        {!isEditing && (
-                            <Badge variant={statusVariant} size="sm">
-                                {event.status ? getEnumLabel('eventStatus', event.status) : event.status}
-                            </Badge>
+                    <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-4 flex-wrap">
+                            <h1 className={`text-3xl font-bold text-text-primary ${isCancelled ? 'line-through opacity-60' : ''}`}>{event.name}</h1>
+                            {!isEditing && (
+                                <Badge variant={statusVariant} size="sm">
+                                    {event.status ? getEnumLabel('eventStatus', event.status) : event.status}
+                                </Badge>
+                            )}
+                            {!isEditing && (
+                                <SyncStatusIndicator syncLink={resourceData._links?.sync} mode="icon+date"/>
+                            )}
+                            {!isEditing && event.eventTypeId && (() => {
+                                const eventType = getEventTypeById(event.eventTypeId);
+                                return eventType ? <EventTypeBadge eventType={eventType}/> : null;
+                            })()}
+                        </div>
+                        {isCancelled && event.cancellationReason && (
+                            <p className="text-sm text-error">{event.cancellationReason}</p>
                         )}
-                        {!isEditing && (
-                            <SyncStatusIndicator syncLink={resourceData._links?.sync} mode="icon+date"/>
-                        )}
-                        {!isEditing && event.eventTypeId && (() => {
-                            const eventType = getEventTypeById(event.eventTypeId);
-                            return eventType ? <EventTypeBadge eventType={eventType}/> : null;
-                        })()}
                     </div>
 
                     {!isEditing && (
@@ -373,18 +379,6 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                         </Button>
                         {helpers?.renderField('submit')}
                     </div>
-                )}
-
-                {!isEditing && event.status === 'CANCELLED' && (
-                    <Card className="p-6 border-error">
-                        <h3 className="text-xs uppercase font-semibold text-error mb-4 flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4"/>
-                            {labels.sections.eventCancelled}
-                        </h3>
-                        {event.cancellationReason && (
-                            <p className="text-text-primary">{event.cancellationReason}</p>
-                        )}
-                    </Card>
                 )}
 
                 {!isEditing && event.deadlines && event.deadlines.length > 0 && (

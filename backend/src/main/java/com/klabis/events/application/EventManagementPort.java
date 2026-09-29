@@ -3,6 +3,7 @@ package com.klabis.events.application;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
+import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,5 +25,9 @@ public interface EventManagementPort {
 
     Event getEvent(EventId eventId, boolean canManageEvents);
 
-    Page<Event> listEvents(EventFilter filter, Pageable pageable, boolean canManageEvents);
+    /**
+     * @param viewerMemberId the calling member, {@code null} when the user has no member profile;
+     *                       ignored when {@code canManageEvents} is true
+     */
+    Page<Event> listEvents(EventFilter filter, Pageable pageable, boolean canManageEvents, MemberId viewerMemberId);
 }
