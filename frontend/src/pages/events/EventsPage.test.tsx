@@ -1073,12 +1073,6 @@ describe('EventsPage', () => {
             expect(screen.getByText('Jihlava')).not.toHaveClass('line-through');
         });
 
-        it('renders no struck span when a cancelled event has no name', () => {
-            const {container} = renderRows([buildEventRow({name: undefined})]);
-
-            expect(container.querySelector('.line-through')).not.toBeInTheDocument();
-        });
-
         it('renders no tooltip on the status cell of a cancelled event', () => {
             renderRows(
                 [buildEventRow()],

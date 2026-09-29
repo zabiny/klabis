@@ -99,10 +99,8 @@ public class EventManagementService implements EventManagementPort {
     }
 
     /**
-     * Applies the list-visibility policy: DRAFT is hidden from non-managers, and CANCELLED is
-     * hidden from non-managers who are not registered for the event. Both rules run for every
-     * non-manager regardless of the requested status filter — a filter that already excludes DRAFT
-     * may still allow CANCELLED (e.g. statuses {ACTIVE, CANCELLED}), so it must not short-circuit.
+     * Both visibility rules run for every non-manager: a filter that already excludes DRAFT may
+     * still allow CANCELLED, so it must not short-circuit.
      */
     @Override
     @Transactional(readOnly = true)
@@ -115,9 +113,7 @@ public class EventManagementService implements EventManagementPort {
         }
         EventFilter visible = filter.withExcludedStatus(EventStatus.DRAFT);
         if (viewerMemberId == null) {
-            // The guard precedes the exclusion for the same reason as the DRAFT rule above:
-            // withExcludedStatus on a single-status filter collapses the set to empty, which
-            // reads as "no restriction" rather than "nothing matches".
+            // withExcludedStatus would collapse a CANCELLED-only filter to "no restriction".
             if (visible.requestsOnlyStatus(EventStatus.CANCELLED)) {
                 return Page.empty(pageable);
             }

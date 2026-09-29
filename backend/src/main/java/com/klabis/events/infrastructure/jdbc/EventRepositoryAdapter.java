@@ -114,9 +114,7 @@ class EventRepositoryAdapter implements EventRepository {
     }
 
     /**
-     * Returns the CANCELLED events the filter's {@code cancelledVisibleTo} member is registered for,
-     * or null when the visibility rule does not apply (no member set, or the filter already excludes
-     * CANCELLED so the pre-fetch would pay for nothing).
+     * Returns null when the visibility rule does not apply.
      */
     private List<UUID> resolveCancelledRegisteredIds(EventFilter filter) {
         if (filter.cancelledVisibleTo() == null || filter.excludesStatus(EventStatus.CANCELLED)) {
@@ -211,10 +209,10 @@ class EventRepositoryAdapter implements EventRepository {
     }
 
     /**
-     * Returns the Criteria conditions for every filter dimension that a Criteria query can carry:
-     * the plain property restrictions plus the CANCELLED-visibility rule, which is assembled here
-     * so no query path can forget it. Fulltext and registeredBy cannot be expressed via Criteria
-     * (they require raw SQL) and are resolved separately via a pre-fetch of matching IDs.
+     * Returns the Criteria conditions for filter dimensions handled by the Spring Data Criteria API.
+     * Fulltext and registeredBy cannot be expressed via Criteria (require raw SQL) and are
+     * resolved separately via a pre-fetch of matching IDs. The CANCELLED-visibility rule is added
+     * here so no query path can forget it.
      */
     private List<Criteria> buildNonFulltextConditions(EventFilter filter, List<UUID> cancelledRegisteredIds) {
         List<Criteria> conditions = new ArrayList<>();
@@ -250,11 +248,7 @@ class EventRepositoryAdapter implements EventRepository {
     }
 
     /**
-     * Adds the CANCELLED-visibility condition: a CANCELLED event is part of the result only when
-     * it is in {@code cancelledRegisteredIds}. Being a disjunction it cannot be folded into
-     * {@link #resolvePreFilteredIds}'s intersection, so it is kept as its own condition — and it
-     * lives in the same Criteria query {@link #executeQuery} reuses for counting, so the page total
-     * reflects it.
+     * A disjunction, so it cannot join the pre-filtered id intersection.
      */
     private void addCancelledVisibilityCondition(List<Criteria> conditions, List<UUID> cancelledRegisteredIds) {
         if (cancelledRegisteredIds == null) {
@@ -317,12 +311,6 @@ class EventRepositoryAdapter implements EventRepository {
         return namedJdbc.query(sql, params, (rs, rowNum) -> rs.getObject(1, UUID.class));
     }
 
-    /**
-     * Returns the IDs of CANCELLED events the given member has a registration for.
-     * The status restriction is what makes this narrower than
-     * {@link #findIdsByRegisteredMember(MemberId)} — only the cancelled subset is needed
-     * for the visibility disjunction.
-     */
     private List<UUID> findIdsByCancelledAndRegistered(MemberId memberId) {
         String sql = """
                 SELECT id FROM events.events e

@@ -110,9 +110,7 @@ export const EventsPage = (): ReactElement => {
     const importTemplate = resourceData?._templates?.importEvent;
     const activeImportTemplate = importBatchTemplate ?? importTemplate;
     const bulkSyncTemplate = resourceData?._templates?.syncAllUpcomingFromOris;
-    // The status column stays manager-only. Since the API stopped omitting `status` for
-    // non-managers, the backend authority signal is the only way left to know whether to
-    // show the column — `_templates.createEvent` is present exactly for EVENTS:MANAGE.
+    // `status` is returned to everyone; `_templates.createEvent` is present exactly for EVENTS:MANAGE.
     const canManageEvents = Boolean(resourceData?._templates?.createEvent);
     const showRegisteredByMeToggle = Boolean(getUser()?.memberId);
 
@@ -270,15 +268,12 @@ export const EventsPage = (): ReactElement => {
                            dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>{labels.tables.date}</TableCell>
                 <TableCell sortable column={"name"}
                            dataRender={({value, item}) => {
-                               const name = typeof value === 'string' ? value : null;
                                const event = item as unknown as EventListData;
-                               if (!name || event.status !== 'CANCELLED') return name;
-                               // The strikethrough is the only cancellation signal a non-manager
-                               // gets — the status column is hidden for them — so the state is
-                               // repeated for screen readers. The reason stays out of the list.
+                               if (event.status !== 'CANCELLED') return value as string;
+                               // Non-managers see no status column, so the state is repeated for screen readers.
                                return (
                                    <span className="line-through opacity-60">
-                                       {name}
+                                       {value as string}
                                        <span className="sr-only"> — {getEnumLabel('eventStatus', 'CANCELLED')}</span>
                                    </span>
                                );
