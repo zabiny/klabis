@@ -23,7 +23,7 @@ The system SHALL process member registration by creating a user account and a me
 
 - **WHEN** admin registers a minor and enters a new guardian with first name, last name, e-mail and telephone
 - **THEN** the minor is registered with that guardian
-- **AND** the guardian gets a user account awaiting activation with their e-mail as login name
+- **AND** the guardian gets a user account awaiting activation with a login number from the series EXT0001, EXT0002, …
 - **AND** no e-mail is sent to anyone
 
 #### Scenario: Admin registers a minor with two guardians
@@ -62,7 +62,7 @@ The system SHALL process member registration by creating a user account and a me
 - **WHEN** admin registers an adult member and chooses to take over "Eva Svobodová"
 - **THEN** the form is pre-filled with her name, e-mail and telephone
 - **AND** after submission she becomes a club member and remains the legal guardian of her minors
-- **AND** she keeps logging in with her e-mail
+- **AND** she keeps logging in with her login number EXTnnnn
 
 #### Scenario: Registration button not shown without permission
 
@@ -124,8 +124,19 @@ The member detail page SHALL use a two-column layout driven by the available PAT
 #### Scenario: Legal guardians section on a minor's detail
 
 - **WHEN** an admin or the minor themself views a minor's detail page
-- **THEN** a "Zákonní zástupci" section lists each guardian with name, e-mail and telephone
+- **THEN** a "Zákonní zástupci" section lists each guardian of the minor's legal guardian group with name, e-mail and telephone
 - **AND** an admin sees the "Upravit zástupce" action in that section
+
+#### Scenario: Legal guardians section of a minor without guardians
+
+- **WHEN** an admin views the detail of a minor who has no legal guardian group
+- **THEN** the "Zákonní zástupci" section states that the minor has no legal guardian
+- **AND** the "Upravit zástupce" action is available
+
+#### Scenario: Other members do not see a minor's guardians
+
+- **WHEN** a member without MEMBERS:MANAGE permission views another member's detail page
+- **THEN** no "Zákonní zástupci" section is shown
 
 #### Scenario: Group navigation buttons shown when member belongs to a group
 

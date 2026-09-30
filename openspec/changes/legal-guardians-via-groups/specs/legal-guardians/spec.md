@@ -90,7 +90,7 @@ The system SHALL let a user with MEMBERS:MANAGE permission set the complete list
 
 #### Scenario: New guardian with an e-mail already in use is rejected
 
-- **WHEN** an admin enters a new guardian whose e-mail belongs to an existing user or to an adult member
+- **WHEN** an admin enters a new guardian whose e-mail belongs to an existing legal guardian or to an adult member
 - **THEN** the form shows an error that the e-mail is already in use and the existing person should be chosen from the list
 - **AND** no changes are saved
 
@@ -121,7 +121,7 @@ The system SHALL offer as legal guardian candidates every non-member legal guard
 
 ### Requirement: Non-Member Legal Guardian Profile
 
-The system SHALL keep a profile for every legal guardian who is not a club member, holding first name, last name, e-mail and telephone. E-mail and telephone SHALL always be present. The profile is visible and editable by users with MEMBERS:MANAGE permission and by the guardian themself. Changing the e-mail does not change the guardian's login name.
+The system SHALL keep a profile for every legal guardian who is not a club member, holding first name, last name, e-mail and telephone, and showing the guardian's login number. E-mail and telephone SHALL always be present. The profile is visible and editable by users with MEMBERS:MANAGE permission and by the guardian themself.
 
 #### Scenario: Admin edits a guardian's telephone
 
@@ -133,7 +133,12 @@ The system SHALL keep a profile for every legal guardian who is not a club membe
 
 - **WHEN** a logged-in non-member guardian opens "Můj profil", changes their e-mail and saves
 - **THEN** the new e-mail is saved
-- **AND** they continue to log in with their original login name
+- **AND** they continue to log in with their login number
+
+#### Scenario: Profile shows the login number
+
+- **WHEN** an admin opens a non-member guardian's profile
+- **THEN** the guardian's login number (for example EXT0001) is shown
 
 #### Scenario: Guardian cannot clear required contact
 
@@ -154,17 +159,23 @@ The system SHALL keep a profile for every legal guardian who is not a club membe
 
 ### Requirement: Non-Member Legal Guardian Account
 
-The system SHALL create a user account for every new non-member legal guardian, with their e-mail as the login name. The account awaits activation, and the guardian activates it themself with their own e-mail. A non-member guardian has only the permission to view club members; they do not yet have access to their minors' personal data.
+The system SHALL create a user account for every new non-member legal guardian. Its login number SHALL be assigned from a single club-wide series with the prefix EXT: the first guardian gets EXT0001, the second EXT0002, and so on; a number is never reused. The account awaits activation, and the guardian activates it themself with their login number and their own e-mail. A non-member guardian has only the permission to view club members; they do not yet have access to their minors' personal data.
 
 #### Scenario: New guardian activates their account
 
 - **GIVEN** a non-member guardian created during a minor's registration
-- **WHEN** the guardian requests account activation with their e-mail as login name and their e-mail address
+- **WHEN** the guardian requests account activation with their login number and their e-mail address
 - **THEN** an activation link is sent to their e-mail
 
-#### Scenario: Guardian logs in with their e-mail
+#### Scenario: Guardians get consecutive login numbers
 
-- **WHEN** an activated non-member guardian logs in with their e-mail and password
+- **GIVEN** the last non-member guardian got the login number EXT0007
+- **WHEN** an admin enters a new non-member guardian
+- **THEN** the new guardian gets the login number EXT0008
+
+#### Scenario: Guardian logs in with their login number
+
+- **WHEN** an activated non-member guardian logs in with their login number and password
 - **THEN** they are logged in to the application
 - **AND** the menu offers the member list
 - **AND** the home page offers "Můj profil" leading to their guardian profile

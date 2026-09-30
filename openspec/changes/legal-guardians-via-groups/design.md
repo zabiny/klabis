@@ -16,7 +16,7 @@ Motivace viz `proposal.md`, požadavky v delta specifikacích.
 **Goals:**
 - Jediný zdroj pravdy o zástupcích = skupina zákonných zástupců; člen o zástupcích nic neví.
 - Více zástupců na dítě, zástupce může zastupovat děti z více skupin.
-- Nečlenský zástupce má vlastní účet (login e-mailem) a profil.
+- Nečlenský zástupce má vlastní účet (login `EXTnnnn`) a profil.
 - Registrace nezletilý/dospělý včetně založení zástupců v jednom kroku.
 - Logika vytváření/slučování skupin na jednom místě.
 
@@ -77,16 +77,25 @@ Nová tabulka `members.legal_guardians` (`id` = `common.users.id`, jméno, pří
 
 Kontakty zástupců pro zbytek systému poskytuje `GuardianContactResolver` (`UserId` → jméno, e-mail, telefon, druh): člen → údaje člena, nečlen → `LegalGuardian`.
 
-*Povýšení na člena:* registrace dospělého může převzít existujícího `LegalGuardian` – vznikne `Member` se stejným `UserId`, řádek `legal_guardians` se smaže, skupiny se nemění, přihlašovací jméno (e-mail) zůstává.
+*Povýšení na člena:* registrace dospělého může převzít existujícího `LegalGuardian` – vznikne `Member` se stejným `UserId` a novým registračním číslem, řádek `legal_guardians` se smaže, skupiny se nemění, přihlašovací jméno (`EXTnnnn`) zůstává.
 
-### D5: Přihlašovací jméno nečlena = e-mail, lookup člena podle `UserId`
+### D5: Přihlašovací jméno nečlena = generované číslo `EXTnnnn`, lookup člena podle `UserId`
 
-`common.users.user_name` → `VARCHAR(255)`. Nový zástupce dostane username = e-mail; kolize s existujícím uživatelem nebo s e-mailem dospělého člena se odmítne (normalizace trim + case-insensitive). Protože povýšený zástupce má username ≠ registrační číslo, token customizer a verifier aktivace hledají člena podle `UserId` (sdílené UUID), ne podle username. Profilová jména v tokenu pro nečlena pocházejí z `LegalGuardian`. Login formulář: „Registrační číslo nebo e-mail“.
-*Alternativy:* generované jméno (špatné UX), login e-mailem pro všechny (mimo rozsah).
+Nový nečlenský zástupce dostane přihlašovací jméno z jediné průběžné řady s „klubovým“ kódem `EXT`: první `EXT0001`, druhý `EXT0002` atd. (vlastní DB sekvence, bez recyklace čísel). Hodnota odpovídá formátu registračního čísla (`[A-Z0-9]{3}\d{4}`), takže `common.users.user_name VARCHAR(7)`, login formulář i formulář aktivace zůstávají beze změny. Číslo zástupce je vidět na jeho profilu; administrátor mu ho sdělí (registrace nic neposílá).
 
-### D6: Zástupci na detailu člena odvozeni ze skupiny
+E-mail už nemusí být unikátní kvůli loginu, ale kvůli duplicitě osob se odmítá nový zástupce, jehož e-mail patří existujícímu zástupci nebo dospělému členovi (normalizace trim + case-insensitive).
 
-`Member` ztrácí `guardian`. Detail nezletilého (věk k dnešku < 18) dotáhne přes port skupinu dítěte a kontakty jejích zástupců; dospělému se zástupci nenačítají ani nezobrazují. Viditelnost stejná jako dřív u `guardian` (`MEMBERS_MANAGE` + vlastník profilu).
+Povýšený zástupce (D4) si ponechá login `EXTnnnn`, tedy username ≠ jeho registrační číslo. Token customizer a verifier aktivace proto hledají člena podle `UserId` (sdílené UUID), ne podle username. Lookup `findByRegistrationNumber(EXTnnnn)` nesmí nikde sloužit jako důkaz „není člen“. Profilová jména v tokenu pro nečlena pocházejí z `LegalGuardian`.
+*Alternativy:* e-mail jako login (rozšíření sloupce, kolize sdílených e-mailů, změna e-mailu ≠ změna loginu), přidělení registračního čísla při povýšení (změna loginu pro uživatele).
+
+### D6: Zástupci nejsou součástí odpovědi člena – odkaz `legalGuardians`
+
+`Member` ztrácí `guardian` a odpověď detailu člena žádná data zástupců neobsahuje. Detail nezletilého (věk k dnešku < 18), který je ve skupině, nese odkaz `legalGuardians` na `GET /api/legal-guardian-groups/{groupId}/guardians` – seznam zástupců skupiny (jméno, e-mail, telefon, odkaz `member` nebo `legalGuardian`). Dospělý ani nezletilý bez skupiny odkaz nemá; frontend pak sekci zobrazí prázdnou („bez zákonného zástupce“). Odkaz i endpoint jsou dostupné pro `MEMBERS:MANAGE` a pro samotného nezletilého (člen skupiny), tj. stejná viditelnost jako dřív `guardian`. Stejný endpoint používá detail skupiny.
+
+*Proč:* detail člena nemusí načítat cizí agregáty; zástupci patří skupině a jejich seznam má jediný zdroj.
+*Alternativa:* vložená data `legalGuardians[]` v detailu člena – zavrženo (duplicitní reprezentace, závislost detailu na skupině a kontaktech).
+
+Úplnost (D7) kontakty zástupců dál potřebuje – načítá je server interně přes port, nikoli přes tento odkaz.
 
 ### D7: Úplnost – stejná sémantika, jiný zdroj
 
@@ -123,7 +132,7 @@ Nečlenský zástupce dostane při založení jen `MEMBERS:READ`. `RootControlle
 
 ### D12: Registrace se zástupci v jedné transakci
 
-`RegisterMemberRequest.legalGuardians[]` – položka je buď `{userId}` (existující kandidát), nebo `{firstName, lastName, email, phone}` (nový). Jedna transakce: noví `User` + `LegalGuardian` → `User` + `Member` → `setGuardiansOf`. Validace: nezletilý ≥ 1 zástupce; dospělý žádné zástupce (odmítnout) a vlastní e-mail + telefon; nový zástupce e-mail i telefon; e-mail bez kolize (D5); vybraný člen ≥ 18. Frontend přepíná sekce podle data narození, backend validuje autoritativně. Registrace dospělého může nést `legalGuardianUserId` pro převzetí zástupce (D4).
+`RegisterMemberRequest.legalGuardians[]` – položka je buď `{userId}` (existující kandidát), nebo `{firstName, lastName, email, phone}` (nový). Jedna transakce: noví `User` (login `EXTnnnn`) + `LegalGuardian` → `User` + `Member` → `setGuardiansOf`. Validace: nezletilý ≥ 1 zástupce; dospělý žádné zástupce (odmítnout) a vlastní e-mail + telefon; nový zástupce e-mail i telefon; e-mail nepatří existujícímu zástupci ani dospělému členovi (D5); vybraný člen ≥ 18. Frontend přepíná sekce podle data narození, backend validuje autoritativně. Registrace dospělého může nést `legalGuardianUserId` pro převzetí zástupce (D4).
 *Riziko:* HAL-FORMS pole objektů – vlastní komponenta „vybrat nebo založit zástupce“, pokrýt integračním testem.
 
 ### D13: Úprava zástupců deklarativním formulářem
@@ -189,7 +198,8 @@ classDiagram
 ## Glosář
 
 - **Zákonný zástupce (Legal guardian)** – uživatel, který zastupuje nezletilého člena; buď dospělý člen, nebo nečlen s profilem zástupce.
-- **Nečlenský zástupce** – zástupce bez členského profilu; přihlašuje se e-mailem.
+- **Nečlenský zástupce** – zástupce bez členského profilu; přihlašuje se číslem `EXTnnnn`.
+- **Číslo zástupce (`EXTnnnn`)** – přihlašovací jméno nečlenského zástupce z průběžné řady `EXT0001`, `EXT0002`, …
 - **Skupina zákonných zástupců (LegalGuardianGroup)** – množina zástupců sdílená nezletilými dětmi, které mají přesně tyto zástupce.
 - **Nezletilý (Minor)** – člen, kterému k dnešku není 18 let.
 - **Kandidát na zástupce** – nečlenský zástupce nebo aktivní člen s věkem ≥ 18.
@@ -200,15 +210,16 @@ classDiagram
 | Endpoint | Změna |
 |---|---|
 | `POST /api/members` (`registerMember`) | `guardian` → `legalGuardians[]` (položka `{userId}` nebo `{firstName, lastName, email, phone}`), nové `legalGuardianUserId` (převzetí zástupce u dospělého) |
-| `GET /api/members/{id}` | `guardian` → `legalGuardians[]` `{userId, firstName, lastName, email, phone}` (jen nezletilý; `MEMBERS_MANAGE` + owner-visible), položka má `_links.member` (člen) nebo `_links.legalGuardian` (nečlen); odkaz `familyGroup` → `legalGuardianGroup` (`MEMBERS_MANAGE`); affordance `setMemberLegalGuardians` (nezletilý, `MEMBERS_MANAGE`), `sendMemberAccountActivation` (nezletilý, účet čeká na aktivaci, má e-mail, `MEMBERS_MANAGE`) |
+| `GET /api/members/{id}` | pole `guardian` **odstraněno**, žádná data zástupců; nový odkaz `legalGuardians` → `/api/legal-guardian-groups/{groupId}/guardians` (jen nezletilý ve skupině; `MEMBERS_MANAGE` nebo sám nezletilý); odkaz `familyGroup` → `legalGuardianGroup` (`MEMBERS_MANAGE`); affordance `setMemberLegalGuardians` (nezletilý, `MEMBERS_MANAGE`), `sendMemberAccountActivation` (nezletilý, účet čeká na aktivaci, má e-mail, `MEMBERS_MANAGE`) |
 | `PATCH /api/members/{id}` (`updateMember`) | odstraněno `guardian` |
 | `PUT /api/members/{id}/legal-guardians` | nový (`setMemberLegalGuardians`): `{legalGuardians[]}` |
 | `POST /api/members/{id}/account-activation` | nový (`sendMemberAccountActivation`), bez těla |
-| `GET /api/legal-guardians/{userId}` | nový (`getLegalGuardian`): `{userId, firstName, lastName, email, phone}`, `self`; affordance `updateLegalGuardian`; přístup `MEMBERS_MANAGE` nebo sám zástupce |
+| `GET /api/legal-guardians/{userId}` | nový (`getLegalGuardian`): `{userId, loginName, firstName, lastName, email, phone}`, `self`; affordance `updateLegalGuardian`; přístup `MEMBERS_MANAGE` nebo sám zástupce |
 | `PATCH /api/legal-guardians/{userId}` | nový (`updateLegalGuardian`): jméno, příjmení, e-mail, telefon (e-mail/telefon nelze vymazat) |
 | `GET /api/legal-guardian-options?q=` | nový (`listLegalGuardianOptions`): `{userId, displayName, kind: MEMBER/LEGAL_GUARDIAN, registrationNumber?, email?}`; `MEMBERS_CREATE` nebo `MEMBERS_MANAGE` |
 | `GET /api/legal-guardian-groups` | přejmenováno z `/api/family-groups` (`listLegalGuardianGroups`); `MEMBERS_MANAGE`; rel v rootu `legalGuardianGroups` |
-| `GET /api/legal-guardian-groups/{id}` | `{name, guardians[{userId, firstName, lastName, _links.member/legalGuardian}], minors[{memberId, joinedAt, _links.member}]}`; affordance `setLegalGuardianGroupGuardians`; `MEMBERS_MANAGE` |
+| `GET /api/legal-guardian-groups/{id}` | `{name, minors[{memberId, joinedAt, _links.member}]}`, odkaz `legalGuardians`; affordance `setLegalGuardianGroupGuardians`; `MEMBERS_MANAGE` |
+| `GET /api/legal-guardian-groups/{id}/guardians` | nový (`listLegalGuardianGroupGuardians`): kolekce `{userId, firstName, lastName, email, phone, _links.member` (člen) nebo `_links.legalGuardian` (nečlen)`}`; `MEMBERS_MANAGE` nebo nezletilý člen skupiny |
 | `PUT /api/legal-guardian-groups/{id}/guardians` | nový (`setLegalGuardianGroupGuardians`): `{legalGuardians[]}` |
 | `POST /api/family-groups`, `DELETE /api/family-groups/{id}`, `/parents…`, `/children…` | **odstraněno** |
 | `GET /api` (root) | nový `_links.profile` (člen i nečlenský zástupce); `familyGroups` → `legalGuardianGroups` |
@@ -218,15 +229,17 @@ classDiagram
 - [BREAKING API a přejmenování] → backend i frontend v jednom release; žádní externí konzumenti.
 - [Zastarávání `data_incomplete` při změnách skupin/kontaktů zástupců] → akceptováno; detail počítá živě; budoucí přepočet přes události.
 - [Výpadek denní úlohy v den 18. narozenin → dítě zůstane ve skupině] → akceptováno do přechodu na Quartz (`introduce-quartz-scheduler`); detail kontroluje věk sám.
-- [Kolize e-mailu jako username (sdílený e-mail rodičů)] → validační chyba; každý zástupce musí mít vlastní e-mail.
-- [Změna e-mailu zástupce nemění login] → vědomě; přihlašovací jméno zůstává původní e-mail.
+- [Zástupce nezná své číslo `EXTnnnn`] → číslo je na profilu zástupce; administrátor ho sdělí spolu s pokynem k aktivaci.
+- [`EXTnnnn` má formát registračního čísla] → kód `EXT` nesmí být přidělen žádnému klubu; lookup člena podle registračního čísla se nesmí používat k rozhodnutí o členství (D5).
+- [Řada `EXT` má 9 999 čísel] → pro velikost klubu dostačující.
+- [Duplicitní osoba (stejný e-mail u zástupce a dospělého člena)] → validační chyba při zakládání zástupce.
 - [Zástupce nevidí údaje svěřenců] → vědomý mezikrok do oprávnění přes skupinu.
 - [HAL-FORMS pole objektů] → vlastní komponenta + integrační test (dřívější chyba v editoru kategorií).
 - [Předpoklad `MemberId` ≡ `UserId`] → již platný invariant; povýšení zástupce jej využívá.
 
 ## Migration Plan
 
-1. Úprava `V001__initial_schema.sql` bez nové migrace (žádný perzistentní stav): drop `members.guardian_*`, nová `members.legal_guardians`, `common.users.user_name VARCHAR(255)`, CHECK `type IN ('FREE','TRAINING','LEGAL_GUARDIAN')`, komentáře.
+1. Úprava `V001__initial_schema.sql` bez nové migrace (žádný perzistentní stav): drop `members.guardian_*`, nová `members.legal_guardians`, sekvence pro čísla `EXTnnnn`, CHECK `type IN ('FREE','TRAINING','LEGAL_GUARDIAN')`, komentáře.
 2. `example-data`: nečlenský zástupce se dvěma sourozenci, člen-zástupce s dítětem, dítě se dvěma zástupci (člen + nečlen), nezletilý z ORIS bez zástupce.
 3. Nasazení jedním releasem backend + frontend; rollback = revert release.
 

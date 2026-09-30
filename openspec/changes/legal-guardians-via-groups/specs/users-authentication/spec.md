@@ -38,7 +38,7 @@ The system SHALL determine membership status by checking whether a Member aggreg
 
 #### Scenario: Former guardian who became a member is identified as a member
 
-- **GIVEN** a non-member legal guardian who was later registered as a club member and still logs in with their e-mail
+- **GIVEN** a non-member legal guardian who was later registered as a club member and still logs in with their login number EXTnnnn
 - **WHEN** they log in
 - **THEN** the system identifies them as a member (`is_member: true`)
 
