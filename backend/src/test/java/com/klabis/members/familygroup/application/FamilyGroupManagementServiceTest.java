@@ -3,6 +3,7 @@ package com.klabis.members.familygroup.application;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.GroupNotFoundException;
+import com.klabis.common.groups.domain.MemberAlreadyInGroupException;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.familygroup.FamilyGroupId;
@@ -218,7 +219,8 @@ class FamilyGroupManagementServiceTest {
             FamilyGroup group = FamilyGroup.reconstruct(GROUP_ID, "Novákovi", Set.of(PARENT_A),
                     Set.of(GroupMembership.of(PARENT_A), GroupMembership.of(MEMBER_A.toUserId())), null);
             when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
-            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.empty());
+            // The child's existing family group is the target group itself, which must not count as a conflict.
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.of(group));
             when(familyGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             service.addParent(GROUP_ID, MEMBER_A.toUserId());
@@ -246,6 +248,8 @@ class FamilyGroupManagementServiceTest {
             FamilyGroup existingGroup = FamilyGroup.reconstruct(
                     new FamilyGroupId(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")),
                     "Jiní", Set.of(PARENT_A), Set.of(), null);
+            when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(FamilyGroup.reconstruct(
+                    GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(GroupMembership.of(PARENT_A)), null)));
             when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.of(existingGroup));
 
             assertThatThrownBy(() -> service.addParent(GROUP_ID, PARENT_B))
@@ -280,6 +284,8 @@ class FamilyGroupManagementServiceTest {
             FamilyGroup existingGroup = FamilyGroup.reconstruct(
                     new FamilyGroupId(UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")),
                     "Jiní", Set.of(PARENT_B), Set.of(), null);
+            when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(FamilyGroup.reconstruct(
+                    GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(GroupMembership.of(PARENT_A)), null)));
             when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.of(existingGroup));
 
             assertThatThrownBy(() -> service.addChild(GROUP_ID, MEMBER_A))
@@ -305,15 +311,13 @@ class FamilyGroupManagementServiceTest {
         @Test
         @DisplayName("should reject a child that is already a parent of the same group")
         void shouldRejectChildWhoIsAlreadyParentOfSameGroup() {
-            // The parent is already in this very family group, so the exclusive-membership check
-            // rejects the child before the aggregate is even loaded.
             FamilyGroup group = FamilyGroup.reconstruct(
-                    GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(), null);
-            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
-                    .thenReturn(Optional.of(group));
+                    GROUP_ID, "Novákovi", Set.of(PARENT_A), Set.of(GroupMembership.of(PARENT_A)), null);
+            when(familyGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class))).thenReturn(Optional.of(group));
 
             assertThatThrownBy(() -> service.addChild(GROUP_ID, MemberId.fromUserId(PARENT_A)))
-                    .isInstanceOf(MemberAlreadyInFamilyGroupException.class);
+                    .isInstanceOf(MemberAlreadyInGroupException.class);
             verify(familyGroupRepository, never()).save(any());
         }
     }

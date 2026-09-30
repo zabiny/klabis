@@ -14,7 +14,7 @@ import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @MvcComponent
-public class    MemberFamilyGroupLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberDetailsResponse>> {
+public class MemberFamilyGroupLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberDetailsResponse>> {
 
     private final FamilyGroupRepository familyGroupRepository;
 
