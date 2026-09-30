@@ -39,4 +39,4 @@
 
 - [x] 7.1 Update `docs/openapi` bundle consistency and run full backend suite sequentially with `SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true` (test-runner agent)
 - [x] 7.2 Run code review agent, address findings
-- [ ] 7.3 Sync delta spec into `openspec/specs/user-groups/spec.md` and archive the change
+- [x] 7.3 Sync delta spec into `openspec/specs/user-groups/spec.md` and archive the change
