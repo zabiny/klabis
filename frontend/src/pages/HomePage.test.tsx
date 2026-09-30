@@ -99,7 +99,10 @@ describe('HomePage - Admin/DEVELOPER user gets standard dashboard', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        useRootNavigation.mockReturnValue(createMockQueryResult(adminNavItems))
+        useRootNavigation.mockReturnValue(createMockQueryResult([
+            ...adminNavItems,
+            {rel: 'profile', href: '/members/member-uuid-admin', label: 'profile', section: 'personal'},
+        ]))
         useAuth.mockReturnValue({
             isAuthenticated: true,
             login: vi.fn(),
@@ -136,7 +139,10 @@ describe('HomePage - Admin/DEVELOPER user gets standard dashboard', () => {
 describe('HomePage - Regular User Dashboard', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        useRootNavigation.mockReturnValue(createMockQueryResult(regularNavItems))
+        useRootNavigation.mockReturnValue(createMockQueryResult([
+            ...regularNavItems,
+            {rel: 'profile', href: '/members/member-uuid-123', label: 'profile', section: 'personal'},
+        ]))
         useAuth.mockReturnValue({
             isAuthenticated: true,
             login: vi.fn(),
@@ -170,9 +176,27 @@ describe('HomePage - Regular User Dashboard', () => {
     })
 
     it('should link my profile to member detail page', () => {
+        useRootNavigation.mockReturnValue(createMockQueryResult([
+            ...regularNavItems,
+            {rel: 'profile', href: '/members/member-uuid-123', label: 'profile', section: 'personal'},
+        ]))
         renderHomePage()
         const profileLink = screen.getByRole('link', {name: /Můj profil/i})
         expect(profileLink).toHaveAttribute('href', '/members/member-uuid-123')
+    })
+
+    it('should link my profile to the legal guardian profile from the profile link', () => {
+        useRootNavigation.mockReturnValue(createMockQueryResult([
+            {rel: 'profile', href: '/legal-guardians/u-1', label: 'profile', section: 'personal'},
+        ]))
+        renderHomePage()
+        expect(screen.getByRole('link', {name: /Můj profil/i})).toHaveAttribute('href', '/legal-guardians/u-1')
+    })
+
+    it('should hide my profile when the root resource has no profile link', () => {
+        useRootNavigation.mockReturnValue(createMockQueryResult(regularNavItems))
+        renderHomePage()
+        expect(screen.queryByText('Můj profil')).not.toBeInTheDocument()
     })
 
     it('should not show admin statistics', () => {

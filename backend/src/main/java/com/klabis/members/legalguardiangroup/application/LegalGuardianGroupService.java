@@ -6,6 +6,8 @@ import com.klabis.members.MemberId;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.legalguardian.application.GuardianContact;
+import com.klabis.members.legalguardian.application.GuardianContactResolver;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup.Guardian;
@@ -17,21 +19,24 @@ import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 class LegalGuardianGroupService implements LegalGuardianGroupPort {
 
     private final LegalGuardianGroupRepository groupRepository;
-    private final GuardianResolver guardianResolver;
+    private final GuardianContactResolver guardianContactResolver;
     private final MemberRepository memberRepository;
 
     LegalGuardianGroupService(LegalGuardianGroupRepository groupRepository,
-                              GuardianResolver guardianResolver,
+                              GuardianContactResolver guardianContactResolver,
                               MemberRepository memberRepository) {
         this.groupRepository = groupRepository;
-        this.guardianResolver = guardianResolver;
+        this.guardianContactResolver = guardianContactResolver;
         this.memberRepository = memberRepository;
     }
 
@@ -119,7 +124,15 @@ class LegalGuardianGroupService implements LegalGuardianGroupPort {
         if (guardianIds == null || guardianIds.isEmpty()) {
             throw new LegalGuardianGroupWithoutGuardianException();
         }
-        return guardianResolver.resolve(guardianIds);
+        Map<UserId, GuardianContact> contacts = guardianContactResolver.resolve(guardianIds).stream()
+                .collect(Collectors.toMap(GuardianContact::userId, Function.identity()));
+        return guardianIds.stream().map(userId -> {
+            GuardianContact contact = contacts.get(userId);
+            if (contact == null) {
+                throw new GuardianNotFoundException(userId);
+            }
+            return new Guardian(userId, contact.lastName());
+        }).collect(Collectors.toUnmodifiableSet());
     }
 
     private Minor loadMinor(MemberId minorId) {

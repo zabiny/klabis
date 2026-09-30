@@ -216,6 +216,13 @@ export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, 
             ]);
         case "MembershipFeeTierMultiSelect":
             return <MembershipFeeTierMultiSelectField {...conf}/>;
+        case "LegalGuardianInputRequest": {
+            if (isMultipleProperty(conf.prop)) return null;
+            // Sub-element props drop options, but the picker for userId needs the collection's options link.
+            const userIdConf = conf.subElementProps("userId", {prompt: conf.prop.prompt});
+            return <HalFormsMemberId {...userIdConf} renderMode={conf.renderMode}
+                                     prop={{...userIdConf.prop, options: conf.prop.options}}/>;
+        }
         case "PaymentRuleRequest":
             // For multi/collection: return null so HalFormsCollectionField handles iteration.
             // For a single item (inside the collection): render sub-fields with custom select renderers.

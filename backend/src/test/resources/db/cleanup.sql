@@ -67,6 +67,7 @@ DELETE FROM membershipfees.membership_fee_tier;
 
 -- Members table
 DELETE FROM members.members;
+DELETE FROM members.legal_guardians;
 
 -- Re-enable foreign key checks (if disabled above)
 -- SET FOREIGN_KEY_CHECKS = 1;  -- MySQL

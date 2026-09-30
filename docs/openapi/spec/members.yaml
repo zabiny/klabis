@@ -539,6 +539,137 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
+  # ---------------------------------------------------------------------------------------------
+  # LegalGuardians (LegalGuardianController, /api/legal-guardians) - non-member legal guardians
+  # and the candidates offered when choosing guardians (/api/legal-guardian-options).
+  # A legal guardian is created together with the minor's guardians, not through a POST here.
+  # ---------------------------------------------------------------------------------------------
+
+  /api/legal-guardians/{userId}:
+    get:
+      operationId: getLegalGuardian
+      tags: [LegalGuardians]
+      summary: Get the profile of a non-member legal guardian
+      description: |
+        Profile of a non-member legal guardian including the login number (EXTnnnn). Visible to users
+        with MEMBERS:MANAGE and to the guardian themself.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      x-klabis-owner-visible: true
+      parameters:
+        - $ref: '#/components/parameters/LegalGuardianUserIdParam'
+      responses:
+        '200':
+          description: Legal guardian found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LegalGuardianResponse'
+          x-hal-links:
+            self:
+              description: This legal guardian profile
+          x-hal-templates:
+            updateLegalGuardian:
+              operation: updateLegalGuardian
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+    patch:
+      operationId: updateLegalGuardian
+      tags: [LegalGuardians]
+      summary: Update the profile of a non-member legal guardian
+      description: |
+        Partial update - only the fields present in the request body are changed. E-mail and telephone
+        cannot be cleared. An e-mail that belongs to another legal guardian or to an adult member is
+        refused. Requires MEMBERS:MANAGE or being the guardian themself.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      x-klabis-owner-visible: true
+      parameters:
+        - $ref: '#/components/parameters/LegalGuardianUserIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLegalGuardianRequest'
+      responses:
+        '204':
+          description: Legal guardian updated
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/legal-guardian-options:
+    get:
+      operationId: listLegalGuardianOptions
+      tags: [LegalGuardianOptions]
+      summary: List candidates for a legal guardian
+      description: |
+        Non-member legal guardians and active members aged 18 or more, each person once, matching
+        the name search. Members carry their registration number and non-members their e-mail so
+        namesakes can be told apart. Requires MEMBERS:MANAGE.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - name: q
+          in: query
+          description: Fulltext search over the name; every word must match
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Candidates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LegalGuardianOptionResponse'
+            application/prs.hal-forms+json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LegalGuardianOptionResponse'
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
 components:
   securitySchemes:
     KlabisAuth:
@@ -587,6 +718,16 @@ components:
       in: path
       required: true
       description: Legal guardian group UUID
+      schema:
+        type: string
+        format: uuid
+
+    LegalGuardianUserIdParam:
+      name: userId
+      in: path
+      required: true
+      description: User UUID of the non-member legal guardian
+      x-klabis-owner-id: true
       schema:
         type: string
         format: uuid
@@ -1183,3 +1324,71 @@ components:
         joinedAt:
           type: string
           format: date-time
+
+    # === LegalGuardians =================================================================================
+
+    LegalGuardianResponse:
+      type: object
+      description: Profile of a non-member legal guardian.
+      required: [userId, loginName, firstName, lastName, email, phone]
+      properties:
+        userId:
+          type: string
+          format: uuid
+          x-klabis-owner-id: true
+        loginName:
+          type: string
+          description: Login number of the guardian (EXTnnnn)
+          example: EXT0001
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+
+    UpdateLegalGuardianRequest:
+      type: object
+      description: |
+        Partial update. An absent property is left untouched; e-mail and telephone cannot be cleared.
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        email:
+          type: string
+          minLength: 1
+          maxLength: 255
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 50
+
+    LegalGuardianOptionResponse:
+      type: object
+      description: |
+        Candidate for a legal guardian. value/prompt make it usable as remote HAL-FORMS options.
+      properties:
+        value:
+          type: string
+          description: User UUID of the candidate
+        prompt:
+          type: string
+          description: Display name of the candidate
+          example: Jan Novák
+        kind:
+          type: string
+          enum: [MEMBER, LEGAL_GUARDIAN]
+        registrationNumber:
+          type: string
+          description: Present for members
+        email:
+          type: string
+          description: Present for non-members and for members having an e-mail

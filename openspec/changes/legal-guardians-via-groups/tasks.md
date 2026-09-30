@@ -10,14 +10,14 @@
 
 ## 2. Iterace: nečlenský zákonný zástupce, účet a profil
 
-- [ ] 2.1 `V001`: nová tabulka `members.legal_guardians` a sekvence pro čísla `EXTnnnn`; testy perzistence
-- [ ] 2.2 Doménové testy (red) a implementace agregátu `LegalGuardian` (povinný e-mail i telefon, update bez vymazání kontaktu) a aplikační služby pro založení: `User` s loginem z řady `EXT0001`, `EXT0002`, …, jen `MEMBERS:READ`, odmítnutí e-mailu existujícího zástupce nebo dospělého člena
-- [ ] 2.3 `GuardianContactResolver` (člen → údaje člena, nečlen → `LegalGuardian`) s testy
-- [ ] 2.4 API spec + controller testy (red) + implementace `GET/PATCH /api/legal-guardians/{userId}` (přístup `MEMBERS:MANAGE` nebo sám zástupce)
-- [ ] 2.5 API spec + testy (red) + implementace `GET /api/legal-guardian-options?q=` (nečlenští zástupci ∪ aktivní členové ≥ 18, dedupe dle `UserId`, `MEMBERS:CREATE`/`MEMBERS:MANAGE`); `x-hal-input-type: UserId` options přepojit na tento endpoint
-- [ ] 2.6 Token customizer a `KlabisUserDetailsService`: lookup člena podle `UserId`, jména nečlenského zástupce do claimů; testy (povýšený zástupce s loginem `EXTnnnn` je `is_member: true`, `EXTnnnn` se nevyhodnocuje jako člen podle registračního čísla)
-- [ ] 2.7 Root `_links.profile` (člen → detail člena, nečlenský zástupce → profil zástupce); testy `RootController`
-- [ ] 2.8 Frontend: stránka profilu zástupce (zobrazení + editace), „Můj profil“ na HomePage z odkazu `profile`, zobrazení čísla `EXTnnnn` na profilu; testy + `npm run build`
+- [x] 2.1 `V001`: nová tabulka `members.legal_guardians` a sekvence pro čísla `EXTnnnn`; testy perzistence
+- [x] 2.2 Doménové testy (red) a implementace agregátu `LegalGuardian` (povinný e-mail i telefon, update bez vymazání kontaktu) a aplikační služby pro založení: `User` s loginem z řady `EXT0001`, `EXT0002`, …, jen `MEMBERS:READ`, odmítnutí e-mailu existujícího zástupce nebo dospělého člena
+- [x] 2.3 `GuardianContactResolver` (člen → údaje člena, nečlen → `LegalGuardian`) s testy
+- [x] 2.4 API spec + controller testy (red) + implementace `GET/PATCH /api/legal-guardians/{userId}` (přístup `MEMBERS:MANAGE` nebo sám zástupce)
+- [x] 2.5 API spec + testy (red) + implementace `GET /api/legal-guardian-options?q=` (nečlenští zástupci ∪ aktivní členové ≥ 18, dedupe dle `UserId`, `MEMBERS:CREATE`/`MEMBERS:MANAGE`); `x-hal-input-type: UserId` options přepojit na tento endpoint
+- [x] 2.6 Token customizer a `KlabisUserDetailsService`: lookup člena podle `UserId`, jména nečlenského zástupce do claimů; testy (povýšený zástupce s loginem `EXTnnnn` je `is_member: true`, `EXTnnnn` se nevyhodnocuje jako člen podle registračního čísla)
+- [x] 2.7 Root `_links.profile` (člen → detail člena, nečlenský zástupce → profil zástupce); testy `RootController`
+- [x] 2.8 Frontend: stránka profilu zástupce (zobrazení + editace), „Můj profil“ na HomePage z odkazu `profile`, zobrazení čísla `EXTnnnn` na profilu; testy + `npm run build`
 
 ## 3. Iterace: zástupci nezletilého ze skupiny (odstranění guardian z člena)
 

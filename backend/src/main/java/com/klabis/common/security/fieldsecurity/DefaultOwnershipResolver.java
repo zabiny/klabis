@@ -6,15 +6,16 @@ import org.springframework.core.convert.ConversionService;
 import org.springframework.security.core.Authentication;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * Default {@link OwnershipResolver} that uses {@link ConversionService} to convert
  * the owner identifier to UUID and compares it with the member ID from the JWT token.
  * <p>
- * Returns {@code false} when the authentication is not a {@link KlabisJwtAuthenticationToken},
- * when the token has no associated member profile, or when the owner ID cannot be converted
- * to UUID.
+ * Returns {@code false} when the authentication is not a {@link KlabisJwtAuthenticationToken}
+ * or when the owner ID cannot be converted to UUID.
  */
 @MvcComponent
 class DefaultOwnershipResolver implements OwnershipResolver {
@@ -31,19 +32,16 @@ class DefaultOwnershipResolver implements OwnershipResolver {
             return false;
         }
 
-        return token.getMemberIdUuid()
-                .map(memberUuid -> {
-                    if (ownerIdValue instanceof Collection<?> ownerIds) {
-                        return ownerIds.stream()
-                                .anyMatch(element -> {
-                                    UUID elementUuid = toUuid(element);
-                                    return elementUuid != null && elementUuid.equals(memberUuid);
-                                });
-                    }
-                    UUID ownerUuid = toUuid(ownerIdValue);
-                    return ownerUuid != null && ownerUuid.equals(memberUuid);
-                })
-                .orElse(false);
+        // A non-member (a legal guardian) has a user id but no member profile, and a member's id is its user id,
+        // so the user id identifies the owner in both cases.
+        Set<UUID> identities = new HashSet<>();
+        identities.add(token.getUserId().uuid());
+        token.getMemberIdUuid().ifPresent(identities::add);
+
+        if (ownerIdValue instanceof Collection<?> ownerIds) {
+            return ownerIds.stream().anyMatch(element -> identities.contains(toUuid(element)));
+        }
+        return identities.contains(toUuid(ownerIdValue));
     }
 
     private UUID toUuid(Object ownerIdValue) {

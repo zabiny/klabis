@@ -2,7 +2,6 @@ import {Link as RouterLink} from 'react-router-dom'
 import {Calendar, ChevronRight, User} from 'lucide-react'
 import {Card} from '../components/UI'
 import {useRootNavigation} from "../hooks/useRootNavigation";
-import {useAuth} from "../contexts/authContext";
 import {labels} from "../localization/labels";
 import {formatDate} from "../utils/dateUtils";
 import {useDashboard} from "../hooks/useDashboard";
@@ -12,8 +11,8 @@ import {UpcomingDeadlinesWidget} from "../components/dashboard/UpcomingDeadlines
 
 const containsRel = (menuItems: { rel: string }[], rel: string) => menuItems.some(item => item.rel === rel)
 
-const UserDashboard = ({memberId, menuItems}: {
-    memberId: string | null;
+const UserDashboard = ({profileHref, menuItems}: {
+    profileHref: string | null;
     menuItems: { rel: string }[]
 }) => {
     const {data: dashboardData} = useDashboard()
@@ -25,8 +24,8 @@ const UserDashboard = ({memberId, menuItems}: {
     return (
         <div className="space-y-8 animate-fade-in">
             <div className="hidden sm:grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {memberId && (
-                    <RouterLink to={`/members/${memberId}`} className="group block">
+                {profileHref && (
+                    <RouterLink to={profileHref} className="group block">
                         <Card className="card-hoverable h-full p-5">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
@@ -121,11 +120,9 @@ const UserDashboard = ({memberId, menuItems}: {
 
 const HomePage = () => {
     const {data: menuItems = []} = useRootNavigation()
-    const {getUser} = useAuth()
-    const user = getUser()
-    const memberId = user?.memberId ?? null
+    const profileHref = menuItems.find(item => item.rel === 'profile')?.href ?? null
 
-    return <UserDashboard memberId={memberId} menuItems={menuItems}/>
+    return <UserDashboard profileHref={profileHref} menuItems={menuItems}/>
 }
 
 export default HomePage

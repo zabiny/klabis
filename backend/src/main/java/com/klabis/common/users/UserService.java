@@ -57,6 +57,8 @@ public interface UserService {
      */
     Optional<User> findUserByUsername(String username);
 
+    Optional<User> findUserById(UserId userId);
+
     /**
      * Suspends a user account by ID.
      * <p>

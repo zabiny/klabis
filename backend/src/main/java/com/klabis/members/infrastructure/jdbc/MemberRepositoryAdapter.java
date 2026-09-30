@@ -91,6 +91,13 @@ class MemberRepositoryAdapter implements MemberRepository {
     }
 
     @Override
+    public List<Member> findAllByEmail(String email) {
+        return jdbcRepository.findAllByEmailEqualsIgnoreCase(email).stream()
+                .map(MemberMemento::toMember)
+                .toList();
+    }
+
+    @Override
     public List<Member> findAll() {
         return StreamSupport.stream(jdbcRepository.findAll().spliterator(), false)
                 .map(MemberMemento::toMember)

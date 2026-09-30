@@ -44,6 +44,11 @@ public interface MemberRepository {
      */
     Optional<Member> findByEmail(String email);
 
+    /**
+     * Members may share an e-mail (a child and a parent), so uniqueness checks need every match.
+     */
+    List<Member> findAllByEmail(String email);
+
     List<Member> findAll();
 
     List<Member> findAll(MemberFilter filter);

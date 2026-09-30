@@ -567,6 +567,36 @@ COMMENT ON COLUMN members.birth_number_audit_log.action IS 'Action type: VIEW_BI
 COMMENT ON COLUMN members.birth_number_audit_log.occurred_at IS 'Timestamp when the action occurred';
 
 -- ============================================================================
+-- 9a. LEGAL_GUARDIANS TABLE
+-- Legal guardians who are not club members (a user is either a Member or a LegalGuardian, never both)
+-- id is the common.users id (no FK, like members.members), so a promoted guardian keeps the same UserId as the new Member
+-- ============================================================================
+
+CREATE TABLE members.legal_guardians
+(
+    id          UUID PRIMARY KEY,
+    first_name  VARCHAR(100) NOT NULL,
+    last_name   VARCHAR(100) NOT NULL,
+    email       VARCHAR(255) NOT NULL UNIQUE,
+    phone       VARCHAR(50)  NOT NULL,
+
+    -- Audit fields
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by  VARCHAR(100) NOT NULL,
+    modified_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_by VARCHAR(100) NOT NULL,
+    version     BIGINT       NOT NULL DEFAULT 0
+);
+
+CREATE INDEX idx_legal_guardians_last_name ON members.legal_guardians (last_name);
+
+COMMENT ON TABLE members.legal_guardians IS 'Legal guardians who are not club members; e-mail and phone are always present';
+COMMENT ON COLUMN members.legal_guardians.id IS 'Same UUID as common.users.id (login name is a generated EXTnnnn number)';
+
+-- Series for the EXTnnnn login numbers of non-member legal guardians; numbers are never reused
+CREATE SEQUENCE members.legal_guardian_login_number_seq START WITH 1 INCREMENT BY 1;
+
+-- ============================================================================
 -- 14. USER_GROUPS TABLE
 -- Unified table for all group types (FREE = FreeGroup, TRAINING = TrainingGroup, LEGAL_GUARDIAN = LegalGuardianGroup)
 -- The type column acts as a discriminator to separate groups by their aggregate type.

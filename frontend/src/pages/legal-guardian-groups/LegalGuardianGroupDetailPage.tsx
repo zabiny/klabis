@@ -51,7 +51,7 @@ const LegalGuardianGroupDetailContent = ({resourceData}: {resourceData: GetLegal
                 </h3>
                 <dl>
                     {guardians.map(guardian => {
-                        const memberLink = guardian._links?.member as HalLink | undefined;
+                        const memberLink = (guardian._links?.member ?? guardian._links?.legalGuardian) as HalLink | undefined;
                         return (
                             <DetailRow key={guardian.userId} label="">
                                 {memberLink ? (

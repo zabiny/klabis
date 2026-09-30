@@ -71,6 +71,14 @@ describe('LegalGuardianGroupDetailPage', () => {
         expect(navigateToResource).toHaveBeenCalledWith({href: '/api/members/u-1'});
     });
 
+    it('navigates to the profile of a non-member guardian via the legalGuardian link', async () => {
+        renderPage(buildGroup({
+            guardians: [{userId: 'u-2', _links: {legalGuardian: {href: '/api/legal-guardians/u-2'}}}],
+        }));
+        await userEvent.click(screen.getByRole('button', {name: /Jana Nováková/}));
+        expect(navigateToResource).toHaveBeenCalledWith({href: '/api/legal-guardians/u-2'});
+    });
+
     it('offers no create, delete or add-member actions', () => {
         renderPage(buildGroup());
         expect(screen.queryByRole('button', {name: /smazat|vytvořit|přidat/i})).not.toBeInTheDocument();
