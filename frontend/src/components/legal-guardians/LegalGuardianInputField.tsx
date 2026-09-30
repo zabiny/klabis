@@ -1,6 +1,7 @@
 import {type ReactElement, useEffect, useState} from 'react';
 import {useField} from 'formik';
-import {HalFormsInput, HalFormsMemberId} from '../HalNavigator2/halforms/fields';
+import {HalFormsInput} from '../HalNavigator2/halforms/fields';
+import {LegalGuardianCandidatePicker} from './LegalGuardianCandidatePicker.tsx';
 import type {HalFormsInputProps} from '../HalNavigator2/halforms';
 import {labels} from '../../localization';
 
@@ -60,8 +61,8 @@ export const LegalGuardianInputField = (conf: HalFormsInputProps): ReactElement 
                 </button>
             </div>
             {mode === 'existing' ? (
-                <HalFormsMemberId {...userIdProps} renderMode="input"
-                                  prop={{...userIdProps.prop, options: conf.prop.options}}/>
+                <LegalGuardianCandidatePicker {...userIdProps} renderMode="input"
+                                              prop={{...userIdProps.prop, options: conf.prop.options}}/>
             ) : (
                 <>
                     {rowInput('firstName', labels.ui.legalGuardianFirstName, 'text')}

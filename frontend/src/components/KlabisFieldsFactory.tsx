@@ -11,6 +11,7 @@ import {DetailRow} from "./UI";
 import {FormGroupWrapper} from "./FormGroupWrapper";
 import {getFieldLabel} from "../localization";
 import {LegalGuardianInputField} from "./legal-guardians/LegalGuardianInputField";
+import {isLegalGuardianOptionsLink, LegalGuardianCandidatePicker} from "./legal-guardians/LegalGuardianCandidatePicker";
 import {useEventTypes} from "../hooks/useEventTypes";
 import {useMembershipFeeTierOptions} from "../hooks/useMembershipFeeTierOptions";
 
@@ -189,6 +190,9 @@ const memberIdFieldRenderer = (conf: HalFormsInputProps, extraProps?: {excludeId
     // If backend already provides inline options, respect them instead of the member picker
     if (conf.prop.options?.inline) {
         return <HalFormsSelect {...conf} />;
+    }
+    if (isLegalGuardianOptionsLink(conf.prop.options?.link?.href)) {
+        return <LegalGuardianCandidatePicker {...conf}/>;
     }
     // Backend always provides options.link for member-picker fields; trust it as-is.
     return <HalFormsMemberId {...conf} {...extraProps}/>;

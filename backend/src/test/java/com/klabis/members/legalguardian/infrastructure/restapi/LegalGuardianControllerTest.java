@@ -74,7 +74,9 @@ class LegalGuardianControllerTest {
                     .andExpect(jsonPath("$.firstName").value("Petr"))
                     .andExpect(jsonPath("$.email").value("petr@example.com"))
                     .andExpect(jsonPath("$._links.self.href", endsWith("/api/legal-guardians/" + GUARDIAN_ID)))
-                    .andExpect(jsonPath("$._templates.updateLegalGuardian").exists());
+                    .andExpect(jsonPath("$._templates.updateLegalGuardian").exists())
+                    .andExpect(jsonPath("$._templates.updateLegalGuardian.properties[?(@.name=='email')].min").value(org.hamcrest.Matchers.contains(1)))
+                    .andExpect(jsonPath("$._templates.updateLegalGuardian.properties[?(@.name=='phone')].min").value(org.hamcrest.Matchers.contains(1)));
         }
 
         @Test
@@ -126,13 +128,13 @@ class LegalGuardianControllerTest {
 
             mockMvc.perform(patch("/api/legal-guardians/{id}", GUARDIAN_ID)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"phone\":\"+420777888999\"}"))
+                            .content("{\"email\":\"petr@example.com\",\"phone\":\"+420777888999\"}"))
                     .andExpect(status().isNoContent());
 
             ArgumentCaptor<LegalGuardian.UpdateLegalGuardian> captor = ArgumentCaptor.forClass(LegalGuardian.UpdateLegalGuardian.class);
             verify(legalGuardianService).update(eq(GUARDIAN_USER_ID), captor.capture());
             assertThat(captor.getValue().phone()).isEqualTo("+420777888999");
-            assertThat(captor.getValue().email()).isNull();
+            assertThat(captor.getValue().email()).isEqualTo("petr@example.com");
         }
 
         @Test
@@ -141,7 +143,7 @@ class LegalGuardianControllerTest {
         void forbiddenForStranger() throws Exception {
             mockMvc.perform(patch("/api/legal-guardians/{id}", GUARDIAN_ID)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"phone\":\"+420777888999\"}"))
+                            .content("{\"email\":\"petr@example.com\",\"phone\":\"+420777888999\"}"))
                     .andExpect(status().isForbidden());
 
             verifyNoInteractions(legalGuardianService);
@@ -155,6 +157,30 @@ class LegalGuardianControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"email\":\"\"}"))
                     .andExpect(status().isBadRequest());
+        }
+    
+        @Test
+        @DisplayName("returns 400 and saves nothing when e-mail is explicitly null")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void rejectsNullEmail() throws Exception {
+            mockMvc.perform(patch("/api/legal-guardians/{id}", GUARDIAN_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":null,\"firstName\":\"Lenka\",\"lastName\":\"Kratochvílová\",\"phone\":\"+420777888999\"}"))
+                    .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(legalGuardianService);
+        }
+
+        @Test
+        @DisplayName("returns 400 and saves nothing when phone is explicitly null")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void rejectsNullPhone() throws Exception {
+            mockMvc.perform(patch("/api/legal-guardians/{id}", GUARDIAN_ID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"a@b.cz\",\"firstName\":\"Lenka\",\"lastName\":\"Kratochvílová\",\"phone\":null}"))
+                    .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(legalGuardianService);
         }
     }
 }

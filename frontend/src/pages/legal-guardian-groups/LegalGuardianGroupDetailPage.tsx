@@ -1,5 +1,5 @@
-import {type ReactElement, useState} from 'react';
-import {Link} from 'react-router-dom';
+import {type ReactElement, useEffect, useState} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Skeleton} from '../../components/UI';
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
@@ -9,8 +9,13 @@ import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import type {GetLegalGuardianGroupResource, HalResourceLinks} from '../../api';
 import {labels} from '../../localization';
 import {Pencil} from 'lucide-react';
+import {FetchError} from '../../api/authorizedFetch.ts';
+import {useToast} from '../../contexts/toastContext.ts';
 
-const LegalGuardianGroupDetailContent = ({resourceData}: {resourceData: GetLegalGuardianGroupResource}): ReactElement => {
+const LegalGuardianGroupDetailContent = ({resourceData, onEditStarted}: {
+    resourceData: GetLegalGuardianGroupResource;
+    onEditStarted: () => void;
+}): ReactElement => {
     const {route} = useHalPageData<GetLegalGuardianGroupResource>();
     const [editGuardiansOpen, setEditGuardiansOpen] = useState(false);
 
@@ -35,7 +40,10 @@ const LegalGuardianGroupDetailContent = ({resourceData}: {resourceData: GetLegal
                 {setGuardiansTemplate && (
                     <Button
                         variant="primary"
-                        onClick={() => setEditGuardiansOpen(true)}
+                        onClick={() => {
+                            onEditStarted();
+                            setEditGuardiansOpen(true);
+                        }}
                         startIcon={<Pencil className="w-4 h-4"/>}
                     >
                         {labels.templates.setLegalGuardianGroupGuardians}
@@ -51,6 +59,7 @@ const LegalGuardianGroupDetailContent = ({resourceData}: {resourceData: GetLegal
                 <h2 className="text-xl font-bold text-text-primary">{labels.sections.legalGuardianGroupMinors}</h2>
                 <GroupMembersTable
                     emptyMessage={labels.ui.noMinorsInGroup}
+                    linkMembers
                     members={minors.map(minor => ({
                         memberId: minor.memberId ?? '',
                         joinedAt: minor.joinedAt ?? '',
@@ -65,6 +74,7 @@ const LegalGuardianGroupDetailContent = ({resourceData}: {resourceData: GetLegal
                     template={setGuardiansTemplate}
                     templateName="setLegalGuardianGroupGuardians"
                     resourceData={guardiansFormValues}
+                    prefillFromTarget={false}
                     pathname={route.pathname}
                     onClose={() => {
                         setEditGuardiansOpen(false);
@@ -79,6 +89,22 @@ const LegalGuardianGroupDetailContent = ({resourceData}: {resourceData: GetLegal
 
 export const LegalGuardianGroupDetailPage = (): ReactElement => {
     const {resourceData, isLoading, error} = useHalPageData<GetLegalGuardianGroupResource>();
+    const navigate = useNavigate();
+    const {addToast} = useToast();
+    const [guardiansEdited, setGuardiansEdited] = useState(false);
+
+    // Changing guardians may merge this group into an existing one, which deletes it: the refetch then answers 404.
+    const groupGone = guardiansEdited && error instanceof FetchError && error.responseStatus === 404;
+
+    useEffect(() => {
+        if (!groupGone) return;
+        addToast(labels.ui.legalGuardianGroupMerged, 'info');
+        navigate('/legal-guardian-groups', {replace: true});
+    }, [groupGone, addToast, navigate]);
+
+    if (groupGone) {
+        return <Skeleton/>;
+    }
 
     if (isLoading || (!error && !resourceData)) {
         return <Skeleton/>;
@@ -88,5 +114,5 @@ export const LegalGuardianGroupDetailPage = (): ReactElement => {
         return <Alert severity="error">{error.message}</Alert>;
     }
 
-    return <LegalGuardianGroupDetailContent resourceData={resourceData!}/>;
+    return <LegalGuardianGroupDetailContent resourceData={resourceData!} onEditStarted={() => setGuardiansEdited(true)}/>;
 };

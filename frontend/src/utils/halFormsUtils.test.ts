@@ -1,4 +1,4 @@
-import {normalizeKlabisApiPath, shouldFetchTargetData} from './halFormsUtils';
+import {expandUriTemplate, normalizeKlabisApiPath, shouldFetchTargetData} from './halFormsUtils';
 
 describe('normalizeApiPath', () => {
     it('removes /api prefix from path', () => {
@@ -81,5 +81,28 @@ describe('shouldFetchTargetData', () => {
 
     it('handles query parameters - exact match including params should return false', () => {
         expect(shouldFetchTargetData('/members/123?view=edit', '/members/123?view=edit')).toBe(false);
+    });
+});
+
+describe('expandUriTemplate', () => {
+    const template = 'https://localhost:8443/api/legal-guardian-options{?q,kind}';
+
+    it('drops query expression when no variables are given', () => {
+        expect(expandUriTemplate(template)).toBe('https://localhost:8443/api/legal-guardian-options');
+    });
+
+    it('expands provided variables and skips missing ones', () => {
+        expect(expandUriTemplate(template, {q: 'nov á'})).toBe('https://localhost:8443/api/legal-guardian-options?q=nov%20%C3%A1');
+        expect(expandUriTemplate(template, {q: 'a', kind: 'MEMBER'})).toContain('?q=a&kind=MEMBER');
+    });
+
+    it('keeps fixed query parameters outside the template', () => {
+        expect(expandUriTemplate('/api/opts?kind=LEGAL_GUARDIAN{&q}')).toBe('/api/opts?kind=LEGAL_GUARDIAN');
+        expect(expandUriTemplate('/api/opts?kind=LEGAL_GUARDIAN{&q}', {q: 'a'})).toBe('/api/opts?kind=LEGAL_GUARDIAN&q=a');
+        expect(expandUriTemplate('/api/opts?kind=LEGAL_GUARDIAN{?q}')).toBe('/api/opts?kind=LEGAL_GUARDIAN');
+    });
+
+    it('leaves non-templated urls untouched', () => {
+        expect(expandUriTemplate('/api/x?a=1')).toBe('/api/x?a=1');
     });
 });

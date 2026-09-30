@@ -9,8 +9,9 @@ import {klabisFieldsFactory} from '../KlabisFieldsFactory';
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn((_url: string, options?: {select?: (data: unknown) => unknown}) => {
         const data = [
-            {value: 'user-1', prompt: 'Jana Nováková'},
-            {value: 'user-2', prompt: 'Petr Svoboda'},
+            {value: 'user-1', prompt: 'Jana Nováková', kind: 'MEMBER', registrationNumber: 'ZBM9400'},
+            {value: 'user-2', prompt: 'Petr Svoboda', kind: 'LEGAL_GUARDIAN', email: 'petr@example.com'},
+            {value: 'user-3', prompt: 'Jana Nováková', kind: 'LEGAL_GUARDIAN', email: 'jana.n@example.com'},
         ];
         return {data: options?.select ? options.select(data) : data, isLoading: false, error: null};
     }),
@@ -62,6 +63,19 @@ describe('legalGuardians collection in HAL-FORMS (integration)', () => {
         await userEvent.click(screen.getByRole('button', {name: 'Odeslat'}));
 
         await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({legalGuardians: [{userId: 'user-2'}]}));
+    });
+
+    it('shows registration number or e-mail and filters candidates by typed name', async () => {
+        renderForm({legalGuardians: [{}]});
+
+        expect(screen.getByRole('option', {name: 'Jana Nováková (ZBM9400)'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: 'Jana Nováková (jana.n@example.com)'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: 'Petr Svoboda (petr@example.com)'})).toBeInTheDocument();
+
+        await userEvent.type(screen.getByRole('textbox', {name: 'Hledat podle jména'}), 'novakova');
+
+        expect(screen.queryByRole('option', {name: /Petr Svoboda/})).not.toBeInTheDocument();
+        expect(screen.getAllByRole('option', {name: /Jana Nováková/})).toHaveLength(2);
     });
 
     it('creates a new guardian from name, e-mail and phone', async () => {

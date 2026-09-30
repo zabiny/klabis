@@ -1,4 +1,6 @@
 import type {ReactElement} from 'react';
+import {Link} from 'react-router-dom';
+import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {Button, Card} from '../UI';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {MemberNameWithRegNumber} from '../members/MemberNameWithRegNumber.tsx';
@@ -18,9 +20,13 @@ export interface GroupMemberRow {
 interface GroupMembersTableProps {
     members: GroupMemberRow[];
     emptyMessage: string;
+    linkMembers?: boolean;
 }
 
-export const GroupMembersTable = ({members, emptyMessage}: GroupMembersTableProps): ReactElement => {
+const memberHref = (link: HalResourceLinks): string | undefined =>
+    (Array.isArray(link) ? link[0] : link)?.href;
+
+export const GroupMembersTable = ({members, emptyMessage, linkMembers = false}: GroupMembersTableProps): ReactElement => {
     if (members.length === 0) {
         return <p className="text-sm text-text-tertiary">{emptyMessage}</p>;
     }
@@ -40,32 +46,40 @@ export const GroupMembersTable = ({members, emptyMessage}: GroupMembersTableProp
                 </tr>
                 </thead>
                 <tbody>
-                {members.map((member) => (
-                    <tr key={member.memberId}
-                        className="border-b border-border last:border-0 hover:bg-slate-50 dark:hover:bg-zinc-800/50">
-                        <td className="px-4 py-3">
-                            {member.memberLink && (
-                                <HalRouteProvider routeLink={member.memberLink}>
-                                    <MemberNameWithRegNumber/>
-                                </HalRouteProvider>
-                            )}
-                        </td>
-                        <td className="px-4 py-3 text-text-secondary">{formatDate(member.joinedAt)}</td>
-                        <td className="px-4 py-3 text-right">
-                            {member.onRemove && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-red-600"
-                                    aria-label={member.removeAriaLabel}
-                                    onClick={member.onRemove}
-                                >
-                                    <UserMinus className="w-4 h-4"/>
-                                </Button>
-                            )}
-                        </td>
-                    </tr>
-                ))}
+                {members.map((member) => {
+                    const href = member.memberLink ? memberHref(member.memberLink) : undefined;
+                    return (
+                        <tr key={member.memberId}
+                            className="border-b border-border last:border-0 hover:bg-slate-50 dark:hover:bg-zinc-800/50">
+                            <td className="px-4 py-3">
+                                {member.memberLink && (
+                                    <HalRouteProvider routeLink={member.memberLink}>
+                                        {linkMembers && href ? (
+                                            <Link to={extractNavigationPath(href)}
+                                                  className="hover:text-primary hover:underline">
+                                                <MemberNameWithRegNumber/>
+                                            </Link>
+                                        ) : <MemberNameWithRegNumber/>}
+                                    </HalRouteProvider>
+                                )}
+                            </td>
+                            <td className="px-4 py-3 text-text-secondary">{formatDate(member.joinedAt)}</td>
+                            <td className="px-4 py-3 text-right">
+                                {member.onRemove && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-600"
+                                        aria-label={member.removeAriaLabel}
+                                        onClick={member.onRemove}
+                                    >
+                                        <UserMinus className="w-4 h-4"/>
+                                    </Button>
+                                )}
+                            </td>
+                        </tr>
+                    );
+                })}
                 </tbody>
             </table>
         </Card>

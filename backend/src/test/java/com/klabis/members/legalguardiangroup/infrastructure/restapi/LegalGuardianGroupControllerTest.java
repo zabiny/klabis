@@ -30,6 +30,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -76,11 +78,17 @@ class LegalGuardianGroupControllerTest {
         void listsGroups() throws Exception {
             when(legalGuardianGroupService.listGroups())
                     .thenReturn(List.of(groupOfMinor(GROUP_UUID, "Novák", GUARDIAN_ID, MINOR_ID)));
+            when(legalGuardianGroupService.listGuardiansOf(anyCollection()))
+                    .thenReturn(Map.of(new LegalGuardianGroupId(GROUP_UUID), List.of(
+                            new GuardianContact(new UserId(UUID.fromString(GUARDIAN_ID)), "Petr", "Novák",
+                                    "petr@example.com", "+420123456789", GuardianKind.LEGAL_GUARDIAN))));
 
             mockMvc.perform(get("/api/legal-guardian-groups").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.legalGuardianGroupSummaryResponseList[0].name").value("Novák"))
                     .andExpect(jsonPath("$._embedded.legalGuardianGroupSummaryResponseList[0].minorCount").value(1))
+                    .andExpect(jsonPath("$._embedded.legalGuardianGroupSummaryResponseList[0].guardians[0].firstName").value("Petr"))
+                    .andExpect(jsonPath("$._embedded.legalGuardianGroupSummaryResponseList[0].guardians[0].lastName").value("Novák"))
                     .andExpect(jsonPath("$._embedded.legalGuardianGroupSummaryResponseList[0]._links.self.href")
                             .value(containsString("/api/legal-guardian-groups/" + GROUP_UUID)))
                     .andExpect(jsonPath("$._templates").doesNotExist());

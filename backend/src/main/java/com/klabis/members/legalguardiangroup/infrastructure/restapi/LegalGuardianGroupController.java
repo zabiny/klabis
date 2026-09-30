@@ -52,8 +52,12 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
     public ResponseEntity<List<LegalGuardianGroupSummaryResponse>> listLegalGuardianGroups() {
         List<LegalGuardianGroup> groups = legalGuardianGroupService.listGroups();
 
+        Map<LegalGuardianGroupId, List<GuardianContact>> guardians = legalGuardianGroupService.listGuardiansOf(groups);
+
         HalResponseContext.setDomainList(groups);
-        return ResponseEntity.ok(groups.stream().map(this::toSummaryResponse).toList());
+        return ResponseEntity.ok(groups.stream()
+                .map(group -> toSummaryResponse(group, guardians.getOrDefault(group.getId(), List.of())))
+                .toList());
     }
 
     // The LegalGuardianGroupResponse record is generated, but its minors array is
@@ -110,10 +114,17 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
                 .build();
     }
 
-    private LegalGuardianGroupSummaryResponse toSummaryResponse(LegalGuardianGroup group) {
+    private LegalGuardianGroupSummaryResponse toSummaryResponse(LegalGuardianGroup group, List<GuardianContact> contacts) {
         return LegalGuardianGroupSummaryResponseBuilder.builder()
                 .id(group.getId().uuid())
                 .name(group.getName())
+                .guardians(contacts.stream()
+                        .map(contact -> LegalGuardianGroupSummaryGuardianBuilder.builder()
+                                .userId(contact.userId().uuid())
+                                .firstName(contact.firstName())
+                                .lastName(contact.lastName())
+                                .build())
+                        .toList())
                 .minorCount(group.getMinors().size())
                 .build();
     }

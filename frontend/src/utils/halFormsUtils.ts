@@ -84,3 +84,16 @@ export function shouldFetchTargetData(
     // If normalized paths are the same, no need to fetch
     return normalizedTarget !== normalizedCurrent;
 }
+
+export function expandUriTemplate(template: string, variables: Record<string, string | undefined> = {}): string {
+    return template.replace(/\{([?&]?)([^}]*)\}/g, (_match, operator: string, names: string) => {
+        const given = names.split(',')
+            .map(name => name.trim())
+            .filter(name => variables[name] !== undefined && variables[name] !== '');
+        if (!operator) {
+            return given.map(name => encodeURIComponent(variables[name] as string)).join(',');
+        }
+        const pairs = given.map(name => `${name}=${encodeURIComponent(variables[name] as string)}`);
+        return pairs.length ? (operator === '?' ? '?' : '&') + pairs.join('&') : '';
+    });
+}
