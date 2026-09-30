@@ -1,5 +1,9 @@
 # Test Runner Agent Memory
 
+- [Frontend test hang (2026-09-30) MemberRegistration.integration.test.tsx](frontend_test_hang_2026_09_30.md) — hangs on execution, no test names printed
+- [Frontend test run (2026-09-30) legal-guardians-refactor](frontend_test_run_2026_09_30.md) — 2124/2124 passed
+- [Backend test run (2026-09-30) full suite](backend_test_run_2026_09_30_full_suite.md) — 3936/3936 passed with SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true
+- [Backend test run (2026-09-30) legal-guardians-refactor](backend_test_run_2026_09_30_legal_guardians.md) — 3927/3927 passed with SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true
 - [Backend test run (2026-09-26) full rerun verify](backend_test_run_2026_09_26_full_rerun_verify.md) — 3780/3780 passed, 14 skipped with --rerun-tasks + SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true
 - [Frontend test run (2026-09-26) full final rerun](frontend_test_run_2026_09_26_full_final_rerun.md) — 2058/2058 passed; build succeeded 9.44s Vite run
 - [Frontend test run (2026-09-26) reviewchanges two files](frontend_test_run_2026_09_26_reviewchanges.md) — 92/92 passed (MemberDetailPage.test.tsx 56/56, MembersPage.test.tsx 36/36)
