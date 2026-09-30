@@ -46,7 +46,7 @@ The system SHALL include a "Finance" entry in the main menu for every authentica
 
 ### Requirement: Desktop Sidebar Splits Menu Into Main and Administrative Sections
 
-On desktop devices, the system SHALL present the main menu as two separately-labelled sections: a main section containing everyday destinations, and an administrative section containing management destinations. The administrative section groups items such as training groups, category presets, family groups, and membership fees.
+On desktop devices, the system SHALL present the main menu as two separately-labelled sections: a main section containing everyday destinations, and an administrative section containing management destinations. The administrative section groups items such as training groups, category presets, legal guardians ("Zákonní zástupci"), and membership fees.
 
 #### Scenario: Manager sees the Administrace section with all authorized admin items
 
@@ -81,7 +81,7 @@ On mobile devices, the system SHALL render a bottom navigation bar containing on
 
 - **WHEN** a user with administrative authorizations uses the application on a mobile device
 - **THEN** the bottom navigation bar shows the everyday destinations (home, calendar, events, members, groups)
-- **AND** administrative destinations (training groups, category presets, family groups) are not shown in the bottom navigation
+- **AND** administrative destinations (training groups, category presets, legal guardians) are not shown in the bottom navigation
 
 #### Scenario: Regular member on a mobile device sees the same bottom nav as a manager
 
@@ -90,7 +90,7 @@ On mobile devices, the system SHALL render a bottom navigation bar containing on
 
 ### Requirement: Administrative Pages Are Currently Reachable Only on Desktop
 
-The system SHALL acknowledge that administrative pages (training groups, category presets, family groups) are reachable only through the desktop sidebar. A mobile user — even one with administrative authorizations — SHALL NOT have a navigation affordance to these pages in the current release. This is an explicit, documented gap intended to be closed by a future change.
+The system SHALL acknowledge that administrative pages (training groups, category presets, legal guardians) are reachable only through the desktop sidebar. A mobile user — even one with administrative authorizations — SHALL NOT have a navigation affordance to these pages in the current release. This is an explicit, documented gap intended to be closed by a future change.
 
 #### Scenario: Manager on mobile cannot navigate to an admin page through the menu
 
@@ -159,4 +159,23 @@ The system SHALL include a single "Členské příspěvky" entry in the Administ
 
 - **WHEN** a member without membership administration authorization views the main menu
 - **THEN** the "Členské příspěvky" entry is not shown
+
+### Requirement: Home Page Offers The User's Own Profile
+
+The system SHALL offer a "Můj profil" entry on the home page to every logged-in user who has a profile: a club member is taken to their member detail, a non-member legal guardian to their legal guardian profile. Users without either profile do not see the entry.
+
+#### Scenario: Member opens own profile from the home page
+
+- **WHEN** a logged-in member clicks "Můj profil" on the home page
+- **THEN** their member detail opens
+
+#### Scenario: Non-member guardian opens own profile from the home page
+
+- **WHEN** a logged-in non-member legal guardian clicks "Můj profil" on the home page
+- **THEN** their legal guardian profile opens
+
+#### Scenario: User without a profile does not see the entry
+
+- **WHEN** the bootstrap administrator without a member or guardian profile opens the home page
+- **THEN** no "Můj profil" entry is shown
 

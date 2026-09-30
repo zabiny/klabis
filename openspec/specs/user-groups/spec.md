@@ -3,27 +3,23 @@
 ## Purpose
 
 Defines the behavior of user groups in the system. Supports three group types: Training Groups (age-based assignment), Family Groups (parent-child linking), and Free Groups (user-managed invitation-based groups).
-
 ## Requirements
-
 ### Requirement: Group Types
 
-The system SHALL provide three distinct group types with separate creation flows and access rules.
+The system SHALL provide two distinct group types with separate creation flows and access rules: training groups and free groups. Legal guardian groups, which replace family groups, are described in the legal-guardians capability and are not created from the group management pages.
 
-Creating any of the three group types SHALL succeed end-to-end through the user interface — selecting the create action, filling in the required fields, and submitting the form SHALL persist the group and add the creating user as the appropriate owner role for that group type.
+Creating either of the two group types SHALL succeed end-to-end through the user interface — selecting the create action, filling in the required fields, and submitting the form SHALL persist the group and add the creating user as the appropriate owner role for that group type.
 
 #### Scenario: Each group type has distinct creation access
 
 - **WHEN** users access the group management features
 - **THEN** Training groups are created from a separate, restricted page accessible only to users with the GROUPS:TRAINING authority
-- **AND** Family groups are created from the user management area accessible only to administrators
 - **AND** Free groups are created by any authenticated member from the general group management page
 
 #### Scenario: Each group type has distinct membership rules
 
 - **WHEN** users join groups
 - **THEN** Training groups have member assignment based on age fitting within the configured age range
-- **AND** Family groups have member assignment limited to administrators or family owners
 - **AND** Free groups have membership controlled exclusively through an invitation system: owners send invitations, invitees accept or reject them, and direct member addition is not permitted
 
 #### Scenario: Member successfully creates a free group through the UI
@@ -33,14 +29,6 @@ Creating any of the three group types SHALL succeed end-to-end through the user 
 - **THEN** the request succeeds without an error message
 - **AND** the new free group appears in the member's "My groups" list
 - **AND** the member is the owner of the new group
-
-#### Scenario: Administrator successfully creates a family group through the UI
-
-- **GIVEN** an authenticated administrator is on the family groups management page
-- **WHEN** the administrator opens the "Create family group" dialog, fills in a non-empty name, and submits the form
-- **THEN** the request succeeds without an error message
-- **AND** the new family group appears in the family groups list
-- **AND** the administrator (or the designated parent) is recorded as the owner of the new group
 
 #### Scenario: Authorized user successfully creates a training group through the UI
 
@@ -52,7 +40,7 @@ Creating any of the three group types SHALL succeed end-to-end through the user 
 
 ### Requirement: Group Owner Management
 
-The system SHALL require every group to have at least one owner. For training groups, owners are referred to as "trainers" in the user interface. Trainers can be managed by users with GROUPS:TRAINING permission, and trainers need not be current members of the training group. For family groups, owners are called "parents"; a parent MAY be any user of the system and need not be a club member. Family group management (adding/removing parents and children) is exclusively controlled by users with MEMBERS:MANAGE permission — parents themselves have no management capabilities over the group. For free groups, owners manage other owners directly, but only current group members may be promoted to owner.
+The system SHALL require every group to have at least one owner. For training groups, owners are referred to as "trainers" in the user interface. Trainers can be managed by users with GROUPS:TRAINING permission, and trainers need not be current members of the training group. For free groups, owners manage other owners directly, but only current group members may be promoted to owner.
 
 #### Scenario: User with GROUPS:TRAINING permission adds a trainer to a training group
 
@@ -70,36 +58,6 @@ The system SHALL require every group to have at least one owner. For training gr
 - **WHEN** user attempts to remove the sole remaining trainer from a training group
 - **THEN** the system rejects the action
 - **AND** displays a message requiring the user to designate a successor first
-
-#### Scenario: Admin adds a parent to a family group
-
-- **WHEN** user with MEMBERS:MANAGE permission adds a user as parent to a family group
-- **THEN** the new user receives parent privileges for the group
-- **AND** the new user is automatically added as a member of the group
-
-#### Scenario: Admin adds a parent who is not a club member
-
-- **WHEN** user with MEMBERS:MANAGE permission adds as parent a user who has no member profile
-- **THEN** the user receives parent privileges for the group
-- **AND** the user is listed among the parents of the group
-
-#### Scenario: Admin removes a parent from a family group
-
-- **WHEN** user with MEMBERS:MANAGE permission removes a parent from a family group
-- **THEN** the removed parent loses parent privileges
-- **AND** the removed parent is removed from the group entirely
-
-#### Scenario: Admin attempts to remove the last parent from a family group
-
-- **WHEN** user with MEMBERS:MANAGE permission attempts to remove the sole remaining parent
-- **THEN** the system rejects the action
-- **AND** displays a message requiring the user to designate a successor first
-
-#### Scenario: Parent cannot manage family group
-
-- **WHEN** a family group parent who does not have MEMBERS:MANAGE permission views the family group
-- **THEN** the system does NOT display actions for adding or removing parents
-- **AND** the system does NOT display actions for adding or removing children
 
 #### Scenario: Owner adds an existing member as co-owner of a free group
 
@@ -122,15 +80,21 @@ The system SHALL warn when deactivating a member who is the last owner of any gr
 - **THEN** the system displays a warning that the member is the last trainer
 - **AND** requires the admin to designate a successor trainer before proceeding
 
-#### Scenario: Deactivating last owner of a family or free group
+#### Scenario: Deactivating last owner of a free group
 
-- **WHEN** admin initiates suspension of a member who is the sole owner of a family or free group
+- **WHEN** admin initiates suspension of a member who is the sole owner of a free group
 - **THEN** the system displays a warning with options to either designate a successor or dissolve the group
 - **AND** the admin must choose one option before the suspension proceeds
 
+#### Scenario: Deactivating the sole legal guardian of a minor
+
+- **WHEN** admin initiates suspension of a member who is the sole legal guardian of one or more minors
+- **THEN** the system displays a warning listing the affected legal guardian groups
+- **AND** the suspension does not proceed until the affected minors have another legal guardian
+
 ### Requirement: Group Editing
 
-The system SHALL allow editing of group properties. For training groups, a single edit operation updates name, age range, and trainers — all fields are optional (only provided fields are changed). For family and free groups, only the name can be edited by group owners.
+The system SHALL allow editing of group properties. For training groups, a single edit operation updates name, age range, and trainers — all fields are optional (only provided fields are changed). For free groups, only the name can be edited by group owners.
 
 #### Scenario: User with GROUPS:TRAINING permission edits training group name
 
@@ -168,14 +132,14 @@ The system SHALL allow editing of group properties. For training groups, a singl
 - **AND** the age range validation fails
 - **THEN** the system rejects the entire change including the name update
 
-#### Scenario: Owner edits free or family group name
+#### Scenario: Owner edits free group name
 
-- **WHEN** group owner changes the name of a free or family group
+- **WHEN** group owner changes the name of a free group
 - **THEN** the system updates the name immediately
 
 ### Requirement: Group Deletion
 
-The system SHALL allow group deletion. Training group deletion requires GROUPS:TRAINING permission. Family group deletion requires MEMBERS:MANAGE permission. Free group deletion requires group ownership.
+The system SHALL allow group deletion. Training group deletion requires GROUPS:TRAINING permission. Free group deletion requires group ownership.
 
 #### Scenario: User with GROUPS:TRAINING permission deletes a training group
 
@@ -188,11 +152,6 @@ The system SHALL allow group deletion. Training group deletion requires GROUPS:T
 - **WHEN** free group owner confirms group deletion
 - **THEN** the system removes the group and all memberships
 - **AND** pending invitations are cancelled
-
-#### Scenario: Authorized user deletes a family group
-
-- **WHEN** user with MEMBERS:MANAGE permission confirms family group deletion
-- **THEN** the system removes the group and all memberships
 
 ### Requirement: Create Free Group
 
@@ -545,102 +504,6 @@ The system SHALL display the member's training group information on their profil
 - **WHEN** member who does not belong to any training group views their profile page
 - **THEN** the training group section is not displayed or shows "not assigned"
 
-### Requirement: Create Family Group
-
-The system SHALL allow users with MEMBERS:MANAGE permission to create family groups from the members list page. A family group links one designated parent with their children. The designated parent MAY be any user of the system and need not be a club member. Exactly one parent SHALL be designated at creation time. No additional children are added during creation; children can be added afterwards from the family group detail page. The creating user does not automatically become a parent.
-
-#### Scenario: User creates a family group with a single parent
-
-- **WHEN** user with MEMBERS:MANAGE permission initiates family group creation
-- **AND** fills in the group name and selects exactly one user as the parent
-- **THEN** the system creates the family group with the selected user as the sole parent
-- **AND** the parent is automatically included as a member of the group
-- **AND** the system opens the family group detail page so further children can be added
-
-#### Scenario: User creates a family group with a parent who is not a club member
-
-- **WHEN** user with MEMBERS:MANAGE permission creates a family group designating a user without member profile as the parent
-- **THEN** the system creates the family group with that user as the sole parent
-
-#### Scenario: User attempts to create a family group without designating a parent
-
-- **WHEN** user with MEMBERS:MANAGE permission attempts to create a family group without selecting a parent
-- **THEN** the system rejects the creation
-- **AND** displays an error indicating a parent is required
-
-#### Scenario: Designated parent is already in another family group
-
-- **WHEN** user attempts to designate as parent a user who already belongs to a family group
-- **THEN** the system rejects the creation
-- **AND** displays an error indicating the user is already in a family group
-
-### Requirement: Exclusive Family Group Membership
-
-The system SHALL enforce that each user (parent) and each member (child) belongs to at most one family group at any time.
-
-#### Scenario: User attempts to add member to a second family group
-
-- **WHEN** user tries to add a member as child or a user as parent who already has a family group
-- **THEN** the system rejects the action with an error indicating existing family group membership
-
-### Requirement: Family Group Info on Member Profile
-
-The system SHALL display the member's family group information on their profile page for members assigned to a family group.
-
-#### Scenario: Member views their family group on profile
-
-- **WHEN** member who belongs to a family group views their profile page
-- **THEN** the system displays the family group name
-
-#### Scenario: Member without family group views profile
-
-- **WHEN** member who does not belong to any family group views their profile page
-- **THEN** the family group section is not displayed
-
-### Requirement: Parent and Child Roles Are Exclusive Within a Family Group
-
-The system SHALL ensure that a person holds at most one role within any single family group. A parent of a family group SHALL NOT simultaneously be a child of the same family group, and vice versa.
-
-#### Scenario: Admin cannot add existing parent as a child of the same family group
-
-- **WHEN** user with MEMBERS:MANAGE permission attempts to add a member as a child of a family group
-- **AND** the member is already a parent of that same family group
-- **THEN** the system rejects the action
-- **AND** displays an error indicating the member is already a parent of this family group
-
-#### Scenario: Admin cannot add existing child as a parent of the same family group by creating a duplicate membership
-
-- **WHEN** user with MEMBERS:MANAGE permission promotes an existing child to parent of the same family group
-- **THEN** the system updates the member's role in place so they become the parent
-- **AND** the member is not listed twice in the group
-
-### Requirement: Add and Remove Child Members of a Family Group
-
-The system SHALL allow users with MEMBERS:MANAGE permission to add and remove non-parent (child) members of an existing family group from the family group detail page.
-
-#### Scenario: Admin adds a child to a family group
-
-- **WHEN** user with MEMBERS:MANAGE permission adds a member as a child to a family group
-- **AND** the member is not already in any family group
-- **THEN** the member is added as a non-parent member of the family group
-
-#### Scenario: Admin cannot add a child who already belongs to another family group
-
-- **WHEN** user with MEMBERS:MANAGE permission attempts to add a member as a child to a family group
-- **AND** the member already belongs to a different family group
-- **THEN** the system rejects the action
-- **AND** displays an error indicating the member is already in a family group
-
-#### Scenario: Admin removes a child from a family group
-
-- **WHEN** user with MEMBERS:MANAGE permission removes a child from a family group
-- **THEN** the child is removed from the group entirely
-
-#### Scenario: Child add and remove actions require MEMBERS:MANAGE
-
-- **WHEN** a user without MEMBERS:MANAGE permission views a family group detail page
-- **THEN** the system does NOT display add-child or remove-child actions
-
 ### Requirement: Manual Training Group Trainee Exclusivity
 
 The system SHALL reject manual assignment of a member as a trainee to a training group when the member is already a trainee of another training group. This rule applies only to the manual "add member" action; the automatic age-based assignment path retains its existing move-on-conflict behavior. Members who act as trainers are exempt: a club member MAY serve as a trainer in multiple training groups simultaneously.
@@ -683,12 +546,7 @@ For any group type that uses an invitation-based membership flow (today: free gr
 
 ### Requirement: Member-Picker Dialogs Hide Existing Members
 
-The system SHALL hide members who are already in the target group from the candidate list in every dialog that selects a member to add to a group, regardless of group type (family, training, or free). This includes dialogs for adding owners, parents, children, trainees, and trainers.
-
-#### Scenario: Family group "add member" dialog excludes current members and parents
-
-- **WHEN** user with MEMBERS:MANAGE permission opens the "add member" dialog on a family group detail page
-- **THEN** the member picker does NOT list members who are already parents or children of that family group
+The system SHALL hide members who are already in the target group from the candidate list in every dialog that selects a member to add to a group, regardless of group type (training or free). This includes dialogs for adding owners, trainees, and trainers.
 
 #### Scenario: Training group "add trainee" dialog excludes current trainees
 
@@ -716,42 +574,3 @@ The system SHALL allow any member of a training group to view the detail page of
 - **WHEN** a user who is not a member, trainer, or GROUPS:TRAINING permission holder attempts to access a training group detail
 - **THEN** the system denies access
 
-### Requirement: Family Group Detail Access for Members
-
-The system SHALL allow any member of a family group, including parents without a member profile, to view the detail page of that family group.
-
-#### Scenario: Family group member views group detail
-
-- **WHEN** a member who belongs to a family group clicks the group navigation button on their profile page
-- **THEN** the system displays the family group detail
-- **AND** does NOT return an access denied error
-
-#### Scenario: Parent without member profile views group detail
-
-- **WHEN** a parent of a family group who has no member profile requests the family group detail
-- **THEN** the system displays the family group detail
-- **AND** does NOT return an access denied error
-
-#### Scenario: User who is not a member of a family group cannot access its detail
-
-- **WHEN** a user who is not a member, parent, or MEMBERS:MANAGE permission holder attempts to access a family group detail
-- **THEN** the system denies access
-
-#### Scenario: Parents are listed without a link to a member profile
-
-- **WHEN** the family group detail is displayed
-- **THEN** each parent is listed by user identifier without a link to a member profile
-
-### Requirement: Family Groups Navigation Visibility
-
-The system SHALL display the "Family Groups" navigation item in the Administration section only to users with MEMBERS:MANAGE permission.
-
-#### Scenario: User with MEMBERS:MANAGE sees family groups navigation item
-
-- **WHEN** a user with MEMBERS:MANAGE permission views the application navigation
-- **THEN** the "Rodinné skupiny" item is visible in the Administration section
-
-#### Scenario: User without MEMBERS:MANAGE does not see family groups navigation item
-
-- **WHEN** a user without MEMBERS:MANAGE permission views the application navigation
-- **THEN** the "Rodinné skupiny" item is NOT visible in the Administration section
