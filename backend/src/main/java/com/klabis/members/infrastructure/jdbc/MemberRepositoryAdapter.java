@@ -107,7 +107,7 @@ class MemberRepositoryAdapter implements MemberRepository {
     @Override
     public List<Member> findAll(MemberFilter filter) {
         List<UUID> fulltextIds = resolveFulltextIds(filter);
-        if (fulltextIds != null && fulltextIds.isEmpty()) {
+        if (matchesNobody(filter, fulltextIds)) {
             return List.of();
         }
 
@@ -121,7 +121,7 @@ class MemberRepositoryAdapter implements MemberRepository {
     @Override
     public Page<Member> findAll(MemberFilter filter, Pageable pageable) {
         List<UUID> fulltextIds = resolveFulltextIds(filter);
-        if (fulltextIds != null && fulltextIds.isEmpty()) {
+        if (matchesNobody(filter, fulltextIds)) {
             return new PageImpl<>(List.of(), pageable, 0);
         }
 
@@ -136,6 +136,11 @@ class MemberRepositoryAdapter implements MemberRepository {
         long total = pageable.isUnpaged() ? results.size() : jdbcAggregateTemplate.count(criteriaQuery, MemberMemento.class);
 
         return new PageImpl<>(results, pageable, total);
+    }
+
+    private static boolean matchesNobody(MemberFilter filter, List<UUID> fulltextIds) {
+        return (fulltextIds != null && fulltextIds.isEmpty())
+                || (filter.bornOn() != null && filter.bornOn().isEmpty());
     }
 
     /**
@@ -162,6 +167,10 @@ class MemberRepositoryAdapter implements MemberRepository {
 
         if (filter.incompleteOnly()) {
             conditions.add(Criteria.where("dataIncomplete").isTrue());
+        }
+
+        if (filter.bornOn() != null) {
+            conditions.add(Criteria.where("dateOfBirth").in(filter.bornOn()));
         }
 
         if (conditions.isEmpty()) {

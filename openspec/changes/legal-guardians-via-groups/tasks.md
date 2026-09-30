@@ -44,8 +44,8 @@
 
 ## 6. Iterace: dovršení 18 let
 
-- [ ] 6.1 Testy (red) a implementace `MinorAgeOutJob` (denně): členové s 18. narozeninami dnes → přepočet a uložení `data_incomplete`, publikace `MinorAgedOutEvent`
-- [ ] 6.2 Testy (red) a implementace listeneru v `legalguardiangroup`: odebrání dítěte, smazání skupiny bez dětí, idempotence
+- [x] 6.1 Testy (red) a implementace `MinorAgeOutJob` (denně): členové s 18. narozeninami dnes → přepočet a uložení `data_incomplete`, publikace `MinorAgedOutEvent`
+- [x] 6.2 Testy (red) a implementace listeneru v `legalguardiangroup`: odebrání dítěte, smazání skupiny bez dětí, idempotence
 
 ## 7. Example data a dokončení
 
