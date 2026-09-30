@@ -27,14 +27,14 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
               AND (
                 EXISTS (
                     SELECT 1 FROM groups.user_group_owners ugo
-                    WHERE ugo.user_group_id = ug.id AND ugo.owner_id = :memberId
+                    WHERE ugo.user_group_id = ug.id AND ugo.owner_id = :participantId
                 ) OR EXISTS (
                     SELECT 1 FROM groups.user_group_members ugm
-                    WHERE ugm.user_group_id = ug.id AND ugm.member_id = :memberId
+                    WHERE ugm.user_group_id = ug.id AND ugm.member_id = :participantId
                 )
               )
             """)
-    List<GroupMemento> findOwnersOrMembersByType(@Param("memberId") UUID memberId, @Param("type") String type);
+    List<GroupMemento> findOwnersOrMembersByType(@Param("participantId") UUID participantId, @Param("type") String type);
 
     @Query("""
             SELECT DISTINCT ug.* FROM groups.user_groups ug
@@ -51,15 +51,15 @@ public interface GroupJdbcRepository extends CrudRepository<GroupMemento, UUID> 
               AND (
                 EXISTS (
                     SELECT 1 FROM groups.user_group_owners ugo
-                    WHERE ugo.user_group_id = ug.id AND ugo.owner_id = :memberId
+                    WHERE ugo.user_group_id = ug.id AND ugo.owner_id = :participantId
                 ) OR EXISTS (
                     SELECT 1 FROM groups.user_group_members ugm
-                    WHERE ugm.user_group_id = ug.id AND ugm.member_id = :memberId
+                    WHERE ugm.user_group_id = ug.id AND ugm.member_id = :participantId
                 )
               )
             LIMIT 2
             """)
-    List<GroupMemento> findFirst2OwnersOrMembersByType(@Param("memberId") UUID memberId, @Param("type") String type);
+    List<GroupMemento> findFirst2OwnersOrMembersByType(@Param("participantId") UUID participantId, @Param("type") String type);
 
     @Query("""
             SELECT DISTINCT ug.* FROM groups.user_groups ug

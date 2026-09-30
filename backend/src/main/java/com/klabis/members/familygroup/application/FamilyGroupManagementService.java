@@ -24,7 +24,7 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
     @Transactional
     @Override
     public FamilyGroup createFamilyGroup(FamilyGroup.CreateFamilyGroup command) {
-        validateNoExistingFamilyGroup(command.parent());
+        validateNotInOtherFamilyGroup(command.parent(), null);
         FamilyGroup group = FamilyGroup.create(command);
         return familyGroupRepository.save(group);
     }
@@ -51,8 +51,8 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
     @Transactional
     @Override
     public void addParent(FamilyGroupId id, UserId parent) {
-        validateNoExistingFamilyGroup(parent);
         FamilyGroup group = loadGroup(id);
+        validateNotInOtherFamilyGroup(parent, id);
         group.addParent(parent);
         familyGroupRepository.save(group);
     }
@@ -68,8 +68,8 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
     @Transactional
     @Override
     public void addChild(FamilyGroupId id, MemberId child) {
-        validateNoExistingFamilyGroup(child.toUserId());
         FamilyGroup group = loadGroup(id);
+        validateNotInOtherFamilyGroup(child.toUserId(), id);
         group.addChild(child);
         familyGroupRepository.save(group);
     }
@@ -87,9 +87,12 @@ class FamilyGroupManagementService implements FamilyGroupManagementPort {
                 .orElseThrow(() -> new GroupNotFoundException("Family", id));
     }
 
-    private void validateNoExistingFamilyGroup(UserId userId) {
-        familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(userId)).ifPresent(existing -> {
-            throw new MemberAlreadyInFamilyGroupException(userId);
-        });
+    // Membership within the target group itself is left to the aggregate, which promotes a child to parent in place.
+    private void validateNotInOtherFamilyGroup(UserId userId, FamilyGroupId targetGroup) {
+        familyGroupRepository.findOne(FamilyGroupFilter.all().withMemberOrParentIs(userId))
+                .filter(existing -> !existing.getId().equals(targetGroup))
+                .ifPresent(existing -> {
+                    throw new MemberAlreadyInFamilyGroupException(userId);
+                });
     }
 }

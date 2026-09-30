@@ -1,6 +1,7 @@
 import type {ReactElement} from 'react';
 import {Button, DetailRow} from '../UI';
 import {UserMinus} from 'lucide-react';
+import {labels} from '../../localization';
 
 interface UserIdRowWithRemoveProps {
     userId: string;
@@ -16,7 +17,10 @@ interface UserIdRowWithRemoveProps {
 export const UserIdRowWithRemove = ({userId, removeAriaLabel, onRemove}: UserIdRowWithRemoveProps): ReactElement => (
     <DetailRow label="">
         <div className="flex items-center justify-between w-full gap-3">
-            <span className="font-mono text-text-primary break-all">{userId}</span>
+            <span className="font-mono text-text-primary break-all">
+                <span className="sr-only">{labels.fields.userId}: </span>
+                {userId}
+            </span>
             {onRemove && (
                 <Button
                     variant="ghost"
