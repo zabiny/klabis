@@ -37,7 +37,7 @@ const navIcons: Record<string, LucideIcon> = {
     members: Users,
     groups: UsersRound,
     'training-groups': Dumbbell,
-    'family-groups': Heart,
+    legalGuardianGroups: Heart,
     'category-presets': Tags,
     'event-types': ListChecks,
     disciplines: BookOpen,

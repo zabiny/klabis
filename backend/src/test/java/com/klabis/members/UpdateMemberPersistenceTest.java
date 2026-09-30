@@ -2,7 +2,7 @@ package com.klabis.members;
 
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
-import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ class UpdateMemberPersistenceTest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private FamilyGroupRepository familyGroupRepository;
+    private LegalGuardianGroupRepository legalGuardianGroupRepository;
 
     @Autowired
     private MockMvc mockMvc;

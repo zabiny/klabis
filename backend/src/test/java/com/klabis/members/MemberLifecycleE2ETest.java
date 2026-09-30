@@ -6,7 +6,7 @@ import com.klabis.common.email.EmailProperties;
 import com.klabis.common.email.EmailService;
 import com.klabis.common.email.LoggingEmailService;
 import com.klabis.common.users.Authority;
-import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -91,7 +91,7 @@ class MemberLifecycleE2ETest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private FamilyGroupRepository familyGroupRepository;
+    private LegalGuardianGroupRepository legalGuardianGroupRepository;
 
     @Autowired
     private MockMvc mockMvc;

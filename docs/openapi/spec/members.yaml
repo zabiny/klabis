@@ -1,8 +1,8 @@
 # Members module — the API surface of MemberController plus registerMember (RegistrationController),
 # which is exposed as an affordance on the member collection.
 #
-# Family groups (FamilyGroupController, /api/family-groups) belong to the members module too: the
-# members module owns the parent/child relation (e.g. suspension blockers), so their API lives here.
+# Legal guardian groups (LegalGuardianGroupController, /api/legal-guardian-groups) belong to the members module too: the
+# members module owns the guardian/minor relation (e.g. suspension blockers), so their API lives here.
 #
 # Endpoints living under /api/members/{memberId}/... that belong to other modules
 # (finance accounts, fee choices, fee summaries) are NOT part of this file.
@@ -258,8 +258,8 @@ paths:
               description: Member's finance account (requires FINANCE:MANAGE or ownership)
             feeSummary:
               description: Membership fee summary for the current year
-            familyGroup:
-              description: Family group the member belongs to, when there is one
+            legalGuardianGroup:
+              description: Legal guardian group of a minor member, present only for callers with MEMBERS:MANAGE
             trainingGroup:
               description: Training group the member belongs to, when there is one
             ical-token:
@@ -419,33 +419,32 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   # ---------------------------------------------------------------------------------------------
-  # FamilyGroups (FamilyGroupController, /api/family-groups) — 8 operations
+  # LegalGuardianGroups (LegalGuardianGroupController, /api/legal-guardian-groups)
+  # Groups are created, merged and removed automatically as the guardians of minors change, so
+  # there is no create/delete endpoint.
   # ---------------------------------------------------------------------------------------------
 
-  /api/family-groups:
+  /api/legal-guardian-groups:
     get:
-      operationId: listFamilyGroups
-      tags: [FamilyGroups]
-      summary: List all family groups
-      description: Returns all family groups. Requires MEMBERS:MANAGE.
+      operationId: listLegalGuardianGroups
+      tags: [LegalGuardianGroups]
+      summary: List all legal guardian groups
+      description: Returns all legal guardian groups. Requires MEMBERS:MANAGE.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       responses:
         '200':
-          description: List of family groups retrieved successfully
+          description: List of legal guardian groups retrieved successfully
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/FamilyGroupSummaryResponse'
+                  $ref: '#/components/schemas/LegalGuardianGroupSummaryResponse'
           x-hal-links:
             self:
               description: This collection
-          x-hal-templates:
-            createFamilyGroup:
-              operation: createFamilyGroup
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -459,77 +458,35 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
-    post:
-      operationId: createFamilyGroup
-      tags: [FamilyGroups]
-      summary: Create a family group
+  /api/legal-guardian-groups/{id}:
+    get:
+      operationId: getLegalGuardianGroup
+      tags: [LegalGuardianGroups]
+      summary: Get legal guardian group details
       description: |
-        Creates a new family group with a single parent. The parent is any user of the system and
-        need not be a club member. Requires MEMBERS:MANAGE.
+        Returns legal guardian group details including its guardians and minors with their own
+        hypermedia links. Requires MEMBERS:MANAGE.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
-      requestBody:
-        required: true
-        x-codegen-request-body-name: request
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateFamilyGroupRequest'
-      responses:
-        '201':
-          description: Family group created
-          headers:
-            Location:
-              description: URI of the created family group
-              schema:
-                type: string
-                format: uri
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/family-groups/{id}:
-    get:
-      operationId: getFamilyGroup
-      tags: [FamilyGroups]
-      summary: Get family group details
-      # Imperative check in FamilyGroupController.getFamilyGroup: MEMBERS:MANAGE OR family-group
-      # membership, which no extension can express — group membership is not an owner ID nameable
-      # as a parameter. See module header comment (pattern c).
-      description: |
-        Returns family group details including parents and children with their own hypermedia links.
-        Requires MEMBERS:MANAGE, or the caller must be a member (parent or child) of this group.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-spring-provide-args:
-        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
+        - $ref: '#/components/parameters/LegalGuardianGroupIdParam'
       responses:
         '200':
-          description: Family group found
+          description: Legal guardian group found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FamilyGroupResponse'
+                $ref: '#/components/schemas/LegalGuardianGroupResponse'
           x-hal-links:
             self:
-              description: This family group
+              description: This legal guardian group
             collection:
-              operation: listFamilyGroups
-              description: Present only for callers with MEMBERS:MANAGE
+              operation: listLegalGuardianGroups
+              description: Back to the group list
+          x-hal-templates:
+            setLegalGuardianGroupGuardians:
+              operation: setLegalGuardianGroupGuardians
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -543,167 +500,30 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
-    delete:
-      operationId: deleteFamilyGroup
-      tags: [FamilyGroups]
-      summary: Delete a family group
-      description: Deletes a family group. Requires MEMBERS:MANAGE.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
-      responses:
-        '204':
-          description: Family group deleted
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/family-groups/{id}/parents:
-    post:
-      operationId: addFamilyGroupParent
-      tags: [FamilyGroups]
-      summary: Add a parent to family group
+  /api/legal-guardian-groups/{id}/guardians:
+    put:
+      operationId: setLegalGuardianGroupGuardians
+      tags: [LegalGuardianGroups]
+      summary: Set the guardians of a legal guardian group
       description: |
-        Adds a parent to the family group. The parent is a user of the system and need not be a
-        club member, so the body carries a user id and not a member id. Requires MEMBERS:MANAGE.
+        Replaces the complete set of guardians for all minors of the group. When another group already
+        has exactly this set of guardians, the minors join it and this group disappears. The set must
+        not be empty. Requires MEMBERS:MANAGE.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
+        - $ref: '#/components/parameters/LegalGuardianGroupIdParam'
       requestBody:
         required: true
         x-codegen-request-body-name: request
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddParentRequest'
+              $ref: '#/components/schemas/SetLegalGuardiansRequest'
       responses:
         '204':
-          description: Parent added
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/family-groups/{id}/parents/{userId}:
-    delete:
-      operationId: removeFamilyGroupParent
-      tags: [FamilyGroups]
-      summary: Remove a parent from family group
-      description: |
-        Removes a parent from the family group. The parent is identified by user id, since a
-        parent need not be a club member. Requires MEMBERS:MANAGE.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
-        - name: userId
-          in: path
-          required: true
-          description: Parent user UUID
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Parent removed
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/family-groups/{id}/children:
-    post:
-      operationId: addFamilyGroupChild
-      tags: [FamilyGroups]
-      summary: Add a child to family group
-      description: Adds a child to the family group. Requires MEMBERS:MANAGE.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
-      requestBody:
-        required: true
-        x-codegen-request-body-name: request
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddMemberRequest'
-      responses:
-        '204':
-          description: Child added
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-  /api/family-groups/{id}/children/{memberId}:
-    delete:
-      operationId: removeFamilyGroupChild
-      tags: [FamilyGroups]
-      summary: Remove a child from family group
-      description: Removes a child from the family group. Requires MEMBERS:MANAGE.
-      security:
-        - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      parameters:
-        - $ref: '#/components/parameters/FamilyGroupIdParam'
-        - name: memberId
-          in: path
-          required: true
-          description: Child member UUID
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '204':
-          description: Child removed
+          description: Guardians set
           content:
             application/prs.hal-forms+json: {}
         '400':
@@ -762,11 +582,11 @@ components:
         items:
           type: string
 
-    FamilyGroupIdParam:
+    LegalGuardianGroupIdParam:
       name: id
       in: path
       required: true
-      description: Family group UUID
+      description: Legal guardian group UUID
       schema:
         type: string
         format: uuid
@@ -1142,7 +962,7 @@ components:
           type: string
         groupType:
           type: string
-          enum: [FREE, FAMILY, TRAINING]
+          enum: [FREE, LEGAL_GUARDIAN, TRAINING]
           description: Which of the three group aggregates the member owns
 
     MonetaryAmount:
@@ -1286,101 +1106,75 @@ components:
       type: string
       enum: [AM, A1, A2, A, B, BE, C, C1, D, D1, T]
 
-    # === FamilyGroups ============================================================================
+    # === LegalGuardianGroups ============================================================================
 
-    CreateFamilyGroupRequest:
+    SetLegalGuardiansRequest:
       type: object
-      description: |
-        Designates a single parent for a new family group. The parent is a user of the system and
-        need not be a club member, so `parent` is a user id and not a member id. The parent options
-        still come from listMemberOptions, whose UUIDs are the same.
-      required: [name, parent]
+      description: Complete list of legal guardians. Must not be empty.
+      required: [legalGuardians]
       properties:
-        name:
-          type: string
-          minLength: 1
-        parent:
-          type: string
-          format: uuid
-          description: UUID of the parent user. Any user qualifies, with or without a member profile.
-          x-hal-input-type: UserId
+        legalGuardians:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/LegalGuardianInputRequest'
 
-    # AddParentRequest, not AddMemberRequest — a parent is a user of the system who need not be a
-    # club member, so the field is a user id. AddMemberRequest stays for addFamilyGroupChild, whose
-    # children are always club members.
-    AddParentRequest:
+    LegalGuardianInputRequest:
       type: object
-      description: |
-        Designates a user as a parent of the family group. The parent may be any user of the
-        system, with or without a member profile, so the field is a user id and not a member id.
-        The parent options still come from listMemberOptions, whose UUIDs are the same.
+      description: An existing legal guardian, chosen by user id.
       required: [userId]
       properties:
         userId:
           type: string
           format: uuid
-          description: UUID of the parent user. Any user qualifies, with or without a member profile.
+          description: UUID of the guardian user
           x-hal-input-type: UserId
 
-    AddMemberRequest:
-      type: object
-      required: [memberId]
-      properties:
-        memberId:
-          type: string
-          format: uuid
-          x-hal-input-type: MemberId
-
-    FamilyGroupSummaryResponse:
+    LegalGuardianGroupSummaryResponse:
       type: object
       x-klabis-relation:
-        collectionRelation: familyGroupSummaryResponseList
+        collectionRelation: legalGuardianGroupSummaryResponseList
       properties:
         id:
           type: string
           format: uuid
         name:
           type: string
-        memberCount:
+        minorCount:
           type: integer
           format: int32
 
-    # getFamilyGroup's payload. parents/members are arrays of HAL-wrapped items (each carrying its
-    # own _links/_templates at runtime), so the Java record fields resolve to List<EntityModel<X>>.
-    # x-hal-entity-items: true on each array declares that: the bundler derives an EntityModel<X>
-    # item schema, KlabisSpringCodegen.fromProperty reads the same marker and maps the property onto
-    # org.springframework.hateoas.EntityModel<X>. The response-level HAL envelope is derived too.
-    FamilyGroupResponse:
+    # guardians/minors are arrays of HAL-wrapped items (each carrying its own _links at runtime), so
+    # the Java record fields resolve to List<EntityModel<X>>. See x-hal-entity-items in the
+    # klabis-api-spec skill.
+    LegalGuardianGroupResponse:
       type: object
-      description: Family group detail with parents and children as independently linked items.
+      description: Legal guardian group detail with guardians and minors as independently linked items.
       properties:
         id:
           type: string
           format: uuid
         name:
           type: string
-        parents:
+        guardians:
           type: array
           x-hal-entity-items: true
           items:
-            $ref: '#/components/schemas/ParentResponse'
-        members:
+            $ref: '#/components/schemas/LegalGuardianGroupGuardianResponse'
+        minors:
           type: array
           x-hal-entity-items: true
           items:
-            $ref: '#/components/schemas/FamilyGroupMembershipResponse'
+            $ref: '#/components/schemas/LegalGuardianGroupMinorResponse'
 
-    # A parent is a user of the system and need not have a member profile, so the row is keyed on
-    # the user id and carries no "member" link. Children below stay on memberId, since a child is
-    # always a club member.
-    ParentResponse:
+    LegalGuardianGroupGuardianResponse:
       type: object
       properties:
         userId:
           type: string
           format: uuid
 
-    FamilyGroupMembershipResponse:
+    LegalGuardianGroupMinorResponse:
       type: object
       properties:
         memberId:

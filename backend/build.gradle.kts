@@ -315,7 +315,7 @@ openApiModule(
     module = "groups",
     pkg = "com.klabis.groups.infrastructure.restapi",
     specFile = "groups.yaml",
-    // The FamilyGroup/Group/TrainingGroup response payloads have array properties whose items each
+    // The LegalGuardianGroup/Group/TrainingGroup response payloads have array properties whose items each
     // carry their own _links (parents/members/owners/pendingInvitations/trainers). Those arrays are
     // marked x-hal-entity-items: true in groups.yaml; KlabisSpringCodegen.fromProperty reads the
     // marker and resolves them to List<EntityModel<X>>, so no per-schema schemaMappings are needed.

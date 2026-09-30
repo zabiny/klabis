@@ -554,7 +554,7 @@ describe('useAuthorizedMutation', () => {
     describe('Location header in result', () => {
         it('POST 201 with Location header returns { data: null, location: header value }', async () => {
             fetchSpy.mockResolvedValueOnce(
-                createMockResponse(null, 201, {'Location': '/api/family-groups/abc'})
+                createMockResponse(null, 201, {'Location': '/api/legal-guardian-groups/abc'})
             );
 
             const onSuccess = vi.fn();
@@ -563,13 +563,13 @@ describe('useAuthorizedMutation', () => {
                 {wrapper: createWrapper()}
             );
 
-            result.current.mutate({url: '/api/family-groups', data: {}});
+            result.current.mutate({url: '/api/legal-guardian-groups', data: {}});
 
             await waitFor(() => expect(result.current.isPending).toBe(false));
 
             expect(onSuccess).toHaveBeenCalledWith(
-                {data: null, location: '/api/family-groups/abc'},
-                expect.objectContaining({url: '/api/family-groups'}),
+                {data: null, location: '/api/legal-guardian-groups/abc'},
+                expect.objectContaining({url: '/api/legal-guardian-groups'}),
                 undefined,
                 expect.any(Object)
             );
@@ -601,7 +601,7 @@ describe('useAuthorizedMutation', () => {
         it('POST 201 with JSON body and Location header returns { data: <body>, location: <header> }', async () => {
             const responseBody = {id: 'xyz', name: 'New Group'};
             fetchSpy.mockResolvedValueOnce(
-                createMockResponse(responseBody, 201, {'Location': '/api/family-groups/xyz'})
+                createMockResponse(responseBody, 201, {'Location': '/api/legal-guardian-groups/xyz'})
             );
 
             const onSuccess = vi.fn();
@@ -610,13 +610,13 @@ describe('useAuthorizedMutation', () => {
                 {wrapper: createWrapper()}
             );
 
-            result.current.mutate({url: '/api/family-groups', data: {}});
+            result.current.mutate({url: '/api/legal-guardian-groups', data: {}});
 
             await waitFor(() => expect(result.current.isPending).toBe(false));
 
             expect(onSuccess).toHaveBeenCalledWith(
-                {data: responseBody, location: '/api/family-groups/xyz'},
-                expect.objectContaining({url: '/api/family-groups'}),
+                {data: responseBody, location: '/api/legal-guardian-groups/xyz'},
+                expect.objectContaining({url: '/api/legal-guardian-groups'}),
                 undefined,
                 expect.any(Object)
             );

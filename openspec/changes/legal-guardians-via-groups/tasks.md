@@ -1,12 +1,12 @@
 ## 1. Iterace: skupina zákonných zástupců místo rodinné skupiny
 
-- [ ] 1.1 Přejmenovat `FamilyGroup` → `LegalGuardianGroup` (balíček `members.legalguardiangroup`, discriminator `LEGAL_GUARDIAN`, CHECK a komentáře ve `V001__initial_schema.sql`) přes JetBrains refactoring; testy zelené beze změny chování
-- [ ] 1.2 Doménové testy (red) a implementace: vlastník ≠ člen, zástupce ve více skupinách, dítě max v jedné skupině, jen nezletilí, neprázdná množina zástupců, generovaný název („Novák a Svobodová“)
-- [ ] 1.3 Testy (red) a implementace `LegalGuardianGroupService` – jádro find-or-create/merge (D2) a operace `changeGroupGuardians(groupId, guardians)`: úprava na místě, sloučení s existující množinou, smazání prázdné skupiny, odmítnutí prázdné množiny
-- [ ] 1.4 Úprava suspension blockeru: `findAll` místo `findOne`, varování pro jediného zástupce nezletilého; testy `ManagementService`
-- [ ] 1.5 API spec: `/api/legal-guardian-groups` (list, detail, `PUT …/guardians` s affordancí `setLegalGuardianGroupGuardians`), odstranit create/delete/parents/children, root rel `legalGuardianGroups`, odkaz `legalGuardianGroup` na detailu člena (jen `MEMBERS_MANAGE`); přegenerovat bundle a frontend typy
-- [ ] 1.6 Controller testy (red) a implementace: přístup jen `MEMBERS:MANAGE`, detail se zástupci a dětmi a jejich odkazy, nastavení zástupců skupiny včetně sloučení
-- [ ] 1.7 Frontend: stránka „Zákonní zástupci“ (seznam, detail, formulář zástupců skupiny), položka menu v Administraci, tlačítko „Zákonní zástupci“ na detailu člena; testy + `npm run build`
+- [x] 1.1 Přejmenovat `FamilyGroup` → `LegalGuardianGroup` (balíček `members.legalguardiangroup`, discriminator `LEGAL_GUARDIAN`, CHECK a komentáře ve `V001__initial_schema.sql`) přes JetBrains refactoring; testy zelené beze změny chování
+- [x] 1.2 Doménové testy (red) a implementace: vlastník ≠ člen, zástupce ve více skupinách, dítě max v jedné skupině, jen nezletilí, neprázdná množina zástupců, generovaný název („Novák a Svobodová“)
+- [x] 1.3 Testy (red) a implementace `LegalGuardianGroupService` – jádro find-or-create/merge (D2) a operace `changeGroupGuardians(groupId, guardians)`: úprava na místě, sloučení s existující množinou, smazání prázdné skupiny, odmítnutí prázdné množiny
+- [x] 1.4 Úprava suspension blockeru: `findAll` místo `findOne`, varování pro jediného zástupce nezletilého; testy `ManagementService`
+- [x] 1.5 API spec: `/api/legal-guardian-groups` (list, detail, `PUT …/guardians` s affordancí `setLegalGuardianGroupGuardians`), odstranit create/delete/parents/children, root rel `legalGuardianGroups`, odkaz `legalGuardianGroup` na detailu člena (jen `MEMBERS_MANAGE`); přegenerovat bundle a frontend typy
+- [x] 1.6 Controller testy (red) a implementace: přístup jen `MEMBERS:MANAGE`, detail se zástupci a dětmi a jejich odkazy, nastavení zástupců skupiny včetně sloučení
+- [x] 1.7 Frontend: stránka „Zákonní zástupci“ (seznam, detail, formulář zástupců skupiny), položka menu v Administraci, tlačítko „Zákonní zástupci“ na detailu člena; testy + `npm run build`
 
 ## 2. Iterace: nečlenský zákonný zástupce, účet a profil
 

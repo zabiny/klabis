@@ -326,13 +326,13 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     {labels.links.trainingGroup}
                                 </Button>
                             )}
-                            {hasLink(memberRel('familyGroup')) && (
+                            {hasLink(memberRel('legalGuardianGroup')) && (
                                 <Button
                                     variant="secondary"
-                                    onClick={() => route.navigateToResource(route.getResourceLink(memberRel('familyGroup'))!)}
+                                    onClick={() => route.navigateToResource(route.getResourceLink(memberRel('legalGuardianGroup'))!)}
                                     startIcon={<Heart className="w-4 h-4"/>}
                                 >
-                                    {labels.links.familyGroup}
+                                    {labels.links.legalGuardians}
                                 </Button>
                             )}
                             {hasEditTemplate && hasLink(memberRel('permissions')) && (

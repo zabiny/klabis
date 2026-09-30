@@ -1,5 +1,5 @@
 # Groups module — the API surface of FreeGroupController, PendingInvitationsController and
-# TrainingGroupController (groups module). Family groups belong to the members module and live in
+# TrainingGroupController (groups module). Legal guardian groups belong to the members module and live in
 # members.yaml.
 #
 # getGroup and getTrainingGroup return the payload DTO, like every other operation.
@@ -1082,10 +1082,8 @@ components:
           format: int32
           minimum: 0
 
-    # TrainingGroupAddMemberRequest, not AddMemberRequest — a same-named FamilyGroups schema (members.yaml)
-    # occupies that name in this one global component namespace after bundling (both wrap a single
-    # memberId field but are unrelated types); see klabis-api-spec skill: "Component names are global
-    # once bundled" / "Prefix module-owned components rather than reaching for the generic name".
+    # Prefixed with the module name: component names are one global namespace after bundling (see
+    # klabis-api-spec skill: "Component names are global once bundled").
     TrainingGroupAddMemberRequest:
       type: object
       required: [memberId]

@@ -4,19 +4,16 @@ import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,11 +40,11 @@ class HalCollectionCrossModuleLeakIntegrationTest {
 
     @Test
     @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_MANAGE})
-    @DisplayName("GET /api/family-groups (empty) exposes only createFamilyGroup affordance and a self link")
-    void familyGroupsCollectionCarriesOnlyItsOwnAffordanceWhenEmpty() throws Exception {
-        mockMvc.perform(get("/api/family-groups").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+    @DisplayName("GET /api/legal-guardian-groups (empty) exposes no create affordance of another module and a self link")
+    void legalGuardianGroupsCollectionCarriesOnlyItsOwnAffordanceWhenEmpty() throws Exception {
+        mockMvc.perform(get("/api/legal-guardian-groups").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._templates.createFamilyGroup").exists())
+                .andExpect(jsonPath("$._templates.createLegalGuardianGroup").doesNotExist())
                 .andExpect(jsonPath("$._templates.createEventType").doesNotExist())
                 .andExpect(jsonPath("$._templates.createCalendarItem").doesNotExist())
                 .andExpect(jsonPath("$._templates.createGroup").doesNotExist())
@@ -60,44 +57,19 @@ class HalCollectionCrossModuleLeakIntegrationTest {
 
     @Test
     @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_MANAGE, Authority.CALENDAR_MANAGE})
-    @DisplayName("GET /api/family-groups after a calendar-items call in the same thread stays isolated")
-    void familyGroupsCollectionStaysIsolatedAfterAnotherCollectionEndpoint() throws Exception {
+    @DisplayName("GET /api/legal-guardian-groups after a calendar-items call in the same thread stays isolated")
+    void legalGuardianGroupsCollectionStaysIsolatedAfterAnotherCollectionEndpoint() throws Exception {
         mockMvc.perform(get("/api/calendar-items").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/family-groups").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+        mockMvc.perform(get("/api/legal-guardian-groups").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._templates.createFamilyGroup").exists())
+                .andExpect(jsonPath("$._templates.createLegalGuardianGroup").doesNotExist())
                 .andExpect(jsonPath("$._templates.createCalendarItem").doesNotExist())
                 .andExpect(jsonPath("$._templates.createEventType").doesNotExist())
                 .andExpect(jsonPath("$._templates.createGroup").doesNotExist())
                 .andExpect(jsonPath("$._templates.createTrainingGroup").doesNotExist())
                 .andExpect(jsonPath("$._templates.createCategoryPreset").doesNotExist())
-                .andExpect(jsonPath("$._links.next").doesNotExist())
-                .andExpect(jsonPath("$._links.prev").doesNotExist());
-    }
-
-    @Test
-    @WithKlabisMockUser(memberId = ADMIN_UUID, authorities = {Authority.MEMBERS_MANAGE})
-    @DisplayName("GET /api/family-groups (non-empty) exposes only createFamilyGroup affordance and a self link")
-    void familyGroupsCollectionCarriesOnlyItsOwnAffordanceWhenNonEmpty() throws Exception {
-        mockMvc.perform(post("/api/family-groups")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"name": "Leak probe family", "parent": "%s"}
-                                """.formatted(ADMIN_UUID)))
-                .andExpect(status().isCreated());
-
-        mockMvc.perform(get("/api/family-groups").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$._embedded.familyGroupSummaryResponseList", Matchers.hasSize(1)))
-                .andExpect(jsonPath("$._templates.createFamilyGroup").exists())
-                .andExpect(jsonPath("$._templates.createEventType").doesNotExist())
-                .andExpect(jsonPath("$._templates.createCalendarItem").doesNotExist())
-                .andExpect(jsonPath("$._templates.createGroup").doesNotExist())
-                .andExpect(jsonPath("$._templates.createTrainingGroup").doesNotExist())
-                .andExpect(jsonPath("$._templates.createCategoryPreset").doesNotExist())
-                .andExpect(jsonPath("$._links.self").exists())
                 .andExpect(jsonPath("$._links.next").doesNotExist())
                 .andExpect(jsonPath("$._links.prev").doesNotExist());
     }

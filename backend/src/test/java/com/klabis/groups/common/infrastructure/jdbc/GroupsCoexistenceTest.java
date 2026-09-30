@@ -10,9 +10,9 @@ import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
 import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import com.klabis.members.MemberId;
-import com.klabis.members.familygroup.domain.FamilyGroup;
-import com.klabis.members.familygroup.domain.FamilyGroupFilter;
-import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
+import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupFilter;
+import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository;
 import org.jmolecules.ddd.annotation.Repository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,9 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,17 +51,17 @@ class GroupsCoexistenceTest {
     private TrainingGroupRepository trainingGroupRepository;
 
     @Autowired
-    private FamilyGroupRepository familyGroupRepository;
+    private LegalGuardianGroupRepository legalGuardianGroupRepository;
 
     private static final MemberId OWNER = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
     private static final MemberId SHARED_MEMBER = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 
     @Test
-    @DisplayName("findAll with ownerOrMemberIs filter returns only FreeGroup (FREE) — not TRAINING or FAMILY rows")
+    @DisplayName("findAll with ownerOrMemberIs filter returns only FreeGroup (FREE) — not TRAINING or LEGAL_GUARDIAN rows")
     void freeGroupRepositoryFindsOnlyFreeType() {
         saveFreeGroupWithMember();
         saveTrainingGroupWithMember();
-        saveFamilyGroupWithMember();
+        saveLegalGuardianGroupWithMember();
 
         List<FreeGroup> result = freeGroupRepository.findAll(
                 FreeGroupFilter.all().withOwnerOrMemberIs(SHARED_MEMBER));
@@ -69,11 +71,11 @@ class GroupsCoexistenceTest {
     }
 
     @Test
-    @DisplayName("findOne(withMemberIs) returns only TrainingGroup (TRAINING) — not FREE or FAMILY rows")
+    @DisplayName("findOne(withMemberIs) returns only TrainingGroup (TRAINING) — not FREE or LEGAL_GUARDIAN rows")
     void trainingGroupRepositoryFindsOnlyTrainingType() {
         saveFreeGroupWithMember();
         saveTrainingGroupWithMember();
-        saveFamilyGroupWithMember();
+        saveLegalGuardianGroupWithMember();
 
         var result = trainingGroupRepository.findOne(TrainingGroupFilter.all().withMemberIs(SHARED_MEMBER));
 
@@ -82,17 +84,17 @@ class GroupsCoexistenceTest {
     }
 
     @Test
-    @DisplayName("findOne(withMemberOrParentIs) returns only FamilyGroup (FAMILY) — not FREE or TRAINING rows")
-    void familyGroupRepositoryFindsOnlyFamilyType() {
+    @DisplayName("findOne(withMinorIs) returns only LegalGuardianGroup (LEGAL_GUARDIAN) — not FREE or TRAINING rows")
+    void legalGuardianGroupRepositoryFindsOnlyLegalGuardianType() {
         saveFreeGroupWithMember();
         saveTrainingGroupWithMember();
-        saveFamilyGroupWithMember();
+        saveLegalGuardianGroupWithMember();
 
-        var result = familyGroupRepository.findOne(
-                FamilyGroupFilter.all().withMemberOrParentIs(SHARED_MEMBER.toUserId()));
+        var result = legalGuardianGroupRepository.findOne(
+                LegalGuardianGroupFilter.all().withMinorIs(SHARED_MEMBER.toUserId()));
 
         assertThat(result).isPresent();
-        assertThat(result.get().getName()).isEqualTo("Family Group");
+        assertThat(result.get().getName()).isEqualTo("Novák");
     }
 
     @Test
@@ -132,9 +134,10 @@ class GroupsCoexistenceTest {
         return trainingGroupRepository.save(group);
     }
 
-    private void saveFamilyGroupWithMember() {
-        FamilyGroup group = FamilyGroup.create(new FamilyGroup.CreateFamilyGroup("Family Group", OWNER.toUserId()));
-        group.addChild(SHARED_MEMBER);
-        familyGroupRepository.save(group);
+    private void saveLegalGuardianGroupWithMember() {
+        LegalGuardianGroup group = LegalGuardianGroup.create(
+                Set.of(new LegalGuardianGroup.Guardian(OWNER.toUserId(), "Novák")),
+                new LegalGuardianGroup.Minor(SHARED_MEMBER, LocalDate.now().minusYears(9)));
+        legalGuardianGroupRepository.save(group);
     }
 }

@@ -131,18 +131,12 @@ paths:
     $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-summary~1{year}'
   /api/members/{memberId}/fee-history:
     $ref: './membershipfees.yaml#/paths/~1api~1members~1{memberId}~1fee-history'
-  /api/family-groups:
-    $ref: './members.yaml#/paths/~1api~1family-groups'
-  /api/family-groups/{id}:
-    $ref: './members.yaml#/paths/~1api~1family-groups~1{id}'
-  /api/family-groups/{id}/parents:
-    $ref: './members.yaml#/paths/~1api~1family-groups~1{id}~1parents'
-  /api/family-groups/{id}/parents/{userId}:
-    $ref: './members.yaml#/paths/~1api~1family-groups~1{id}~1parents~1{userId}'
-  /api/family-groups/{id}/children:
-    $ref: './members.yaml#/paths/~1api~1family-groups~1{id}~1children'
-  /api/family-groups/{id}/children/{memberId}:
-    $ref: './members.yaml#/paths/~1api~1family-groups~1{id}~1children~1{memberId}'
+  /api/legal-guardian-groups:
+    $ref: './members.yaml#/paths/~1api~1legal-guardian-groups'
+  /api/legal-guardian-groups/{id}:
+    $ref: './members.yaml#/paths/~1api~1legal-guardian-groups~1{id}'
+  /api/legal-guardian-groups/{id}/guardians:
+    $ref: './members.yaml#/paths/~1api~1legal-guardian-groups~1{id}~1guardians'
   /api/groups:
     $ref: './groups.yaml#/paths/~1api~1groups'
   /api/groups/{id}:
