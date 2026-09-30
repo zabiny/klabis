@@ -366,19 +366,28 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * own contacts are enforced here.
      */
     public static Member register(RegisterMember command) {
+        return register(command, null);
+    }
+
+    /**
+     * Registers a hand-filled member together with the contacts of the legal guardians that are being set at
+     * the same time, so the registration enforces every completeness rule, including a minor's guardian.
+     */
+    public static Member register(RegisterMember command, GuardianContacts guardians) {
         validateStructure(command);
 
         // Consistency rule: always enforced, regardless of completeness
         validateBirthNumberConsistency(command.personalInformation().getNationalityCode(), command.birthNumber());
 
         Set<MissingDataItem> missing = MemberCompleteness.missingData(command.email(), command.phone(),
-                command.personalInformation(), command.birthNumber(), command.address(), GuardianContacts.NONE);
-        if (command.personalInformation().isMinor()) {
+                command.personalInformation(), command.birthNumber(), command.address(),
+                guardians != null ? guardians : GuardianContacts.NONE);
+        if (guardians == null && command.personalInformation().isMinor()) {
             missing.removeAll(Set.of(MissingDataItem.EMAIL, MissingDataItem.PHONE, MissingDataItem.GUARDIAN));
         }
         enforceCompleteness(missing);
 
-        return buildFrom(command);
+        return buildFrom(command, guardians != null ? guardians : GuardianContacts.NONE);
     }
 
     /**
@@ -395,7 +404,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         // Consistency rule: always enforced, even when completeness is not (design.md D5)
         validateBirthNumberConsistency(command.personalInformation().getNationalityCode(), command.birthNumber());
 
-        return buildFrom(command);
+        return buildFrom(command, GuardianContacts.NONE);
     }
 
     private static void validateStructure(RegisterMember command) {
@@ -407,7 +416,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         // enforceCompleteness so the exception type/message a hand registration sees is unchanged.
     }
 
-    private static Member buildFrom(RegisterMember command) {
+    private static Member buildFrom(RegisterMember command, GuardianContacts guardians) {
         Member member = new Member(
                 command.id(),
                 command.registrationNumber(),
@@ -426,7 +435,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 command.birthNumber(),
                 command.bankAccountNumber(),
                 !MemberCompleteness.missingData(command.email(), command.phone(), command.personalInformation(),
-                        command.birthNumber(), command.address(), GuardianContacts.NONE).isEmpty(),
+                        command.birthNumber(), command.address(), guardians).isEmpty(),
                 null, // suspensionReason
                 null, // suspendedAt
                 null, // suspensionNote
@@ -482,18 +491,18 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * validation methods this replaced, so the registration form's behaviour is unchanged.
      */
     private static void enforceCompleteness(Set<MissingDataItem> missing) {
-        Assert.isTrue(!missing.contains(MissingDataItem.EMAIL),
-                "At least one email address is required (member or guardian)");
-        Assert.isTrue(!missing.contains(MissingDataItem.PHONE),
-                "At least one phone number is required (member or guardian)");
-        Assert.isTrue(!missing.contains(MissingDataItem.ADDRESS), "Address is required");
-
         if (missing.contains(MissingDataItem.GUARDIAN)) {
             throw new BusinessRuleViolationException(
                     "Guardian is required for minors (under 18 years)"
             ) {
             };
         }
+        Assert.isTrue(!missing.contains(MissingDataItem.EMAIL),
+                "At least one email address is required (member or guardian)");
+        Assert.isTrue(!missing.contains(MissingDataItem.PHONE),
+                "At least one phone number is required (member or guardian)");
+        Assert.isTrue(!missing.contains(MissingDataItem.ADDRESS), "Address is required");
+
         if (missing.contains(MissingDataItem.BIRTH_NUMBER)) {
             throw new BusinessRuleViolationException(
                     "Birth number is required for Czech nationals"

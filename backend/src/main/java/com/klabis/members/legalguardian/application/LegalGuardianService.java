@@ -56,6 +56,12 @@ class LegalGuardianService implements LegalGuardianPort {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
+    @Transactional
+    @Override
+    public void releaseForMembership(UserId id) {
+        legalGuardianRepository.delete(load(id));
+    }
+
     @Transactional(readOnly = true)
     @Override
     public LegalGuardianProfile get(UserId id) {

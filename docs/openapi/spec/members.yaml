@@ -733,6 +733,12 @@ paths:
           required: false
           schema:
             type: string
+        - name: kind
+          in: query
+          description: Restricts the candidates to members or to non-member legal guardians; both when absent
+          required: false
+          schema:
+            $ref: '#/components/schemas/LegalGuardianKind'
       responses:
         '200':
           description: Candidates retrieved successfully
@@ -977,8 +983,14 @@ components:
 
     RegisterMemberRequest:
       type: object
-      description: Member registration request
-      required: [firstName, lastName, dateOfBirth, nationality, gender, email, phone, address]
+      description: |
+        Member registration request. Whether the member is a minor is derived from dateOfBirth.
+
+        An adult must give their own email and phone and no legalGuardians; an adult may take over
+        an existing non-member legal guardian by legalGuardianUserId. A minor needs at least one
+        entry in legalGuardians (existing by userId or a new guardian) and their own email and phone
+        are optional when a guardian provides them.
+      required: [firstName, lastName, dateOfBirth, nationality, gender, address]
       properties:
         firstName:
           type: string
@@ -1013,14 +1025,12 @@ components:
         email:
           type: string
           format: email
-          x-klabis-not-blank: true
-          description: Email address
+          description: Email address; required for an adult
           example: jan.novak@example.com
           maxLength: 255
         phone:
           type: string
-          x-klabis-not-blank: true
-          description: Phone number in E.164 format
+          description: Phone number in E.164 format; required for an adult
           example: '+420777123456'
           pattern: '^\+[0-9\s]{7,20}$'
         address:
@@ -1034,6 +1044,16 @@ components:
           description: Bank account number (IBAN or domestic Czech format)
           example: CZ6508000000192000145399
           maxLength: 50
+        legalGuardians:
+          type: array
+          description: Legal guardians of a minor; must be empty for an adult
+          items:
+            $ref: '#/components/schemas/LegalGuardianInputRequest'
+        legalGuardianUserId:
+          type: string
+          format: uuid
+          description: Existing non-member legal guardian to take over as the new adult member (keeps their user account)
+          x-hal-input-type: UserId
 
     UpdateMemberRequest:
       type: object
@@ -1436,6 +1456,10 @@ components:
           minLength: 1
           maxLength: 50
 
+    LegalGuardianKind:
+      type: string
+      enum: [MEMBER, LEGAL_GUARDIAN]
+
     LegalGuardianOptionResponse:
       type: object
       description: |
@@ -1449,8 +1473,7 @@ components:
           description: Display name of the candidate
           example: Jan Novák
         kind:
-          type: string
-          enum: [MEMBER, LEGAL_GUARDIAN]
+          $ref: '#/components/schemas/LegalGuardianKind'
         registrationNumber:
           type: string
           description: Present for members

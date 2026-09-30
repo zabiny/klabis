@@ -2,7 +2,7 @@ package com.klabis.members.legalguardian.infrastructure.restapi;
 
 import com.klabis.members.infrastructure.restapi.LegalGuardianOptionResponse;
 import com.klabis.members.infrastructure.restapi.LegalGuardianOptionResponseBuilder;
-import com.klabis.members.infrastructure.restapi.LegalGuardianOptionResponseKind;
+import com.klabis.members.infrastructure.restapi.LegalGuardianKind;
 import com.klabis.members.infrastructure.restapi.LegalGuardianOptionsApi;
 import com.klabis.members.legalguardian.application.GuardianCandidate;
 import com.klabis.members.legalguardian.application.GuardianCandidatesPort;
@@ -27,8 +27,9 @@ class LegalGuardianOptionsController implements LegalGuardianOptionsApi {
     }
 
     @Override
-    public ResponseEntity<List<LegalGuardianOptionResponse>> listLegalGuardianOptions(String q) {
-        return ResponseEntity.ok(guardianCandidatesService.findCandidates(q).stream()
+    public ResponseEntity<List<LegalGuardianOptionResponse>> listLegalGuardianOptions(String q, LegalGuardianKind kind) {
+        GuardianKind guardianKind = kind != null ? GuardianKind.valueOf(kind.name()) : null;
+        return ResponseEntity.ok(guardianCandidatesService.findCandidates(q, guardianKind).stream()
                 .map(LegalGuardianOptionsController::toResponse)
                 .toList());
     }
@@ -38,8 +39,8 @@ class LegalGuardianOptionsController implements LegalGuardianOptionsApi {
                 .value(candidate.userId().uuid().toString())
                 .prompt(candidate.displayName())
                 .kind(candidate.kind() == GuardianKind.MEMBER
-                        ? LegalGuardianOptionResponseKind.MEMBER
-                        : LegalGuardianOptionResponseKind.LEGAL_GUARDIAN)
+                        ? LegalGuardianKind.MEMBER
+                        : LegalGuardianKind.LEGAL_GUARDIAN)
                 .registrationNumber(candidate.registrationNumber())
                 .email(candidate.email())
                 .build();

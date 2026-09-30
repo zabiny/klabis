@@ -28,6 +28,11 @@ class LegalGuardianRepositoryAdapter implements LegalGuardianRepository {
     }
 
     @Override
+    public void delete(LegalGuardian legalGuardian) {
+        jdbcRepository.deleteById(legalGuardian.getId().uuid());
+    }
+
+    @Override
     public Optional<LegalGuardian> findById(UserId id) {
         return jdbcRepository.findById(id.uuid()).map(LegalGuardianMemento::toLegalGuardian);
     }

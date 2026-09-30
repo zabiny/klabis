@@ -45,6 +45,12 @@ public interface LegalGuardianPort {
      */
     Set<UserId> resolveGuardians(List<GuardianInput> inputs);
 
+    /**
+     * Removes the guardian profile of a guardian who is being registered as a club member. The user account
+     * stays, so the person keeps their login number and their guardian groups.
+     */
+    void releaseForMembership(UserId id);
+
     LegalGuardianProfile get(UserId id);
 
     LegalGuardianProfile update(UserId id, LegalGuardian.UpdateLegalGuardian command);

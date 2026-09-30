@@ -922,26 +922,12 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("with minor should accept guardian")
+        @DisplayName("with minor should pass existing and new legal guardians to the service")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldCreateMinorWithGuardian() throws Exception {
+        void shouldPassLegalGuardiansOfMinor() throws Exception {
             UUID memberId = UUID.randomUUID();
-
-            Address address = Address.of("Test Street", "Test City", "10000", "CZ");
-            EmailAddress email = EmailAddress.of("test@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420123456789");
-
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withName("Test", "Member")
-                    .withRegistrationNumber("ZBM1234")
-                    .withDateOfBirth(LocalDate.of(2000, 1, 1))
-                    .withNationality("CZ")
-                    .withGender(Gender.MALE)
-                    .withAddress(address)
-                    .withPhone(phone)
-                    .withEmail(email)
-                    .build();
-
+            UUID existingGuardian = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
             when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
             mockMvc.perform(postMembers().content("""
@@ -951,7 +937,49 @@ class MemberControllerApiTest {
                                 "dateOfBirth": "2010-06-20",
                                 "nationality": "CZ",
                                 "gender": "FEMALE",
-                                "email": "petra.novakova@example.com",
+                                "address": {
+                                    "street": "Hlavní 456",
+                                    "city": "Brno",
+                                    "postalCode": "60000",
+                                    "country": "CZ"
+                                },
+                                "legalGuardians": [
+                                    {"userId": "%s"},
+                                    {"firstName": "Eva", "lastName": "Nováková",
+                                     "email": "eva@example.com", "phone": "+420123456789"}
+                                ]
+                            }
+                            """.formatted(existingGuardian))
+                    )
+                    .andExpect(status().isCreated())
+                    .andExpect(locationHeaderWithMemberDetailRedirect(memberId));
+
+            Mockito.verify(registrationService).registerMember(argThat(cmd ->
+                    cmd.email() == null && cmd.phone() == null &&
+                    cmd.takenOverLegalGuardian() == null &&
+                    cmd.legalGuardians().size() == 2 &&
+                    existingGuardian.equals(cmd.legalGuardians().get(0).userId().uuid()) &&
+                    "eva@example.com".equals(cmd.legalGuardians().get(1).newGuardian().email())
+            ));
+        }
+
+        @Test
+        @DisplayName("with legalGuardianUserId should pass the guardian to take over")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldPassTakenOverLegalGuardian() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            UUID guardian = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
+
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Eva",
+                                "lastName": "Svobodová",
+                                "dateOfBirth": "1985-06-20",
+                                "nationality": "CZ",
+                                "gender": "FEMALE",
+                                "email": "eva@example.com",
                                 "phone": "+420111222333",
                                 "address": {
                                     "street": "Hlavní 456",
@@ -959,18 +987,16 @@ class MemberControllerApiTest {
                                     "postalCode": "60000",
                                     "country": "CZ"
                                 },
-                                "guardian": {
-                                    "firstName": "Guardian",
-                                    "lastName": "Surname",
-                                    "relationship": "PARENT",
-                                    "email": "guardian@example.com",
-                                    "phone": "+420123456789"
-                                }
+                                "legalGuardianUserId": "%s"
                             }
-                            """)
+                            """.formatted(guardian))
                     )
-                    .andExpect(status().isCreated())
-                    .andExpect(locationHeaderWithMemberDetailRedirect(memberId));
+                    .andExpect(status().isCreated());
+
+            Mockito.verify(registrationService).registerMember(argThat(cmd ->
+                    cmd.takenOverLegalGuardian() != null && guardian.equals(cmd.takenOverLegalGuardian().uuid()) &&
+                    cmd.legalGuardians().isEmpty()
+            ));
         }
 
         @Test
@@ -1086,9 +1112,13 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("with missing email should return 400")
+        @DisplayName("with blank email should leave the requirement of own contacts to the service")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturn400WhenEmailMissing() throws Exception {
+        void shouldPassBlankEmailAsAbsentToService() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class)))
+                    .thenThrow(new IllegalArgumentException("At least one email address is required (member or guardian)"));
+
             mockMvc.perform(postMembers().content("""
                             {
                                 "firstName": "Jan",
@@ -1107,10 +1137,9 @@ class MemberControllerApiTest {
                             }
                             """)
                     )
-                    .andExpect(status().isBadRequest())
+                    .andExpect(status().isBadRequest());
 
-                    .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.email").value("must not be blank"));
+            Mockito.verify(registrationService).registerMember(argThat(cmd -> cmd.email() == null));
         }
 
         @Test
@@ -1380,6 +1409,21 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._templates.registerMember.properties[?(@.name=='gender')].options.inline[0]").value("MALE"))
                     .andExpect(jsonPath("$._templates.registerMember.properties[?(@.name=='gender')].options.inline[1]").value("FEMALE"))
                     .andExpect(jsonPath("$._templates.registerMember.properties[?(@.name=='gender')].type").value("Gender"));
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: registerMember template binds legal guardian options to the legalGuardians array property")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void registerMemberTemplateCarriesLegalGuardianOptions() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.registerMember.properties[?(@.name=='legalGuardians')].options.link.href")
+                            .value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("/api/legal-guardian-options"))))
+                    .andExpect(jsonPath("$._templates.registerMember.properties[?(@.name=='legalGuardianUserId')].options.link.href")
+                            .value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.containsString("kind=LEGAL_GUARDIAN"))));
         }
 
         @Test

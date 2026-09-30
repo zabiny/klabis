@@ -3,6 +3,9 @@ package com.klabis.members.application;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.domain.*;
+import com.klabis.members.legalguardian.application.LegalGuardianPort.GuardianInput;
+
+import java.util.List;
 
 /**
  * Service for member registration operations.
@@ -26,8 +29,27 @@ public interface RegistrationPort {
             PhoneNumber phone,
             BirthNumber birthNumber,
             BankAccountNumber bankAccountNumber,
-            UserId registeredBy
-    ) {}
+            UserId registeredBy,
+            List<GuardianInput> legalGuardians,
+            UserId takenOverLegalGuardian
+    ) {
+
+        public RegisterNewMember {
+            legalGuardians = legalGuardians == null ? List.of() : List.copyOf(legalGuardians);
+        }
+
+        public RegisterNewMember(
+                PersonalInformation personalInformation,
+                Address address,
+                EmailAddress email,
+                PhoneNumber phone,
+                BirthNumber birthNumber,
+                BankAccountNumber bankAccountNumber,
+                UserId registeredBy) {
+            this(personalInformation, address, email, phone, birthNumber, bankAccountNumber, registeredBy,
+                    List.of(), null);
+        }
+    }
 
     /**
      * Registers a new member.

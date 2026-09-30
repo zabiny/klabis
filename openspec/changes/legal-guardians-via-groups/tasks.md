@@ -31,10 +31,10 @@
 
 ## 4. Iterace: registrace nezletilý / dospělý
 
-- [ ] 4.1 API spec `RegisterMemberRequest`: `guardian` → `legalGuardians[]`, `legalGuardianUserId` pro převzetí zástupce; přegenerovat bundle a typy
-- [ ] 4.2 Testy (red) a implementace `RegistrationService`: nezletilý vyžaduje ≥ 1 zástupce (existující/nový) a zavolá `setGuardiansOf` v jedné transakci; dospělý se zástupci odmítnut; dospělý vyžaduje vlastní e-mail a telefon; chyba při zakládání zástupce nic nevytvoří
-- [ ] 4.3 Testy (red) a implementace převzetí nečlenského zástupce při registraci dospělého (stejný `UserId`, smazání `LegalGuardian`, skupiny beze změny, login `EXTnnnn` funguje a `is_member: true`)
-- [ ] 4.4 Frontend registrace: sekce podle data narození, volitelné vlastní kontakty nezletilého, zástupci (výběr/založení), převzetí zástupce s předvyplněním; testy + `npm run build`
+- [x] 4.1 API spec `RegisterMemberRequest`: `guardian` → `legalGuardians[]`, `legalGuardianUserId` pro převzetí zástupce; přegenerovat bundle a typy
+- [x] 4.2 Testy (red) a implementace `RegistrationService`: nezletilý vyžaduje ≥ 1 zástupce (existující/nový) a zavolá `setGuardiansOf` v jedné transakci; dospělý se zástupci odmítnut; dospělý vyžaduje vlastní e-mail a telefon; chyba při zakládání zástupce nic nevytvoří
+- [x] 4.3 Testy (red) a implementace převzetí nečlenského zástupce při registraci dospělého (stejný `UserId`, smazání `LegalGuardian`, skupiny beze změny, login `EXTnnnn` funguje a `is_member: true`)
+- [x] 4.4 Frontend registrace: sekce podle data narození, volitelné vlastní kontakty nezletilého, zástupci (výběr/založení), převzetí zástupce s předvyplněním; testy + `npm run build`
 
 ## 5. Iterace: aktivace účtů
 

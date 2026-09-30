@@ -7,6 +7,7 @@ import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.legalguardian.domain.LegalGuardian;
 import com.klabis.members.legalguardian.domain.LegalGuardianRepository;
 import org.jmolecules.ddd.annotation.Service;
+import org.jspecify.annotations.Nullable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Collator;
@@ -35,9 +36,22 @@ class GuardianCandidatesService implements GuardianCandidatesPort {
 
     @Transactional(readOnly = true)
     @Override
-    public List<GuardianCandidate> findCandidates(String query) {
+    public List<GuardianCandidate> findCandidates(String query, @Nullable GuardianKind kind) {
         Map<UserId, GuardianCandidate> byUser = new LinkedHashMap<>();
 
+        if (kind != GuardianKind.MEMBER) {
+            addLegalGuardians(query, byUser);
+        }
+        if (kind != GuardianKind.LEGAL_GUARDIAN) {
+            addAdultMembers(query, byUser);
+        }
+
+        List<GuardianCandidate> candidates = new ArrayList<>(byUser.values());
+        candidates.sort(Comparator.comparing(GuardianCandidate::displayName, CZECH));
+        return candidates;
+    }
+
+    private void addLegalGuardians(String query, Map<UserId, GuardianCandidate> byUser) {
         for (LegalGuardian guardian : legalGuardianRepository.findAll()) {
             if (matches(query, guardian.getFirstName(), guardian.getLastName())) {
                 byUser.put(guardian.getId(), new GuardianCandidate(guardian.getId(),
@@ -45,6 +59,9 @@ class GuardianCandidatesService implements GuardianCandidatesPort {
                         guardian.getEmail().value()));
             }
         }
+    }
+
+    private void addAdultMembers(String query, Map<UserId, GuardianCandidate> byUser) {
         for (Member member : memberRepository.findAll(MemberFilter.activeOnly().withFulltext(query))) {
             if (!member.getPersonalInformation().isMinor()) {
                 byUser.put(member.getId().toUserId(), new GuardianCandidate(member.getId().toUserId(),
@@ -53,10 +70,6 @@ class GuardianCandidatesService implements GuardianCandidatesPort {
                         member.getEmail() != null ? member.getEmail().value() : null));
             }
         }
-
-        List<GuardianCandidate> candidates = new ArrayList<>(byUser.values());
-        candidates.sort(Comparator.comparing(GuardianCandidate::displayName, CZECH));
-        return candidates;
     }
 
     private static boolean matches(String query, String firstName, String lastName) {

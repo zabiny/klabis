@@ -45,7 +45,7 @@ class LegalGuardianOptionsControllerTest {
     @DisplayName("returns candidates as value/prompt options")
     @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
     void returnsCandidates() throws Exception {
-        when(guardianCandidatesService.findCandidates("nov")).thenReturn(List.of(
+        when(guardianCandidatesService.findCandidates("nov", null)).thenReturn(List.of(
                 new GuardianCandidate(new UserId(MEMBER_UUID), "Jan Novák", GuardianKind.MEMBER, "ZBM0101", "jan@example.com"),
                 new GuardianCandidate(new UserId(GUARDIAN_UUID), "Petr Novotný", GuardianKind.LEGAL_GUARDIAN, null, "petr@example.com")));
 
@@ -58,6 +58,19 @@ class LegalGuardianOptionsControllerTest {
                 .andExpect(jsonPath("$[1].value").value(GUARDIAN_UUID.toString()))
                 .andExpect(jsonPath("$[1].kind").value("LEGAL_GUARDIAN"))
                 .andExpect(jsonPath("$[1].email").value("petr@example.com"));
+    }
+
+    @Test
+    @DisplayName("passes the kind filter to the candidates query")
+    @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+    void passesKindFilter() throws Exception {
+        when(guardianCandidatesService.findCandidates(null, GuardianKind.LEGAL_GUARDIAN)).thenReturn(List.of(
+                new GuardianCandidate(new UserId(GUARDIAN_UUID), "Petr Novotný", GuardianKind.LEGAL_GUARDIAN, null, "petr@example.com")));
+
+        mockMvc.perform(get("/api/legal-guardian-options").param("kind", "LEGAL_GUARDIAN").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].kind").value("LEGAL_GUARDIAN"));
     }
 
     @Test
