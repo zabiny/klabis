@@ -10,6 +10,7 @@ import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.common.ui.HalFormsOptionsDef;
+import com.klabis.members.application.MemberAccountActivationPort;
 import com.klabis.members.application.MemberCompletenessPort;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberDiscoveryPort;
@@ -298,10 +299,22 @@ record EnrolledMemberIds(Set<String> memberIds) {
 @MvcComponent
 class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDetailsResponse, Member> {
 
+    private final MemberAccountActivationPort accountActivationPort;
+
+    MemberDetailsPostprocessor(MemberAccountActivationPort accountActivationPort) {
+        this.accountActivationPort = accountActivationPort;
+    }
+
     @Override
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
         MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member,
                 member.getPersonalInformation().isMinor());
+
+        if (accountActivationPort.isAvailableFor(member)) {
+            UUID id = member.getId().uuid();
+            dtoModel.mapLink(IanaLinkRelations.SELF, self -> (Link) self.andAffordances(
+                    klabisAfford(methodOn(MemberAccountActivationApi.class).sendMemberAccountActivation(id))));
+        }
 
         klabisLinkTo(methodOn(MembersApi.class).listMembers(null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));

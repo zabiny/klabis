@@ -181,7 +181,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
         // Fail closed: a module bootstrapped without the members adapter (e.g. isolated
         // module tests) has no verifier bean. Treat that exactly like "no match" rather
         // than sending a link nobody could actually confirm ownership of.
-        boolean isActivationContact = verifier != null && verifier.isActivationContact(registrationNumber, email);
+        boolean isActivationContact = verifier != null && verifier.isActivationContact(user.getId(), email);
 
         if (!isActivationContact) {
             // Neutral outcome by design (D1): never reveal whether the address matched,
