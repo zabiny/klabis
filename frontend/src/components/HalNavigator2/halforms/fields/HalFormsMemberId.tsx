@@ -1,10 +1,10 @@
-import type {ReactElement} from 'react'
+import {type ReactElement, useState} from 'react'
 import type {FieldProps} from 'formik'
 import {Field, useField} from 'formik'
-import {SelectField} from '../../../UI/forms'
+import {SelectField, TextField} from '../../../UI/forms'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
-import {getFieldLabel} from '../../../../localization'
+import {getFieldLabel, labels} from '../../../../localization'
 import {ReadOnlyDisplay} from '../HalFormsForm.tsx'
 import {ClearSelectionButton} from './ClearSelectionButton.tsx'
 
@@ -14,6 +14,14 @@ interface HalFormsMemberIdProps extends HalFormsInputProps {
     /** When provided, only these member IDs will be shown (whitelist — used for "promote to owner" where only current members are valid) */
     includeIds?: string[];
 }
+
+const normalize = (text: string): string =>
+    text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+const matchesSearch = (label: string, query: string): boolean => {
+    const haystack = normalize(label);
+    return normalize(query).split(/\s+/).filter(Boolean).every(word => haystack.includes(word));
+};
 
 /**
  * HalFormsMemberId component - dropdown selection for member ID with clear button
@@ -27,6 +35,7 @@ interface HalFormsMemberIdProps extends HalFormsInputProps {
 export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', excludeIds, includeIds}: HalFormsMemberIdProps): ReactElement => {
     const {options: rawOptions, isLoading} = useHalFormOptions(prop.options)
     const [field] = useField<unknown>(prop.name)
+    const [search, setSearch] = useState('')
 
     const options = rawOptions.filter(opt => {
         const id = String(opt.value);
@@ -50,6 +59,8 @@ export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', exclude
                 // Convert undefined/null to empty string so it matches placeholder's empty value
                 const selectValue = (fieldValue === undefined || fieldValue === null || fieldValue === '') ? '' : fieldValue;
                 const hasValue = selectValue !== '';
+                const visibleOptions = options.filter(opt =>
+                    String(opt.value) === String(selectValue) || matchesSearch(opt.label, search));
 
                 const handleClear = () => {
                     field.onChange({
@@ -61,7 +72,15 @@ export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', exclude
                 };
 
                 return (
-                    <div className="relative">
+                    <div className="space-y-2">
+                        <TextField
+                            type="text"
+                            aria-label={labels.ui.optionSearch}
+                            placeholder={labels.ui.optionSearch}
+                            value={search}
+                            onChange={event => setSearch(event.target.value)}
+                        />
+                        <div className="relative">
                         <SelectField
                             {...field}
                             id={`field-${prop.name}`}
@@ -71,13 +90,14 @@ export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', exclude
                             disabled={isLoading}
                             required={prop.required}
                             error={errorText}
-                            options={options}
+                            options={visibleOptions}
                             className="w-full"
                         />
                         {/* Clear button - only visible when value is selected */}
                         {hasValue && (
                             <ClearSelectionButton onClick={handleClear}/>
                         )}
+                        </div>
                     </div>
                 );
             }}

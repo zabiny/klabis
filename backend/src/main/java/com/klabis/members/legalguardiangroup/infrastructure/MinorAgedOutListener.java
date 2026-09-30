@@ -1,10 +1,7 @@
 package com.klabis.members.legalguardiangroup.infrastructure;
 
-import com.klabis.members.MemberId;
 import com.klabis.members.MinorAgedOutEvent;
-import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
-import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupFilter;
-import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository;
+import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,26 +14,15 @@ class MinorAgedOutListener {
 
     private static final Logger log = LoggerFactory.getLogger(MinorAgedOutListener.class);
 
-    private final LegalGuardianGroupRepository groupRepository;
+    private final LegalGuardianGroupPort legalGuardianGroupPort;
 
-    MinorAgedOutListener(LegalGuardianGroupRepository groupRepository) {
-        this.groupRepository = groupRepository;
+    MinorAgedOutListener(LegalGuardianGroupPort legalGuardianGroupPort) {
+        this.legalGuardianGroupPort = legalGuardianGroupPort;
     }
 
     @ApplicationModuleListener
     void on(MinorAgedOutEvent event) {
-        MemberId memberId = event.memberId();
-        groupRepository.findOne(LegalGuardianGroupFilter.all().withMinorIs(memberId.toUserId()))
-                .ifPresent(group -> removeFromGroup(group, memberId));
-    }
-
-    private void removeFromGroup(LegalGuardianGroup group, MemberId memberId) {
-        group.removeMinor(memberId);
-        if (group.hasMinors()) {
-            groupRepository.save(group);
-        } else {
-            groupRepository.delete(group.getId());
-        }
-        log.info("Member {} left legal guardian group {} after turning 18", memberId, group.getId());
+        legalGuardianGroupPort.removeMinor(event.memberId());
+        log.info("Member {} left the legal guardian group after turning 18", event.memberId());
     }
 }

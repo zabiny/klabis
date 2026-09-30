@@ -4,7 +4,6 @@ import com.klabis.common.exceptions.MemberProfileRequiredException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.users.ActingUser;
-import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.ActingMember;
 import com.klabis.members.CurrentUserData;
@@ -18,8 +17,6 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @MvcComponent
 class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
@@ -57,10 +54,7 @@ class CurrentUserArgumentResolver implements HandlerMethodArgumentResolver {
         }
 
         if (parameterType.equals(CurrentUserData.class)) {
-            Set<Authority> authorities = token.getAuthorities().stream()
-                    .map(a -> Authority.fromString(a.getAuthority()))
-                    .collect(Collectors.toSet());
-            return new CurrentUserData(token.getUsername(), token.getUserId(), token.getMemberIdUuid().map(MemberId::new).orElse(null), authorities);
+            return CurrentUserData.from(token).orElseThrow();
         }
 
         throw new IllegalArgumentException(

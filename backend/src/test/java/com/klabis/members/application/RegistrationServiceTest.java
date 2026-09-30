@@ -8,14 +8,10 @@ import com.klabis.common.users.application.PermissionService;
 import com.klabis.members.MemberAssert;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.*;
-import com.klabis.members.legalguardian.application.GuardianContact;
-import com.klabis.members.legalguardian.application.GuardianContactResolver;
-import com.klabis.members.legalguardian.application.GuardianKind;
 import com.klabis.members.legalguardian.application.LegalGuardianPort;
 import com.klabis.members.legalguardian.application.LegalGuardianPort.GuardianInput;
 import com.klabis.members.legalguardian.application.LegalGuardianPort.NewLegalGuardian;
 import com.klabis.members.legalguardian.domain.LegalGuardianEmailAlreadyInUseException;
-import com.klabis.members.legalguardiangroup.application.GuardianNotFoundException;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -78,9 +74,6 @@ class RegistrationServiceTest {
     @Mock
     private PermissionService permissionService;
 
-    @Mock
-    private GuardianContactResolver guardianContactResolver;
-
     private RegistrationPort service;
 
     @BeforeEach
@@ -92,8 +85,7 @@ class RegistrationServiceTest {
                 legalGuardianPort,
                 legalGuardianGroupPort,
                 memberCompletenessPort,
-                permissionService,
-                guardianContactResolver
+                permissionService
         );
 
         // Setup default mock behavior that can be overridden in individual tests
@@ -101,12 +93,6 @@ class RegistrationServiceTest {
         UserId defaultSharedId = new UserId(UUID.fromString("12345678-1234-1234-1234-123456789012"));
         mockUserCreation(defaultSharedId);
         mockMemberCreation(defaultSharedId);
-
-        when(guardianContactResolver.resolve(any())).thenAnswer(invocation -> {
-            java.util.Collection<UserId> ids = invocation.getArgument(0);
-            return ids.stream().map(id -> new GuardianContact(id, "G", "Guardian", "g@example.com",
-                    "+420777000000", GuardianKind.MEMBER)).toList();
-        });
 
         // Setup default registration number generator
         when(registrationNumberGenerator.generate(any(LocalDate.class)))
@@ -551,7 +537,7 @@ class RegistrationServiceTest {
         void shouldRegisterMinorWithoutOwnContactsWhenGuardianCoversThem() {
             List<GuardianInput> guardians = List.of(GuardianInput.existing(GUARDIAN_ID));
             when(legalGuardianPort.resolveGuardians(guardians)).thenReturn(Set.of(GUARDIAN_ID));
-            when(memberCompletenessPort.contactsOfGuardians(Set.of(GUARDIAN_ID)))
+            when(memberCompletenessPort.contactsOfChosenGuardians(Set.of(GUARDIAN_ID)))
                     .thenReturn(new GuardianContacts(true, true, true));
 
             Member result = service.registerMember(minorCommand(null, null, guardians));
@@ -566,7 +552,7 @@ class RegistrationServiceTest {
         void shouldSetGuardiansAfterMemberIsSaved() {
             List<GuardianInput> guardians = List.of(GuardianInput.existing(GUARDIAN_ID));
             when(legalGuardianPort.resolveGuardians(guardians)).thenReturn(Set.of(GUARDIAN_ID));
-            when(memberCompletenessPort.contactsOfGuardians(Set.of(GUARDIAN_ID)))
+            when(memberCompletenessPort.contactsOfChosenGuardians(Set.of(GUARDIAN_ID)))
                     .thenReturn(new GuardianContacts(true, true, true));
 
             service.registerMember(minorCommand(null, null, guardians));
@@ -582,7 +568,7 @@ class RegistrationServiceTest {
             List<GuardianInput> guardians = List.of(GuardianInput.created(
                     new NewLegalGuardian("Eva", "Svobodová", "eva@example.com", "+420777111222")));
             when(legalGuardianPort.resolveGuardians(guardians)).thenReturn(Set.of(GUARDIAN_ID));
-            when(memberCompletenessPort.contactsOfGuardians(Set.of(GUARDIAN_ID)))
+            when(memberCompletenessPort.contactsOfChosenGuardians(Set.of(GUARDIAN_ID)))
                     .thenReturn(new GuardianContacts(true, true, true));
 
             service.registerMember(minorCommand(null, null, guardians));
@@ -603,25 +589,11 @@ class RegistrationServiceTest {
         }
 
         @Test
-        @DisplayName("should reject a chosen guardian who is unknown or a minor with a specific error")
-        void shouldRejectUnusableGuardian() {
-            List<GuardianInput> guardians = List.of(GuardianInput.existing(GUARDIAN_ID));
-            when(legalGuardianPort.resolveGuardians(guardians)).thenReturn(Set.of(GUARDIAN_ID));
-            when(guardianContactResolver.resolve(Set.of(GUARDIAN_ID))).thenReturn(List.of());
-
-            assertThatThrownBy(() -> service.registerMember(minorCommand(null, null, guardians)))
-                    .isInstanceOf(GuardianNotFoundException.class);
-
-            verify(userService, never()).createUser(anyString(), any(Set.class));
-            verify(memberRepository, never()).save(any(Member.class));
-        }
-
-        @Test
         @DisplayName("should reject a minor whose contacts nobody provides")
         void shouldRejectMinorWithoutContacts() {
             List<GuardianInput> guardians = List.of(GuardianInput.existing(GUARDIAN_ID));
             when(legalGuardianPort.resolveGuardians(guardians)).thenReturn(Set.of(GUARDIAN_ID));
-            when(memberCompletenessPort.contactsOfGuardians(Set.of(GUARDIAN_ID)))
+            when(memberCompletenessPort.contactsOfChosenGuardians(Set.of(GUARDIAN_ID)))
                     .thenReturn(new GuardianContacts(true, false, false));
 
             assertThatThrownBy(() -> service.registerMember(minorCommand(null, null, guardians)))

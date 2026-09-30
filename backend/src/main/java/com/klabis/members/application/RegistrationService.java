@@ -12,10 +12,7 @@ import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.RegistrationNumber;
 import com.klabis.members.domain.RegistrationNumberAlreadyInUseException;
 import com.klabis.members.domain.RegistrationNumberGenerator;
-import com.klabis.members.legalguardian.application.GuardianContact;
-import com.klabis.members.legalguardian.application.GuardianContactResolver;
 import com.klabis.members.legalguardian.application.LegalGuardianPort;
-import com.klabis.members.legalguardiangroup.application.GuardianNotFoundException;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
@@ -56,7 +53,6 @@ public class RegistrationService implements RegistrationPort {
     private final LegalGuardianGroupPort legalGuardianGroupPort;
     private final MemberCompletenessPort memberCompletenessPort;
     private final PermissionService permissionService;
-    private final GuardianContactResolver guardianContactResolver;
 
     /**
      * Constructs a new RegistrationPort.
@@ -68,7 +64,6 @@ public class RegistrationService implements RegistrationPort {
      * @param legalGuardianGroupPort      assigns the legal guardians to the registered minor
      * @param memberCompletenessPort      tells what the legal guardians offer towards the minor's contacts
      * @param permissionService           grants a taken-over guardian the authorities of a member
-     * @param guardianContactResolver     rejects chosen guardians who cannot serve as one
      */
     public RegistrationService(
             MemberRepository memberRepository,
@@ -77,8 +72,7 @@ public class RegistrationService implements RegistrationPort {
             LegalGuardianPort legalGuardianPort,
             LegalGuardianGroupPort legalGuardianGroupPort,
             MemberCompletenessPort memberCompletenessPort,
-            PermissionService permissionService,
-            GuardianContactResolver guardianContactResolver) {
+            PermissionService permissionService) {
         this.memberRepository = memberRepository;
         this.userService = userService;
         this.registrationNumberGenerator = registrationNumberGenerator;
@@ -86,7 +80,6 @@ public class RegistrationService implements RegistrationPort {
         this.legalGuardianGroupPort = legalGuardianGroupPort;
         this.memberCompletenessPort = memberCompletenessPort;
         this.permissionService = permissionService;
-        this.guardianContactResolver = guardianContactResolver;
     }
 
     @Transactional
@@ -108,10 +101,9 @@ public class RegistrationService implements RegistrationPort {
         Set<UserId> guardians = command.legalGuardians().isEmpty()
                                 ? Set.of()
                                 : legalGuardianPort.resolveGuardians(command.legalGuardians());
-        requireUsableGuardians(guardians);
         GuardianContacts guardianContacts = guardians.isEmpty()
                                             ? GuardianContacts.NONE
-                                            : memberCompletenessPort.contactsOfGuardians(guardians);
+                                            : memberCompletenessPort.contactsOfChosenGuardians(guardians);
 
         RegistrationNumber registrationNumber = registrationNumberGenerator.generate(dateOfBirth);
         log.debug("Generated registration number: {} for date of birth: {}",
@@ -180,18 +172,6 @@ public class RegistrationService implements RegistrationPort {
             // a race between the check and this save. See design.md D4.
             throw new RegistrationNumberAlreadyInUseException(registrationNumber, e);
         }
-    }
-
-    private void requireUsableGuardians(Set<UserId> guardians) {
-        if (guardians.isEmpty()) {
-            return;
-        }
-        Set<UserId> usable = guardianContactResolver.resolve(guardians).stream()
-                .map(GuardianContact::userId)
-                .collect(java.util.stream.Collectors.toSet());
-        guardians.stream().filter(id -> !usable.contains(id)).findFirst().ifPresent(id -> {
-            throw new GuardianNotFoundException(id);
-        });
     }
 
     /**

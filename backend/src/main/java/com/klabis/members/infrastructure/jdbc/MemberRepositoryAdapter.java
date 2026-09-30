@@ -173,6 +173,10 @@ class MemberRepositoryAdapter implements MemberRepository {
             conditions.add(Criteria.where("dateOfBirth").in(filter.bornOn()));
         }
 
+        if (filter.bornOnOrBefore() != null) {
+            conditions.add(Criteria.where("dateOfBirth").lessThanOrEquals(filter.bornOnOrBefore()));
+        }
+
         if (conditions.isEmpty()) {
             return Query.empty();
         }

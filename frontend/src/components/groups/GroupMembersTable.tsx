@@ -8,11 +8,14 @@ import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
 import {UserMinus} from 'lucide-react';
 import type {HalResourceLinks} from '../../api';
+import {toHref} from '../../api/hateoas.ts';
 
 export interface GroupMemberRow {
     memberId: string;
     joinedAt: string;
     memberLink: HalResourceLinks | undefined;
+    /** Display name already known to the caller; skips loading the member resource for the row. */
+    memberName?: string;
     removeAriaLabel?: string;
     onRemove?: () => void;
 }
@@ -22,9 +25,6 @@ interface GroupMembersTableProps {
     emptyMessage: string;
     linkMembers?: boolean;
 }
-
-const memberHref = (link: HalResourceLinks): string | undefined =>
-    (Array.isArray(link) ? link[0] : link)?.href;
 
 export const GroupMembersTable = ({members, emptyMessage, linkMembers = false}: GroupMembersTableProps): ReactElement => {
     if (members.length === 0) {
@@ -47,19 +47,19 @@ export const GroupMembersTable = ({members, emptyMessage, linkMembers = false}: 
                 </thead>
                 <tbody>
                 {members.map((member) => {
-                    const href = member.memberLink ? memberHref(member.memberLink) : undefined;
+                    const href = member.memberLink ? toHref(member.memberLink) : undefined;
+                    const cell = (name: ReactElement) => linkMembers && href
+                        ? <Link to={extractNavigationPath(href)} className="hover:text-primary hover:underline">{name}</Link>
+                        : name;
                     return (
                         <tr key={member.memberId}
                             className="border-b border-border last:border-0 hover:bg-slate-50 dark:hover:bg-zinc-800/50">
                             <td className="px-4 py-3">
-                                {member.memberLink && (
+                                {member.memberName !== undefined ? (
+                                    cell(<span className="text-text-primary">{member.memberName}</span>)
+                                ) : member.memberLink && (
                                     <HalRouteProvider routeLink={member.memberLink}>
-                                        {linkMembers && href ? (
-                                            <Link to={extractNavigationPath(href)}
-                                                  className="hover:text-primary hover:underline">
-                                                <MemberNameWithRegNumber/>
-                                            </Link>
-                                        ) : <MemberNameWithRegNumber/>}
+                                        {cell(<MemberNameWithRegNumber/>)}
                                     </HalRouteProvider>
                                 )}
                             </td>

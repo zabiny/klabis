@@ -6,6 +6,7 @@ import com.klabis.common.groups.domain.MemberAlreadyInGroupException;
 import com.klabis.common.groups.domain.MemberGroup;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
+import com.klabis.members.domain.PersonalInformation;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
@@ -13,7 +14,6 @@ import org.springframework.util.Assert;
 
 import java.text.Collator;
 import java.time.LocalDate;
-import java.time.Period;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -31,8 +31,6 @@ import java.util.stream.Collectors;
 public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGuardianGroupId, UserId> {
 
     public static final String TYPE_DISCRIMINATOR = "LEGAL_GUARDIAN";
-
-    private static final int ADULT_AGE = 18;
 
     @Identity
     private final LegalGuardianGroupId id;
@@ -58,7 +56,7 @@ public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGua
         public Minor {
             Assert.notNull(id, "Minor MemberId is required");
             Assert.notNull(dateOfBirth, "Minor date of birth is required");
-            if (Period.between(dateOfBirth, LocalDate.now()).getYears() >= ADULT_AGE) {
+            if (!PersonalInformation.isMinor(dateOfBirth)) {
                 throw new OnlyMinorsAllowedException(id);
             }
         }

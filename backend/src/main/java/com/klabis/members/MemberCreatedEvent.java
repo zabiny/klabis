@@ -6,7 +6,6 @@ import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.Period;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -151,7 +150,7 @@ public record MemberCreatedEvent(
      * Whether the member is younger than 18 today; guardians are not known at creation time.
      */
     public boolean isMinor() {
-        return Period.between(dateOfBirth, LocalDate.now()).getYears() < 18;
+        return PersonalInformation.isMinor(dateOfBirth);
     }
 
     /**

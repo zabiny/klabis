@@ -1,7 +1,7 @@
 import type {SelectOption} from '../components/UI/forms';
 import type {HalFormsOption, HalFormsOptionType} from '../api';
 import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
-import {expandUriTemplate, normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
+import {normalizeKlabisApiPath, stripUriTemplate} from "../utils/halFormsUtils.ts";
 import {getPermissionInfo, labels} from '../localization';
 
 /**
@@ -78,19 +78,14 @@ interface UseHalFormOptionsResult {
  */
 export function useHalFormOptions(
     optionDef: HalFormsOption | undefined,
-    prop?: EnumOptionContext,
-    labelOf?: (item: HalFormsOptionType) => string
+    prop?: EnumOptionContext
 ): UseHalFormOptionsResult {
-    const optionsHref = (optionDef?.link?.href && normalizeKlabisApiPath(expandUriTemplate(optionDef.link.href))) ?? '';
+    const optionsHref = (optionDef?.link?.href && normalizeKlabisApiPath(stripUriTemplate(optionDef.link.href))) ?? '';
 
     const linkOptions = useAuthorizedQuery(optionsHref, {
         enabled: !!optionsHref,
         staleTime: 5 * 60 * 1000, // 5 minutes - options rarely change
-        select: (data) => {
-            const items = (Array.isArray(data) ? data : []) as HalFormsOptionType[];
-            const options = convertToSelectOptions(items);
-            return labelOf ? options.map((option, index) => ({...option, label: labelOf(items[index])})) : options;
-        }
+        select: (data) => convertToSelectOptions((Array.isArray(data) ? data : []) as HalFormsOptionType[])
     })
 
     // Handle inline options - no fetching needed

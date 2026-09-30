@@ -1,20 +1,14 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {LegalGuardianDetailPage} from './LegalGuardianDetailPage';
 
 vi.mock('../../hooks/useHalPageData', () => ({useHalPageData: vi.fn()}));
 
-const modalSpy = vi.fn();
-vi.mock('../../components/HalNavigator2/HalFormModal.tsx', () => ({
-    HalFormModal: (props: Record<string, unknown>) => {
-        modalSpy(props);
-        return <div data-testid="form-modal"/>;
-    },
+vi.mock('../../components/HalNavigator2/HalFormButton.tsx', () => ({
+    HalFormButton: ({name}: {name: string}) => <button data-testid="hal-form-button">{name}</button>,
 }));
 
 const renderPage = (resourceData: Record<string, unknown> | null, extra?: {isLoading?: boolean; error?: Error}) => {
@@ -55,23 +49,9 @@ describe('LegalGuardianDetailPage', () => {
         expect(screen.getByText('+420777111222')).toBeInTheDocument();
     });
 
-    it('hides the edit button without the template', () => {
+    it('offers the updateLegalGuardian form action', () => {
         renderPage(buildGuardian());
-        expect(screen.queryByRole('button', {name: 'Upravit profil'})).not.toBeInTheDocument();
-    });
-
-    it('opens the edit form prefilled with current values', async () => {
-        renderPage(buildGuardian({
-            _templates: {
-                updateLegalGuardian: mockHalFormsTemplate({method: 'PATCH', target: '/api/legal-guardians/u-1'}),
-            },
-        }));
-        await userEvent.click(screen.getByRole('button', {name: 'Upravit profil'}));
-        expect(screen.getByTestId('form-modal')).toBeInTheDocument();
-        expect(modalSpy).toHaveBeenCalledWith(expect.objectContaining({
-            templateName: 'updateLegalGuardian',
-            resourceData: expect.objectContaining({firstName: 'Jana', email: 'jana@example.com'}),
-        }));
+        expect(screen.getByTestId('hal-form-button')).toHaveTextContent('updateLegalGuardian');
     });
 
     it('shows an error alert on failure', () => {

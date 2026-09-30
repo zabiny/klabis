@@ -3,7 +3,6 @@ package com.klabis.authorizationserver;
 import com.klabis.common.security.AuthorizationServerCustomizer;
 import com.klabis.common.security.KlabisOAuth2ClaimNames;
 import com.klabis.common.users.UserId;
-import com.klabis.members.LegalGuardianDto;
 import com.klabis.members.LegalGuardians;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
@@ -53,19 +52,13 @@ class KlabisAuthorizationServerCustomizer implements AuthorizationServerCustomiz
             userId.ifPresent(id -> claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_USER_ID, id.uuid().toString()));
 
             Optional<MemberDto> member = userId.flatMap(this::findMember);
-            if (member.isPresent()) {
-                MemberDto memberDto = member.get();
-                claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_MEMBER_ID, memberDto.memberId().toString());
-                claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_GIVEN_NAME, memberDto.firstName());
-                claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_FAMILY_NAME, memberDto.lastName());
+            member.ifPresent(memberDto ->
+                    claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_MEMBER_ID, memberDto.memberId().toString()));
+            userId.flatMap(id -> findProfile(id, member)).ifPresent(profile -> {
+                claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_GIVEN_NAME, profile.firstName());
+                claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_FAMILY_NAME, profile.lastName());
                 claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_PREFERRED_USER_NAME, userName);
-            } else {
-                userId.flatMap(legalGuardians::findById).ifPresent(guardian -> {
-                    claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_GIVEN_NAME, guardian.firstName());
-                    claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_FAMILY_NAME, guardian.lastName());
-                    claimsBuilder.claim(KlabisOAuth2ClaimNames.CLAIM_PREFERRED_USER_NAME, userName);
-                });
-            }
+            });
         }
     }
 
@@ -73,18 +66,23 @@ class KlabisAuthorizationServerCustomizer implements AuthorizationServerCustomiz
     public void customizeOidcUserInfo(String userName, Set<String> scopes, OidcUserInfo.Builder builder) {
         Optional<UserId> userId = findUserId(userName);
         Optional<MemberDto> member = userId.flatMap(this::findMember);
-        if (member.isPresent()) {
-            builder.claim(KlabisOAuth2ClaimNames.USER_INFO_IS_MEMBER, true);
-            addProfileClaims(builder, scopes, member.get().firstName(), member.get().lastName(), member.get().lastModifiedAt());
-            addEmailClaims(builder, scopes, member.get().email());
-            return;
-        }
-
-        builder.claim(KlabisOAuth2ClaimNames.USER_INFO_IS_MEMBER, false);
-        userId.flatMap(legalGuardians::findById).ifPresent((LegalGuardianDto guardian) -> {
-            addProfileClaims(builder, scopes, guardian.firstName(), guardian.lastName(), guardian.lastModifiedAt());
-            addEmailClaims(builder, scopes, guardian.email());
+        builder.claim(KlabisOAuth2ClaimNames.USER_INFO_IS_MEMBER, member.isPresent());
+        userId.flatMap(id -> findProfile(id, member)).ifPresent(profile -> {
+            addProfileClaims(builder, scopes, profile.firstName(), profile.lastName(), profile.lastModifiedAt());
+            addEmailClaims(builder, scopes, profile.email());
         });
+    }
+
+    private record Profile(String firstName, String lastName, String email, LocalDateTime lastModifiedAt) {
+    }
+
+    private Optional<Profile> findProfile(UserId userId, Optional<MemberDto> member) {
+        return member
+                .map(memberDto -> new Profile(memberDto.firstName(), memberDto.lastName(), memberDto.email(),
+                        memberDto.lastModifiedAt()))
+                .or(() -> legalGuardians.findById(userId)
+                        .map(guardian -> new Profile(guardian.firstName(), guardian.lastName(), guardian.email(),
+                                guardian.lastModifiedAt())));
     }
 
     // Membership is decided by the user id, never by the login name: a non-member guardian logs in

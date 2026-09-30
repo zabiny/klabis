@@ -128,7 +128,7 @@ Nečlenský zástupce dostane při založení jen `MEMBERS:READ`. `RootControlle
 
 ### D11: Kandidáti na zástupce
 
-`GET /api/legal-guardian-options` spojí všechny `LegalGuardian` a aktivní členy s věkem ≥ 18 (deduplikace podle `UserId`), s fulltextovým `q`. Vrací i e-mail (přístup jen `MEMBERS:CREATE` / `MEMBERS:MANAGE`). Slouží i jako options pro `x-hal-input-type: UserId`.
+`GET /api/legal-guardian-options` spojí všechny `LegalGuardian` a aktivní členy s věkem ≥ 18 (deduplikace podle `UserId`), bez fulltextového filtru (výběr filtruje klient). `prompt` je hotový popisek („Jméno Příjmení (ZBMnnnn)“ / „Jméno Příjmení (e-mail)“). Vrací i e-mail (přístup jen `MEMBERS:CREATE` / `MEMBERS:MANAGE`). Slouží i jako options pro `x-hal-input-type: UserId`.
 
 ### D12: Registrace se zástupci v jedné transakci
 
@@ -216,11 +216,11 @@ classDiagram
 | `POST /api/members/{id}/account-activation` | nový (`sendMemberAccountActivation`), bez těla |
 | `GET /api/legal-guardians/{userId}` | nový (`getLegalGuardian`): `{userId, loginName, firstName, lastName, email, phone}`, `self`; affordance `updateLegalGuardian`; přístup `MEMBERS_MANAGE` nebo sám zástupce |
 | `PATCH /api/legal-guardians/{userId}` | nový (`updateLegalGuardian`): jméno, příjmení, e-mail, telefon (e-mail/telefon nelze vymazat) |
-| `GET /api/legal-guardian-options?q=` | nový (`listLegalGuardianOptions`): `{userId, displayName, kind: MEMBER/LEGAL_GUARDIAN, registrationNumber?, email?}`; `MEMBERS_CREATE` nebo `MEMBERS_MANAGE` |
+| `GET /api/legal-guardian-options?kind=` | nový (`listLegalGuardianOptions`): `{userId, displayName, kind: MEMBER/LEGAL_GUARDIAN, registrationNumber?, email?}`; `MEMBERS_CREATE` nebo `MEMBERS_MANAGE` |
 | `GET /api/legal-guardian-groups` | přejmenováno z `/api/family-groups` (`listLegalGuardianGroups`); `MEMBERS_MANAGE`; rel v rootu `legalGuardianGroups` |
 | `GET /api/legal-guardian-groups/{id}` | `{name, minors[{memberId, joinedAt, _links.member}]}`, odkaz `legalGuardians`; affordance `setLegalGuardianGroupGuardians`; `MEMBERS_MANAGE` |
 | `GET /api/legal-guardian-groups/{id}/guardians` | nový (`listLegalGuardianGroupGuardians`): kolekce `{userId, firstName, lastName, email, phone, _links.member` (člen) nebo `_links.legalGuardian` (nečlen)`}`; `MEMBERS_MANAGE` nebo nezletilý člen skupiny |
-| `PUT /api/legal-guardian-groups/{id}/guardians` | nový (`setLegalGuardianGroupGuardians`): `{legalGuardians[]}` |
+| `PUT /api/legal-guardian-groups/{id}/legal-guardians` | nový (`setLegalGuardianGroupGuardians`): `{legalGuardians[]}` |
 | `POST /api/family-groups`, `DELETE /api/family-groups/{id}`, `/parents…`, `/children…` | **odstraněno** |
 | `GET /api` (root) | nový `_links.profile` (člen i nečlenský zástupce); `familyGroups` → `legalGuardianGroups` |
 

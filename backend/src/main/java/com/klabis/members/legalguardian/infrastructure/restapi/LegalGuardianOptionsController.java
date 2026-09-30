@@ -27,9 +27,9 @@ class LegalGuardianOptionsController implements LegalGuardianOptionsApi {
     }
 
     @Override
-    public ResponseEntity<List<LegalGuardianOptionResponse>> listLegalGuardianOptions(String q, LegalGuardianKind kind) {
+    public ResponseEntity<List<LegalGuardianOptionResponse>> listLegalGuardianOptions(LegalGuardianKind kind) {
         GuardianKind guardianKind = kind != null ? GuardianKind.valueOf(kind.name()) : null;
-        return ResponseEntity.ok(guardianCandidatesService.findCandidates(q, guardianKind).stream()
+        return ResponseEntity.ok(guardianCandidatesService.findCandidates(guardianKind).stream()
                 .map(LegalGuardianOptionsController::toResponse)
                 .toList());
     }

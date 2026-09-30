@@ -1,7 +1,7 @@
 import {type ReactElement, type ReactNode, useEffect} from 'react';
 import {useFormikContext} from 'formik';
 import {DetailRow} from '../../components/UI';
-import {authorizedFetch} from '../../api/authorizedFetch';
+import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
 import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {Section} from './MemberSection.tsx';
@@ -45,23 +45,17 @@ export const RegistrationGuardianSections = ({renderInput, hasField}: Registrati
         if (isMinor === false && hasGuardianValue) void setFieldValue('legalGuardians', []);
     }, [isMinor, takeoverId, hasGuardianValue, setFieldValue]);
 
+    const {data: profile} = useAuthorizedQuery<LegalGuardianProfile>(`/legal-guardians/${takeoverId}`, {
+        enabled: isMinor === false && takeoverId !== '',
+    });
+
     useEffect(() => {
-        if (isMinor !== false || !takeoverId) return;
-        let cancelled = false;
-        authorizedFetch(`/api/legal-guardians/${takeoverId}`)
-            .then(response => response.json() as Promise<LegalGuardianProfile>)
-            .then(profile => {
-                if (cancelled) return;
-                void setFieldValue('firstName', profile.firstName);
-                void setFieldValue('lastName', profile.lastName);
-                void setFieldValue('email', profile.email);
-                void setFieldValue('phone', profile.phone);
-            })
-            .catch(() => undefined);
-        return () => {
-            cancelled = true;
-        };
-    }, [isMinor, takeoverId, setFieldValue]);
+        if (!profile) return;
+        void setFieldValue('firstName', profile.firstName);
+        void setFieldValue('lastName', profile.lastName);
+        void setFieldValue('email', profile.email);
+        void setFieldValue('phone', profile.phone);
+    }, [profile, setFieldValue]);
 
     if (isMinor === true && hasField('legalGuardians')) {
         return (
