@@ -61,6 +61,7 @@ export const labels = {
         createCalendarItem: 'Přidat položku',
         suspendMember: 'Ukončit členství',
         resumeMember: 'Reaktivovat',
+        sendMemberAccountActivation: 'Založit účet',
         updateMember: 'Upravit profil',
         registerMember: 'Registrovat člena',
         importFromOris: 'Synchronizovat s ORIS',
@@ -122,6 +123,7 @@ export const labels = {
         editRegistration: 'Upravit přihlášku',
         suspendMember: 'Ukončení členství',
         resumeMember: 'Reaktivace člena',
+        sendMemberAccountActivation: 'Založení účtu',
         importEvent: 'Import akce z ORIS',
         syncAllUpcomingFromOris: 'Hromadná synchronizace z ORIS',
         createEvent: 'Nová akce',
@@ -622,6 +624,10 @@ export const labels = {
         errorIncorrectCurrentPassword: 'Zadané aktuální heslo je nesprávné.',
     },
 
+    accountActivation: {
+        confirm: 'Na vlastní e-mail člena bude odeslán aktivační odkaz, přes který si vytvoří přístup do aplikace.',
+        sent: 'Aktivační odkaz byl odeslán na e-mail člena.',
+    },
     memberCompleteness: {
         missingDataWarning: (items: string) => `Chybí: ${items}`,
     },

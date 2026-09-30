@@ -115,6 +115,9 @@ class MemberControllerApiTest {
     }
 
     @Autowired
+    private com.klabis.members.application.MemberAccountActivationPort accountActivationPort;
+
+    @Autowired
     private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
     @Autowired
@@ -613,6 +616,46 @@ class MemberControllerApiTest {
             mockMvc.perform(getMemberById(adultId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.setMemberLegalGuardians").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("offers sendMemberAccountActivation only when activation is available for the member")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void offersAccountActivationOnlyWhenAvailable() throws Exception {
+            UUID availableId = UUID.randomUUID();
+            UUID unavailableId = UUID.randomUUID();
+            Member available = MemberTestDataBuilder.aMemberWithId(availableId)
+                    .withDateOfBirth(LocalDate.now().minusYears(10)).build();
+            Member unavailable = MemberTestDataBuilder.aMemberWithId(unavailableId)
+                    .withDateOfBirth(LocalDate.now().minusYears(10)).build();
+            when(managementService.getMemberAndRecordView(eq(new MemberId(availableId)), any(UserId.class), anyBoolean())).thenReturn(available);
+            when(managementService.getMemberAndRecordView(eq(new MemberId(unavailableId)), any(UserId.class), anyBoolean())).thenReturn(unavailable);
+            when(accountActivationPort.isAvailableFor(available)).thenReturn(true);
+            when(accountActivationPort.isAvailableFor(unavailable)).thenReturn(false);
+
+            mockMvc.perform(getMemberById(availableId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.sendMemberAccountActivation.method").value("POST"))
+                    .andExpect(jsonPath("$._templates.sendMemberAccountActivation.target").value(
+                            "http://localhost/api/members/%s/account-activation".formatted(availableId)));
+            mockMvc.perform(getMemberById(unavailableId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.sendMemberAccountActivation").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("does not offer sendMemberAccountActivation without MEMBERS:MANAGE")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void hidesAccountActivationWithoutManage() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withDateOfBirth(LocalDate.now().minusYears(10)).build();
+            when(managementService.getMemberAndRecordView(eq(new MemberId(memberId)), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(accountActivationPort.isAvailableFor(member)).thenReturn(true);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.sendMemberAccountActivation").doesNotExist());
         }
 
         @Test

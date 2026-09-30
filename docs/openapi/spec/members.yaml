@@ -286,6 +286,11 @@ paths:
             setMemberLegalGuardians:
               operation: setMemberLegalGuardians
               description: Present only for a minor and for callers with MEMBERS:MANAGE
+            sendMemberAccountActivation:
+              operation: sendMemberAccountActivation
+              description: |
+                Present only for a minor with an own e-mail whose account still awaits activation and
+                for callers with MEMBERS:MANAGE
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -424,6 +429,34 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
+  /api/members/{id}/account-activation:
+    post:
+      operationId: sendMemberAccountActivation
+      tags: [MemberAccountActivation]
+      summary: Send an activation link to a minor's own e-mail
+      description: |
+        Lets an administrator decide that a minor gets their own login: generates a password setup
+        token and sends the activation link to the minor's own e-mail. Refused unless the member is a
+        minor with an own e-mail and an account awaiting activation. Requires MEMBERS:MANAGE.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+      responses:
+        '204':
+          description: Activation link sent
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
 
   /api/members/{id}/legal-guardians:
     put:

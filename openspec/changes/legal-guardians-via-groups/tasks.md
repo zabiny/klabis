@@ -38,9 +38,9 @@
 
 ## 5. Iterace: aktivace účtů
 
-- [ ] 5.1 Testy (red) a implementace pravidel `MemberActivationContactVerifier`: nečlenský zástupce svým e-mailem, dospělý člen vlastním e-mailem, nezletilý nikdy; login může být `EXTnnnn`
-- [ ] 5.2 API spec + testy (red) + implementace `POST /api/members/{id}/account-activation` (`sendMemberAccountActivation`): jen `MEMBERS:MANAGE`, nezletilý s vlastním e-mailem a účtem čekajícím na aktivaci; odkaz na e-mail dítěte
-- [ ] 5.3 Frontend: akce „Založit účet“ na detailu nezletilého s potvrzením; testy + `npm run build`
+- [x] 5.1 Testy (red) a implementace pravidel `MemberActivationContactVerifier`: nečlenský zástupce svým e-mailem, dospělý člen vlastním e-mailem, nezletilý nikdy; login může být `EXTnnnn`
+- [x] 5.2 API spec + testy (red) + implementace `POST /api/members/{id}/account-activation` (`sendMemberAccountActivation`): jen `MEMBERS:MANAGE`, nezletilý s vlastním e-mailem a účtem čekajícím na aktivaci; odkaz na e-mail dítěte
+- [x] 5.3 Frontend: akce „Založit účet“ na detailu nezletilého s potvrzením; testy + `npm run build`
 
 ## 6. Iterace: dovršení 18 let
 

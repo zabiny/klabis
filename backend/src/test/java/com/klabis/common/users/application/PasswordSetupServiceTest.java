@@ -415,7 +415,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             User user = createPendingUser();
 
             when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
-            when(activationContactVerifier.isActivationContact(registrationNumber, email)).thenReturn(true);
+            when(activationContactVerifier.isActivationContact(user.getId(), email)).thenReturn(true);
             when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
             when(templateRenderer.renderText(any(), any())).thenReturn("text body");
@@ -440,7 +440,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             User user = createPendingUser();
 
             when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
-            when(activationContactVerifier.isActivationContact(registrationNumber, foreignEmail)).thenReturn(false);
+            when(activationContactVerifier.isActivationContact(user.getId(), foreignEmail)).thenReturn(false);
 
             // When
             passwordSetupService.requestNewToken(registrationNumber, foreignEmail);
@@ -491,7 +491,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             User user = createPendingUser();
 
             when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
-            when(activationContactVerifier.isActivationContact(registrationNumber, enteredEmail)).thenReturn(true);
+            when(activationContactVerifier.isActivationContact(user.getId(), enteredEmail)).thenReturn(true);
             when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
             when(templateRenderer.renderText(any(), any())).thenReturn("text body");

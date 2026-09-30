@@ -10,7 +10,7 @@ import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
 import type {GetMemberHal, GetMemberResource, HalFormsTemplate} from "../../api";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Banknote, Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserX} from "lucide-react";
+import {Banknote, Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserPlus, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField";
 import {isCzNationality} from "./isCzNationality";
@@ -94,6 +94,7 @@ interface MemberDetailContentProps {
 const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = false}: MemberDetailContentProps) => {
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
     const [suspendMemberModal, setSuspendMemberModal] = useState(false);
+    const [accountActivationModal, setAccountActivationModal] = useState(false);
     const [editGuardiansOpen, setEditGuardiansOpen] = useState(false);
 
     const {
@@ -367,6 +368,15 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                 </Button>
                             )}
                             {hasEditTemplate && <HalFormButton name="resumeMember" modal={true}/>}
+                            {resourceData._templates?.sendMemberAccountActivation && (
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setAccountActivationModal(true)}
+                                    startIcon={<UserPlus className="w-4 h-4"/>}
+                                >
+                                    {labels.templates.sendMemberAccountActivation}
+                                </Button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -473,6 +483,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
     );
 
     const suspendTemplate = resourceData._templates?.suspendMember ?? null;
+    const accountActivationTemplate = resourceData._templates?.sendMemberAccountActivation ?? null;
 
     return (
         <>
@@ -490,6 +501,25 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                 onClose={clearNegativeBalanceWarning}
                 warning={negativeBalanceWarning}
             />
+            {accountActivationTemplate && accountActivationModal && (
+                <Modal
+                    isOpen={true}
+                    onClose={() => setAccountActivationModal(false)}
+                    title={labels.dialogTitles.sendMemberAccountActivation}
+                    size="2xl"
+                >
+                    <p className="mb-4 text-text-secondary">{labels.accountActivation.confirm}</p>
+                    <HalFormDisplay
+                        template={accountActivationTemplate}
+                        templateName="sendMemberAccountActivation"
+                        resourceData={resourceData as unknown as Record<string, unknown>}
+                        pathname={route.pathname}
+                        onClose={() => setAccountActivationModal(false)}
+                        successMessage={labels.accountActivation.sent}
+                        submitButtonLabel={labels.templates.sendMemberAccountActivation}
+                    />
+                </Modal>
+            )}
             {suspendTemplate && suspendMemberModal && (
                 <Modal
                     isOpen={true}

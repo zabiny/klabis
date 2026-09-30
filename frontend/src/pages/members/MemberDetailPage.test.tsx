@@ -474,6 +474,31 @@ describe('MemberDetailPage', () => {
             expect(screen.getByRole('button', {name: /ukončit členství/i})).toBeInTheDocument();
         });
 
+        it('shows "Založit účet" button and confirmation dialog when sendMemberAccountActivation template exists', async () => {
+            const user = userEvent.setup();
+            const data = mockMemberDetailData({
+                _templates: {
+                    sendMemberAccountActivation: mockHalFormsTemplate({
+                        title: 'sendMemberAccountActivation',
+                        target: '/api/members/123/account-activation',
+                    }),
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /založit účet/i}));
+
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(screen.getByText('Založení účtu')).toBeInTheDocument();
+            expect(screen.getByText(/aktivační odkaz/i)).toBeInTheDocument();
+        });
+
+        it('does NOT show "Založit účet" button without sendMemberAccountActivation template', () => {
+            const data = mockMemberDetailData({_templates: {updateMember: adminEditTemplate}});
+            renderPage(createMockPageData(data));
+            expect(screen.queryByRole('button', {name: /založit účet/i})).not.toBeInTheDocument();
+        });
+
         it('shows "Oprávnění" button when permissions link exists', () => {
             const data = mockMemberDetailData({
                 _templates: {updateMember: adminEditTemplate},
