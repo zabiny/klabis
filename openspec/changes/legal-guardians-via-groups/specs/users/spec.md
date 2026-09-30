@@ -2,7 +2,7 @@
 
 ### Requirement: User Authentication
 
-The system SHALL authenticate users via OAuth2 using a login name and a cryptographically hashed password. The login name of a club member is their registration number; the login name of a non-member legal guardian is the e-mail they had when their account was created. Authorities are loaded from the UserPermissions aggregate.
+The system SHALL authenticate users via OAuth2 using a login name and a cryptographically hashed password. The login name of a club member is their registration number; the login name of a non-member legal guardian is their login number from the EXT series (EXT0001, EXT0002, …), which has the same format as a registration number and is kept if the guardian later becomes a club member. Authorities are loaded from the UserPermissions aggregate.
 
 #### Scenario: User logs in with valid credentials
 
@@ -10,15 +10,10 @@ The system SHALL authenticate users via OAuth2 using a login name and a cryptogr
 - **THEN** the system issues an access token and a refresh token
 - **AND** the user is redirected to the application
 
-#### Scenario: Non-member legal guardian logs in with e-mail
+#### Scenario: Non-member legal guardian logs in with login number
 
-- **WHEN** a non-member legal guardian enters their e-mail and password on the login page and submits
+- **WHEN** a non-member legal guardian enters their login number (for example EXT0001) and password on the login page and submits
 - **THEN** the guardian is logged in and redirected to the application
-
-#### Scenario: Login page accepts registration number or e-mail
-
-- **WHEN** a person opens the login page
-- **THEN** the login field is labelled "Registrační číslo nebo e-mail"
 
 #### Scenario: User logs in with invalid credentials
 
@@ -43,14 +38,8 @@ The system SHALL manage user accounts as a separate aggregate from members and l
 #### Scenario: User account is created for a new non-member legal guardian
 
 - **WHEN** a new non-member legal guardian is entered
-- **THEN** a user account with the guardian's e-mail as login name is created in pending activation status
+- **THEN** a user account with the next login number from the EXT series is created in pending activation status
 - **AND** the account holds only the permission to view club members
-
-#### Scenario: Two accounts cannot share a login name
-
-- **WHEN** a new non-member legal guardian is entered with an e-mail that is already the login name of another account
-- **THEN** the guardian is not created
-- **AND** the form shows an error that the e-mail is already in use
 
 #### Scenario: User account can be suspended
 
@@ -93,7 +82,7 @@ The system SHALL allow users with PENDING_ACTIVATION status to request an activa
 #### Scenario: Member reaches account activation from the login page
 
 - **WHEN** a person on the login page chooses to activate their account
-- **THEN** they are taken to a form asking for their registration number or e-mail and their e-mail address
+- **THEN** they are taken to a form asking for their registration number and e-mail address
 
 #### Scenario: Adult member requests an activation link with their own e-mail
 
@@ -104,7 +93,7 @@ The system SHALL allow users with PENDING_ACTIVATION status to request an activa
 
 #### Scenario: Non-member guardian requests an activation link
 
-- **WHEN** a non-member legal guardian submits their login e-mail and their e-mail address held in Klabis
+- **WHEN** a non-member legal guardian submits their login number and their e-mail address held in Klabis
 - **AND** the rate limit has not been exceeded
 - **THEN** an activation link is sent to the guardian's e-mail address
 
