@@ -3,9 +3,11 @@ package com.klabis.members.legalguardiangroup.infrastructure.restapi;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
+import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.UserId;
+import com.klabis.members.LegalGuardians;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.*;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
@@ -23,11 +25,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -38,9 +41,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class LegalGuardianGroupController implements LegalGuardianGroupsApi {
 
     private final LegalGuardianGroupPort legalGuardianGroupService;
+    private final LegalGuardians legalGuardians;
 
-    LegalGuardianGroupController(LegalGuardianGroupPort legalGuardianGroupService) {
+    LegalGuardianGroupController(LegalGuardianGroupPort legalGuardianGroupService, LegalGuardians legalGuardians) {
         this.legalGuardianGroupService = legalGuardianGroupService;
+        this.legalGuardians = legalGuardians;
     }
 
     @Override
@@ -52,7 +57,7 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
     }
 
     // The LegalGuardianGroupResponse record is generated, but its guardians/minors arrays are
-    // List<EntityModel<X>> and each item carries its own _links at runtime — a "member" link on every row —
+    // List<EntityModel<X>> and each item carries its own _links at runtime — "member" or "legalGuardian" per row —
     // which the generator cannot express on the payload. The controller assembles them.
     @Override
     public ResponseEntity<LegalGuardianGroupResponse> getLegalGuardianGroup(UUID id) {
@@ -85,9 +90,15 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
                 .map(guardianId -> {
                     EntityModel<LegalGuardianGroupGuardianResponse> model = EntityModel.of(
                             LegalGuardianGroupGuardianResponseBuilder.builder().userId(guardianId.uuid()).build());
-                    klabisLinkTo(methodOn(MembersApi.class).getMember(guardianId.uuid(), null))
-                            .map(link -> link.withRel("member"))
-                            .ifPresent(model::add);
+                    if (legalGuardians.findById(guardianId).isPresent()) {
+                        klabisLinkTo(methodOn(LegalGuardiansApi.class).getLegalGuardian(guardianId.uuid()))
+                                .map(link -> link.withRel("legalGuardian"))
+                                .ifPresent(model::add);
+                    } else {
+                        klabisLinkTo(methodOn(MembersApi.class).getMember(guardianId.uuid(), null))
+                                .map(link -> link.withRel("member"))
+                                .ifPresent(model::add);
+                    }
                     return model;
                 })
                 .toList();
@@ -137,8 +148,10 @@ class LegalGuardianGroupDetailsPostprocessor extends ModelWithDomainPostprocesso
         UUID id = group.getId().uuid();
         klabisLinkTo(methodOn(LegalGuardianGroupsApi.class).getLegalGuardianGroup(id))
                 .map(link -> link.withSelfRel()
-                        .andAffordances(klabisAfford(
-                                methodOn(LegalGuardianGroupsApi.class).setLegalGuardianGroupGuardians(id, null))))
+                        .andAffordances(klabisAffordWithOptions(
+                                methodOn(LegalGuardianGroupsApi.class).setLegalGuardianGroupGuardians(id, null),
+                                Map.of("legalGuardians", HalFormsOptionsDef.remote(
+                                        methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null))))))
                 .ifPresent(dtoModel::add);
 
         klabisLinkTo(methodOn(LegalGuardianGroupsApi.class).listLegalGuardianGroups())

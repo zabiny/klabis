@@ -52,6 +52,8 @@ interface MemberJdbcRepository extends CrudRepository<MemberMemento, UUID>, Pagi
      */
     Optional<MemberMemento> findByEmailEqualsIgnoreCase(String email);
 
+    List<MemberMemento> findAllByEmailEqualsIgnoreCase(String email);
+
     /**
      * Count members born in a specific year.
      * <p>

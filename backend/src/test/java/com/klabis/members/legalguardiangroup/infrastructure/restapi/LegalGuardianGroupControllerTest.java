@@ -8,6 +8,8 @@ import com.klabis.common.groups.domain.GroupNotFoundException;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
+import com.klabis.members.LegalGuardianDto;
+import com.klabis.members.LegalGuardians;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
@@ -29,6 +31,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -51,6 +54,9 @@ class LegalGuardianGroupControllerTest {
 
     @MockitoBean
     private LegalGuardianGroupPort legalGuardianGroupService;
+
+    @Autowired
+    private LegalGuardians legalGuardians;
 
     private static LegalGuardianGroup groupOfMinor(UUID groupUuid, String name, String guardianId, String minorId) {
         return LegalGuardianGroup.reconstruct(new LegalGuardianGroupId(groupUuid), name,
@@ -112,10 +118,41 @@ class LegalGuardianGroupControllerTest {
                     .andExpect(jsonPath("$.guardians[0].userId").value(GUARDIAN_ID))
                     .andExpect(jsonPath("$.guardians[0]._links.member.href")
                             .value(containsString("/api/members/" + GUARDIAN_ID)))
+                    .andExpect(jsonPath("$.guardians[0]._links.legalGuardian").doesNotExist())
                     .andExpect(jsonPath("$.minors[0].memberId").value(MINOR_ID))
                     .andExpect(jsonPath("$.minors[0].joinedAt").exists())
                     .andExpect(jsonPath("$.minors[0]._links.member.href")
                             .value(containsString("/api/members/" + MINOR_ID)));
+        }
+
+        @Test
+        @DisplayName("links a non-member guardian to the legal guardian profile instead of a member")
+        @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void linksNonMemberGuardianToProfile() throws Exception {
+            when(legalGuardianGroupService.getGroup(any(LegalGuardianGroupId.class)))
+                    .thenReturn(groupOfMinor(GROUP_UUID, "Novák", GUARDIAN_ID, MINOR_ID));
+            when(legalGuardians.findById(new UserId(UUID.fromString(GUARDIAN_ID))))
+                    .thenReturn(java.util.Optional.of(new LegalGuardianDto(UUID.fromString(GUARDIAN_ID), "Eva",
+                            "Nováková", "eva@example.com", null)));
+
+            mockMvc.perform(get("/api/legal-guardian-groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.guardians[0]._links.legalGuardian.href")
+                            .value(containsString("/api/legal-guardians/" + GUARDIAN_ID)))
+                    .andExpect(jsonPath("$.guardians[0]._links.member").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("points guardian options to the legal guardian options endpoint")
+        @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void pointsGuardianOptionsToOptionsEndpoint() throws Exception {
+            when(legalGuardianGroupService.getGroup(any(LegalGuardianGroupId.class)))
+                    .thenReturn(groupOfMinor(GROUP_UUID, "Novák", GUARDIAN_ID, MINOR_ID));
+
+            mockMvc.perform(get("/api/legal-guardian-groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.setLegalGuardianGroupGuardians.properties[?(@.name=='legalGuardians')].options.link.href")
+                            .value(hasItem(containsString("/api/legal-guardian-options"))));
         }
 
         @Test

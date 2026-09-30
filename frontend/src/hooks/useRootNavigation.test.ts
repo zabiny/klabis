@@ -44,6 +44,16 @@ afterEach(() => {
 });
 
 describe('useRootNavigation — section assignment', () => {
+    it('assigns the profile link to the personal section so it stays out of the menu', async () => {
+        mockFetchWithResponse(buildHalResponse(['events', 'profile']));
+
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        expect(result.current.data!.find(i => i.rel === 'profile')?.section).toBe('personal');
+    });
+
     it('assigns main section to events and admin section to training-groups, category-presets, legalGuardianGroups', async () => {
         mockFetchWithResponse(buildHalResponse(['events', 'training-groups', 'category-presets', 'legalGuardianGroups']));
 

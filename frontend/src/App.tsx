@@ -25,6 +25,7 @@ import {GroupsPage} from "./pages/groups/GroupsPage.tsx";
 import {GroupDetailPage} from "./pages/groups/GroupDetailPage.tsx";
 import {TrainingGroupsPage} from "./pages/training-groups/TrainingGroupsPage.tsx";
 import {TrainingGroupDetailPage} from "./pages/training-groups/TrainingGroupDetailPage.tsx";
+import {LegalGuardianDetailPage} from "./pages/legal-guardians/LegalGuardianDetailPage.tsx";
 import {LegalGuardianGroupsPage} from "./pages/legal-guardian-groups/LegalGuardianGroupsPage.tsx";
 import {LegalGuardianGroupDetailPage} from "./pages/legal-guardian-groups/LegalGuardianGroupDetailPage.tsx";
 import {CategoryPresetsPage} from "./pages/events/CategoryPresetsPage.tsx";
@@ -113,6 +114,7 @@ function App() {
                                     <Route path="/groups/:id" element={<GroupDetailPage/>}/>
                                     <Route path="/training-groups" element={<TrainingGroupsPage/>}/>
                                     <Route path="/training-groups/:id" element={<TrainingGroupDetailPage/>}/>
+                                    <Route path="/legal-guardians/:id" element={<LegalGuardianDetailPage/>}/>
                                     <Route path="/legal-guardian-groups" element={<LegalGuardianGroupsPage/>}/>
                                     <Route path="/legal-guardian-groups/:id" element={<LegalGuardianGroupDetailPage/>}/>
                                     <Route path="/category-presets" element={<CategoryPresetsPage/>}/>

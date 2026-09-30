@@ -2,6 +2,9 @@ package com.klabis.members.legalguardiangroup.application;
 
 import com.klabis.common.groups.domain.GroupNotFoundException;
 import com.klabis.common.users.UserId;
+import com.klabis.members.legalguardian.application.GuardianContact;
+import com.klabis.members.legalguardian.application.GuardianContactResolver;
+import com.klabis.members.legalguardian.application.GuardianKind;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.domain.MemberRepository;
@@ -25,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.klabis.members.MemberTestDataBuilder.aMemberWithId;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,8 +48,10 @@ class LegalGuardianGroupServiceTest {
 
     private final InMemoryLegalGuardianGroupRepository groups = new InMemoryLegalGuardianGroupRepository();
 
-    @Mock
-    private GuardianResolver guardianResolver;
+    private final GuardianContactResolver guardianContactResolver = userIds -> Stream.of(NOVAK, SVOBODOVA, DVORAK)
+            .filter(g -> userIds.contains(g.userId()))
+            .map(g -> new GuardianContact(g.userId(), "Jan", g.lastName(), null, null, GuardianKind.MEMBER))
+            .toList();
 
     @Mock
     private MemberRepository memberRepository;
@@ -54,14 +60,7 @@ class LegalGuardianGroupServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new LegalGuardianGroupService(groups, guardianResolver, memberRepository);
-        for (Guardian g : Set.of(NOVAK, SVOBODOVA, DVORAK)) {
-            lenient().when(guardianResolver.resolve(Set.of(g.userId()))).thenReturn(Set.of(g));
-        }
-        lenient().when(guardianResolver.resolve(ids(NOVAK, SVOBODOVA))).thenReturn(Set.of(NOVAK, SVOBODOVA));
-        lenient().when(guardianResolver.resolve(ids(NOVAK, DVORAK))).thenReturn(Set.of(NOVAK, DVORAK));
-        lenient().when(guardianResolver.resolve(ids(NOVAK, SVOBODOVA, DVORAK)))
-                .thenReturn(Set.of(NOVAK, SVOBODOVA, DVORAK));
+        service = new LegalGuardianGroupService(groups, guardianContactResolver, memberRepository);
         lenient().when(memberRepository.findById(CHILD_A))
                 .thenReturn(Optional.of(aMemberWithId(CHILD_A.uuid()).withDateOfBirth(tenYearsAgo()).build()));
         lenient().when(memberRepository.findById(CHILD_B))
@@ -96,6 +95,15 @@ class LegalGuardianGroupServiceTest {
 
     private Optional<LegalGuardianGroup> groupOfMinor(MemberId minor) {
         return groups.findOne(LegalGuardianGroupFilter.all().withMinorIs(minor.toUserId()));
+    }
+
+    @Test
+    @DisplayName("rejects a guardian that is neither a legal guardian nor an adult member")
+    void rejectsUnknownGuardian() {
+        UserId stranger = new UserId(UUID.fromString("99999999-9999-9999-9999-999999999999"));
+
+        assertThatThrownBy(() -> service.setGuardiansOf(CHILD_A, Set.of(stranger)))
+                .isInstanceOf(GuardianNotFoundException.class);
     }
 
     @Nested

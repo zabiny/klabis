@@ -103,6 +103,7 @@ describe('Layout - Responsive Sidebar', () => {
             createMockQueryResult([
                 {rel: 'members', href: '/members', label: 'Members', section: 'main'},
                 {rel: 'events', href: '/events', label: 'Events', section: 'main'},
+                {rel: 'profile', href: '/members/member-uuid-1', label: 'profile', section: 'personal'},
             ])
         )
 

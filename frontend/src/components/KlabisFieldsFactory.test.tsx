@@ -494,6 +494,36 @@ describe('KlabisFieldsFactory', () => {
         });
     });
 
+    describe('LegalGuardianInputRequest field type', () => {
+
+        const optionsLink = {link: {href: 'http://localhost:8443/api/legal-guardian-options'}};
+
+        it('should delegate the multi property to HalFormsCollectionField', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'legalGuardians', prompt: 'Zástupci', type: 'LegalGuardianInputRequest', multiple: true, options: optionsLink},
+            });
+
+            const result = klabisFieldsFactory('LegalGuardianInputRequest', mockConf);
+
+            const element = result as React.ReactElement;
+            const componentName = (element.type as {displayName?: string; name?: string}).displayName
+                ?? (element.type as {displayName?: string; name?: string}).name;
+            expect(componentName).toMatch(/CollectionField/i);
+        });
+
+        it('should render userId of each item as a picker using the collection options link', () => {
+            const mockConf = createMockConf({
+                prop: {name: 'legalGuardians.0', prompt: 'Zástupci', type: 'LegalGuardianInputRequest', options: optionsLink},
+            });
+
+            render(klabisFieldsFactory('LegalGuardianInputRequest', mockConf)!);
+
+            expect(screen.getByTestId('select-name')).toHaveTextContent('parent.userId');
+            expect(screen.getByTestId('select-href'))
+                .toHaveTextContent('http://localhost:8443/api/legal-guardian-options');
+        });
+    });
+
     describe('PaymentRuleRequest field type', () => {
 
         it('should delegate to HalFormsCollectionField for multiple/collection PaymentRuleRequest', () => {

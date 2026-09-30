@@ -76,6 +76,7 @@ const Layout = () => {
     const {data: menuItems = [], isLoading: menuLoading, error: menuError} = useRootNavigation()
     const mainItems = menuItems.filter(item => item.section === 'main')
     const adminItems = menuItems.filter(item => item.section === 'admin')
+    const profileHref = menuItems.find(item => item.rel === 'profile')?.href
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -90,8 +91,8 @@ const Layout = () => {
     }
 
     const handleUserNameClick = () => {
-        if (userDetails?.memberId) {
-            navigate(`members/${userDetails.memberId}`)
+        if (profileHref) {
+            navigate(profileHref)
         }
     }
 
@@ -127,7 +128,7 @@ const Layout = () => {
                         {/* User name/info */}
                         {userDetails && (
                             userDetails.firstName && userDetails.lastName ? (
-                                userDetails.memberId ? (
+                                profileHref ? (
                                     <Button
                                         variant="ghost"
                                         size="sm"
