@@ -8,7 +8,9 @@ import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @PrimaryPort
@@ -48,4 +50,10 @@ public interface LegalGuardianGroupPort {
      * Contacts of the group's guardians, whether they are members or non-member guardians.
      */
     List<GuardianContact> listGuardians(LegalGuardianGroupId id);
+
+    /**
+     * Like {@link #listGuardians(LegalGuardianGroupId)} for already loaded groups; contacts of all groups
+     * are resolved at once.
+     */
+    Map<LegalGuardianGroupId, List<GuardianContact>> listGuardiansOf(Collection<LegalGuardianGroup> groups);
 }

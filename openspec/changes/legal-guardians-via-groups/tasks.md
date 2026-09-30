@@ -52,5 +52,5 @@
 - [x] 7.1 `example-data`: nečlenský zástupce se dvěma sourozenci, člen-zástupce s dítětem, dítě se dvěma zástupci (člen + nečlen), nezletilý z ORIS bez zástupce
 - [x] 7.2 Zapsat ADR (`docs/design-decisions.md`) k modelu zástupců přes skupiny a přihlašovacím číslům `EXTnnnn`
 - [x] 7.3 Plný backend test suite sekvenčně s `SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true` (test-runner agent), frontend testy a `npm run build`
-- [ ] 7.4 QA testování scénářů ze specifikací přes Playwright (registrace nezletilého, úprava zástupců, stránka skupin, login zástupce, „Založit účet“)
+- [x] 7.4 QA testování scénářů ze specifikací přes Playwright (registrace nezletilého, úprava zástupců, stránka skupin, login zástupce, „Založit účet“)
 - [ ] 7.5 Přidat label `BackendCompleted` na issues #332, #333 a #334

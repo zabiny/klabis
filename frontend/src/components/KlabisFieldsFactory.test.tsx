@@ -23,6 +23,19 @@ vi.mock('../hooks/useMembershipFeeTierOptions', () => ({
     ],
 }));
 
+vi.mock('./legal-guardians/LegalGuardianCandidatePicker', async () => {
+    const actual = await vi.importActual('./legal-guardians/LegalGuardianCandidatePicker');
+    return {
+        ...(actual as object),
+        LegalGuardianCandidatePicker: ({prop}: HalFormsInputProps) => (
+            <div data-testid="legal-guardian-picker-mock">
+                <span data-testid="select-name">{prop.name}</span>
+                {prop.options?.link?.href && <span data-testid="select-href">{prop.options.link.href}</span>}
+            </div>
+        ),
+    };
+});
+
 vi.mock('./HalNavigator2/halforms/fields', async () => {
     const actual = await vi.importActual('./HalNavigator2/halforms/fields');
     return {

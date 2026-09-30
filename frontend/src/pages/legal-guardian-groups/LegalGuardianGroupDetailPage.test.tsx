@@ -6,6 +6,7 @@ import {vi} from 'vitest';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {LegalGuardianGroupDetailPage} from './LegalGuardianGroupDetailPage';
+import {FetchError} from '../../api/authorizedFetch';
 
 vi.mock('../../hooks/useHalPageData', () => ({useHalPageData: vi.fn()}));
 
@@ -84,6 +85,11 @@ describe('LegalGuardianGroupDetailPage', () => {
         expect(screen.getByText('+420777111222')).toBeInTheDocument();
     });
 
+    it('links the minor to the member detail', () => {
+        renderPage(buildGroup());
+        expect(screen.getByRole('link', {name: /Jana Nováková/})).toHaveAttribute('href', '/members/m-1');
+    });
+
     it('navigates to guardian member on click', async () => {
         renderPage(buildGroup());
         await userEvent.click(screen.getByRole('button', {name: /Jana Nováková/}));
@@ -130,6 +136,44 @@ describe('LegalGuardianGroupDetailPage', () => {
         expect(modalSpy).toHaveBeenCalledWith(expect.objectContaining({
             templateName: 'setLegalGuardianGroupGuardians',
             resourceData: {legalGuardians: [{userId: 'u-1'}]},
+            prefillFromTarget: false,
         }));
+    });
+
+    it('leaves the detail for the list with a message when the group was merged away', async () => {
+        const group = buildGroup({
+            _templates: {
+                setLegalGuardianGroupGuardians: mockHalFormsTemplate({
+                    method: 'PUT',
+                    target: '/api/legal-guardian-groups/g-1/guardians',
+                }),
+            },
+        });
+        const {rerender} = renderPage(group);
+        await userEvent.click(screen.getByRole('button', {name: 'Upravit zástupce'}));
+
+        vi.mocked(useHalPageData).mockReturnValue({
+            resourceData: undefined,
+            isLoading: false,
+            error: new FetchError('HTTP 404 (Not Found)', 404, 'Not Found', new Headers()),
+            route: {pathname: '/legal-guardian-groups/g-1', navigateToResource, refetch: async () => {}},
+        } as unknown as ReturnType<typeof useHalPageData>);
+        rerender(<MemoryRouter><LegalGuardianGroupDetailPage/></MemoryRouter>);
+
+        expect(navigate).toHaveBeenCalledWith('/legal-guardian-groups', {replace: true});
+        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
+    });
+
+    it('still shows a 404 when no guardians edit preceded it', () => {
+        vi.mocked(useHalPageData).mockReturnValue({
+            resourceData: undefined,
+            isLoading: false,
+            error: new FetchError('HTTP 404 (Not Found)', 404, 'Not Found', new Headers()),
+            route: {pathname: '/legal-guardian-groups/g-1', navigateToResource, refetch: async () => {}},
+        } as unknown as ReturnType<typeof useHalPageData>);
+        render(<MemoryRouter><LegalGuardianGroupDetailPage/></MemoryRouter>);
+
+        expect(screen.getByText('HTTP 404 (Not Found)')).toBeInTheDocument();
+        expect(navigate).not.toHaveBeenCalled();
     });
 });

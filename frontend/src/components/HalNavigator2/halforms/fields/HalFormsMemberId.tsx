@@ -6,6 +6,7 @@ import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
 import {getFieldLabel} from '../../../../localization'
 import {ReadOnlyDisplay} from '../HalFormsForm.tsx'
+import {ClearSelectionButton} from './ClearSelectionButton.tsx'
 
 interface HalFormsMemberIdProps extends HalFormsInputProps {
     /** Member IDs to exclude from the picker options */
@@ -75,28 +76,7 @@ export const HalFormsMemberId = ({prop, errorText, renderMode = 'field', exclude
                         />
                         {/* Clear button - only visible when value is selected */}
                         {hasValue && (
-                            <button
-                                type="button"
-                                onClick={handleClear}
-                                className="absolute right-20 top-1/2 transform -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
-                                title="Zrušit výběr"
-                                aria-label="Zrušit výběr"
-                                data-testid="clear-member-button"
-                            >
-                                <svg
-                                    className="w-5 h-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
-                            </button>
+                            <ClearSelectionButton onClick={handleClear}/>
                         )}
                     </div>
                 );

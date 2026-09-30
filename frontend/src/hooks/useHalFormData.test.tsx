@@ -73,6 +73,21 @@ describe('useHalFormData Hook', () => {
         });
     });
 
+    describe('Prefill from target disabled', () => {
+        it('should use current resource data and not probe the target', () => {
+            const template = mockHalFormsTemplate({target: '/api/members/456'});
+
+            const {result} = renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123', false),
+                {wrapper: createWrapper()}
+            );
+
+            expect(result.current.formData).toEqual(currentResourceData);
+            expect(result.current.isLoadingTargetData).toBe(false);
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+    });
+
     describe('Target is Undefined', () => {
         it('should return current resource data when target is undefined', () => {
             const template = mockHalFormsTemplate({target: undefined});
@@ -863,6 +878,23 @@ describe('useHalFormData Hook', () => {
             await waitFor(() => {
                 expect(result.current.isLoadingTargetData).toBe(false);
             });
+        });
+    });
+    describe('prefillFromTarget disabled', () => {
+        it('should ignore data cached under the target key by another consumer', () => {
+            queryClient.setQueryData(
+                ['authorized', '/legal-guardian-groups/1/guardians', ''],
+                {_embedded: {legalGuardianGroupGuardianResponseList: [{userId: 'u1'}]}}
+            );
+            const template = mockHalFormsTemplate({method: 'PUT', target: '/api/legal-guardian-groups/1/guardians'});
+            const resourceData = {legalGuardians: [{userId: 'u1'}]};
+
+            const {result} = renderHook(
+                () => useHalFormData(template, resourceData, '/legal-guardian-groups/1', false),
+                {wrapper: createWrapper()}
+            );
+
+            expect(result.current.formData).toEqual(resourceData);
         });
     });
 });

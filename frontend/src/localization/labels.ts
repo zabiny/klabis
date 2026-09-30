@@ -180,6 +180,8 @@ export const labels = {
     },
 
     fields: {
+        legalGuardians: 'Zákonní zástupci',
+        guardians: 'Zástupci',
         legalGuardianUserId: 'Zákonný zástupce',
         coordinators: 'Vedoucí',
         eventDate: 'Datum konání',
@@ -413,6 +415,10 @@ export const labels = {
         registrationTakeoverHint: 'Pokud se dosavadní zákonný zástupce stává členem, vyberte ho; údaje se předvyplní z jeho profilu.',
         legalGuardianPickExisting: 'Vybrat existujícího zástupce',
         legalGuardianCreateNew: 'Založit nového zástupce',
+        legalGuardianSearch: 'Hledat podle jména',
+        clearSelection: 'Zrušit výběr',
+        selectOption: 'Vyberte možnost',
+        legalGuardianGroupMerged: 'Skupina byla sloučena s existující skupinou se stejnými zástupci.',
         legalGuardianFirstName: 'Jméno',
         legalGuardianLastName: 'Příjmení',
         legalGuardianEmail: 'E-mail',

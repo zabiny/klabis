@@ -27,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -47,15 +48,21 @@ class LegalGuardianGroupServiceTest {
     private static final Guardian SVOBODOVA = guardian("22222222-2222-2222-2222-222222222222", "Svobodová");
     private static final Guardian DVORAK = guardian("33333333-3333-3333-3333-333333333333", "Dvořák");
     private static final MemberId CHILD_A = new MemberId(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+    private static final MemberId CHILD_C = new MemberId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"));
     private static final MemberId CHILD_B = new MemberId(UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
     private static final MemberId ADULT = new MemberId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"));
 
     private final InMemoryLegalGuardianGroupRepository groups = new InMemoryLegalGuardianGroupRepository();
 
-    private final GuardianContactResolver guardianContactResolver = userIds -> Stream.of(NOVAK, SVOBODOVA, DVORAK)
-            .filter(g -> userIds.contains(g.userId()))
-            .map(g -> new GuardianContact(g.userId(), "Jan", g.lastName(), null, null, GuardianKind.MEMBER))
-            .toList();
+    private int resolveCalls;
+
+    private final GuardianContactResolver guardianContactResolver = userIds -> {
+        resolveCalls++;
+        return Stream.of(NOVAK, SVOBODOVA, DVORAK)
+                .filter(g -> userIds.contains(g.userId()))
+                .map(g -> new GuardianContact(g.userId(), "Jan", g.lastName(), null, null, GuardianKind.MEMBER))
+                .toList();
+    };
 
     @Mock
     private MemberRepository memberRepository;
@@ -339,6 +346,36 @@ class LegalGuardianGroupServiceTest {
     }
 
     @Nested
+    @DisplayName("listGuardiansOf()")
+    class ListGuardiansOf {
+
+        @Test
+        @DisplayName("returns contacts of each group's guardians keyed by group")
+        void returnsContactsPerGroup() {
+            LegalGuardianGroup first = groupOf(Set.of(NOVAK, SVOBODOVA), CHILD_A);
+            LegalGuardianGroup second = groupOf(Set.of(NOVAK), CHILD_B);
+
+            Map<LegalGuardianGroupId, List<GuardianContact>> result = service.listGuardiansOf(List.of(first, second));
+
+            assertThat(result.get(first.getId())).extracting(GuardianContact::userId)
+                    .containsExactlyInAnyOrder(NOVAK.userId(), SVOBODOVA.userId());
+            assertThat(result.get(second.getId())).extracting(GuardianContact::userId)
+                    .containsExactly(NOVAK.userId());
+        }
+
+        @Test
+        @DisplayName("resolves contacts of all groups in one call")
+        void resolvesOnce() {
+            LegalGuardianGroup first = groupOf(Set.of(NOVAK), CHILD_A);
+            LegalGuardianGroup second = groupOf(Set.of(SVOBODOVA), CHILD_B);
+
+            service.listGuardiansOf(List.of(first, second));
+
+            assertThat(resolveCalls).isEqualTo(1);
+        }
+    }
+
+    @Nested
     @DisplayName("guardiansOf()")
     class GuardiansOf {
 
@@ -368,6 +405,17 @@ class LegalGuardianGroupServiceTest {
             groupOf(Set.of(SVOBODOVA), CHILD_B);
 
             assertThat(service.listGroups()).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("lists groups ordered by name in Czech alphabet")
+        void listsOrderedByName() {
+            groupOf(Set.of(SVOBODOVA), CHILD_A);
+            groupOf(Set.of(DVORAK), CHILD_B);
+            groupOf(Set.of(NOVAK), CHILD_C);
+
+            assertThat(service.listGroups()).extracting(LegalGuardianGroup::getName)
+                    .containsExactly("Dvořák", "Novák", "Svobodová");
         }
 
         @Test

@@ -510,7 +510,7 @@ paths:
       operationId: listLegalGuardianGroups
       tags: [LegalGuardianGroups]
       summary: List all legal guardian groups
-      description: Returns all legal guardian groups. Requires MEMBERS:MANAGE.
+      description: Returns all legal guardian groups ordered by name, each with its guardians and number of minors. Requires MEMBERS:MANAGE.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
@@ -1394,9 +1394,24 @@ components:
           format: uuid
         name:
           type: string
+        guardians:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegalGuardianGroupSummaryGuardian'
         minorCount:
           type: integer
           format: int32
+
+    LegalGuardianGroupSummaryGuardian:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+        lastName:
+          type: string
 
     # guardians/minors are arrays of HAL-wrapped items (each carrying its own _links at runtime), so
     # the Java record fields resolve to List<EntityModel<X>>. See x-hal-entity-items in the
@@ -1470,7 +1485,9 @@ components:
     UpdateLegalGuardianRequest:
       type: object
       description: |
-        Partial update. An absent property is left untouched; e-mail and telephone cannot be cleared.
+        Partial update of names; e-mail and telephone are required and always sent, and a null or blank
+        value is refused with 400.
+      required: [email, phone]
       properties:
         firstName:
           type: string
@@ -1484,10 +1501,12 @@ components:
           type: string
           minLength: 1
           maxLength: 255
+          x-klabis-not-blank: true
         phone:
           type: string
           minLength: 1
           maxLength: 50
+          x-klabis-not-blank: true
 
     LegalGuardianKind:
       type: string

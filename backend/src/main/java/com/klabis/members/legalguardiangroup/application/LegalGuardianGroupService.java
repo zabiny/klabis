@@ -20,7 +20,11 @@ import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupWithoutGua
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Collator;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -48,7 +52,10 @@ class LegalGuardianGroupService implements LegalGuardianGroupPort {
     @Transactional(readOnly = true)
     @Override
     public List<LegalGuardianGroup> listGroups() {
-        return groupRepository.findAll(LegalGuardianGroupFilter.all());
+        Collator czech = Collator.getInstance(Locale.forLanguageTag("cs-CZ"));
+        return groupRepository.findAll(LegalGuardianGroupFilter.all()).stream()
+                .sorted(Comparator.comparing(LegalGuardianGroup::getName, czech))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -118,6 +125,20 @@ class LegalGuardianGroupService implements LegalGuardianGroupPort {
     @Override
     public List<GuardianContact> listGuardians(LegalGuardianGroupId id) {
         return guardianContactResolver.resolve(loadGroup(id).getGuardians());
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Map<LegalGuardianGroupId, List<GuardianContact>> listGuardiansOf(Collection<LegalGuardianGroup> groups) {
+        Set<UserId> allGuardianIds = groups.stream()
+                .flatMap(group -> group.getGuardians().stream())
+                .collect(Collectors.toSet());
+        List<GuardianContact> resolved = guardianContactResolver.resolve(allGuardianIds);
+        return groups.stream().collect(Collectors.toMap(
+                LegalGuardianGroup::getId,
+                group -> resolved.stream()
+                        .filter(contact -> group.getGuardians().contains(contact.userId()))
+                        .toList()));
     }
 
     @Transactional(readOnly = true)

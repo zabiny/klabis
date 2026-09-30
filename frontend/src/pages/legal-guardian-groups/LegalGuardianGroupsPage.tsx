@@ -8,6 +8,12 @@ import {labels} from '../../localization';
 
 type LegalGuardianGroupSummaryItem = components['schemas']['EntityModelLegalGuardianGroupSummaryResponse'];
 
+const formatGuardianNames = ({value}: {value: unknown}): string =>
+    ((value as LegalGuardianGroupSummaryItem['guardians']) ?? [])
+        .map(guardian => `${guardian.firstName ?? ''} ${guardian.lastName ?? ''}`.trim())
+        .filter(Boolean)
+        .join(', ');
+
 export const LegalGuardianGroupsPage = (): ReactElement => {
     const {isLoading, error, route} = useHalPageData();
 
@@ -31,6 +37,7 @@ export const LegalGuardianGroupsPage = (): ReactElement => {
                 emptyMessage={labels.ui.noLegalGuardianGroups}
             >
                 <TableCell sortable column="name">{labels.fields.name}</TableCell>
+                <TableCell column="guardians" dataRender={formatGuardianNames}>{labels.fields.guardians}</TableCell>
                 <TableCell sortable column="minorCount">{labels.fields.minorCount}</TableCell>
             </HalEmbeddedTable>
         </div>
