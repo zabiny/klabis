@@ -20,7 +20,7 @@
 -- 6. events.event_registrations (FK → events.events, members.members)
 -- 7. calendar.calendar_items (FK → events.events)
 -- 8. members.birth_number_audit_log (no FK)
--- 9. groups.user_groups (unified table: type discriminator FREE/TRAINING/FAMILY)
+-- 9. groups.user_groups (unified table: type discriminator FREE/TRAINING/LEGAL_GUARDIAN)
 -- 10. groups.user_group_owners + user_group_members + user_group_invitations (FK → groups.user_groups)
 -- 37. sync.sync_record (no FK — opaque entity/external references)
 -- 38. sync.sync_attempt (FK → sync.sync_record)
@@ -568,9 +568,9 @@ COMMENT ON COLUMN members.birth_number_audit_log.occurred_at IS 'Timestamp when 
 
 -- ============================================================================
 -- 14. USER_GROUPS TABLE
--- Unified table for all group types (FREE = FreeGroup, TRAINING = TrainingGroup, FAMILY = FamilyGroup)
+-- Unified table for all group types (FREE = FreeGroup, TRAINING = TrainingGroup, LEGAL_GUARDIAN = LegalGuardianGroup)
 -- The type column acts as a discriminator to separate groups by their aggregate type.
--- age_range_min/max are used only by TRAINING groups; NULL for FREE and FAMILY groups.
+-- age_range_min/max are used only by TRAINING groups; NULL for FREE and LEGAL_GUARDIAN groups.
 -- ============================================================================
 
 CREATE TABLE groups.user_groups
@@ -588,7 +588,7 @@ CREATE TABLE groups.user_groups
     modified_by   VARCHAR(100) NOT NULL,
     version       BIGINT       NOT NULL DEFAULT 0,
 
-    CONSTRAINT chk_user_groups_type CHECK (type IN ('FREE', 'TRAINING', 'FAMILY'))
+    CONSTRAINT chk_user_groups_type CHECK (type IN ('FREE', 'TRAINING', 'LEGAL_GUARDIAN'))
 );
 
 -- Indexes for user_groups
@@ -597,14 +597,14 @@ CREATE INDEX idx_user_groups_name ON groups.user_groups (name);
 CREATE INDEX idx_user_groups_training_age ON groups.user_groups (type, age_range_min, age_range_max);
 
 -- Comments for user_groups
-COMMENT ON TABLE groups.user_groups IS 'Unified table for all group aggregate types: FREE (FreeGroup), TRAINING (TrainingGroup), FAMILY (FamilyGroup)';
-COMMENT ON COLUMN groups.user_groups.type IS 'Discriminator: FREE = invitation-based members group, TRAINING = age-range training group, FAMILY = family group';
+COMMENT ON TABLE groups.user_groups IS 'Unified table for all group aggregate types: FREE (FreeGroup), TRAINING (TrainingGroup), LEGAL_GUARDIAN (LegalGuardianGroup)';
+COMMENT ON COLUMN groups.user_groups.type IS 'Discriminator: FREE = invitation-based members group, TRAINING = age-range training group, LEGAL_GUARDIAN = legal guardian group';
 COMMENT ON COLUMN groups.user_groups.age_range_min IS 'Minimum age (inclusive) — populated only for TRAINING groups';
 COMMENT ON COLUMN groups.user_groups.age_range_max IS 'Maximum age (inclusive) — populated only for TRAINING groups';
 
 -- ============================================================================
 -- 15. USER_GROUP_OWNERS TABLE
--- Maps owners/trainers/parents to their group (role depends on the group type).
+-- Maps owners/trainers/legal guardians to their group (role depends on the group type).
 -- ============================================================================
 
 CREATE TABLE groups.user_group_owners
@@ -619,7 +619,7 @@ CREATE INDEX idx_user_group_owners_group_id ON groups.user_group_owners (user_gr
 CREATE INDEX idx_user_group_owners_owner_id ON groups.user_group_owners (owner_id);
 
 -- Comments for user_group_owners
-COMMENT ON TABLE groups.user_group_owners IS 'Owners/trainers/parents per group — interpretation depends on the group type';
+COMMENT ON TABLE groups.user_group_owners IS 'Owners/trainers/legal guardians per group — interpretation depends on the group type';
 
 -- ============================================================================
 -- 16. USER_GROUP_MEMBERS TABLE

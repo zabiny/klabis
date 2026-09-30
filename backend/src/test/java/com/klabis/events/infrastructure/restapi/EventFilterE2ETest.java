@@ -5,7 +5,7 @@ import com.klabis.common.security.JwtParams;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.events.application.EventManagementPort;
-import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +58,7 @@ class EventFilterE2ETest {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private FamilyGroupRepository familyGroupRepository;
+    private LegalGuardianGroupRepository legalGuardianGroupRepository;
 
     @Autowired
     private MockMvc mockMvc;

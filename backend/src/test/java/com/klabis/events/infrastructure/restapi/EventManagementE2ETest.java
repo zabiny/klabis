@@ -11,7 +11,7 @@ import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventBuilder;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventUpdateEventBuilder;
-import com.klabis.members.familygroup.domain.FamilyGroupRepository;
+import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +54,7 @@ class EventManagementE2ETest extends SecurityTestBase {
 
     @MockitoBean
     @SuppressWarnings("unused")
-    private FamilyGroupRepository familyGroupRepository;
+    private LegalGuardianGroupRepository legalGuardianGroupRepository;
 
     @Autowired
     private MockMvc mockMvc;

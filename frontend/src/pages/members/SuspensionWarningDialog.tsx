@@ -17,7 +17,7 @@ interface SuspensionWarningDialogProps {
 const groupTypeLabel = (groupType: string): string => {
     const map: Record<string, string> = {
         TRAINING: labels.suspensionWarning.groupTypeTrainingGroup,
-        FAMILY: labels.suspensionWarning.groupTypeFamilyGroup,
+        LEGAL_GUARDIAN: labels.suspensionWarning.groupTypeLegalGuardianGroup,
         FREE: labels.suspensionWarning.groupTypeFreeGroup,
     };
     return map[groupType] ?? groupType;

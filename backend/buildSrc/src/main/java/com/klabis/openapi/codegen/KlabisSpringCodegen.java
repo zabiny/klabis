@@ -107,7 +107,7 @@ public class KlabisSpringCodegen extends SpringCodegen {
      * {@code components.schemas} entry, BEFORE model construction begins.
      *
      * <p>That one-level scan covers every marker in the spec today (all of them sit on the
-     * {@code FamilyGroupResponse}/{@code GroupResponse}/{@code TrainingGroupResponse} payloads). A
+     * {@code LegalGuardianGroupResponse}/{@code GroupResponse}/{@code TrainingGroupResponse} payloads). A
      * marker buried in a nested object, an {@code allOf} member or an array's items would be missed
      * here and silently fall through to {@link #fromProperty}'s no-op path, producing
      * {@code List<Item>} instead of {@code List<EntityModel<Item>>} — recurse here before putting one

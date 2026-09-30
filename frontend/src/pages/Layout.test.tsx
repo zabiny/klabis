@@ -338,7 +338,7 @@ describe('Layout - Responsive Sidebar', () => {
                     {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
                     {rel: 'training-groups', href: '/training-groups', label: 'Tréninkové skupiny', section: 'admin'},
                     {rel: 'category-presets', href: '/category-presets', label: 'Šablony', section: 'admin'},
-                    {rel: 'family-groups', href: '/family-groups', label: 'Rodinné skupiny', section: 'admin'},
+                    {rel: 'legalGuardianGroups', href: '/legal-guardian-groups', label: 'Zákonní zástupci', section: 'admin'},
                 ])
             )
 
@@ -352,7 +352,7 @@ describe('Layout - Responsive Sidebar', () => {
             expect(screen.getByText('Akce')).toBeInTheDocument()
             expect(screen.getByText('Tréninkové skupiny')).toBeInTheDocument()
             expect(screen.getByText('Šablony')).toBeInTheDocument()
-            expect(screen.getByText('Rodinné skupiny')).toBeInTheDocument()
+            expect(screen.getByText('Zákonní zástupci')).toBeInTheDocument()
         })
 
         it('renders only the main heading and no Administrace heading when there are no admin items', async () => {
@@ -393,7 +393,7 @@ describe('Layout - Responsive Sidebar', () => {
                 createMockQueryResult([
                     {rel: 'members', href: '/members', label: 'Členové', section: 'main'},
                     {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
-                    {rel: 'family-groups', href: '/family-groups', label: 'Rodinné skupiny', section: 'admin'},
+                    {rel: 'legalGuardianGroups', href: '/legal-guardian-groups', label: 'Zákonní zástupci', section: 'admin'},
                     {rel: 'training-groups', href: '/training-groups', label: 'Tréninkové skupiny', section: 'admin'},
                 ])
             )
@@ -410,7 +410,7 @@ describe('Layout - Responsive Sidebar', () => {
 
             const membersIdx = linkTexts.findIndex(t => t === 'Členové')
             const eventsIdx = linkTexts.findIndex(t => t === 'Akce')
-            const familyIdx = linkTexts.findIndex(t => t === 'Rodinné skupiny')
+            const familyIdx = linkTexts.findIndex(t => t === 'Zákonní zástupci')
             const trainingIdx = linkTexts.findIndex(t => t === 'Tréninkové skupiny')
 
             expect(membersIdx).toBeLessThan(eventsIdx)

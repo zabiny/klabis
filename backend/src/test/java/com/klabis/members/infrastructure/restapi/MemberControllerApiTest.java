@@ -16,11 +16,11 @@ import com.klabis.members.application.*;
 import com.klabis.members.domain.*;
 import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.Gender;
-import com.klabis.members.familygroup.FamilyGroupId;
-import com.klabis.members.familygroup.domain.FamilyGroup;
-import com.klabis.members.familygroup.domain.FamilyGroupFilter;
-import com.klabis.members.familygroup.domain.FamilyGroupRepository;
-import com.klabis.members.familygroup.infrastructure.restapi.MemberFamilyGroupLinkProcessor;
+import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
+import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
+import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupFilter;
+import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository;
+import com.klabis.members.legalguardiangroup.infrastructure.restapi.MemberLegalGuardianGroupLinkProcessor;
 import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.application.SynchronizationPort;
@@ -77,7 +77,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = {MemberController.class, RegistrationController.class, MembersExceptionHandler.class})
 @Import({MemberMapperImpl.class, HalFormsSupport.class,
         com.klabis.groups.traininggroup.infrastructure.restapi.MemberTrainingGroupLinkProcessor.class,
-        MemberFamilyGroupLinkProcessor.class,
+        MemberLegalGuardianGroupLinkProcessor.class,
         com.klabis.calendar.infrastructure.restapi.IcalTokenMemberDetailLinkProcessor.class})
 @WithPostprocessors
 class MemberControllerApiTest {
@@ -115,7 +115,7 @@ class MemberControllerApiTest {
     private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
     @Autowired
-    private FamilyGroupRepository familyGroupRepository;
+    private LegalGuardianGroupRepository legalGuardianGroupRepository;
 
     @TestBean
     private EntityLinks entityLinks;
@@ -527,20 +527,20 @@ class MemberControllerApiTest {
                     .thenReturn(new com.klabis.groups.traininggroup.TrainingGroupId(groupId));
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.of(mockTrainingGroup));
-            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
+            when(legalGuardianGroupRepository.findOne(any(LegalGuardianGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.trainingGroup.href")
                             .value(org.hamcrest.Matchers.endsWith("/api/training-groups/" + groupId)))
-                    .andExpect(jsonPath("$._links.familyGroup").doesNotExist());
+                    .andExpect(jsonPath("$._links.legalGuardianGroup").doesNotExist());
         }
 
         @Test
-        @DisplayName("should include familyGroup link when member belongs to a family group")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
-        void shouldIncludeFamilyGroupLinkWhenMemberBelongsToGroup() throws Exception {
+        @DisplayName("should include legalGuardianGroup link when member belongs to a legal guardian group")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void shouldIncludeLegalGuardianGroupLinkWhenMemberBelongsToGroup() throws Exception {
             UUID memberId = UUID.randomUUID();
             UUID groupId = UUID.fromString("11111111-2222-3333-4444-555555555555");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
@@ -548,18 +548,18 @@ class MemberControllerApiTest {
                     .thenReturn(member);
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
-            FamilyGroup mockFamilyGroup =
-                    Mockito.mock(FamilyGroup.class);
-            Mockito.when(mockFamilyGroup.getId())
-                    .thenReturn(new FamilyGroupId(groupId));
-            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
-                    .thenReturn(java.util.Optional.of(mockFamilyGroup));
+            LegalGuardianGroup mockLegalGuardianGroup =
+                    Mockito.mock(LegalGuardianGroup.class);
+            Mockito.when(mockLegalGuardianGroup.getId())
+                    .thenReturn(new LegalGuardianGroupId(groupId));
+            when(legalGuardianGroupRepository.findOne(any(LegalGuardianGroupFilter.class)))
+                    .thenReturn(java.util.Optional.of(mockLegalGuardianGroup));
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.trainingGroup").doesNotExist())
-                    .andExpect(jsonPath("$._links.familyGroup.href")
-                            .value(org.hamcrest.Matchers.endsWith("/api/family-groups/" + groupId)));
+                    .andExpect(jsonPath("$._links.legalGuardianGroup.href")
+                            .value(org.hamcrest.Matchers.endsWith("/api/legal-guardian-groups/" + groupId)));
         }
 
         @Test
@@ -572,13 +572,13 @@ class MemberControllerApiTest {
                     .thenReturn(member);
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
-            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
+            when(legalGuardianGroupRepository.findOne(any(LegalGuardianGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.trainingGroup").doesNotExist())
-                    .andExpect(jsonPath("$._links.familyGroup").doesNotExist());
+                    .andExpect(jsonPath("$._links.legalGuardianGroup").doesNotExist());
         }
 
         @Test
@@ -591,7 +591,7 @@ class MemberControllerApiTest {
                     .thenReturn(member);
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
-            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
+            when(legalGuardianGroupRepository.findOne(any(LegalGuardianGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))
@@ -609,7 +609,7 @@ class MemberControllerApiTest {
                     .thenReturn(member);
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
-            when(familyGroupRepository.findOne(any(FamilyGroupFilter.class)))
+            when(legalGuardianGroupRepository.findOne(any(LegalGuardianGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))

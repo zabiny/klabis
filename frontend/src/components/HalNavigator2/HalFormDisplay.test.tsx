@@ -614,12 +614,12 @@ describe('HalFormDisplay Component', () => {
         });
 
         describe('auto-navigation on POST+Location', () => {
-            // target '/api/family-groups' normalizes to '/family-groups' which equals pathname
+            // target '/api/legal-guardian-groups' normalizes to '/legal-guardian-groups' which equals pathname
             // — no OPTIONS/GET prefetch. resourceData carries the pre-fill value 'Existing'.
             const renderPostForm = (method: HalFormsTemplateMethod, pageData?: ReturnType<typeof createMockPageData>) => {
                 const template = mockHalFormsTemplate({
                     title: 'Create Group',
-                    target: '/api/family-groups',
+                    target: '/api/legal-guardian-groups',
                     method,
                     properties: [{name: 'name', prompt: 'Name', type: 'text', required: true}],
                 });
@@ -631,7 +631,7 @@ describe('HalFormDisplay Component', () => {
                             template={template}
                             templateName="create"
                             resourceData={{id: 1, name: 'Existing'}}
-                            pathname="/family-groups"
+                            pathname="/legal-guardian-groups"
                             onClose={vi.fn()}
                         />
                     </Wrapper>
@@ -644,7 +644,7 @@ describe('HalFormDisplay Component', () => {
                 const pageData = createMockPageData({id: 1});
                 renderPostForm('POST', pageData);
 
-                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
+                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/legal-guardian-groups/xyz'));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
@@ -653,7 +653,7 @@ describe('HalFormDisplay Component', () => {
                 await user.click(screen.getByRole('button', {name: /odeslat/i}));
 
                 await waitFor(() => {
-                    expect(mockNavigate).toHaveBeenCalledWith('/family-groups/xyz');
+                    expect(mockNavigate).toHaveBeenCalledWith('/legal-guardian-groups/xyz');
                 });
             });
 
@@ -662,7 +662,7 @@ describe('HalFormDisplay Component', () => {
                 const mockOnClose = vi.fn();
                 const template = mockHalFormsTemplate({
                     title: 'Create Group',
-                    target: '/api/family-groups',
+                    target: '/api/legal-guardian-groups',
                     method: 'POST',
                     properties: [{name: 'name', prompt: 'Name', type: 'text', required: true}],
                 });
@@ -674,13 +674,13 @@ describe('HalFormDisplay Component', () => {
                             template={template}
                             templateName="create"
                             resourceData={{id: 1, name: 'Existing'}}
-                            pathname="/family-groups"
+                            pathname="/legal-guardian-groups"
                             onClose={mockOnClose}
                         />
                     </Wrapper>
                 );
 
-                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
+                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/legal-guardian-groups/xyz'));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
@@ -688,7 +688,7 @@ describe('HalFormDisplay Component', () => {
                 await user.type(nameInput, 'My Group');
                 await user.click(screen.getByRole('button', {name: /odeslat/i}));
 
-                await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/family-groups/xyz'));
+                await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/legal-guardian-groups/xyz'));
                 expect(mockOnClose).not.toHaveBeenCalled();
             });
 
@@ -697,7 +697,7 @@ describe('HalFormDisplay Component', () => {
                 const mockOnClose = vi.fn();
                 const template = mockHalFormsTemplate({
                     title: 'Edit Group',
-                    target: '/api/family-groups/xyz',
+                    target: '/api/legal-guardian-groups/xyz',
                     method: 'PUT',
                     properties: [{name: 'name', prompt: 'Name', type: 'text', required: true}],
                 });
@@ -709,7 +709,7 @@ describe('HalFormDisplay Component', () => {
                             template={template}
                             templateName="edit"
                             resourceData={{id: 1, name: 'Existing'}}
-                            pathname="/family-groups/xyz"
+                            pathname="/legal-guardian-groups/xyz"
                             onClose={mockOnClose}
                         />
                     </Wrapper>
@@ -733,7 +733,7 @@ describe('HalFormDisplay Component', () => {
                 const pageData = createMockPageData({id: 1});
                 renderPostForm('PUT', pageData);
 
-                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 200, '/api/family-groups/xyz'));
+                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 200, '/api/legal-guardian-groups/xyz'));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;
@@ -750,7 +750,7 @@ describe('HalFormDisplay Component', () => {
                 const pageData = createMockPageData({id: 1});
                 renderPostForm('DELETE', pageData);
 
-                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 204, '/api/family-groups/xyz'));
+                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 204, '/api/legal-guardian-groups/xyz'));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 await user.click(screen.getByRole('button', {name: /odeslat/i}));
@@ -795,7 +795,7 @@ describe('HalFormDisplay Component', () => {
 
                 renderPostForm('POST', pageData);
 
-                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/family-groups/xyz'));
+                fetchSpy.mockResolvedValueOnce(createMockResponseWithLocation(null, 201, '/api/legal-guardian-groups/xyz'));
 
                 await waitFor(() => expect(screen.queryByText(/Nač/)).not.toBeInTheDocument());
                 const nameInput = screen.getByDisplayValue('Existing') as HTMLInputElement;

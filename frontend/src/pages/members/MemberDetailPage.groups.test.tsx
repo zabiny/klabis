@@ -194,26 +194,26 @@ describe('MemberDetailPage — group navigation buttons', () => {
         expect(navigateToResource).toHaveBeenCalledWith(trainingGroupLink);
     });
 
-    it('renders "Rodina" button when familyGroup link is present', () => {
+    it('renders "Zákonní zástupci" button when legalGuardianGroup link is present', () => {
         const data = mockMemberDetailData({
             _links: {
                 self: {href: '/api/members/123'},
-                familyGroup: {href: '/api/family-groups/fg-uuid'},
+                legalGuardianGroup: {href: '/api/legal-guardian-groups/lg-uuid'},
             },
             _templates: {updateMember: adminEditTemplate},
         });
         renderPage(createMockPageData(data));
-        expect(screen.getByRole('button', {name: /rodina/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /zákonní zástupci/i})).toBeInTheDocument();
     });
 
-    it('clicking "Rodina" button calls navigateToResource with the familyGroup link', async () => {
+    it('clicking "Zákonní zástupci" button calls navigateToResource with the legalGuardianGroup link', async () => {
         const user = userEvent.setup();
         const navigateToResource = vi.fn();
-        const familyGroupLink = {href: '/api/family-groups/fg-uuid'};
+        const legalGuardianGroupLink = {href: '/api/legal-guardian-groups/lg-uuid'};
         const data = mockMemberDetailData({
             _links: {
                 self: {href: '/api/members/123'},
-                familyGroup: familyGroupLink,
+                legalGuardianGroup: legalGuardianGroupLink,
             },
             _templates: {updateMember: adminEditTemplate},
         });
@@ -224,15 +224,15 @@ describe('MemberDetailPage — group navigation buttons', () => {
                 refetch: async () => {},
                 queryState: 'success' as const,
                 getResourceLink: vi.fn().mockImplementation((rel: string) =>
-                    rel === 'familyGroup' ? familyGroupLink : null
+                    rel === 'legalGuardianGroup' ? legalGuardianGroupLink : null
                 ),
             },
         });
         renderPage(pageData);
 
-        await user.click(screen.getByRole('button', {name: /rodina/i}));
+        await user.click(screen.getByRole('button', {name: /zákonní zástupci/i}));
 
-        expect(navigateToResource).toHaveBeenCalledWith(familyGroupLink);
+        expect(navigateToResource).toHaveBeenCalledWith(legalGuardianGroupLink);
     });
 
     it('renders neither group button when both links are absent', () => {
@@ -241,24 +241,24 @@ describe('MemberDetailPage — group navigation buttons', () => {
         });
         renderPage(createMockPageData(data));
         expect(screen.queryByRole('button', {name: /tréninková skupina/i})).not.toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: /rodina/i})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /zákonní zástupci/i})).not.toBeInTheDocument();
     });
 
     it('renders group navigation buttons even without an edit template (other-member view)', () => {
-        // The backend emits trainingGroup/familyGroup links for any reader of the member detail,
+        // The backend emits trainingGroup/legalGuardianGroup links for any reader of the member detail,
         // regardless of whether the reader has edit permissions. Buttons must render on HAL link
         // presence alone — no _templates.updateMember required.
         const data = mockMemberDetailData({
             _links: {
                 self: {href: '/api/members/123'},
                 trainingGroup: {href: '/api/training-groups/tg-uuid'},
-                familyGroup: {href: '/api/family-groups/fg-uuid'},
+                legalGuardianGroup: {href: '/api/legal-guardian-groups/lg-uuid'},
             },
             // deliberately no _templates
         });
         renderPage(createMockPageData(data));
         expect(screen.getByRole('button', {name: /tréninková skupina/i})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /rodina/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /zákonní zástupci/i})).toBeInTheDocument();
     });
 
 });

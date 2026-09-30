@@ -37,10 +37,10 @@ describe('SuspensionWarningDialog (task 6.7)', () => {
         expect(screen.getByRole('button', {name: /rozpustit skupinu/i})).toBeInTheDocument();
     });
 
-    it('shows "Určit nástupce" and "Rozpustit skupinu" for FamilyGroup', () => {
+    it('shows "Určit nástupce" and "Rozpustit skupinu" for Skupina zástupců', () => {
         const props = {
             ...baseProps,
-            affectedGroups: [{groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'FAMILY'}],
+            affectedGroups: [{groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'LEGAL_GUARDIAN'}],
         };
         render(<SuspensionWarningDialog {...props}/>);
         expect(screen.getByRole('button', {name: /určit nástupce/i})).toBeInTheDocument();
@@ -71,13 +71,13 @@ describe('SuspensionWarningDialog (task 6.7)', () => {
         expect(screen.getByText('Tréninková skupina')).toBeInTheDocument();
     });
 
-    it('shows human-readable group type label for FamilyGroup', () => {
+    it('shows human-readable group type label for Skupina zástupců', () => {
         const props = {
             ...baseProps,
-            affectedGroups: [{groupId: 'g-2', groupName: 'Novákovi', groupType: 'FAMILY'}],
+            affectedGroups: [{groupId: 'g-2', groupName: 'Novákovi', groupType: 'LEGAL_GUARDIAN'}],
         };
         render(<SuspensionWarningDialog {...props}/>);
-        expect(screen.getByText('Rodinná skupina')).toBeInTheDocument();
+        expect(screen.getByText('Skupina zákonných zástupců')).toBeInTheDocument();
     });
 
     it('renders multiple affected groups', () => {
@@ -85,7 +85,7 @@ describe('SuspensionWarningDialog (task 6.7)', () => {
             ...baseProps,
             affectedGroups: [
                 {groupId: 'g-1', groupName: 'Trail Runners', groupType: 'FREE'},
-                {groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'FAMILY'},
+                {groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'LEGAL_GUARDIAN'},
                 {groupId: 'g-3', groupName: 'U10', groupType: 'TRAINING'},
             ],
         };
