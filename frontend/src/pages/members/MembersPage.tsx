@@ -12,6 +12,7 @@ import {Badge, Button, DetailRow, Modal} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {SyncMembersFromOrisModal} from "../../components/members/SyncMembersFromOrisModal.tsx";
 import {Section} from "./MemberSection.tsx";
+import {RegistrationContactSection, RegistrationGuardianSections} from "./RegistrationGuardianSections.tsx";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
 import {Banknote, Pencil, RefreshCw, Shield, UserCheck, UserX} from "lucide-react";
@@ -267,11 +268,9 @@ export const MembersPage = (): ReactElement => {
                                                     </Section>
                                                 )}
                                                 {hasFields(CONTACT_FIELDS) && (
-                                                    <Section title={labels.sections.contact}>
-                                                        {hasField('email') && <DetailRow label={labels.fields.email}>{renderInput('email')}</DetailRow>}
-                                                        {hasField('phone') && <DetailRow label={labels.fields.phone}>{renderInput('phone')}</DetailRow>}
-                                                    </Section>
+                                                    <RegistrationContactSection renderInput={renderInput} hasField={hasField}/>
                                                 )}
+                                                <RegistrationGuardianSections renderInput={renderInput} hasField={hasField}/>
                                                 {hasType(ADDRESS_TYPE) && (
                                                     <Section title={labels.sections.address}>
                                                         {renderInput('address')}

@@ -30,7 +30,12 @@ class MemberCompletenessService implements MemberCompletenessPort {
     @Transactional(readOnly = true)
     @Override
     public GuardianContacts guardianContactsOf(MemberId memberId) {
-        Set<UserId> guardians = legalGuardianGroupPort.guardiansOf(memberId);
+        return contactsOfGuardians(legalGuardianGroupPort.guardiansOf(memberId));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public GuardianContacts contactsOfGuardians(Set<UserId> guardians) {
         if (guardians.isEmpty()) {
             return GuardianContacts.NONE;
         }

@@ -10,6 +10,8 @@ public interface LegalGuardianRepository {
 
     LegalGuardian save(LegalGuardian legalGuardian);
 
+    void delete(LegalGuardian legalGuardian);
+
     Optional<LegalGuardian> findById(UserId id);
 
     List<LegalGuardian> findAllByIds(Collection<UserId> ids);

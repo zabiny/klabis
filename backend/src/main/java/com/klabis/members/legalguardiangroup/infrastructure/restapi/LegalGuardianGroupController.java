@@ -11,8 +11,6 @@ import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.legalguardian.application.GuardianContact;
 import com.klabis.members.legalguardian.application.GuardianKind;
-import com.klabis.members.legalguardian.application.LegalGuardianPort.GuardianInput;
-import com.klabis.members.legalguardian.application.LegalGuardianPort.NewLegalGuardian;
 import com.klabis.common.users.Authority;
 import com.klabis.members.infrastructure.restapi.*;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
@@ -82,13 +80,13 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
 
     @Override
     public ResponseEntity<Void> setLegalGuardianGroupGuardians(UUID id, SetLegalGuardiansRequest request) {
-        legalGuardianGroupService.changeGroupGuardians(new LegalGuardianGroupId(id), toInputs(request));
+        legalGuardianGroupService.changeGroupGuardians(new LegalGuardianGroupId(id), GuardianInputMapper.toInputs(request.legalGuardians()));
         return ResponseEntity.noContent().build();
     }
 
     @Override
     public ResponseEntity<Void> setMemberLegalGuardians(UUID id, SetLegalGuardiansRequest request) {
-        legalGuardianGroupService.setGuardiansOf(new MemberId(id), toInputs(request));
+        legalGuardianGroupService.setGuardiansOf(new MemberId(id), GuardianInputMapper.toInputs(request.legalGuardians()));
         return ResponseEntity.noContent().build();
     }
 
@@ -100,23 +98,6 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
             throw new AccessDeniedException(
                     "Access to legal guardians requires MEMBERS:MANAGE authority or being a minor of the group");
         }
-    }
-
-    private static List<GuardianInput> toInputs(SetLegalGuardiansRequest request) {
-        return request.legalGuardians().stream().map(LegalGuardianGroupController::toInput).toList();
-    }
-
-    private static GuardianInput toInput(LegalGuardianInputRequest item) {
-        boolean hasNewGuardianData = item.firstName() != null || item.lastName() != null
-                                     || item.email() != null || item.phone() != null;
-        if ((item.userId() == null) == !hasNewGuardianData) {
-            throw new IllegalArgumentException(
-                    "Legal guardian must be given either by userId or by the details of a new guardian");
-        }
-        if (item.userId() != null) {
-            return GuardianInput.existing(new UserId(item.userId()));
-        }
-        return GuardianInput.created(new NewLegalGuardian(item.firstName(), item.lastName(), item.email(), item.phone()));
     }
 
     private LegalGuardianGroupGuardianResponse toGuardianResponse(GuardianContact contact) {
@@ -185,7 +166,7 @@ class LegalGuardianGroupDetailsPostprocessor extends ModelWithDomainPostprocesso
                         .andAffordances(klabisAffordWithOptions(
                                 methodOn(LegalGuardianGroupsApi.class).setLegalGuardianGroupGuardians(id, null),
                                 Map.of("legalGuardians", HalFormsOptionsDef.remote(
-                                        methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null))))))
+                                        methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null, null))))))
                 .ifPresent(dtoModel::add);
 
         klabisLinkTo(methodOn(LegalGuardianGroupsApi.class).listLegalGuardianGroupGuardians(id, null))

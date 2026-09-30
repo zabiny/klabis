@@ -178,6 +178,7 @@ export const labels = {
     },
 
     fields: {
+        legalGuardianUserId: 'Zákonný zástupce',
         coordinators: 'Vedoucí',
         eventDate: 'Datum konání',
         registrationDeadline: 'Uzávěrka',
@@ -405,6 +406,9 @@ export const labels = {
         noLegalGuardianGroups: 'Zatím neexistuje žádná skupina zákonných zástupců.',
         noMinorsInGroup: 'Skupina nemá žádné nezletilé.',
         noLegalGuardians: 'Bez zákonného zástupce',
+        registrationMinorContactHint: 'Vlastní e-mail a telefon nezletilého jsou volitelné.',
+        registrationGuardiansRequiredHint: 'Nezletilý člen musí mít alespoň jednoho zákonného zástupce.',
+        registrationTakeoverHint: 'Pokud se dosavadní zákonný zástupce stává členem, vyberte ho; údaje se předvyplní z jeho profilu.',
         legalGuardianPickExisting: 'Vybrat existujícího zástupce',
         legalGuardianCreateNew: 'Založit nového zástupce',
         legalGuardianFirstName: 'Jméno',
@@ -484,6 +488,7 @@ export const labels = {
         trainingGroup: 'TRÉNINKOVÁ SKUPINA',
         legalGuardianGroups: 'Zákonní zástupci',
         legalGuardians: 'ZÁKONNÍ ZÁSTUPCI',
+        legalGuardianTakeover: 'PŘEVZETÍ ZÁKONNÉHO ZÁSTUPCE',
         legalGuardianGroupMinors: 'NEZLETILÍ',
         categoryPresetsList: 'Šablony kategorií',
         presetsListHeading: 'Seznam šablon',

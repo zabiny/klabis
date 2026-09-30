@@ -3,12 +3,20 @@ package com.klabis.members.application;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
+import com.klabis.common.users.application.PermissionService;
 import com.klabis.members.MemberId;
+import com.klabis.members.domain.GuardianContacts;
+import com.klabis.members.domain.GuardiansNotAllowedException;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.RegistrationNumber;
 import com.klabis.members.domain.RegistrationNumberAlreadyInUseException;
 import com.klabis.members.domain.RegistrationNumberGenerator;
+import com.klabis.members.legalguardian.application.GuardianContact;
+import com.klabis.members.legalguardian.application.GuardianContactResolver;
+import com.klabis.members.legalguardian.application.LegalGuardianPort;
+import com.klabis.members.legalguardiangroup.application.GuardianNotFoundException;
+import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 /**
  * Service for member registration operations.
@@ -43,6 +52,11 @@ public class RegistrationService implements RegistrationPort {
     private final MemberRepository memberRepository;
     private final UserService userService;
     private final RegistrationNumberGenerator registrationNumberGenerator;
+    private final LegalGuardianPort legalGuardianPort;
+    private final LegalGuardianGroupPort legalGuardianGroupPort;
+    private final MemberCompletenessPort memberCompletenessPort;
+    private final PermissionService permissionService;
+    private final GuardianContactResolver guardianContactResolver;
 
     /**
      * Constructs a new RegistrationPort.
@@ -50,14 +64,29 @@ public class RegistrationService implements RegistrationPort {
      * @param memberRepository            the member repository for persisting members
      * @param userService                 the user service for creating users and permissions
      * @param registrationNumberGenerator the generator for registration numbers
+     * @param legalGuardianPort           creates new non-member legal guardians and releases a taken-over one
+     * @param legalGuardianGroupPort      assigns the legal guardians to the registered minor
+     * @param memberCompletenessPort      tells what the legal guardians offer towards the minor's contacts
+     * @param permissionService           grants a taken-over guardian the authorities of a member
+     * @param guardianContactResolver     rejects chosen guardians who cannot serve as one
      */
     public RegistrationService(
             MemberRepository memberRepository,
             UserService userService,
-            RegistrationNumberGenerator registrationNumberGenerator) {
+            RegistrationNumberGenerator registrationNumberGenerator,
+            LegalGuardianPort legalGuardianPort,
+            LegalGuardianGroupPort legalGuardianGroupPort,
+            MemberCompletenessPort memberCompletenessPort,
+            PermissionService permissionService,
+            GuardianContactResolver guardianContactResolver) {
         this.memberRepository = memberRepository;
         this.userService = userService;
         this.registrationNumberGenerator = registrationNumberGenerator;
+        this.legalGuardianPort = legalGuardianPort;
+        this.legalGuardianGroupPort = legalGuardianGroupPort;
+        this.memberCompletenessPort = memberCompletenessPort;
+        this.permissionService = permissionService;
+        this.guardianContactResolver = guardianContactResolver;
     }
 
     @Transactional
@@ -67,12 +96,33 @@ public class RegistrationService implements RegistrationPort {
         Assert.notNull(command.personalInformation().getDateOfBirth(), "Date of birth must not be null");
 
         LocalDate dateOfBirth = command.personalInformation().getDateOfBirth();
+        boolean minor = command.personalInformation().isMinor();
+
+        if (minor && command.takenOverLegalGuardian() != null) {
+            throw GuardiansNotAllowedException.takeOverByMinor();
+        }
+        if (!minor && !command.legalGuardians().isEmpty()) {
+            throw GuardiansNotAllowedException.adultWithGuardians();
+        }
+
+        Set<UserId> guardians = command.legalGuardians().isEmpty()
+                                ? Set.of()
+                                : legalGuardianPort.resolveGuardians(command.legalGuardians());
+        requireUsableGuardians(guardians);
+        GuardianContacts guardianContacts = guardians.isEmpty()
+                                            ? GuardianContacts.NONE
+                                            : memberCompletenessPort.contactsOfGuardians(guardians);
 
         RegistrationNumber registrationNumber = registrationNumberGenerator.generate(dateOfBirth);
         log.debug("Generated registration number: {} for date of birth: {}",
                 registrationNumber.getValue(), dateOfBirth);
 
-        return register(command, registrationNumber, false);
+        Member member = register(command, registrationNumber, guardianContacts, false);
+
+        if (!guardians.isEmpty()) {
+            legalGuardianGroupPort.setGuardiansOf(member.getId(), guardians);
+        }
+        return member;
     }
 
     @Transactional
@@ -80,7 +130,7 @@ public class RegistrationService implements RegistrationPort {
     public Member importMember(ImportMember command) {
         Assert.notNull(command.registrationNumber(), "Registration number must not be null");
 
-        return register(command.details(), command.registrationNumber(), true);
+        return register(command.details(), command.registrationNumber(), GuardianContacts.NONE, true);
     }
 
     /**
@@ -90,9 +140,12 @@ public class RegistrationService implements RegistrationPort {
      * factory differs — {@code importing} routes to {@link Member#importFromOris}, which tolerates
      * incomplete data, instead of {@link Member#register}, which does not (design.md D5).
      */
-    private Member register(RegisterNewMember command, RegistrationNumber registrationNumber, boolean importing) {
+    private Member register(RegisterNewMember command, RegistrationNumber registrationNumber,
+                            GuardianContacts guardianContacts, boolean importing) {
         try {
-            UserId sharedUserId = userService.createUser(
+            UserId sharedUserId = command.takenOverLegalGuardian() != null
+                                  ? takeOverLegalGuardian(command.takenOverLegalGuardian())
+                                  : userService.createUser(
                     registrationNumber.getValue(),
                     Authority.getStandardUserAuthorities()
             );
@@ -112,7 +165,8 @@ public class RegistrationService implements RegistrationPort {
                     command.registeredBy()
             );
 
-            Member member = importing ? Member.importFromOris(domainCommand) : Member.register(domainCommand);
+            Member member = importing ? Member.importFromOris(domainCommand)
+                                                   : Member.register(domainCommand, guardianContacts);
 
             Member savedMember = memberRepository.save(member);
 
@@ -126,5 +180,27 @@ public class RegistrationService implements RegistrationPort {
             // a race between the check and this save. See design.md D4.
             throw new RegistrationNumberAlreadyInUseException(registrationNumber, e);
         }
+    }
+
+    private void requireUsableGuardians(Set<UserId> guardians) {
+        if (guardians.isEmpty()) {
+            return;
+        }
+        Set<UserId> usable = guardianContactResolver.resolve(guardians).stream()
+                .map(GuardianContact::userId)
+                .collect(java.util.stream.Collectors.toSet());
+        guardians.stream().filter(id -> !usable.contains(id)).findFirst().ifPresent(id -> {
+            throw new GuardianNotFoundException(id);
+        });
+    }
+
+    /**
+     * The guardian's user becomes the member's user, so the person keeps their login number and their
+     * legal guardian groups; only the guardian profile is replaced by the member profile.
+     */
+    private UserId takeOverLegalGuardian(UserId guardianId) {
+        legalGuardianPort.releaseForMembership(guardianId);
+        permissionService.updateUserPermissions(guardianId, Authority.getStandardUserAuthorities());
+        return guardianId;
     }
 }

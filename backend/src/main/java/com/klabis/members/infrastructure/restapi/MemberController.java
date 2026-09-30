@@ -354,7 +354,7 @@ final class MemberSelfLinkSupport {
                 self = self.andAffordances(klabisAffordWithOptions(
                         methodOn(LegalGuardianGroupsApi.class).setMemberLegalGuardians(memberId, null),
                         Map.of("legalGuardians", HalFormsOptionsDef.remote(
-                                methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null)))));
+                                methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null, null)))));
             }
             return (Link) self;
         }).ifPresent(dtoModel::add);
@@ -381,7 +381,12 @@ class MemberListPostprocessor implements RepresentationModelProcessor<PagedModel
     public PagedModel<EntityModel<MemberSummaryResponse>> process(PagedModel<EntityModel<MemberSummaryResponse>> pagedModel) {
         pagedModel.mapLink(IanaLinkRelations.SELF, selfLink -> (Link) selfLink
                 .andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(null, null, null)))
-                .andAffordances(klabisAfford(methodOn(RegistrationApi.class).registerMember(null, null))));
+                .andAffordances(klabisAffordWithOptions(
+                        methodOn(RegistrationApi.class).registerMember(null, null),
+                        Map.of("legalGuardians", HalFormsOptionsDef.remote(
+                                        methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null, null)),
+                                "legalGuardianUserId", HalFormsOptionsDef.remote(
+                                        methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null, LegalGuardianKind.LEGAL_GUARDIAN))))));
         return pagedModel;
     }
 }

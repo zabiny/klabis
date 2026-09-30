@@ -1,5 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.users.UserId;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Address;
 import com.klabis.members.domain.BankAccountNumber;
@@ -32,11 +33,17 @@ class RegisterNewMemberConverter implements Converter<RegisterMemberRequestWithP
                         request.dateOfBirth(), request.nationality(), gender),
                 request.address() != null ? new Address(request.address().street(), request.address().city(),
                         request.address().postalCode(), request.address().country()) : null,
-                EmailAddress.of(request.email()),
-                PhoneNumber.of(request.phone()),
+                hasText(request.email()) ? EmailAddress.of(request.email()) : null,
+                hasText(request.phone()) ? PhoneNumber.of(request.phone()) : null,
                 request.birthNumber() != null ? BirthNumber.of(request.birthNumber()) : null,
                 request.bankAccountNumber() != null ? BankAccountNumber.of(request.bankAccountNumber()) : null,
-                source.registeredBy()
+                source.registeredBy(),
+                GuardianInputMapper.toInputs(request.legalGuardians()),
+                request.legalGuardianUserId() != null ? new UserId(request.legalGuardianUserId()) : null
         );
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }
