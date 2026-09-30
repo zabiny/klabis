@@ -62,7 +62,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
-                    .withNoGuardian()
                     .build();
 
             // When
@@ -75,49 +74,13 @@ class MemberRepositoryTest {
                     .hasDateOfBirth(LocalDate.of(2005, 3, 15))
                     .hasNationality("CZ")
                     .hasGender(Gender.MALE)
-                    .isActive()
-                    .hasGuardian(null);
+                    .isActive();
             assertThat(savedMember.getId()).isNotNull();
             assertThat(savedMember.getRegistrationNumber().getValue()).isEqualTo("ZBM0501");
             assertThat(savedMember.getEmail()).isNotNull();
             assertThat(savedMember.getEmail().value()).isEqualTo("jan.novak@example.com");
             assertThat(savedMember.getPhone()).isNotNull();
             assertThat(savedMember.getPhone().value()).isEqualTo("+420123456789");
-        }
-
-        @Test
-        @DisplayName("should save member with guardian information")
-        void shouldSaveMemberWithGuardian() {
-            // Given
-            GuardianInformation guardian = new GuardianInformation(
-                    "Pavel",
-                    "Novák",
-                    "PARENT",
-                    EmailAddress.of("pavel.novak@example.com"),
-                    PhoneNumber.of("+420987654321")
-            );
-            Member member = aMember()
-                    .withRegistrationNumber("ZBM1001")
-                    .withName("Petra", "Nováková")
-                    .withDateOfBirth(LocalDate.of(2010, 6, 20))
-                    .withNationality("CZ")
-                    .withGender(Gender.FEMALE)
-                    .withAddress(Address.of("Dětská 1", "Brno", "60200", "CZ"))
-                    .withEmail("petra.novakova@example.com")
-                    .withPhone("+420111222333")
-                    .withGuardian(guardian)
-                    .build();
-
-            // When
-            Member savedMember = memberRepository.save(member);
-
-            // Then
-            MemberAssert.assertThat(savedMember).hasGuardianNotNull();
-            assertThat(savedMember.getGuardian().getFirstName()).isEqualTo("Pavel");
-            assertThat(savedMember.getGuardian().getLastName()).isEqualTo("Novák");
-            assertThat(savedMember.getGuardian().getRelationship()).isEqualTo("PARENT");
-            assertThat(savedMember.getGuardian().getEmailValue()).isEqualTo("pavel.novak@example.com");
-            assertThat(savedMember.getGuardian().getPhoneValue()).isEqualTo("+420987654321");
         }
 
         @Test
@@ -133,7 +96,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 5", "Ostrava", "70800", "CZ"))
                     .withEmail("test@example.com")
                     .withPhone("+420111111111")
-                    .withNoGuardian()
                     .build();
 
             // When
@@ -160,7 +122,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
                     .withEmail("version@example.com")
                     .withPhone("+420111111112")
-                    .withNoGuardian()
                     .build();
 
             // When
@@ -176,13 +137,6 @@ class MemberRepositoryTest {
         @DisplayName("should save member with all optional fields")
         void shouldSaveMemberWithAllOptionalFields() {
             // Given
-            GuardianInformation guardian = new GuardianInformation(
-                    "Guardian",
-                    "Name",
-                    "PARENT",
-                    EmailAddress.of("guardian@example.com"),
-                    PhoneNumber.of("+420111111113")
-            );
             Member member = aMember()
                     .withRegistrationNumber("ZBM0003")
                     .withName("Complete", "Member")
@@ -192,7 +146,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
                     .withEmail("complete@example.com")
                     .withPhone("+420111111114")
-                    .withGuardian(guardian)
                     .build();
 
             // When
@@ -222,10 +175,9 @@ class MemberRepositoryTest {
         @Test
         @DisplayName("stores true when saving an incomplete member")
         void shouldStoreTrueWhenSavingIncompleteMember() {
-            // a minor without a guardian is missing GUARDIAN -> incomplete
             Member incompleteMember = aMember()
                     .withRegistrationNumber("ZBM7001")
-                    .withNoGuardian()
+                    .withDataIncomplete(true)
                     .build();
 
             Member savedMember = memberRepository.save(incompleteMember);
@@ -250,16 +202,12 @@ class MemberRepositoryTest {
         void shouldUpdateStoredFlagToFalseAfterCompletion() {
             Member incompleteMember = aMember()
                     .withRegistrationNumber("ZBM7003")
-                    .withNoGuardian()
+                    .withDataIncomplete(true)
                     .build();
             Member savedMember = memberRepository.save(incompleteMember);
             assertThat(dataIncompleteColumnFor(savedMember.getId().uuid())).isTrue();
 
-            savedMember.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(savedMember))
-                    .guardian(new GuardianInformation("Petr", "Novák", "Father",
-                            EmailAddress.of("petr.novak@example.com"),
-                            PhoneNumber.of("+420987654321")))
-                    .build());
+            savedMember.recordMissingData(java.util.Set.of());
             Member resavedMember = memberRepository.save(savedMember);
 
             assertThat(dataIncompleteColumnFor(resavedMember.getId().uuid())).isFalse();
@@ -284,15 +232,15 @@ class MemberRepositoryTest {
 
             incompleteActive = aMember()
                     .withRegistrationNumber("ZBM7102")
+                    .withDataIncomplete(true)
                     .withName("Ivana", "Nekompletní")
-                    .withNoGuardian()
                     .withActive(true)
                     .build();
 
             incompleteInactive = aMember()
                     .withRegistrationNumber("ZBM7103")
+                    .withDataIncomplete(true)
                     .withName("Karel", "Nekompletní")
-                    .withNoGuardian()
                     .withActive(false)
                     .build();
 
@@ -357,7 +305,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
-                    .withNoGuardian()
                     .build();
             Member savedMember = memberRepository.save(member);
 
@@ -388,13 +335,6 @@ class MemberRepositoryTest {
         @DisplayName("should load all member fields correctly")
         void shouldLoadAllMemberFieldsCorrectly() {
             // Given
-            GuardianInformation guardian = new GuardianInformation(
-                    "Guard",
-                    "Guardian",
-                    "PARENT",
-                    EmailAddress.of("guard@example.com"),
-                    PhoneNumber.of("+420111111115")
-            );
             Member member = aMember()
                     .withRegistrationNumber("ZBM0004")
                     .withName("Full", "Load")
@@ -404,7 +344,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 1", "Test", "11000", "CZ"))
                     .withEmail("full@example.com")
                     .withPhone("+420111111116")
-                    .withGuardian(guardian)
                     .build();
             Member savedMember = memberRepository.save(member);
 
@@ -418,8 +357,6 @@ class MemberRepositoryTest {
             assertThat(loaded.getLastName()).isEqualTo("Load");
             assertThat(loaded.getEmail().value()).isEqualTo("full@example.com");
             assertThat(loaded.getPhone().value()).isEqualTo("+420111111116");
-            assertThat(loaded.getGuardian()).isNotNull();
-            assertThat(loaded.getGuardian().getFirstName()).isEqualTo("Guard");
         }
     }
 
@@ -441,7 +378,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
-                    .withNoGuardian()
                     .build();
             memberRepository.save(member);
 
@@ -482,7 +418,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420123456789")
-                    .withNoGuardian()
                     .build();
             memberRepository.save(member);
 
@@ -518,7 +453,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 1", "Test", "11000", "CZ"))
                     .withEmail("test@example.com")
                     .withPhone("+420111111118")
-                    .withNoGuardian()
                     .build();
             memberRepository.save(member);
 
@@ -549,7 +483,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test1 1", "Praha", "11000", "CZ"))
                     .withEmail("test1@example.com")
                     .withPhone("+420111111119")
-                    .withNoGuardian()
                     .build();
 
             Member member2 = aMember()
@@ -561,7 +494,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test2 2", "Brno", "60200", "CZ"))
                     .withEmail("test2@example.com")
                     .withPhone("+420111111120")
-                    .withNoGuardian()
                     .build();
 
             Member member3 = aMember()
@@ -573,7 +505,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test3 3", "Ostrava", "70800", "CZ"))
                     .withEmail("test3@example.com")
                     .withPhone("+420111111121")
-                    .withNoGuardian()
                     .build();
 
             memberRepository.save(member1);
@@ -620,7 +551,6 @@ class MemberRepositoryTest {
                         .withAddress(Address.of("Street " + i, "City", "11000", "CZ"))
                         .withEmail("user" + i + "@example.com")
                         .withPhone("+420111111%03d".formatted(i))
-                        .withNoGuardian()
                         .build();
                 memberRepository.save(member);
             }
@@ -650,7 +580,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Hlavní 1", "Praha", "11000", "CZ"))
                     .withEmail("jan@example.com")
                     .withPhone("+420111111122")
-                    .withNoGuardian()
                     .build();
 
             Member member2 = aMember()
@@ -662,7 +591,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Dětská 2", "Brno", "60200", "CZ"))
                     .withEmail("petra@example.com")
                     .withPhone("+420111111123")
-                    .withNoGuardian()
                     .build();
 
             Member member3 = aMember()
@@ -674,7 +602,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Svobodova 3", "Ostrava", "70800", "CZ"))
                     .withEmail("karel@example.com")
                     .withPhone("+420111111124")
-                    .withNoGuardian()
                     .build();
 
             memberRepository.save(member1);
@@ -721,16 +648,8 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Hlavní 1", "Praha", "11000", "CZ"))
                     .withEmail("jan@example.com")
                     .withPhone("+420111111125")
-                    .withNoGuardian()
                     .build();
 
-            GuardianInformation guardian = new GuardianInformation(
-                    "Pavel",
-                    "Novák",
-                    "PARENT",
-                    EmailAddress.of("pavel@example.com"),
-                    PhoneNumber.of("+420987654321")
-            );
             Member member2 = aMember()
                     .withRegistrationNumber("ZBM1001")
                     .withName("Petra", "Nováková")
@@ -740,7 +659,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Dětská 2", "Brno", "60200", "CZ"))
                     .withEmail("petra@example.com")
                     .withPhone("+420111111126")
-                    .withGuardian(guardian)
                     .build();
 
             memberRepository.save(member1);
@@ -785,7 +703,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
                     .withEmail("version@example.com")
                     .withPhone("+420111111127")
-                    .withNoGuardian()
                     .build();
 
             // When
@@ -816,7 +733,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
                     .withEmail("audit@example.com")
                     .withPhone("+420111111129")
-                    .withNoGuardian()
                     .build();
 
             // When
@@ -840,7 +756,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
                     .withEmail("modified@example.com")
                     .withPhone("+420111111130")
-                    .withNoGuardian()
                     .build();
 
             // When
@@ -877,7 +792,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
                     .withEmail("jan.novak@example.com")
                     .withPhone("+420111111200")
-                    .withNoGuardian()
                     .build();
 
             cermak = aMember()
@@ -889,7 +803,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 2", "Praha", "11000", "CZ"))
                     .withEmail("petr.cermak@example.com")
                     .withPhone("+420111111201")
-                    .withNoGuardian()
                     .build();
 
             memberRepository.save(jan);
@@ -1392,7 +1305,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
                     .withEmail("active@example.com")
                     .withPhone("+420111111900")
-                    .withNoGuardian()
                     .withActive(true)
                     .build();
 
@@ -1405,7 +1317,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 2", "Praha", "11000", "CZ"))
                     .withEmail("inactive@example.com")
                     .withPhone("+420111111901")
-                    .withNoGuardian()
                     .withActive(false)
                     .build();
 
@@ -1479,7 +1390,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 1", "Praha", "11000", "CZ"))
                     .withEmail("trainer.test@example.com")
                     .withPhone("+420111111200")
-                    .withNoGuardian()
                     .withTrainerLicense(trainerLicense)
                     .build();
 
@@ -1505,7 +1415,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 2", "Praha", "11000", "CZ"))
                     .withEmail("referee.test@example.com")
                     .withPhone("+420111111201")
-                    .withNoGuardian()
                     .withRefereeLicense(refereeLicense)
                     .build();
 
@@ -1530,7 +1439,6 @@ class MemberRepositoryTest {
                     .withAddress(Address.of("Test 3", "Praha", "11000", "CZ"))
                     .withEmail("nolicense.test@example.com")
                     .withPhone("+420111111202")
-                    .withNoGuardian()
                     .build();
 
             Member savedMember = memberRepository.save(member);

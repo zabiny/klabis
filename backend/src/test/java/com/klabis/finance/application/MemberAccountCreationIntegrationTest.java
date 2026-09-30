@@ -41,7 +41,6 @@ class MemberAccountCreationIntegrationTest {
                 PhoneNumber.of("+420777888999"),
                 null,
                 null,
-                null,
                 null
         );
 

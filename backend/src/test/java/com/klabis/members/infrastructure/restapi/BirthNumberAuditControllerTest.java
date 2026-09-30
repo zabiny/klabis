@@ -51,6 +51,9 @@ class BirthNumberAuditControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private com.klabis.members.application.MemberCompletenessPort memberCompletenessPort;
+
+    @MockitoBean
     private ManagementPort managementService;
 
     @MockitoBean
@@ -87,7 +90,6 @@ class BirthNumberAuditControllerTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withNationality("CZ")
                     .withBirthNumber(BirthNumber.of("900101/1234"))
-                    .withNoGuardian()
                     .build();
 
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
@@ -111,7 +113,6 @@ class BirthNumberAuditControllerTest {
             UUID memberId = UUID.randomUUID();
             Member existingMember = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withNationality("CZ")
-                    .withNoGuardian()
                     .build();
 
             when(managementService.prefilledUpdateCommand(any(MemberId.class)))
@@ -140,7 +141,6 @@ class BirthNumberAuditControllerTest {
             UUID memberId = UUID.randomUUID();
             Member existingMember = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withNationality("CZ")
-                    .withNoGuardian()
                     .build();
 
             when(managementService.prefilledUpdateCommand(any(MemberId.class)))
@@ -175,7 +175,6 @@ class BirthNumberAuditControllerTest {
             Member registeredMember = MemberTestDataBuilder.aMemberWithId(newMemberId)
                     .withNationality("CZ")
                     .withBirthNumber(BirthNumber.of("900101/1234"))
-                    .withNoGuardian()
                     .build();
 
             when(registrationService.registerMember(any())).thenReturn(registeredMember);
@@ -213,7 +212,6 @@ class BirthNumberAuditControllerTest {
             UUID newMemberId = UUID.randomUUID();
             Member registeredMember = MemberTestDataBuilder.aMemberWithId(newMemberId)
                     .withNationality("CZ")
-                    .withNoGuardian()
                     .build();
 
             when(registrationService.registerMember(any())).thenReturn(registeredMember);

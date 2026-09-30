@@ -73,6 +73,9 @@ class UpdateMemberApiTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private com.klabis.members.application.MemberCompletenessPort memberCompletenessPort;
+
+    @MockitoBean
     private ManagementPort memberService;
 
     @MockitoBean
@@ -101,7 +104,6 @@ class UpdateMemberApiTest {
                 .withEmail("jan.novak@example.com")
                 .withPhone("+420777123456")
                 .withAddress(Address.of("Hlavní 1", "Praha", "11000", "CZ"))
-                .withNoGuardian()
                 .build();
     }
 

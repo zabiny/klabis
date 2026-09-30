@@ -21,7 +21,6 @@ class MemberCreatedEventTestFactory {
                 Gender.MALE,
                 Address.of("Testovací 1", "Praha", "10000", "CZ"),
                 null,
-                null,
                 null
         );
     }

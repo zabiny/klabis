@@ -27,6 +27,17 @@ vi.mock('../../contexts/halRouteContext.ts', () => ({
     })),
 }));
 
+const guardiansState = {guardians: [] as Array<Record<string, unknown>>};
+vi.mock('../../hooks/useLegalGuardians.ts', () => ({
+    useLegalGuardians: vi.fn(() => ({guardians: guardiansState.guardians, isLoading: false})),
+}));
+
+const navigate = vi.fn();
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-router-dom')>()),
+    useNavigate: () => navigate,
+}));
+
 const navigateToResource = vi.fn();
 
 const renderPage = (resourceData: Record<string, unknown>) => {
@@ -46,15 +57,21 @@ const renderPage = (resourceData: Record<string, unknown>) => {
 const buildGroup = (overrides?: Record<string, unknown>) => ({
     id: 'g-1',
     name: 'Nováková a Svobodová',
-    guardians: [{userId: 'u-1', _links: {member: {href: '/api/members/u-1'}}}],
     minors: [{memberId: 'm-1', joinedAt: '2026-01-01T10:00:00Z', _links: {member: {href: '/api/members/m-1'}}}],
-    _links: {self: {href: '/api/legal-guardian-groups/g-1'}},
+    _links: {
+        self: {href: '/api/legal-guardian-groups/g-1'},
+        legalGuardians: {href: '/api/legal-guardian-groups/g-1/guardians'},
+    },
     ...overrides,
 });
 
 describe('LegalGuardianGroupDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        guardiansState.guardians = [{
+            userId: 'u-1', firstName: 'Jana', lastName: 'Nováková', email: 'jana@example.com', phone: '+420777111222',
+            _links: {member: {href: '/api/members/u-1'}},
+        }];
     });
 
     it('shows group name, guardians and minors', () => {
@@ -62,21 +79,31 @@ describe('LegalGuardianGroupDetailPage', () => {
         expect(screen.getByRole('heading', {name: 'Nováková a Svobodová'})).toBeInTheDocument();
         expect(screen.getByText('ZÁKONNÍ ZÁSTUPCI')).toBeInTheDocument();
         expect(screen.getByText('NEZLETILÍ')).toBeInTheDocument();
-        expect(screen.getAllByText('Jana Nováková (ZBM2000)').length).toBeGreaterThan(0);
+        expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
+        expect(screen.getByText('jana@example.com')).toBeInTheDocument();
+        expect(screen.getByText('+420777111222')).toBeInTheDocument();
     });
 
     it('navigates to guardian member on click', async () => {
         renderPage(buildGroup());
         await userEvent.click(screen.getByRole('button', {name: /Jana Nováková/}));
-        expect(navigateToResource).toHaveBeenCalledWith({href: '/api/members/u-1'});
+        expect(navigate).toHaveBeenCalledWith('/members/u-1');
     });
 
     it('navigates to the profile of a non-member guardian via the legalGuardian link', async () => {
-        renderPage(buildGroup({
-            guardians: [{userId: 'u-2', _links: {legalGuardian: {href: '/api/legal-guardians/u-2'}}}],
-        }));
+        guardiansState.guardians = [{
+            userId: 'u-2', firstName: 'Jana', lastName: 'Nováková',
+            _links: {legalGuardian: {href: '/api/legal-guardians/u-2'}},
+        }];
+        renderPage(buildGroup());
         await userEvent.click(screen.getByRole('button', {name: /Jana Nováková/}));
-        expect(navigateToResource).toHaveBeenCalledWith({href: '/api/legal-guardians/u-2'});
+        expect(navigate).toHaveBeenCalledWith('/legal-guardians/u-2');
+    });
+
+    it('shows an empty state without guardians', () => {
+        guardiansState.guardians = [];
+        renderPage(buildGroup());
+        expect(screen.getByText('Bez zákonného zástupce')).toBeInTheDocument();
     });
 
     it('offers no create, delete or add-member actions', () => {

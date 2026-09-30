@@ -66,18 +66,11 @@ class ImportMemberUsualConsequencesTest {
         ));
         trainingGroupRepository.save(group);
 
-        GuardianInformation guardian = new GuardianInformation(
-                "Parent", "Guardian", "PARENT",
-                EmailAddress.of("guardian.consequences.test@example.com"),
-                PhoneNumber.of("+420777654321")
-        );
-
         RegistrationPort.RegisterNewMember details = new RegistrationPort.RegisterNewMember(
                 PersonalInformation.of("Imported", "Child", dateOfBirth, "CZ", Gender.MALE),
                 Address.of("Importovaná 1", "Praha", "10000", "CZ"),
                 EmailAddress.of("imported.consequences.test@example.com"),
                 PhoneNumber.of("+420777123456"),
-                guardian,
                 BirthNumber.of(dateOfBirth.format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd")) + "/1234"),
                 null,
                 null

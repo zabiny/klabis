@@ -29,16 +29,19 @@ public class ManagementService implements ManagementPort {
     private final ApplicationEventPublisher eventPublisher;
     private final MemberFinancialStatePort memberFinancialStatePort;
     private final List<MemberOwnedGroupsPort> memberOwnedGroupsPorts;
+    private final MemberCompletenessPort memberCompletenessPort;
 
     public ManagementService(MemberRepository memberRepository, UserService userService,
                              ApplicationEventPublisher eventPublisher,
                              Optional<MemberFinancialStatePort> memberFinancialStatePort,
-                             List<MemberOwnedGroupsPort> memberOwnedGroupsPorts) {
+                             List<MemberOwnedGroupsPort> memberOwnedGroupsPorts,
+                             MemberCompletenessPort memberCompletenessPort) {
         this.memberRepository = memberRepository;
         this.userService = userService;
         this.eventPublisher = eventPublisher;
         this.memberFinancialStatePort = memberFinancialStatePort.orElseGet(NoOpMemberFinancialStatePort::new);
         this.memberOwnedGroupsPorts = memberOwnedGroupsPorts;
+        this.memberCompletenessPort = memberCompletenessPort;
     }
 
     @Override
@@ -50,7 +53,7 @@ public class ManagementService implements ManagementPort {
     @Override
     public Member updateMember(MemberId memberId, Member.UpdateMember command) {
         Member member = loadMember(memberId);
-        member.update(command);
+        member.update(command, memberCompletenessPort.guardianContactsOf(memberId));
         Member saved = memberRepository.save(member);
         log.info("Member updated: memberId={}", memberId);
         return saved;
@@ -61,6 +64,7 @@ public class ManagementService implements ManagementPort {
     public Member syncMemberFromOris(MemberId memberId, Member.SyncFromOris command) {
         Member member = loadMember(memberId);
         member.syncFromOris(command);
+        member.recordMissingData(memberCompletenessPort.missingData(member));
         Member saved = memberRepository.save(member);
         log.info("Member synced from ORIS: memberId={}", memberId);
         return saved;

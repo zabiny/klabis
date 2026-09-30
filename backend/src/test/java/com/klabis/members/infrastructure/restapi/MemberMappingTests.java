@@ -272,7 +272,6 @@ class MemberMappingTests {
             assertThat(dto.email()).isEqualTo("jan.novak@example.com");
             assertThat(dto.phone()).isEqualTo("+420 123 456 789");
             assertThat(dto.address()).isNotNull();
-            assertThat(dto.guardian()).isNotNull();
             assertThat(dto.chipNumber()).isEqualTo("CHIP123");
             assertThat(dto.identityCard()).isNotNull();
             assertThat(dto.identityCard().cardNumber()).isEqualTo("IC123");

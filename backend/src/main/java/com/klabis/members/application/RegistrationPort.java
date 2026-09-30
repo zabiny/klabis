@@ -24,7 +24,6 @@ public interface RegistrationPort {
             Address address,
             EmailAddress email,
             PhoneNumber phone,
-            GuardianInformation guardian,
             BirthNumber birthNumber,
             BankAccountNumber bankAccountNumber,
             UserId registeredBy

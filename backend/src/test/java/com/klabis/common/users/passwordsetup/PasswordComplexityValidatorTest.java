@@ -821,7 +821,6 @@ class PasswordComplexityValidatorTest {
                     .withAddress(Address.of("Via Roma 123", "Milano", "20100", "IT"))
                     .withEmail("test@example.com")
                     .withPhone("+420777888999")
-                    .withNoGuardian()
                     .build();
         }
     }

@@ -89,30 +89,6 @@ public class MemberAssert extends AbstractAssert<MemberAssert, Member> {
         return this;
     }
 
-    public MemberAssert hasGuardian(GuardianInformation expected) {
-        isNotNull();
-        if (expected == null) {
-            if (actual.getGuardian() != null) {
-                failWithMessage("Expected guardian to be null but was <%s>", actual.getGuardian());
-            }
-        } else {
-            if (actual.getGuardian() == null) {
-                failWithMessage("Expected guardian to be <%s> but was null", expected);
-            } else if (!actual.getGuardian().equals(expected)) {
-                failWithMessage("Expected guardian to be <%s> but was <%s>", expected, actual.getGuardian());
-            }
-        }
-        return this;
-    }
-
-    public MemberAssert hasGuardianNotNull() {
-        isNotNull();
-        if (actual.getGuardian() == null) {
-            failWithMessage("Expected guardian to be not null");
-        }
-        return this;
-    }
-
     public MemberAssert isActive() {
         isNotNull();
         if (!actual.isActive()) {

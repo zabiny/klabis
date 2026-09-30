@@ -63,13 +63,6 @@ class MemberMementoTest {
         PhoneNumber phone = PhoneNumber.of("+420111222333");
         Address address = Address.of("Dětská 1", "Brno", "60200", "CZ");
         RegistrationNumber registrationNumber = new RegistrationNumber("ZBM0501");
-        GuardianInformation guardian = new GuardianInformation(
-                "Pavel",
-                "Novák",
-                "PARENT",
-                EmailAddress.of("pavel.novak@example.com"),
-                PhoneNumber.of("+420987654321")
-        );
         IdentityCard identityCard = IdentityCard.of("AB123456", LocalDate.now().plusYears(5));
         MedicalCourse medicalCourse = MedicalCourse.of(
                 LocalDate.of(2023, 1, 15),
@@ -93,7 +86,6 @@ class MemberMementoTest {
                 .withEmail(email)
                 .withPhone(phone)
                 .withAuditMetadata(auditMetadata)
-                .withGuardian(guardian)
                 .withName("Petra", "Nováková")
                 .withDateOfBirth(dateOfBirth)
                 .withGender(Gender.FEMALE)
@@ -197,12 +189,6 @@ class MemberMementoTest {
             assertThat(reconstructed.getEmail().value()).isEqualTo("petra.novakova@example.com");
             assertThat(reconstructed.getPhone().value()).isEqualTo("+420111222333");
 
-            // Assert - Guardian
-            assertThat(reconstructed.getGuardian()).isNotNull();
-            assertThat(reconstructed.getGuardian().getFirstName()).isEqualTo("Pavel");
-            assertThat(reconstructed.getGuardian().getLastName()).isEqualTo("Novák");
-            assertThat(reconstructed.getGuardian().getRelationship()).isEqualTo("PARENT");
-
             // Assert - Documents
             assertThat(reconstructed.getIdentityCard()).isNotNull();
             assertThat(reconstructed.getIdentityCard().cardNumber()).isEqualTo("AB123456");
@@ -234,7 +220,6 @@ class MemberMementoTest {
         void shouldReconstructMemberWithNullOptionalFields() {
             // Arrange
             Member member = buildTestMember()
-                    .withNoGuardian()
                     .withIdentityCard(null)
                     .withMedicalCourse(null)
                     .withChipNumber(null)
@@ -248,7 +233,6 @@ class MemberMementoTest {
             Member reconstructed = memento.toMember();
 
             // Assert - Null fields are preserved
-            assertThat(reconstructed.getGuardian()).isNull();
             assertThat(reconstructed.getIdentityCard()).isNull();
             assertThat(reconstructed.getMedicalCourse()).isNull();
             assertThat(reconstructed.getTrainerLicense()).isNull();
@@ -285,7 +269,6 @@ class MemberMementoTest {
             assertThat(reconstructed.getEmail()).isEqualTo(original.getEmail());
             assertThat(reconstructed.getPhone()).isEqualTo(original.getPhone());
             assertThat(reconstructed.getAddress()).isEqualTo(original.getAddress());
-            assertThat(reconstructed.getGuardian()).isEqualTo(original.getGuardian());
             assertThat(reconstructed.isActive()).isEqualTo(original.isActive());
             assertThat(reconstructed.getChipNumber()).isEqualTo(original.getChipNumber());
             assertThat(reconstructed.getDrivingLicenseGroup()).isEqualTo(original.getDrivingLicenseGroup());
@@ -298,6 +281,7 @@ class MemberMementoTest {
             // Arrange - an ORIS-imported member whose address was incomplete has no address at all
             Member original = MemberTestDataBuilder.aMember()
                     .withAddress(null)
+                    .withDataIncomplete(true)
                     .build();
 
             // Act - Convert to memento and back
@@ -306,7 +290,7 @@ class MemberMementoTest {
 
             // Assert
             assertThat(reconstructed.getAddress()).isNull();
-            assertThat(reconstructed.missingData()).contains(MissingDataItem.ADDRESS);
+            assertThat(reconstructed.isDataIncomplete()).isTrue();
         }
 
         @Test

@@ -46,7 +46,6 @@ class ImportMemberRegistrationNumberConflictTest {
                 Address.of("Testovací 1", "Praha", "10000", "CZ"),
                 EmailAddress.of(email),
                 PhoneNumber.of("+420777888999"),
-                null,
                 BirthNumber.of(dateOfBirth.format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd")) + "/1234"),
                 null,
                 null

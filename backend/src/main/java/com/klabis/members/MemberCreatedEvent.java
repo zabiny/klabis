@@ -6,6 +6,7 @@ import org.jmolecules.event.annotation.DomainEvent;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Period;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +47,6 @@ public record MemberCreatedEvent(
         Address address,
         EmailAddress email,
         PhoneNumber phone,
-        GuardianInformation guardian,
         Instant occurredAt
 ) {
 
@@ -63,7 +63,6 @@ public record MemberCreatedEvent(
      * @param address            the member's address
      * @param email              the member's email address
      * @param phone              the member's phone number
-     * @param guardian           the guardian information (may be null for adults)
      */
     public MemberCreatedEvent(
             MemberId memberId,
@@ -75,8 +74,7 @@ public record MemberCreatedEvent(
             Gender gender,
             Address address,
             EmailAddress email,
-            PhoneNumber phone,
-            GuardianInformation guardian) {
+            PhoneNumber phone) {
         this(
                 UUID.randomUUID(),  // Generate unique event ID
                 memberId,
@@ -89,7 +87,6 @@ public record MemberCreatedEvent(
                 address,
                 email,
                 phone,
-                guardian,
                 Instant.now()  // Use current time
         );
     }
@@ -107,7 +104,7 @@ public record MemberCreatedEvent(
         Objects.requireNonNull(nationality, "Nationality is required");
         Objects.requireNonNull(gender, "Gender is required");
         Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
-        // address, email, phone, guardian are nullable — an ORIS import may bring a member in
+        // address, email, phone are nullable — an ORIS import may bring a member in
         // with an incomplete address (design.md D5/ADDRESS)
     }
 
@@ -128,8 +125,7 @@ public record MemberCreatedEvent(
                 member.getGender(),
                 member.getAddress(),
                 member.getEmail(),
-                member.getPhone(),
-                member.getGuardian()
+                member.getPhone()
         );
     }
 
@@ -152,28 +148,19 @@ public record MemberCreatedEvent(
     }
 
     /**
-     * Check if member is a minor (has guardian).
-     *
-     * @return true if member has a guardian
+     * Whether the member is younger than 18 today; guardians are not known at creation time.
      */
     public boolean isMinor() {
-        return guardian != null;
+        return Period.between(dateOfBirth, LocalDate.now()).getYears() < 18;
     }
 
     /**
      * Get primary email for notifications.
-     * Prefers member email if available, falls back to guardian email.
      *
-     * @return primary email address as string, or null if none available
+     * @return the member's own email address as string, or null if there is none
      */
     public String getPrimaryEmail() {
-        if (email != null) {
-            return email.value();
-        }
-        if (guardian != null) {
-            return guardian.getEmail().value();
-        }
-        return null;
+        return email != null ? email.value() : null;
     }
 
     /**

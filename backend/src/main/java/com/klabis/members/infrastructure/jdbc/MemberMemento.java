@@ -61,28 +61,13 @@ class MemberMemento implements Persistable<UUID> {
     @Column("phone")
     private String phone;
 
-    @Column("guardian_first_name")
-    private String guardianFirstName;
-
-    @Column("guardian_last_name")
-    private String guardianLastName;
-
-    @Column("guardian_relationship")
-    private String guardianRelationship;
-
-    @Column("guardian_email")
-    private String guardianEmail;
-
-    @Column("guardian_phone")
-    private String guardianPhone;
-
     @Column("is_active")
     private boolean active;
 
     /**
-     * Write-only materialisation of {@link Member#isComplete()} for the member list filter
-     * (design.md D4 of import-incomplete-members). Never read back into the domain aggregate -
-     * completeness is always recomputed from the aggregate's own state in {@link Member#missingData()}.
+     * Materialisation of the member's completeness as of the last save, for the member list and its filter
+     * (design.md D7 of legal-guardians-via-groups). Completeness depends on legal guardians, which the member
+     * detail evaluates live.
      */
     @Column("data_incomplete")
     private boolean dataIncomplete;
@@ -195,17 +180,8 @@ class MemberMemento implements Persistable<UUID> {
         memento.email = member.getEmail() != null ? member.getEmail().value() : null;
         memento.phone = member.getPhone() != null ? member.getPhone().value() : null;
 
-        GuardianInformation guardian = member.getGuardian();
-        if (guardian != null) {
-            memento.guardianFirstName = guardian.getFirstName();
-            memento.guardianLastName = guardian.getLastName();
-            memento.guardianRelationship = guardian.getRelationship();
-            memento.guardianEmail = guardian.getEmailValue();
-            memento.guardianPhone = guardian.getPhoneValue();
-        }
-
         memento.active = member.isActive();
-        memento.dataIncomplete = !member.isComplete();
+        memento.dataIncomplete = member.isDataIncomplete();
         memento.chipNumber = member.getChipNumber();
 
         IdentityCard identityCard = member.getIdentityCard();
@@ -280,17 +256,6 @@ class MemberMemento implements Persistable<UUID> {
         EmailAddress email = this.email != null ? EmailAddress.of(this.email) : null;
         PhoneNumber phone = this.phone != null ? PhoneNumber.of(this.phone) : null;
 
-        GuardianInformation guardian = null;
-        if (this.guardianFirstName != null) {
-            guardian = new GuardianInformation(
-                    this.guardianFirstName,
-                    this.guardianLastName,
-                    this.guardianRelationship,
-                    EmailAddress.of(this.guardianEmail),
-                    PhoneNumber.of(this.guardianPhone)
-            );
-        }
-
         IdentityCard identityCard = null;
         if (this.identityCardNumber != null && this.identityCardValidityDate != null) {
             identityCard = IdentityCard.of(
@@ -339,7 +304,6 @@ class MemberMemento implements Persistable<UUID> {
                 address,
                 email,
                 phone,
-                guardian,
                 this.active,
                 this.chipNumber,
                 identityCard,
@@ -350,6 +314,7 @@ class MemberMemento implements Persistable<UUID> {
                 this.dietaryRestrictions,
                 birthNumber,
                 bankAccountNumber,
+                this.dataIncomplete,
                 this.suspensionReason,
                 this.suspendedAt,
                 this.suspensionNote,

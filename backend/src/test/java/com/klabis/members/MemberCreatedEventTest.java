@@ -26,7 +26,6 @@ class MemberCreatedEventTest {
                 .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
                 .withEmail("jan@example.com")
                 .withPhone("+420777888999")
-                .withNoGuardian()
                 .build();
 
         // When
@@ -44,42 +43,18 @@ class MemberCreatedEventTest {
         assertThat(event.emailAsOptional().get().value()).isEqualTo("jan@example.com");
         assertThat(event.phoneAsOptional()).isPresent();
         assertThat(event.phoneAsOptional().get().value()).isEqualTo("+420777888999");
-        assertThat(event.guardian()).isNull();
         assertThat(event.occurredAt()).isNotNull();
     }
 
     @Test
-    @DisplayName("should include guardian information in event for minors")
-    void shouldIncludeGuardianInformation() {
-        // Given
-        GuardianInformation guardian = new GuardianInformation(
-                "Parent",
-                "Name",
-                "PARENT",
-                EmailAddress.of("parent@example.com"),
-                PhoneNumber.of("+420777111222")
-        );
-
+    @DisplayName("should identify minor members by date of birth")
+    void shouldIdentifyMinorMembers() {
         Member member = aMember()
-                .withRegistrationNumber("ZBM1001")
-                .withName("Child", "Minor")
-                .withDateOfBirth(LocalDate.of(2010, 1, 15))
+                .withDateOfBirth(LocalDate.now().minusYears(10))
                 .withNationality("CZ")
-                .withGender(Gender.MALE)
-                .withAddress(Address.of("Dětská 1", "Brno", "60200", "CZ"))
-                .withEmail("child@example.com")
-                .withPhone("+420777333444")
-                .withGuardian(guardian)
                 .build();
 
-        // When
-        MemberCreatedEvent event = MemberCreatedEvent.fromAggregate(member);
-
-        // Then
-        assertThat(event.guardian()).isNotNull();
-        assertThat(event.guardian().getFirstName()).isEqualTo("Parent");
-        assertThat(event.guardian().getLastName()).isEqualTo("Name");
-        assertThat(event.isMinor()).isTrue();
+        assertThat(MemberCreatedEvent.fromAggregate(member).isMinor()).isTrue();
     }
 
     @Test
@@ -95,7 +70,6 @@ class MemberCreatedEventTest {
                 .withAddress(Address.of("Dospělá 10", "Plzeň", "30100", "CZ"))
                 .withEmail("adult@example.com")
                 .withPhone("+420777555666")
-                .withNoGuardian()
                 .build();
 
         // When
@@ -118,7 +92,6 @@ class MemberCreatedEventTest {
                 .withAddress(Address.of("Testovací 5", "Ústí nad Labem", "40001", "CZ"))
                 .withEmail("test@example.com")
                 .withPhone("+420777888999")
-                .withNoGuardian()
                 .build();
 
         // When
@@ -126,37 +99,6 @@ class MemberCreatedEventTest {
 
         // Then
         assertThat(event.getPrimaryEmail()).isEqualTo("test@example.com");
-    }
-
-    @Test
-    @DisplayName("should return guardian email as primary when member has no email")
-    void shouldReturnGuardianEmailWhenMemberHasNoEmail() {
-        // Given
-        GuardianInformation guardian = new GuardianInformation(
-                "Parent",
-                "Name",
-                "PARENT",
-                EmailAddress.of("parent@example.com"),
-                PhoneNumber.of("+420777111222")
-        );
-
-        Member member = aMember()
-                .withRegistrationNumber("ZBM1001")
-                .withName("Child", "Minor")
-                .withDateOfBirth(LocalDate.of(2010, 1, 15))
-                .withNationality("CZ")
-                .withGender(Gender.MALE)
-                .withAddress(Address.of("Dětská 2", "Olomouc", "77100", "CZ"))
-                .withEmail((EmailAddress) null)  // No member email
-                .withPhone("+420777333444")
-                .withGuardian(guardian)
-                .build();
-
-        // When
-        MemberCreatedEvent event = MemberCreatedEvent.fromAggregate(member);
-
-        // Then
-        assertThat(event.getPrimaryEmail()).isEqualTo("parent@example.com");
     }
 
     @Test
@@ -172,7 +114,6 @@ class MemberCreatedEventTest {
                 .withAddress(Address.of("Testovací 5", "Liberec", "46001", "CZ"))
                 .withEmail("test@example.com")
                 .withPhone("+420777888999")
-                .withNoGuardian()
                 .build();
 
         MemberCreatedEvent event = MemberCreatedEvent.fromAggregate(member);
@@ -203,8 +144,7 @@ class MemberCreatedEventTest {
                 Gender.MALE,
                 address,
                 new EmailAddress("test@example.com"),
-                new PhoneNumber("+420777888999"),
-                null
+                new PhoneNumber("+420777888999")
         )).isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("Member ID");
     }
@@ -222,7 +162,6 @@ class MemberCreatedEventTest {
                 .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
                 .withEmail("jan@example.com")
                 .withPhone("+420777888999")
-                .withNoGuardian()
                 .build();
 
         // When

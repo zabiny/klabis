@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 import static com.klabis.members.MemberTestDataBuilder.aMember;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,13 +29,12 @@ class MemberImportFromOrisTest {
                 .withNationality("SK")
                 .withEmail((EmailAddress) null)
                 .withPhone((PhoneNumber) null)
-                .withNoGuardian()
                 .withBirthNumber((BirthNumber) null)
                 .toRegisterMemberCommand());
 
-        assertThat(member.missingData()).containsExactlyInAnyOrder(
+        assertThat(missing(member)).containsExactlyInAnyOrder(
                 MissingDataItem.EMAIL, MissingDataItem.PHONE, MissingDataItem.GUARDIAN);
-        assertThat(member.isComplete()).isFalse();
+        assertThat(missing(member).isEmpty()).isFalse();
     }
 
     @Test
@@ -47,9 +47,9 @@ class MemberImportFromOrisTest {
                 .withAddress(null)
                 .toRegisterMemberCommand());
 
-        assertThat(member.missingData()).containsExactly(MissingDataItem.ADDRESS);
+        assertThat(missing(member)).containsExactly(MissingDataItem.ADDRESS);
         assertThat(member.getAddress()).isNull();
-        assertThat(member.isComplete()).isFalse();
+        assertThat(missing(member).isEmpty()).isFalse();
     }
 
     @Test
@@ -61,7 +61,7 @@ class MemberImportFromOrisTest {
                 .withBirthNumber((BirthNumber) null)
                 .toRegisterMemberCommand());
 
-        assertThat(member.missingData()).containsExactly(MissingDataItem.BIRTH_NUMBER);
+        assertThat(missing(member)).containsExactly(MissingDataItem.BIRTH_NUMBER);
     }
 
     @Test
@@ -73,7 +73,7 @@ class MemberImportFromOrisTest {
                 .withBirthNumber("900515/1234")
                 .toRegisterMemberCommand());
 
-        assertThat(member.isComplete()).isTrue();
+        assertThat(missing(member).isEmpty()).isTrue();
     }
 
     @Test
@@ -88,5 +88,9 @@ class MemberImportFromOrisTest {
         assertThatThrownBy(() -> Member.importFromOris(command))
                 .isInstanceOf(BusinessRuleViolationException.class)
                 .hasMessageContaining("Birth number is only allowed for Czech nationals");
+    }
+
+    private static Set<MissingDataItem> missing(Member member) {
+        return MemberCompleteness.missingData(member, GuardianContacts.NONE);
     }
 }

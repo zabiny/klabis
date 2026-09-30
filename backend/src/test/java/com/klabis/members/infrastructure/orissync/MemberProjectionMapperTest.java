@@ -59,7 +59,6 @@ class MemberProjectionMapperTest {
                 .address(Address.of("Testovací 1", "Brno", "600 00", "CZ"))
                 .email(EmailAddress.of("jan@example.com"))
                 .phone(PhoneNumber.of("+420700000001"))
-                .guardian(null)
                 .birthNumber(BirthNumber.of("900115/0000"))
                 .bankAccountNumber(null)
                 .registeredBy(null)

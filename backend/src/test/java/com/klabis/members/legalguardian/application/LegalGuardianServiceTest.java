@@ -195,4 +195,56 @@ class LegalGuardianServiceTest {
             verify(legalGuardianRepository, never()).findByEmail(anyString());
         }
     }
+
+    @Nested
+    @DisplayName("resolveGuardians")
+    class ResolveGuardians {
+
+        private final UserId chosen = new UserId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
+
+        @Test
+        @DisplayName("passes chosen guardians through and registers new ones in the same call")
+        void resolvesChosenAndNewGuardians() {
+            when(loginNumberSequence.next()).thenReturn("EXT0002");
+            when(userService.createUser("EXT0002", Set.of(Authority.MEMBERS_READ))).thenReturn(USER_ID);
+            when(legalGuardianRepository.save(any(LegalGuardian.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Set<UserId> resolved = service.resolveGuardians(List.of(
+                    LegalGuardianPort.GuardianInput.existing(chosen),
+                    LegalGuardianPort.GuardianInput.created(NEW_GUARDIAN)));
+
+            assertThat(resolved).containsExactlyInAnyOrder(chosen, USER_ID);
+        }
+
+        @Test
+        @DisplayName("does not create anything for chosen guardians only")
+        void createsNothingForChosen() {
+            assertThat(service.resolveGuardians(List.of(LegalGuardianPort.GuardianInput.existing(chosen))))
+                    .containsExactly(chosen);
+            verify(userService, never()).createUser(anyString(), any());
+        }
+
+        @Test
+        @DisplayName("rejects a new guardian without e-mail")
+        void rejectsNewGuardianWithoutEmail() {
+            assertThatThrownBy(() -> service.resolveGuardians(List.of(LegalGuardianPort.GuardianInput.created(
+                    new LegalGuardianPort.NewLegalGuardian("Jan", "Novák", null, "+420 777 123 456")))))
+                    .isInstanceOf(IllegalArgumentException.class);
+            verify(userService, never()).createUser(anyString(), any());
+        }
+
+        @Test
+        @DisplayName("rejects an input that is neither a chosen nor a new guardian")
+        void rejectsEmptyInput() {
+            assertThatThrownBy(() -> new LegalGuardianPort.GuardianInput(null, null))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("rejects an input that is both a chosen and a new guardian")
+        void rejectsAmbiguousInput() {
+            assertThatThrownBy(() -> new LegalGuardianPort.GuardianInput(chosen, NEW_GUARDIAN))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
 }

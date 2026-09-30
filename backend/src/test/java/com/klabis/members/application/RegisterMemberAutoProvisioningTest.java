@@ -66,7 +66,6 @@ class RegisterMemberAutoProvisioningTest {
                 address,
                 email,
                 phone,
-                null,
                 BirthNumber.of("050615/1234"),
                 null,
                 null
@@ -109,7 +108,6 @@ class RegisterMemberAutoProvisioningTest {
                 phone,
                 null,
                 null,
-                null,
                 null
         );
 
@@ -139,7 +137,6 @@ class RegisterMemberAutoProvisioningTest {
                 address1,
                 email1,
                 phone1,
-                null,
                 BirthNumber.of("050101/1234"),
                 null,
                 null
@@ -158,7 +155,6 @@ class RegisterMemberAutoProvisioningTest {
                 address2,
                 email2,
                 phone2,
-                null,
                 BirthNumber.of("050102/1234"),
                 null,
                 null

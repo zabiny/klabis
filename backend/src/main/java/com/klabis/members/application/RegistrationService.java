@@ -107,7 +107,6 @@ public class RegistrationService implements RegistrationPort {
                     command.address(),
                     command.email(),
                     command.phone(),
-                    command.guardian(),
                     command.birthNumber(),
                     command.bankAccountNumber(),
                     command.registeredBy()

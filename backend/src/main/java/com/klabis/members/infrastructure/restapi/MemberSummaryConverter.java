@@ -19,6 +19,6 @@ interface MemberSummaryConverter extends Converter<Member, MemberSummaryResponse
     @Mapping(target = "id", expression = "java(member.getId().value())")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     @Mapping(target = "email", expression = "java(member.getEmail() != null ? member.getEmail().value() : null)")
-    @Mapping(target = "dataIncomplete", expression = "java(!member.isComplete())")
+    @Mapping(target = "dataIncomplete", expression = "java(member.isDataIncomplete())")
     MemberSummaryResponse convert(Member member);
 }

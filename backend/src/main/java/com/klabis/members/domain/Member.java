@@ -31,9 +31,8 @@ import java.util.Set;
  * <p>
  * Business invariants:
  * - Registration number must be unique
- * - At least one email and one phone required (member OR guardian)
  * - Rodne cislo only allowed for Czech nationality
- * - Guardian required for minors (<18 years)
+ * - Completeness of contacts and legal guardians is derived by {@link MemberCompleteness}
  */
 @AggregateRoot
 public class Member extends KlabisAggregateRoot<Member, MemberId> {
@@ -47,7 +46,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     private Address address;
     private EmailAddress email;
     private PhoneNumber phone;
-    private GuardianInformation guardian;
     private boolean active;
     private String chipNumber;
     private IdentityCard identityCard;
@@ -58,6 +56,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     private String dietaryRestrictions;
     private BirthNumber birthNumber;
     private BankAccountNumber bankAccountNumber;
+    private boolean dataIncomplete;
 
     // Suspension fields
     private DeactivationReason suspensionReason;
@@ -81,7 +80,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             Address address,
             EmailAddress email,
             PhoneNumber phone,
-            GuardianInformation guardian,
             BirthNumber birthNumber,
             BankAccountNumber bankAccountNumber,
             UserId registeredBy
@@ -94,7 +92,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                     member.address,
                     member.email,
                     member.phone,
-                    member.guardian,
                     member.birthNumber,
                     member.bankAccountNumber,
                     null
@@ -129,7 +126,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             TrainerLicense trainerLicense,
             RefereeLicense refereeLicense,
             String dietaryRestrictions,
-            GuardianInformation guardian,
             String firstName,
             String lastName,
             LocalDate dateOfBirth,
@@ -157,7 +153,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                     member.trainerLicense,
                     member.refereeLicense,
                     member.dietaryRestrictions,
-                    member.guardian,
                     pi != null ? pi.getFirstName() : null,
                     pi != null ? pi.getLastName() : null,
                     pi != null ? pi.getDateOfBirth() : null,
@@ -203,7 +198,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     /**
      * Command carrying an inward write from ORIS synchronisation.
      * <p>
-     * Carries exactly the fields ORIS owns — see design.md D2/D3. Licences, guardian, bank account,
+     * Carries exactly the fields ORIS owns — see design.md D2/D3. Licences, bank account,
      * dietary requirements and the suspension block are not expressible here, so a synchronisation
      * cannot touch them even by mistake. Each field is written unconditionally by
      * {@link #syncFromOris(SyncFromOris)}, including when it is {@code null}: protecting a
@@ -241,7 +236,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             Address address,
             EmailAddress email,
             PhoneNumber phone,
-            GuardianInformation guardian,
             boolean active,
             String chipNumber,
             IdentityCard identityCard,
@@ -252,6 +246,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             String dietaryRestrictions,
             BirthNumber birthNumber,
             BankAccountNumber bankAccountNumber,
+            boolean dataIncomplete,
             DeactivationReason suspensionReason,
             Instant suspendedAt,
             String suspensionNote,
@@ -263,7 +258,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.address = address;
         this.email = email;
         this.phone = phone;
-        this.guardian = guardian;
         this.active = active;
         this.chipNumber = chipNumber;
         this.identityCard = identityCard;
@@ -274,6 +268,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.dietaryRestrictions = dietaryRestrictions;
         this.birthNumber = birthNumber;
         this.bankAccountNumber = bankAccountNumber;
+        this.dataIncomplete = dataIncomplete;
         this.suspensionReason = suspensionReason;
         this.suspendedAt = suspendedAt;
         this.suspensionNote = suspensionNote;
@@ -296,7 +291,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * @param address             member's address
      * @param email               member's email address
      * @param phone               member's phone number
-     * @param guardian            guardian information (may be null)
      * @param active              whether the member is active
      * @param chipNumber          member's chip number (may be null)
      * @param identityCard        member's identity card (may be null)
@@ -306,6 +300,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * @param dietaryRestrictions member's dietary restrictions (may be null)
      * @param birthNumber         member's birth number (may be null)
      * @param bankAccountNumber   member's bank account number (may be null)
+     * @param dataIncomplete      materialised completeness flag as of the member's last save
      * @param suspensionReason    reason for suspension (may be null)
      * @param suspendedAt         timestamp of suspension (may be null)
      * @param suspensionNote      optional suspension note (may be null)
@@ -319,7 +314,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             Address address,
             EmailAddress email,
             PhoneNumber phone,
-            GuardianInformation guardian,
             boolean active,
             String chipNumber,
             IdentityCard identityCard,
@@ -330,6 +324,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             String dietaryRestrictions,
             BirthNumber birthNumber,
             BankAccountNumber bankAccountNumber,
+            boolean dataIncomplete,
             DeactivationReason suspensionReason,
             Instant suspendedAt,
             String suspensionNote,
@@ -343,7 +338,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 address,
                 email,
                 phone,
-                guardian,
                 active,
                 chipNumber,
                 identityCard,
@@ -354,6 +348,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 dietaryRestrictions,
                 birthNumber,
                 bankAccountNumber,
+                dataIncomplete,
                 suspensionReason,
                 suspendedAt,
                 suspensionNote,
@@ -364,16 +359,24 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         return member;
     }
 
+    /**
+     * Registers a hand-filled member, which must be complete (design.md D5). Contacts and legal guardians of
+     * a minor are not known yet at this point - they are set on the legal guardian group afterwards - so for
+     * a minor the e-mail, telephone and guardian requirements are the caller's to enforce, while an adult's
+     * own contacts are enforced here.
+     */
     public static Member register(RegisterMember command) {
         validateStructure(command);
 
         // Consistency rule: always enforced, regardless of completeness
         validateBirthNumberConsistency(command.personalInformation().getNationalityCode(), command.birthNumber());
 
-        // Completeness rules: a hand-registered member must be complete (design.md D5)
-        enforceCompleteness(computeMissingData(
-                command.email(), command.phone(), command.guardian(),
-                command.personalInformation(), command.birthNumber(), command.address()));
+        Set<MissingDataItem> missing = MemberCompleteness.missingData(command.email(), command.phone(),
+                command.personalInformation(), command.birthNumber(), command.address(), GuardianContacts.NONE);
+        if (command.personalInformation().isMinor()) {
+            missing.removeAll(Set.of(MissingDataItem.EMAIL, MissingDataItem.PHONE, MissingDataItem.GUARDIAN));
+        }
+        enforceCompleteness(missing);
 
         return buildFrom(command);
     }
@@ -381,7 +384,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     /**
      * Registers a member whose data comes from ORIS rather than a hand-filled form (design.md
      * D5), used only by {@code RegistrationPort.importMember}. Unlike {@link #register}, no
-     * completeness rule is enforced here: ORIS never holds a guardian and often lacks contact
+     * completeness rule is enforced here: ORIS never holds a legal guardian and often lacks contact
      * details, and the goal is to bring every current club member in regardless. The consistency
      * rule — a birth number is never accepted for a non-Czech national — still holds, since it is
      * not about completeness but about a value that would otherwise be simply wrong.
@@ -412,7 +415,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 command.address(),
                 command.email(),
                 command.phone(),
-                command.guardian(),
                 true, // new members are active by default
                 null, // chipNumber
                 null, // identityCard
@@ -423,6 +425,8 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 null, // dietaryRestrictions
                 command.birthNumber(),
                 command.bankAccountNumber(),
+                !MemberCompleteness.missingData(command.email(), command.phone(), command.personalInformation(),
+                        command.birthNumber(), command.address(), GuardianContacts.NONE).isEmpty(),
                 null, // suspensionReason
                 null, // suspendedAt
                 null, // suspensionNote
@@ -461,62 +465,15 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     }
 
     /**
-     * Derives which required details this member currently lacks (design.md D3).
-     * <p>
-     * {@code EMAIL}/{@code PHONE} are satisfied by either the member or their guardian.
-     * {@code BIRTH_NUMBER} is required only for Czech nationals. {@code GUARDIAN} is required
-     * only while the member is a minor <i>today</i> — a minor imported without a guardian becomes
-     * complete on their 18th birthday without any write.
-     *
-     * @return the set of missing data items, empty when the member is complete
+     * Stores whether the member is incomplete, so the member list and its filter can read it without loading
+     * legal guardians. The value is only as fresh as the member's last save.
      */
-    public Set<MissingDataItem> missingData() {
-        return computeMissingData(email, phone, guardian, personalInformation, birthNumber, address);
+    public void recordMissingData(Set<MissingDataItem> missing) {
+        this.dataIncomplete = !missing.isEmpty();
     }
 
-    /**
-     * @return {@code true} when {@link #missingData()} is empty
-     */
-    public boolean isComplete() {
-        return missingData().isEmpty();
-    }
-
-    private static Set<MissingDataItem> computeMissingData(
-            EmailAddress email,
-            PhoneNumber phone,
-            GuardianInformation guardian,
-            PersonalInformation personalInformation,
-            BirthNumber birthNumber,
-            Address address) {
-
-        Set<MissingDataItem> missing = EnumSet.noneOf(MissingDataItem.class);
-
-        if (address == null) {
-            missing.add(MissingDataItem.ADDRESS);
-        }
-
-        // GuardianInformation enforces non-null email and phone in its constructor,
-        // so a present guardian always covers both.
-        boolean hasEmail = email != null || guardian != null;
-        boolean hasPhone = phone != null || guardian != null;
-
-        if (!hasEmail) {
-            missing.add(MissingDataItem.EMAIL);
-        }
-        if (!hasPhone) {
-            missing.add(MissingDataItem.PHONE);
-        }
-
-        if (personalInformation != null) {
-            if (personalInformation.getNationality().isCzech() && birthNumber == null) {
-                missing.add(MissingDataItem.BIRTH_NUMBER);
-            }
-            if (personalInformation.isMinor() && guardian == null) {
-                missing.add(MissingDataItem.GUARDIAN);
-            }
-        }
-
-        return missing;
+    public boolean isDataIncomplete() {
+        return dataIncomplete;
     }
 
     /**
@@ -551,7 +508,8 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * missing before the edit may remain missing (an incomplete member may be saved with unrelated
      * changes, or with only some missing items filled in).
      */
-    private static void enforceNeverWorsen(Set<MissingDataItem> before, Set<MissingDataItem> after) {
+    private static void enforceNeverWorsen(Set<MissingDataItem> before, Set<MissingDataItem> after,
+                                           boolean becameMinor) {
         if (after.contains(MissingDataItem.EMAIL) && !before.contains(MissingDataItem.EMAIL)) {
             throw new IllegalArgumentException("At least one email address is required (member or guardian)");
         }
@@ -561,7 +519,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         if (after.contains(MissingDataItem.ADDRESS) && !before.contains(MissingDataItem.ADDRESS)) {
             throw new IllegalArgumentException("Address is required");
         }
-        if (after.contains(MissingDataItem.GUARDIAN) && !before.contains(MissingDataItem.GUARDIAN)) {
+        if (!becameMinor && after.contains(MissingDataItem.GUARDIAN) && !before.contains(MissingDataItem.GUARDIAN)) {
             throw new BusinessRuleViolationException(
                     "Guardian is required for minors (under 18 years)"
             ) {
@@ -624,10 +582,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
     public PhoneNumber getPhone() {
         return phone;
-    }
-
-    public GuardianInformation getGuardian() {
-        return guardian;
     }
 
     public boolean isActive() {
@@ -693,9 +647,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * only mean to touch some fields pass {@link UpdateMember#from(Member)} as the baseline and
      * overlay just those — a field left at its baseline value round-trips to the same value here.
      */
-    public void update(UpdateMember command) {
-        GuardianInformation newGuardian = command.guardian();
-
+    public void update(UpdateMember command, GuardianContacts guardians) {
         PersonalInformation newPersonalInfo = PersonalInformation.of(
                 command.firstName(), command.lastName(), command.dateOfBirth(),
                 command.nationality(), command.gender());
@@ -707,18 +659,20 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         // Consistency rule: always enforced, regardless of completeness
         validateBirthNumberConsistency(newPersonalInfo.getNationalityCode(), newBirthNumber);
 
-        // Never-worsen rule: an edit may only fill in missing data, never add to it (design.md D5)
-        Set<MissingDataItem> missingBefore = missingData();
-        Set<MissingDataItem> missingAfter = computeMissingData(
-                command.email(), command.phone(), newGuardian, newPersonalInfo, newBirthNumber, command.address());
-        enforceNeverWorsen(missingBefore, missingAfter);
+        // Never-worsen rule: an edit may only fill in missing data, never add to it (design.md D5). The one
+        // exception is a corrected date of birth turning an adult into a minor, who then lacks a guardian.
+        Set<MissingDataItem> missingBefore = MemberCompleteness.missingData(this, guardians);
+        Set<MissingDataItem> missingAfter = MemberCompleteness.missingData(command.email(), command.phone(),
+                newPersonalInfo, newBirthNumber, command.address(), guardians);
+        boolean becameMinor = !personalInformation.isMinor() && newPersonalInfo.isMinor();
+        enforceNeverWorsen(missingBefore, missingAfter, becameMinor);
+        recordMissingData(missingAfter);
 
         BirthNumber previousBirthNumber = this.birthNumber;
 
         this.email = command.email();
         this.phone = command.phone();
         this.address = command.address();
-        this.guardian = newGuardian;
         this.personalInformation = newPersonalInfo;
         this.birthNumber = newBirthNumber;
         this.chipNumber = command.chipNumber();
@@ -741,7 +695,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      * Distinct from {@link #update(UpdateMember)} on purpose (design.md D3): a synchronisation has
      * no {@link UserId} to attribute a birth-number access to, so this method does not publish
      * {@link BirthNumberAccessedEvent} even when the birth number changes. It also cannot touch
-     * licences, guardian, bank account, dietary requirements or the suspension block — those fields
+     * licences, bank account, dietary requirements or the suspension block — those fields
      * are simply absent from {@link SyncFromOris}. Whether ORIS's field-by-field merge protection
      * has already run is decided by the caller before this method is invoked.
      *

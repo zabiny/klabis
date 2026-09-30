@@ -42,6 +42,9 @@ class MemberOrisImportControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private com.klabis.members.application.MemberCompletenessPort memberCompletenessPort;
+
+    @MockitoBean
     private ManagementPort managementService;
 
     @MockitoBean

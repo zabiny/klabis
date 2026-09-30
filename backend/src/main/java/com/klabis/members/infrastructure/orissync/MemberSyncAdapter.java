@@ -181,7 +181,6 @@ class MemberSyncAdapter implements SynchronizationAdapter {
                 addressOf(projection),
                 projection.email() != null ? EmailAddress.of(projection.email()) : null,
                 projection.phone() != null ? PhoneNumber.of(projection.phone()) : null,
-                null,
                 projection.birthNumber() != null ? BirthNumber.of(projection.birthNumber()) : null,
                 null,
                 null

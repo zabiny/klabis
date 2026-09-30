@@ -8,7 +8,6 @@ import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
-import com.klabis.members.domain.GuardianInformation;
 import com.klabis.members.domain.Member;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.*;
@@ -80,26 +79,23 @@ class MemberOrisSyncProtectionIntegrationTest {
     @Test
     @DisplayName("a Klabis-only field edited by an administrator survives a subsequent sync pass untouched")
     void klabisOwnedFieldSurvivesSubsequentSyncPass() {
-        GuardianInformation guardian = new GuardianInformation(
-                "Petr", "Novák", "PARENT",
-                com.klabis.members.domain.EmailAddress.of("petr@example.com"),
-                com.klabis.members.domain.PhoneNumber.of("+420111111111"));
+        String dietaryRestrictions = "vegetarian";
         Member.UpdateMember baseline = managementPort.prefilledUpdateCommand(memberId);
         managementPort.updateMember(memberId, new Member.UpdateMember(
                 baseline.email(), baseline.phone(), baseline.address(), baseline.chipNumber(),
                 baseline.nationality(), baseline.bankAccountNumber(), baseline.identityCard(),
                 baseline.drivingLicenseGroup(), baseline.medicalCourse(), baseline.trainerLicense(),
-                baseline.refereeLicense(), baseline.dietaryRestrictions(), guardian,
+                baseline.refereeLicense(), dietaryRestrictions,
                 baseline.firstName(), baseline.lastName(), baseline.dateOfBirth(), baseline.gender(),
                 baseline.birthNumber(), null));
 
-        // Same ORIS payload as discovery compared against — the guardian edit is the
+        // Same ORIS payload as discovery compared against — the dietary restrictions edit is the
         // only local change, and it must not be visible to the projection at all.
         SyncRecord afterPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
         assertThat(afterPass.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
         Member stillGuarded = managementPort.getMember(memberId);
-        assertThat(stillGuarded.getGuardian()).isEqualTo(guardian);
+        assertThat(stillGuarded.getDietaryRestrictions()).isEqualTo(dietaryRestrictions);
     }
 
     @Test
@@ -110,7 +106,7 @@ class MemberOrisSyncProtectionIntegrationTest {
                 baseline.email(), baseline.phone(), baseline.address(), "998877",
                 baseline.nationality(), baseline.bankAccountNumber(), baseline.identityCard(),
                 baseline.drivingLicenseGroup(), baseline.medicalCourse(), baseline.trainerLicense(),
-                baseline.refereeLicense(), baseline.dietaryRestrictions(), baseline.guardian(),
+                baseline.refereeLicense(), baseline.dietaryRestrictions(),
                 baseline.firstName(), baseline.lastName(), baseline.dateOfBirth(), baseline.gender(),
                 baseline.birthNumber(), null));
 

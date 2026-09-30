@@ -1,12 +1,12 @@
 -- Test data: Member without email for UserInfo integration tests
--- Creates User + Member + UserPermissions with NULL email (uses guardian email)
+-- Creates User + Member + UserPermissions with NULL email 
 
 -- Clean up existing test data
 DELETE FROM common.user_permissions WHERE user_id = '33333333-3333-3333-3333-333333333333';
 DELETE FROM common.users WHERE id = '33333333-3333-3333-3333-333333333333';
 DELETE FROM members.members WHERE id = '33333333-3333-3333-3333-333333333333';
 
--- Insert Member entity with NO email (minor with guardian)
+-- Insert Member entity with NO email (minor)
 INSERT INTO members.members (
     id,
     registration_number,
@@ -21,11 +21,6 @@ INSERT INTO members.members (
     city,
     postal_code,
     country,
-    guardian_first_name,
-    guardian_last_name,
-    guardian_relationship,
-    guardian_email,
-    guardian_phone,
     is_active,
     birth_number,
     bank_account_number,
@@ -48,11 +43,6 @@ INSERT INTO members.members (
     'Ostrava',
     '70200',
     'CZ',
-    'Anna',
-    'Mala',
-    'MOTHER',
-    'anna.mala@example.com',  -- Guardian has email
-    '+420777888999',          -- Guardian has phone
     TRUE,
     NULL,  -- birth_number (nullable)
     NULL,  -- bank_account_number (nullable)

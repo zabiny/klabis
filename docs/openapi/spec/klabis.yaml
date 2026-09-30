@@ -41,6 +41,8 @@ paths:
     $ref: './members.yaml#/paths/~1api~1members~1{id}~1suspend'
   /api/members/{id}/resume:
     $ref: './members.yaml#/paths/~1api~1members~1{id}~1resume'
+  /api/members/{id}/legal-guardians:
+    $ref: './members.yaml#/paths/~1api~1members~1{id}~1legal-guardians'
   /api/event-types:
     $ref: './events.yaml#/paths/~1api~1event-types'
   /api/event-types/{id}:

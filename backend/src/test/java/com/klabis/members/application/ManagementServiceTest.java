@@ -20,6 +20,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,13 +48,18 @@ class ManagementServiceTest {
     @Mock
     private MemberOwnedGroupsPort memberOwnedGroupsPort;
 
+    @Mock
+    private MemberCompletenessPort memberCompletenessPort;
+
     private ManagementPort testedSubject;
     private UUID testMemberId;
     private Member testMember;
 
     @BeforeEach
     void setUp() {
-        testedSubject = new ManagementService(memberRepository, userService, eventPublisher, Optional.of(memberFinancialStatePort), List.of(memberOwnedGroupsPort));
+        testedSubject = new ManagementService(memberRepository, userService, eventPublisher, Optional.of(memberFinancialStatePort), List.of(memberOwnedGroupsPort), memberCompletenessPort);
+        lenient().when(memberCompletenessPort.guardianContactsOf(any())).thenReturn(GuardianContacts.NONE);
+        lenient().when(memberCompletenessPort.missingData(any())).thenReturn(Set.of());
 
         testMemberId = UUID.randomUUID();
         testMember = MemberTestDataBuilder.aMember()
@@ -66,7 +72,6 @@ class ManagementServiceTest {
                 .withEmail("john.doe@example.com")
                 .withPhone("+420123456789")
                 .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
-                .withNoGuardian()
                 .build();
     }
 
@@ -147,7 +152,6 @@ class ManagementServiceTest {
                     .withEmail("jane.smith@example.com")
                     .withPhone("+420987654321")
                     .withAddress(Address.of("Vinohradská 456", "Praha", "12000", "CZ"))
-                    .withNoGuardian()
                     .build();
 
             // Default: no outstanding debt — only override in debt-specific tests
@@ -443,7 +447,6 @@ class ManagementServiceTest {
                         .withEmail("bob.jones@example.com")
                         .withPhone("+420111222333")
                         .withAddress(Address.of("Řeznická 1", "Brno", "60200", "CZ"))
-                        .withNoGuardian()
                         .suspended(DeactivationReason.ODHLASKA, "Previous termination")
                         .build();
 
@@ -702,7 +705,6 @@ class ManagementServiceTest {
                     .withEmail("jane.smith@example.com")
                     .withPhone("+420987654321")
                     .withAddress(Address.of("Reakční 10", "Brno", "60200", "CZ"))
-                    .withNoGuardian()
                     .suspended(DeactivationReason.ODHLASKA, "Previous termination")
                     .build();
         }
@@ -731,7 +733,6 @@ class ManagementServiceTest {
                     .withEmail("bob.jones@example.com")
                     .withPhone("+420111222333")
                     .withAddress(Address.of("Řeznická 1", "Brno", "60200", "CZ"))
-                    .withNoGuardian()
                     .build();
 
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(activeMember));

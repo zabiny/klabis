@@ -275,28 +275,32 @@ describe('MemberDetailPage', () => {
         });
     });
 
-    it('shows guardian section when guardian data exists', () => {
+    it('shows the legal guardians section for a member with the legalGuardians link', () => {
         const data = mockMemberDetailData({
-            guardian: {
-                firstName: 'Marie',
-                lastName: 'Nováková',
-                relationship: 'matka',
-                email: 'marie@email.cz',
-                phone: '+420777999888',
+            _links: {
+                self: {href: '/api/members/1'},
+                legalGuardians: {href: '/api/legal-guardian-groups/g-1/guardians'},
             },
         });
         renderPage(createMockPageData(data));
-        expect(screen.getByText('ZÁKONNÝ ZÁSTUPCE')).toBeInTheDocument();
-        expect(screen.getByText('Marie')).toBeInTheDocument();
-        expect(screen.getByText('Nováková')).toBeInTheDocument();
-        expect(screen.getByText('matka')).toBeInTheDocument();
-        expect(screen.getByText('marie@email.cz')).toBeInTheDocument();
-        expect(screen.getByText('+420777999888')).toBeInTheDocument();
+        expect(screen.getByText('ZÁKONNÍ ZÁSTUPCI')).toBeInTheDocument();
     });
 
-    it('does NOT show guardian section when no guardian', () => {
+    it('does NOT show the legal guardians section for an adult without the link', () => {
         renderPage(createMockPageData(mockMemberDetailData()));
-        expect(screen.queryByText('ZÁKONNÝ ZÁSTUPCE')).not.toBeInTheDocument();
+        expect(screen.queryByText('ZÁKONNÍ ZÁSTUPCI')).not.toBeInTheDocument();
+    });
+
+    it('shows an empty legal guardians section for a minor without a group', () => {
+        const year = new Date().getFullYear() - 10;
+        renderPage(createMockPageData(mockMemberDetailData({dateOfBirth: `${year}-01-01`})));
+        expect(screen.getByText('ZÁKONNÍ ZÁSTUPCI')).toBeInTheDocument();
+        expect(screen.getByText('Bez zákonného zástupce')).toBeInTheDocument();
+    });
+
+    it('offers "Upravit zástupce" only with the setMemberLegalGuardians template', () => {
+        renderPage(createMockPageData(mockMemberDetailData()));
+        expect(screen.queryByRole('button', {name: 'Upravit zástupce'})).not.toBeInTheDocument();
     });
 
     it('shows birth number masked when nationality is CZ (self view)', () => {
