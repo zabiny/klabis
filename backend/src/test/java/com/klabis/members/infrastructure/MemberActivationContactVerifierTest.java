@@ -2,7 +2,6 @@ package com.klabis.members.infrastructure;
 
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.EmailAddress;
-import com.klabis.members.domain.GuardianInformation;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.PhoneNumber;
@@ -43,24 +42,6 @@ class MemberActivationContactVerifierTest {
                 .thenReturn(Optional.of(member));
 
         boolean result = verifier.isActivationContact("ZBM0101", "member@example.com");
-
-        assertThat(result).isTrue();
-    }
-
-    @Test
-    @DisplayName("matches the guardian's e-mail")
-    void matchesGuardianEmail() {
-        GuardianInformation guardian = new GuardianInformation("Petr", "Novák", "Father",
-                EmailAddress.of("guardian@example.com"),
-                PhoneNumber.of("+420 987 654 321"));
-        Member member = MemberTestDataBuilder.aMember()
-                .withRegistrationNumber("ZBM0102")
-                .withGuardian(guardian)
-                .build();
-        when(memberRepository.findByRegistrationNumber(RegistrationNumber.of("ZBM0102")))
-                .thenReturn(Optional.of(member));
-
-        boolean result = verifier.isActivationContact("ZBM0102", "guardian@example.com");
 
         assertThat(result).isTrue();
     }

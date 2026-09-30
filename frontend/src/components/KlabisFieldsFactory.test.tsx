@@ -332,38 +332,6 @@ describe('KlabisFieldsFactory', () => {
         });
     });
 
-    describe('GuardianDTO field type', () => {
-
-        it('should render as single object with 5 sub-fields', () => {
-            const mockSubElementProps = createMockSubElementProps();
-            const mockConf = createMockConf({
-                prop: {name: 'guardian', prompt: 'Zákonný zástupce', type: 'GuardianDTO'},
-                subElementProps: mockSubElementProps,
-            });
-
-            const fieldElement = klabisFieldsFactory('GuardianDTO', mockConf);
-            render(fieldElement!);
-
-            expect(mockSubElementProps).toHaveBeenCalledWith('firstName', {prompt: 'Jméno'});
-            expect(mockSubElementProps).toHaveBeenCalledWith('lastName', {prompt: 'Příjmení'});
-            expect(mockSubElementProps).toHaveBeenCalledWith('relationship', {prompt: 'Vztah'});
-            expect(mockSubElementProps).toHaveBeenCalledWith('email', {prompt: 'E-mail', type: 'email'});
-            expect(mockSubElementProps).toHaveBeenCalledWith('phone', {prompt: 'Telefon', type: 'tel'});
-        });
-
-        it('should not render FieldArray or add/remove buttons', () => {
-            const mockConf = createMockConf({
-                prop: {name: 'guardian', prompt: 'Zákonný zástupce', type: 'GuardianDTO'},
-            });
-
-            const fieldElement = klabisFieldsFactory('GuardianDTO', mockConf);
-            render(fieldElement!);
-
-            expect(screen.queryByText('Pridej')).not.toBeInTheDocument();
-            expect(screen.queryByText('Odeber')).not.toBeInTheDocument();
-        });
-    });
-
     describe('MedicalCourseDto field type', () => {
 
         it('should be registered and render sub-fields', () => {
@@ -511,12 +479,14 @@ describe('KlabisFieldsFactory', () => {
             expect(componentName).toMatch(/CollectionField/i);
         });
 
-        it('should render userId of each item as a picker using the collection options link', () => {
+        it('should render each item as an existing-guardian picker using the collection options link', () => {
             const mockConf = createMockConf({
                 prop: {name: 'legalGuardians.0', prompt: 'Zástupci', type: 'LegalGuardianInputRequest', options: optionsLink},
             });
 
-            render(klabisFieldsFactory('LegalGuardianInputRequest', mockConf)!);
+            render(<Formik initialValues={{legalGuardians: [{}]}} onSubmit={vi.fn()}>
+                <Form>{klabisFieldsFactory('LegalGuardianInputRequest', mockConf)!}</Form>
+            </Formik>);
 
             expect(screen.getByTestId('select-name')).toHaveTextContent('parent.userId');
             expect(screen.getByTestId('select-href'))

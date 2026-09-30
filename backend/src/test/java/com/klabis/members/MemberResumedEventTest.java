@@ -28,7 +28,6 @@ class MemberResumedEventTest {
                 .withAddress(Address.of("Hlavní 123", "Praha", "11000", "CZ"))
                 .withEmail("jan@example.com")
                 .withPhone("+420777888999")
-                .withNoGuardian()
                 .build();
 
         UserId adminUserId = new UserId(UUID.randomUUID());

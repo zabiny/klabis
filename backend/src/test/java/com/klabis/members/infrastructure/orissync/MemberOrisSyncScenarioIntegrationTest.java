@@ -9,6 +9,8 @@ import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.domain.Member;
+import com.klabis.members.domain.MemberCompleteness;
+import com.klabis.members.domain.GuardianContacts;
 import com.klabis.members.domain.MissingDataItem;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.*;
@@ -127,7 +129,7 @@ class MemberOrisSyncScenarioIntegrationTest {
         stubClubMembers(orisClubMember(orisId, regNum, "Jan", "Novák", "700000001"));
         memberDiscoveryJob.discoverNewMembers();
         SyncRecord enrolled = enrolledRecord();
-        assertThat(managementPort.getMember(memberIdOf(enrolled)).isComplete()).isTrue();
+        assertThat(managementPort.getMember(memberIdOf(enrolled)).isDataIncomplete()).isFalse();
         assertThat(dataIncompleteFlagFor(enrolled)).isFalse();
 
         stubClubMembers(orisClubMemberWithoutPhone(orisId, regNum, "Jan", "Novák"));
@@ -136,7 +138,7 @@ class MemberOrisSyncScenarioIntegrationTest {
         assertThat(afterPass.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
         Member updated = managementPort.getMember(memberIdOf(enrolled));
         assertThat(updated.getPhone()).isNull();
-        assertThat(updated.missingData()).containsExactly(MissingDataItem.PHONE);
+        assertThat(MemberCompleteness.missingData(updated, GuardianContacts.NONE)).containsExactly(MissingDataItem.PHONE);
         assertThat(dataIncompleteFlagFor(enrolled)).isTrue();
     }
 
@@ -146,7 +148,7 @@ class MemberOrisSyncScenarioIntegrationTest {
         stubClubMembers(orisClubMemberWithoutBirthNumber(orisId, regNum, "Jan", "Novák"));
         memberDiscoveryJob.discoverNewMembers();
         SyncRecord enrolled = enrolledRecord();
-        assertThat(managementPort.getMember(memberIdOf(enrolled)).missingData())
+        assertThat(MemberCompleteness.missingData(managementPort.getMember(memberIdOf(enrolled)), GuardianContacts.NONE))
                 .containsExactly(MissingDataItem.BIRTH_NUMBER);
         assertThat(dataIncompleteFlagFor(enrolled)).isTrue();
 
@@ -156,7 +158,7 @@ class MemberOrisSyncScenarioIntegrationTest {
         assertThat(afterPass.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
         Member updated = managementPort.getMember(memberIdOf(enrolled));
         assertThat(updated.getBirthNumber()).isNotNull();
-        assertThat(updated.isComplete()).isTrue();
+        assertThat(updated.isDataIncomplete()).isFalse();
         assertThat(dataIncompleteFlagFor(enrolled)).isFalse();
     }
 

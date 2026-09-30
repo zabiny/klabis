@@ -250,7 +250,6 @@ export const MembersPage = (): ReactElement => {
                                 const TRAINER_LICENSE_TYPE = 'TrainerLicenseDto';
                                 const DOCUMENT_FIELDS = ['drivingLicenseGroup'];
                                 const DOCUMENT_TYPES = [IDENTITY_CARD_TYPE, MEDICAL_COURSE_TYPE, TRAINER_LICENSE_TYPE];
-                                const GUARDIAN_TYPE = 'GuardianDTO';
                                 const hasFields = (fieldNames: string[]) => fieldNames.some(f => hasField(f));
                                 const hasDocumentFields = hasFields(DOCUMENT_FIELDS) || DOCUMENT_TYPES.some(t => hasType(t));
                                 return (
@@ -289,11 +288,6 @@ export const MembersPage = (): ReactElement => {
                                                             </DetailRow>
                                                         )}
                                                         {hasField('dietaryRestrictions') && <DetailRow label={labels.fields.dietaryRestrictions}>{renderInput('dietaryRestrictions')}</DetailRow>}
-                                                    </Section>
-                                                )}
-                                                {hasType(GUARDIAN_TYPE) && (
-                                                    <Section title={labels.sections.guardian}>
-                                                        {renderInput('guardian')}
                                                     </Section>
                                                 )}
                                             </div>

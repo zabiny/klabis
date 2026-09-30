@@ -113,7 +113,6 @@ class MemberSyncAdapterTest {
             assertThat(command.details().email().value()).isEqualTo(projection.email());
             assertThat(command.details().phone().value()).isEqualTo(projection.phone());
             assertThat(command.details().address().street()).isEqualTo(projection.street());
-            assertThat(command.details().guardian()).isNull();
             assertThat(command.details().bankAccountNumber()).isNull();
             assertThat(command.details().registeredBy()).isNull();
 
@@ -149,13 +148,12 @@ class MemberSyncAdapterTest {
         }
 
         @Test
-        @DisplayName("regression: syncing does not touch trainer licence or guardian, which SyncFromOris never carries")
-        void doesNotTouchTrainerLicenceOrGuardian() {
+        @DisplayName("regression: syncing does not touch trainer licence, which SyncFromOris never carries")
+        void doesNotTouchTrainerLicence() {
             MemberProjection projection = referenceProjection();
 
-            Member realMember = registeredMemberWithLicenceAndGuardian();
+            Member realMember = registeredMemberWithLicence();
             TrainerLicense licenceBefore = realMember.getTrainerLicense();
-            GuardianInformation guardianBefore = realMember.getGuardian();
 
             when(managementPort.syncMemberFromOris(any(MemberId.class), any(Member.SyncFromOris.class)))
                     .thenAnswer(invocation -> {
@@ -167,7 +165,6 @@ class MemberSyncAdapterTest {
             adapter.applyToLocal(realMember.getId().value().toString(), projection);
 
             assertThat(realMember.getTrainerLicense()).isEqualTo(licenceBefore);
-            assertThat(realMember.getGuardian()).isEqualTo(guardianBefore);
         }
     }
 
@@ -178,7 +175,7 @@ class MemberSyncAdapterTest {
         @Test
         @DisplayName("maps the local Member read through ManagementPort into the canonical projection")
         void mapsMemberIntoProjection() {
-            Member realMember = registeredMemberWithLicenceAndGuardian();
+            Member realMember = registeredMemberWithLicence();
             when(managementPort.getMember(any(MemberId.class))).thenReturn(realMember);
 
             SyncProjection projection = adapter.readLocal(realMember.getId().value().toString());
@@ -247,7 +244,7 @@ class MemberSyncAdapterTest {
         );
     }
 
-    private static Member registeredMemberWithLicenceAndGuardian() {
+    private static Member registeredMemberWithLicence() {
         Member member = Member.register(new Member.RegisterMember(
                 MEMBER_ID,
                 new RegistrationNumber("ZBM0001"),
@@ -255,7 +252,6 @@ class MemberSyncAdapterTest {
                 new Address("Testovací 1", "Brno", "60000", "CZ"),
                 EmailAddress.of("jan@example.com"),
                 PhoneNumber.of("+420123456789"),
-                null,
                 BirthNumber.of("9001151234"),
                 null,
                 null
@@ -275,14 +271,13 @@ class MemberSyncAdapterTest {
                 new TrainerLicense(TrainerLevel.values()[0], LocalDate.now().plusYears(1)),
                 baseline.refereeLicense(),
                 baseline.dietaryRestrictions(),
-                new GuardianInformation("Petr", "Novák", "Otec", "petr@example.com", "+420111111111"),
                 baseline.firstName(),
                 baseline.lastName(),
                 baseline.dateOfBirth(),
                 baseline.gender(),
                 baseline.birthNumber(),
                 null
-        ));
+        ), GuardianContacts.NONE);
         return member;
     }
 

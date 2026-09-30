@@ -5,7 +5,6 @@ import com.klabis.members.domain.Address;
 import com.klabis.members.domain.BankAccountNumber;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.EmailAddress;
-import com.klabis.members.domain.GuardianInformation;
 import com.klabis.members.domain.PersonalInformation;
 import com.klabis.members.domain.PhoneNumber;
 import org.springframework.core.convert.converter.Converter;
@@ -35,9 +34,6 @@ class RegisterNewMemberConverter implements Converter<RegisterMemberRequestWithP
                         request.address().postalCode(), request.address().country()) : null,
                 EmailAddress.of(request.email()),
                 PhoneNumber.of(request.phone()),
-                request.guardian() != null ? new GuardianInformation(request.guardian().firstName(),
-                        request.guardian().lastName(), request.guardian().relationship(),
-                        request.guardian().email(), request.guardian().phone()) : null,
                 request.birthNumber() != null ? BirthNumber.of(request.birthNumber()) : null,
                 request.bankAccountNumber() != null ? BankAccountNumber.of(request.bankAccountNumber()) : null,
                 source.registeredBy()

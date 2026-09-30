@@ -8,6 +8,8 @@ import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.legalguardian.application.GuardianContact;
 import com.klabis.members.legalguardian.application.GuardianContactResolver;
+import com.klabis.members.legalguardian.application.LegalGuardianPort;
+import com.klabis.members.legalguardian.application.LegalGuardianPort.GuardianInput;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup.Guardian;
@@ -31,13 +33,16 @@ class LegalGuardianGroupService implements LegalGuardianGroupPort {
     private final LegalGuardianGroupRepository groupRepository;
     private final GuardianContactResolver guardianContactResolver;
     private final MemberRepository memberRepository;
+    private final LegalGuardianPort legalGuardianPort;
 
     LegalGuardianGroupService(LegalGuardianGroupRepository groupRepository,
                               GuardianContactResolver guardianContactResolver,
-                              MemberRepository memberRepository) {
+                              MemberRepository memberRepository,
+                              LegalGuardianPort legalGuardianPort) {
         this.groupRepository = groupRepository;
         this.guardianContactResolver = guardianContactResolver;
         this.memberRepository = memberRepository;
+        this.legalGuardianPort = legalGuardianPort;
     }
 
     @Transactional(readOnly = true)
@@ -95,6 +100,24 @@ class LegalGuardianGroupService implements LegalGuardianGroupPort {
             leaveCurrentGroup(current, minorId);
             groupRepository.save(LegalGuardianGroup.create(guardians, minor));
         }
+    }
+
+    @Transactional
+    @Override
+    public void changeGroupGuardians(LegalGuardianGroupId id, List<GuardianInput> guardians) {
+        changeGroupGuardians(id, legalGuardianPort.resolveGuardians(guardians));
+    }
+
+    @Transactional
+    @Override
+    public void setGuardiansOf(MemberId minor, List<GuardianInput> guardians) {
+        setGuardiansOf(minor, legalGuardianPort.resolveGuardians(guardians));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<GuardianContact> listGuardians(LegalGuardianGroupId id) {
+        return guardianContactResolver.resolve(loadGroup(id).getGuardians());
     }
 
     @Transactional(readOnly = true)

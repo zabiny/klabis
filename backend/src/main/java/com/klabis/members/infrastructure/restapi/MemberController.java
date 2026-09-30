@@ -9,6 +9,8 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
+import com.klabis.common.ui.HalFormsOptionsDef;
+import com.klabis.members.application.MemberCompletenessPort;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.domain.Member;
@@ -40,12 +42,14 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
+import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -62,6 +66,7 @@ public class MemberController implements MembersApi {
     private final Optional<MemberDiscoveryPort> memberDiscoveryJob;
     private final OrisClubKeyPort orisClubKeyPort;
     private final Optional<SynchronizationPort> synchronizationPort;
+    private final MemberCompletenessPort memberCompletenessPort;
 
     public MemberController(
             ManagementPort managementService,
@@ -69,7 +74,9 @@ public class MemberController implements MembersApi {
             ConversionService conversionService,
             Optional<MemberDiscoveryPort> memberDiscoveryJob,
             OrisClubKeyPort orisClubKeyPort,
-            Optional<SynchronizationPort> synchronizationPort) {
+            Optional<SynchronizationPort> synchronizationPort,
+            MemberCompletenessPort memberCompletenessPort) {
+        this.memberCompletenessPort = memberCompletenessPort;
         this.managementService = managementService;
         this.memberRepository = memberRepository;
         this.conversionService = conversionService;
@@ -255,7 +262,18 @@ public class MemberController implements MembersApi {
         HalResponseContext.setContext(new EnrolledMemberIds(enrolledIds));
 
         HalResponseContext.setDomain(member);
-        return ResponseEntity.ok(conversionService.convert(member, MemberDetailsResponse.class));
+        MemberDetailsResponse response = conversionService.convert(member, MemberDetailsResponse.class);
+        return ResponseEntity.ok(MemberDetailsResponseBuilder.builder(response)
+                .missingData(liveMissingData(member))
+                .build());
+    }
+
+    // The detail is computed live (the guardians' contacts may have changed since the member was last saved),
+    // unlike the materialized flag the member list reads.
+    private List<MissingDataItem> liveMissingData(Member member) {
+        return memberCompletenessPort.missingData(member).stream()
+                .map(item -> MissingDataItem.valueOf(item.name()))
+                .toList();
     }
 
     private static SyncTarget targetFor(MemberId memberId) {
@@ -282,7 +300,8 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
 
     @Override
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
-        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
+        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member,
+                member.getPersonalInformation().isMinor());
 
         klabisLinkTo(methodOn(MembersApi.class).listMembers(null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
@@ -315,6 +334,11 @@ final class MemberSelfLinkSupport {
     }
 
     static void addSelfLinkWithAffordances(RepresentationModel<?> dtoModel, Member member) {
+        addSelfLinkWithAffordances(dtoModel, member, false);
+    }
+
+    static void addSelfLinkWithAffordances(RepresentationModel<?> dtoModel, Member member,
+                                           boolean withLegalGuardiansForm) {
         UUID memberId = member.getId().uuid();
 
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId, null)).map(link -> {
@@ -325,6 +349,12 @@ final class MemberSelfLinkSupport {
                         methodOn(MembersApi.class).suspendMember(memberId, null, null)));
             } else {
                 self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).resumeMember(memberId, null)));
+            }
+            if (withLegalGuardiansForm) {
+                self = self.andAffordances(klabisAffordWithOptions(
+                        methodOn(LegalGuardianGroupsApi.class).setMemberLegalGuardians(memberId, null),
+                        Map.of("legalGuardians", HalFormsOptionsDef.remote(
+                                methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null)))));
             }
             return (Link) self;
         }).ifPresent(dtoModel::add);

@@ -5,6 +5,8 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.legalguardian.application.GuardianContact;
 import com.klabis.members.legalguardian.application.GuardianContactResolver;
 import com.klabis.members.legalguardian.application.GuardianKind;
+import com.klabis.members.legalguardian.application.LegalGuardianPort;
+import com.klabis.members.legalguardian.application.LegalGuardianPort.GuardianInput;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.members.domain.MemberRepository;
@@ -24,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -34,6 +37,7 @@ import static com.klabis.members.MemberTestDataBuilder.aMemberWithId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 @DisplayName("LegalGuardianGroupService")
 @ExtendWith(MockitoExtension.class)
@@ -55,12 +59,14 @@ class LegalGuardianGroupServiceTest {
 
     @Mock
     private MemberRepository memberRepository;
+    @Mock
+    private LegalGuardianPort legalGuardianPort;
 
     private LegalGuardianGroupService service;
 
     @BeforeEach
     void setUp() {
-        service = new LegalGuardianGroupService(groups, guardianContactResolver, memberRepository);
+        service = new LegalGuardianGroupService(groups, guardianContactResolver, memberRepository, legalGuardianPort);
         lenient().when(memberRepository.findById(CHILD_A))
                 .thenReturn(Optional.of(aMemberWithId(CHILD_A.uuid()).withDateOfBirth(tenYearsAgo()).build()));
         lenient().when(memberRepository.findById(CHILD_B))
@@ -278,6 +284,57 @@ class LegalGuardianGroupServiceTest {
 
             assertThatThrownBy(() -> service.setGuardiansOf(unknown, ids(NOVAK)))
                     .isInstanceOf(MemberNotFoundException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("guardian form input")
+    class GuardianFormInput {
+
+        private final List<GuardianInput> input = List.of(GuardianInput.existing(NOVAK.userId()),
+                GuardianInput.created(new LegalGuardianPort.NewLegalGuardian("Eva", "Svobodová", "eva@example.com",
+                        "+420 777 123 456")));
+
+        @Test
+        @DisplayName("setGuardiansOf resolves new guardians and moves the minor to the group with all of them")
+        void setsGuardiansOfMinorFromInput() {
+            when(legalGuardianPort.resolveGuardians(input)).thenReturn(ids(NOVAK, SVOBODOVA));
+
+            service.setGuardiansOf(CHILD_A, input);
+
+            assertThat(groupOfMinor(CHILD_A).orElseThrow().getGuardians()).isEqualTo(ids(NOVAK, SVOBODOVA));
+        }
+
+        @Test
+        @DisplayName("changeGroupGuardians resolves new guardians and changes the whole group")
+        void changesGroupGuardiansFromInput() {
+            LegalGuardianGroup group = groupOf(Set.of(NOVAK), CHILD_A, CHILD_B);
+            when(legalGuardianPort.resolveGuardians(input)).thenReturn(ids(NOVAK, SVOBODOVA));
+
+            service.changeGroupGuardians(group.getId(), input);
+
+            assertThat(groups.findById(group.getId()).orElseThrow().getGuardians()).isEqualTo(ids(NOVAK, SVOBODOVA));
+        }
+    }
+
+    @Nested
+    @DisplayName("listGuardians()")
+    class ListGuardians {
+
+        @Test
+        @DisplayName("returns contacts of the group's guardians")
+        void returnsContacts() {
+            LegalGuardianGroup group = groupOf(Set.of(NOVAK, SVOBODOVA), CHILD_A);
+
+            assertThat(service.listGuardians(group.getId())).extracting(GuardianContact::userId)
+                    .containsExactlyInAnyOrder(NOVAK.userId(), SVOBODOVA.userId());
+        }
+
+        @Test
+        @DisplayName("fails for an unknown group")
+        void unknownGroup() {
+            assertThatThrownBy(() -> service.listGuardians(new LegalGuardianGroupId(UUID.randomUUID())))
+                    .isInstanceOf(GroupNotFoundException.class);
         }
     }
 

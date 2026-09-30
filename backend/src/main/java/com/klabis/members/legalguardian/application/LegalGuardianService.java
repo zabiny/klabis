@@ -11,7 +11,9 @@ import com.klabis.members.legalguardian.domain.LegalGuardianRepository;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 class LegalGuardianService implements LegalGuardianPort {
@@ -44,6 +46,14 @@ class LegalGuardianService implements LegalGuardianPort {
                 new LegalGuardian.CreateLegalGuardian(userId, command.firstName(), command.lastName(),
                         email, command.phone())));
         return new LegalGuardianProfile(guardian, loginName);
+    }
+
+    @Transactional
+    @Override
+    public Set<UserId> resolveGuardians(List<GuardianInput> inputs) {
+        return inputs.stream()
+                .map(input -> input.userId() != null ? input.userId() : register(input.newGuardian()).guardian().getId())
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     @Transactional(readOnly = true)

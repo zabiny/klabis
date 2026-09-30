@@ -36,7 +36,6 @@ class UpdateMemberRequestMapper {
             overlay(request.trainerLicense(), v -> b.trainerLicense(v == null ? null : TrainerLicense.of(toTrainerLevel(v.level()), v.validityDate())));
             overlay(request.refereeLicense(), v -> b.refereeLicense(v == null ? null : RefereeLicense.of(toRefereeLevel(v.level()), v.validityDate())));
             overlay(request.dietaryRestrictions(), b::dietaryRestrictions);
-            overlay(request.guardian(), v -> b.guardian(v == null ? null : toGuardianInformation(v)));
             overlay(request.birthNumber(), v -> b.birthNumber(toBirthNumber(v)));
 
             overlayValue(request.nationality(), b::nationality);
@@ -103,14 +102,5 @@ class UpdateMemberRequestMapper {
 
     private static com.klabis.members.domain.RefereeLevel toRefereeLevel(RefereeLicenseDtoLevel dto) {
         return dto == null ? null : com.klabis.members.domain.RefereeLevel.valueOf(dto.name());
-    }
-
-    private static GuardianInformation toGuardianInformation(GuardianDTO dto) {
-        return new GuardianInformation(
-                dto.firstName(),
-                dto.lastName(),
-                dto.relationship(),
-                dto.email() != null ? EmailAddress.of(dto.email()) : null,
-                dto.phone() != null ? PhoneNumber.of(dto.phone()) : null);
     }
 }

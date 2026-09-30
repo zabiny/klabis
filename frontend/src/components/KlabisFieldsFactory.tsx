@@ -10,6 +10,7 @@ import {HalFormsCheckboxGroup, HalFormsInput, HalFormsMemberId, HalFormsSelect} 
 import {DetailRow} from "./UI";
 import {FormGroupWrapper} from "./FormGroupWrapper";
 import {getFieldLabel} from "../localization";
+import {LegalGuardianInputField} from "./legal-guardians/LegalGuardianInputField";
 import {useEventTypes} from "../hooks/useEventTypes";
 import {useMembershipFeeTierOptions} from "../hooks/useMembershipFeeTierOptions";
 
@@ -48,14 +49,6 @@ const ADDRESS_FIELDS: SubField[] = [
 const IDENTITY_CARD_FIELDS: SubField[] = [
     {key: "cardNumber", attr: "cardNumber", prompt: "Číslo OP"},
     {key: "validityDate", attr: "validityDate", prompt: "Platnost OP", type: "date"},
-];
-
-const GUARDIAN_FIELDS: SubField[] = [
-    {key: "firstName", attr: "firstName", prompt: "Jméno"},
-    {key: "lastName", attr: "lastName", prompt: "Příjmení"},
-    {key: "relationship", attr: "relationship", prompt: "Vztah"},
-    {key: "email", attr: "email", prompt: "E-mail", type: "email"},
-    {key: "phone", attr: "phone", prompt: "Telefon", type: "tel"},
 ];
 
 const AGE_RANGE_FIELDS: SubField[] = [
@@ -216,13 +209,9 @@ export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, 
             ]);
         case "MembershipFeeTierMultiSelect":
             return <MembershipFeeTierMultiSelectField {...conf}/>;
-        case "LegalGuardianInputRequest": {
+        case "LegalGuardianInputRequest":
             if (isMultipleProperty(conf.prop)) return null;
-            // Sub-element props drop options, but the picker for userId needs the collection's options link.
-            const userIdConf = conf.subElementProps("userId", {prompt: conf.prop.prompt});
-            return <HalFormsMemberId {...userIdConf} renderMode={conf.renderMode}
-                                     prop={{...userIdConf.prop, options: conf.prop.options}}/>;
-        }
+            return <LegalGuardianInputField {...conf}/>;
         case "PaymentRuleRequest":
             // For multi/collection: return null so HalFormsCollectionField handles iteration.
             // For a single item (inside the collection): render sub-fields with custom select renderers.
@@ -237,8 +226,6 @@ export const klabisCustomFieldFactory: CustomFieldFactory = (fieldType: string, 
             return renderCompositeField(conf, ADDRESS_FIELDS);
         case "AgeRangeRequest":
             return renderCompositeField(conf, AGE_RANGE_FIELDS);
-        case "GuardianDTO":
-            return renderCompositeField(conf, GUARDIAN_FIELDS);
         case "IdentityCardDto":
             return renderCompositeField(conf, IDENTITY_CARD_FIELDS);
         case "MedicalCourseDto":

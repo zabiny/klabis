@@ -2,6 +2,8 @@ package com.klabis.members.legalguardiangroup.application;
 
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
+import com.klabis.members.legalguardian.application.GuardianContact;
+import com.klabis.members.legalguardian.application.LegalGuardianPort.GuardianInput;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
@@ -28,5 +30,22 @@ public interface LegalGuardianGroupPort {
      */
     void setGuardiansOf(MemberId minor, Set<UserId> guardians);
 
+    /**
+     * Like {@link #changeGroupGuardians(LegalGuardianGroupId, Set)}, for guardians as entered in a form: new
+     * guardians are created in the same transaction.
+     */
+    void changeGroupGuardians(LegalGuardianGroupId id, List<GuardianInput> guardians);
+
+    /**
+     * Like {@link #setGuardiansOf(MemberId, Set)}, for guardians as entered in a form: new guardians are
+     * created in the same transaction.
+     */
+    void setGuardiansOf(MemberId minor, List<GuardianInput> guardians);
+
     Set<UserId> guardiansOf(MemberId minor);
+
+    /**
+     * Contacts of the group's guardians, whether they are members or non-member guardians.
+     */
+    List<GuardianContact> listGuardians(LegalGuardianGroupId id);
 }

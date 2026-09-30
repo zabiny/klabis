@@ -114,8 +114,7 @@ paths:
       tags: [Registration]
       summary: Register a new member
       description: |
-        Creates a new member with personal information, contact details, and optional guardian
-        information for minors. Generates a unique registration number in format XXXYYSS
+        Creates a new member with personal information and contact details. Generates a unique registration number in format XXXYYSS
         (club code, birth year, sequence).
 
         Responds with a Location header pointing at the created member. When the birth number is
@@ -260,6 +259,11 @@ paths:
               description: Membership fee summary for the current year
             legalGuardianGroup:
               description: Legal guardian group of a minor member, present only for callers with MEMBERS:MANAGE
+            legalGuardians:
+              operation: listLegalGuardianGroupGuardians
+              description: |
+                Legal guardians of a minor who belongs to a legal guardian group; present for callers with
+                MEMBERS:MANAGE and for the minor themself. Absent for adults and for minors without a group.
             trainingGroup:
               description: Training group the member belongs to, when there is one
             ical-token:
@@ -279,6 +283,9 @@ paths:
             resume:
               operation: resumeMember
               description: Present only while the member is suspended
+            setMemberLegalGuardians:
+              operation: setMemberLegalGuardians
+              description: Present only for a minor and for callers with MEMBERS:MANAGE
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -418,6 +425,47 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
+  /api/members/{id}/legal-guardians:
+    put:
+      operationId: setMemberLegalGuardians
+      tags: [LegalGuardianGroups]
+      summary: Set the legal guardians of a minor
+      description: |
+        Replaces the complete list of legal guardians of a minor member. Each item is either an
+        existing guardian chosen by user id or a new non-member guardian entered in place; a new
+        guardian is created in the same transaction. The minor moves to the legal guardian group with
+        exactly these guardians (created when there is none); siblings keep their guardians. The list
+        must not be empty and the member must be younger than 18. Requires MEMBERS:MANAGE.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-klabis-authority: MEMBERS_MANAGE
+      parameters:
+        - $ref: '#/components/parameters/MemberIdParam'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetLegalGuardiansRequest'
+      responses:
+        '204':
+          description: Legal guardians set
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
   # ---------------------------------------------------------------------------------------------
   # LegalGuardianGroups (LegalGuardianGroupController, /api/legal-guardian-groups)
   # Groups are created, merged and removed automatically as the guardians of minors change, so
@@ -464,8 +512,8 @@ paths:
       tags: [LegalGuardianGroups]
       summary: Get legal guardian group details
       description: |
-        Returns legal guardian group details including its guardians and minors with their own
-        hypermedia links. Requires MEMBERS:MANAGE.
+        Returns legal guardian group details including its minors with their own hypermedia links;
+        the guardians are behind the legalGuardians link. Requires MEMBERS:MANAGE.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
@@ -484,6 +532,9 @@ paths:
             collection:
               operation: listLegalGuardianGroups
               description: Back to the group list
+            legalGuardians:
+              operation: listLegalGuardianGroupGuardians
+              description: Guardians of the group
           x-hal-templates:
             setLegalGuardianGroupGuardians:
               operation: setLegalGuardianGroupGuardians
@@ -501,6 +552,45 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
   /api/legal-guardian-groups/{id}/guardians:
+    get:
+      operationId: listLegalGuardianGroupGuardians
+      tags: [LegalGuardianGroups]
+      summary: List the guardians of a legal guardian group
+      description: |
+        Guardians of the group with their contacts; each item links to the guardian's member detail
+        (member) or non-member profile (legalGuardian). Requires MEMBERS:MANAGE or being a minor of the
+        group.
+      security:
+        - KlabisAuth: [MEMBERS]
+      x-spring-provide-args:
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/LegalGuardianGroupIdParam'
+      responses:
+        '200':
+          description: Guardians of the group retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LegalGuardianGroupGuardianResponse'
+          x-hal-links:
+            self:
+              description: This collection
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
     put:
       operationId: setLegalGuardianGroupGuardians
       tags: [LegalGuardianGroups]
@@ -772,10 +862,6 @@ components:
           type: string
         address:
           $ref: '#/components/schemas/AddressResponse'
-        guardian:
-          $ref: '#/components/schemas/GuardianDTO'
-          x-klabis-authority: MEMBERS_MANAGE
-          x-klabis-owner-visible: true
         active:
           type: boolean
           x-klabis-authority: MEMBERS_MANAGE
@@ -939,9 +1025,6 @@ components:
           pattern: '^\+[0-9\s]{7,20}$'
         address:
           $ref: '#/components/schemas/AddressRequest'
-        guardian:
-          $ref: '#/components/schemas/GuardianDTO'
-          description: Guardian information (required for minors under 18)
         birthNumber:
           type: string
           description: Birth number (rodné číslo) — Czech nationals only, format RRMMDD/XXXX or RRMMDDXXXX
@@ -960,8 +1043,9 @@ components:
 
         Clearing a field the domain requires is rejected. firstName, lastName, dateOfBirth and
         gender have no cleared state, so a null there is treated as "leave alone". An explicit null
-        is refused for email or phone unless a guardian still covers that contact, for guardian
-        when the member is a minor, and for birthNumber when the member is a Czech national.
+        is refused for email or phone unless a legal guardian of a minor still covers that contact, and
+        for birthNumber when the member is a Czech national. Legal guardians are not part of this
+        request; they are set through setMemberLegalGuardians.
       # Properties are inlined rather than sharing named wrapper schemas: seven of them are plain
       # strings with different constraints (email 255, chipNumber 50 + digits, firstName 100), and a
       # shared schema can only carry one set.
@@ -1035,9 +1119,6 @@ components:
         bankAccountNumber:
           type: ['string', 'null']
           maxLength: 50
-        guardian:
-          $ref: '#/components/schemas/GuardianDTO'
-          x-klabis-nullable: true
 
     SuspendMembershipRequest:
       type: object
@@ -1157,44 +1238,6 @@ components:
           # Kept in sync with Address.ISO_3166_ALPHA_2_PATTERN.
           pattern: '^[A-Za-z]{2}$'
 
-    GuardianDTO:
-      type: object
-      description: Guardian information for minors
-      required: [firstName, lastName, relationship, email, phone]
-      properties:
-        # minLength: 1 is what makes these reject an empty string. `required` only means the key
-        # must be present, so it generates @NotNull — which happily accepts "".
-        firstName:
-          type: string
-          description: Guardian's first name
-          example: Pavel
-          minLength: 1
-          maxLength: 100
-        lastName:
-          type: string
-          description: Guardian's last name
-          example: Novák
-          minLength: 1
-          maxLength: 100
-        relationship:
-          type: string
-          description: Relationship to member (e.g., PARENT, LEGAL_GUARDIAN)
-          example: PARENT
-          minLength: 1
-          maxLength: 50
-        email:
-          type: string
-          format: email
-          description: Guardian's email address
-          example: pavel.novak@example.com
-          minLength: 1
-        phone:
-          type: string
-          description: Guardian's phone number
-          example: '+420987654321'
-          minLength: 1
-          pattern: '^\+?[0-9\s\-()]{7,20}$'
-
     IdentityCardDto:
       type: object
       properties:
@@ -1262,14 +1305,31 @@ components:
 
     LegalGuardianInputRequest:
       type: object
-      description: An existing legal guardian, chosen by user id.
-      required: [userId]
+      description: |
+        A legal guardian: either an existing one chosen by userId, or a new non-member guardian given by
+        firstName, lastName, e-mail and phone (all four required, checked by the server).
       properties:
         userId:
           type: string
           format: uuid
-          description: UUID of the guardian user
+          description: UUID of an existing guardian user
           x-hal-input-type: UserId
+        firstName:
+          type: string
+          maxLength: 100
+          description: First name of a new guardian
+        lastName:
+          type: string
+          maxLength: 100
+          description: Last name of a new guardian
+        email:
+          type: string
+          maxLength: 255
+          description: E-mail of a new guardian
+        phone:
+          type: string
+          maxLength: 50
+          description: Telephone of a new guardian
 
     LegalGuardianGroupSummaryResponse:
       type: object
@@ -1290,18 +1350,13 @@ components:
     # klabis-api-spec skill.
     LegalGuardianGroupResponse:
       type: object
-      description: Legal guardian group detail with guardians and minors as independently linked items.
+      description: Legal guardian group detail with its minors as independently linked items.
       properties:
         id:
           type: string
           format: uuid
         name:
           type: string
-        guardians:
-          type: array
-          x-hal-entity-items: true
-          items:
-            $ref: '#/components/schemas/LegalGuardianGroupGuardianResponse'
         minors:
           type: array
           x-hal-entity-items: true
@@ -1310,10 +1365,20 @@ components:
 
     LegalGuardianGroupGuardianResponse:
       type: object
+      x-klabis-relation:
+        collectionRelation: legalGuardianGroupGuardianResponseList
       properties:
         userId:
           type: string
           format: uuid
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
 
     LegalGuardianGroupMinorResponse:
       type: object

@@ -7,8 +7,13 @@ import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.UserId;
-import com.klabis.members.LegalGuardians;
+import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
+import com.klabis.members.legalguardian.application.GuardianContact;
+import com.klabis.members.legalguardian.application.GuardianKind;
+import com.klabis.members.legalguardian.application.LegalGuardianPort.GuardianInput;
+import com.klabis.members.legalguardian.application.LegalGuardianPort.NewLegalGuardian;
+import com.klabis.common.users.Authority;
 import com.klabis.members.infrastructure.restapi.*;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
@@ -20,15 +25,14 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
@@ -41,11 +45,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class LegalGuardianGroupController implements LegalGuardianGroupsApi {
 
     private final LegalGuardianGroupPort legalGuardianGroupService;
-    private final LegalGuardians legalGuardians;
 
-    LegalGuardianGroupController(LegalGuardianGroupPort legalGuardianGroupService, LegalGuardians legalGuardians) {
+    LegalGuardianGroupController(LegalGuardianGroupPort legalGuardianGroupService) {
         this.legalGuardianGroupService = legalGuardianGroupService;
-        this.legalGuardians = legalGuardians;
     }
 
     @Override
@@ -56,8 +58,8 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
         return ResponseEntity.ok(groups.stream().map(this::toSummaryResponse).toList());
     }
 
-    // The LegalGuardianGroupResponse record is generated, but its guardians/minors arrays are
-    // List<EntityModel<X>> and each item carries its own _links at runtime — "member" or "legalGuardian" per row —
+    // The LegalGuardianGroupResponse record is generated, but its minors array is
+    // List<EntityModel<X>> and each item carries its own _links at runtime
     // which the generator cannot express on the payload. The controller assembles them.
     @Override
     public ResponseEntity<LegalGuardianGroupResponse> getLegalGuardianGroup(UUID id) {
@@ -68,13 +70,63 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
     }
 
     @Override
-    public ResponseEntity<Void> setLegalGuardianGroupGuardians(UUID id, SetLegalGuardiansRequest request) {
-        Set<UserId> guardians = request.legalGuardians().stream()
-                .map(guardian -> new UserId(guardian.userId()))
-                .collect(Collectors.toSet());
+    public ResponseEntity<List<LegalGuardianGroupGuardianResponse>> listLegalGuardianGroupGuardians(
+            UUID id, CurrentUserData currentUser) {
+        LegalGuardianGroup group = legalGuardianGroupService.getGroup(new LegalGuardianGroupId(id));
+        checkGuardianListAccess(group, currentUser);
 
-        legalGuardianGroupService.changeGroupGuardians(new LegalGuardianGroupId(id), guardians);
+        List<GuardianContact> contacts = legalGuardianGroupService.listGuardians(group.getId());
+        HalResponseContext.setDomainList(contacts);
+        return ResponseEntity.ok(contacts.stream().map(this::toGuardianResponse).toList());
+    }
+
+    @Override
+    public ResponseEntity<Void> setLegalGuardianGroupGuardians(UUID id, SetLegalGuardiansRequest request) {
+        legalGuardianGroupService.changeGroupGuardians(new LegalGuardianGroupId(id), toInputs(request));
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    public ResponseEntity<Void> setMemberLegalGuardians(UUID id, SetLegalGuardiansRequest request) {
+        legalGuardianGroupService.setGuardiansOf(new MemberId(id), toInputs(request));
+        return ResponseEntity.noContent().build();
+    }
+
+    private static void checkGuardianListAccess(LegalGuardianGroup group, CurrentUserData currentUser) {
+        boolean canManage = currentUser.authorities().contains(Authority.MEMBERS_MANAGE);
+        boolean isMinorOfGroup = currentUser.isMemberOf(memberId -> group.getMinors().stream()
+                .anyMatch(membership -> membership.memberId().equals(memberId)));
+        if (!canManage && !isMinorOfGroup) {
+            throw new AccessDeniedException(
+                    "Access to legal guardians requires MEMBERS:MANAGE authority or being a minor of the group");
+        }
+    }
+
+    private static List<GuardianInput> toInputs(SetLegalGuardiansRequest request) {
+        return request.legalGuardians().stream().map(LegalGuardianGroupController::toInput).toList();
+    }
+
+    private static GuardianInput toInput(LegalGuardianInputRequest item) {
+        boolean hasNewGuardianData = item.firstName() != null || item.lastName() != null
+                                     || item.email() != null || item.phone() != null;
+        if ((item.userId() == null) == !hasNewGuardianData) {
+            throw new IllegalArgumentException(
+                    "Legal guardian must be given either by userId or by the details of a new guardian");
+        }
+        if (item.userId() != null) {
+            return GuardianInput.existing(new UserId(item.userId()));
+        }
+        return GuardianInput.created(new NewLegalGuardian(item.firstName(), item.lastName(), item.email(), item.phone()));
+    }
+
+    private LegalGuardianGroupGuardianResponse toGuardianResponse(GuardianContact contact) {
+        return LegalGuardianGroupGuardianResponseBuilder.builder()
+                .userId(contact.userId().uuid())
+                .firstName(contact.firstName())
+                .lastName(contact.lastName())
+                .email(contact.email())
+                .phone(contact.phone())
+                .build();
     }
 
     private LegalGuardianGroupSummaryResponse toSummaryResponse(LegalGuardianGroup group) {
@@ -86,23 +138,6 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
     }
 
     private LegalGuardianGroupResponse toGroupResponse(LegalGuardianGroup group) {
-        List<EntityModel<LegalGuardianGroupGuardianResponse>> guardianModels = group.getGuardians().stream()
-                .map(guardianId -> {
-                    EntityModel<LegalGuardianGroupGuardianResponse> model = EntityModel.of(
-                            LegalGuardianGroupGuardianResponseBuilder.builder().userId(guardianId.uuid()).build());
-                    if (legalGuardians.findById(guardianId).isPresent()) {
-                        klabisLinkTo(methodOn(LegalGuardiansApi.class).getLegalGuardian(guardianId.uuid()))
-                                .map(link -> link.withRel("legalGuardian"))
-                                .ifPresent(model::add);
-                    } else {
-                        klabisLinkTo(methodOn(MembersApi.class).getMember(guardianId.uuid(), null))
-                                .map(link -> link.withRel("member"))
-                                .ifPresent(model::add);
-                    }
-                    return model;
-                })
-                .toList();
-
         List<EntityModel<LegalGuardianGroupMinorResponse>> minorModels = group.getMinors().stream()
                 .sorted(Comparator.comparing(GroupMembership::joinedAt))
                 .map(this::toMinorModel)
@@ -111,7 +146,6 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
         return LegalGuardianGroupResponseBuilder.builder()
                 .id(group.getId().uuid())
                 .name(group.getName())
-                .guardians(guardianModels)
                 .minors(minorModels)
                 .build();
     }
@@ -154,8 +188,27 @@ class LegalGuardianGroupDetailsPostprocessor extends ModelWithDomainPostprocesso
                                         methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null))))))
                 .ifPresent(dtoModel::add);
 
+        klabisLinkTo(methodOn(LegalGuardianGroupsApi.class).listLegalGuardianGroupGuardians(id, null))
+                .ifPresent(link -> dtoModel.add(link.withRel("legalGuardians")));
+
         klabisLinkTo(methodOn(LegalGuardianGroupsApi.class).listLegalGuardianGroups())
                 .ifPresent(link -> dtoModel.add(link.withRel(IanaLinkRelations.COLLECTION)));
+    }
+}
+
+@MvcComponent
+class LegalGuardianGroupGuardianPostprocessor extends ModelWithDomainPostprocessor<LegalGuardianGroupGuardianResponse, GuardianContact> {
+
+    @Override
+    public void process(EntityModel<LegalGuardianGroupGuardianResponse> dtoModel, GuardianContact contact) {
+        UUID userId = contact.userId().uuid();
+        if (contact.kind() == GuardianKind.LEGAL_GUARDIAN) {
+            klabisLinkTo(methodOn(LegalGuardiansApi.class).getLegalGuardian(userId))
+                    .ifPresent(link -> dtoModel.add(link.withRel("legalGuardian")));
+        } else {
+            klabisLinkTo(methodOn(MembersApi.class).getMember(userId, null))
+                    .ifPresent(link -> dtoModel.add(link.withRel("member")));
+        }
     }
 }
 

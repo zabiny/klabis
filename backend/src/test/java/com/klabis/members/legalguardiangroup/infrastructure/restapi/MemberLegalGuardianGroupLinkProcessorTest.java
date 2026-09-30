@@ -9,6 +9,7 @@ import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup.Guardian;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup.Minor;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupFilter;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository;
+import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.ui.HalFormsSupport;
 import org.junit.jupiter.api.AfterEach;
@@ -103,7 +104,21 @@ class MemberLegalGuardianGroupLinkProcessorTest {
     }
 
     private static EntityModel<MemberDetailsResponse> detailOf(MemberId memberId) {
-        return EntityModel.of(MemberDetailsResponseBuilder.builder().id(memberId.uuid()).build());
+        return detailOf(memberId, LocalDate.now().minusYears(9));
+    }
+
+    private static EntityModel<MemberDetailsResponse> detailOf(MemberId memberId, LocalDate dateOfBirth) {
+        return EntityModel.of(MemberDetailsResponseBuilder.builder().id(memberId.uuid()).dateOfBirth(dateOfBirth).build());
+    }
+
+    private static void authenticateAsMember(MemberId memberId, String authority) {
+        KlabisJwtAuthenticationToken authentication = mock(KlabisJwtAuthenticationToken.class);
+        lenient().when(authentication.isAuthenticated()).thenReturn(true);
+        lenient().doReturn(List.of(new SimpleGrantedAuthority(authority))).when(authentication).getAuthorities();
+        lenient().when(authentication.getMemberIdUuid()).thenReturn(Optional.of(memberId.uuid()));
+        SecurityContext context = mock(SecurityContext.class);
+        lenient().when(context.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(context);
     }
 
     @Test
@@ -164,5 +179,64 @@ class MemberLegalGuardianGroupLinkProcessorTest {
         processor.process(model);
 
         assertThat(model.getLink("legalGuardianGroup")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("adds legalGuardians link to the guardians of the group for MEMBERS:MANAGE")
+    void addsGuardiansLinkForAdmin() {
+        LegalGuardianGroup group = groupOfChild(CHILD);
+        givenGroups(group);
+        EntityModel<MemberDetailsResponse> model = detailOf(CHILD);
+
+        processor.process(model);
+
+        assertThat(model.getLink("legalGuardians")).hasValueSatisfying(link -> assertThat(link.getHref())
+                .endsWith("/api/legal-guardian-groups/" + group.getId().uuid() + "/guardians"));
+    }
+
+    @Test
+    @DisplayName("adds legalGuardians link on the minor's own detail without MEMBERS:MANAGE")
+    void addsGuardiansLinkForTheMinorThemself() {
+        authenticateAsMember(CHILD, "MEMBERS:READ");
+        givenGroups(groupOfChild(CHILD));
+        EntityModel<MemberDetailsResponse> model = detailOf(CHILD);
+
+        processor.process(model);
+
+        assertThat(model.getLink("legalGuardians")).isPresent();
+    }
+
+    @Test
+    @DisplayName("adds no legalGuardians link on another member's detail without MEMBERS:MANAGE")
+    void addsNoGuardiansLinkForOthers() {
+        authenticateAsMember(OTHER_CHILD, "MEMBERS:READ");
+        givenGroups(groupOfChild(CHILD));
+        EntityModel<MemberDetailsResponse> model = detailOf(CHILD);
+
+        processor.process(model);
+
+        assertThat(model.getLink("legalGuardians")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("adds no legalGuardians link for a member who has turned 18 but is still in a group")
+    void addsNoGuardiansLinkForAdult() {
+        givenGroups(groupOfChild(CHILD));
+        EntityModel<MemberDetailsResponse> model = detailOf(CHILD, LocalDate.now().minusYears(18));
+
+        processor.process(model);
+
+        assertThat(model.getLink("legalGuardians")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("adds no legalGuardians link for a minor without a group")
+    void addsNoGuardiansLinkWithoutGroup() {
+        givenGroups();
+        EntityModel<MemberDetailsResponse> model = detailOf(CHILD);
+
+        processor.process(model);
+
+        assertThat(model.getLink("legalGuardians")).isEmpty();
     }
 }

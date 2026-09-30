@@ -67,7 +67,6 @@ class PasswordSetupRequestSecurityIntegrationTest {
                 PhoneNumber.of("+420123456789"),
                 null,
                 null,
-                null,
                 null
         ));
         registrationNumber = member.getRegistrationNumber().getValue();

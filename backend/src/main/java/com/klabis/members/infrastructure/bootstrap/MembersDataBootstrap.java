@@ -167,7 +167,6 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 Address.of(street, city, postalCode, "CZ"),
                 EmailAddress.of(email),
                 PhoneNumber.of(phone),
-                null,
                 birthNumber,
                 null,
                 null
@@ -176,7 +175,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
         if (chipNumber != null) {
             member.update(MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member))
                     .chipNumber(chipNumber)
-                    .build());
+                    .build(), GuardianContacts.NONE);
         }
 
         memberRepository.save(member);

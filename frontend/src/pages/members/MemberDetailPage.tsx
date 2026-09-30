@@ -22,6 +22,9 @@ import {useInlineEditing} from "../../hooks/useInlineEditing.ts";
 import {CalendarFeedSection} from "./CalendarFeedSection.tsx";
 import {MemberFeeSection} from "./MemberFeeSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
+import {HalFormModal} from "../../components/HalNavigator2/HalFormModal.tsx";
+import {LegalGuardiansSection} from "../../components/legal-guardians/LegalGuardiansSection.tsx";
+import {useLegalGuardians} from "../../hooks/useLegalGuardians.ts";
 import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
 
 type MemberDetail = GetMemberResource;
@@ -32,6 +35,13 @@ type MemberDetail = GetMemberResource;
 type MemberLinks = NonNullable<GetMemberHal['_links']>;
 const memberRel = <K extends keyof MemberLinks>(rel: K): K => rel;
 const memberLink = <K extends keyof MemberLinks>(links: MemberLinks | undefined, rel: K): MemberLinks[K] => links?.[rel];
+
+const isMinor = (dateOfBirth?: string): boolean => {
+    if (!dateOfBirth) return false;
+    const adultFrom = new Date(dateOfBirth);
+    adultFrom.setFullYear(adultFrom.getFullYear() + 18);
+    return adultFrom > new Date();
+};
 
 const val = (value: ReactNode): ReactNode => value || '\u2014';
 
@@ -84,6 +94,7 @@ interface MemberDetailContentProps {
 const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = false}: MemberDetailContentProps) => {
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
     const [suspendMemberModal, setSuspendMemberModal] = useState(false);
+    const [editGuardiansOpen, setEditGuardiansOpen] = useState(false);
 
     const {
         suspensionWarning,
@@ -107,12 +118,14 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
 
     const member = resourceData;
     const address = member.address;
-    const guardian = member.guardian;
     const identityCard = member.identityCard;
     const medicalCourse = member.medicalCourse;
     const trainerLicense = member.trainerLicense;
     const refereeLicense = member.refereeLicense;
     const showDeactivation = member.active === false;
+    const setGuardiansTemplate = resourceData._templates?.setMemberLegalGuardians ?? null;
+    const {guardians} = useLegalGuardians(resourceData._links?.legalGuardians);
+    const showGuardiansSection = !!resourceData._links?.legalGuardians || setGuardiansTemplate !== null || isMinor(member.dateOfBirth);
 
     const extractLinkHref = (link: unknown): string | null => {
         if (!link) return null;
@@ -375,18 +388,36 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                     </div>
                 ) : leftColumn}
 
-                {(guardian || (isEditing && enrichedFieldNames.has('guardian'))) && (
-                    <Section title={labels.sections.guardian}>
-                        {isEditing ? ri('guardian') : (
-                            <>
-                                <DetailRow label="Jméno">{val(guardian?.firstName)}</DetailRow>
-                                <DetailRow label="Příjmení">{val(guardian?.lastName)}</DetailRow>
-                                <DetailRow label="Vztah">{val(guardian?.relationship)}</DetailRow>
-                                <DetailRow label="E-mail">{val(guardian?.email)}</DetailRow>
-                                <DetailRow label="Telefon">{val(guardian?.phone)}</DetailRow>
-                            </>
+                {showGuardiansSection && (
+                    <div className="flex flex-col gap-4">
+                        {setGuardiansTemplate && (
+                            <div className="flex justify-end">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setEditGuardiansOpen(true)}
+                                    startIcon={<Pencil className="w-4 h-4"/>}
+                                >
+                                    {labels.templates.setMemberLegalGuardians}
+                                </Button>
+                            </div>
                         )}
-                    </Section>
+                        <LegalGuardiansSection guardiansLink={resourceData._links?.legalGuardians}/>
+                    </div>
+                )}
+
+                {setGuardiansTemplate && editGuardiansOpen && (
+                    <HalFormModal
+                        title={labels.templates.setMemberLegalGuardians}
+                        template={setGuardiansTemplate}
+                        templateName="setMemberLegalGuardians"
+                        resourceData={{legalGuardians: guardians.map(g => ({userId: g.userId}))}}
+                        pathname={route.pathname}
+                        onClose={() => {
+                            setEditGuardiansOpen(false);
+                            void route.refetch();
+                        }}
+                        successMessage={labels.ui.savedSuccessfully}
+                    />
                 )}
 
                 {showDeactivation && (

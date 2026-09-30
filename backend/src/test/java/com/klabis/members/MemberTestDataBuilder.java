@@ -20,10 +20,8 @@ public class MemberTestDataBuilder {
     private Address address = Address.of("Hlavní 123", "Praha", "110 00", "CZ");
     private EmailAddress email = EmailAddress.of("jan.novak@example.com");
     private PhoneNumber phone = PhoneNumber.of("+420 123 456 789");
-    private GuardianInformation guardian = new GuardianInformation("Petr", "Novák", "Father",
-            EmailAddress.of("petr.novak@example.com"),
-            PhoneNumber.of("+420 987 654 321"));
     private boolean isActive = true;
+    private boolean dataIncomplete = false;
     private String chipNumber = null;
     private IdentityCard identityCard = null;
     private MedicalCourse medicalCourse = null;
@@ -120,16 +118,6 @@ public class MemberTestDataBuilder {
         return this;
     }
 
-    public MemberTestDataBuilder withGuardian(GuardianInformation guardian) {
-        this.guardian = guardian;
-        return this;
-    }
-
-    public MemberTestDataBuilder withNoGuardian() {
-        this.guardian = null;
-        return this;
-    }
-
     public MemberTestDataBuilder withActive(boolean isActive) {
         this.isActive = isActive;
         return this;
@@ -193,6 +181,11 @@ public class MemberTestDataBuilder {
         return withBankAccountNumber(BankAccountNumber.of(bankAccountNumber));
     }
 
+    public MemberTestDataBuilder withDataIncomplete(boolean dataIncomplete) {
+        this.dataIncomplete = dataIncomplete;
+        return this;
+    }
+
     public MemberTestDataBuilder suspended(DeactivationReason reason, String note) {
         this.isActive = false;
         this.suspensionReason = reason;
@@ -209,7 +202,6 @@ public class MemberTestDataBuilder {
                 address,
                 email,
                 phone,
-                guardian,
                 isActive,
                 chipNumber,
                 identityCard,
@@ -220,6 +212,7 @@ public class MemberTestDataBuilder {
                 dietaryRestrictions,
                 birthNumber,
                 bankAccountNumber,
+                dataIncomplete,
                 suspensionReason,
                 suspendedAt,
                 suspensionNote,
@@ -237,7 +230,6 @@ public class MemberTestDataBuilder {
                 this.address,
                 this.email,
                 this.phone,
-                this.guardian,
                 birthNumber,
                 bankAccountNumber,
                 null);

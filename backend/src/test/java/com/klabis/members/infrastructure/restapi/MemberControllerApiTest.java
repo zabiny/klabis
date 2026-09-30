@@ -89,6 +89,9 @@ class MemberControllerApiTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private com.klabis.members.application.MemberCompletenessPort memberCompletenessPort;
+
+    @MockitoBean
     private ManagementPort managementService;
 
     @MockitoBean
@@ -243,32 +246,6 @@ class MemberControllerApiTest {
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.active").value(false));
-        }
-
-        @Test
-        @DisplayName("should return guardian information when present")
-        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
-        void shouldReturnGuardianInformationWhenPresent() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withGuardian(new GuardianInformation("Parent",
-                            "Name",
-                            "PARENT",
-                            "parent@example.com",
-                            "+420777111222"))
-                    .build();
-
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
-
-            mockMvc.perform(getMemberById(memberId))
-                    .andExpect(status().isOk())
-                    // Assert only guardian presence - detailed structure is tested in MemberMappingTests
-                    .andExpect(jsonPath("$.guardian").isNotEmpty())
-                    .andExpect(jsonPath("$.guardian.firstName").exists())
-                    .andExpect(jsonPath("$.guardian.lastName").exists())
-                    .andExpect(jsonPath("$.guardian.relationship").exists())
-                    .andExpect(jsonPath("$.guardian.email").exists())
-                    .andExpect(jsonPath("$.guardian.phone").exists());
         }
 
         @Test
@@ -618,17 +595,38 @@ class MemberControllerApiTest {
         }
 
         @Test
+        @DisplayName("offers setMemberLegalGuardians affordance for a minor, not for an adult")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void offersSetLegalGuardiansOnlyForMinor() throws Exception {
+            UUID minorId = UUID.randomUUID();
+            UUID adultId = UUID.randomUUID();
+            Member minor = MemberTestDataBuilder.aMemberWithId(minorId)
+                    .withDateOfBirth(LocalDate.now().minusYears(10)).build();
+            Member adult = MemberTestDataBuilder.aMemberWithId(adultId)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1)).build();
+            when(managementService.getMemberAndRecordView(eq(new MemberId(minorId)), any(UserId.class), anyBoolean())).thenReturn(minor);
+            when(managementService.getMemberAndRecordView(eq(new MemberId(adultId)), any(UserId.class), anyBoolean())).thenReturn(adult);
+
+            mockMvc.perform(getMemberById(minorId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.setMemberLegalGuardians.method").value("PUT"));
+            mockMvc.perform(getMemberById(adultId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.setMemberLegalGuardians").doesNotExist());
+        }
+
+        @Test
         @DisplayName("7.1 — detail endpoint serializes a member without an address (field simply omitted)")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void detailSerializesMemberWithoutAddress() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
-                    .withNoGuardian()
                     .withAddress(null)
                     .build();
 
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(memberCompletenessPort.missingData(member)).thenReturn(java.util.Set.of(com.klabis.members.domain.MissingDataItem.ADDRESS));
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -643,11 +641,11 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
-                    .withNoGuardian()
                     .withPhone((PhoneNumber) null)
                     .build();
 
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(memberCompletenessPort.missingData(member)).thenReturn(java.util.Set.of(com.klabis.members.domain.MissingDataItem.PHONE));
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -662,7 +660,6 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
-                    .withNoGuardian()
                     .withPhone((PhoneNumber) null)
                     .build();
 
@@ -680,7 +677,6 @@ class MemberControllerApiTest {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
-                    .withNoGuardian()
                     .withPhone((PhoneNumber) null)
                     .build();
 
@@ -840,80 +836,6 @@ class MemberControllerApiTest {
             Mockito.verify(registrationService).registerMember(argThat(cmd ->
                     cmd.email().value().equals("jan.novak@example.com") &&
                     cmd.phone().value().equals("+420777123456")
-            ));
-        }
-
-        @Test
-        @DisplayName("should call service with correct guardian arguments for minor")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldCallServiceWithCorrectGuardian() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
-
-            mockMvc.perform(postMembers().content("""
-                    {
-                        "firstName": "Petra",
-                        "lastName": "Nováková",
-                        "dateOfBirth": "2010-06-20",
-                        "nationality": "CZ",
-                        "gender": "FEMALE",
-                        "email": "petra.novakova@example.com",
-                        "phone": "+420111222333",
-                        "address": {
-                            "street": "Hlavní 456",
-                            "city": "Brno",
-                            "postalCode": "60000",
-                            "country": "CZ"
-                        },
-                        "guardian": {
-                            "firstName": "Guardian",
-                            "lastName": "Surname",
-                            "relationship": "PARENT",
-                            "email": "guardian@example.com",
-                            "phone": "+420123456789"
-                        }
-                    }
-                    """));
-
-            Mockito.verify(registrationService).registerMember(argThat(cmd ->
-                    cmd.guardian() != null &&
-                    cmd.guardian().getFirstName().equals("Guardian") &&
-                    cmd.guardian().getLastName().equals("Surname") &&
-                    cmd.guardian().getRelationship().equals("PARENT") &&
-                    cmd.guardian().getEmailValue().equals("guardian@example.com") &&
-                    cmd.guardian().getPhoneValue().equals("+420123456789")
-            ));
-        }
-
-        @Test
-        @DisplayName("should call service with null guardian when not provided")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldCallServiceWithNullGuardianWhenNotProvided() throws Exception {
-            UUID memberId = UUID.randomUUID();
-            Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
-
-            mockMvc.perform(postMembers().content("""
-                    {
-                        "firstName": "Jan",
-                        "lastName": "Novák",
-                        "dateOfBirth": "2000-06-15",
-                        "nationality": "CZ",
-                        "gender": "MALE",
-                        "email": "jan.novak@example.com",
-                        "phone": "+420777123456",
-                        "address": {
-                            "street": "Hlavní 123",
-                            "city": "Praha",
-                            "postalCode": "11000",
-                            "country": "CZ"
-                        }
-                    }
-                    """));
-
-            Mockito.verify(registrationService).registerMember(argThat(cmd ->
-                    cmd.guardian() == null
             ));
         }
 
@@ -1189,45 +1111,6 @@ class MemberControllerApiTest {
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.email").value("must not be blank"));
-        }
-
-        @Test
-        @DisplayName("with invalid guardian should return 400")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
-        void shouldReturn400WhenGuardianInvalid() throws Exception {
-            mockMvc.perform(postMembers().content("""
-                            {
-                                "firstName": "Petra",
-                                "lastName": "Nováková",
-                                "dateOfBirth": "2010-06-20",
-                                "nationality": "CZ",
-                                "gender": "FEMALE",
-                                "email": "petra@example.com",
-                                "phone": "+420111222333",
-                                "address": {
-                                    "street": "Hlavní 456",
-                                    "city": "Brno",
-                                    "postalCode": "60000",
-                                    "country": "CZ"
-                                },
-                                "guardian": {
-                                    "firstName": "",
-                                    "lastName": "Novák",
-                                    "relationship": "PARENT",
-                                    "email": "pavel.novak@example.com",
-                                    "phone": "+420987654321"
-                                }
-                            }
-                            """)
-                    )
-                    .andExpect(status().isBadRequest())
-
-                    .andExpect(jsonPath("$.title").value("Bad Request"))
-                    // GuardianDTO is generated from docs/openapi/spec/members.yaml, so its constraints
-                    // come from `required` + `minLength`/`maxLength` and carry Bean Validation's default
-                    // messages. The hand-written record used @NotBlank with a custom message; OpenAPI has
-                    // no way to express that, so the expectation follows the default text.
-                    .andExpect(jsonPath("$.fieldErrors['guardian.firstName']").value("size must be between 1 and 100"));
         }
 
         @Test
@@ -1563,8 +1446,8 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
-                    .withNoGuardian()
                     .withPhone((PhoneNumber) null)
+                    .withDataIncomplete(true)
                     .build();
             when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
@@ -1581,8 +1464,8 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
-                    .withNoGuardian()
                     .withPhone((PhoneNumber) null)
+                    .withDataIncomplete(true)
                     .build();
             when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
@@ -2347,7 +2230,6 @@ class MemberControllerApiTest {
                     .withGender(Gender.FEMALE)
                     .withNationality("CZ")
                     .withBirthNumber("905101/1239")
-                    .withNoGuardian()
                     .build();
             when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
@@ -2369,7 +2251,6 @@ class MemberControllerApiTest {
                     .withGender(Gender.FEMALE)
                     .withNationality("CZ")
                     .withBirthNumber("905101/1239")
-                    .withNoGuardian()
                     .build();
             when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class))).thenReturn(member);
 
@@ -2391,7 +2272,6 @@ class MemberControllerApiTest {
                     .withGender(Gender.MALE)
                     .withNationality("CZ")
                     .withBirthNumber("905101/1239")
-                    .withNoGuardian()
                     .build();
             when(managementService.prefilledUpdateCommand(any(MemberId.class)))
                     .thenReturn(Member.UpdateMember.from(member));
@@ -2414,7 +2294,6 @@ class MemberControllerApiTest {
         void shouldNotIncludeWarningsWhenNoBirthNumberOnUpdate() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withNoGuardian()
                     .build();
             when(managementService.prefilledUpdateCommand(any(MemberId.class)))
                     .thenReturn(Member.UpdateMember.from(member));
@@ -2444,7 +2323,6 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withEmail("original@example.com")
                     .withPhone("+420111000111")
-                    .withNoGuardian()
                     .build();
             when(managementService.prefilledUpdateCommand(any(MemberId.class)))
                     .thenReturn(Member.UpdateMember.from(member));

@@ -34,7 +34,6 @@ import static org.mockito.Mockito.when;
  * Tests cover the member registration functionality including:
  * <ul>
  *   <li>User account creation with pending activation status</li>
- *   <li>Guardian information handling</li>
  *   <li>Transactional integrity of member and user creation</li>
  * </ul>
  */
@@ -135,7 +134,6 @@ class RegistrationServiceTest {
                     address,
                     email,
                     phone,
-                    null,
                     BirthNumber.of("050615/1234"),
                     null,
                     null
@@ -191,7 +189,6 @@ class RegistrationServiceTest {
                     phone,
                     null,
                     null,
-                    null,
                     null
             );
 
@@ -208,90 +205,6 @@ class RegistrationServiceTest {
 
             assertThat(usernameCaptor.getValue()).isEqualTo("ZBM0501");
             assertThat(authoritiesCaptor.getValue()).isEqualTo(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ));
-        }
-
-        @Test
-        @DisplayName("should handle member with guardian information")
-        void shouldHandleMemberWithGuardian() {
-            // Given
-            LocalDate dateOfBirth = LocalDate.of(2010, 1, 15);
-            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM1000");
-            Address address = Address.of("Dětská 1", "Brno", "60200", "CZ");
-            EmailAddress email = EmailAddress.of("child@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420777333444");
-            EmailAddress guardianEmail = EmailAddress.of("parent@example.com");
-            PhoneNumber guardianPhone = PhoneNumber.of("+420777111222");
-            GuardianInformation guardian = new GuardianInformation(
-                    "Parent", "Name", "PARENT", guardianEmail, guardianPhone
-            );
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Child", "Minor", dateOfBirth, "CZ", Gender.MALE
-            );
-
-            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
-                    guardian,
-                    BirthNumber.of("100115/1234"),
-                    null,
-                    null
-            );
-
-            mockUserCreation(testSharedId);
-            mockMemberCreation(testSharedId);
-
-            // When
-            service.registerMember(command);
-
-            // Then
-            ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-            verify(memberRepository).save(memberCaptor.capture());
-
-            Member savedMember = memberCaptor.getValue();
-            MemberAssert.assertThat(savedMember).hasGuardianNotNull();
-            assertThat(savedMember.getGuardian().getFirstName()).isEqualTo("Parent");
-            assertThat(savedMember.getGuardian().getLastName()).isEqualTo("Name");
-            assertThat(savedMember.getGuardian().getRelationship()).isEqualTo("PARENT");
-        }
-
-        @Test
-        @DisplayName("should handle member without guardian")
-        void shouldHandleMemberWithoutGuardian() {
-            // Given
-            LocalDate dateOfBirth = LocalDate.of(1990, 5, 10);
-            UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
-            RegistrationNumber registrationNumber = new RegistrationNumber("ZBM9005");
-            Address address = Address.of("Náměstí Svobody 1", "Ostrava", "70200", "CZ");
-            EmailAddress email = EmailAddress.of("adult@example.com");
-            PhoneNumber phone = PhoneNumber.of("+420777555666");
-            PersonalInformation personalInformation = PersonalInformation.of(
-                    "Adult", "Member", dateOfBirth, "CZ", Gender.FEMALE
-            );
-
-            RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
-                    address,
-                    email,
-                    phone,
-                    null,
-                    BirthNumber.of("905110/1234"),
-                    null,
-                    null
-            );
-
-            mockUserCreation(testSharedId);
-            mockMemberCreation(testSharedId);
-
-            // When
-            service.registerMember(command);
-
-            // Then
-            ArgumentCaptor<Member> memberCaptor = ArgumentCaptor.forClass(Member.class);
-            verify(memberRepository).save(memberCaptor.capture());
-
-            Member savedMember = memberCaptor.getValue();
-            assertThat(savedMember.getGuardian()).isNull();
         }
 
         @Test
@@ -312,7 +225,6 @@ class RegistrationServiceTest {
                     address,
                     email,
                     phone,
-                    null,
                     BirthNumber.of("050720/1234"),
                     null,
                     null
@@ -349,7 +261,6 @@ class RegistrationServiceTest {
                     address,
                     email,
                     phone,
-                    null,
                     BirthNumber.of("000101/1234"),
                     null,
                     null
@@ -385,7 +296,6 @@ class RegistrationServiceTest {
                     address,
                     email,
                     phone,
-                    null,
                     birthNumber,
                     null,
                     null
@@ -428,7 +338,6 @@ class RegistrationServiceTest {
                     email,
                     phone,
                     null,
-                    null,
                     bankAccountNumber,
                     null
             );
@@ -470,7 +379,6 @@ class RegistrationServiceTest {
                     address,
                     email,
                     phone,
-                    null,
                     birthNumber,
                     bankAccountNumber,
                     null
@@ -515,7 +423,6 @@ class RegistrationServiceTest {
                     phone,
                     null,
                     null,
-                    null,
                     null
             );
 
@@ -554,7 +461,6 @@ class RegistrationServiceTest {
                     address,
                     email,
                     phone,
-                    null,
                     BirthNumber.of("050615/1234"),
                     null,
                     null
@@ -573,32 +479,26 @@ class RegistrationServiceTest {
     }
 
     @Nested
-    @DisplayName("registerMember() with guardian-only e-mail (design D7 / NPE regression)")
-    class RegisterMemberWithGuardianOnlyEmail {
+    @DisplayName("registerMember() of a minor without own e-mail (NPE regression)")
+    class RegisterMinorWithoutOwnEmail {
 
         @Test
-        @DisplayName("should register a minor whose only e-mail is the guardian's and create a PENDING_ACTIVATION user")
-        void shouldRegisterMinorWithOnlyGuardianEmail() {
+        @DisplayName("should register a minor without own e-mail and create a PENDING_ACTIVATION user")
+        void shouldRegisterMinorWithoutOwnEmail() {
             // Given
             LocalDate dateOfBirth = LocalDate.of(2015, 4, 10);
             UserId testSharedId = new UserId(UUID.fromString("11111111-2222-3333-4444-555555555555"));
             Address address = Address.of("Dětská 1", "Brno", "60200", "CZ");
             PhoneNumber phone = PhoneNumber.of("+420777333444");
-            EmailAddress guardianEmail = EmailAddress.of("guardian@example.com");
-            PhoneNumber guardianPhone = PhoneNumber.of("+420777111222");
-            GuardianInformation guardian = new GuardianInformation(
-                    "Parent", "Name", "PARENT", guardianEmail, guardianPhone
-            );
             PersonalInformation personalInformation = PersonalInformation.of(
                     "Child", "Minor", dateOfBirth, "CZ", Gender.MALE
             );
 
-            // Member has no e-mail of their own - only the guardian's
+            // Contacts of a minor come from the legal guardians, set on the group afterwards
             RegistrationPort.RegisterNewMember command = new RegistrationPort.RegisterNewMember(personalInformation,
                     address,
                     null,
                     phone,
-                    guardian,
                     BirthNumber.of("150410/1234"),
                     null,
                     null
@@ -613,7 +513,6 @@ class RegistrationServiceTest {
             // Then - no NPE, member registered and user created without an email
             assertThat(result).isNotNull();
             assertThat(result.getEmail()).isNull();
-            assertThat(result.getGuardian().getEmail()).isEqualTo(guardianEmail);
 
             verify(userService).createUser(eq("ZBM0500"), eq(Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ)));
         }
@@ -641,7 +540,6 @@ class RegistrationServiceTest {
                     address,
                     email,
                     phone,
-                    null,
                     BirthNumber.of("050615/1234"),
                     null,
                     null

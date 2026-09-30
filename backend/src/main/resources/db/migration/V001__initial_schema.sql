@@ -68,18 +68,11 @@ CREATE TABLE members.members
     postal_code           VARCHAR(20),  -- Postal or ZIP code
     country               VARCHAR(2),   -- Country code (ISO 3166-1 alpha-2 format, e.g., 'CZ', 'US')
 
-    -- Guardian information (for minors)
-    guardian_first_name   VARCHAR(100),
-    guardian_last_name    VARCHAR(100),
-    guardian_relationship VARCHAR(50),
-    guardian_email        VARCHAR(255),
-    guardian_phone        VARCHAR(50),
-
     -- Status
     is_active             BOOLEAN      NOT NULL DEFAULT TRUE,
 
-    -- Derived completeness (see Member.missingData()): materialised write-only for the member list
-    -- filter, never read back into the domain (design.md D4 of import-incomplete-members)
+    -- Derived completeness (see MemberCompleteness): materialised as of the last save for the member list
+    -- filter; the member detail computes it live (design.md D7 of legal-guardians-via-groups)
     data_incomplete       BOOLEAN      NOT NULL DEFAULT FALSE,
 
     -- Member self-edit fields (from V009)

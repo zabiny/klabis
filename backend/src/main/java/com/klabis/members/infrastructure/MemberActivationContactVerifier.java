@@ -2,7 +2,6 @@ package com.klabis.members.infrastructure;
 
 import com.klabis.common.users.application.ActivationContactVerifier;
 import com.klabis.members.domain.EmailAddress;
-import com.klabis.members.domain.GuardianInformation;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.domain.RegistrationNumber;
@@ -31,14 +30,7 @@ class MemberActivationContactVerifier implements ActivationContactVerifier {
     }
 
     private boolean matches(Member member, String email) {
-        String candidate = email.trim();
-
-        if (matches(member.getEmail(), candidate)) {
-            return true;
-        }
-
-        GuardianInformation guardian = member.getGuardian();
-        return guardian != null && matches(guardian.getEmail(), candidate);
+        return matches(member.getEmail(), email.trim());
     }
 
     private boolean matches(EmailAddress address, String candidate) {

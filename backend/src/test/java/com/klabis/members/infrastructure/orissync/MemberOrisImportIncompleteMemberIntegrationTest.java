@@ -9,6 +9,8 @@ import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.domain.Member;
+import com.klabis.members.domain.MemberCompleteness;
+import com.klabis.members.domain.GuardianContacts;
 import com.klabis.members.domain.MissingDataItem;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.*;
@@ -86,10 +88,9 @@ class MemberOrisImportIncompleteMemberIntegrationTest {
         assertThat(imported.getRegistrationNumber().getValue()).isEqualTo(regNum);
         assertThat(imported.getPhone()).isNull();
         assertThat(imported.getBirthNumber()).isNull();
-        assertThat(imported.getGuardian()).isNull();
-        assertThat(imported.missingData()).containsExactlyInAnyOrder(
+        assertThat(MemberCompleteness.missingData(imported, GuardianContacts.NONE)).containsExactlyInAnyOrder(
                 MissingDataItem.GUARDIAN, MissingDataItem.PHONE, MissingDataItem.BIRTH_NUMBER);
-        assertThat(imported.isComplete()).isFalse();
+        assertThat(imported.isDataIncomplete()).isTrue();
     }
 
     private SyncRecord enrolledRecord() {
@@ -113,8 +114,8 @@ class MemberOrisImportIncompleteMemberIntegrationTest {
 
         Member imported = managementPort.getMember(memberIdOf(record));
         assertThat(imported.getAddress()).isNull();
-        assertThat(imported.missingData()).containsExactly(MissingDataItem.ADDRESS);
-        assertThat(imported.isComplete()).isFalse();
+        assertThat(MemberCompleteness.missingData(imported, GuardianContacts.NONE)).containsExactly(MissingDataItem.ADDRESS);
+        assertThat(imported.isDataIncomplete()).isTrue();
     }
 
     private static MemberId memberIdOf(SyncRecord record) {

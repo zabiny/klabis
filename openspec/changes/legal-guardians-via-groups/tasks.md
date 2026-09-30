@@ -21,13 +21,13 @@
 
 ## 3. Iterace: zástupci nezletilého ze skupiny (odstranění guardian z člena)
 
-- [ ] 3.1 Testy (red) a implementace `LegalGuardianGroupService.setGuardiansOf(minor, guardians)` nad jádrem D2 (sourozenec se nemění, přesun do existující množiny, úprava na místě u jediného dítěte, odmítnutí dospělého)
-- [ ] 3.2 Doménová služba `MemberCompleteness` (testy red: pravidla nezletilý/dospělý, kontakty kteréhokoli zástupce, `GUARDIAN` bez skupiny, výjimka změny data narození dospělý → nezletilý); `Member.missingData`/edit validace na ni přepojit
-- [ ] 3.3 Odstranit `GuardianInformation` z `Member`, `MemberMemento`, `MemberCreatedEvent` (`isMinor()` z data narození), `UpdateMemberRequest`, konvertorů a sloupce `guardian_*` z `V001`; `MemberActivationContactVerifier` dočasně jen vlastní e-mail
-- [ ] 3.4 API spec: odstranit `guardian` z detailu člena, odkaz `legalGuardians` (nezletilý ve skupině; `MEMBERS_MANAGE` nebo sám nezletilý) na nový `GET /api/legal-guardian-groups/{id}/guardians` (kolekce s odkazy `member`/`legalGuardian`, použít i v detailu skupiny místo vložených zástupců), `PUT /api/members/{id}/legal-guardians` (`setMemberLegalGuardians`, jen nezletilý, položka `{userId}` nebo nový zástupce); přegenerovat bundle a typy
-- [ ] 3.5 Controller testy (red) a implementace: odkaz `legalGuardians` jen u nezletilého ve skupině a oprávněného uživatele, seznam zástupců skupiny (přístup `MEMBERS:MANAGE` / nezletilý ze skupiny, jinak odepřen), nastavení zástupců včetně inline založení nového zástupce v jedné transakci, poslední zástupce nelze odebrat
-- [ ] 3.6 Seznam členů: štítek „Neúplné údaje“ čte materializovaný příznak (`data_incomplete`), detail počítá živě; testy
-- [ ] 3.7 Frontend: sekce „Zákonní zástupci“ na detailu nezletilého načítaná z odkazu `legalGuardians` (bez odkazu prázdná), komponenta „vybrat nebo založit zástupce“ (pole objektů HAL-FORMS) + integrační test, odstranit guardian pole z editace; testy + `npm run build`
+- [x] 3.1 Testy (red) a implementace `LegalGuardianGroupService.setGuardiansOf(minor, guardians)` nad jádrem D2 (sourozenec se nemění, přesun do existující množiny, úprava na místě u jediného dítěte, odmítnutí dospělého)
+- [x] 3.2 Doménová služba `MemberCompleteness` (testy red: pravidla nezletilý/dospělý, kontakty kteréhokoli zástupce, `GUARDIAN` bez skupiny, výjimka změny data narození dospělý → nezletilý); `Member.missingData`/edit validace na ni přepojit
+- [x] 3.3 Odstranit `GuardianInformation` z `Member`, `MemberMemento`, `MemberCreatedEvent` (`isMinor()` z data narození), `UpdateMemberRequest`, konvertorů a sloupce `guardian_*` z `V001`; `MemberActivationContactVerifier` dočasně jen vlastní e-mail
+- [x] 3.4 API spec: odstranit `guardian` z detailu člena, odkaz `legalGuardians` (nezletilý ve skupině; `MEMBERS_MANAGE` nebo sám nezletilý) na nový `GET /api/legal-guardian-groups/{id}/guardians` (kolekce s odkazy `member`/`legalGuardian`, použít i v detailu skupiny místo vložených zástupců), `PUT /api/members/{id}/legal-guardians` (`setMemberLegalGuardians`, jen nezletilý, položka `{userId}` nebo nový zástupce); přegenerovat bundle a typy
+- [x] 3.5 Controller testy (red) a implementace: odkaz `legalGuardians` jen u nezletilého ve skupině a oprávněného uživatele, seznam zástupců skupiny (přístup `MEMBERS:MANAGE` / nezletilý ze skupiny, jinak odepřen), nastavení zástupců včetně inline založení nového zástupce v jedné transakci, poslední zástupce nelze odebrat
+- [x] 3.6 Seznam členů: štítek „Neúplné údaje“ čte materializovaný příznak (`data_incomplete`), detail počítá živě; testy
+- [x] 3.7 Frontend: sekce „Zákonní zástupci“ na detailu nezletilého načítaná z odkazu `legalGuardians` (bez odkazu prázdná), komponenta „vybrat nebo založit zástupce“ (pole objektů HAL-FORMS) + integrační test, odstranit guardian pole z editace; testy + `npm run build`
 
 ## 4. Iterace: registrace nezletilý / dospělý
 
