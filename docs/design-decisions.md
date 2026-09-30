@@ -242,3 +242,38 @@ Enum-typed request properties (gender, driving licence group, deactivation reaso
 - A new enum-typed request property gets inline options with no controller code. The frontend localises the values (see `x-hal-input-type`).
 - Option order follows enum declaration order in the API spec, so the spec orders enum values for display.
 - The record scan runs once per application context. `@MvcComponent` makes it part of every `@WebMvcTest` slice without an `@Import`.
+
+## ADR-008: Legal guardians are modelled by guardian groups; non-member guardians log in with `EXTnnnn`
+
+**Status:** Accepted
+
+**Context:**
+
+A minor's legal guardian used to be a value (`GuardianInformation`) copied into the member record: one guardian per child, no account, data duplicated across siblings. The family group that existed next to it was exclusive (a user in at most one group) and treated the parent as a member of the group, so it could not express a child with two guardians from different households. Guardians who are not club members also need an account, while `common.users.user_name` is a `VARCHAR(7)` holding the registration number, and token customisation and account activation looked the member up by that username.
+
+**Decision:**
+
+1. `FamilyGroup` became `LegalGuardianGroup` (`members.legalguardiangroup`): owners are the guardians (`UserId`), members are minors (`MemberId`). A guardian may be in many groups, a minor in at most one, no two groups share the same guardian set, and the group name is generated from the guardians' surnames. `Member` knows nothing about guardians; it only sees them through the `LegalGuardianGroupPort` and `GuardianContactResolver`.
+2. All find-or-create/merge logic lives in `LegalGuardianGroupService` (`setGuardiansOf`, `changeGroupGuardians`): move to an existing group with the same guardian set, else edit in place when all children move, else create a new group.
+3. A guardian who is not a member is the separate aggregate `LegalGuardian` (`members.legal_guardians`, `id` = `common.users.id`). A user is a `Member` or a `LegalGuardian`, never both; an adult registration may take a guardian over, keeping the `UserId` and the login.
+4. Non-member guardians log in with a generated `EXTnnnn` number from a dedicated DB sequence (`EXT0001`, `EXT0002`, ...), which has the shape of a registration number, so the column, login form and activation form stay unchanged.
+5. Because a taken-over guardian keeps `EXTnnnn` as login, username no longer equals the registration number. The token customiser and activation verifier therefore look the member up by `UserId` (shared UUID). `findByRegistrationNumber(EXTnnnn)` must never be used to conclude "not a member".
+
+**Rationale:**
+
+Guardianship is a relation to the child; grouping by the exact guardian set shares it between siblings without errors for divorced or step families and keeps the group as the future anchor for guardian permissions. Reusing the registration-number format avoids schema and UI changes for logins; the lookup by `UserId` follows from the existing invariant `MemberId` = `UserId`.
+
+**Alternatives considered:**
+
+- Guardian relation per child without a group: rejected, the group is the intended place for future guardian permissions.
+- Keeping exclusivity of guardians in groups: cannot model a child with two guardians from different households.
+- E-mail as login: needs a wider column, collides on shared e-mails, and e-mail change would change the login.
+- Assigning a registration number on promotion to member: changes the login of an existing user.
+
+**Consequences:**
+
+- The `EXT` code must never be issued to a real club; the series holds 9,999 numbers.
+- Guardian numbers are not sent anywhere; an administrator communicates them (visible on the guardian profile).
+- `data_incomplete` is not recomputed when guardians or their contacts change (except when a minor turns 18), an accepted staleness.
+
+**References:** OpenSpec change `legal-guardians-via-groups` (`design.md` D1, D2, D4, D5), ADR-001.

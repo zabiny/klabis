@@ -5,7 +5,11 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.MemberId;
+import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.*;
+import com.klabis.members.legalguardian.application.LegalGuardianPort.GuardianInput;
+import com.klabis.members.legalguardian.application.LegalGuardianPort.NewLegalGuardian;
+import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
@@ -14,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 @Component
@@ -27,9 +32,14 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final RegistrationNumberGenerator registrationNumberGenerator;
+    private final RegistrationPort registrationPort;
+    private final LegalGuardianGroupPort legalGuardianGroupPort;
 
     MembersDataBootstrap(MemberRepository memberRepository, UserService userService,
-                         PasswordEncoder passwordEncoder, RegistrationNumberGenerator registrationNumberGenerator) {
+                         PasswordEncoder passwordEncoder, RegistrationNumberGenerator registrationNumberGenerator,
+                         RegistrationPort registrationPort, LegalGuardianGroupPort legalGuardianGroupPort) {
+        this.registrationPort = registrationPort;
+        this.legalGuardianGroupPort = legalGuardianGroupPort;
         this.memberRepository = memberRepository;
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
@@ -45,13 +55,13 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
     public void bootstrapData() {
         String passwordHash = passwordEncoder.encode("password");
 
-        createMember("Jan", "Novák", LocalDate.of(1990, 3, 15),
+        Member jan = createMember("Jan", "Novák", LocalDate.of(1990, 3, 15),
                 "jan.novak@example.com", "+420 601 111 222",
                 "Hlavní 10", "Praha", "11000",
                 passwordHash, Set.of(Authority.values()), Gender.MALE,
                 BirthNumber.of("900315/1234"), "8012345");
 
-        createMember("Eva", "Svobodová", LocalDate.of(1995, 7, 22),
+        Member eva = createMember("Eva", "Svobodová", LocalDate.of(1995, 7, 22),
                 "eva.svobodova@example.com", "+420 602 333 444",
                 "Zahradní 5", "Brno", "60200",
                 passwordHash, Authority.getStandardUserAuthorities(), Gender.FEMALE,
@@ -105,7 +115,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 passwordHash, Authority.getStandardUserAuthorities(), Gender.FEMALE,
                 BirthNumber.of("015812/8888"), "8078901");
 
-        createMember("Ondřej", "Kratochvíl", LocalDate.of(1994, 12, 3),
+        Member ondrej = createMember("Ondřej", "Kratochvíl", LocalDate.of(1994, 12, 3),
                 "ondrej.kratochvil@example.com", "+420 603 009 009",
                 "Příční 6", "Jihlava", "58601",
                 passwordHash, Authority.getStandardUserAuthorities(), Gender.MALE,
@@ -147,10 +157,65 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                 passwordHash, Authority.getStandardUserAuthorities(), Gender.MALE,
                 BirthNumber.of("870621/1515"), null);
 
-        LOG.info("Created 17 bootstrap members");
+        LOG.info("Created 15 bootstrap members");
+
+        createLegalGuardianScenarios(jan.getId().toUserId(), eva.getId().toUserId(), ondrej.getId().toUserId());
     }
 
-    private void createMember(String firstName, String lastName, LocalDate dateOfBirth,
+    private void createLegalGuardianScenarios(UserId registeredBy, UserId memberGuardian, UserId memberGuardianOfTwo) {
+        LocalDate today = LocalDate.now();
+        NewLegalGuardian ivana = new NewLegalGuardian("Ivana", "Dlouhá", "ivana.dlouha@example.com", "+420 604 100 100");
+        NewLegalGuardian lenka = new NewLegalGuardian("Lenka", "Kratochvílová", "lenka.kratochvilova@example.com",
+                "+420 604 200 200");
+
+        Member adam = registerMinor("Adam", "Dlouhý", today.minusYears(10), Gender.MALE, registeredBy,
+                List.of(GuardianInput.created(ivana)));
+        UserId ivanaId = legalGuardianGroupPort.guardiansOf(adam.getId()).iterator().next();
+        registerMinor("Klára", "Dlouhá", today.minusYears(8), Gender.FEMALE, registeredBy,
+                List.of(GuardianInput.existing(ivanaId)));
+
+        registerMinor("Sofie", "Svobodová", today.minusYears(12), Gender.FEMALE, registeredBy,
+                List.of(GuardianInput.existing(memberGuardian)));
+
+        registerMinor("Matyáš", "Kratochvíl", today.minusYears(9), Gender.MALE, registeredBy,
+                List.of(GuardianInput.existing(memberGuardianOfTwo), GuardianInput.created(lenka)));
+
+        importMinorWithoutGuardian("Vojtěch", "Malý", today.minusYears(14), Gender.MALE, registeredBy);
+
+        LOG.info("Created bootstrap legal guardian scenarios (non-member guardians log in with EXT0001, EXT0002)");
+    }
+
+    private Member registerMinor(String firstName, String lastName, LocalDate dateOfBirth, Gender gender,
+                                 UserId registeredBy, List<GuardianInput> guardians) {
+        Member member = registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
+                PersonalInformation.of(firstName, lastName, dateOfBirth, "CZ", gender),
+                Address.of("Dětská 1", "Praha", "11000", "CZ"),
+                null, null, birthNumberOf(dateOfBirth, gender), null,
+                registeredBy, guardians, null));
+        LOG.info("Created bootstrap minor: {} {} (registration number: {})", firstName, lastName,
+                member.getRegistrationNumber().getValue());
+        return member;
+    }
+
+    private static BirthNumber birthNumberOf(LocalDate dateOfBirth, Gender gender) {
+        int month = dateOfBirth.getMonthValue() + (gender == Gender.FEMALE ? 50 : 0);
+        return BirthNumber.of("%02d%02d%02d/%04d".formatted(dateOfBirth.getYear() % 100, month,
+                dateOfBirth.getDayOfMonth(), 1000 + dateOfBirth.getDayOfYear()));
+    }
+
+    private void importMinorWithoutGuardian(String firstName, String lastName, LocalDate dateOfBirth, Gender gender,
+                                            UserId registeredBy) {
+        RegistrationNumber registrationNumber = registrationNumberGenerator.generate(dateOfBirth);
+        registrationPort.importMember(new RegistrationPort.ImportMember(
+                new RegistrationPort.RegisterNewMember(
+                        PersonalInformation.of(firstName, lastName, dateOfBirth, "CZ", gender),
+                        null, null, null, null, null, registeredBy),
+                registrationNumber));
+        LOG.info("Created bootstrap ORIS-imported minor without guardian: {} {} (registration number: {})",
+                firstName, lastName, registrationNumber.getValue());
+    }
+
+    private Member createMember(String firstName, String lastName, LocalDate dateOfBirth,
                               String email, String phone,
                               String street, String city, String postalCode,
                               String passwordHash, Set<Authority> authorities, Gender gender,
@@ -178,10 +243,11 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
                     .build(), GuardianContacts.NONE);
         }
 
-        memberRepository.save(member);
+        member = memberRepository.save(member);
 
         LOG.info("Created bootstrap member: {} {} (username: {}, authorities: {})",
                 firstName, lastName, registrationNumber.getValue(),
                 authorities.size() == Authority.values().length ? "ALL" : "STANDARD");
+        return member;
     }
 }
