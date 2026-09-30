@@ -19,13 +19,9 @@ vi.mock('../../components/HalNavigator2/HalFormModal.tsx', () => ({
 }));
 
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
-    HalRouteProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
-}));
-
-vi.mock('../../contexts/halRouteContext.ts', () => ({
-    useHalRoute: vi.fn(() => ({
-        resourceData: {firstName: 'Jana', lastName: 'Nováková', registrationNumber: 'ZBM2000'},
-    })),
+    HalRouteProvider: () => {
+        throw new Error('minor rows must not load the member resource');
+    },
 }));
 
 const guardiansState = {guardians: [] as Array<Record<string, unknown>>};
@@ -58,7 +54,7 @@ const renderPage = (resourceData: Record<string, unknown>) => {
 const buildGroup = (overrides?: Record<string, unknown>) => ({
     id: 'g-1',
     name: 'Nováková a Svobodová',
-    minors: [{memberId: 'm-1', joinedAt: '2026-01-01T10:00:00Z', _links: {member: {href: '/api/members/m-1'}}}],
+    minors: [{memberId: 'm-1', firstName: 'Anička', lastName: 'Nováková', registrationNumber: 'ZBM2000', joinedAt: '2026-01-01T10:00:00Z', _links: {member: {href: '/api/members/m-1'}}}],
     _links: {
         self: {href: '/api/legal-guardian-groups/g-1'},
         legalGuardians: {href: '/api/legal-guardian-groups/g-1/guardians'},
@@ -85,15 +81,15 @@ describe('LegalGuardianGroupDetailPage', () => {
         expect(screen.getByText('+420777111222')).toBeInTheDocument();
     });
 
-    it('links the minor to the member detail', () => {
+    it('shows the minor name from the group response and links to the member detail', () => {
         renderPage(buildGroup());
-        expect(screen.getByRole('link', {name: /Jana Nováková/})).toHaveAttribute('href', '/members/m-1');
+        expect(screen.getByRole('link', {name: 'Anička Nováková (ZBM2000)'})).toHaveAttribute('href', '/members/m-1');
     });
 
     it('navigates to guardian member on click', async () => {
         renderPage(buildGroup());
         await userEvent.click(screen.getByRole('button', {name: /Jana Nováková/}));
-        expect(navigate).toHaveBeenCalledWith('/members/u-1');
+        expect(navigateToResource).toHaveBeenCalledWith({href: '/api/members/u-1'});
     });
 
     it('navigates to the profile of a non-member guardian via the legalGuardian link', async () => {
@@ -103,7 +99,7 @@ describe('LegalGuardianGroupDetailPage', () => {
         }];
         renderPage(buildGroup());
         await userEvent.click(screen.getByRole('button', {name: /Jana Nováková/}));
-        expect(navigate).toHaveBeenCalledWith('/legal-guardians/u-2');
+        expect(navigateToResource).toHaveBeenCalledWith({href: '/api/legal-guardians/u-2'});
     });
 
     it('shows an empty state without guardians', () => {
@@ -136,7 +132,6 @@ describe('LegalGuardianGroupDetailPage', () => {
         expect(modalSpy).toHaveBeenCalledWith(expect.objectContaining({
             templateName: 'setLegalGuardianGroupGuardians',
             resourceData: {legalGuardians: [{userId: 'u-1'}]},
-            prefillFromTarget: false,
         }));
     });
 

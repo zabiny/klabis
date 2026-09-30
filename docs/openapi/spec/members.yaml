@@ -624,6 +624,7 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
+  /api/legal-guardian-groups/{id}/legal-guardians:
     put:
       operationId: setLegalGuardianGroupGuardians
       tags: [LegalGuardianGroups]
@@ -753,19 +754,13 @@ paths:
       tags: [LegalGuardianOptions]
       summary: List candidates for a legal guardian
       description: |
-        Non-member legal guardians and active members aged 18 or more, each person once, matching
-        the name search. Members carry their registration number and non-members their e-mail so
-        namesakes can be told apart. Requires MEMBERS:MANAGE.
+        Non-member legal guardians and active members aged 18 or more, each person once. The prompt
+        is the final display label: members carry their registration number and non-members their
+        e-mail so namesakes can be told apart. Requires MEMBERS:MANAGE.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_MANAGE
       parameters:
-        - name: q
-          in: query
-          description: Fulltext search over the name; every word must match
-          required: false
-          schema:
-            type: string
         - name: kind
           in: query
           description: Restricts the candidates to members or to non-member legal guardians; both when absent
@@ -1454,6 +1449,12 @@ components:
         memberId:
           type: string
           format: uuid
+        firstName:
+          type: string
+        lastName:
+          type: string
+        registrationNumber:
+          type: string
         joinedAt:
           type: string
           format: date-time
@@ -1522,8 +1523,8 @@ components:
           description: User UUID of the candidate
         prompt:
           type: string
-          description: Display name of the candidate
-          example: Jan Novák
+          description: Display label of the candidate - name with registration number (members) or e-mail (non-members)
+          example: Jan Novák (ZBM9500)
         kind:
           $ref: '#/components/schemas/LegalGuardianKind'
         registrationNumber:

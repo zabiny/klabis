@@ -57,4 +57,17 @@ class MemberRepositoryBornOnTest {
 
         assertThat(memberRepository.findAll(MemberFilter.all().withBornOn(Set.of()))).isEmpty();
     }
+
+    @Test
+    @DisplayName("bornOnOrBefore keeps members born on that date or earlier")
+    void shouldFilterByLatestBirthDate() {
+        memberRepository.save(aMember().withRegistrationNumber("ZBM0801").withDateOfBirth(LocalDate.of(2008, 3, 1)).build());
+        memberRepository.save(aMember().withRegistrationNumber("ZBM0701").withDateOfBirth(LocalDate.of(2007, 6, 1)).build());
+        memberRepository.save(aMember().withRegistrationNumber("ZBM0901").withDateOfBirth(LocalDate.of(2008, 3, 2)).build());
+
+        List<Member> found = memberRepository.findAll(MemberFilter.all().withBornOnOrBefore(LocalDate.of(2008, 3, 1)));
+
+        assertThat(found).extracting(m -> m.getRegistrationNumber().getValue())
+                .containsExactlyInAnyOrder("ZBM0801", "ZBM0701");
+    }
 }

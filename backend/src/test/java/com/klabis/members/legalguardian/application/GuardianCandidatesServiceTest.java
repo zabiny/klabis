@@ -58,9 +58,9 @@ class GuardianCandidatesServiceTest {
         when(legalGuardianRepository.findAll()).thenReturn(List.of(nonMember(GUARDIAN_ID, "Eva", "Svobodová", "eva@example.com")));
         when(memberRepository.findAll(any(MemberFilter.class))).thenReturn(List.of(adultMember(ADULT_UUID, "Jan", "Novák")));
 
-        List<GuardianCandidate> candidates = service.findCandidates(null, null);
+        List<GuardianCandidate> candidates = service.findCandidates(null);
 
-        assertThat(candidates).extracting(GuardianCandidate::displayName).containsExactly("Eva Svobodová", "Jan Novák");
+        assertThat(candidates).extracting(GuardianCandidate::displayName).containsExactly("Eva Svobodová (eva@example.com)", "Jan Novák (" + candidates.get(1).registrationNumber() + ")");
         GuardianCandidate member = candidates.get(1);
         assertThat(member.kind()).isEqualTo(GuardianKind.MEMBER);
         assertThat(member.registrationNumber()).isNotBlank();
@@ -71,41 +71,17 @@ class GuardianCandidatesServiceTest {
     }
 
     @Test
-    @DisplayName("asks only for active members")
+    @DisplayName("asks only for active members aged 18 or more")
     void asksOnlyForActiveMembers() {
         when(legalGuardianRepository.findAll()).thenReturn(List.of());
         when(memberRepository.findAll(any(MemberFilter.class))).thenReturn(List.of());
 
-        service.findCandidates("nov", null);
+        service.findCandidates(null);
 
         ArgumentCaptor<MemberFilter> filter = ArgumentCaptor.forClass(MemberFilter.class);
         verify(memberRepository).findAll(filter.capture());
         assertThat(filter.getValue().status()).isEqualTo(MemberFilter.StatusFilter.ACTIVE);
-        assertThat(filter.getValue().fulltextQuery()).isEqualTo("nov");
-    }
-
-    @Test
-    @DisplayName("leaves out members younger than 18")
-    void leavesOutMinors() {
-        when(legalGuardianRepository.findAll()).thenReturn(List.of());
-        when(memberRepository.findAll(any(MemberFilter.class))).thenReturn(List.of(
-                aMemberWithId(ADULT_UUID).withDateOfBirth(LocalDate.now().minusYears(12)).build()));
-
-        assertThat(service.findCandidates(null, null)).isEmpty();
-    }
-
-    @Test
-    @DisplayName("filters non-member guardians by name ignoring case and diacritics")
-    void filtersGuardiansByName() {
-        when(legalGuardianRepository.findAll()).thenReturn(List.of(
-                nonMember(GUARDIAN_ID, "Eva", "Svobodová", "eva@example.com"),
-                nonMember(new UserId(UUID.randomUUID()), "Petr", "Dvořák", "petr@example.com")));
-        when(memberRepository.findAll(any(MemberFilter.class))).thenReturn(List.of());
-
-        assertThat(service.findCandidates("dvorak", null)).extracting(GuardianCandidate::displayName)
-                .containsExactly("Petr Dvořák");
-        assertThat(service.findCandidates("eva svob", null)).extracting(GuardianCandidate::displayName)
-                .containsExactly("Eva Svobodová");
+        assertThat(filter.getValue().bornOnOrBefore()).isEqualTo(LocalDate.now().minusYears(18));
     }
 
     @Test
@@ -115,7 +91,7 @@ class GuardianCandidatesServiceTest {
                 nonMember(new UserId(ADULT_UUID), "Jan", "Novák", "jan@example.com")));
         when(memberRepository.findAll(any(MemberFilter.class))).thenReturn(List.of(adultMember(ADULT_UUID, "Jan", "Novák")));
 
-        assertThat(service.findCandidates(null, null)).singleElement()
+        assertThat(service.findCandidates(null)).singleElement()
                 .extracting(GuardianCandidate::kind).isEqualTo(GuardianKind.MEMBER);
     }
 
@@ -123,8 +99,8 @@ class GuardianCandidatesServiceTest {
     @DisplayName("offers only non-member guardians for kind LEGAL_GUARDIAN without asking for members")
     void filtersByLegalGuardianKind() {
         when(legalGuardianRepository.findAll()).thenReturn(List.of(nonMember(GUARDIAN_ID, "Eva", "Svobodová", "eva@example.com")));
-        assertThat(service.findCandidates(null, GuardianKind.LEGAL_GUARDIAN)).extracting(GuardianCandidate::displayName)
-                .containsExactly("Eva Svobodová");
+        assertThat(service.findCandidates(GuardianKind.LEGAL_GUARDIAN)).extracting(GuardianCandidate::displayName)
+                .containsExactly("Eva Svobodová (eva@example.com)");
         verify(memberRepository, org.mockito.Mockito.never()).findAll(any(MemberFilter.class));
     }
 
@@ -133,8 +109,8 @@ class GuardianCandidatesServiceTest {
     void filtersByMemberKind() {
         when(memberRepository.findAll(any(MemberFilter.class))).thenReturn(List.of(adultMember(ADULT_UUID, "Jan", "Novák")));
 
-        assertThat(service.findCandidates(null, GuardianKind.MEMBER)).extracting(GuardianCandidate::displayName)
-                .containsExactly("Jan Novák");
+        assertThat(service.findCandidates(GuardianKind.MEMBER)).extracting(GuardianCandidate::displayName)
+                .singleElement().asString().startsWith("Jan Novák (").endsWith(")");
         verify(legalGuardianRepository, org.mockito.Mockito.never()).findAll();
     }
 }

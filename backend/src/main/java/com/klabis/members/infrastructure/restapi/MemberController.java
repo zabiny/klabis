@@ -9,7 +9,6 @@ import com.klabis.common.users.UserId;
 import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
-import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.members.application.MemberAccountActivationPort;
 import com.klabis.members.application.MemberCompletenessPort;
 import com.klabis.members.application.ManagementPort;
@@ -17,6 +16,9 @@ import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
+import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
+import com.klabis.members.legalguardiangroup.infrastructure.restapi.MemberLegalGuardianGroup;
 import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.members.infrastructure.orissync.ClubKeyHeld;
 import com.klabis.sync.application.SynchronizationPort;
@@ -27,6 +29,8 @@ import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -68,6 +72,7 @@ public class MemberController implements MembersApi {
     private final OrisClubKeyPort orisClubKeyPort;
     private final Optional<SynchronizationPort> synchronizationPort;
     private final MemberCompletenessPort memberCompletenessPort;
+    private final LegalGuardianGroupPort legalGuardianGroupPort;
 
     public MemberController(
             ManagementPort managementService,
@@ -76,8 +81,10 @@ public class MemberController implements MembersApi {
             Optional<MemberDiscoveryPort> memberDiscoveryJob,
             OrisClubKeyPort orisClubKeyPort,
             Optional<SynchronizationPort> synchronizationPort,
-            MemberCompletenessPort memberCompletenessPort) {
+            MemberCompletenessPort memberCompletenessPort,
+            LegalGuardianGroupPort legalGuardianGroupPort) {
         this.memberCompletenessPort = memberCompletenessPort;
+        this.legalGuardianGroupPort = legalGuardianGroupPort;
         this.managementService = managementService;
         this.memberRepository = memberRepository;
         this.conversionService = conversionService;
@@ -262,17 +269,21 @@ public class MemberController implements MembersApi {
         Set<String> enrolledIds = isEnrolled ? Set.of(memberId.uuid().toString()) : Set.of();
         HalResponseContext.setContext(new EnrolledMemberIds(enrolledIds));
 
+        Optional<LegalGuardianGroup> guardianGroup = legalGuardianGroupPort.findGroupOf(memberId);
+        HalResponseContext.setContext(new MemberLegalGuardianGroup(guardianGroup.orElse(null)));
+
         HalResponseContext.setDomain(member);
         MemberDetailsResponse response = conversionService.convert(member, MemberDetailsResponse.class);
         return ResponseEntity.ok(MemberDetailsResponseBuilder.builder(response)
-                .missingData(liveMissingData(member))
+                .missingData(liveMissingData(member, guardianGroup))
                 .build());
     }
 
     // The detail is computed live (the guardians' contacts may have changed since the member was last saved),
     // unlike the materialized flag the member list reads.
-    private List<MissingDataItem> liveMissingData(Member member) {
-        return memberCompletenessPort.missingData(member).stream()
+    private List<MissingDataItem> liveMissingData(Member member, Optional<LegalGuardianGroup> guardianGroup) {
+        Set<UserId> guardians = guardianGroup.map(LegalGuardianGroup::getGuardians).orElse(Set.of());
+        return memberCompletenessPort.missingData(member, guardians).stream()
                 .map(item -> MissingDataItem.valueOf(item.name()))
                 .toList();
     }
@@ -296,7 +307,9 @@ record EnrolledMemberIds(Set<String> memberIds) {
     }
 }
 
+// Runs before MemberLegalGuardianGroupLinkProcessor, which extends the self link created here.
 @MvcComponent
+@Order(Ordered.HIGHEST_PRECEDENCE)
 class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDetailsResponse, Member> {
 
     private final MemberAccountActivationPort accountActivationPort;
@@ -307,8 +320,7 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
 
     @Override
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
-        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member,
-                member.getPersonalInformation().isMinor());
+        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
 
         if (accountActivationPort.isAvailableFor(member)) {
             UUID id = member.getId().uuid();
@@ -347,11 +359,6 @@ final class MemberSelfLinkSupport {
     }
 
     static void addSelfLinkWithAffordances(RepresentationModel<?> dtoModel, Member member) {
-        addSelfLinkWithAffordances(dtoModel, member, false);
-    }
-
-    static void addSelfLinkWithAffordances(RepresentationModel<?> dtoModel, Member member,
-                                           boolean withLegalGuardiansForm) {
         UUID memberId = member.getId().uuid();
 
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId, null)).map(link -> {
@@ -362,12 +369,6 @@ final class MemberSelfLinkSupport {
                         methodOn(MembersApi.class).suspendMember(memberId, null, null)));
             } else {
                 self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).resumeMember(memberId, null)));
-            }
-            if (withLegalGuardiansForm) {
-                self = self.andAffordances(klabisAffordWithOptions(
-                        methodOn(LegalGuardianGroupsApi.class).setMemberLegalGuardians(memberId, null),
-                        Map.of("legalGuardians", HalFormsOptionsDef.remote(
-                                methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null, null)))));
             }
             return (Link) self;
         }).ifPresent(dtoModel::add);
@@ -396,10 +397,7 @@ class MemberListPostprocessor implements RepresentationModelProcessor<PagedModel
                 .andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(null, null, null)))
                 .andAffordances(klabisAffordWithOptions(
                         methodOn(RegistrationApi.class).registerMember(null, null),
-                        Map.of("legalGuardians", HalFormsOptionsDef.remote(
-                                        methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null, null)),
-                                "legalGuardianUserId", HalFormsOptionsDef.remote(
-                                        methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null, LegalGuardianKind.LEGAL_GUARDIAN))))));
+                        LegalGuardianOptions.forRegistration())));
         return pagedModel;
     }
 }

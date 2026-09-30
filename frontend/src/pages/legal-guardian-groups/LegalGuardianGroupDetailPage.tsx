@@ -1,14 +1,11 @@
 import {type ReactElement, useEffect, useState} from 'react';
 import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {Alert, Button, Skeleton} from '../../components/UI';
-import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
+import {Alert, Skeleton} from '../../components/UI';
 import {LegalGuardiansSection} from '../../components/legal-guardians/LegalGuardiansSection.tsx';
-import {useLegalGuardians} from '../../hooks/useLegalGuardians.ts';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import type {GetLegalGuardianGroupResource, HalResourceLinks} from '../../api';
 import {labels} from '../../localization';
-import {Pencil} from 'lucide-react';
 import {FetchError} from '../../api/authorizedFetch.ts';
 import {useToast} from '../../contexts/toastContext.ts';
 
@@ -16,16 +13,7 @@ const LegalGuardianGroupDetailContent = ({resourceData, onEditStarted}: {
     resourceData: GetLegalGuardianGroupResource;
     onEditStarted: () => void;
 }): ReactElement => {
-    const {route} = useHalPageData<GetLegalGuardianGroupResource>();
-    const [editGuardiansOpen, setEditGuardiansOpen] = useState(false);
-
-    const setGuardiansTemplate = resourceData._templates?.setLegalGuardianGroupGuardians ?? null;
-    const {guardians} = useLegalGuardians(resourceData._links?.legalGuardians);
     const minors = resourceData.minors ?? [];
-
-    const guardiansFormValues = {
-        legalGuardians: guardians.map(guardian => ({userId: guardian.userId})),
-    };
 
     return (
         <div className="flex flex-col gap-8">
@@ -35,25 +23,16 @@ const LegalGuardianGroupDetailContent = ({resourceData, onEditStarted}: {
                 </Link>
             </div>
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <h1 className="text-3xl font-bold text-text-primary">{resourceData.name}</h1>
-                {setGuardiansTemplate && (
-                    <Button
-                        variant="primary"
-                        onClick={() => {
-                            onEditStarted();
-                            setEditGuardiansOpen(true);
-                        }}
-                        startIcon={<Pencil className="w-4 h-4"/>}
-                    >
-                        {labels.templates.setLegalGuardianGroupGuardians}
-                    </Button>
-                )}
-            </div>
+            <h1 className="text-3xl font-bold text-text-primary">{resourceData.name}</h1>
 
             <hr className="border-border"/>
 
-            <LegalGuardiansSection guardiansLink={resourceData._links?.legalGuardians}/>
+            <LegalGuardiansSection
+                guardiansLink={resourceData._links?.legalGuardians}
+                editTemplate={resourceData._templates?.setLegalGuardianGroupGuardians}
+                editTemplateName="setLegalGuardianGroupGuardians"
+                onEditStarted={onEditStarted}
+            />
 
             <div className="flex flex-col gap-4">
                 <h2 className="text-xl font-bold text-text-primary">{labels.sections.legalGuardianGroupMinors}</h2>
@@ -62,27 +41,12 @@ const LegalGuardianGroupDetailContent = ({resourceData, onEditStarted}: {
                     linkMembers
                     members={minors.map(minor => ({
                         memberId: minor.memberId ?? '',
+                        memberName: `${minor.firstName ?? ''} ${minor.lastName ?? ''}${minor.registrationNumber ? ` (${minor.registrationNumber})` : ''}`.trim(),
                         joinedAt: minor.joinedAt ?? '',
                         memberLink: minor._links?.member as HalResourceLinks | undefined,
                     }))}
                 />
             </div>
-
-            {setGuardiansTemplate && editGuardiansOpen && (
-                <HalFormModal
-                    title={labels.templates.setLegalGuardianGroupGuardians}
-                    template={setGuardiansTemplate}
-                    templateName="setLegalGuardianGroupGuardians"
-                    resourceData={guardiansFormValues}
-                    prefillFromTarget={false}
-                    pathname={route.pathname}
-                    onClose={() => {
-                        setEditGuardiansOpen(false);
-                        void route.refetch();
-                    }}
-                    successMessage={labels.ui.savedSuccessfully}
-                />
-            )}
         </div>
     );
 };

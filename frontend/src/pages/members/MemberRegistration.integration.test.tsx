@@ -6,16 +6,21 @@ import type {HalFormsTemplate} from '../../api';
 import {HalFormsForm} from '../../components/HalNavigator2/halforms/HalFormsForm.tsx';
 import {klabisFieldsFactory} from '../../components/KlabisFieldsFactory';
 import {RegistrationContactSection, RegistrationGuardianSections} from './RegistrationGuardianSections.tsx';
-import {authorizedFetch} from '../../api/authorizedFetch';
 
-vi.mock('../../api/authorizedFetch', () => ({authorizedFetch: vi.fn()}));
+const guardianProfiles = vi.hoisted(() => ({current: undefined as Record<string, unknown> | undefined}));
+const requestedUrls = vi.hoisted(() => [] as string[]);
+const candidates = vi.hoisted(() => [
+    {value: 'user-1', prompt: 'Jana Nováková'},
+    {value: 'user-2', prompt: 'Petr Svoboda'},
+]);
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn((_url: string, options?: { select?: (data: unknown) => unknown }) => {
-        const data = [
-            {value: 'user-1', prompt: 'Jana Nováková'},
-            {value: 'user-2', prompt: 'Petr Svoboda'},
-        ];
-        return {data: options?.select ? options.select(data) : data, isLoading: false, error: null};
+    useAuthorizedQuery: vi.fn((url: string, options?: { enabled?: boolean; select?: (data: unknown) => unknown }) => {
+        if (options?.enabled === false) return {data: undefined, isLoading: false, error: null};
+        if (url.startsWith('/legal-guardians/')) {
+            requestedUrls.push(url);
+            return {data: guardianProfiles.current, isLoading: false, error: null};
+        }
+        return {data: options?.select ? options.select(candidates) : candidates, isLoading: false, error: null};
     }),
     useAuthorizedMutation: vi.fn(),
 }));
@@ -77,7 +82,11 @@ const setBirthDate = async (value: string) => {
 };
 
 describe('member registration form sections', () => {
-    beforeEach(() => vi.clearAllMocks());
+    beforeEach(() => {
+        vi.clearAllMocks();
+        guardianProfiles.current = undefined;
+        requestedUrls.length = 0;
+    });
 
     it('shows no guardian sections until date of birth is filled', () => {
         renderForm();
@@ -111,12 +120,10 @@ describe('member registration form sections', () => {
     });
 
     it('registers an adult taking over a guardian, prefilling data from the guardian profile', async () => {
-        vi.mocked(authorizedFetch).mockResolvedValue({
-            json: async () => ({
-                userId: 'user-1', firstName: 'Jana', lastName: 'Nováková',
-                email: 'jana@example.com', phone: '+420601000000', loginName: 'EXT0001',
-            }),
-        } as unknown as Response);
+        guardianProfiles.current = {
+            userId: 'user-1', firstName: 'Jana', lastName: 'Nováková',
+            email: 'jana@example.com', phone: '+420601000000', loginName: 'EXT0001',
+        };
         const onSubmit = renderForm();
         await setBirthDate('1985-01-01');
 
@@ -127,7 +134,7 @@ describe('member registration form sections', () => {
         await userEvent.selectOptions(screen.getByRole('combobox'), 'user-1');
 
         await waitFor(() => expect(input('firstName')).toHaveValue('Jana'));
-        expect(authorizedFetch).toHaveBeenCalledWith('/api/legal-guardians/user-1');
+        expect(requestedUrls).toContain('/legal-guardians/user-1');
         expect(input('lastName')).toHaveValue('Nováková');
         expect(input('email')).toHaveValue('jana@example.com');
         expect(input('phone')).toHaveValue('+420601000000');
@@ -140,9 +147,7 @@ describe('member registration form sections', () => {
     });
 
     it('drops the takeover selection when the birth date turns the member into a minor', async () => {
-        vi.mocked(authorizedFetch).mockResolvedValue({
-            json: async () => ({firstName: 'Jana', lastName: 'N', email: 'j@e.cz', phone: '+420601000000'}),
-        } as unknown as Response);
+        guardianProfiles.current = {firstName: 'Jana', lastName: 'N', email: 'j@e.cz', phone: '+420601000000'};
         const onSubmit = renderForm();
         await setBirthDate('1985-01-01');
         await userEvent.selectOptions(screen.getByRole('combobox'), 'user-1');

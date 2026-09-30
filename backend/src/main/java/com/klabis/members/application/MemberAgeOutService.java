@@ -4,6 +4,7 @@ import com.klabis.members.MinorAgedOutEvent;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.domain.PersonalInformation;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +21,6 @@ import java.util.Set;
 class MemberAgeOutService implements MemberAgeOutPort {
 
     private static final Logger log = LoggerFactory.getLogger(MemberAgeOutService.class);
-
-    private static final int ADULT_AGE = 18;
 
     private final MemberRepository memberRepository;
     private final MemberCompletenessPort completenessPort;
@@ -57,9 +56,9 @@ class MemberAgeOutService implements MemberAgeOutPort {
         Set<LocalDate> dates = new HashSet<>();
         boolean leapDay = today.getMonth() == Month.FEBRUARY && today.getDayOfMonth() == 29;
         if (!leapDay) {
-            dates.add(today.minusYears(ADULT_AGE));
+            dates.add(today.minusYears(PersonalInformation.ADULT_AGE));
         }
-        int birthYear = today.getYear() - ADULT_AGE;
+        int birthYear = today.getYear() - PersonalInformation.ADULT_AGE;
         if (today.getMonth() == Month.MARCH && today.getDayOfMonth() == 1
                 && !Year.isLeap(today.getYear()) && Year.isLeap(birthYear)) {
             dates.add(LocalDate.of(birthYear, Month.FEBRUARY, 29));

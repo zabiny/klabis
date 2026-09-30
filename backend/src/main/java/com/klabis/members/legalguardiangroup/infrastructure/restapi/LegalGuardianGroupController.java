@@ -1,17 +1,18 @@
 package com.klabis.members.legalguardiangroup.infrastructure.restapi;
 
+import org.jspecify.annotations.Nullable;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
-import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUserData;
+import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
+import com.klabis.members.Members;
 import com.klabis.members.legalguardian.application.GuardianContact;
 import com.klabis.members.legalguardian.application.GuardianKind;
-import com.klabis.common.users.Authority;
 import com.klabis.members.infrastructure.restapi.*;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
@@ -23,7 +24,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,9 +43,11 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class LegalGuardianGroupController implements LegalGuardianGroupsApi {
 
     private final LegalGuardianGroupPort legalGuardianGroupService;
+    private final Members members;
 
-    LegalGuardianGroupController(LegalGuardianGroupPort legalGuardianGroupService) {
+    LegalGuardianGroupController(LegalGuardianGroupPort legalGuardianGroupService, Members members) {
         this.legalGuardianGroupService = legalGuardianGroupService;
+        this.members = members;
     }
 
     @Override
@@ -75,9 +77,9 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
     public ResponseEntity<List<LegalGuardianGroupGuardianResponse>> listLegalGuardianGroupGuardians(
             UUID id, CurrentUserData currentUser) {
         LegalGuardianGroup group = legalGuardianGroupService.getGroup(new LegalGuardianGroupId(id));
-        checkGuardianListAccess(group, currentUser);
+        GuardianListAccess.require(currentUser, group);
 
-        List<GuardianContact> contacts = legalGuardianGroupService.listGuardians(group.getId());
+        List<GuardianContact> contacts = legalGuardianGroupService.listGuardians(group);
         HalResponseContext.setDomainList(contacts);
         return ResponseEntity.ok(contacts.stream().map(this::toGuardianResponse).toList());
     }
@@ -92,16 +94,6 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
     public ResponseEntity<Void> setMemberLegalGuardians(UUID id, SetLegalGuardiansRequest request) {
         legalGuardianGroupService.setGuardiansOf(new MemberId(id), GuardianInputMapper.toInputs(request.legalGuardians()));
         return ResponseEntity.noContent().build();
-    }
-
-    private static void checkGuardianListAccess(LegalGuardianGroup group, CurrentUserData currentUser) {
-        boolean canManage = currentUser.authorities().contains(Authority.MEMBERS_MANAGE);
-        boolean isMinorOfGroup = currentUser.isMemberOf(memberId -> group.getMinors().stream()
-                .anyMatch(membership -> membership.memberId().equals(memberId)));
-        if (!canManage && !isMinorOfGroup) {
-            throw new AccessDeniedException(
-                    "Access to legal guardians requires MEMBERS:MANAGE authority or being a minor of the group");
-        }
     }
 
     private LegalGuardianGroupGuardianResponse toGuardianResponse(GuardianContact contact) {
@@ -130,9 +122,12 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
     }
 
     private LegalGuardianGroupResponse toGroupResponse(LegalGuardianGroup group) {
+        Map<MemberId, MemberDto> minorDetails = members.findByIds(group.getMinors().stream()
+                .map(GroupMembership::memberId)
+                .toList());
         List<EntityModel<LegalGuardianGroupMinorResponse>> minorModels = group.getMinors().stream()
                 .sorted(Comparator.comparing(GroupMembership::joinedAt))
-                .map(this::toMinorModel)
+                .map(membership -> toMinorModel(membership, minorDetails.get(membership.memberId())))
                 .toList();
 
         return LegalGuardianGroupResponseBuilder.builder()
@@ -142,11 +137,15 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
                 .build();
     }
 
-    private EntityModel<LegalGuardianGroupMinorResponse> toMinorModel(GroupMembership<MemberId> membership) {
+    private EntityModel<LegalGuardianGroupMinorResponse> toMinorModel(GroupMembership<MemberId> membership,
+                                                                      @Nullable MemberDto details) {
         MemberId memberId = membership.memberId();
         EntityModel<LegalGuardianGroupMinorResponse> model = EntityModel.of(
                 LegalGuardianGroupMinorResponseBuilder.builder()
                         .memberId(memberId.uuid())
+                        .firstName(details != null ? details.firstName() : null)
+                        .lastName(details != null ? details.lastName() : null)
+                        .registrationNumber(details != null ? details.registrationNumber() : null)
                         .joinedAt(membership.joinedAt())
                         .build());
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
@@ -176,8 +175,7 @@ class LegalGuardianGroupDetailsPostprocessor extends ModelWithDomainPostprocesso
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAffordWithOptions(
                                 methodOn(LegalGuardianGroupsApi.class).setLegalGuardianGroupGuardians(id, null),
-                                Map.of("legalGuardians", HalFormsOptionsDef.remote(
-                                        methodOn(LegalGuardianOptionsApi.class).listLegalGuardianOptions(null, null))))))
+                                LegalGuardianOptions.forLegalGuardiansField())))
                 .ifPresent(dtoModel::add);
 
         klabisLinkTo(methodOn(LegalGuardianGroupsApi.class).listLegalGuardianGroupGuardians(id, null))

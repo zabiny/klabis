@@ -11,6 +11,7 @@ import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @PrimaryPort
@@ -46,10 +47,23 @@ public interface LegalGuardianGroupPort {
 
     Set<UserId> guardiansOf(MemberId minor);
 
+    Optional<LegalGuardianGroup> findGroupOf(MemberId minor);
+
+    /**
+     * The minor leaves the group they are in; a group left without minors is removed. Nothing happens when the
+     * member is in no group.
+     */
+    void removeMinor(MemberId minor);
+
     /**
      * Contacts of the group's guardians, whether they are members or non-member guardians.
      */
     List<GuardianContact> listGuardians(LegalGuardianGroupId id);
+
+    /**
+     * Like {@link #listGuardians(LegalGuardianGroupId)} for an already loaded group.
+     */
+    List<GuardianContact> listGuardians(LegalGuardianGroup group);
 
     /**
      * Like {@link #listGuardians(LegalGuardianGroupId)} for already loaded groups; contacts of all groups

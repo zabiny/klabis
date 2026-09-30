@@ -18,8 +18,7 @@ import com.klabis.members.domain.DeactivationReason;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
-import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupFilter;
-import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository;
+import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.members.legalguardiangroup.infrastructure.restapi.MemberLegalGuardianGroupLinkProcessor;
 import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
 import com.klabis.sync.SyncRecordId;
@@ -120,8 +119,8 @@ class MemberControllerApiTest {
     @Autowired
     private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
-    @Autowired
-    private LegalGuardianGroupRepository legalGuardianGroupRepository;
+    @MockitoBean
+    private LegalGuardianGroupPort legalGuardianGroupPort;
 
     @TestBean
     private EntityLinks entityLinks;
@@ -507,7 +506,7 @@ class MemberControllerApiTest {
                     .thenReturn(new com.klabis.groups.traininggroup.TrainingGroupId(groupId));
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.of(mockTrainingGroup));
-            when(legalGuardianGroupRepository.findOne(any(LegalGuardianGroupFilter.class)))
+            when(legalGuardianGroupPort.findGroupOf(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))
@@ -532,7 +531,7 @@ class MemberControllerApiTest {
                     Mockito.mock(LegalGuardianGroup.class);
             Mockito.when(mockLegalGuardianGroup.getId())
                     .thenReturn(new LegalGuardianGroupId(groupId));
-            when(legalGuardianGroupRepository.findOne(any(LegalGuardianGroupFilter.class)))
+            when(legalGuardianGroupPort.findGroupOf(any(MemberId.class)))
                     .thenReturn(java.util.Optional.of(mockLegalGuardianGroup));
 
             mockMvc.perform(getMemberById(memberId))
@@ -552,7 +551,7 @@ class MemberControllerApiTest {
                     .thenReturn(member);
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
-            when(legalGuardianGroupRepository.findOne(any(LegalGuardianGroupFilter.class)))
+            when(legalGuardianGroupPort.findGroupOf(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))
@@ -571,7 +570,7 @@ class MemberControllerApiTest {
                     .thenReturn(member);
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
-            when(legalGuardianGroupRepository.findOne(any(LegalGuardianGroupFilter.class)))
+            when(legalGuardianGroupPort.findGroupOf(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))
@@ -589,7 +588,7 @@ class MemberControllerApiTest {
                     .thenReturn(member);
             when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
                     .thenReturn(java.util.Optional.empty());
-            when(legalGuardianGroupRepository.findOne(any(LegalGuardianGroupFilter.class)))
+            when(legalGuardianGroupPort.findGroupOf(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
 
             mockMvc.perform(getMemberById(memberId))
@@ -669,7 +668,7 @@ class MemberControllerApiTest {
                     .build();
 
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
-            when(memberCompletenessPort.missingData(member)).thenReturn(java.util.Set.of(com.klabis.members.domain.MissingDataItem.ADDRESS));
+            when(memberCompletenessPort.missingData(eq(member), any())).thenReturn(java.util.Set.of(com.klabis.members.domain.MissingDataItem.ADDRESS));
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -688,7 +687,7 @@ class MemberControllerApiTest {
                     .build();
 
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
-            when(memberCompletenessPort.missingData(member)).thenReturn(java.util.Set.of(com.klabis.members.domain.MissingDataItem.PHONE));
+            when(memberCompletenessPort.missingData(eq(member), any())).thenReturn(java.util.Set.of(com.klabis.members.domain.MissingDataItem.PHONE));
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())

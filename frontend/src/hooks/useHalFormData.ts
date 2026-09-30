@@ -63,7 +63,6 @@ export interface UseHalFormDataReturn {
  * @param selectedTemplate - The currently selected HAL Forms template (null if no template selected)
  * @param currentResourceData - The current resource data to use as fallback
  * @param currentPathname - The current resource pathname to compare with template target
- * @param prefillFromTarget - false when the target's GET returns a different shape than the form payload, so the caller's resource data must be used as-is
  * @returns Form state with data, loading flag, error, and refetch function
  *
  * @example
@@ -84,8 +83,7 @@ export interface UseHalFormDataReturn {
 export function useHalFormData(
     selectedTemplate: HalFormsTemplate | null,
     currentResourceData: Record<string, unknown>,
-    currentPathname: string,
-    prefillFromTarget = true
+    currentPathname: string
 ): UseHalFormDataReturn {
     // Validate template structure
     if (selectedTemplate && !selectedTemplate.properties) {
@@ -94,11 +92,11 @@ export function useHalFormData(
 
     // Determine if we need to fetch from target
     const shouldFetch = useMemo(() => {
-        if (!selectedTemplate || !prefillFromTarget) return false;
+        if (!selectedTemplate) return false;
         return shouldFetchTargetData(selectedTemplate.target, currentPathname);
-    }, [selectedTemplate, currentPathname, prefillFromTarget]);
+    }, [selectedTemplate, currentPathname]);
 
-    const targetUrl = prefillFromTarget && selectedTemplate?.target ? normalizeKlabisApiPath(selectedTemplate.target) : '';
+    const targetUrl = selectedTemplate?.target ? normalizeKlabisApiPath(selectedTemplate.target) : '';
 
     // Phase 1: Probe the target via OPTIONS to determine whether GET is supported.
     // Only fires when shouldFetch is true so we don't probe same-resource targets.

@@ -1,7 +1,7 @@
 import {type ReactElement, useEffect, useState} from 'react';
 import {useField} from 'formik';
-import {HalFormsInput} from '../HalNavigator2/halforms/fields';
-import {LegalGuardianCandidatePicker} from './LegalGuardianCandidatePicker.tsx';
+import {HalFormsInput, HalFormsMemberId} from '../HalNavigator2/halforms/fields';
+import {PillGroup} from '../UI/PillGroup.tsx';
 import type {HalFormsInputProps} from '../HalNavigator2/halforms';
 import {labels} from '../../localization';
 
@@ -41,34 +41,26 @@ export const LegalGuardianInputField = (conf: HalFormsInputProps): ReactElement 
     const rowInput = (attr: string, prompt: string, type: string) =>
         <HalFormsInput key={attr} {...conf.subElementProps(attr, {prompt, type})} />;
 
-    const modeButtonClass = (active: boolean) =>
-        `px-3 py-1 text-sm rounded-md border ${active
-            ? 'bg-primary text-white border-primary'
-            : 'border-border text-text-secondary hover:text-text-primary'}`;
-
     return (
         <div className="space-y-3">
-            <div className="flex gap-2" role="group">
-                <button type="button" aria-pressed={mode === 'existing'}
-                        className={modeButtonClass(mode === 'existing')}
-                        onClick={() => switchMode('existing')}>
-                    {labels.ui.legalGuardianPickExisting}
-                </button>
-                <button type="button" aria-pressed={mode === 'new'}
-                        className={modeButtonClass(mode === 'new')}
-                        onClick={() => switchMode('new')}>
-                    {labels.ui.legalGuardianCreateNew}
-                </button>
-            </div>
+            <PillGroup<Mode>
+                ariaLabel={conf.prop.prompt || labels.fields.legalGuardianUserId}
+                selectedValue={mode}
+                onChange={switchMode}
+                options={[
+                    {value: 'existing', label: labels.ui.legalGuardianPickExisting},
+                    {value: 'new', label: labels.ui.legalGuardianCreateNew},
+                ]}
+            />
             {mode === 'existing' ? (
-                <LegalGuardianCandidatePicker {...userIdProps} renderMode="input"
-                                              prop={{...userIdProps.prop, options: conf.prop.options}}/>
+                <HalFormsMemberId {...userIdProps} renderMode="input"
+                                  prop={{...userIdProps.prop, options: conf.prop.options}}/>
             ) : (
                 <>
-                    {rowInput('firstName', labels.ui.legalGuardianFirstName, 'text')}
-                    {rowInput('lastName', labels.ui.legalGuardianLastName, 'text')}
-                    {rowInput('email', labels.ui.legalGuardianEmail, 'email')}
-                    {rowInput('phone', labels.ui.legalGuardianPhone, 'tel')}
+                    {rowInput('firstName', labels.fields.firstName, 'text')}
+                    {rowInput('lastName', labels.fields.lastName, 'text')}
+                    {rowInput('email', labels.fields.email, 'email')}
+                    {rowInput('phone', labels.fields.phone, 'tel')}
                 </>
             )}
         </div>

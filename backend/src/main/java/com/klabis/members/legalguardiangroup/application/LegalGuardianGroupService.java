@@ -21,8 +21,10 @@ import org.jmolecules.ddd.annotation.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.Collator;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -88,8 +90,7 @@ class LegalGuardianGroupService implements LegalGuardianGroupPort {
     public void setGuardiansOf(MemberId minorId, Set<UserId> guardianIds) {
         Set<Guardian> guardians = resolveGuardians(guardianIds);
         Minor minor = loadMinor(minorId);
-        Optional<LegalGuardianGroup> current = groupRepository.findOne(
-                LegalGuardianGroupFilter.all().withMinorIs(minorId.toUserId()));
+        Optional<LegalGuardianGroup> current = findGroupOf(minorId);
         Optional<LegalGuardianGroup> target = findGroupWithGuardians(guardianIds);
 
         if (target.isPresent() && current.map(c -> c.getId().equals(target.get().getId())).orElse(false)) {
@@ -124,29 +125,49 @@ class LegalGuardianGroupService implements LegalGuardianGroupPort {
     @Transactional(readOnly = true)
     @Override
     public List<GuardianContact> listGuardians(LegalGuardianGroupId id) {
-        return guardianContactResolver.resolve(loadGroup(id).getGuardians());
+        return listGuardians(loadGroup(id));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<GuardianContact> listGuardians(LegalGuardianGroup group) {
+        return guardianContactResolver.resolve(group.getGuardians());
     }
 
     @Transactional(readOnly = true)
     @Override
     public Map<LegalGuardianGroupId, List<GuardianContact>> listGuardiansOf(Collection<LegalGuardianGroup> groups) {
-        Set<UserId> allGuardianIds = groups.stream()
-                .flatMap(group -> group.getGuardians().stream())
-                .collect(Collectors.toSet());
-        List<GuardianContact> resolved = guardianContactResolver.resolve(allGuardianIds);
-        return groups.stream().collect(Collectors.toMap(
-                LegalGuardianGroup::getId,
-                group -> resolved.stream()
-                        .filter(contact -> group.getGuardians().contains(contact.userId()))
-                        .toList()));
+        Map<UserId, List<LegalGuardianGroup>> groupsByGuardian = new HashMap<>();
+        Map<LegalGuardianGroupId, List<GuardianContact>> contactsByGroup = new HashMap<>();
+        for (LegalGuardianGroup group : groups) {
+            contactsByGroup.put(group.getId(), new ArrayList<>());
+            group.getGuardians().forEach(guardian ->
+                    groupsByGuardian.computeIfAbsent(guardian, key -> new ArrayList<>()).add(group));
+        }
+        for (GuardianContact contact : guardianContactResolver.resolve(groupsByGuardian.keySet())) {
+            groupsByGuardian.get(contact.userId()).forEach(group -> contactsByGroup.get(group.getId()).add(contact));
+        }
+        return contactsByGroup;
     }
 
     @Transactional(readOnly = true)
     @Override
     public Set<UserId> guardiansOf(MemberId minor) {
-        return groupRepository.findOne(LegalGuardianGroupFilter.all().withMinorIs(minor.toUserId()))
+        return findGroupOf(minor)
                 .map(LegalGuardianGroup::getGuardians)
                 .orElse(Set.of());
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Optional<LegalGuardianGroup> findGroupOf(MemberId minor) {
+        return groupRepository.findOne(LegalGuardianGroupFilter.all().withMinorIs(minor.toUserId()));
+    }
+
+    @Transactional
+    @Override
+    public void removeMinor(MemberId minor) {
+        leaveCurrentGroup(findGroupOf(minor), minor);
     }
 
     private void leaveCurrentGroup(Optional<LegalGuardianGroup> current, MemberId minorId) {

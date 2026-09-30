@@ -291,11 +291,21 @@ describe('MemberDetailPage', () => {
         expect(screen.queryByText('ZÁKONNÍ ZÁSTUPCI')).not.toBeInTheDocument();
     });
 
-    it('shows an empty legal guardians section for a minor without a group', () => {
-        const year = new Date().getFullYear() - 10;
-        renderPage(createMockPageData(mockMemberDetailData({dateOfBirth: `${year}-01-01`})));
+    it('shows an empty legal guardians section for a minor without a group (template offered by backend)', () => {
+        renderPage(createMockPageData(mockMemberDetailData({
+            _templates: {
+                setMemberLegalGuardians: mockHalFormsTemplate({method: 'PUT', target: '/api/members/1/legal-guardians'}),
+            },
+        })));
         expect(screen.getByText('ZÁKONNÍ ZÁSTUPCI')).toBeInTheDocument();
         expect(screen.getByText('Bez zákonného zástupce')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Upravit zástupce'})).toBeInTheDocument();
+    });
+
+    it('does not derive the guardians section from the date of birth', () => {
+        const year = new Date().getFullYear() - 10;
+        renderPage(createMockPageData(mockMemberDetailData({dateOfBirth: `${year}-01-01`})));
+        expect(screen.queryByText('ZÁKONNÍ ZÁSTUPCI')).not.toBeInTheDocument();
     });
 
     it('offers "Upravit zástupce" only with the setMemberLegalGuardians template', () => {

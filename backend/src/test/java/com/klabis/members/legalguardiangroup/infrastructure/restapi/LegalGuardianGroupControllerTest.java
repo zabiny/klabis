@@ -9,7 +9,9 @@ import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.legalguardiangroup.domain.OnlyMinorsAllowedException;
+import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
+import com.klabis.members.Members;
 import com.klabis.members.legalguardian.application.GuardianContact;
 import com.klabis.members.legalguardian.application.GuardianKind;
 import com.klabis.members.legalguardian.application.LegalGuardianPort.GuardianInput;
@@ -18,6 +20,7 @@ import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupWithoutGuardianException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,6 +32,7 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,6 +65,15 @@ class LegalGuardianGroupControllerTest {
 
     @MockitoBean
     private LegalGuardianGroupPort legalGuardianGroupService;
+
+    @MockitoBean
+    private Members members;
+
+    @BeforeEach
+    void stubMinorDetails() {
+        when(members.findByIds(anyCollection())).thenReturn(Map.of(new MemberId(UUID.fromString(MINOR_ID)),
+                new MemberDto(UUID.fromString(MINOR_ID), "Tomáš", "Novák", null, "ZBM1501", LocalDateTime.now())));
+    }
 
     private static LegalGuardianGroup groupOfMinor(UUID groupUuid, String name, String guardianId, String minorId) {
         return LegalGuardianGroup.reconstruct(new LegalGuardianGroupId(groupUuid), name,
@@ -115,6 +128,23 @@ class LegalGuardianGroupControllerTest {
     class GetGroup {
 
         @Test
+        @DisplayName("renders a minor whose member details are not found with null names")
+        @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ})
+        void rendersMinorWithoutDetails() throws Exception {
+            when(members.findByIds(anyCollection())).thenReturn(Map.of());
+            when(legalGuardianGroupService.getGroup(new LegalGuardianGroupId(GROUP_UUID)))
+                    .thenReturn(groupOfMinor(GROUP_UUID, "Novák", GUARDIAN_ID, MINOR_ID));
+
+            mockMvc.perform(get("/api/legal-guardian-groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.minors[0].memberId").value(MINOR_ID))
+                    .andExpect(jsonPath("$.minors[0].joinedAt").exists())
+                    .andExpect(jsonPath("$.minors[0].firstName").doesNotExist())
+                    .andExpect(jsonPath("$.minors[0].lastName").doesNotExist())
+                    .andExpect(jsonPath("$.minors[0].registrationNumber").doesNotExist());
+        }
+
+        @Test
         @DisplayName("returns minors with links to their members and a link to the guardians")
         @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE, Authority.MEMBERS_READ})
         void returnsGuardiansAndMinors() throws Exception {
@@ -129,6 +159,9 @@ class LegalGuardianGroupControllerTest {
                     .andExpect(jsonPath("$._links.legalGuardians.href")
                             .value(containsString("/api/legal-guardian-groups/" + GROUP_UUID + "/guardians")))
                     .andExpect(jsonPath("$.minors[0].memberId").value(MINOR_ID))
+                    .andExpect(jsonPath("$.minors[0].firstName").value("Tomáš"))
+                    .andExpect(jsonPath("$.minors[0].lastName").value("Novák"))
+                    .andExpect(jsonPath("$.minors[0].registrationNumber").value("ZBM1501"))
                     .andExpect(jsonPath("$.minors[0].joinedAt").exists())
                     .andExpect(jsonPath("$.minors[0]._links.member.href")
                             .value(containsString("/api/members/" + MINOR_ID)));
@@ -158,7 +191,7 @@ class LegalGuardianGroupControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.setLegalGuardianGroupGuardians.method").value("PUT"))
                     .andExpect(jsonPath("$._templates.setLegalGuardianGroupGuardians.target")
-                            .value(containsString("/api/legal-guardian-groups/" + GROUP_UUID + "/guardians")))
+                            .value(containsString("/api/legal-guardian-groups/" + GROUP_UUID + "/legal-guardians")))
                     .andExpect(jsonPath("$._templates.default").doesNotExist())
                     .andExpect(jsonPath("$._links.collection.href").exists())
                     .andExpect(jsonPath("$._links.self.href").exists());
@@ -192,7 +225,7 @@ class LegalGuardianGroupControllerTest {
     }
 
     @Nested
-    @DisplayName("PUT /api/legal-guardian-groups/{id}/guardians")
+    @DisplayName("PUT /api/legal-guardian-groups/{id}/legal-guardians")
     class SetGuardians {
 
         private static final String BODY = """
@@ -208,7 +241,7 @@ class LegalGuardianGroupControllerTest {
         @DisplayName("returns 204 and passes the guardians to the service")
         @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
         void setsGuardians() throws Exception {
-            mockMvc.perform(put("/api/legal-guardian-groups/{id}/guardians", GROUP_UUID)
+            mockMvc.perform(put("/api/legal-guardian-groups/{id}/legal-guardians", GROUP_UUID)
                             .contentType("application/json")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                             .content(BODY))
@@ -226,7 +259,7 @@ class LegalGuardianGroupControllerTest {
         @DisplayName("passes a new guardian given inline to the service")
         @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
         void setsNewGuardianInline() throws Exception {
-            mockMvc.perform(put("/api/legal-guardian-groups/{id}/guardians", GROUP_UUID)
+            mockMvc.perform(put("/api/legal-guardian-groups/{id}/legal-guardians", GROUP_UUID)
                             .contentType("application/json")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                             .content(NEW_GUARDIAN_BODY))
@@ -243,7 +276,7 @@ class LegalGuardianGroupControllerTest {
         @DisplayName("returns 400 for an empty list of guardians")
         @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
         void rejectsEmptyList() throws Exception {
-            mockMvc.perform(put("/api/legal-guardian-groups/{id}/guardians", GROUP_UUID)
+            mockMvc.perform(put("/api/legal-guardian-groups/{id}/legal-guardians", GROUP_UUID)
                             .contentType("application/json")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                             .content("""
@@ -259,7 +292,7 @@ class LegalGuardianGroupControllerTest {
             doThrow(new LegalGuardianGroupWithoutGuardianException())
                     .when(legalGuardianGroupService).changeGroupGuardians(any(LegalGuardianGroupId.class), anyList());
 
-            mockMvc.perform(put("/api/legal-guardian-groups/{id}/guardians", GROUP_UUID)
+            mockMvc.perform(put("/api/legal-guardian-groups/{id}/legal-guardians", GROUP_UUID)
                             .contentType("application/json")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                             .content(BODY))
@@ -270,7 +303,7 @@ class LegalGuardianGroupControllerTest {
         @DisplayName("returns 400 when a guardian has neither userId nor new guardian details")
         @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
         void rejectsGuardianWithoutUserId() throws Exception {
-            mockMvc.perform(put("/api/legal-guardian-groups/{id}/guardians", GROUP_UUID)
+            mockMvc.perform(put("/api/legal-guardian-groups/{id}/legal-guardians", GROUP_UUID)
                             .contentType("application/json")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                             .content("""
@@ -283,7 +316,7 @@ class LegalGuardianGroupControllerTest {
         @DisplayName("returns 403 without MEMBERS:MANAGE")
         @WithKlabisMockUser(memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ})
         void forbiddenWithoutManage() throws Exception {
-            mockMvc.perform(put("/api/legal-guardian-groups/{id}/guardians", GROUP_UUID)
+            mockMvc.perform(put("/api/legal-guardian-groups/{id}/legal-guardians", GROUP_UUID)
                             .contentType("application/json")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                             .content(BODY))
@@ -299,7 +332,7 @@ class LegalGuardianGroupControllerTest {
         private void stubGroupWithContacts() {
             when(legalGuardianGroupService.getGroup(any(LegalGuardianGroupId.class)))
                     .thenReturn(groupOfMinor(GROUP_UUID, "Novák", GUARDIAN_ID, MINOR_ID));
-            when(legalGuardianGroupService.listGuardians(new LegalGuardianGroupId(GROUP_UUID))).thenReturn(List.of(
+            when(legalGuardianGroupService.listGuardians(any(LegalGuardianGroup.class))).thenReturn(List.of(
                     new GuardianContact(new UserId(UUID.fromString(GUARDIAN_ID)), "Petr", "Novák",
                             "petr@example.com", "+420777111222", GuardianKind.MEMBER),
                     new GuardianContact(new UserId(UUID.fromString(OTHER_GUARDIAN_ID)), "Eva", "Nováková",
@@ -344,7 +377,7 @@ class LegalGuardianGroupControllerTest {
             mockMvc.perform(get("/api/legal-guardian-groups/{id}/guardians", GROUP_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
-            verify(legalGuardianGroupService, never()).listGuardians(any());
+            verify(legalGuardianGroupService, never()).listGuardians(any(LegalGuardianGroup.class));
         }
 
         @Test

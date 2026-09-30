@@ -145,6 +145,8 @@ paths:
     $ref: './members.yaml#/paths/~1api~1legal-guardian-groups~1{id}'
   /api/legal-guardian-groups/{id}/guardians:
     $ref: './members.yaml#/paths/~1api~1legal-guardian-groups~1{id}~1guardians'
+  /api/legal-guardian-groups/{id}/legal-guardians:
+    $ref: './members.yaml#/paths/~1api~1legal-guardian-groups~1{id}~1legal-guardians'
   /api/groups:
     $ref: './groups.yaml#/paths/~1api~1groups'
   /api/groups/{id}:

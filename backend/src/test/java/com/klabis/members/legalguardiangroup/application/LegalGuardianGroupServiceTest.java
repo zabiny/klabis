@@ -395,6 +395,42 @@ class LegalGuardianGroupServiceTest {
     }
 
     @Nested
+    @DisplayName("removeMinor()")
+    class RemoveMinor {
+
+        @Test
+        @DisplayName("removes the minor and keeps the group when siblings remain")
+        void keepsGroupWithSiblings() {
+            LegalGuardianGroup group = groupOf(Set.of(NOVAK), CHILD_A, CHILD_B);
+
+            service.removeMinor(CHILD_A);
+
+            assertThat(groups.findById(group.getId()).orElseThrow().getMinors())
+                    .extracting(m -> m.memberId()).containsExactly(CHILD_B);
+        }
+
+        @Test
+        @DisplayName("deletes the group when no minor remains")
+        void deletesEmptiedGroup() {
+            LegalGuardianGroup group = groupOf(Set.of(NOVAK), CHILD_A);
+
+            service.removeMinor(CHILD_A);
+
+            assertThat(groups.findById(group.getId())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("does nothing for a minor in no group")
+        void idempotent() {
+            LegalGuardianGroup other = groupOf(Set.of(NOVAK), CHILD_B);
+
+            service.removeMinor(CHILD_A);
+
+            assertThat(groups.findById(other.getId())).isPresent();
+        }
+    }
+
+    @Nested
     @DisplayName("getGroup() / listGroups()")
     class Queries {
 

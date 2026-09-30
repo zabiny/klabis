@@ -45,6 +45,9 @@ class MemberOrisImportControllerTest {
     private com.klabis.members.application.MemberCompletenessPort memberCompletenessPort;
 
     @MockitoBean
+    private com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort legalGuardianGroupPort;
+
+    @MockitoBean
     private ManagementPort managementService;
 
     @MockitoBean

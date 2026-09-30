@@ -53,7 +53,7 @@ public class ManagementService implements ManagementPort {
     @Override
     public Member updateMember(MemberId memberId, Member.UpdateMember command) {
         Member member = loadMember(memberId);
-        member.update(command, memberCompletenessPort.guardianContactsOf(memberId));
+        member.update(command, memberCompletenessPort.guardianContactsOf(member));
         Member saved = memberRepository.save(member);
         log.info("Member updated: memberId={}", memberId);
         return saved;

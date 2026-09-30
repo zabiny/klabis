@@ -18,8 +18,8 @@ describe('MembersPage — suspension warning dialog (task 6.7)', () => {
 
     it('suspension warning dialog shows affected group names', async () => {
         const error409 = buildSuspendWarning409([
-            {groupId: 'g-1', groupName: 'Trail Runners', groupType: 'FreeGroup'},
-            {groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'FamilyGroup'},
+            {groupId: 'g-1', groupName: 'Trail Runners', groupType: 'FREE'},
+            {groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'LEGAL_GUARDIAN'},
         ]);
 
         // Verify FetchError builds correctly — the dialog is rendered conditionally on this error structure

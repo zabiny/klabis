@@ -63,12 +63,6 @@ export interface HalFormDisplayProps {
      * Defaults to true for backward compatibility.
      */
     navigateOnSuccess?: boolean;
-    /**
-     * When false, `resourceData` is used as the form data even if the template target supports GET.
-     * For targets whose GET response has a different shape than the submitted payload.
-     * Defaults to true.
-     */
-    prefillFromTarget?: boolean;
 }
 
 
@@ -93,7 +87,6 @@ export const HalFormDisplay = ({
                                    includeOnlyMemberIds,
                                    resourceUrl,
                                    navigateOnSuccess = true,
-                                   prefillFromTarget = true,
                                }: HalFormDisplayProps): ReactElement => {
     const {route} = useHalPageData();
 
@@ -117,8 +110,7 @@ export const HalFormDisplay = ({
     const {formData, isLoadingTargetData, targetFetchError, refetchTargetData} = useHalFormData(
         template,
         resourceData,
-        pathname,
-        prefillFromTarget
+        pathname
     );
 
     const handleSubmit = async (data: Record<string, unknown>) => {

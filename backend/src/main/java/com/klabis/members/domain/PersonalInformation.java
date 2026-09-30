@@ -21,6 +21,8 @@ import java.util.Objects;
 @ValueObject
 public final class PersonalInformation {
 
+    public static final int ADULT_AGE = 18;
+
     private final PersonName name;
     private final LocalDate dateOfBirth;
     private final Nationality nationality;
@@ -92,7 +94,7 @@ public final class PersonalInformation {
      * @return age in years
      */
     public int getAge() {
-        return Period.between(dateOfBirth, LocalDate.now()).getYears();
+        return ageOn(dateOfBirth, LocalDate.now());
     }
 
     /**
@@ -101,7 +103,15 @@ public final class PersonalInformation {
      * @return true if member is under 18, false otherwise
      */
     public boolean isMinor() {
-        return getAge() < 18;
+        return isMinor(dateOfBirth);
+    }
+
+    public static boolean isMinor(LocalDate dateOfBirth) {
+        return ageOn(dateOfBirth, LocalDate.now()) < ADULT_AGE;
+    }
+
+    private static int ageOn(LocalDate dateOfBirth, LocalDate day) {
+        return Period.between(dateOfBirth, day).getYears();
     }
 
     // Getters
