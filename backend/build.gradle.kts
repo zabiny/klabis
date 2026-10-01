@@ -10,7 +10,7 @@ buildscript {
 
 plugins {
     java
-    id("org.springframework.boot") version "4.0.5"
+    id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
     id("net.bytebuddy.byte-buddy-gradle-plugin") version "1.18.4"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
@@ -49,14 +49,14 @@ repositories {
 val mapstructVersion = "1.6.3"
 val mapstructSpringExtensionsVersion = "2.0.0"
 val testcontainersVersion = "1.19.3"
-val springModulithVersion = "2.0.0"
+val springModulithVersion = "2.1.1"
 val h2Version = "2.5.250"
 
 extra["h2.version"] = h2Version
 
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.1.1")
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.1.3")
         mavenBom("org.jmolecules:jmolecules-bom:2025.0.2")
     }
 }
@@ -120,7 +120,7 @@ dependencies {
     implementation("com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5")
 
     // SpringDoc OpenAPI (Swagger)
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
 
     // Spring Cloud Resilience4j for rate limiting
     implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j")
