@@ -1,3 +1,6 @@
 # Test auto-configurations
 org.springframework.boot.test.context.SpringBootTestContextBootstrapper=\
 com.klabis.TestApplicationConfiguration
+
+org.springframework.test.context.TestExecutionListener=\
+com.klabis.common.ui.HalFormsSupportInstanceTestExecutionListener

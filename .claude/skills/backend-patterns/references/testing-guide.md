@@ -314,9 +314,11 @@ Use `@CleanupTestData` on E2E tests — tests share a single H2 instance.
 | Problem | Solution |
 |---------|----------|
 | `@WebMvcTest` fails with `UnsatisfiedDependencyException` | Missing `@WithPostprocessors`, or a postprocessor dependency not yet listed in it |
+| Asserting published domain events | `@RecordApplicationEvents` + `ApplicationEvents`, not a custom `@EventListener` bean (`@Import` on the class splits the context cache key) |
 | Domain events not fired in E2E test | Add `SyncTaskExecutor` `@TestConfiguration` |
 | `@DataJdbcTest` doesn't find custom repos | Add `includeFilters = @Filter(type = ANNOTATION, value = Repository.class)` |
 | Tests interfere with each other in H2 | Use `@CleanupTestData` or `@Sql(statements = "DELETE FROM ...")` |
 | `EntityLinks` not available in `@WebMvcTest` | Provide `@TestBean EntityLinks` via `HateoasTestingSupport.createModuleEntityLinks()` |
 | Duplicate-mock error on context bootstrap | Type already mocked by `@WithPostprocessors` — use `@Autowired` |
 | `@WithMockUser` causes ClassCastException | Replace with `@WithKlabisMockUser` |
+| Link authorization (`klabisLinkTo`/`klabisAfford`) depends on test order | The static `HalFormsSupport` instance is bound per test method by `HalFormsSupportInstanceTestExecutionListener` (`spring.factories`) and is `null` outside it — plain unit tests and `@BeforeAll` code get unfiltered links; a class declaring `@TestExecutionListeners` must use `MERGE` |
