@@ -90,7 +90,6 @@ dependencies {
     runtimeOnly("com.h2database:h2")
 
     // Flyway for database migrations
-    runtimeOnly("javax.xml.bind:jaxb-api:2.3.1")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
 
     // Lombok (annotation processor - must be before MapStruct)
@@ -154,7 +153,6 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-starter-security-test")
-    testImplementation("io.rest-assured:rest-assured:5.5.0")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5")
