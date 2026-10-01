@@ -116,7 +116,7 @@ dependencies {
     annotationProcessor("io.soabase.record-builder:record-builder-processor:53")
 
     // Jasypt for encryption (GDPR - rodne cislo)
-    implementation("com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5")
+    implementation("com.github.ulisesbocchio:jasypt-spring-boot-starter:4.0.4")
 
     // SpringDoc OpenAPI (Swagger)
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
