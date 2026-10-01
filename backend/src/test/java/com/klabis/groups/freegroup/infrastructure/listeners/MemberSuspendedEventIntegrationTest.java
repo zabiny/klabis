@@ -1,6 +1,7 @@
 package com.klabis.groups.freegroup.infrastructure.listeners;
 
 import com.klabis.CleanupTestData;
+import com.klabis.KlabisModuleTest;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.FreeGroupFilter;
 import com.klabis.groups.freegroup.domain.FreeGroupRepository;
@@ -14,9 +15,7 @@ import com.klabis.members.domain.RegistrationNumber;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.Instant;
@@ -24,8 +23,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
-@ActiveProfiles("test")
+@KlabisModuleTest
 @CleanupTestData
 @DisplayName("MemberSuspendedEvent integration — pending free-group invitation cancellation")
 class MemberSuspendedEventIntegrationTest {

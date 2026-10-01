@@ -1,6 +1,7 @@
 package com.klabis.sync.application;
 
 import com.klabis.CleanupTestData;
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.domain.*;
 import com.klabis.sync.fixtures.FixedClockTestSupport;
@@ -15,8 +16,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.convention.TestBean;
 
 import java.time.Clock;
@@ -34,8 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * stop the scan on an open circuit breaker, leaving the rest untouched (design.md
  * D11).
  */
-@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
-@ActiveProfiles("test")
+@KlabisModuleTest
 @CleanupTestData
 @Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
 @DisplayName("SyncScheduler")

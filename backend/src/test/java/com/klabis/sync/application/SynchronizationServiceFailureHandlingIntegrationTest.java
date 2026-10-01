@@ -1,6 +1,7 @@
 package com.klabis.sync.application;
 
 import com.klabis.CleanupTestData;
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.*;
@@ -14,8 +15,6 @@ import org.junit.jupiter.api.Test;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
 
@@ -27,8 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 4.9), driven entirely through {@link TestSynchronizationAdapter} — no ORIS
  * involvement (design.md Migration Plan, step 1).
  */
-@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
-@ActiveProfiles("test")
+@KlabisModuleTest
 @CleanupTestData
 @Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
 @DisplayName("Synchronisation engine: retry, terminal failure, outage and claim handling")

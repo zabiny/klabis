@@ -1,5 +1,6 @@
 package com.klabis.testdomain;
 
+import com.klabis.KlabisModuleTest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,7 +14,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.UUID;
@@ -49,9 +49,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see ApplicationModuleTest
  */
 @Slf4j
-@ApplicationModuleTest(verifyAutomatically = false, module = "common")
+@KlabisModuleTest(module = "common")
 @ComponentScan(basePackageClasses = OrderCreatedEventHandler.class)
-@ActiveProfiles("test")
 @MockitoBean(types = UserDetailsService.class)
 @DisplayName("Framework: Event Lifecycle Logging")
 @ExtendWith(OutputCaptureExtension.class)

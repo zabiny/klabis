@@ -1,6 +1,7 @@
 package com.klabis.sync.application;
 
 import com.klabis.CleanupTestData;
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.*;
@@ -15,8 +16,6 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.time.Duration;
@@ -39,8 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  * concurrent {@code markDirty} the way it structurally could before scheduling moved
  * off {@code sync_record}.
  */
-@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
-@ActiveProfiles("test")
+@KlabisModuleTest
 @CleanupTestData
 @Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
 class SynchronizationServiceTransactionBoundaryIntegrationTest {

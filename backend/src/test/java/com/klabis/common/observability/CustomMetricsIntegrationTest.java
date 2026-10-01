@@ -1,5 +1,6 @@
 package com.klabis.common.observability;
 
+import com.klabis.KlabisModuleTest;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
@@ -13,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ExitCodeEvent;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.modulith.events.ApplicationModuleListener;
-import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -43,7 +43,7 @@ import static org.awaitility.Awaitility.await;
  * @see MeterRegistry
  */
 @DisplayName("Framework: Spring Modulith Custom Metrics")
-@ApplicationModuleTest(verifyAutomatically = false)
+@KlabisModuleTest
 @ActiveProfiles({"metrics", "test"})
 class CustomMetricsIntegrationTest {
 

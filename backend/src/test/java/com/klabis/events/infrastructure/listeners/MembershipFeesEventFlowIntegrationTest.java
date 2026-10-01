@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.listeners;
 
 import com.klabis.CleanupTestData;
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.events.domain.MemberRegistrationBlockRepository;
@@ -17,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.UUID;
@@ -33,8 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>{@link MemberFeeSelectionResolvedEvent} → member registration block gets lifted</li>
  * </ul>
  */
-@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES, extraIncludes = {"membershipfees", "sync"})
-@ActiveProfiles("test")
+@KlabisModuleTest(mode = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES, extraIncludes = {"membershipfees", "sync"})
 @CleanupTestData
 @Import(TestApplicationConfiguration.class)
 @DisplayName("membership-fees → events cross-module event flow")

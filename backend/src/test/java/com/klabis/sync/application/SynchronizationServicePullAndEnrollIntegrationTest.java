@@ -1,6 +1,7 @@
 package com.klabis.sync.application;
 
 import com.klabis.CleanupTestData;
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.domain.*;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
@@ -13,8 +14,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -25,8 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * runs the initial pass, all driven through {@link TestSynchronizationAdapter}, no
  * ORIS involvement (Migration Plan step 1).
  */
-@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
-@ActiveProfiles("test")
+@KlabisModuleTest
 @CleanupTestData
 @Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
 @DisplayName("pullAndEnroll: bringing in a record Klabis does not have")

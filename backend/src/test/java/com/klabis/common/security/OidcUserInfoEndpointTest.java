@@ -1,6 +1,7 @@
 package com.klabis.common.security;
 
 import com.klabis.CleanupTestData;
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.bootstrap.BootstrapDataLoader;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,11 +14,9 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -44,10 +43,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>Tokens without openid scope are rejected</li>
  * </ul>
  */
-@ApplicationModuleTest(verifyAutomatically = false, extraIncludes = "members")   // Need members module to load member details for user info endpoint
+@KlabisModuleTest(extraIncludes = "members")   // Need members module to load member details for user info endpoint
 @AutoConfigureMockMvc
 @Import(TestApplicationConfiguration.class)
-@ActiveProfiles("test")
 @TestPropertySource(properties = {
         "klabis.bootstrap.admin.username=" + OidcUserInfoEndpointTest.ADMIN_USERNAME,
         "klabis.bootstrap.admin.password=" + OidcUserInfoEndpointTest.ADMIN_PASSWORD,

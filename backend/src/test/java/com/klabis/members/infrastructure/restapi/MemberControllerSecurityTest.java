@@ -1,5 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.SecurityTestBase;
 import com.klabis.common.WithKlabisMockUser;
@@ -19,7 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("Member Controller Security Tests")
-@ApplicationModuleTest(verifyAutomatically = false, mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES)
+@KlabisModuleTest(mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES)
 // need users for Security configuration, common for EmailService
 @Import(TestApplicationConfiguration.class)
 class MemberControllerSecurityTest extends SecurityTestBase {

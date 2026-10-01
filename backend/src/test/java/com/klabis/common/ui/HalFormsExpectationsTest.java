@@ -1,5 +1,6 @@
 package com.klabis.common.ui;
 
+import com.klabis.KlabisModuleTest;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
 import org.junit.jupiter.api.DisplayName;
@@ -13,9 +14,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
-import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.stereotype.Component;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,9 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ApplicationModuleTest(verifyAutomatically = false)
+@KlabisModuleTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
 @Import(CommonUiExampleControllers.class)
 class HalFormsExpectationsTest {
 

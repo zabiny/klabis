@@ -1,6 +1,7 @@
 package com.klabis.sync.application;
 
 import com.klabis.CleanupTestData;
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.domain.*;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
@@ -11,8 +12,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -26,8 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link SynchronizationPort#markDirty} (task 8.2, design.md D9): a consuming module
  * marks a record due after observing a local change, without running a pass inline.
  */
-@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
-@ActiveProfiles("test")
+@KlabisModuleTest
 @CleanupTestData
 @Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
 @DisplayName("SynchronizationPort#markDirty")
