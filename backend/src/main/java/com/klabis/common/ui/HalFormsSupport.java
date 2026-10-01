@@ -70,6 +70,14 @@ public class HalFormsSupport {
         }
     }
 
+    /**
+     * Test hook: several cached test contexts share one JVM, so the instance registered last by
+     * {@link #init()} does not have to belong to the context the current test runs against.
+     */
+    static void useInstance(HalFormsSupport instance) {
+        INSTANCE = instance;
+    }
+
     public static Optional<WebMvcLinkBuilder> klabisLinkTo(Object invocation) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
