@@ -129,7 +129,7 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine")
 
     // Apache Commons Validator for IBAN validation
-    implementation("commons-validator:commons-validator:1.7")
+    implementation("commons-validator:commons-validator:1.11.0")
 
     // Apache Commons CSV for accommodation list CSV export
     implementation("org.apache.commons:commons-csv:1.14.1")
