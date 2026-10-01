@@ -8,15 +8,14 @@ import org.springframework.core.convert.converter.Converter;
 @Configuration
 public class EncryptionConfiguration {
 
-    @Value("${jasypt.encryptor.password}")
+    @Value("${klabis.encryption.password}")
     private String encryptionPassword;
-    @Value("${jasypt.encryptor.algorithm:PBEWithHmacSHA512AndAES_256}")
-    private String algorithm;
-
+    @Value("${klabis.encryption.salt}")
+    private String encryptionSalt;
 
     @Bean
     public EncryptionService sharedEncryptionService() {
-        return new SharedEncryptionService(encryptionPassword, algorithm);
+        return new SharedEncryptionService(encryptionPassword, encryptionSalt);
     }
 
     @Bean

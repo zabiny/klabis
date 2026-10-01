@@ -133,7 +133,7 @@ COMMENT ON COLUMN members.members.referee_license_level IS 'Referee license leve
 COMMENT ON COLUMN members.members.referee_license_validity_date IS 'Referee license validity expiration date (nullable)';
 COMMENT ON COLUMN members.members.driving_license_group IS 'Driving license group/category (nullable, max 10 characters, e.g., BE, C1, C1E)';
 COMMENT ON COLUMN members.members.dietary_restrictions IS 'Dietary restrictions or food allergies (nullable, max 500 characters)';
-COMMENT ON COLUMN members.members.birth_number IS 'Czech birth number (rodné číslo), encrypted with Jasypt, format RRMMDD/XXXX (nullable, only for Czech nationals)';
+COMMENT ON COLUMN members.members.birth_number IS 'Czech birth number (rodné číslo), encrypted with AES-256-GCM, format RRMMDD/XXXX (nullable, only for Czech nationals)';
 COMMENT ON COLUMN members.members.bank_account_number IS 'Bank account number in IBAN or domestic Czech format for expense reimbursement (nullable)';
 
 -- ============================================================================

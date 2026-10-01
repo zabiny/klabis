@@ -26,7 +26,8 @@ Backend REST API for orienteering club management system with HATEOAS hypermedia
 export KLABIS_ADMIN_USERNAME='admin'
 export KLABIS_ADMIN_PASSWORD='admin123'
 export KLABIS_OAUTH2_CLIENT_SECRET='test-secret-123'
-export KLABIS_JASYPT_PASSWORD='test-key-123'
+export KLABIS_ENCRYPTION_PASSWORD='test-key-123'
+export KLABIS_ENCRYPTION_SALT='5c0744940b5c369b'
 
 # 3. Run the application
 ./gradlew bootRun
@@ -75,7 +76,8 @@ cp .env.example .env
 
 ```bash
 # Encryption (REQUIRED for GDPR fields)
-KLABIS_JASYPT_PASSWORD=your_secret_key_min_32_chars
+KLABIS_ENCRYPTION_PASSWORD=your_secret_key_min_32_chars
+KLABIS_ENCRYPTION_SALT=hex_string_e_g_openssl_rand_hex_16
 
 # Bootstrap Admin User
 KLABIS_ADMIN_USERNAME=admin

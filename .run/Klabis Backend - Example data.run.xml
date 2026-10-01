@@ -9,7 +9,8 @@
       </param>
     </additionalParameters>
     <envs>
-      <env name="KLABIS_JASYPT_PASSWORD" value="encryptpass" />
+      <env name="KLABIS_ENCRYPTION_PASSWORD" value="encryptpass" />
+      <env name="KLABIS_ENCRYPTION_SALT" value="5c0744940b5c369b" />
       <env name="KLABIS_ADMIN_PASSWORD" value="admin123" />
       <env name="KLABIS_OAUTH2_CLIENT_SECRET" value="test-secret-123" />
       <env name="KLABIS_SMTP_HOST" value="localhost" />

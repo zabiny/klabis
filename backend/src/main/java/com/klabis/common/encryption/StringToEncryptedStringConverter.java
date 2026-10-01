@@ -5,7 +5,7 @@ import org.springframework.data.convert.ReadingConverter;
 
 /**
  * Spring Data JDBC ReadingConverter for decrypting sensitive string data
- * from database using Jasypt encryption.
+ * from database using AES-GCM encryption.
  * <p>
  * Converts encrypted {@link String} from database to {@link EncryptedString} domain type.
  * <p>

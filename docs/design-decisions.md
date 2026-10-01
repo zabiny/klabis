@@ -277,3 +277,21 @@ Guardianship is a relation to the child; grouping by the exact guardian set shar
 - `data_incomplete` is not recomputed when guardians or their contacts change (except when a minor turns 18), an accepted staleness.
 
 **References:** OpenSpec change `legal-guardians-via-groups` (`design.md` D1, D2, D4, D5), ADR-001.
+
+
+---
+
+## ADR-009: GDPR field encryption uses Spring Security `AesGcmBytesEncryptor` (AES-256-GCM)
+
+**Status:** Accepted
+
+**Context:** Sensitive fields (birth number, bank account) are encrypted at rest through `EncryptionService`. The previous implementation used `jasypt-spring-boot-starter` with password-based CBC encryption (no authentication of ciphertext).
+
+**Decision:** `SharedEncryptionService` wraps `AesGcmBytesEncryptor.withPassword(password, salt)` from Spring Security Crypto, configured by `klabis.encryption.password` and `klabis.encryption.salt` (hex; env `KLABIS_ENCRYPTION_PASSWORD`, `KLABIS_ENCRYPTION_SALT`). Output is hex. Encryption stays non-deterministic (random IV); lookups use separate hash columns.
+
+**Rationale:** GCM is authenticated encryption, so tampered ciphertext fails to decrypt. Spring Security Crypto is already on the classpath, which removes the jasypt dependency.
+
+**Consequences:**
+
+- Losing the password or salt makes stored values unreadable; both must be backed up.
+- Ciphertext format differs from the jasypt one; there was no production data, so no migration exists.

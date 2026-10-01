@@ -5,7 +5,7 @@ import org.springframework.data.convert.WritingConverter;
 
 /**
  * Spring Data JDBC Converter for encrypting sensitive string data
- * using Jasypt encryption.
+ * using AES-GCM encryption.
  * <p>
  * This converter ensures that sensitive data is encrypted at rest in the database
  * while maintaining transparent encryption/decryption for the application.

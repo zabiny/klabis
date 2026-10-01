@@ -136,12 +136,12 @@ public void on(MemberCreatedEvent event) { … }</code></pre>
     <a class="ext" href="https://mapstruct.org/documentation/stable/reference/html/" target="_blank" rel="noopener">MapStruct docs</a>
 </p>
 
-<h2>Resilience4j, Jasypt, Flyway</h2>
+<h2>Resilience4j, Spring Security Crypto, Flyway</h2>
 <dl class="api-list">
     <dt>Resilience4j</dt>
     <dd>Knihovna pro fault tolerance — Klabis ji používá pro per-key rate limiting (viz kap. 09). <a class="ext" href="https://resilience4j.readme.io/" target="_blank" rel="noopener">docs</a></dd>
-    <dt>Jasypt</dt>
-    <dd>Šifrování řetězců (PBE) — používá se pro GDPR-citlivá pole (viz <code>EncryptedString</code> v kap. 02). <a class="ext" href="http://www.jasypt.org/" target="_blank" rel="noopener">docs</a></dd>
+    <dt>Spring Security Crypto</dt>
+    <dd>Šifrování řetězců (<code>AesGcmBytesEncryptor</code>, AES-256-GCM) — používá se pro GDPR-citlivá pole (viz <code>EncryptedString</code> v kap. 02). <a class="ext" href="https://docs.spring.io/spring-security/reference/features/integrations/cryptography.html" target="_blank" rel="noopener">docs</a></dd>
     <dt>Flyway</dt>
     <dd>SQL migrace s verzí. Klabis má jen 3 baseline skripty (V001 doménové tabulky, V002 OAuth2, V003 Modulith). Změny schématu se zapisují přímo do existujících scriptů (DB se v devu resetuje). <a class="ext" href="https://documentation.red-gate.com/flyway" target="_blank" rel="noopener">docs</a></dd>
 </dl>

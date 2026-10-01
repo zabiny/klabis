@@ -115,9 +115,6 @@ dependencies {
     compileOnly("io.soabase.record-builder:record-builder-core:44")
     annotationProcessor("io.soabase.record-builder:record-builder-processor:53")
 
-    // Jasypt for encryption (GDPR - rodne cislo)
-    implementation("com.github.ulisesbocchio:jasypt-spring-boot-starter:4.0.4")
-
     // SpringDoc OpenAPI (Swagger)
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1")
 
@@ -222,7 +219,7 @@ openApi {
     outputFileName.set("klabis-codefirst.json")
     waitTimeInSeconds.set(30)
     customBootRun {
-        args.set(listOf("--server.ssl.enabled=false", "--server.port=8080", "--jasypt.encryptor.password=something"))
+        args.set(listOf("--server.ssl.enabled=false", "--server.port=8080", "--klabis.encryption.password=something", "--klabis.encryption.salt=5c0744940b5c369b"))
     }
 }
 

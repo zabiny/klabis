@@ -70,7 +70,8 @@ Spustí Spring Boot aplikaci v **dev** profilu (H2 database):
 - **Active profiles**: `dev`
 - **Environment variables**:
   - `KLABIS_CLUB_CODE=ZBM`
-  - `KLABIS_JASYPT_PASSWORD=dev-secret`
+  - `KLABIS_ENCRYPTION_PASSWORD=dev-secret`
+  - `KLABIS_ENCRYPTION_SALT=5c0744940b5c369b`
 
 **Spuštění**: Toolbar → vyberte "KlabisBackendApplication" → Run (▶️)
 
