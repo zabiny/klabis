@@ -11,5 +11,5 @@
 
 ## 3. Dokončení
 
-- [ ] 3.1 Test-runner: backend members modul a frontend, `npm run build`
-- [ ] 3.2 QA přes Playwright: ZBM9000 upraví nezletilého, nezletilý s aktivním účtem „Upravit“ nevidí a PATCH dostane 403
+- [x] 3.1 Test-runner: backend members modul a frontend, `npm run build`
+- [x] 3.2 QA přes Playwright: ZBM9000 upraví nezletilého, nezletilý s aktivním účtem „Upravit“ nevidí a PATCH dostane 403
