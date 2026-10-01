@@ -24,6 +24,7 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -281,6 +282,10 @@ class GroupsRootPostprocessor implements RepresentationModelProcessor<EntityMode
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!(auth instanceof KlabisJwtAuthenticationToken token) || !token.hasMemberProfile()) {
+            return model;
+        }
         klabisLinkTo(methodOn(GroupsApi.class).listGroups(null))
                 .ifPresent(link -> model.add(link.withRel("groups")));
         return model;

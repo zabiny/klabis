@@ -40,7 +40,7 @@ class LegalGuardianService implements LegalGuardianPort {
         requireEmailNotInUse(email, null);
 
         String loginName = loginNumberSequence.next();
-        UserId userId = userService.createUser(loginName, Set.of(Authority.MEMBERS_READ));
+        UserId userId = userService.createUser(loginName, Authority.getStandardUserAuthorities());
 
         LegalGuardian guardian = legalGuardianRepository.save(LegalGuardian.create(
                 new LegalGuardian.CreateLegalGuardian(userId, command.firstName(), command.lastName(),

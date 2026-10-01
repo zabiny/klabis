@@ -334,6 +334,23 @@ class PasswordSetupControllerTest {
         }
 
         @Test
+        @DisplayName("should return the same neutral response when the service rejects the request")
+        void shouldReturnNeutralResponseWhenServiceRejectsRequest() throws Exception {
+            TokenRequestRequest request = TokenRequestRequestBuilder.builder()
+                    .registrationNumber("ZBM0101")
+                    .email("test@example.com")
+                    .build();
+            doThrow(new TokenValidationException("Account is not in pending activation status"))
+                    .when(passwordSetupServiceMock).requestNewToken("ZBM0101", "test@example.com");
+
+            mockMvc.perform(post("/api/auth/password-setup/request")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.message").value("If your account is pending activation, you will receive an email with a new setup link."));
+        }
+
+        @Test
         @DisplayName("should reject request with blank registration number")
         void shouldRejectRequestWithBlankRegistrationNumber() throws Exception {
             // Given

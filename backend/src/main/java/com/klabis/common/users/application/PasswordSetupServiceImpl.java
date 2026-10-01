@@ -186,7 +186,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
         if (!isActivationContact) {
             // Neutral outcome by design (D1): never reveal whether the address matched,
             // so the form cannot be used to enumerate members' e-mail addresses.
-            log.info("Password setup token reissue requested for user {} with an e-mail that is not an activation contact", user.getId());
+            log.warn("Activation e-mail not sent for user {} ({}): the entered e-mail is not an activation contact of this account (e-mail mismatch, or the account holder cannot self-activate, e.g. a minor)", user.getId(), registrationNumber);
             return;
         }
 
