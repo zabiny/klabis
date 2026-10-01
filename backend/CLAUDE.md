@@ -165,8 +165,8 @@ Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics,pwa` (d
 ## Key Technologies
 
 - **Java 21+**
-- **Spring Boot 4.0.5**
-- **Spring Modulith 2.0.0** - Event-driven modular application using hexagonal architecture
+- **Spring Boot 4.1.1**
+- **Spring Modulith 2.1.1** - Event-driven modular application using hexagonal architecture
 - **Spring Security 7** - OAuth2 Authorization Server + Resource Server
 - **Spring Data JDBC** - Lightweight JDBC-based persistence
 - **Spring HATEOAS** - HAL+FORMS hypermedia
