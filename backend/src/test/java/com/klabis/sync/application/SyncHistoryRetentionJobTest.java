@@ -5,7 +5,9 @@ import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.*;
 import com.klabis.sync.fixtures.FixedClockTestSupport;
+import com.klabis.sync.fixtures.MutableClock;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,16 +41,11 @@ class SyncHistoryRetentionJobTest {
      * Replaces the production {@code java.time.Clock} bean (the one
      * {@link SyncHistoryRetentionJob} reads its cut-off from) with a fixed clock at
      * {@link FixedClockTestSupport#FIXED_NOW}, so the appended attempt rows below age
-     * relative to a known instant rather than the wall clock. The field is unused —
-     * only the bean replacement matters — but {@code enforceOverride} keeps it honest.
+     * relative to a known instant rather than the wall clock. {@code enforceOverride} makes a
+     * missing production bean a hard failure.
      */
-    @SuppressWarnings("unused") // only the bean replacement matters; the field is never read
-    @TestBean(enforceOverride = true)
+    @TestBean(methodName = "com.klabis.sync.fixtures.FixedClockTestSupport#fixedClock", enforceOverride = true)
     private Clock clock;
-
-    static Clock clock() {
-        return FixedClockTestSupport.fixedClock();
-    }
 
     @Autowired
     private SyncHistoryRetentionJob job;
@@ -61,6 +58,15 @@ class SyncHistoryRetentionJobTest {
 
     @Autowired
     private SyncProjectionHasher hasher;
+
+    /**
+     * The clock is shared with {@code SyncSchedulerTest} through the cached context, which
+     * advances it — pin it back so the cut-off is computed from {@link #NOW}.
+     */
+    @BeforeEach
+    void resetClock() {
+        ((MutableClock) clock).setInstant(NOW);
+    }
 
     @Test
     @DisplayName("removes only expired attempt rows, leaves sync_record and its last-success info intact")

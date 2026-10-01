@@ -13,9 +13,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.convention.TestBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.UUID;
 
@@ -53,6 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ApplicationModuleTest(verifyAutomatically = false, module = "common")
 @ComponentScan(basePackageClasses = OrderCreatedEventHandler.class)
 @ActiveProfiles("test")
+@MockitoBean(types = UserDetailsService.class)
 @DisplayName("Framework: Event Lifecycle Logging")
 @ExtendWith(OutputCaptureExtension.class)
 class EventLoggingTests {
@@ -68,13 +68,6 @@ class EventLoggingTests {
 
     @Autowired
     private TestProcessedPaymentEventRepository processedEventRepository;
-
-    @TestBean
-    public UserDetailsService userDetailsService;
-
-    static UserDetailsService userDetailsService() {
-        return new InMemoryUserDetailsManager();
-    }
 
     @BeforeEach
     void setUp() {

@@ -10,6 +10,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.EnableScenarios;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.test.context.ActiveProfiles;
@@ -33,8 +35,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * User extends {@link org.springframework.data.domain.AbstractAggregateRoot} which handles event registration
  * and Spring Data JDBC publishes them to the outbox automatically.
  */
-@SpringBootTest(classes = {TestApplicationConfiguration.class})
+@SpringBootTest
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(TestApplicationConfiguration.class)
 @EnableScenarios
 @DisplayName("Domain Event Publishing Integration Test")
 class EventPublishingIntegrationTest {

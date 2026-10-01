@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ApplicationModuleTest(verifyAutomatically = false)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import({OptionsDefExampleController.class})
+@Import(CommonUiExampleControllers.class)
 class HalFormsSupportOptionsDefTest {
 
     @Autowired

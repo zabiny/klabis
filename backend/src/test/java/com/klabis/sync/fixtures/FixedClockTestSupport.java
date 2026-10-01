@@ -10,8 +10,8 @@ import java.time.ZoneId;
  * Not a Spring configuration: the two tests that need it replace the production
  * {@code java.time.Clock} bean with {@link #fixedClock()} via {@code @TestBean}
  * (Spring bean-override, type-deterministic, no
- * {@code spring.main.allow-bean-definition-overriding}). This class only removes the
- * copy-pasted constant and factory body from those tests.
+ * {@code spring.main.allow-bean-definition-overriding}). Both point {@code @TestBean(methodName)} at
+ * this one factory so their override is equal and they share a cached Spring context.
  */
 public final class FixedClockTestSupport {
 

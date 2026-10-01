@@ -66,12 +66,8 @@ class SyncSchedulerTest {
      * {@link #mutableClock()} narrows it back for the {@code advanceBy} / {@code setInstant}
      * calls. {@code enforceOverride} makes a missing production bean a hard failure.
      */
-    @TestBean(enforceOverride = true)
+    @TestBean(methodName = "com.klabis.sync.fixtures.FixedClockTestSupport#fixedClock", enforceOverride = true)
     private Clock clock;
-
-    static Clock clock() {
-        return FixedClockTestSupport.fixedClock();
-    }
 
     private MutableClock mutableClock() {
         return (MutableClock) clock;

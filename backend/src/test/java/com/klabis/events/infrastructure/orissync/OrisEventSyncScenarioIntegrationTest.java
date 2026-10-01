@@ -52,6 +52,7 @@ import static org.mockito.Mockito.when;
  */
 @SpringBootTest
 @ActiveProfiles({"test", "oris"})
+@MockitoBean(types = {OrisApiClient.class, OrisWebUrls.class})
 @Import(TestApplicationConfiguration.class)
 @CleanupTestData
 @DisplayName("Events on the sync engine — end-to-end scenarios")
@@ -69,10 +70,10 @@ class OrisEventSyncScenarioIntegrationTest {
     @Autowired
     private OrisBulkSyncPort orisBulkSyncPort;
 
-    @MockitoBean
+    @Autowired
     private OrisApiClient orisApiClient;
 
-    @MockitoBean
+    @Autowired
     private OrisWebUrls orisWebUrls;
 
     private static final AtomicInteger ORIS_ID_SEQUENCE = new AtomicInteger(655_000);

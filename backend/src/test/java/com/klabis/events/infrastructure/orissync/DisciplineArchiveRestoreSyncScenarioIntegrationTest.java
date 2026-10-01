@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.orissync;
 
 import com.dpolach.api.orisclient.OrisApiClient;
+import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.lov.DisciplineListEntry;
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
@@ -48,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest
 @ActiveProfiles({"test", "oris"})
+@MockitoBean(types = {OrisApiClient.class, OrisWebUrls.class})
 @Import(TestApplicationConfiguration.class)
 @CleanupTestData
 @DisplayName("Disciplines archiving/restoring on the sync engine — end-to-end scenarios (specs/disciplines)")
@@ -68,7 +70,7 @@ class DisciplineArchiveRestoreSyncScenarioIntegrationTest {
     @Autowired
     private EventTypeManagementPort eventTypeManagementPort;
 
-    @MockitoBean
+    @Autowired
     private OrisApiClient orisApiClient;
 
     private static final AtomicInteger ORIS_ID_SEQUENCE = new AtomicInteger(920_000);

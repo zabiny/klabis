@@ -9,6 +9,7 @@ import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -28,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * ensuring Member ID equals User ID.
  */
 @ApplicationModuleTest(verifyAutomatically = false)
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @DisplayName("Member Auto-Provisioning Integration Tests")
 @Import(TestApplicationConfiguration.class)

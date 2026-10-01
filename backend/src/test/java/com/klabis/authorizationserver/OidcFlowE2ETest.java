@@ -55,8 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
         "klabis.bootstrap.admin.username=" + OidcFlowE2ETest.ADMIN_USERNAME,
         "klabis.bootstrap.admin.password=" + OidcFlowE2ETest.ADMIN_PASSWORD,
-        "klabis.oauth2.client.secret=" + OidcFlowE2ETest.CLIENT_SECRET,
-        "logging.level.org.springframework.security=TRACE"
+        "klabis.oauth2.client.secret=" + OidcFlowE2ETest.CLIENT_SECRET
 })
 @DisplayName("OIDC Complete Flow E2E Test")
 @CleanupTestData
