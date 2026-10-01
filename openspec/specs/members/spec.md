@@ -573,13 +573,31 @@ The member registration page SHALL use a two-column layout.
 
 ### Requirement: Member Update
 
-The system SHALL allow members to update their own profile data, and admins to update any member's data. Field access is role-based. Legal guardians are not part of the member edit form; they are managed separately on the minor's detail page.
+The system SHALL allow adult members to update their own profile data, and admins to update any member's data. A minor member (under 18 years) cannot update their own profile; only admins can change a minor's data. Field access is role-based. Legal guardians are not part of the member edit form; they are managed separately on the minor's detail page.
 
 #### Scenario: Member updates their own information
 
-- **WHEN** authenticated member edits their own profile and saves the changes
+- **WHEN** authenticated adult member edits their own profile and saves the changes
 - **THEN** the updated information is saved
 - **AND** the member is taken to their updated profile
+
+#### Scenario: Minor cannot edit own profile
+
+- **WHEN** a minor member views their own profile
+- **THEN** the "Upravit" action is not displayed
+- **AND** an attempt to save changes to their own profile is refused with a permission denied error
+- **AND** no changes are saved
+
+#### Scenario: Admin updates a minor's information
+
+- **WHEN** user with MEMBERS:UPDATE permission edits a minor member's profile and saves the changes
+- **THEN** the updated information is saved
+
+#### Scenario: Member can edit own profile after turning 18
+
+- **GIVEN** a member who was a minor and has turned 18
+- **WHEN** the member views their own profile
+- **THEN** the "Upravit" action is displayed
 
 #### Scenario: Admin updates a member's information
 
@@ -600,7 +618,7 @@ The system SHALL allow members to update their own profile data, and admins to u
 
 #### Scenario: Member-editable fields
 
-- **WHEN** a member (without admin permission) opens their own edit form
+- **WHEN** an adult member (without admin permission) opens their own edit form
 - **THEN** the form shows fields: email, phone, address, chip number, nationality, bank account, identity card, driving license, medical course, trainer license, dietary restrictions
 
 #### Scenario: Admin-only fields
