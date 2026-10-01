@@ -2,6 +2,8 @@ package com.klabis.common.encryption;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -64,5 +66,39 @@ class SharedEncryptionServiceTest {
         String tampered = encrypted.substring(0, encrypted.length() - 1) + (last.equals("0") ? "1" : "0");
 
         assertThatThrownBy(() -> service.decrypt(tampered)).isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    @DisplayName("should fail to decrypt with the same password but a different salt")
+    void shouldFailWithDifferentSalt() {
+        String encrypted = service.encrypt("secret");
+        SharedEncryptionService other = new SharedEncryptionService("test-password", "00112233445566778899aabbccddeeff");
+
+        assertThatThrownBy(() -> other.decrypt(encrypted)).isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    @DisplayName("should accept a 32 character hex salt")
+    void shouldAcceptLongHexSalt() {
+        SharedEncryptionService longSalt = new SharedEncryptionService("test-password", "00112233445566778899AABBCCDDEEFF");
+
+        assertThat(longSalt.decrypt(longSalt.encrypt("value"))).isEqualTo("value");
+    }
+
+    @ParameterizedTest(name = "should reject invalid salt ''{0}''")
+    @ValueSource(strings = {"", "   ", "not-hex-at-all!!", "5c0744940b5c369", "zz"})
+    void shouldRejectInvalidSalt(String salt) {
+        assertThatThrownBy(() -> new SharedEncryptionService("test-password", salt))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("klabis.encryption.salt")
+                .hasMessageContaining("hex");
+    }
+
+    @Test
+    @DisplayName("should reject null salt")
+    void shouldRejectNullSalt() {
+        assertThatThrownBy(() -> new SharedEncryptionService("test-password", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("klabis.encryption.salt");
     }
 }
