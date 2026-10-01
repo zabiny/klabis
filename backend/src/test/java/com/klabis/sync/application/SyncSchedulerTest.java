@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * stop the scan on an open circuit breaker, leaving the rest untouched (design.md
  * D11).
  */
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
 @Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})

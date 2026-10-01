@@ -1,17 +1,13 @@
 package com.klabis.members.infrastructure.orissync;
 
-import com.klabis.CleanupTestData;
-import com.klabis.TestApplicationConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,52 +19,44 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code due-scan-interval} and {@code events.infrastructure.orissync.DisciplinesProperties}'s
  * {@code discovery-cron}.
  * <p>
- * Mirrors {@code DisciplinesPropertiesTest}'s shape: {@code @SpringBootTest} rather
- * than {@code @ApplicationModuleTest(STANDALONE)}, since a STANDALONE bootstrap scoped
- * to the nested {@code members.infrastructure.orissync} module boundary does not pick
- * up {@code @ConfigurationPropertiesScan}'s registration from {@code KlabisApplication}.
+ * Binds through {@link ApplicationContextRunner} with {@code application.yml} loaded, so the
+ * effective default is verified without starting a full application context.
  */
 @DisplayName("MembersOrisDiscoveryProperties")
 class MembersOrisDiscoveryPropertiesTest {
 
+    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+            .withInitializer(new ConfigDataApplicationContextInitializer())
+            .withUserConfiguration(PropertiesConfiguration.class);
+
+    @Configuration(proxyBeanMethods = false)
+    @EnableConfigurationProperties(MembersOrisDiscoveryProperties.class)
+    static class PropertiesConfiguration {
+    }
+
     @Nested
-    @SpringBootTest
-    @ActiveProfiles("test")
-    @CleanupTestData
-    @Import(TestApplicationConfiguration.class)
     @DisplayName("with nothing configured")
     class Defaults {
-
-        @Autowired
-        private MembersOrisDiscoveryProperties properties;
 
         @Test
         @DisplayName("applies the D7 default")
         void appliesDefault() {
-            assertThat(properties.getOrisDiscoveryCron()).isEqualTo("0 30 3 * * *");
+            contextRunner.run(context ->
+                    assertThat(context.getBean(MembersOrisDiscoveryProperties.class).getOrisDiscoveryCron()).isEqualTo("0 30 3 * * *"));
         }
     }
 
     @Nested
-    @SpringBootTest
-    @ActiveProfiles("test")
-    @CleanupTestData
-    @Import(TestApplicationConfiguration.class)
     @DisplayName("with values overridden")
     class Overrides {
-
-        @DynamicPropertySource
-        static void overrideProperties(DynamicPropertyRegistry registry) {
-            registry.add("klabis.members.oris-discovery-cron", () -> "0 45 5 * * *");
-        }
-
-        @Autowired
-        private MembersOrisDiscoveryProperties properties;
 
         @Test
         @DisplayName("takes the overridden value into account")
         void appliesOverride() {
-            assertThat(properties.getOrisDiscoveryCron()).isEqualTo("0 45 5 * * *");
+            contextRunner
+                    .withPropertyValues("klabis.members.oris-discovery-cron=0 45 5 * * *")
+                    .run(context ->
+                            assertThat(context.getBean(MembersOrisDiscoveryProperties.class).getOrisDiscoveryCron()).isEqualTo("0 45 5 * * *"));
         }
     }
 

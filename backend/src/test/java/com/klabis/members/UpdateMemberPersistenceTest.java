@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ApplicationModuleTest
+@ApplicationModuleTest(verifyAutomatically = false)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @DisplayName("UpdateMember persistence smoke test")

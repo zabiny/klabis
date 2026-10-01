@@ -177,6 +177,8 @@ byteBuddy {
 
 tasks.test {
     useJUnitPlatform()
+    // each fork has its own JVM and therefore its own in-memory H2, so forks do not share test data
+    maxParallelForks = (Runtime.getRuntime().availableProcessors() / 4).coerceIn(1, 4)
     systemProperty("spring.modulith.test.file-modification-detector", "default")
     systemProperty("spring.test.context.cache.maxSize", "60")
     val testTmpDir = layout.buildDirectory.dir("tmp/test").get().asFile

@@ -2,7 +2,9 @@ package com.klabis.common.security;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+import java.util.Arrays;
 
 /**
  * Resolves method/class/parameter-level security annotations ({@code @HasAuthority},
@@ -146,14 +148,12 @@ public final class MethodSecurityAnnotations {
      * method whose implementation erases differently would be missed here rather than reported.
      */
     private static <A extends Annotation> A findOnInterfaceAndItsParents(Class<?> iface, String methodName, Class<?>[] parameterTypes, Class<A> annotationType) {
-        try {
-            Method candidate = iface.getMethod(methodName, parameterTypes);
+        Method candidate = findPublicMethod(iface, methodName, parameterTypes);
+        if (candidate != null) {
             A found = candidate.getAnnotation(annotationType);
             if (found != null) {
                 return found;
             }
-        } catch (NoSuchMethodException ignored) {
-            // this interface doesn't declare the method — keep searching its parents
         }
 
         for (Class<?> parent : iface.getInterfaces()) {
@@ -182,16 +182,33 @@ public final class MethodSecurityAnnotations {
     }
 
     private static Method findMethodOnInterfaceAndItsParents(Class<?> iface, String methodName, Class<?>[] parameterTypes) {
-        try {
-            return iface.getMethod(methodName, parameterTypes);
-        } catch (NoSuchMethodException ignored) {
-            for (Class<?> parent : iface.getInterfaces()) {
-                Method found = findMethodOnInterfaceAndItsParents(parent, methodName, parameterTypes);
-                if (found != null) {
-                    return found;
-                }
-            }
-            return null;
+        Method candidate = findPublicMethod(iface, methodName, parameterTypes);
+        if (candidate != null) {
+            return candidate;
         }
+        for (Class<?> parent : iface.getInterfaces()) {
+            Method found = findMethodOnInterfaceAndItsParents(parent, methodName, parameterTypes);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Looks only at methods declared by {@code iface} itself — callers walk the parent interfaces —
+     * and avoids {@link Class#getMethod}, whose {@link NoSuchMethodException} per miss is too costly
+     * on this proxy-creation hot path.
+     */
+    private static Method findPublicMethod(Class<?> iface, String methodName, Class<?>[] parameterTypes) {
+        for (Method method : iface.getDeclaredMethods()) {
+            if (Modifier.isPublic(method.getModifiers())
+                && !method.isBridge()
+                && method.getName().equals(methodName)
+                && Arrays.equals(method.getParameterTypes(), parameterTypes)) {
+                return method;
+            }
+        }
+        return null;
     }
 }

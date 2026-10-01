@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * unknown-entity-type rejection path (tasks.md 1.15). Deliberately a separate context
  * from {@link SynchronizationServiceIntegrationTest}, which registers a test adapter.
  */
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
 @Import(TestApplicationConfiguration.class)

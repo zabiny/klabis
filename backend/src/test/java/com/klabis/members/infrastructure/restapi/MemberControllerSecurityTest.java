@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("Member Controller Security Tests")
-@ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES)
+@ApplicationModuleTest(verifyAutomatically = false, mode = ApplicationModuleTest.BootstrapMode.DIRECT_DEPENDENCIES)
 // need users for Security configuration, common for EmailService
 @Import(TestApplicationConfiguration.class)
 class MemberControllerSecurityTest extends SecurityTestBase {

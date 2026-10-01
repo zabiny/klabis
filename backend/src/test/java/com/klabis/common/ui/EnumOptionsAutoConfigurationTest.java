@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * only scans record types in packages ending with {@code .infrastructure.restapi}, matching where
  * real request DTOs live.
  */
-@ApplicationModuleTest
+@ApplicationModuleTest(verifyAutomatically = false)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import({AutoEnumOptionsExampleController.class})

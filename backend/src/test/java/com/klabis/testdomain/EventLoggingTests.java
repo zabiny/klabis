@@ -50,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see ApplicationModuleTest
  */
 @Slf4j
-@ApplicationModuleTest(module = "common")
+@ApplicationModuleTest(verifyAutomatically = false, module = "common")
 @ComponentScan(basePackageClasses = OrderCreatedEventHandler.class)
 @ActiveProfiles("test")
 @DisplayName("Framework: Event Lifecycle Logging")

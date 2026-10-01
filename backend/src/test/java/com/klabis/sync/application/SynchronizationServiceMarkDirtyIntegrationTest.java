@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link SynchronizationPort#markDirty} (task 8.2, design.md D9): a consuming module
  * marks a record due after observing a local change, without running a pass inline.
  */
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
 @Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})

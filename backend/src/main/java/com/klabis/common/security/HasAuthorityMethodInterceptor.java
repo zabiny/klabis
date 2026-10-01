@@ -46,16 +46,21 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
 
     private static final AuthorizationResult DENY = () -> false;
 
+    private static final String APPLICATION_PACKAGE_PREFIX = "com.klabis.";
+
     /**
      * Matches methods annotated with {@link HasAuthority} or {@link OwnerVisible} on the class
      * itself, OR on any interface it implements — {@link org.springframework.aop.support.annotation.AnnotationMatchingPointcut}
      * only looks at the target class/method directly and misses annotations declared on a
      * generated OpenAPI {@code *Api} interface that the controller implements.
+     * <p>
+     * The class filter limits matching to application classes: the interface-aware lookup is
+     * expensive and running it for every method of every framework bean dominated context startup.
      */
     private static final Pointcut POINTCUT = new Pointcut() {
         @Override
         public ClassFilter getClassFilter() {
-            return ClassFilter.TRUE;
+            return clazz -> clazz.getName().startsWith(APPLICATION_PACKAGE_PREFIX);
         }
 
         @Override

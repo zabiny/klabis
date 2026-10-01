@@ -1,17 +1,13 @@
 package com.klabis.events.infrastructure.orissync;
 
-import com.klabis.CleanupTestData;
-import com.klabis.TestApplicationConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,57 +18,45 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code com.klabis.sync.application.SyncProperties}'s own {@code scan-cron}/
  * {@code due-scan-interval}.
  * <p>
- * Uses {@code @SpringBootTest} rather than {@code @ApplicationModuleTest(STANDALONE)}
- * (unlike {@code SyncPropertiesTest}'s otherwise-identical shape): {@code
- * DisciplinesProperties} lives in {@code events.infrastructure.orissync}, a nested
- * module boundary within {@code events}, and a STANDALONE bootstrap scoped to that
- * nested module does not pick up {@code @ConfigurationPropertiesScan}'s registration
- * from {@code KlabisApplication} — confirmed by a real CI run
- * ({@code NoSuchBeanDefinitionException} for exactly this bean). A full
- * {@code @SpringBootTest} context (as {@link DisciplineDiscoverySyncScenarioIntegrationTest}
- * already uses successfully in this same package) does not have that limitation.
+ * Binds through {@link ApplicationContextRunner} with {@code application.yml} loaded, so the
+ * effective default (Java field default combined with the yml placeholder default) is verified
+ * without starting a full application context.
  */
 @DisplayName("DisciplinesProperties")
 class DisciplinesPropertiesTest {
 
+    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+            .withInitializer(new ConfigDataApplicationContextInitializer())
+            .withUserConfiguration(PropertiesConfiguration.class);
+
+    @Configuration(proxyBeanMethods = false)
+    @EnableConfigurationProperties(DisciplinesProperties.class)
+    static class PropertiesConfiguration {
+    }
+
     @Nested
-    @SpringBootTest
-    @ActiveProfiles("test")
-    @CleanupTestData
-    @Import(TestApplicationConfiguration.class)
     @DisplayName("with nothing configured")
     class Defaults {
-
-        @Autowired
-        private DisciplinesProperties properties;
 
         @Test
         @DisplayName("applies the D4 default: nightly, offset from klabis.sync.scan-cron")
         void appliesDefault() {
-            assertThat(properties.getDiscoveryCron()).isEqualTo("0 0 3 * * *");
+            contextRunner.run(context ->
+                    assertThat(context.getBean(DisciplinesProperties.class).getDiscoveryCron()).isEqualTo("0 0 3 * * *"));
         }
     }
 
     @Nested
-    @SpringBootTest
-    @ActiveProfiles("test")
-    @CleanupTestData
-    @Import(TestApplicationConfiguration.class)
     @DisplayName("with values overridden")
     class Overrides {
-
-        @DynamicPropertySource
-        static void overrideProperties(DynamicPropertyRegistry registry) {
-            registry.add("klabis.disciplines.discovery-cron", () -> "0 15 4 * * *");
-        }
-
-        @Autowired
-        private DisciplinesProperties properties;
 
         @Test
         @DisplayName("takes the overridden value into account")
         void appliesOverride() {
-            assertThat(properties.getDiscoveryCron()).isEqualTo("0 15 4 * * *");
+            contextRunner
+                    .withPropertyValues("klabis.disciplines.discovery-cron=0 15 4 * * *")
+                    .run(context ->
+                            assertThat(context.getBean(DisciplinesProperties.class).getDiscoveryCron()).isEqualTo("0 15 4 * * *"));
         }
     }
 

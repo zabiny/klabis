@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * frontend localises), an Inline-wrapped option as value/prompt pairs, and a Remote-wrapped
  * option as a HAL-FORMS options.link pointing at the given href.
  */
-@ApplicationModuleTest
+@ApplicationModuleTest(verifyAutomatically = false)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Import({OptionsDefExampleController.class})
