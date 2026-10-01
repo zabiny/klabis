@@ -295,3 +295,5 @@ Guardianship is a relation to the child; grouping by the exact guardian set shar
 
 - Losing the password or salt makes stored values unreadable; both must be backed up.
 - Ciphertext format differs from the jasypt one; there was no production data, so no migration exists.
+- The password is the only real secret: the salt is not secret and only separates derived keys. Use a long random password (e.g. `openssl rand -base64 32`). `AesGcmBytesEncryptor.withPassword` derives the key with PBKDF2WithHmacSHA256, 600,000 iterations, 256-bit key (verified in spring-security-crypto 7.1.1); the count is a private constant and not configurable, so a weak password is not compensated by key stretching.
+- The salt must be a non-empty, even-length hex string (generate with `openssl rand -hex 16`); the application fails at startup otherwise. The example salt in dev configs (`.env.example`, run scripts, test properties) is public and must never be reused in a deployed environment.

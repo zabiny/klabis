@@ -11,7 +11,18 @@ class SharedEncryptionService implements EncryptionService {
     private final BytesEncryptor encryptor;
 
     SharedEncryptionService(String password, String hexSalt) {
-        this.encryptor = AesGcmBytesEncryptor.withPassword(password, hexSalt).build();
+        this.encryptor = AesGcmBytesEncryptor.withPassword(password, requireValidHexSalt(hexSalt)).build();
+    }
+
+    private static String requireValidHexSalt(String hexSalt) {
+        boolean valid = hexSalt != null && !hexSalt.isEmpty() && HexFormat.isHexDigit(hexSalt.charAt(0))
+                && hexSalt.length() % 2 == 0 && hexSalt.chars().allMatch(HexFormat::isHexDigit);
+        if (!valid) {
+            throw new IllegalArgumentException(
+                    "klabis.encryption.salt must be a non-empty hex string with an even number of characters "
+                            + "(generate one with: openssl rand -hex 16)");
+        }
+        return hexSalt;
     }
 
     @Override
