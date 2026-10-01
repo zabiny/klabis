@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.orissync;
 
 import com.dpolach.api.orisclient.OrisApiClient;
+import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.ClubMember;
 import com.dpolach.api.orisclient.dto.ClubMemberBuilder;
 import com.klabis.CleanupTestData;
@@ -42,6 +43,7 @@ import static org.mockito.Mockito.when;
  */
 @SpringBootTest
 @ActiveProfiles({"test", "oris"})
+@MockitoBean(types = {OrisApiClient.class, OrisWebUrls.class})
 @Import(TestApplicationConfiguration.class)
 @CleanupTestData
 @DisplayName("Members on the sync engine — end-to-end discovery scenario")
@@ -59,7 +61,7 @@ class MemberOrisSyncScenarioIntegrationTest {
     @Autowired
     private ManagementPort managementPort;
 
-    @MockitoBean
+    @Autowired
     private OrisApiClient orisApiClient;
 
     @Autowired

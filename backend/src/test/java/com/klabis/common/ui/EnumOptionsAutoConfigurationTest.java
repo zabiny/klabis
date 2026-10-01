@@ -1,7 +1,6 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.ui.infrastructure.restapi.AutoEnumOptionsExampleController;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ApplicationModuleTest(verifyAutomatically = false)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import({AutoEnumOptionsExampleController.class})
+@Import(CommonUiExampleControllers.class)
 class EnumOptionsAutoConfigurationTest {
 
     @Autowired

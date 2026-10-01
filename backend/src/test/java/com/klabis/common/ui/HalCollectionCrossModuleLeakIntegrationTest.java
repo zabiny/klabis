@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,9 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Requires the full application context ({@code @SpringBootTest}); a {@code @WebMvcTest} slice only
  * registers the postprocessors of the controller under test, so it cannot reproduce the leak.
  */
-@SpringBootTest(classes = {TestApplicationConfiguration.class})
+@SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(TestApplicationConfiguration.class)
 @CleanupTestData
 @DisplayName("HalResponseBodyAdvice collection wrapping — no cross-module postprocessor leak")
 class HalCollectionCrossModuleLeakIntegrationTest {
