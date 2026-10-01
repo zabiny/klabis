@@ -72,10 +72,10 @@ class LegalGuardianServiceTest {
     class Register {
 
         @Test
-        @DisplayName("creates an account with the next EXT login number, holding only MEMBERS:READ")
+        @DisplayName("creates an account with the next EXT login number, with the standard user authorities")
         void createsAccountWithLoginNumber() {
             when(loginNumberSequence.next()).thenReturn("EXT0008");
-            when(userService.createUser("EXT0008", Set.of(Authority.MEMBERS_READ))).thenReturn(USER_ID);
+            when(userService.createUser("EXT0008", Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ))).thenReturn(USER_ID);
             when(legalGuardianRepository.save(any(LegalGuardian.class))).thenAnswer(inv -> inv.getArgument(0));
 
             LegalGuardianProfile profile = service.register(NEW_GUARDIAN);
@@ -206,7 +206,7 @@ class LegalGuardianServiceTest {
         @DisplayName("passes chosen guardians through and registers new ones in the same call")
         void resolvesChosenAndNewGuardians() {
             when(loginNumberSequence.next()).thenReturn("EXT0002");
-            when(userService.createUser("EXT0002", Set.of(Authority.MEMBERS_READ))).thenReturn(USER_ID);
+            when(userService.createUser("EXT0002", Set.of(Authority.MEMBERS_READ, Authority.EVENTS_READ))).thenReturn(USER_ID);
             when(legalGuardianRepository.save(any(LegalGuardian.class))).thenAnswer(inv -> inv.getArgument(0));
 
             Set<UserId> resolved = service.resolveGuardians(List.of(

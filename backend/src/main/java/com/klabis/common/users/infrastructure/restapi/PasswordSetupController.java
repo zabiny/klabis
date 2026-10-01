@@ -4,6 +4,7 @@ import com.klabis.common.users.application.PasswordSetupService;
 import com.klabis.common.users.domain.PasswordSetupToken;
 import com.klabis.common.users.domain.TokenAlreadyUsedException;
 import com.klabis.common.users.domain.TokenExpiredException;
+import com.klabis.common.users.domain.TokenValidationException;
 import com.klabis.common.users.domain.User;
 import jakarta.servlet.http.HttpServletRequest;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -106,7 +107,12 @@ public class PasswordSetupController implements PasswordSetupApi {
      */
     @Override
     public ResponseEntity<TokenRequestResponse> requestNewPasswordSetupToken(TokenRequestRequest request) {
-        passwordSetupService.requestNewToken(request.registrationNumber(), request.email());
+        try {
+            passwordSetupService.requestNewToken(request.registrationNumber(), request.email());
+        } catch (TokenValidationException e) {
+            // Response is deliberately identical to the success case so the form cannot be used to probe accounts.
+            log.warn("Activation e-mail request rejected: {}", e.getMessage());
+        }
         return ResponseEntity.ok(TokenRequestResponseBuilder.builder()
                 .message("If your account is pending activation, you will receive an email with a new setup link.")
                 .build());
