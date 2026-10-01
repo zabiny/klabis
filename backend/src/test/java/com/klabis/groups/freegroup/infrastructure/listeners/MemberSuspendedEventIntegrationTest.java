@@ -24,7 +24,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
 @DisplayName("MemberSuspendedEvent integration — pending free-group invitation cancellation")

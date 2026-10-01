@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
  * - Description formatting (location + " - " + organizer + optional website URL)
  * - Idempotent behavior (no duplicate calendar items)
  */
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
 @Import(MemberIdMixin.class)

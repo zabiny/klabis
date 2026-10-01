@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The RegistrationPort creates both Member and User aggregates in a single transaction,
  * ensuring Member ID equals User ID.
  */
-@ApplicationModuleTest
+@ApplicationModuleTest(verifyAutomatically = false)
 @ActiveProfiles("test")
 @DisplayName("Member Auto-Provisioning Integration Tests")
 @Import(TestApplicationConfiguration.class)

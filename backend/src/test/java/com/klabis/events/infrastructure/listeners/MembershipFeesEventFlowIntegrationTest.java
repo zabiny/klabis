@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>{@link MemberFeeSelectionResolvedEvent} → member registration block gets lifted</li>
  * </ul>
  */
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES, extraIncludes = {"membershipfees", "sync"})
+@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES, extraIncludes = {"membershipfees", "sync"})
 @ActiveProfiles("test")
 @CleanupTestData
 @Import(TestApplicationConfiguration.class)

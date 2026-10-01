@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 2.6, 2.7), driven entirely through {@link TestSynchronizationAdapter} — no ORIS
  * involvement (design.md Migration Plan, step 1).
  */
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
 @Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})

@@ -51,7 +51,7 @@ The controller keeps only: `@PrimaryAdapter`, `@RestController`, a `@RequestMapp
 
 ## `@HasAuthority` — declared in the spec, not the controller
 
-`@HasAuthority(Authority.X)` is the type-safe alternative to `@PreAuthorize("hasAuthority('X:Y')")` for **single-authority global checks**, enforced by `HasAuthorityMethodInterceptor` (AuthorizationAdvisor); failure throws `AccessDeniedException` → 403.
+`@HasAuthority(Authority.X)` is the type-safe alternative to `@PreAuthorize("hasAuthority('X:Y')")` for **single-authority global checks**, enforced by `HasAuthorityMethodInterceptor` (AuthorizationAdvisor); failure throws `AccessDeniedException` → 403. The interceptor's pointcut only considers classes under `com.klabis.*` — a bean from any other package is never secured by `@HasAuthority`/`@OwnerVisible`.
 
 For spec'd endpoints do not write it by hand — set `x-klabis-authority: MEMBERS_READ` on the operation and the generator emits the annotation onto the interface method. Omitting the extension means "any authenticated caller" (per the `/api/**` `.authenticated()` rule), which is a deliberate choice worth a comment in the YAML rather than an accident.
 

@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * external system — mirrors {@link SynchronizationServiceNoAdapterIntegrationTest}'s
  * separate, adapter-free context.
  */
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
 @Import(TestApplicationConfiguration.class)

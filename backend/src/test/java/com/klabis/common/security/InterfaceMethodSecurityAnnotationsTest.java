@@ -71,6 +71,17 @@ class InterfaceMethodSecurityAnnotationsTest {
         }
     }
 
+    interface ExtendingInterface extends AnnotatedOnInterface {
+        String ownMethod();
+    }
+
+    static class ImplementingExtendingInterface extends ImplementingClass implements ExtendingInterface {
+        @Override
+        public String ownMethod() {
+            return "own";
+        }
+    }
+
     static class ClassAnnotatedImplementation implements ClassAnnotatedInterface {
         @Override
         public String inheritedFromInterfaceClass() {
@@ -148,6 +159,34 @@ class InterfaceMethodSecurityAnnotationsTest {
         void returnsNullWhenNoClassAnnotationAnywhere() {
             HasAuthority found = MethodSecurityAnnotations.findClassAnnotation(
                     ImplementingClass.class, HasAuthority.class);
+
+            assertThat(found).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("method-level annotation on parent interface")
+    class MethodLevelOnParentInterface {
+
+        @Test
+        @DisplayName("finds @HasAuthority declared on a parent of the implemented interface")
+        void findsAnnotationOnParentInterface() throws NoSuchMethodException {
+            Method method = ImplementingExtendingInterface.class.getMethod("secured");
+
+            HasAuthority found = MethodSecurityAnnotations.findMethodAnnotation(
+                    method, ImplementingExtendingInterface.class, HasAuthority.class);
+
+            assertThat(found).isNotNull();
+            assertThat(found.value()).isEqualTo(Authority.MEMBERS_READ);
+        }
+
+        @Test
+        @DisplayName("returns null for a method declared only on the child interface without annotation")
+        void returnsNullForUnannotatedChildInterfaceMethod() throws NoSuchMethodException {
+            Method method = ImplementingExtendingInterface.class.getMethod("ownMethod");
+
+            HasAuthority found = MethodSecurityAnnotations.findMethodAnnotation(
+                    method, ImplementingExtendingInterface.class, HasAuthority.class);
 
             assertThat(found).isNull();
         }

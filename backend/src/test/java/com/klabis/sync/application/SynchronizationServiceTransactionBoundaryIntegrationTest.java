@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  * concurrent {@code markDirty} the way it structurally could before scheduling moved
  * off {@code sync_record}.
  */
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
 @Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})

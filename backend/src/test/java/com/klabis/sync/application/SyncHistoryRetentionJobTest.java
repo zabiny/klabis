@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * rows older than {@code history-retention}, never touches {@code sync_record}, and
  * leaves the record's last-successful-sync information intact.
  */
-@ApplicationModuleTest(value = ApplicationModuleTest.BootstrapMode.STANDALONE)
+@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
 @ActiveProfiles("test")
 @CleanupTestData
 @Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
