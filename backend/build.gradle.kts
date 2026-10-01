@@ -12,7 +12,7 @@ plugins {
     java
     id("org.springframework.boot") version "4.1.1"
     id("io.spring.dependency-management") version "1.1.7"
-    id("net.bytebuddy.byte-buddy-gradle-plugin") version "1.18.4"
+    id("net.bytebuddy.byte-buddy-gradle-plugin") version "1.18.14"
     id("org.springdoc.openapi-gradle-plugin") version "1.9.0"
     jacoco
 }
@@ -114,7 +114,7 @@ dependencies {
 
     // RecordBuilder for type-safe record builders
     compileOnly("io.soabase.record-builder:record-builder-core:44")
-    annotationProcessor("io.soabase.record-builder:record-builder-processor:44")
+    annotationProcessor("io.soabase.record-builder:record-builder-processor:53")
 
     // Jasypt for encryption (GDPR - rodne cislo)
     implementation("com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5")
@@ -132,12 +132,12 @@ dependencies {
     implementation("commons-validator:commons-validator:1.7")
 
     // Apache Commons CSV for accommodation list CSV export
-    implementation("org.apache.commons:commons-csv:1.13.0")
+    implementation("org.apache.commons:commons-csv:1.14.1")
 
     // JsonNullable: tri-state (absent / null / value) wrapper for PATCH request bodies.
     // 0.2.10+ ships a Jackson 3 module (tools.jackson); the Jackson 2 artifacts it also declares
     // stay off the classpath because both are `provided` upstream.
-    implementation("org.openapitools:jackson-databind-nullable:0.2.11")
+    implementation("org.openapitools:jackson-databind-nullable:0.2.12")
 
     // jMolecules: DDD and hexagonal architecture annotations
     implementation("org.jmolecules:jmolecules-ddd")
@@ -156,8 +156,8 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-security-test")
     testImplementation("io.rest-assured:rest-assured:5.5.0")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.4")
-    testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.4")
+    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test:$springModulithVersion")
     testImplementation("org.springframework.modulith:spring-modulith-junit:$springModulithVersion")
     testImplementation("org.awaitility:awaitility")
