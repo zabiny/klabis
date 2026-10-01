@@ -162,7 +162,7 @@ public interface MemberRepository {
 
 <p>
     Value object pro řetězce, které musí být šifrované at-rest. Spring Data JDBC konvertery zajistí
-    transparentní šifrování/dešifrování (Jasypt). <code>toString()</code> vrací <code>"***"</code>,
+    transparentní šifrování/dešifrování (Spring Security Crypto, AES-GCM). <code>toString()</code> vrací <code>"***"</code>,
     aby hodnota neunikla do logů.
 </p>
 

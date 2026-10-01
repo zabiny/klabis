@@ -173,7 +173,7 @@ Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics,pwa` (d
 - **PostgreSQL** (prod) / H2 (dev/test)
 - **Flyway** - Database migrations
 - **Resilience4j** - Rate limiting
-- **Jasypt** - Encryption for GDPR data
+- **Spring Security Crypto** - `AesGcmBytesEncryptor` (AES-256-GCM) field encryption for GDPR data
 - **MapStruct** - DTO mapping
 - **Gradle** (Kotlin DSL) - Build tool
 - **JUnit 5** + **AssertJ** + **Mockito** - Testing

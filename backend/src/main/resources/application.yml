@@ -152,6 +152,10 @@ springdoc:
         - /actuator/**
 
 klabis:
+  encryption:
+    password: ${KLABIS_ENCRYPTION_PASSWORD}
+    salt: ${KLABIS_ENCRYPTION_SALT}
+
   finance:
     overdraft-limit: ${KLABIS_FINANCE_OVERDRAFT_LIMIT:-500}
 
@@ -217,12 +221,6 @@ klabis:
 oris:
   client:
     enabled: false
-
-jasypt:
-  encryptor:
-    password: ${KLABIS_JASYPT_PASSWORD}
-    algorithm: PBEWithHmacSHA512AndAES_256
-    iv-generator-classname: org.jasypt.iv.RandomIvGenerator
 
 server:
   port: 8080

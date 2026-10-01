@@ -136,8 +136,8 @@ public interface PasswordSetupService {
 <p>
     Pokud potřebujete zašifrovat řetězec mimo JDBC vrstvu (např. před uložením do tokenu nebo do
     cache), je k dispozici <code>EncryptionService</code> v <code>common.encryption</code>.
-    <code>EncryptionConfiguration</code> sestavuje Jasypt encryptor podle property
-    <code>klabis.encryption.password</code>.
+    <code>EncryptionConfiguration</code> sestavuje <code>AesGcmBytesEncryptor</code> podle property
+    <code>klabis.encryption.password</code> a <code>klabis.encryption.salt</code> (hex).
 </p>
 
 <pre class="signature"><code>String cipher = encryptionService.encrypt(plaintext);

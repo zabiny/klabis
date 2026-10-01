@@ -16,7 +16,7 @@ class StringEncryptionConverterTest {
 
     @BeforeEach
     void setUp() {
-        encryptionService = new SharedEncryptionService("test-password-for-unit-tests", "PBEWithMD5AndDES");
+        encryptionService = new SharedEncryptionService("test-password-for-unit-tests", "5c0744940b5c369b");
         encryptionConverter = new EncryptedStringToStringConverter(encryptionService);
         decryptionConverter = new StringToEncryptedStringConverter(encryptionService);
     }
