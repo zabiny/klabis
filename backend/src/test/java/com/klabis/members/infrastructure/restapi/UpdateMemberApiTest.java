@@ -104,6 +104,7 @@ class UpdateMemberApiTest {
                 .withFirstName("Jan")
                 .withLastName("Novak")
                 .withRegistrationNumber("ZBM1234")
+                .withDateOfBirth(LocalDate.of(1990, 1, 1))
                 .withEmail("jan.novak@example.com")
                 .withPhone("+420777123456")
                 .withAddress(Address.of("Hlavní 1", "Praha", "11000", "CZ"))
@@ -481,6 +482,36 @@ class UpdateMemberApiTest {
         }
 
         @Nested
+        @DisplayName("Admin edit of a minor")
+        class AdminEditMinorTests {
+
+            @Test
+            @DisplayName("admin updating a minor should return 204")
+            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+            void shouldAllowAdminToUpdateMinor() throws Exception {
+                Member minor = MemberTestDataBuilder.aMember()
+                        .withId(testMemberId)
+                        .withDateOfBirth(LocalDate.now().minusYears(15))
+                        .build();
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(minor));
+                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
+                        .thenReturn(minor);
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", testMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "email": "new.email@example.com"
+                                                }
+                                                """)
+                        )
+                        .andExpect(status().isNoContent());
+            }
+        }
+
+        @Nested
         @DisplayName("Member self-edit")
         class MemberSelfEditTests {
 
@@ -511,6 +542,58 @@ class UpdateMemberApiTest {
 
                 var command = captor.getValue();
                 assertThat(command.email()).isEqualTo(EmailAddress.of("my.new.email@example.com"));
+            }
+
+            @Test
+            @DisplayName("minor updating own profile should return 403 and save nothing")
+            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
+            void shouldRejectMinorUpdatingOwnProfile() throws Exception {
+                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                Member minor = MemberTestDataBuilder.aMember()
+                        .withId(currentMemberId)
+                        .withDateOfBirth(LocalDate.now().minusYears(15))
+                        .build();
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(minor));
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", currentMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "email": "my.new.email@example.com"
+                                                }
+                                                """)
+                        )
+                        .andExpect(status().isForbidden());
+
+                verify(memberService, never()).updateMember(any(MemberId.class), any(Member.UpdateMember.class));
+            }
+
+            @Test
+            @DisplayName("member who turned 18 today updating own profile should return 204")
+            @WithKlabisMockUser(memberId = "00000000-0000-0000-0000-000000000001", authorities = {})
+            void shouldAllowMemberTurned18TodayToUpdateOwnProfile() throws Exception {
+                UUID currentMemberId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+                Member justAdult = MemberTestDataBuilder.aMember()
+                        .withId(currentMemberId)
+                        .withDateOfBirth(LocalDate.now().minusYears(18))
+                        .build();
+                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
+                        .thenReturn(Member.UpdateMember.from(justAdult));
+                when(memberService.updateMember(eq(new MemberId(currentMemberId)), any(Member.UpdateMember.class)))
+                        .thenReturn(justAdult);
+
+                mockMvc.perform(
+                                patch("/api/members/{id}", currentMemberId)
+                                        .contentType("application/json")
+                                        .content("""
+                                                {
+                                                    "email": "my.new.email@example.com"
+                                                }
+                                                """)
+                        )
+                        .andExpect(status().isNoContent());
             }
 
             @Test

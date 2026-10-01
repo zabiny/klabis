@@ -1,5 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
@@ -42,6 +43,7 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
@@ -121,6 +123,10 @@ public class MemberController implements MembersApi {
 
         MemberId memberId = new MemberId(id);
         var prefilled = managementService.prefilledUpdateCommand(memberId);
+        if (OwnProfileEditRule.isForbidden(prefilled.dateOfBirth(),
+                SecurityContextHolder.getContext().getAuthentication())) {
+            throw new InsufficientAuthorityException(Authority.MEMBERS_MANAGE.getValue());
+        }
         var command = UpdateMemberRequestMapper.toCommand(request, prefilled, currentUser.userId());
         Member updatedMember = managementService.updateMember(memberId, command);
 
@@ -362,8 +368,11 @@ final class MemberSelfLinkSupport {
         UUID memberId = member.getId().uuid();
 
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId, null)).map(link -> {
-            var self = link.withSelfRel()
-                    .andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(memberId, null, null)));
+            var self = link.withSelfRel();
+            if (!OwnProfileEditRule.isForbidden(member.getDateOfBirth(),
+                    SecurityContextHolder.getContext().getAuthentication())) {
+                self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(memberId, null, null)));
+            }
             if (member.isActive()) {
                 self = self.andAffordances(klabisAfford(
                         methodOn(MembersApi.class).suspendMember(memberId, null, null)));

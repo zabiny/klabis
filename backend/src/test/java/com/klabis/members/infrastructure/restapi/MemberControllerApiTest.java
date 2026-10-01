@@ -435,6 +435,7 @@ class MemberControllerApiTest {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withActive(true)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
                     .build();
 
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
@@ -446,6 +447,57 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))
                     .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: minor viewing own profile - should not include update affordance")
+        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        void minorOwnProfileShouldNotReturnUpdateAffordance() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .withDateOfBirth(LocalDate.now().minusYears(15))
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateMember").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: member who turned 18 today viewing own profile - should include update affordance")
+        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        void justTurnedAdultOwnProfileShouldReturnUpdateAffordance() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .withDateOfBirth(LocalDate.now().minusYears(18))
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"));
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: admin viewing a minor profile - should include update affordance")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void adminViewingMinorShouldReturnUpdateAffordance() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .withDateOfBirth(LocalDate.now().minusYears(15))
+                    .build();
+
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"));
         }
 
         @Test
@@ -2312,7 +2364,7 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             // Member with dateOfBirth 1990-05-15 but birth number 905101 implies 1990-01-01 → date mismatch
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withDateOfBirth(java.time.LocalDate.of(1990, 5, 15))
+                    .withDateOfBirth(LocalDate.of(1990, 5, 15))
                     .withGender(Gender.FEMALE)
                     .withNationality("CZ")
                     .withBirthNumber("905101/1239")
@@ -2333,7 +2385,7 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             // Member with dateOfBirth 1990-01-01 and birth number 905101 (female, 1990-01-01) → consistent
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withDateOfBirth(java.time.LocalDate.of(1990, 1, 1))
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
                     .withGender(Gender.FEMALE)
                     .withNationality("CZ")
                     .withBirthNumber("905101/1239")
@@ -2354,7 +2406,7 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             // Member is MALE but birth number 905101 indicates FEMALE → gender mismatch warning
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
-                    .withDateOfBirth(java.time.LocalDate.of(1990, 1, 1))
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
                     .withGender(Gender.MALE)
                     .withNationality("CZ")
                     .withBirthNumber("905101/1239")
@@ -2409,6 +2461,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withEmail("original@example.com")
                     .withPhone("+420111000111")
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
                     .build();
             when(managementService.prefilledUpdateCommand(any(MemberId.class)))
                     .thenReturn(Member.UpdateMember.from(member));
