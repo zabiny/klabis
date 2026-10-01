@@ -1,6 +1,7 @@
 package com.klabis.sync.application;
 
 import com.klabis.CleanupTestData;
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.ExternalReference;
@@ -12,8 +13,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -22,8 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * unknown-entity-type rejection path (tasks.md 1.15). Deliberately a separate context
  * from {@link SynchronizationServiceIntegrationTest}, which registers a test adapter.
  */
-@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
-@ActiveProfiles("test")
+@KlabisModuleTest
 @CleanupTestData
 @Import(TestApplicationConfiguration.class)
 @DisplayName("Synchronisation engine: enrolment with no registered adapter")

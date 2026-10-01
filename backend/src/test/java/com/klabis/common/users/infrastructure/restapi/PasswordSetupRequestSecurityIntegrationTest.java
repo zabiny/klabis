@@ -1,6 +1,7 @@
 package com.klabis.common.users.infrastructure.restapi;
 
 import com.klabis.CleanupTestData;
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.email.LoggingEmailService;
 import com.klabis.members.application.RegistrationPort;
@@ -17,8 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
@@ -33,10 +32,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * End-to-end coverage of design.md D1: a foreign e-mail must get exactly the same response
  * as a matching one, and must trigger no e-mail (task 1.4).
  */
-@ApplicationModuleTest(verifyAutomatically = false, extraIncludes = "members")
+@KlabisModuleTest(extraIncludes = "members")
 @AutoConfigureMockMvc
 @Import(TestApplicationConfiguration.class)
-@ActiveProfiles("test")
 @CleanupTestData
 @DisplayName("POST /api/auth/password-setup/request — activation contact verification")
 class PasswordSetupRequestSecurityIntegrationTest {

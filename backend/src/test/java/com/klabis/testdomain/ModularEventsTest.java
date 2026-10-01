@@ -1,5 +1,6 @@
 package com.klabis.testdomain;
 
+import com.klabis.KlabisModuleTest;
 import lombok.extern.slf4j.Slf4j;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.*;
@@ -12,7 +13,6 @@ import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -41,9 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see ApplicationModuleTest
  */
 @Slf4j
-@ApplicationModuleTest(verifyAutomatically = false, module = "common")
+@KlabisModuleTest(module = "common")
 @ComponentScan(basePackageClasses = OrderCreatedEventHandler.class)
-@ActiveProfiles("test")
 @MockitoBean(types = UserDetailsService.class)
 @DisplayName("Framework: Spring Modulith Event Processing")
 class ModularEventsTest {

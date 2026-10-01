@@ -1,5 +1,6 @@
 package com.klabis.members.application;
 
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.users.domain.User;
 import com.klabis.common.users.domain.UserRepository;
@@ -11,8 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.modulith.test.ApplicationModuleTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,9 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The RegistrationPort creates both Member and User aggregates in a single transaction,
  * ensuring Member ID equals User ID.
  */
-@ApplicationModuleTest(verifyAutomatically = false)
+@KlabisModuleTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
 @DisplayName("Member Auto-Provisioning Integration Tests")
 @Import(TestApplicationConfiguration.class)
 class RegisterMemberAutoProvisioningTest {

@@ -1,6 +1,7 @@
 package com.klabis.calendar.application;
 
 import com.klabis.CleanupTestData;
+import com.klabis.KlabisModuleTest;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.CalendarItemKind;
 import com.klabis.calendar.domain.CalendarRepository;
@@ -18,9 +19,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.SqlConfig;
@@ -49,8 +48,7 @@ import static org.mockito.Mockito.when;
  * - Description formatting (location + " - " + organizer + optional website URL)
  * - Idempotent behavior (no duplicate calendar items)
  */
-@ApplicationModuleTest(verifyAutomatically = false, value = ApplicationModuleTest.BootstrapMode.STANDALONE)
-@ActiveProfiles("test")
+@KlabisModuleTest
 @CleanupTestData
 @Import(MemberIdMixin.class)
 @DisplayName("Calendar Event Synchronization Integration Tests")

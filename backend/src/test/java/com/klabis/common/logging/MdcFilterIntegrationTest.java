@@ -1,5 +1,6 @@
 package com.klabis.common.logging;
 
+import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -7,10 +8,8 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -28,9 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p><b>NOTE:</b> Tests infrastructure behavior (MDC lifecycle), not business logic.
  */
-@ApplicationModuleTest(verifyAutomatically = false)
+@KlabisModuleTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
 @DisplayName("Framework: MDC Filter Lifecycle")
 @Import(TestApplicationConfiguration.class)
 class MdcFilterIntegrationTest {

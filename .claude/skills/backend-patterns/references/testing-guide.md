@@ -10,7 +10,7 @@ Testing patterns derived from the `members` module as the canonical reference.
 | Service unit | `@ExtendWith(MockitoExtension.class)` | No Spring | Service logic, mock interactions |
 | Repository | `@DataJdbcTest` | JDBC slice | CRUD, custom queries |
 | Controller | `@WebMvcTest` | MVC slice | HTTP status, request mapping, service calls |
-| Integration | `@ApplicationModuleTest` | Module + direct deps | Full flow with real database |
+| Integration | `@KlabisModuleTest` | Module + direct deps | Full flow with real database |
 | E2E | `@E2ETest` | All dependencies | Complete user scenarios |
 
 ## Domain & Service Unit Tests
@@ -124,12 +124,16 @@ Slice-context rules:
 - Never add a feature-flag bean (injected as `Optional<T>`) to `@WithPostprocessors` — its presence would switch the feature on in every slice.
 - `@TestBean EntityLinks` via `HateoasTestingSupport.createModuleEntityLinks(Controller.class)` only when the controller under test uses `EntityLinks`.
 
-## Integration Tests (@ApplicationModuleTest)
+## Integration Tests (@KlabisModuleTest)
+
+Never use `@ApplicationModuleTest` directly — use `@KlabisModuleTest` (`com.klabis`), which wraps it with
+`verifyAutomatically = false` and `@ActiveProfiles("test")` and exposes `mode`, `module` and
+`extraIncludes`. Automatic verification runs a full ArchUnit import per test class; the module structure
+is verified once by `ModuleStructureVerificationTest`.
 
 ```java
-@ApplicationModuleTest(mode = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES)
+@KlabisModuleTest(mode = ApplicationModuleTest.BootstrapMode.ALL_DEPENDENCIES)
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
 @Import(TestApplicationConfiguration.class)
 @DisplayName("Member Registration Integration Tests")
 class MemberRegistrationIntegrationTest {
@@ -178,7 +182,7 @@ class MemberLifecycleE2ETest {
 }
 ```
 
-`@E2ETest` is a meta-annotation combining `@ApplicationModuleTest(ALL_DEPENDENCIES)`, `@AutoConfigureMockMvc`, `@ActiveProfiles("test")`, `@CleanupTestData`, and `@Import(TestApplicationConfiguration.class)`.
+`@E2ETest` is a meta-annotation combining `@KlabisModuleTest(mode = ALL_DEPENDENCIES)`, `@AutoConfigureMockMvc`, `@CleanupTestData`, and `@Import(TestApplicationConfiguration.class)`.
 
 E2E scope rules:
 - 1 test per aggregate root verifying its **full lifecycle** (register → update → suspend → resume)
