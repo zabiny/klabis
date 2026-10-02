@@ -1,47 +1,45 @@
 package com.klabis.finance.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
+import com.klabis.finance.FinanceWebMvcTest;
 import com.klabis.finance.application.ChargePort;
 import com.klabis.finance.application.DepositPort;
 import com.klabis.finance.application.ReversePort;
 import com.klabis.finance.application.TransactionQueryPort;
 import com.klabis.finance.application.TransactionWithReversal;
 import com.klabis.finance.domain.MemberAccount;
-import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.Transaction;
 import com.klabis.finance.domain.TransactionAlreadyReversedException;
 import com.klabis.finance.domain.TransactionId;
 import com.klabis.finance.domain.TransactionType;
 import com.klabis.members.MemberId;
+import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.application.ManagementPort;
+import com.klabis.members.domain.Member;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -49,9 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 
 @DisplayName("MemberAccountController REST API Tests")
-@WebMvcTest(MemberAccountController.class)
-@Import(HalFormsSupport.class)
-@WithPostprocessors
+@FinanceWebMvcTest
 class MemberAccountControllerTest {
 
     private static final UUID MEMBER_UUID = UUID.fromString("11111111-1111-1111-1111-111111111111");
@@ -62,20 +58,20 @@ class MemberAccountControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private DepositPort depositPort;
 
-    @MockitoBean
+    @Autowired
     private ChargePort chargePort;
 
-    @MockitoBean
+    @Autowired
     private ReversePort reversePort;
 
-    @MockitoBean
-    private MemberAccountRepository memberAccountRepository;
-
-    @MockitoBean
+    @Autowired
     private TransactionQueryPort transactionQueryPort;
+
+    @Autowired
+    private ManagementPort managementPort;
 
     @Nested
     @DisplayName("POST /api/members/{id}/account/transactions (deposit)")
@@ -94,6 +90,8 @@ class MemberAccountControllerTest {
         @DisplayName("returns 403 when authenticated without FINANCE:MANAGE")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WithoutFinanceManage() throws Exception {
+            when(depositPort.deposit(any())).thenReturn(buildDepositTransaction());
+
             mockMvc.perform(post("/api/members/{id}/account/transactions", MEMBER_UUID)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(validDepositBody()))
@@ -139,6 +137,8 @@ class MemberAccountControllerTest {
         @DisplayName("returns 403 when authenticated without FINANCE:MANAGE")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WithoutFinanceManage() throws Exception {
+            when(chargePort.charge(any())).thenReturn(buildChargeTransaction());
+
             mockMvc.perform(post("/api/members/{id}/account/transactions/charge", MEMBER_UUID)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(validChargeBody()))
@@ -162,7 +162,7 @@ class MemberAccountControllerTest {
         @DisplayName("5.1 owner gets 200 with history link")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
         void shouldReturn200ForOwner() throws Exception {
-            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -175,6 +175,8 @@ class MemberAccountControllerTest {
         @DisplayName("5.2 non-owner without FINANCE:MANAGE gets 403")
         @WithKlabisMockUser(memberId = "99999999-9999-9999-9999-999999999999")
         void shouldReturn403ForNonOwnerWithoutFinanceManage() throws Exception {
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
+
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
@@ -184,7 +186,7 @@ class MemberAccountControllerTest {
         @DisplayName("5.3 FINANCE:MANAGE can read any account")
         @WithKlabisMockUser(memberId = "99999999-9999-9999-9999-999999999999", authorities = {Authority.FINANCE_MANAGE})
         void shouldReturn200ForFinanceManager() throws Exception {
-            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -196,7 +198,7 @@ class MemberAccountControllerTest {
         @DisplayName("response includes accountOwner link pointing to the member resource")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
         void shouldIncludeAccountOwnerLink() throws Exception {
-            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -209,7 +211,7 @@ class MemberAccountControllerTest {
         @DisplayName("returns 200 with deposit affordance for FINANCE:MANAGE")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.FINANCE_MANAGE})
         void shouldReturnAccountWithDepositAffordanceForFinanceManager() throws Exception {
-            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -221,7 +223,7 @@ class MemberAccountControllerTest {
         @DisplayName("offers the deposit template's fields as writable, not read-only")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.FINANCE_MANAGE})
         void shouldExposeWritableDepositFields() throws Exception {
-            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
             // required/type are asserted alongside readOnly so the test cannot pass through the
             // properties array being empty or the field missing altogether.
@@ -240,7 +242,7 @@ class MemberAccountControllerTest {
         @DisplayName("returns 200 without deposit affordance for plain member viewing own account")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
         void shouldReturnAccountWithoutDepositAffordanceForRegularMember() throws Exception {
-            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -252,7 +254,7 @@ class MemberAccountControllerTest {
         @DisplayName("returns 200 with charge affordance for FINANCE:MANAGE")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.FINANCE_MANAGE})
         void shouldReturnAccountWithChargeAffordanceForFinanceManager() throws Exception {
-            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -264,7 +266,7 @@ class MemberAccountControllerTest {
         @DisplayName("offers the charge template's fields as writable, not read-only")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.FINANCE_MANAGE})
         void shouldExposeWritableChargeFields() throws Exception {
-            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -281,7 +283,7 @@ class MemberAccountControllerTest {
         @DisplayName("returns 200 without charge affordance for plain member viewing own account")
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
         void shouldReturnAccountWithoutChargeAffordanceForRegularMember() throws Exception {
-            when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(Money.zero()));
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenReturn(Money.zero());
 
             mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -313,6 +315,9 @@ class MemberAccountControllerTest {
         @DisplayName("5.5 returns 403 for non-owner without FINANCE:MANAGE")
         @WithKlabisMockUser(memberId = "99999999-9999-9999-9999-999999999999")
         void shouldReturn403ForNonOwnerWithoutFinanceManage() throws Exception {
+            when(transactionQueryPort.findTransactionsWithReversals(any()))
+                    .thenReturn(buildPageWithoutReversal(buildDepositTransaction()));
+
             mockMvc.perform(get("/api/members/{id}/account/transactions", MEMBER_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
@@ -488,8 +493,8 @@ class MemberAccountControllerTest {
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
         void shouldExposeRecordedByLinkOnTransaction() throws Exception {
             Transaction tx = buildDepositTransaction();
-            when(transactionQueryPort.findTransaction(MEMBER_ID, new TransactionId(TX_UUID))).thenReturn(tx);
-            when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.empty());
+            when(transactionQueryPort.findTransactionWithReversal(MEMBER_ID, new TransactionId(TX_UUID)))
+                    .thenReturn(TransactionWithReversal.withoutReversal(tx));
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -505,8 +510,8 @@ class MemberAccountControllerTest {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction original = buildDepositTransaction();
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
-            when(transactionQueryPort.findTransaction(MEMBER_ID, new TransactionId(TX_UUID))).thenReturn(original);
-            when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.of(reversal));
+            when(transactionQueryPort.findTransactionWithReversal(MEMBER_ID, new TransactionId(TX_UUID)))
+                    .thenReturn(TransactionWithReversal.withReversal(original, reversal.getId()));
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -520,8 +525,8 @@ class MemberAccountControllerTest {
         void shouldExposeReversesLinkOnReversalTransaction() throws Exception {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
-            when(transactionQueryPort.findTransaction(MEMBER_ID, new TransactionId(reversalTxUuid))).thenReturn(reversal);
-            when(memberAccountRepository.findReversalOf(new TransactionId(reversalTxUuid))).thenReturn(Optional.empty());
+            when(transactionQueryPort.findTransactionWithReversal(MEMBER_ID, new TransactionId(reversalTxUuid)))
+                    .thenReturn(TransactionWithReversal.withoutReversal(reversal));
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, reversalTxUuid)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -534,8 +539,8 @@ class MemberAccountControllerTest {
         @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.FINANCE_MANAGE})
         void shouldExposeReverseAffordanceForFinanceManagerOnUnreversedTransaction() throws Exception {
             Transaction original = buildDepositTransaction();
-            when(transactionQueryPort.findTransaction(MEMBER_ID, new TransactionId(TX_UUID))).thenReturn(original);
-            when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.empty());
+            when(transactionQueryPort.findTransactionWithReversal(MEMBER_ID, new TransactionId(TX_UUID)))
+                    .thenReturn(TransactionWithReversal.withoutReversal(original));
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -552,8 +557,8 @@ class MemberAccountControllerTest {
             UUID reversalTxUuid = UUID.fromString("33333333-3333-3333-3333-333333333333");
             Transaction original = buildDepositTransaction();
             Transaction reversal = buildReversalTransaction(reversalTxUuid);
-            when(transactionQueryPort.findTransaction(MEMBER_ID, new TransactionId(TX_UUID))).thenReturn(original);
-            when(memberAccountRepository.findReversalOf(new TransactionId(TX_UUID))).thenReturn(Optional.of(reversal));
+            when(transactionQueryPort.findTransactionWithReversal(MEMBER_ID, new TransactionId(TX_UUID)))
+                    .thenReturn(TransactionWithReversal.withReversal(original, reversal.getId()));
 
             mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -580,6 +585,8 @@ class MemberAccountControllerTest {
         @DisplayName("returns 403 when authenticated without FINANCE:MANAGE")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WithoutFinanceManage() throws Exception {
+            when(reversePort.reverse(any())).thenReturn(buildReversalTransaction(UUID.randomUUID()));
+
             mockMvc.perform(post("/api/members/{id}/account/transactions/{txId}/reverse",
                             MEMBER_UUID, TX_UUID)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -617,6 +624,111 @@ class MemberAccountControllerTest {
                             .content(validReverseBody()))
                     .andExpect(status().is(409))
                     .andExpect(jsonPath("$.type").value(containsString("TRANSACTION_ALREADY_REVERSED")));
+        }
+    }
+
+    @Nested
+    @DisplayName("account link on other modules' responses")
+    class AccountLinkOnForeignResponses {
+
+        private static final UUID OTHER_MEMBER_UUID = UUID.fromString("55555555-5555-5555-5555-555555555555");
+
+        @Test
+        @DisplayName("root contains account link for a user with a member profile")
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        void rootContainsAccountLinkForMember() throws Exception {
+            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.account.href")
+                            .value(containsString("/api/members/" + MEMBER_UUID + "/account")));
+        }
+
+        @Test
+        @DisplayName("root has no account link for a user without a member profile")
+        @WithKlabisMockUser(username = "noMemberUser")
+        void rootHasNoAccountLinkWithoutMemberProfile() throws Exception {
+            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.account").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("member detail contains account link for FINANCE:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.FINANCE_MANAGE})
+        void memberDetailContainsAccountLinkForFinanceManager() throws Exception {
+            stubMember(true);
+
+            mockMvc.perform(get("/api/members/{id}", OTHER_MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.account.href")
+                            .value(containsString("/api/members/" + OTHER_MEMBER_UUID + "/account")));
+        }
+
+        @Test
+        @DisplayName("member detail contains account link also for an inactive member")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.FINANCE_MANAGE})
+        void memberDetailContainsAccountLinkForInactiveMember() throws Exception {
+            stubMember(false);
+
+            mockMvc.perform(get("/api/members/{id}", OTHER_MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.account").exists());
+        }
+
+        @Test
+        @DisplayName("member detail has no account link without FINANCE:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
+        void memberDetailHasNoAccountLinkWithoutFinanceManage() throws Exception {
+            stubMember(true);
+
+            mockMvc.perform(get("/api/members/{id}", OTHER_MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.account").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("member list rows contain account link for FINANCE:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.FINANCE_MANAGE})
+        void memberListRowsContainAccountLinkForFinanceManager() throws Exception {
+            stubMemberList(true);
+
+            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.account.href")
+                            .value(containsString("/api/members/" + OTHER_MEMBER_UUID + "/account")));
+        }
+
+        @Test
+        @DisplayName("member list rows contain account link also for an inactive member")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.FINANCE_MANAGE})
+        void memberListRowsContainAccountLinkForInactiveMember() throws Exception {
+            stubMemberList(false);
+
+            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.account").exists());
+        }
+
+        @Test
+        @DisplayName("member list rows have no account link without FINANCE:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
+        void memberListRowsHaveNoAccountLinkWithoutFinanceManage() throws Exception {
+            stubMemberList(true);
+
+            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]").exists())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0]._links.account").doesNotExist());
+        }
+
+        private void stubMember(boolean active) {
+            when(managementPort.getMemberAndRecordView(any(), any(), anyBoolean()))
+                    .thenReturn(MemberTestDataBuilder.aMemberWithId(OTHER_MEMBER_UUID).withActive(active).build());
+        }
+
+        private void stubMemberList(boolean active) {
+            Member member = MemberTestDataBuilder.aMemberWithId(OTHER_MEMBER_UUID).withActive(active).build();
+            when(managementPort.listMembers(any(), any())).thenReturn(new PageImpl<>(List.of(member)));
         }
     }
 

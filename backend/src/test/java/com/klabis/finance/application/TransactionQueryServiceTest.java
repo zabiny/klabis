@@ -111,6 +111,50 @@ class TransactionQueryServiceTest {
         assertThat(result.getContent().get(0).reversedBy()).isEmpty();
     }
 
+    @Test
+    @DisplayName("findBalance returns the balance of the member account")
+    void findBalanceReturnsBalance() {
+        Money balance = Money.ofCzk(BigDecimal.valueOf(150));
+        when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.of(balance));
+
+        assertThat(service.findBalance(MEMBER_ID)).isEqualTo(balance);
+    }
+
+    @Test
+    @DisplayName("findBalance throws MemberAccountNotFoundException when member account not found")
+    void findBalanceThrowsWhenMemberAccountNotFound() {
+        when(memberAccountRepository.findBalanceById(MEMBER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findBalance(MEMBER_ID))
+                .isInstanceOf(MemberAccountNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("findTransactionWithReversal returns the transaction with the ID of its reversal")
+    void findTransactionWithReversalReturnsReversalId() {
+        TransactionId reversalId = new TransactionId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"));
+        Transaction tx = buildTransaction(TX_ID);
+        when(memberAccountRepository.findById(MEMBER_ID))
+                .thenReturn(Optional.of(MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(tx))));
+        when(memberAccountRepository.findReversalOf(TX_ID)).thenReturn(Optional.of(buildTransaction(reversalId)));
+
+        TransactionWithReversal result = service.findTransactionWithReversal(MEMBER_ID, TX_ID);
+
+        assertThat(result.transaction()).isSameAs(tx);
+        assertThat(result.reversedBy()).contains(reversalId);
+    }
+
+    @Test
+    @DisplayName("findTransactionWithReversal returns empty reversedBy when transaction was not reversed")
+    void findTransactionWithReversalReturnsEmptyReversedBy() {
+        Transaction tx = buildTransaction(TX_ID);
+        when(memberAccountRepository.findById(MEMBER_ID))
+                .thenReturn(Optional.of(MemberAccount.reconstruct(MEMBER_ID, Money.zero(), List.of(tx))));
+        when(memberAccountRepository.findReversalOf(TX_ID)).thenReturn(Optional.empty());
+
+        assertThat(service.findTransactionWithReversal(MEMBER_ID, TX_ID).reversedBy()).isEmpty();
+    }
+
     private Transaction buildTransaction(TransactionId id) {
         return Transaction.reconstruct(
                 id,

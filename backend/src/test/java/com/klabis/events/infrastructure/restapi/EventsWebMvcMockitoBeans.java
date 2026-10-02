@@ -22,8 +22,8 @@ import java.lang.annotation.Target;
  * {@code OrisEventImportPort} is deliberately absent: it is injected as {@code Optional} and acts as a
  * feature flag. ORIS-gated controllers are not part of the test profile.
  * <p>
- * Also requires {@code Members} (see members annotation), {@code FinanceAccountLinkSupport} (see finance
- * annotation) and {@code SynchronizationPort} (see sync annotation).
+ * Also requires {@code Members} (see members annotation), {@code FinanceAccountLinkSupport} (real bean,
+ * loaded by adding {@code finance} to {@code extraIncludes}) and {@code SynchronizationPort} (see sync annotation).
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
