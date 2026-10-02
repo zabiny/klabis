@@ -8,7 +8,7 @@ import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
-import com.klabis.common.settings.OrisClubKeyPort;
+import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.members.domain.*;
 import com.klabis.members.domain.Gender;
@@ -74,7 +74,7 @@ class UpdateMemberApiTest {
     private ManagementPort memberService;
 
     @Autowired
-    private OrisClubKeyPort orisClubKeyPort;
+    private OrisClubKeyManagementPort orisClubKeyManagementPort;
 
     @Autowired
     private SynchronizationPort synchronizationPort;

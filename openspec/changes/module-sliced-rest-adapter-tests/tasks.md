@@ -45,9 +45,9 @@
 
 ## 8. Module `oris`
 
-- [ ] 8.1 Add a dedicated primary port over `OrisClubKeyPort` (unit test first, `JMoleculesArchitectureTest` stays green); update `CommonWebMvcMockitoBeans`
-- [ ] 8.2 Migrate `OrisClubKeyControllerTest` and `OrisControllerTest` (profile `oris`, local mocks of profile-gated beans, `OrisApiClient` kept as documented exception)
-- [ ] 8.3 Run `oris` tests, review, commit
+- [x] 8.1 Add a dedicated primary port over `OrisClubKeyPort` (unit test first, `JMoleculesArchitectureTest` stays green); update `CommonWebMvcMockitoBeans`
+- [x] 8.2 Migrate `OrisClubKeyControllerTest` and `OrisControllerTest` (profile `oris`, local mocks of profile-gated beans, `OrisApiClient` kept as documented exception)
+- [x] 8.3 Run `oris` tests, review, commit
 
 ## 9. Module `common`
 

@@ -1,7 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.settings.OrisClubKeyPort;
+import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.common.users.Authority;
 import com.klabis.members.MembersWebMvcTest;
 import com.klabis.members.application.ManagementPort;
@@ -45,7 +45,7 @@ class MemberOrisImportEnabledApiTest {
     private MemberDiscoveryPort memberDiscoveryPort;
 
     @Autowired
-    private OrisClubKeyPort orisClubKeyPort;
+    private OrisClubKeyManagementPort orisClubKeyManagementPort;
 
     @Nested
     @DisplayName("POST /api/members/oris-import")
@@ -98,7 +98,7 @@ class MemberOrisImportEnabledApiTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.SYNC_MANAGE})
         void syncManageAndKeyHeld_affordancePresent() throws Exception {
             givenEmptyMemberList();
-            when(orisClubKeyPort.isSet()).thenReturn(true);
+            when(orisClubKeyManagementPort.isSet()).thenReturn(true);
 
             mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
@@ -111,7 +111,7 @@ class MemberOrisImportEnabledApiTest {
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.SYNC_MANAGE})
         void syncManageHeldButNoKey_affordanceAbsent() throws Exception {
             givenEmptyMemberList();
-            when(orisClubKeyPort.isSet()).thenReturn(false);
+            when(orisClubKeyManagementPort.isSet()).thenReturn(false);
 
             mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
@@ -123,7 +123,7 @@ class MemberOrisImportEnabledApiTest {
         @WithKlabisMockUser(authorities = Authority.MEMBERS_READ)
         void keyHeldButNoSyncManage_affordanceAbsent() throws Exception {
             givenEmptyMemberList();
-            when(orisClubKeyPort.isSet()).thenReturn(true);
+            when(orisClubKeyManagementPort.isSet()).thenReturn(true);
 
             mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())

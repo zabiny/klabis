@@ -19,7 +19,7 @@ import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.infrastructure.restapi.MemberLegalGuardianGroup;
-import com.klabis.common.settings.OrisClubKeyPort;
+import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.members.infrastructure.orissync.ClubKeyHeld;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
@@ -68,7 +68,7 @@ public class MemberController implements MembersApi {
     private final ManagementPort managementService;
     private final ConversionService conversionService;
     private final Optional<MemberDiscoveryPort> memberDiscoveryPort;
-    private final OrisClubKeyPort orisClubKeyPort;
+    private final OrisClubKeyManagementPort orisClubKeyManagementPort;
     private final SynchronizationPort synchronizationPort;
     private final MemberCompletenessPort memberCompletenessPort;
     private final LegalGuardianGroupPort legalGuardianGroupPort;
@@ -77,7 +77,7 @@ public class MemberController implements MembersApi {
             ManagementPort managementService,
             ConversionService conversionService,
             Optional<MemberDiscoveryPort> memberDiscoveryPort,
-            OrisClubKeyPort orisClubKeyPort,
+            OrisClubKeyManagementPort orisClubKeyManagementPort,
             SynchronizationPort synchronizationPort,
             MemberCompletenessPort memberCompletenessPort,
             LegalGuardianGroupPort legalGuardianGroupPort) {
@@ -86,7 +86,7 @@ public class MemberController implements MembersApi {
         this.managementService = managementService;
         this.conversionService = conversionService;
         this.memberDiscoveryPort = memberDiscoveryPort;
-        this.orisClubKeyPort = orisClubKeyPort;
+        this.orisClubKeyManagementPort = orisClubKeyManagementPort;
         this.synchronizationPort = synchronizationPort;
     }
 
@@ -200,7 +200,7 @@ public class MemberController implements MembersApi {
                         .collect(Collectors.toSet());
         HalResponseContext.setContext(new EnrolledMemberIds(enrolledMemberIds));
 
-        HalResponseContext.setContext(new ClubKeyHeld(memberDiscoveryPort.isPresent() && orisClubKeyPort.isSet()));
+        HalResponseContext.setContext(new ClubKeyHeld(memberDiscoveryPort.isPresent() && orisClubKeyManagementPort.isSet()));
         HalResponseContext.setDomainList(memberPage.getContent());
 
         return ResponseEntity.ok(memberPage.map(member -> conversionService.convert(member, MemberSummaryResponse.class)));
