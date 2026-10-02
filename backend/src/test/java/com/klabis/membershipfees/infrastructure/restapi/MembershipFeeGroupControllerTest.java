@@ -1,9 +1,7 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.membershipfees.MembershipFeesWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberDto;
@@ -22,10 +20,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -44,9 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("MembershipFeeGroupController API tests")
-@WebMvcTest(controllers = MembershipFeeGroupController.class)
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@MembershipFeesWebMvcTest
 class MembershipFeeGroupControllerTest {
 
     private static final UUID GROUP_UUID = UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc");
@@ -59,10 +52,10 @@ class MembershipFeeGroupControllerTest {
     @Autowired
     private FeeSelectionCampaignManagementPort managementPort;
 
-    @MockitoBean
+    @Autowired
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
 
-    @MockitoBean
+    @Autowired
     private Members members;
 
     private static final LocalDate VOTING_DEADLINE = LocalDate.of(2026, 3, 31);

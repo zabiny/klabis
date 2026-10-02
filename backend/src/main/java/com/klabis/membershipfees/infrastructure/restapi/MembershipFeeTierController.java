@@ -9,10 +9,9 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import com.klabis.membershipfees.MembershipFeeTierId;
-import com.klabis.membershipfees.application.EventTypeOptionsPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
-import com.klabis.membershipfees.application.RankingOptionsPort;
+import com.klabis.membershipfees.application.MembershipFeeTierOptionsPort;
 import com.klabis.membershipfees.domain.*;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.core.convert.ConversionService;
@@ -43,8 +42,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class MembershipFeeTierController implements MembershipFeeTiersApi {
 
     private final MembershipFeeTierManagementPort managementPort;
-    private final RankingOptionsPort rankingOptionsPort;
-    private final EventTypeOptionsPort eventTypeOptionsPort;
+    private final MembershipFeeTierOptionsPort optionsPort;
     private final FeeSelectionCampaignManagementPort campaignManagementPort;
     private final ConversionService conversionService;
     // toSummaryResponse is a plain interface method (not the Converter.convert override), so it
@@ -53,14 +51,12 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     private final MembershipFeeTierResponseConverter tierResponseConverter;
 
     MembershipFeeTierController(MembershipFeeTierManagementPort managementPort,
-                                RankingOptionsPort rankingOptionsPort,
-                                EventTypeOptionsPort eventTypeOptionsPort,
+                                MembershipFeeTierOptionsPort optionsPort,
                                 FeeSelectionCampaignManagementPort campaignManagementPort,
                                 ConversionService conversionService,
                                 MembershipFeeTierResponseConverter tierResponseConverter) {
         this.managementPort = managementPort;
-        this.rankingOptionsPort = rankingOptionsPort;
-        this.eventTypeOptionsPort = eventTypeOptionsPort;
+        this.optionsPort = optionsPort;
         this.campaignManagementPort = campaignManagementPort;
         this.conversionService = conversionService;
         this.tierResponseConverter = tierResponseConverter;
@@ -128,7 +124,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
                 .toList();
 
         MembershipFeeTierListRulesPostprocessor.setOptions(
-                rankingOptionsPort.listRankingOptions(), eventTypeOptionsPort.listEventTypeOptions());
+                optionsPort.listRankingOptions(), optionsPort.listEventTypeOptions());
         HalResponseContext.setDomainList(domains);
         return ResponseEntity.ok(items);
     }
@@ -336,7 +332,7 @@ class PaymentRuleDetailsPostprocessor
 // CollectionModel<EntityModel<PaymentRuleResponse>> carries no reference back to the tier when the
 // list is empty. Same pattern as EventRegistrationController.RegistrationListPostprocessor.
 // The ranking/event-type inline options are computed by the controller (which already holds
-// RankingOptionsPort/EventTypeOptionsPort) and handed over via a request attribute — see the
+// MembershipFeeTierOptionsPort) and handed over via a request attribute — see the
 // comment on MembershipFeeTierListPostprocessor for why these ports are not injected here.
 @MvcComponent
 class MembershipFeeTierListRulesPostprocessor

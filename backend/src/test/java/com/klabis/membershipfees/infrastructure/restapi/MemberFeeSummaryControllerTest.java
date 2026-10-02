@@ -1,11 +1,13 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.membershipfees.MembershipFeesWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
+import com.klabis.members.MemberId;
+import com.klabis.members.MemberTestDataBuilder;
+import com.klabis.members.application.ManagementPort;
+import com.klabis.common.users.UserId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
@@ -17,10 +19,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -37,9 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("MemberFeeSummaryController API tests")
-@WebMvcTest(controllers = MemberFeeSummaryController.class)
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@MembershipFeesWebMvcTest
 class MemberFeeSummaryControllerTest {
 
     private static final String MEMBER_ID_STR = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -53,11 +50,14 @@ class MemberFeeSummaryControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private MemberFeeHistoryPort memberFeeHistoryPort;
 
     @Autowired
     private FeeSelectionCampaignManagementPort publicationManagementPort;
+
+    @Autowired
+    private ManagementPort memberManagementPort;
 
     @Nested
     @DisplayName("GET /api/members/{memberId}/fee-summary/{year}")
@@ -159,6 +159,9 @@ class MemberFeeSummaryControllerTest {
         @DisplayName("should return 403 when member accesses another member's summary")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
         void shouldReturn403WhenAccessingOtherMember() throws Exception {
+            when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(
+                    new MemberFeeHistoryPort.CurrentLevelInfo(null, null, null, false, Optional.empty()));
+
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -171,6 +174,9 @@ class MemberFeeSummaryControllerTest {
         @DisplayName("should return 403 for another member's summary even with MEMBERS:MANAGE")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = Authority.MEMBERS_MANAGE)
         void shouldReturn403WhenManagerAccessesOtherMember() throws Exception {
+            when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(
+                    new MemberFeeHistoryPort.CurrentLevelInfo(null, null, null, false, Optional.empty()));
+
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -241,6 +247,66 @@ class MemberFeeSummaryControllerTest {
                             get("/api/members/{memberId}/fee-history", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("feeSummary link on GET /api/members/{id}")
+    class FeeSummaryLinkOnMemberDetailTests {
+
+        private static final int CAMPAIGN_YEAR = 2027;
+        private static final int CURRENT_YEAR = 2026;
+
+        @BeforeEach
+        void stubMember() {
+            when(memberManagementPort.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenReturn(MemberTestDataBuilder.aMemberWithId(MEMBER_UUID).build());
+        }
+
+        @Test
+        @DisplayName("should point to campaign year when viewing own profile and campaign is active")
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ})
+        void shouldPointToCampaignYear() throws Exception {
+            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(CAMPAIGN_YEAR);
+
+            mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.feeSummary.href").value(
+                            org.hamcrest.Matchers.containsString("/api/members/" + MEMBER_UUID + "/fee-summary/" + CAMPAIGN_YEAR)));
+        }
+
+        @Test
+        @DisplayName("should point to current year when viewing own profile and no campaign is active")
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ})
+        void shouldPointToCurrentYear() throws Exception {
+            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(CURRENT_YEAR);
+
+            mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.feeSummary.href").value(
+                            org.hamcrest.Matchers.containsString("/api/members/" + MEMBER_UUID + "/fee-summary/" + CURRENT_YEAR)));
+        }
+
+        @Test
+        @DisplayName("should NOT add the link when viewing another member's profile")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldNotAddLinkForOtherMember() throws Exception {
+            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(CURRENT_YEAR);
+
+            mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should NOT add the link for a user without member profile")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
+        void shouldNotAddLinkWithoutMemberProfile() throws Exception {
+            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(CURRENT_YEAR);
+
+            mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
         }
     }
 }

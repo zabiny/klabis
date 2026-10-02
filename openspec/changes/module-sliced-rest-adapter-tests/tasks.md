@@ -32,9 +32,9 @@
 
 ## 6. Module `membershipfees`
 
-- [ ] 6.1 Provide primary ports for `EventTypeOptionsPort` and `RankingOptionsPort` consumed by `MembershipFeeTierController` (unit test first); remove their mocks from `WithPostprocessors`
-- [ ] 6.2 Add `@MembershipFeesWebMvcTest`; migrate `FeeSelectionCampaignControllerTest`, `MemberFeeSummaryControllerTest`, `MemberFeeChoiceControllerTest`, `MembershipFeeGroupControllerTest`, `MembershipFeeTierControllerTest`; merge `MemberFeeSummaryLinkProcessorTest`
-- [ ] 6.3 Run `membershipfees` tests, review, commit
+- [x] 6.1 Provide primary ports for `EventTypeOptionsPort` and `RankingOptionsPort` consumed by `MembershipFeeTierController` (unit test first); remove their mocks from `WithPostprocessors`
+- [x] 6.2 Add `@MembershipFeesWebMvcTest`; migrate `FeeSelectionCampaignControllerTest`, `MemberFeeSummaryControllerTest`, `MemberFeeChoiceControllerTest`, `MembershipFeeGroupControllerTest`, `MembershipFeeTierControllerTest`; merge `MemberFeeSummaryLinkProcessorTest`
+- [x] 6.3 Run `membershipfees` tests, review, commit
 
 ## 7. Module `events`
 

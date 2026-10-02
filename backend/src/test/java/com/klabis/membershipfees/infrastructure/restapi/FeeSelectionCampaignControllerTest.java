@@ -1,9 +1,7 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.membershipfees.MembershipFeesWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
 import com.klabis.members.Members;
@@ -25,10 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -47,9 +42,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("FeeSelectionCampaignController API tests")
-@WebMvcTest(controllers = {FeeSelectionCampaignController.class, MembershipFeeGroupController.class})
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@MembershipFeesWebMvcTest
 class FeeSelectionCampaignControllerTest {
 
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -63,16 +56,16 @@ class FeeSelectionCampaignControllerTest {
     @Autowired
     private FeeSelectionCampaignManagementPort managementPort;
 
-    @MockitoBean
+    @Autowired
     private MembershipFeeTierManagementPort levelManagementPort;
 
-    @MockitoBean
+    @Autowired
     private AdminFeeAssignmentPort adminFeeAssignmentPort;
 
-    @MockitoBean
+    @Autowired
     private ManualCampaignClosePort manualCampaignClosePort;
 
-    @MockitoBean
+    @Autowired
     private Members members;
 
     private FeeSelectionCampaign buildPublication(UUID id, int year) {
@@ -120,6 +113,8 @@ class FeeSelectionCampaignControllerTest {
         @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
+            when(managementPort.publishYear(any())).thenReturn(PUBLICATION_ID);
+
             mockMvc.perform(
                             post("/api/fee-selection-campaigns")
                                     .contentType("application/json")
@@ -311,6 +306,8 @@ class FeeSelectionCampaignControllerTest {
         @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
+            when(managementPort.changeDeadline(any(), any())).thenReturn(buildActiveCampaign(PUBLICATION_UUID));
+
             mockMvc.perform(
                             patch("/api/fee-selection-campaigns/{id}/deadline", PUBLICATION_UUID)
                                     .contentType("application/json")
