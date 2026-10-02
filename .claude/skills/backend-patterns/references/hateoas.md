@@ -150,7 +150,7 @@ Rules:
   list falls back to them (it does not mean "no options").
 - Options are bound to the one affordance built in that call — they never leak into other templates.
 - Data needed for the options (ports, repositories) may be injected straight into the postprocessor —
-  register the dependency in `@WithPostprocessors` (`testing-guide.md`). Real examples: `PermissionController` (assignable
+  register the dependency in the owning module's `*WebMvcMockitoBeans` (or legacy `@WithPostprocessors`, see `testing-guide.md`). Real examples: `PermissionController` (assignable
   authorities), `SyncStatePostprocessor` (`SynchronizationPort.supportedResolutions`),
   `MembershipFeeTierController` (`Inline`).
 

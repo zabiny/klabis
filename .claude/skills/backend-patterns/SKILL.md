@@ -2,7 +2,7 @@
 name: backend-patterns
 description: This skill should be used when implementing, modifying or fixing any backend Java code in the Klabis project — e.g. "add an aggregate", "new REST endpoint", "implement the generated *Api interface", "add a postprocessor / affordance / HAL-FORMS options", "PATCH endpoint with JsonNullable", "map DTO to domain", "add a memento / repository adapter", "publish or listen to a domain event", "hide a field for non-admins", "write a @WebMvcTest", "add a sync adapter", or "create a new module". It is the authoritative source for Klabis-specific backend structure (HalResponseContext, klabisAfford, ConversionService converters, @OwnerVisible/@HasAuthority, memento pattern).
 user-invocable: false
-version: 0.11.0
+version: 0.12.0
 ---
 
 # Klabis Backend Patterns
