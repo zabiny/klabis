@@ -51,9 +51,9 @@
 
 ## 9. Module `common`
 
-- [ ] 9.1 Classify the 16 `@WebMvcTest` classes in `common` (controller tests migrate; filter/advice/infrastructure tests keep a dedicated setup) and migrate the controller tests (`PermissionControllerTest`, `PasswordSetupControllerTest`, `DashboardControllerTest`, `RootControllerTest`, and others identified)
-- [ ] 9.2 Merge `RootProfileLinkProcessorTest`, `OrisClubKeyRootLinkProcessorTest` and similar postprocessor tests into the controller tests where applicable
-- [ ] 9.3 Run `common` tests, review, commit
+- [x] 9.1 Classify the 16 `@WebMvcTest` classes in `common` (controller tests migrate; filter/advice/infrastructure tests keep a dedicated setup) and migrate the controller tests (`PermissionControllerTest`, `PasswordSetupControllerTest`, `DashboardControllerTest`, `RootControllerTest`, and others identified)
+- [x] 9.2 Merge `RootProfileLinkProcessorTest`, `OrisClubKeyRootLinkProcessorTest` and similar postprocessor tests into the controller tests where applicable
+- [x] 9.3 Run `common` tests, review, commit
 
 ## 10. Members follow-ups
 

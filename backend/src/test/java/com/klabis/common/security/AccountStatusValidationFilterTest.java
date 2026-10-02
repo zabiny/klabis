@@ -1,7 +1,7 @@
 package com.klabis.common.security;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
+import com.klabis.common.CommonInfrastructureWebMvcSetup;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.users.UserService;
 import com.klabis.common.users.domain.User;
@@ -35,8 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * before it was removed. The filter is now the sole enforcer of account-status checks.
  */
 @WebMvcTest(controllers = AccountStatusValidationFilterTest.TestController.class)
+@CommonInfrastructureWebMvcSetup
 @Import(AccountStatusValidationFilter.class)
-@WithPostprocessors
 @DisplayName("AccountStatusValidationFilter")
 class AccountStatusValidationFilterTest {
 

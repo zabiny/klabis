@@ -1,7 +1,7 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
+import com.klabis.common.CommonInfrastructureWebMvcSetup;
 import com.klabis.common.mvc.MvcComponent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,9 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * authorization-sensitive.
  */
 @WebMvcTest(controllers = HalResponseBodyAdviceTest.SelfLinkTestController.class)
-@Import(HalFormsSupport.class)
 @DisplayName("HalResponseBodyAdvice self link handling for paged responses")
-@WithPostprocessors
+@CommonInfrastructureWebMvcSetup
+@Import(HalFormsSupport.class)
 class HalResponseBodyAdviceTest {
 
     @Autowired

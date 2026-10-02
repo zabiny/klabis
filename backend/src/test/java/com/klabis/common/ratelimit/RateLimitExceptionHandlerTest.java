@@ -1,14 +1,13 @@
 package com.klabis.common.ratelimit;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
+import com.klabis.common.CommonInfrastructureWebMvcSetup;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,9 +23,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * with correct HTTP status codes.
  */
 @WebMvcTest(controllers = ErrorHandlingTestController.class)
-@ActiveProfiles("test")
+@CommonInfrastructureWebMvcSetup
 @Import(EncryptionConfiguration.class)
-@WithPostprocessors
 class RateLimitExceptionHandlerTest {
 
     @Autowired
