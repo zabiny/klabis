@@ -1,9 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.events.EventsWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventCategory;
 import com.klabis.events.EventCategoryId;
@@ -26,12 +24,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
@@ -52,9 +47,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("EventController API tests")
-@WebMvcTest(controllers = {EventController.class, EventsExceptionHandler.class, EventDetailsPostprocessor.class, EventSummaryPostprocessor.class})
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@EventsWebMvcTest
 class EventControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";
@@ -65,17 +58,14 @@ class EventControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean
+    @Autowired
     private EventManagementPort eventManagementService;
 
-    @MockitoBean
+    @Autowired
     private EventRegistrationPort eventRegistrationService;
 
-    @MockitoBean
+    @Autowired
     private Members members;
-
-    @MockitoBean
-    private AccommodationListCsvRenderer csvRenderer;
 
     @Autowired
     private SynchronizationPort synchronizationPort;
@@ -115,6 +105,8 @@ class EventControllerTest {
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WithoutEventsManageAuthority() throws Exception {
+            when(eventManagementService.createEvent(any())).thenReturn(EventTestDataBuilder.anEvent().build());
+
             mockMvc.perform(
                             post("/api/events")
                                     .contentType("application/json")
@@ -349,6 +341,8 @@ class EventControllerTest {
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WhenUpdatingWithoutAuthority() throws Exception {
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(EventTestDataBuilder.anEvent().build());
+
             UUID eventId = UUID.randomUUID();
 
             mockMvc.perform(
@@ -2905,10 +2899,8 @@ class EventControllerTest {
                     "Jan", "Novák", "AB123456", java.time.LocalDate.of(2028, 1, 1),
                     java.time.LocalDate.of(1990, 5, 10), "Hlavní 1", "Praha", "11000", "CZ");
 
-            byte[] csvBytes = "Jan;Novák\n".getBytes(java.nio.charset.StandardCharsets.UTF_8);
             when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(members.findAccommodationDataByIds(any())).thenReturn(Map.of(memberId, accommodationDto));
-            when(csvRenderer.renderToBytes(any())).thenReturn(csvBytes);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/accommodation-list", eventId)
@@ -3046,21 +3038,14 @@ class EventControllerTest {
             when(members.findAccommodationDataByIds(any())).thenReturn(Map.of(
                     wantsIt, accommodationDto("Wants"),
                     doesNot, accommodationDto("DoesNot")));
-            when(csvRenderer.renderToBytes(any())).thenReturn("csv".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/accommodation-list", eventId)
                                     .accept("text/csv")
                     )
-                    .andExpect(status().isOk());
-
-            @SuppressWarnings("unchecked")
-            org.mockito.ArgumentCaptor<List<AccommodationListItemDto>> captor =
-                    org.mockito.ArgumentCaptor.forClass(List.class);
-            verify(csvRenderer).renderToBytes(captor.capture());
-            org.assertj.core.api.Assertions.assertThat(captor.getValue())
-                    .extracting(AccommodationListItemDto::firstName)
-                    .containsExactly("Wants");
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("Wants")))
+                    .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("DoesNot"))));
         }
 
         @Test
@@ -3336,4 +3321,62 @@ class EventControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("GET /api/dashboard - upcomingRegistrations link")
+    class DashboardUpcomingRegistrationsLinkTests {
+
+        @Test
+        @DisplayName("should expose upcomingRegistrations link for user with member profile")
+        @WithKlabisMockUser(memberId = "11111111-1111-1111-1111-111111111111")
+        void shouldExposeLinkForUserWithMemberProfile() throws Exception {
+            mockMvc.perform(get("/api/dashboard").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.upcomingRegistrations.href", org.hamcrest.Matchers.allOf(
+                            org.hamcrest.Matchers.startsWith("/api/events"),
+                            org.hamcrest.Matchers.containsString("status=ACTIVE"),
+                            org.hamcrest.Matchers.containsString("registeredBy=me"),
+                            org.hamcrest.Matchers.containsString("dateFrom=" + java.time.LocalDate.now()),
+                            org.hamcrest.Matchers.containsString("sort=eventDate,ASC"),
+                            org.hamcrest.Matchers.containsString("size=3"))));
+        }
+
+        @Test
+        @DisplayName("should NOT expose upcomingRegistrations link for user without member profile")
+        @WithKlabisMockUser(username = "adminuser")
+        void shouldNotExposeLinkForUserWithoutMemberProfile() throws Exception {
+            mockMvc.perform(get("/api/dashboard").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.upcomingRegistrations").doesNotExist());
+        }
+    }
+
+    @Nested
+    @DisplayName("ORIS integration disabled (no oris profile)")
+    class OrisImportDisabledTests {
+
+        @Test
+        @DisplayName("should NOT expose importEvent and importEventsBatch affordances")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldNotExposeImportAffordances() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.importEvent").doesNotExist())
+                    .andExpect(jsonPath("$._templates.importEventsBatch").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should reject ORIS import endpoints (not mapped) with a client error")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldRejectOrisEndpoints() throws Exception {
+            mockMvc.perform(post("/api/events/import").contentType("application/json").content("{\"orisId\": 1}"))
+                    .andExpect(status().is4xxClientError());
+            mockMvc.perform(post("/api/events/import-batch").contentType("application/json").content("{\"orisIds\": [1]}"))
+                    .andExpect(status().is4xxClientError());
+            mockMvc.perform(post("/api/events/sync-from-oris/all-upcoming"))
+                    .andExpect(status().is4xxClientError());
+        }
+    }
 }

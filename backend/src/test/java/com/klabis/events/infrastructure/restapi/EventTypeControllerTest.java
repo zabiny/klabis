@@ -1,9 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.events.EventsWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
@@ -16,10 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -36,15 +31,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("EventTypeController API tests")
-@WebMvcTest(controllers = {EventTypeController.class})
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@EventsWebMvcTest
 class EventTypeControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private EventTypeManagementPort eventTypeManagementService;
 
     @Nested
@@ -203,6 +196,8 @@ class EventTypeControllerTest {
         @DisplayName("should return 403 when user has no event authorities at all")
         @WithKlabisMockUser(authorities = {})
         void shouldReturn403WhenMissingAuthority() throws Exception {
+            when(eventTypeManagementService.getEventType(any(EventTypeId.class))).thenReturn(EventType.create(new EventType.CreateEventType("Závod", "#00ff00", 2, null), 2));
+
             mockMvc.perform(get("/api/event-types/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
         }
@@ -278,6 +273,8 @@ class EventTypeControllerTest {
         @DisplayName("should return 403 when missing authority")
         @WithKlabisMockUser(authorities = {})
         void shouldReturn403WhenMissingAuthority() throws Exception {
+            when(eventTypeManagementService.createEventType(any())).thenReturn(EventType.create(new EventType.CreateEventType("Trénink", "#ff0000", 1, null), 1));
+
             mockMvc.perform(post("/api/event-types")
                             .contentType("application/json")
                             .content("""
@@ -419,6 +416,29 @@ class EventTypeControllerTest {
         void shouldReturn403WhenMissingAuthority() throws Exception {
             mockMvc.perform(delete("/api/event-types/{id}", UUID.randomUUID()))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api - event-types navigation link")
+    class RootNavigationLinkTests {
+
+        @Test
+        @DisplayName("should expose event-types link for user with EVENTS:READ and EVENTS:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldExposeLinkForEventsManageUser() throws Exception {
+            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.event-types.href", containsString("/api/event-types")));
+        }
+
+        @Test
+        @DisplayName("should NOT expose event-types link for user with only EVENTS:READ")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void shouldNotExposeLinkForEventsReadOnlyUser() throws Exception {
+            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.event-types").doesNotExist());
         }
     }
 }

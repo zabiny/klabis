@@ -34,8 +34,7 @@ import java.lang.annotation.Target;
         EventTypeManagementPort.class,
         DisciplineManagementPort.class,
         CategoryPresetManagementPort.class,
-        MemberRegistrationSanctionPort.class,
-        AccommodationListCsvRenderer.class
+        MemberRegistrationSanctionPort.class
 })
 public @interface EventsWebMvcMockitoBeans {
 }

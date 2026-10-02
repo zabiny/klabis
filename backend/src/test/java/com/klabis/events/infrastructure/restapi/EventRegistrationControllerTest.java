@@ -1,10 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.common.HateoasTestingSupport;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.events.EventsWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventCategory;
 import com.klabis.events.EventCategoryId;
@@ -23,12 +20,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.test.context.bean.override.convention.TestBean;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
@@ -51,9 +43,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("Event Registration Controller API Tests")
-@WebMvcTest(controllers = {EventRegistrationController.class, EventsExceptionHandler.class})
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@EventsWebMvcTest
 class EventRegistrationControllerTest {
 
     private static final String MEMBER_1_ID = "11111111-1111-1111-1111-111111111111";
@@ -64,24 +54,17 @@ class EventRegistrationControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @TestBean
-    private EntityLinks entityLinksMock;
-
-    @MockitoBean
+    @Autowired
     private EventManagementPort eventManagementServiceMock;
 
-    @MockitoBean
+    @Autowired
     private EventRegistrationPort registrationServiceMock;
 
-    @MockitoBean
+    @Autowired
     private Members membersMock;
 
     @Autowired
     private MemberRegistrationSanctionPort memberRegistrationSanctionPortMock;
-
-    static EntityLinks entityLinksMock() {
-        return HateoasTestingSupport.createModuleEntityLinks(EventRegistrationController.class);
-    }
 
     @Nested
     @DisplayName("POST /api/events/{id}/registrations")
