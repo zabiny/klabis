@@ -2,7 +2,7 @@ package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.MembersWebMvcTest;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.settings.OrisClubKeyPort;
+import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
@@ -82,7 +82,7 @@ class MemberControllerApiTest {
     private RegistrationPort registrationService;
 
     @Autowired
-    private OrisClubKeyPort orisClubKeyPort;
+    private OrisClubKeyManagementPort orisClubKeyManagementPort;
 
     @Autowired
     private SynchronizationPort synchronizationPort;
@@ -2759,7 +2759,7 @@ class MemberControllerApiTest {
         void affordanceAbsent() throws Exception {
             when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
-            when(orisClubKeyPort.isSet()).thenReturn(true);
+            when(orisClubKeyManagementPort.isSet()).thenReturn(true);
 
             mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())

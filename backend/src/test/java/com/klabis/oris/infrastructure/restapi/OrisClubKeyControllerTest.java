@@ -1,20 +1,16 @@
 package com.klabis.oris.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.settings.OrisClubKeyPort;
-import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.oris.OrisWebMvcTest;
+import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.common.users.Authority;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.verify;
@@ -28,16 +24,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * the 'set'/'clear' affordances depending on whether a key is currently held.
  */
 @DisplayName("OrisClubKeyController")
-@WebMvcTest(controllers = OrisClubKeyController.class)
-@Import({HalFormsSupport.class, OrisClubKeyResponsePostprocessor.class})
-@WithPostprocessors
+@OrisWebMvcTest
 class OrisClubKeyControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
-    private OrisClubKeyPort orisClubKeyPort;
+    @Autowired
+    private OrisClubKeyManagementPort orisClubKeyManagementPort;
 
     @Nested
     @DisplayName("GET /api/oris/club-key")
@@ -47,7 +41,7 @@ class OrisClubKeyControllerTest {
         @WithKlabisMockUser(authorities = Authority.SYNC_MANAGE)
         @DisplayName("no key held -> isSet false, only the 'set' affordance")
         void noKeyHeld_reportsUnsetWithSetAffordanceOnly() throws Exception {
-            when(orisClubKeyPort.isSet()).thenReturn(false);
+            when(orisClubKeyManagementPort.isSet()).thenReturn(false);
 
             mockMvc.perform(get("/api/oris/club-key").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
@@ -60,7 +54,7 @@ class OrisClubKeyControllerTest {
         @WithKlabisMockUser(authorities = Authority.SYNC_MANAGE)
         @DisplayName("key held -> isSet true, only the 'clear' affordance")
         void keyHeld_reportsSetWithClearAffordanceOnly() throws Exception {
-            when(orisClubKeyPort.isSet()).thenReturn(true);
+            when(orisClubKeyManagementPort.isSet()).thenReturn(true);
 
             mockMvc.perform(get("/api/oris/club-key").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
@@ -73,7 +67,7 @@ class OrisClubKeyControllerTest {
         @WithKlabisMockUser(authorities = Authority.SYNC_MANAGE)
         @DisplayName("response never carries the key value itself")
         void neverDisclosesTheKeyValue() throws Exception {
-            when(orisClubKeyPort.isSet()).thenReturn(true);
+            when(orisClubKeyManagementPort.isSet()).thenReturn(true);
 
             mockMvc.perform(get("/api/oris/club-key").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
@@ -85,6 +79,8 @@ class OrisClubKeyControllerTest {
         @WithKlabisMockUser(authorities = Authority.MEMBERS_MANAGE)
         @DisplayName("user without SYNC:MANAGE -> 403")
         void withoutSyncManageAuthority_returns403() throws Exception {
+            when(orisClubKeyManagementPort.isSet()).thenReturn(false);
+
             mockMvc.perform(get("/api/oris/club-key").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isForbidden());
         }
@@ -105,7 +101,7 @@ class OrisClubKeyControllerTest {
         @WithKlabisMockUser(authorities = Authority.SYNC_MANAGE)
         @DisplayName("valid key -> stored, isSet true in response")
         void validKey_isStored() throws Exception {
-            when(orisClubKeyPort.isSet()).thenReturn(true);
+            when(orisClubKeyManagementPort.isSet()).thenReturn(true);
 
             mockMvc.perform(put("/api/oris/club-key")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -116,7 +112,7 @@ class OrisClubKeyControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.isSet").value(true));
 
-            verify(orisClubKeyPort).store("secret-value");
+            verify(orisClubKeyManagementPort).store("secret-value");
         }
 
         @Test
@@ -131,7 +127,7 @@ class OrisClubKeyControllerTest {
                                     """))
                     .andExpect(status().isBadRequest());
 
-            Mockito.verifyNoInteractions(orisClubKeyPort);
+            Mockito.verifyNoInteractions(orisClubKeyManagementPort);
         }
 
         @Test
@@ -159,7 +155,7 @@ class OrisClubKeyControllerTest {
             mockMvc.perform(delete("/api/oris/club-key").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isNoContent());
 
-            verify(orisClubKeyPort).clear();
+            verify(orisClubKeyManagementPort).clear();
         }
 
         @Test
@@ -169,7 +165,7 @@ class OrisClubKeyControllerTest {
             mockMvc.perform(delete("/api/oris/club-key").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isNoContent());
 
-            verify(orisClubKeyPort).clear();
+            verify(orisClubKeyManagementPort).clear();
         }
 
         @Test
@@ -179,7 +175,7 @@ class OrisClubKeyControllerTest {
             mockMvc.perform(delete("/api/oris/club-key").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isForbidden());
 
-            Mockito.verifyNoInteractions(orisClubKeyPort);
+            Mockito.verifyNoInteractions(orisClubKeyManagementPort);
         }
     }
 }

@@ -4,17 +4,13 @@ import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.dto.EventSummary;
 import com.dpolach.api.orisclient.dto.Organizer;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
+import com.klabis.oris.OrisWebMvcTest;
 import com.klabis.oris.application.ImportedOrisEventsPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -33,10 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("OrisController — GET /api/oris/events filtering tests")
-@WebMvcTest(controllers = OrisController.class)
-@ActiveProfiles("oris")
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@OrisWebMvcTest
+@ActiveProfiles({"test", "oris"})
 class OrisControllerTest {
 
     @Autowired
@@ -45,7 +39,7 @@ class OrisControllerTest {
     @MockitoBean
     private OrisApiClient orisApiClient;
 
-    @MockitoBean
+    @Autowired
     private ImportedOrisEventsPort importedOrisEventsPort;
 
     @Nested
@@ -100,6 +94,9 @@ class OrisControllerTest {
         @DisplayName("should return 403 when user lacks EVENTS:MANAGE authority")
         @WithKlabisMockUser(username = "member", authorities = {Authority.EVENTS_READ})
         void shouldReturn403WithoutEventsManageAuthority() throws Exception {
+            stubOrisApiReturning(List.of(orisEventSummary(501, "Some Race", LocalDate.of(2026, 8, 1))));
+            when(importedOrisEventsPort.findImportedOrisIds(any())).thenReturn(Set.of());
+
             mockMvc.perform(get("/api/oris/events").accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isForbidden());
         }

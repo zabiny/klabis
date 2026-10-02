@@ -1,6 +1,6 @@
 package com.klabis.oris.infrastructure.restapi;
 
-import com.klabis.common.settings.OrisClubKeyPort;
+import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.oris.ClubKeyStateResponse;
 import com.klabis.oris.ClubKeyStateResponseBuilder;
@@ -13,17 +13,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * The club-key resource never discloses the key itself (design.md D9/D10) — every response is
- * built from {@link OrisClubKeyPort#isSet()} alone, and the port carries no getter to begin with.
+ * built from {@link OrisClubKeyManagementPort#isSet()} alone, and the port carries no getter to begin with.
  */
 @PrimaryAdapter
 @RestController
 @RequestMapping(produces = MediaTypes.HAL_FORMS_JSON_VALUE)
 class OrisClubKeyController implements OrisClubKeyApi {
 
-    private final OrisClubKeyPort orisClubKeyPort;
+    private final OrisClubKeyManagementPort orisClubKeyManagementPort;
 
-    OrisClubKeyController(OrisClubKeyPort orisClubKeyPort) {
-        this.orisClubKeyPort = orisClubKeyPort;
+    OrisClubKeyController(OrisClubKeyManagementPort orisClubKeyManagementPort) {
+        this.orisClubKeyManagementPort = orisClubKeyManagementPort;
     }
 
     @Override
@@ -35,7 +35,7 @@ class OrisClubKeyController implements OrisClubKeyApi {
 
     @Override
     public ResponseEntity<ClubKeyStateResponse> setClubKey(com.klabis.oris.SetClubKeyRequest request) {
-        orisClubKeyPort.store(request.clubKey());
+        orisClubKeyManagementPort.store(request.clubKey());
         ClubKeyStateResponse response = currentState();
         HalResponseContext.setDomain(response);
         return ResponseEntity.ok(response);
@@ -43,13 +43,13 @@ class OrisClubKeyController implements OrisClubKeyApi {
 
     @Override
     public ResponseEntity<Void> clearClubKey() {
-        orisClubKeyPort.clear();
+        orisClubKeyManagementPort.clear();
         return ResponseEntity.noContent().build();
     }
 
     private ClubKeyStateResponse currentState() {
         return ClubKeyStateResponseBuilder.builder()
-                .isSet(orisClubKeyPort.isSet())
+                .isSet(orisClubKeyManagementPort.isSet())
                 .build();
     }
 }

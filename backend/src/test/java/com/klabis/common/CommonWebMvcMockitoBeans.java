@@ -1,6 +1,6 @@
 package com.klabis.common;
 
-import com.klabis.common.settings.OrisClubKeyPort;
+import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.common.users.application.PasswordChangePort;
 import com.klabis.common.users.application.PasswordSetupService;
 import com.klabis.common.users.application.PermissionService;
@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
 /**
  * Mocks the shared-kernel services required by common web beans (password and permission controllers,
  * resource-server account status filter, authorization server components) and by web beans of other
- * modules ({@link OrisClubKeyPort}).
+ * modules ({@link OrisClubKeyManagementPort}).
  * <p>
  * {@link UserService} and {@link UserDetailsService} are needed in every {@code @WebMvcTest} that loads
  * the security filter chain. {@link UserDetailsService} is mocked because it is framework security
@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Documented
 @MockitoBean(types = {
-        OrisClubKeyPort.class,
+        OrisClubKeyManagementPort.class,
         PasswordChangePort.class,
         PasswordSetupService.class,
         PermissionService.class,

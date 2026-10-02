@@ -10,7 +10,7 @@ import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.Member;
-import com.klabis.common.settings.OrisClubKeyPort;
+import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.sync.application.SynchronizationPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -55,7 +55,7 @@ class BirthNumberAuditControllerTest {
     private RegistrationPort registrationService;
 
     @Autowired
-    private OrisClubKeyPort orisClubKeyPort;
+    private OrisClubKeyManagementPort orisClubKeyManagementPort;
 
     @Autowired
     private SynchronizationPort synchronizationPort;
