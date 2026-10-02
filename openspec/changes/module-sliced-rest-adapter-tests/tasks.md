@@ -7,9 +7,9 @@
 
 ## 2. Module `groups`
 
-- [ ] 2.1 Add `@GroupsWebMvcTest` (`@ModuleSlicing` STANDALONE, composes `@GroupsWebMvcMockitoBeans` and `@CommonWebMvcMockitoBeans`); migrate `FreeGroupControllerTest` and `TrainingGroupControllerTest`, merge related link-processor/postprocessor tests as `@Nested` groups
-- [ ] 2.2 Write 403 tests so that port returns are stubbed (controller body must not fail with NPE if the authorization annotation were missing; design D7)
-- [ ] 2.3 Run `groups` tests, review, commit
+- [x] 2.1 Add `@GroupsWebMvcTest` (`@ModuleSlicing` STANDALONE, composes `@GroupsWebMvcMockitoBeans` and `@CommonWebMvcMockitoBeans`); migrate `FreeGroupControllerTest` and `TrainingGroupControllerTest`, merge related link-processor/postprocessor tests as `@Nested` groups
+- [x] 2.2 Write 403 tests so that port returns are stubbed (controller body must not fail with NPE if the authorization annotation were missing; design D7)
+- [x] 2.3 Run `groups` tests, review, commit
 
 ## 3. Module `calendar`
 

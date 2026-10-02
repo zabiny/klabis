@@ -1,13 +1,11 @@
 package com.klabis.groups.traininggroup.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.groups.domain.GroupMembership;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
+import com.klabis.groups.GroupsWebMvcTest;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.groups.traininggroup.application.MemberAlreadyInTrainingGroupException;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
@@ -18,8 +16,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -34,9 +30,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("TrainingGroupController API tests")
-@WebMvcTest(controllers = {TrainingGroupController.class})
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@GroupsWebMvcTest
 class TrainingGroupControllerTest {
 
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -71,6 +65,9 @@ class TrainingGroupControllerTest {
         @DisplayName("should return 403 when user lacks GROUPS:TRAINING authority")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingTrainingAuthority() throws Exception {
+            when(trainingGroupManagementService.createTrainingGroup(any(TrainingGroup.CreateTrainingGroup.class)))
+                    .thenReturn(buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID));
+
             mockMvc.perform(
                             post("/api/training-groups")
                                     .contentType("application/json")
@@ -140,6 +137,9 @@ class TrainingGroupControllerTest {
         @DisplayName("should return 403 when user lacks GROUPS:TRAINING authority")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingTrainingAuthority() throws Exception {
+            when(trainingGroupManagementService.listTrainingGroups())
+                    .thenReturn(List.of(buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID)));
+
             mockMvc.perform(
                             get("/api/training-groups")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
@@ -467,6 +467,10 @@ class TrainingGroupControllerTest {
         @DisplayName("should return 403 when user lacks GROUPS:TRAINING authority")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingTrainingAuthority() throws Exception {
+            stubPrefill();
+            when(trainingGroupManagementService.updateTrainingGroup(any(TrainingGroupId.class), any()))
+                    .thenReturn(stubGroup());
+
             mockMvc.perform(
                             patch("/api/training-groups/{id}", GROUP_UUID)
                                     .contentType("application/json")
