@@ -73,7 +73,7 @@ public class EventController implements EventsApi {
     private final Members members;
     private final AccommodationListCsvRenderer csvRenderer;
     private final ConversionService conversionService;
-    private final Optional<SynchronizationPort> synchronizationPort;
+    private final SynchronizationPort synchronizationPort;
 
     public EventController(
             EventManagementPort eventManagementService,
@@ -82,7 +82,7 @@ public class EventController implements EventsApi {
             java.util.Optional<OrisEventImportPort> orisEventImportPort,
             AccommodationListCsvRenderer csvRenderer,
             ConversionService conversionService,
-            Optional<SynchronizationPort> synchronizationPort) {
+            SynchronizationPort synchronizationPort) {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
@@ -143,12 +143,8 @@ public class EventController implements EventsApi {
 
         // Same reasoning for SynchronizationPort (task 8.6): the postprocessor reads this from
         // HalResponseContext instead of holding the port itself, so unrelated @WebMvcTest slices need not mock it.
-        // The port is Optional because the sync engine is absent from events-only slices; without it
-        // nothing is reported as enrolled.
-        boolean isEnrolled = synchronizationPort
-                .map(port -> port.findByTarget(
-                        new SyncTarget(SyncEntityType.EVENT, event.getId().value().toString())).isPresent())
-                .orElse(false);
+        boolean isEnrolled = synchronizationPort.findByTarget(
+                new SyncTarget(SyncEntityType.EVENT, event.getId().value().toString())).isPresent();
         Set<String> enrolledIds = isEnrolled ? Set.of(event.getId().value().toString()) : Set.of();
         HalResponseContext.setContext(new EnrolledEventIds(enrolledIds));
 
@@ -218,12 +214,10 @@ public class EventController implements EventsApi {
         // Same reasoning as getEvent (task 8.6): one enrolment lookup per request, scoped to this
         // page's event ids rather than every active EVENT sync record, read back by the
         // postprocessor via HalResponseContext, rather than injecting SynchronizationPort there.
-        // The port is Optional because the sync engine is absent from events-only slices; without it
-        // nothing is reported as enrolled.
         List<String> pageEventIds = page.getContent().stream().map(e -> e.getId().value().toString()).toList();
-        Set<String> enrolledEventIds = pageEventIds.isEmpty() || synchronizationPort.isEmpty()
+        Set<String> enrolledEventIds = pageEventIds.isEmpty()
                 ? Set.of()
-                : synchronizationPort.get().findActiveByTargets(SyncEntityType.EVENT, pageEventIds).stream()
+                : synchronizationPort.findActiveByTargets(SyncEntityType.EVENT, pageEventIds).stream()
                         .map(reference -> reference.target().entityId())
                         .collect(Collectors.toSet());
         HalResponseContext.setContext(new EnrolledEventIds(enrolledEventIds));

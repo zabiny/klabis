@@ -60,7 +60,7 @@ class FeeSelectionCampaignControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private FeeSelectionCampaignManagementPort managementPort;
 
     @MockitoBean

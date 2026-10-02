@@ -33,7 +33,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,10 +49,10 @@ public class DisciplineController implements DisciplinesApi {
 
     private final DisciplineManagementPort disciplineManagementService;
     private final ConversionService conversionService;
-    private final Optional<SynchronizationPort> synchronizationPort;
+    private final SynchronizationPort synchronizationPort;
 
     DisciplineController(DisciplineManagementPort disciplineManagementService, ConversionService conversionService,
-                          Optional<SynchronizationPort> synchronizationPort) {
+                          SynchronizationPort synchronizationPort) {
         this.disciplineManagementService = disciplineManagementService;
         this.conversionService = conversionService;
         this.synchronizationPort = synchronizationPort;
@@ -68,14 +67,13 @@ public class DisciplineController implements DisciplinesApi {
         // Mirrors EventController#listEvents (design.md D9): one batched enrolment lookup for
         // the whole page rather than one per row, read back by the postprocessor via
         // HalResponseContext instead of injecting SynchronizationPort into it (an @MvcComponent,
-        // scanned by every @WebMvcTest slice). The port is Optional because the sync engine is
-        // absent from events-only slices; without it nothing is reported as enrolled.
+        // scanned by every @WebMvcTest slice).
         List<String> pageDisciplineIds = page.getContent().stream()
                 .map(discipline -> discipline.getId().value().toString())
                 .toList();
-        Set<String> enrolledDisciplineIds = pageDisciplineIds.isEmpty() || synchronizationPort.isEmpty()
+        Set<String> enrolledDisciplineIds = pageDisciplineIds.isEmpty()
                 ? Set.of()
-                : synchronizationPort.get().findActiveByTargets(SyncEntityType.DISCIPLINE, pageDisciplineIds).stream()
+                : synchronizationPort.findActiveByTargets(SyncEntityType.DISCIPLINE, pageDisciplineIds).stream()
                         .map(reference -> reference.target().entityId())
                         .collect(Collectors.toSet());
         HalResponseContext.setContext(new EnrolledDisciplineIds(enrolledDisciplineIds));
@@ -118,9 +116,7 @@ public class DisciplineController implements DisciplinesApi {
         // updateDiscipline) and the "sync" link, read back by the postprocessor via
         // HalResponseContext rather than injecting SynchronizationPort into it (an @MvcComponent,
         // scanned by every @WebMvcTest slice).
-        boolean isEnrolled = synchronizationPort
-                .map(port -> port.findByTarget(targetFor(disciplineId)).isPresent())
-                .orElse(false);
+        boolean isEnrolled = synchronizationPort.findByTarget(targetFor(disciplineId)).isPresent();
         Set<String> enrolledIds = isEnrolled ? Set.of(disciplineId.value().toString()) : Set.of();
         HalResponseContext.setContext(new EnrolledDisciplineIds(enrolledIds));
 

@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>Tokens without openid scope are rejected</li>
  * </ul>
  */
-@KlabisModuleTest(extraIncludes = "members")   // Need members module to load member details for user info endpoint
+@KlabisModuleTest(extraIncludes = {"members", "sync"})   // Need members module to load member details for user info endpoint
 @AutoConfigureMockMvc
 @Import(TestApplicationConfiguration.class)
 @TestPropertySource(properties = {

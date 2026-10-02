@@ -11,7 +11,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
@@ -27,20 +26,16 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @MvcComponent
 public class MemberFeeSummaryLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberDetailsResponse>> {
 
-    private final Optional<FeeSelectionCampaignManagementPort> campaignManagementPort;
+    private final FeeSelectionCampaignManagementPort campaignManagementPort;
     private final Clock clock;
 
-    MemberFeeSummaryLinkProcessor(Optional<FeeSelectionCampaignManagementPort> campaignManagementPort, Clock clock) {
+    MemberFeeSummaryLinkProcessor(FeeSelectionCampaignManagementPort campaignManagementPort, Clock clock) {
         this.campaignManagementPort = campaignManagementPort;
         this.clock = clock;
     }
 
     @Override
     public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
-        if (campaignManagementPort.isEmpty()) {
-            return model;
-        }
-
         MemberDetailsResponse content = model.getContent();
         if (content == null || content.id() == null) {
             return model;
@@ -52,7 +47,7 @@ public class MemberFeeSummaryLinkProcessor implements RepresentationModelProcess
             return model;
         }
 
-        int year = campaignManagementPort.get().relevantFeeYear(LocalDate.now(clock));
+        int year = campaignManagementPort.relevantFeeYear(LocalDate.now(clock));
         klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(resourceMemberId, year, null))
                 .ifPresent(link -> model.add(link.withRel("feeSummary")));
 

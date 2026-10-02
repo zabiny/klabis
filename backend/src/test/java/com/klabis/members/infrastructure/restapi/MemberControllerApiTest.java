@@ -1,6 +1,5 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.MembersWebMvcTest;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.settings.OrisClubKeyPort;
@@ -81,9 +80,6 @@ class MemberControllerApiTest {
 
     @Autowired
     private RegistrationPort registrationService;
-
-    @Autowired
-    private MemberDiscoveryPort memberDiscoveryPort;
 
     @Autowired
     private OrisClubKeyPort orisClubKeyPort;
@@ -180,6 +176,8 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn403WhenUnauthorized() throws Exception {
             UUID memberId = UUID.randomUUID();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenReturn(MemberTestDataBuilder.aMemberWithId(memberId).build());
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isForbidden());
@@ -2612,6 +2610,9 @@ class MemberControllerApiTest {
         @DisplayName("POST /api/members with wrong authority should return 403")
         @WithKlabisMockUser(username = "ZBM0102", authorities = {Authority.MEMBERS_READ})
         void shouldReturn403WhenInsufficientAuthority() throws Exception {
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class)))
+                    .thenReturn(MemberTestDataBuilder.aMember().build());
+
             mockMvc.perform(post("/api/members").contentType("application/json").content(REGISTER_BODY))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.type").exists())
@@ -2644,7 +2645,11 @@ class MemberControllerApiTest {
         @DisplayName("GET /api/members/{id} with wrong authority should return 403")
         @WithKlabisMockUser(username = "ZBM0102", authorities = {})
         void shouldReturn403WhenGettingMemberWithoutReadAuthority() throws Exception {
-            mockMvc.perform(get("/api/members/" + UUID.randomUUID()).contentType("application/json"))
+            UUID memberId = UUID.randomUUID();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenReturn(MemberTestDataBuilder.aMemberWithId(memberId).build());
+
+            mockMvc.perform(get("/api/members/" + memberId).contentType("application/json"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.type").exists())
                     .andExpect(jsonPath("$.title").value("Forbidden"));
@@ -2678,6 +2683,9 @@ class MemberControllerApiTest {
         @DisplayName("GET /api/members with wrong authority should return 403")
         @WithKlabisMockUser(username = "ZBM0102", authorities = {Authority.CALENDAR_MANAGE})
         void shouldReturn403WhenListingMembersWithoutReadAuthority() throws Exception {
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
             mockMvc.perform(get("/api/members").contentType("application/json"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.type").exists())
@@ -2734,81 +2742,23 @@ class MemberControllerApiTest {
     }
 
     @Nested
-    @DisplayName("POST /api/members/oris-import")
-    class ImportFromOrisTests {
+    @DisplayName("ORIS import disabled (no MemberDiscoveryPort bean, oris profile off)")
+    class OrisImportDisabledTests {
 
         @Test
-        @DisplayName("SYNC:MANAGE holder -> runs the same discovery job, 204")
+        @DisplayName("POST /api/members/oris-import -> 404 even for SYNC:MANAGE holder")
         @WithKlabisMockUser(authorities = Authority.SYNC_MANAGE)
-        void runsTheSameDiscoveryJob() throws Exception {
+        void importEndpointNotFound() throws Exception {
             mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isNoContent());
-
-            Mockito.verify(memberDiscoveryPort).discoverNewMembers();
+                    .andExpect(status().isNotFound());
         }
 
         @Test
-        @DisplayName("running twice invokes the discovery job twice, not a reimplementation")
-        @WithKlabisMockUser(authorities = Authority.SYNC_MANAGE)
-        void runningTwiceInvokesTheJobTwice() throws Exception {
-            mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isNoContent());
-            mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isNoContent());
-
-            Mockito.verify(memberDiscoveryPort, Mockito.times(2)).discoverNewMembers();
-        }
-
-        @Test
-        @DisplayName("user without SYNC:MANAGE -> 403, job never invoked")
-        @WithKlabisMockUser(authorities = Authority.MEMBERS_MANAGE)
-        void withoutSyncManageAuthority_returns403() throws Exception {
-            mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isForbidden());
-
-            Mockito.verify(memberDiscoveryPort, Mockito.times(0)).discoverNewMembers();
-        }
-    }
-
-    @Nested
-    @DisplayName("importFromOris affordance on GET /api/members (design.md D11)")
-    class ImportFromOrisAffordanceTests {
-
-        private void givenEmptyMemberList() {
+        @DisplayName("importFromOris affordance absent even with SYNC:MANAGE and club key held")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.SYNC_MANAGE})
+        void affordanceAbsent() throws Exception {
             when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
-        }
-
-        @Test
-        @DisplayName("SYNC:MANAGE held and club key held -> affordance present")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.SYNC_MANAGE})
-        void syncManageAndKeyHeld_affordancePresent() throws Exception {
-            givenEmptyMemberList();
-            when(orisClubKeyPort.isSet()).thenReturn(true);
-
-            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.importFromOris").exists())
-                    .andExpect(jsonPath("$._templates.importFromOris.method").value("POST"));
-        }
-
-        @Test
-        @DisplayName("SYNC:MANAGE held but no club key held -> affordance absent")
-        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.SYNC_MANAGE})
-        void syncManageHeldButNoKey_affordanceAbsent() throws Exception {
-            givenEmptyMemberList();
-            when(orisClubKeyPort.isSet()).thenReturn(false);
-
-            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.importFromOris").doesNotExist());
-        }
-
-        @Test
-        @DisplayName("club key held but no SYNC:MANAGE -> affordance absent")
-        @WithKlabisMockUser(authorities = Authority.MEMBERS_READ)
-        void keyHeldButNoSyncManage_affordanceAbsent() throws Exception {
-            givenEmptyMemberList();
             when(orisClubKeyPort.isSet()).thenReturn(true);
 
             mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON))

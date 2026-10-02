@@ -20,9 +20,6 @@ import java.lang.annotation.Target;
  * Mocks the ports required by the web beans of the membershipfees module (tier, campaign, fee group,
  * fee choice and fee summary controllers, link processors) so that other modules' {@code @WebMvcTest}
  * slices can load them without the membershipfees application layer.
- * <p>
- * {@code FeeSelectionCampaignManagementPort} is injected as {@code Optional} by a link processor but
- * required by controllers, so it is always mocked here.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

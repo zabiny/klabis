@@ -194,6 +194,9 @@ class LegalGuardianGroupControllerTest {
         @DisplayName("returns 403 to a minor of the group who lacks MEMBERS:MANAGE")
         @WithKlabisMockUser(memberId = MINOR_ID, authorities = {Authority.MEMBERS_READ})
         void forbiddenForMinorOfTheGroup() throws Exception {
+            when(legalGuardianGroupService.getGroup(any(LegalGuardianGroupId.class)))
+                    .thenReturn(groupOfMinor(GROUP_UUID, "Novák", GUARDIAN_ID, MINOR_ID));
+
             mockMvc.perform(get("/api/legal-guardian-groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
         }

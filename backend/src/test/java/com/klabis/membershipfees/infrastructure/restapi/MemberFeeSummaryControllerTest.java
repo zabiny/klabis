@@ -56,7 +56,7 @@ class MemberFeeSummaryControllerTest {
     @MockitoBean
     private MemberFeeHistoryPort memberFeeHistoryPort;
 
-    @MockitoBean
+    @Autowired
     private FeeSelectionCampaignManagementPort publicationManagementPort;
 
     @Nested

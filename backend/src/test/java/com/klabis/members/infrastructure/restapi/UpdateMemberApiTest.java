@@ -1,6 +1,5 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.MembersWebMvcTest;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
@@ -73,9 +72,6 @@ class UpdateMemberApiTest {
 
     @Autowired
     private ManagementPort memberService;
-
-    @Autowired
-    private MemberDiscoveryPort memberDiscoveryPort;
 
     @Autowired
     private OrisClubKeyPort orisClubKeyPort;
