@@ -56,7 +56,7 @@ class MembershipFeeTierControllerTest {
     @MockitoBean
     private MembershipFeeTierManagementPort managementPort;
 
-    @MockitoBean
+    @Autowired
     private FeeSelectionCampaignManagementPort campaignManagementPort;
 
     @Autowired

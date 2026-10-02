@@ -17,7 +17,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +33,7 @@ class MemberFeeSummaryLinkProcessorTest {
     private static final int CAMPAIGN_YEAR = 2027;
     private final FeeSelectionCampaignManagementPort campaignPort = mock(FeeSelectionCampaignManagementPort.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-06-11T12:00:00Z"), ZoneId.of("UTC"));
-    private final MemberFeeSummaryLinkProcessor processor = new MemberFeeSummaryLinkProcessor(Optional.of(campaignPort), clock);
+    private final MemberFeeSummaryLinkProcessor processor = new MemberFeeSummaryLinkProcessor(campaignPort, clock);
 
     @AfterEach
     void clearSecurityContext() {

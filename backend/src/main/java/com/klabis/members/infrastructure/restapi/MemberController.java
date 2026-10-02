@@ -69,7 +69,7 @@ public class MemberController implements MembersApi {
     private final ConversionService conversionService;
     private final Optional<MemberDiscoveryPort> memberDiscoveryPort;
     private final OrisClubKeyPort orisClubKeyPort;
-    private final Optional<SynchronizationPort> synchronizationPort;
+    private final SynchronizationPort synchronizationPort;
     private final MemberCompletenessPort memberCompletenessPort;
     private final LegalGuardianGroupPort legalGuardianGroupPort;
 
@@ -78,7 +78,7 @@ public class MemberController implements MembersApi {
             ConversionService conversionService,
             Optional<MemberDiscoveryPort> memberDiscoveryPort,
             OrisClubKeyPort orisClubKeyPort,
-            Optional<SynchronizationPort> synchronizationPort,
+            SynchronizationPort synchronizationPort,
             MemberCompletenessPort memberCompletenessPort,
             LegalGuardianGroupPort legalGuardianGroupPort) {
         this.memberCompletenessPort = memberCompletenessPort;
@@ -193,9 +193,9 @@ public class MemberController implements MembersApi {
         // member ids rather than every active MEMBER sync record, read back by the postprocessor
         // via HalResponseContext (design.md D4).
         List<String> pageMemberIds = memberPage.getContent().stream().map(m -> m.getId().uuid().toString()).toList();
-        Set<String> enrolledMemberIds = pageMemberIds.isEmpty() || synchronizationPort.isEmpty()
+        Set<String> enrolledMemberIds = pageMemberIds.isEmpty()
                 ? Set.of()
-                : synchronizationPort.get().findActiveByTargets(SyncEntityType.MEMBER, pageMemberIds).stream()
+                : synchronizationPort.findActiveByTargets(SyncEntityType.MEMBER, pageMemberIds).stream()
                         .map(reference -> reference.target().entityId())
                         .collect(Collectors.toSet());
         HalResponseContext.setContext(new EnrolledMemberIds(enrolledMemberIds));
@@ -259,12 +259,7 @@ public class MemberController implements MembersApi {
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
                 currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
-        // Held as Optional like memberDiscoveryPort above: the sync engine is absent from
-        // members-only slices (@ApplicationModuleTest without extraIncludes), where the
-        // member is simply reported as not enrolled.
-        boolean isEnrolled = synchronizationPort
-                .map(port -> port.findByTarget(targetFor(memberId)).isPresent())
-                .orElse(false);
+        boolean isEnrolled = synchronizationPort.findByTarget(targetFor(memberId)).isPresent();
         Set<String> enrolledIds = isEnrolled ? Set.of(memberId.uuid().toString()) : Set.of();
         HalResponseContext.setContext(new EnrolledMemberIds(enrolledIds));
 

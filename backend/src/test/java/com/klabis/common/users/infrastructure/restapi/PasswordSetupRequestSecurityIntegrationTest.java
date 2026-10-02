@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * End-to-end coverage of design.md D1: a foreign e-mail must get exactly the same response
  * as a matching one, and must trigger no e-mail (task 1.4).
  */
-@KlabisModuleTest(extraIncludes = "members")
+@KlabisModuleTest(extraIncludes = {"members", "sync"})
 @AutoConfigureMockMvc
 @Import(TestApplicationConfiguration.class)
 @CleanupTestData

@@ -95,7 +95,7 @@ Reference implementation: `com.klabis.members.MembersWebMvcTest` (members module
 
 ```java
 @WebMvcTest                                   // no `controllers` filter — all module controllers share one context
-@ModuleSlicing(module = "members", extraIncludes = {"groups", "calendar"},
+@ModuleSlicing(module = "members", extraIncludes = {"groups", "calendar", "sync"},
         mode = ApplicationModuleTest.BootstrapMode.STANDALONE, verifyAutomatically = false)
 @ActiveProfiles("test")
 @Import({ClockConfiguration.class, EncryptionConfiguration.class, HalFormsSupport.class})
@@ -103,17 +103,18 @@ Reference implementation: `com.klabis.members.MembersWebMvcTest` (members module
 @CommonWebMvcMockitoBeans
 @GroupsWebMvcMockitoBeans
 @CalendarWebMvcMockitoBeans
+@SyncWebMvcMockitoBeans
 public @interface MembersWebMvcTest {}
 ```
 
 - `@ModuleSlicing` (Spring Modulith) loads the real beans of the module (controllers, postprocessors, converters) plus shared `common`; use `mode = STANDALONE`. The meta-annotation must live in `com.klabis.<module>` and name `module` explicitly.
-- `extraIncludes` — only modules whose postprocessors add links/affordances to the responses the tests actually assert (members: `groups` → `trainingGroup` link, `calendar` → `ical-token` link). Every included module loads **all** its web beans, so each needs its `*WebMvcMockitoBeans`.
+- `extraIncludes` — only modules whose postprocessors add links/affordances to the responses the tests actually assert (members: `groups` → `trainingGroup` link, `calendar` → `ical-token` link, `sync` → sync link/state). A module whose port is injected into other modules' controllers (e.g. `sync`'s `SynchronizationPort`) is provided by adding the module to `extraIncludes` and composing its `*WebMvcMockitoBeans` — never by mocking the port directly in the consumer's annotation. Every included module loads **all** its web beans, so each needs its `*WebMvcMockitoBeans`. `@KlabisModuleTest` of a module whose controllers need a foreign primary port (e.g. members' `MemberController` -> `SynchronizationPort`) likewise needs `extraIncludes = "sync"`.
 - **Mock only primary ports.** The only beans a REST adapter test mocks are the module's primary ports (`@PrimaryPort`) and the same from other modules, plus infrastructure forced by the framework (`UserDetailsService`). Never mock:
   - beans from the REST adapter package under test (renderers, converters, link-support implementations, mappers) — load the real ones;
   - application/domain internals (repositories, `@Port` secondary ports, domain readers). A controller or postprocessor that needs one is bypassing the primary port — extend the primary port instead of mocking the repository.
   An external client (e.g. `OrisApiClient`) is a justified exception only when the adapter calls it directly.
 - `<Module>WebMvcMockitoBeans` (test source of the owning module, e.g. `com.klabis.groups.GroupsWebMvcMockitoBeans`) bundles `@MockitoBean(types=...)` for all ports/repositories the module's web beans need. Consumers compose it without knowing the ports. Each type is mocked in exactly one such annotation — the module that defines it (`common` owns `UserService`, `UserDetailsService`, `PasswordChangePort`, `PermissionService`, `OrisClubKeyPort`). When a web bean of the module gains a dependency, add it there, not in a test.
-- Feature-flag beans (injected as `Optional<T>`, e.g. `MemberDiscoveryPort`) never go into a `*WebMvcMockitoBeans`; they are mocked in the module's `@<Module>WebMvcTest` only when every test of the slice needs the feature on.
+- Optional / feature-flag / profile-gated beans (injected as `Optional<T>`, e.g. `MemberDiscoveryPort`, `OrisEventImportPort`) never go into a `*WebMvcMockitoBeans` or the `@<Module>WebMvcTest`. The test that needs the feature declares the mock itself (`@MockitoBean` on a dedicated test class, e.g. `MemberOrisImportEnabledApiTest`); the shared-context test class keeps a `...DisabledTests` nested class verifying the "feature off" behaviour (endpoint 404, affordance absent). A required dependency must not be `Optional<T>` just for test convenience.
 
 ```java
 @MembersWebMvcTest
@@ -128,7 +129,7 @@ class MemberControllerApiTest {
 ```
 
 Slice-context rules:
-- **One context per module.** Tests declare no `@MockitoBean`, `@Import`, `@ActiveProfiles` or `@TestPropertySource` of their own — any difference creates a new context and loses the sharing. Stub mocks via `@Autowired` fields (`reset` is automatic). A genuinely different configuration (e.g. `oris` profile, feature flag off) is a separate, deliberately named test setup — not an ad-hoc override.
+- **One context per module.** Tests declare no `@MockitoBean`, `@Import`, `@ActiveProfiles` or `@TestPropertySource` of their own — any difference creates a new context and loses the sharing. Stub mocks via `@Autowired` fields (`reset` is automatic). A genuinely different configuration (e.g. feature flag on via a locally mocked `Optional` bean) is a separate, deliberately named test class — keep their number minimal, each one is an extra context.
 - `Converter<S,T>` beans are always included by `WebMvcTypeExcludeFilter` — never `@Import` or mock a converter. The same visibility is why a `Converter` must have no module-specific constructor dependencies and no `uses = <PlainMapper>` (see `dto-mapping.md`).
 - `EntityLinks` comes from the real context; no `@TestBean EntityLinks`.
 - Duplicate `@MockitoBean` of the same type (including via two composed annotations) fails context bootstrap — keep type ownership in one `*WebMvcMockitoBeans`.

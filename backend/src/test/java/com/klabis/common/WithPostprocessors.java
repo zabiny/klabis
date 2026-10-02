@@ -6,6 +6,7 @@ import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.members.LegalGuardians;
 import com.klabis.members.application.MemberAccountActivationPort;
 import com.klabis.membershipfees.application.EventTypeOptionsPort;
+import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.sync.application.SynchronizationPort;
 import org.springframework.context.annotation.Import;
@@ -53,7 +54,8 @@ import java.lang.annotation.Target;
         RankingOptionsPort.class,
         EventTypeOptionsPort.class,
         MemberRegistrationSanctionPort.class,
-        SynchronizationPort.class
+        SynchronizationPort.class,
+        FeeSelectionCampaignManagementPort.class
 })
 public @interface WithPostprocessors {
 }
