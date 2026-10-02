@@ -1,10 +1,8 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.membershipfees.MembershipFeesWebMvcTest;
 import com.klabis.common.ui.HalFormsInlineOption;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
@@ -19,10 +17,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -40,9 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("MembershipFeeTierController API tests")
-@WebMvcTest(controllers = {MembershipFeeTierController.class, MembershipFeesExceptionHandler.class})
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@MembershipFeesWebMvcTest
 class MembershipFeeTierControllerTest {
 
     private static final String MEMBER_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -53,22 +46,19 @@ class MembershipFeeTierControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private MembershipFeeTierManagementPort managementPort;
 
     @Autowired
     private FeeSelectionCampaignManagementPort campaignManagementPort;
 
     @Autowired
-    private RankingOptionsPort rankingOptionsPortMock;
-
-    @Autowired
-    private EventTypeOptionsPort eventTypeOptionsPortMock;
+    private MembershipFeeTierOptionsPort optionsPort;
 
     @BeforeEach
     void setupMocks() {
-        when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of());
-        when(eventTypeOptionsPortMock.listEventTypeOptions()).thenReturn(List.of());
+        when(optionsPort.listRankingOptions()).thenReturn(List.of());
+        when(optionsPort.listEventTypeOptions()).thenReturn(List.of());
         when(campaignManagementPort.findActiveCampaign()).thenReturn(Optional.empty());
     }
 
@@ -95,6 +85,8 @@ class MembershipFeeTierControllerTest {
         @DisplayName("should return 403 when user lacks MEMBERS:MANAGE authority")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturn403WhenMissingAuthority() throws Exception {
+            when(managementPort.createTier(any())).thenReturn(LEVEL_ID);
+
             mockMvc.perform(
                             post("/api/membership-fee-tiers")
                                     .contentType("application/json")
@@ -562,7 +554,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeRankingInlineOptionsInAddRuleTemplate() throws Exception {
             when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
-            when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of(
+            when(optionsPort.listRankingOptions()).thenReturn(List.of(
                     new HalFormsInlineOption("A", "Elita"),
                     new HalFormsInlineOption("B", "Výkonnostní"),
                     new HalFormsInlineOption("WRE", "World Ranking Event")
@@ -588,7 +580,7 @@ class MembershipFeeTierControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeEmptyRankingOptionsWhenOrisUnavailable() throws Exception {
             when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Dospělý"));
-            when(rankingOptionsPortMock.listRankingOptions()).thenReturn(List.of());
+            when(optionsPort.listRankingOptions()).thenReturn(List.of());
 
             mockMvc.perform(
                             get("/api/membership-fee-tiers/{id}/rules", LEVEL_UUID)
@@ -603,7 +595,7 @@ class MembershipFeeTierControllerTest {
         void shouldIncludeEventTypeOptionsInAddRuleTemplate() throws Exception {
             var eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
             when(managementPort.getTier(LEVEL_ID)).thenReturn(buildLevel(LEVEL_UUID, "Závodní"));
-            when(eventTypeOptionsPortMock.listEventTypeOptions()).thenReturn(List.of(
+            when(optionsPort.listEventTypeOptions()).thenReturn(List.of(
                     new HalFormsInlineOption(eventTypeUuid.toString(), "Závod"),
                     new HalFormsInlineOption(UUID.randomUUID().toString(), "Trénink")
             ));

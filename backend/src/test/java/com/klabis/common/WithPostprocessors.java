@@ -5,9 +5,7 @@ import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.members.LegalGuardians;
 import com.klabis.members.application.MemberAccountActivationPort;
-import com.klabis.membershipfees.application.EventTypeOptionsPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
-import com.klabis.membershipfees.application.RankingOptionsPort;
 import com.klabis.sync.application.SynchronizationPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -51,8 +49,6 @@ import java.lang.annotation.Target;
         TrainingGroupManagementPort.class,
         UserService.class,
         UserDetailsService.class,
-        RankingOptionsPort.class,
-        EventTypeOptionsPort.class,
         MemberRegistrationSanctionPort.class,
         SynchronizationPort.class,
         FeeSelectionCampaignManagementPort.class

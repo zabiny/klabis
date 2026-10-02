@@ -1,13 +1,12 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
-import com.klabis.membershipfees.application.EventTypeOptionsPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.ManualCampaignClosePort;
 import com.klabis.membershipfees.application.MemberFeeHistoryPort;
 import com.klabis.membershipfees.application.MemberChoicePort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
-import com.klabis.membershipfees.application.RankingOptionsPort;
+import com.klabis.membershipfees.application.MembershipFeeTierOptionsPort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.lang.annotation.Documented;
@@ -26,8 +25,7 @@ import java.lang.annotation.Target;
 @Documented
 @MockitoBean(types = {
         MembershipFeeTierManagementPort.class,
-        RankingOptionsPort.class,
-        EventTypeOptionsPort.class,
+        MembershipFeeTierOptionsPort.class,
         FeeSelectionCampaignManagementPort.class,
         ManualCampaignClosePort.class,
         AdminFeeAssignmentPort.class,
