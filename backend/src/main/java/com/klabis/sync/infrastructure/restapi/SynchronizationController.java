@@ -5,7 +5,7 @@ import com.klabis.common.users.ActingUser;
 import com.klabis.common.users.UserId;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
-import com.klabis.sync.domain.SyncProjectionFieldReader;
+import com.klabis.sync.application.SyncProjectionFieldsPort;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncResolution;
 import com.klabis.sync.domain.SyncTarget;
@@ -33,7 +33,7 @@ public class SynchronizationController implements SyncApi {
     // SyncStateResponseConverter is deliberately not a Spring bean of its own — see its
     // javadoc — so it is built here from the same two ports it would otherwise be
     // injected with.
-    SynchronizationController(SynchronizationPort synchronizationPort, SyncProjectionFieldReader fieldReader) {
+    SynchronizationController(SynchronizationPort synchronizationPort, SyncProjectionFieldsPort fieldReader) {
         this.synchronizationPort = synchronizationPort;
         this.responseConverter = new SyncStateResponseConverter(fieldReader, synchronizationPort);
     }

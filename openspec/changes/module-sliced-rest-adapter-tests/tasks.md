@@ -19,9 +19,9 @@
 
 ## 4. Module `sync`
 
-- [ ] 4.1 Add a primary port over `SyncProjectionFieldReader`; `SynchronizationController` and `SyncStateResponseConverter` use it (test first, no behavior change)
-- [ ] 4.2 Update `SyncWebMvcMockitoBeans` and add `@SyncWebMvcTest`; migrate `SynchronizationControllerTest` and merge postprocessor tests
-- [ ] 4.3 Run `sync` tests plus `members` tests (they compose the sync mocks), review, commit
+- [x] 4.1 Add a primary port over `SyncProjectionFieldReader`; `SynchronizationController` and `SyncStateResponseConverter` use it (test first, no behavior change)
+- [x] 4.2 Update `SyncWebMvcMockitoBeans` and add `@SyncWebMvcTest`; migrate `SynchronizationControllerTest` and merge postprocessor tests
+- [x] 4.3 Run `sync` tests plus `members` tests (they compose the sync mocks), review, commit
 
 ## 5. Module `finance`
 

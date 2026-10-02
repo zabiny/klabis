@@ -1,8 +1,8 @@
 package com.klabis.sync.infrastructure.restapi;
 
+import com.klabis.sync.application.SyncProjectionFieldsPort;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncBaseline;
-import com.klabis.sync.domain.SyncProjectionFieldReader;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncStatus;
 import org.openapitools.jackson.nullable.JsonNullable;
@@ -14,7 +14,7 @@ import java.util.Map;
  * Maps a {@link SyncRecord} to its response shape (design.md D14). Not a MapStruct
  * {@code @Mapper} — the mapping is conditional (diverged fields only in CONFLICT,
  * baselineExternal only while diverged) rather than a field-to-field copy, and the
- * projections need {@link SyncProjectionFieldReader} to turn into plain maps.
+ * projections need {@link SyncProjectionFieldsPort} to turn into plain maps.
  * <p>
  * Every generated enum property (`entityType`, `status`, `externalSystem`,
  * `lastDirection`, `changedSides` values) is built via that enum's own
@@ -26,7 +26,7 @@ import java.util.Map;
  * Deliberately <b>not</b> a Spring {@code Converter} bean, unlike the usual mapping
  * pattern in this codebase: a {@code Converter} is registered into the global
  * {@code mvcConversionService} and therefore constructed by every {@code @WebMvcTest}
- * slice in the whole app, but its dependencies here ({@link SyncProjectionFieldReader},
+ * slice in the whole app, but its dependencies here ({@link SyncProjectionFieldsPort},
  * {@link SynchronizationPort}) are sync-module-specific and not available in an
  * unrelated slice — {@code MemberIdToUuidConverter}/{@code RegisterNewMemberConverter}
  * avoid this because they take no constructor dependencies at all. Constructed
@@ -35,10 +35,10 @@ import java.util.Map;
  */
 class SyncStateResponseConverter {
 
-    private final SyncProjectionFieldReader fieldReader;
+    private final SyncProjectionFieldsPort fieldReader;
     private final SynchronizationPort synchronizationPort;
 
-    SyncStateResponseConverter(SyncProjectionFieldReader fieldReader, SynchronizationPort synchronizationPort) {
+    SyncStateResponseConverter(SyncProjectionFieldsPort fieldReader, SynchronizationPort synchronizationPort) {
         this.fieldReader = fieldReader;
         this.synchronizationPort = synchronizationPort;
     }
@@ -55,7 +55,7 @@ class SyncStateResponseConverter {
                 : null;
 
         Map<String, com.klabis.sync.domain.ChangedSide> changedSidesByField = inConflict
-                ? record.changedSides(fieldReader)
+                ? record.changedSides(fieldReader::fields)
                 : Map.of();
         List<String> divergedFields = List.copyOf(changedSidesByField.keySet());
         Map<String, SyncStateResponseChangedSidesValue> changedSides = changedSidesByField.entrySet().stream()
