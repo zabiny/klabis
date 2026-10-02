@@ -784,4 +784,28 @@ class ManagementServiceTest {
             assertThat(resumeEvent.registrationNumber()).isEqualTo(testSuspendedMember.getRegistrationNumber());
         }
     }
+
+    @Nested
+    @DisplayName("member listing")
+    class ListMembersTests {
+
+        @Test
+        @DisplayName("listMembers should delegate filter and pageable to repository")
+        void shouldDelegateListMembersToRepository() {
+            var filter = MemberFilter.activeOnly();
+            var pageable = org.springframework.data.domain.PageRequest.of(0, 5);
+            var page = new org.springframework.data.domain.PageImpl<>(List.of(testMember));
+            when(memberRepository.findAll(filter, pageable)).thenReturn(page);
+
+            assertThat(testedSubject.listMembers(filter, pageable)).isSameAs(page);
+        }
+
+        @Test
+        @DisplayName("listActiveMembers should return only active-filter results")
+        void shouldListActiveMembers() {
+            when(memberRepository.findAll(MemberFilter.activeOnly())).thenReturn(List.of(testMember));
+
+            assertThat(testedSubject.listActiveMembers()).containsExactly(testMember);
+        }
+    }
 }

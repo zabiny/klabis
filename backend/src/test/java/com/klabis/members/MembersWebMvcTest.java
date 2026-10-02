@@ -21,18 +21,20 @@ import java.lang.annotation.*;
 /**
  * Single shared {@code @WebMvcTest} context for all REST adapter tests of the members module.
  * <p>
- * No {@code controllers} filter: {@link ModuleSlicing} in STANDALONE mode scans only the members module
- * (plus shared {@code common}), so every members controller and RepresentationModelProcessor is real.
- * {@code groups} and {@code calendar} are included because their processors add links to member responses
- * (training group, ical-token); other modules are not loaded. Ports excluded by the web slice are mocked via
- * the per-module {@code *WebMvcMockitoBeans} annotations. Tests stub them through {@code @Autowired} fields;
- * declaring an additional {@code @MockitoBean} in a test class would create a different context.
+ * STANDALONE slicing loads only members and shared {@code common}; {@code groups} and {@code calendar} are
+ * added via {@code extraIncludes} because their processors add links to member responses. Every other
+ * collaborator is a primary port mocked through the per-module {@code *WebMvcMockitoBeans}.
  * <p>
- * {@link SynchronizationPort} is mocked directly: {@code MemberController} uses it for the sync link, while
- * the sync module itself is not loaded.
+ * Mocked here, not in those annotations:
+ * <ul>
+ *   <li>{@link MemberDiscoveryPort}: injected as {@code Optional}, so its presence is a feature flag.</li>
+ *   <li>{@link SynchronizationPort}: sync web beans are not loaded, so {@code SyncWebMvcMockitoBeans}
+ *       (which also mocks a sync-internal reader) is not composed; the port is needed only for the sync link.</li>
+ * </ul>
+ * {@code UserDetailsService} stays mocked in {@link CommonWebMvcMockitoBeans}: it is security infrastructure.
  * <p>
- * {@link MemberDiscoveryPort} is mocked here because it is an {@code Optional} feature flag and so is
- * excluded from {@link MembersWebMvcMockitoBeans}.
+ * Tests must stub mocks via {@code @Autowired} fields; a {@code @MockitoBean} declared in a test class
+ * creates a new context and defeats the sharing.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

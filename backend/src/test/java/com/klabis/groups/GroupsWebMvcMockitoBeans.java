@@ -2,7 +2,6 @@ package com.klabis.groups;
 
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.lang.annotation.Documented;
@@ -21,8 +20,7 @@ import java.lang.annotation.Target;
 @Documented
 @MockitoBean(types = {
         FreeGroupManagementPort.class,
-        TrainingGroupManagementPort.class,
-        TrainingGroupRepository.class
+        TrainingGroupManagementPort.class
 })
 public @interface GroupsWebMvcMockitoBeans {
 }

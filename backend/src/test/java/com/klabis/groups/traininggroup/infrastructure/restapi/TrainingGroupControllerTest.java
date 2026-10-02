@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -47,7 +46,7 @@ class TrainingGroupControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private TrainingGroupManagementPort trainingGroupManagementService;
 
     private TrainingGroup buildTrainingGroup(UUID groupUuid, String name, AgeRange ageRange, String trainerUuidStr) {

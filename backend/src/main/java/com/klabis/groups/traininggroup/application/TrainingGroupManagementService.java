@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 class TrainingGroupManagementService implements TrainingGroupManagementPort {
@@ -33,6 +34,12 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
     @Override
     public TrainingGroup getTrainingGroup(TrainingGroupId id) {
         return loadTrainingGroup(id);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Optional<TrainingGroup> findTrainingGroupOfMember(MemberId memberId) {
+        return trainingGroupRepository.findOne(TrainingGroupFilter.all().withMemberIs(memberId));
     }
 
     @Transactional
