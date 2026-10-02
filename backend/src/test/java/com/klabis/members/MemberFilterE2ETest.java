@@ -1,4 +1,4 @@
-package com.klabis.members.infrastructure.restapi;
+package com.klabis.members;
 
 import com.klabis.E2ETest;
 import com.klabis.common.security.JwtParams;

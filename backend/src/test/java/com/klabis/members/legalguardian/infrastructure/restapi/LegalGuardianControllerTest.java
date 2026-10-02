@@ -1,9 +1,7 @@
 package com.klabis.members.legalguardian.infrastructure.restapi;
 
+import com.klabis.members.MembersWebMvcTest;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.domain.EmailAddress;
@@ -18,11 +16,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
@@ -37,9 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("LegalGuardianController API tests")
-@WebMvcTest(controllers = {LegalGuardianController.class})
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@MembersWebMvcTest
 class LegalGuardianControllerTest {
 
     private static final String GUARDIAN_ID = "22222222-2222-2222-2222-222222222222";
@@ -48,7 +41,7 @@ class LegalGuardianControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private LegalGuardianPort legalGuardianService;
 
     private static LegalGuardianProfile profile() {

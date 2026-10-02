@@ -1,8 +1,8 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.common.HateoasTestingSupport;
+import com.klabis.members.application.MemberDiscoveryPort;
+import com.klabis.members.MembersWebMvcTest;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
@@ -12,7 +12,6 @@ import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
-import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
 import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.sync.application.SynchronizationPort;
 import org.junit.jupiter.api.DisplayName;
@@ -20,12 +19,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.convention.TestBean;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
@@ -43,43 +38,36 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * so they are captured by Spring Modulith outbox within a transaction.
  */
 @DisplayName("Birth Number Audit – Controller Tests")
-@WebMvcTest(controllers = {MemberController.class, RegistrationController.class})
-@WithPostprocessors
+@MembersWebMvcTest
 class BirthNumberAuditControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private com.klabis.members.application.MemberCompletenessPort memberCompletenessPort;
 
-    @MockitoBean
+    @Autowired
     private com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort legalGuardianGroupPort;
 
-    @MockitoBean
+    @Autowired
     private ManagementPort managementService;
 
-    @MockitoBean
+    @Autowired
     private MemberRepository memberRepository;
 
-    @MockitoBean
+    @Autowired
     private RegistrationPort registrationService;
 
-    @MockitoBean
-    private MemberDiscoveryJob memberDiscoveryJob;
+    @Autowired
+    private MemberDiscoveryPort memberDiscoveryJob;
 
-    @MockitoBean
+    @Autowired
     private OrisClubKeyPort orisClubKeyPort;
 
     @Autowired
     private SynchronizationPort synchronizationPort;
 
-    @TestBean
-    private EntityLinks entityLinks;
-
-    static EntityLinks entityLinks() {
-        return HateoasTestingSupport.createModuleEntityLinks(MemberController.class);
-    }
 
     @Nested
     @DisplayName("GET /api/members/{id} – VIEW audit")
