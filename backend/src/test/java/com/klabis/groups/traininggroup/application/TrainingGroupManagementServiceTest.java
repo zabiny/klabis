@@ -51,6 +51,17 @@ class TrainingGroupManagementServiceTest {
         service = new TrainingGroupManagementService(trainingGroupRepository, activeMembersByAgeProvider);
     }
 
+    @Test
+    @DisplayName("findTrainingGroupOfMember() should look up the group the member belongs to")
+    void shouldFindTrainingGroupOfMember() {
+        TrainingGroup group = TrainingGroup.create(
+                new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+        when(trainingGroupRepository.findOne(TrainingGroupFilter.all().withMemberIs(TRAINER_2)))
+                .thenReturn(Optional.of(group));
+
+        assertThat(service.findTrainingGroupOfMember(TRAINER_2)).contains(group);
+    }
+
     @Nested
     @DisplayName("createTrainingGroup()")
     class CreateTrainingGroupMethod {

@@ -20,7 +20,8 @@ import java.lang.annotation.Target;
  * modules ({@link OrisClubKeyPort}).
  * <p>
  * {@link UserService} and {@link UserDetailsService} are needed in every {@code @WebMvcTest} that loads
- * the security filter chain.
+ * the security filter chain. {@link UserDetailsService} is mocked because it is framework security
+ * infrastructure backed by persistence, not a primary port of any adapter under test.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

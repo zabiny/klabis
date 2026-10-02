@@ -75,10 +75,7 @@ class UpdateMemberApiTest {
     private ManagementPort memberService;
 
     @Autowired
-    private MemberRepository memberRepository;
-
-    @Autowired
-    private MemberDiscoveryPort memberDiscoveryJob;
+    private MemberDiscoveryPort memberDiscoveryPort;
 
     @Autowired
     private OrisClubKeyPort orisClubKeyPort;

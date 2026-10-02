@@ -11,7 +11,6 @@ import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.Member;
-import com.klabis.members.domain.MemberRepository;
 import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.sync.application.SynchronizationPort;
 import org.junit.jupiter.api.DisplayName;
@@ -54,13 +53,10 @@ class BirthNumberAuditControllerTest {
     private ManagementPort managementService;
 
     @Autowired
-    private MemberRepository memberRepository;
-
-    @Autowired
     private RegistrationPort registrationService;
 
     @Autowired
-    private MemberDiscoveryPort memberDiscoveryJob;
+    private MemberDiscoveryPort memberDiscoveryPort;
 
     @Autowired
     private OrisClubKeyPort orisClubKeyPort;

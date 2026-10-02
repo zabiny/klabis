@@ -8,11 +8,14 @@ import com.klabis.members.MemberId;
 import com.klabis.members.MonetaryAmount;
 import com.klabis.members.OwnedGroup;
 import com.klabis.members.domain.Member;
+import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.domain.MemberRepository;
 import org.jmolecules.ddd.annotation.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -42,6 +45,18 @@ public class ManagementService implements ManagementPort {
         this.memberFinancialStatePort = memberFinancialStatePort.orElseGet(NoOpMemberFinancialStatePort::new);
         this.memberOwnedGroupsPorts = memberOwnedGroupsPorts;
         this.memberCompletenessPort = memberCompletenessPort;
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<Member> listMembers(MemberFilter filter, Pageable pageable) {
+        return memberRepository.findAll(filter, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<Member> listActiveMembers() {
+        return memberRepository.findAll(MemberFilter.activeOnly());
     }
 
     @Override

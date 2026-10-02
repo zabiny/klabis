@@ -4,7 +4,6 @@ import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberAccountActivationPort;
 import com.klabis.members.application.MemberCompletenessPort;
 import com.klabis.members.application.RegistrationPort;
-import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.legalguardian.application.GuardianCandidatesPort;
 import com.klabis.members.legalguardian.application.LegalGuardianPort;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
@@ -32,7 +31,6 @@ import java.lang.annotation.Target;
 @MockitoBean(types = {
         ManagementPort.class,
         RegistrationPort.class,
-        MemberRepository.class,
         MemberCompletenessPort.class,
         MemberAccountActivationPort.class,
         LegalGuardianPort.class,

@@ -6,7 +6,6 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.MonetaryAmount;
@@ -81,13 +80,10 @@ class MemberControllerApiTest {
     private ManagementPort managementService;
 
     @Autowired
-    private MemberRepository memberRepository;
-
-    @Autowired
     private RegistrationPort registrationService;
 
     @Autowired
-    private MemberDiscoveryPort memberDiscoveryJob;
+    private MemberDiscoveryPort memberDiscoveryPort;
 
     @Autowired
     private OrisClubKeyPort orisClubKeyPort;
@@ -104,11 +100,10 @@ class MemberControllerApiTest {
     private com.klabis.members.application.MemberAccountActivationPort accountActivationPort;
 
     @Autowired
-    private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
+    private com.klabis.groups.traininggroup.application.TrainingGroupManagementPort trainingGroupManagementPort;
 
     @Autowired
     private LegalGuardianGroupPort legalGuardianGroupPort;
-
 
     @Nested
     @DisplayName("GET /api/members/{id}")
@@ -319,7 +314,6 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$.active").doesNotExist())
                     .andExpect(jsonPath("$._links.permissions").doesNotExist());
         }
-
 
         @Test
         @DisplayName("HAL+FORMS: user with MEMBERS_MANAGE authority: should include update and suspend in active member response (no permissions)")
@@ -537,7 +531,7 @@ class MemberControllerApiTest {
                     Mockito.mock(com.klabis.groups.traininggroup.domain.TrainingGroup.class);
             Mockito.when(mockTrainingGroup.getId())
                     .thenReturn(new com.klabis.groups.traininggroup.TrainingGroupId(groupId));
-            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
+            when(trainingGroupManagementPort.findTrainingGroupOfMember(any(MemberId.class)))
                     .thenReturn(java.util.Optional.of(mockTrainingGroup));
             when(legalGuardianGroupPort.findGroupOf(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
@@ -558,7 +552,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenReturn(member);
-            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
+            when(trainingGroupManagementPort.findTrainingGroupOfMember(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
             LegalGuardianGroup mockLegalGuardianGroup =
                     Mockito.mock(LegalGuardianGroup.class);
@@ -582,7 +576,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenReturn(member);
-            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
+            when(trainingGroupManagementPort.findTrainingGroupOfMember(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
             when(legalGuardianGroupPort.findGroupOf(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
@@ -601,7 +595,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).withActive(true).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenReturn(member);
-            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
+            when(trainingGroupManagementPort.findTrainingGroupOfMember(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
             when(legalGuardianGroupPort.findGroupOf(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
@@ -619,7 +613,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).withActive(true).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
                     .thenReturn(member);
-            when(trainingGroupRepository.findOne(any(TrainingGroupFilter.class)))
+            when(trainingGroupManagementPort.findTrainingGroupOfMember(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
             when(legalGuardianGroupPort.findGroupOf(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
@@ -1360,7 +1354,7 @@ class MemberControllerApiTest {
         @DisplayName("should return 200 with empty collection when no members exist")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturnEmptyCollectionWhenNoMembers() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class))).thenReturn(new PageImpl<>(
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class))).thenReturn(new PageImpl<>(
                     List.of()));
 
             mockMvc.perform(getApiMembers())
@@ -1373,12 +1367,12 @@ class MemberControllerApiTest {
         @DisplayName("should call repository with correct default pagination parameters")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldCallRepositoryWithDefaultPagination() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(getApiMembers());
 
-            Mockito.verify(memberRepository).findAll(any(MemberFilter.class), argThat(pageable ->
+            Mockito.verify(managementService).listMembers(any(MemberFilter.class), argThat(pageable ->
                     pageable.getPageNumber() == 0 &&
                     pageable.getPageSize() == 10 &&
                     pageable.getSort().getOrderFor("lastName") != null &&
@@ -1390,14 +1384,14 @@ class MemberControllerApiTest {
         @DisplayName("should call repository with custom page and size parameters")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldCallRepositoryWithCustomPagination() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(getApiMembers()
                     .param("page", "2")
                     .param("size", "20"));
 
-            Mockito.verify(memberRepository).findAll(any(MemberFilter.class), argThat(pageable ->
+            Mockito.verify(managementService).listMembers(any(MemberFilter.class), argThat(pageable ->
                     pageable.getPageNumber() == 2 &&
                     pageable.getPageSize() == 20
             ));
@@ -1407,14 +1401,14 @@ class MemberControllerApiTest {
         @DisplayName("should call repository with correct sort parameters")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldCallRepositoryWithCorrectSortParameters() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(getApiMembers()
                     .param("sort", "firstName,desc")
                     .param("sort", "registrationNumber,asc"));
 
-            Mockito.verify(memberRepository).findAll(any(MemberFilter.class), argThat(pageable ->
+            Mockito.verify(managementService).listMembers(any(MemberFilter.class), argThat(pageable ->
                     pageable.getSort().getOrderFor("firstName") != null &&
                     pageable.getSort().getOrderFor("firstName").isDescending() &&
                     pageable.getSort().getOrderFor("registrationNumber") != null &&
@@ -1439,7 +1433,7 @@ class MemberControllerApiTest {
                     .withRegistrationNumber(RegistrationNumber.of("ZBM0002"))
                     .build();
 
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member1, member2), PageRequest.of(0, 10), 2));
 
             mockMvc.perform(getApiMembers())
@@ -1463,7 +1457,7 @@ class MemberControllerApiTest {
         @DisplayName("HAL+FORMS: user with MEMBERS_MANAGE should see registerMember template on collection")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void adminShouldSeeRegisterMemberTemplateOnCollection() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(getApiMembers())
@@ -1476,7 +1470,7 @@ class MemberControllerApiTest {
         @DisplayName("HAL+FORMS: registerMember template carries inline gender options")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void registerMemberTemplateCarriesGenderInlineOptions() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(getApiMembers())
@@ -1490,7 +1484,7 @@ class MemberControllerApiTest {
         @DisplayName("HAL+FORMS: registerMember template binds legal guardian options to the legalGuardians array property")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void registerMemberTemplateCarriesLegalGuardianOptions() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(getApiMembers())
@@ -1505,7 +1499,7 @@ class MemberControllerApiTest {
         @DisplayName("HAL+FORMS: collection updateMember template carries inline gender and drivingLicenseGroup options")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void collectionUpdateMemberTemplateCarriesGenderAndDrivingLicenseInlineOptions() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(getApiMembers())
@@ -1519,7 +1513,7 @@ class MemberControllerApiTest {
         @DisplayName("HAL+FORMS: user without MEMBERS_MANAGE should not see registerMember template on collection")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void memberShouldNotSeeRegisterMemberTemplateOnCollection() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(getApiMembers())
@@ -1549,7 +1543,7 @@ class MemberControllerApiTest {
                     .withEmail("jan.novak@example.com")
                     .withActive(true)
                     .build();
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(getApiMembers())
@@ -1568,7 +1562,7 @@ class MemberControllerApiTest {
                     .withPhone((PhoneNumber) null)
                     .withDataIncomplete(true)
                     .build();
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(getApiMembers())
@@ -1586,7 +1580,7 @@ class MemberControllerApiTest {
                     .withPhone((PhoneNumber) null)
                     .withDataIncomplete(true)
                     .build();
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(getApiMembers())
@@ -1603,7 +1597,7 @@ class MemberControllerApiTest {
                     .withEmail("jan.novak@example.com")
                     .withActive(true)
                     .build();
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(getApiMembers())
@@ -1620,7 +1614,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withActive(true)
                     .build();
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(getApiMembers())
@@ -1638,7 +1632,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withActive(false)
                     .build();
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(getApiMembers())
@@ -1656,7 +1650,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withActive(true)
                     .build();
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(getApiMembers())
@@ -1672,7 +1666,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withActive(true)
                     .build();
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(getApiMembers())
@@ -1689,7 +1683,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withActive(false)
                     .build();
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(getApiMembers())
@@ -1705,7 +1699,7 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withActive(true)
                     .build();
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(getApiMembers())
@@ -1720,7 +1714,7 @@ class MemberControllerApiTest {
             UUID activeMemberId = UUID.randomUUID();
             Member activeMember = MemberTestDataBuilder.aMemberWithId(activeMemberId).withActive(true).build();
 
-            when(memberRepository.findAll(
+            when(managementService.listMembers(
                     argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
                     any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(activeMember)));
@@ -1739,7 +1733,7 @@ class MemberControllerApiTest {
             UUID activeMemberId = UUID.randomUUID();
             Member activeMember = MemberTestDataBuilder.aMemberWithId(activeMemberId).withActive(true).build();
 
-            when(memberRepository.findAll(
+            when(managementService.listMembers(
                     argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
                     any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(activeMember)));
@@ -1759,7 +1753,7 @@ class MemberControllerApiTest {
             Member activeMember = MemberTestDataBuilder.aMemberWithId(activeMemberId).withActive(true).build();
             Member inactiveMember = MemberTestDataBuilder.aMemberWithId(inactiveMemberId).withActive(false).build();
 
-            when(memberRepository.findAll(
+            when(managementService.listMembers(
                     argThat(filter -> filter.status() == MemberFilter.StatusFilter.ALL),
                     any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(activeMember, inactiveMember)));
@@ -1786,7 +1780,7 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             Member orisMember = MemberTestDataBuilder.aMemberWithId(memberId).build();
 
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(orisMember), PageRequest.of(0, 10), 1));
 
             SyncTarget target = new SyncTarget(SyncEntityType.MEMBER, memberId.toString());
@@ -1807,7 +1801,7 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             Member handRegisteredMember = MemberTestDataBuilder.aMemberWithId(memberId).build();
 
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(handRegisteredMember), PageRequest.of(0, 10), 1));
 
             mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -1824,14 +1818,14 @@ class MemberControllerApiTest {
         @DisplayName("3.1 — q param is passed as fulltextQuery in the filter")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldPassQParamAsFulltextQuery() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
                     .param("q", "novak")
                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
 
-            Mockito.verify(memberRepository).findAll(
+            Mockito.verify(managementService).listMembers(
                     argThat(filter -> "novak".equals(filter.fulltextQuery())),
                     any(org.springframework.data.domain.Pageable.class)
             );
@@ -1841,13 +1835,13 @@ class MemberControllerApiTest {
         @DisplayName("3.2 — q param absent means fulltextQuery is null in filter")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldPassNullFulltextQueryWhenQParamAbsent() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
 
-            Mockito.verify(memberRepository).findAll(
+            Mockito.verify(managementService).listMembers(
                     argThat(filter -> filter.fulltextQuery() == null),
                     any(org.springframework.data.domain.Pageable.class)
             );
@@ -1857,7 +1851,7 @@ class MemberControllerApiTest {
         @DisplayName("3.3 — MANAGE caller with status=INACTIVE gets StatusFilter.INACTIVE in filter")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void shouldPassInactiveStatusForManageCaller() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
@@ -1865,7 +1859,7 @@ class MemberControllerApiTest {
                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
 
-            Mockito.verify(memberRepository).findAll(
+            Mockito.verify(managementService).listMembers(
                     argThat(filter -> filter.status() == MemberFilter.StatusFilter.INACTIVE),
                     any(org.springframework.data.domain.Pageable.class)
             );
@@ -1875,7 +1869,7 @@ class MemberControllerApiTest {
         @DisplayName("3.3 — MANAGE caller with status=ALL gets StatusFilter.ALL in filter")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void shouldPassAllStatusForManageCaller() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
@@ -1883,7 +1877,7 @@ class MemberControllerApiTest {
                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
 
-            Mockito.verify(memberRepository).findAll(
+            Mockito.verify(managementService).listMembers(
                     argThat(filter -> filter.status() == MemberFilter.StatusFilter.ALL),
                     any(org.springframework.data.domain.Pageable.class)
             );
@@ -1903,7 +1897,7 @@ class MemberControllerApiTest {
         @DisplayName("3.5 — non-MANAGE caller with status=INACTIVE is silently forced to ACTIVE")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldForceActiveStatusForNonManageCaller() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
@@ -1911,7 +1905,7 @@ class MemberControllerApiTest {
                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
 
-            Mockito.verify(memberRepository).findAll(
+            Mockito.verify(managementService).listMembers(
                     argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
                     any(org.springframework.data.domain.Pageable.class)
             );
@@ -1921,7 +1915,7 @@ class MemberControllerApiTest {
         @DisplayName("3.5 — non-MANAGE caller with status=ALL is silently forced to ACTIVE")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldForceActiveStatusWhenNonManageCallerRequestsAll() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
@@ -1929,7 +1923,7 @@ class MemberControllerApiTest {
                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
 
-            Mockito.verify(memberRepository).findAll(
+            Mockito.verify(managementService).listMembers(
                     argThat(filter -> filter.status() == MemberFilter.StatusFilter.ACTIVE),
                     any(org.springframework.data.domain.Pageable.class)
             );
@@ -1939,13 +1933,13 @@ class MemberControllerApiTest {
         @DisplayName("3.7 — default sort includes firstName ASC as secondary tiebreak")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldHaveFirstNameAscAsSecondaryDefaultSort() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
 
-            Mockito.verify(memberRepository).findAll(
+            Mockito.verify(managementService).listMembers(
                     any(MemberFilter.class),
                     argThat(pageable ->
                             pageable.getSort().getOrderFor("lastName") != null &&
@@ -1960,7 +1954,7 @@ class MemberControllerApiTest {
         @DisplayName("3.8 — self link is a concrete URL with applied filter params, not a URI template")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void selfLinkMustBeConcreteUrlNotUriTemplate() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
@@ -1980,7 +1974,7 @@ class MemberControllerApiTest {
         @DisplayName("3.9 — self link has no template variables when only status is provided (q absent)")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void selfLinkHasNoTemplateVarsWhenOnlyStatusProvided() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
@@ -1998,7 +1992,7 @@ class MemberControllerApiTest {
         @DisplayName("3.10 — self link has no template variables when only q is provided (status absent)")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void selfLinkHasNoTemplateVarsWhenOnlyQProvided() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
@@ -2016,7 +2010,7 @@ class MemberControllerApiTest {
         @DisplayName("7.3 — incomplete=true filters for MEMBERS:MANAGE callers")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void incompleteTrueFiltersForManageCaller() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
@@ -2024,7 +2018,7 @@ class MemberControllerApiTest {
                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
 
-            Mockito.verify(memberRepository).findAll(
+            Mockito.verify(managementService).listMembers(
                     argThat(MemberFilter::incompleteOnly),
                     any(org.springframework.data.domain.Pageable.class)
             );
@@ -2034,7 +2028,7 @@ class MemberControllerApiTest {
         @DisplayName("7.3 — incomplete=true is ignored for callers without MEMBERS:MANAGE")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void incompleteTrueIsIgnoredForNonManageCaller() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
@@ -2042,7 +2036,7 @@ class MemberControllerApiTest {
                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
 
-            Mockito.verify(memberRepository).findAll(
+            Mockito.verify(managementService).listMembers(
                     argThat(filter -> !filter.incompleteOnly()),
                     any(org.springframework.data.domain.Pageable.class)
             );
@@ -2052,7 +2046,7 @@ class MemberControllerApiTest {
         @DisplayName("7.3 — incomplete=true is preserved in the collection's self link")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
         void incompleteParamPreservedInSelfLink() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members")
@@ -2527,7 +2521,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(memberRepository.findAll(MemberFilter.activeOnly())).thenReturn(List.of(activeMember1, activeMember2));
+            when(managementService.listActiveMembers()).thenReturn(List.of(activeMember1, activeMember2));
 
             mockMvc.perform(get("/api/members/options")
                             .accept(MediaType.APPLICATION_JSON))
@@ -2546,7 +2540,7 @@ class MemberControllerApiTest {
         @DisplayName("should return empty array when no active members")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturnEmptyArrayWhenNoActiveMembers() throws Exception {
-            when(memberRepository.findAll(MemberFilter.activeOnly())).thenReturn(List.of());
+            when(managementService.listActiveMembers()).thenReturn(List.of());
 
             mockMvc.perform(get("/api/members/options")
                             .accept(MediaType.APPLICATION_JSON))
@@ -2695,7 +2689,7 @@ class MemberControllerApiTest {
         @DisplayName("GET /api/members with MEMBERS:READ authority should return 200")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldReturn200WhenListingMembersWithReadAuthority() throws Exception {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
 
             mockMvc.perform(get("/api/members").contentType("application/json"))
@@ -2750,7 +2744,7 @@ class MemberControllerApiTest {
             mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isNoContent());
 
-            Mockito.verify(memberDiscoveryJob).discoverNewMembers();
+            Mockito.verify(memberDiscoveryPort).discoverNewMembers();
         }
 
         @Test
@@ -2762,7 +2756,7 @@ class MemberControllerApiTest {
             mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isNoContent());
 
-            Mockito.verify(memberDiscoveryJob, Mockito.times(2)).discoverNewMembers();
+            Mockito.verify(memberDiscoveryPort, Mockito.times(2)).discoverNewMembers();
         }
 
         @Test
@@ -2772,7 +2766,7 @@ class MemberControllerApiTest {
             mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isForbidden());
 
-            Mockito.verify(memberDiscoveryJob, Mockito.times(0)).discoverNewMembers();
+            Mockito.verify(memberDiscoveryPort, Mockito.times(0)).discoverNewMembers();
         }
     }
 
@@ -2781,7 +2775,7 @@ class MemberControllerApiTest {
     class ImportFromOrisAffordanceTests {
 
         private void givenEmptyMemberList() {
-            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of()));
         }
 

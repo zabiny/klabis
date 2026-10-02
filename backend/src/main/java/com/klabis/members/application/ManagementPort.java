@@ -3,7 +3,12 @@ package com.klabis.members.application;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.Member;
+import com.klabis.members.domain.MemberFilter;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.List;
 
 @PrimaryPort
 public interface ManagementPort {
@@ -46,4 +51,11 @@ public interface ManagementPort {
      * @throws MemberNotFoundException if no member with the given id exists
      */
     Member getMember(MemberId memberId);
+
+    /**
+     * Performs no authorization: the caller must restrict the filter (e.g. status, incompleteness) to what the user may see.
+     */
+    Page<Member> listMembers(MemberFilter filter, Pageable pageable);
+
+    List<Member> listActiveMembers();
 }

@@ -6,6 +6,7 @@ import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
 import java.util.List;
+import java.util.Optional;
 
 @PrimaryPort
 public interface TrainingGroupManagementPort {
@@ -13,6 +14,8 @@ public interface TrainingGroupManagementPort {
     List<TrainingGroup> listTrainingGroups();
 
     TrainingGroup getTrainingGroup(TrainingGroupId id);
+
+    Optional<TrainingGroup> findTrainingGroupOfMember(MemberId memberId);
 
     TrainingGroup createTrainingGroup(TrainingGroup.CreateTrainingGroup command);
 

@@ -16,7 +16,6 @@ import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
-import com.klabis.members.domain.MemberRepository;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.infrastructure.restapi.MemberLegalGuardianGroup;
@@ -44,7 +43,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
@@ -68,9 +66,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 public class MemberController implements MembersApi {
 
     private final ManagementPort managementService;
-    private final MemberRepository memberRepository;
     private final ConversionService conversionService;
-    private final Optional<MemberDiscoveryPort> memberDiscoveryJob;
+    private final Optional<MemberDiscoveryPort> memberDiscoveryPort;
     private final OrisClubKeyPort orisClubKeyPort;
     private final Optional<SynchronizationPort> synchronizationPort;
     private final MemberCompletenessPort memberCompletenessPort;
@@ -78,9 +75,8 @@ public class MemberController implements MembersApi {
 
     public MemberController(
             ManagementPort managementService,
-            MemberRepository memberRepository,
             ConversionService conversionService,
-            Optional<MemberDiscoveryPort> memberDiscoveryJob,
+            Optional<MemberDiscoveryPort> memberDiscoveryPort,
             OrisClubKeyPort orisClubKeyPort,
             Optional<SynchronizationPort> synchronizationPort,
             MemberCompletenessPort memberCompletenessPort,
@@ -88,9 +84,8 @@ public class MemberController implements MembersApi {
         this.memberCompletenessPort = memberCompletenessPort;
         this.legalGuardianGroupPort = legalGuardianGroupPort;
         this.managementService = managementService;
-        this.memberRepository = memberRepository;
         this.conversionService = conversionService;
-        this.memberDiscoveryJob = memberDiscoveryJob;
+        this.memberDiscoveryPort = memberDiscoveryPort;
         this.orisClubKeyPort = orisClubKeyPort;
         this.synchronizationPort = synchronizationPort;
     }
@@ -107,9 +102,9 @@ public class MemberController implements MembersApi {
      */
     @Override
     public ResponseEntity<Void> importFromOris() {
-        return memberDiscoveryJob
-                .map(job -> {
-                    job.discoverNewMembers();
+        return memberDiscoveryPort
+                .map(port -> {
+                    port.discoverNewMembers();
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -169,10 +164,9 @@ public class MemberController implements MembersApi {
                 .build();
     }
 
-    @Transactional(readOnly = true)
     @Override
     public ResponseEntity<List<MemberOptionResponse>> listMemberOptions() {
-        List<MemberOptionResponse> options = memberRepository.findAll(MemberFilter.activeOnly()).stream()
+        List<MemberOptionResponse> options = managementService.listActiveMembers().stream()
                 .map(member -> MemberOptionResponseBuilder.builder()
                         .prompt("%s %s (%s)".formatted(member.getFirstName(), member.getLastName(), member.getRegistrationNumber().getValue()))
                         .value(member.getId().uuid().toString())
@@ -181,7 +175,6 @@ public class MemberController implements MembersApi {
         return ResponseEntity.ok(options);
     }
 
-    @Transactional(readOnly = true)
     @Override
     public ResponseEntity<Page<MemberSummaryResponse>> listMembers(
             @Valid @RequestParam(required = false) String q,
@@ -194,7 +187,7 @@ public class MemberController implements MembersApi {
 
         MemberFilter filter = buildFilter(q, status, incomplete, currentUser);
 
-        Page<Member> memberPage = memberRepository.findAll(filter, pageable);
+        Page<Member> memberPage = managementService.listMembers(filter, pageable);
 
         // Same reasoning as getMember: one enrolment lookup per request, scoped to this page's
         // member ids rather than every active MEMBER sync record, read back by the postprocessor
@@ -207,7 +200,7 @@ public class MemberController implements MembersApi {
                         .collect(Collectors.toSet());
         HalResponseContext.setContext(new EnrolledMemberIds(enrolledMemberIds));
 
-        HalResponseContext.setContext(new ClubKeyHeld(memberDiscoveryJob.isPresent() && orisClubKeyPort.isSet()));
+        HalResponseContext.setContext(new ClubKeyHeld(memberDiscoveryPort.isPresent() && orisClubKeyPort.isSet()));
         HalResponseContext.setDomainList(memberPage.getContent());
 
         return ResponseEntity.ok(memberPage.map(member -> conversionService.convert(member, MemberSummaryResponse.class)));
@@ -266,7 +259,7 @@ public class MemberController implements MembersApi {
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
                 currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
 
-        // Held as Optional like memberDiscoveryJob above: the sync engine is absent from
+        // Held as Optional like memberDiscoveryPort above: the sync engine is absent from
         // members-only slices (@ApplicationModuleTest without extraIncludes), where the
         // member is simply reported as not enrolled.
         boolean isEnrolled = synchronizationPort

@@ -2,7 +2,7 @@ package com.klabis.common;
 
 import com.klabis.common.users.UserService;
 import com.klabis.events.application.MemberRegistrationSanctionPort;
-import com.klabis.groups.traininggroup.domain.TrainingGroupRepository;
+import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.members.LegalGuardians;
 import com.klabis.members.application.MemberAccountActivationPort;
 import com.klabis.membershipfees.application.EventTypeOptionsPort;
@@ -47,7 +47,7 @@ import java.lang.annotation.Target;
 @MockitoBean(types = {
         LegalGuardians.class,
         MemberAccountActivationPort.class,
-        TrainingGroupRepository.class,
+        TrainingGroupManagementPort.class,
         UserService.class,
         UserDetailsService.class,
         RankingOptionsPort.class,
