@@ -1,15 +1,14 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.members.application.MemberDiscoveryPort;
+import com.klabis.members.MembersWebMvcTest;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.users.Authority;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
-import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
 import com.klabis.common.settings.OrisClubKeyPort;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.members.domain.*;
@@ -19,12 +18,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.data.web.PagedResourcesAssembler;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
@@ -64,33 +59,28 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * </ul>
  */
 @DisplayName("Update Member Controller API Tests")
-@WebMvcTest(controllers = MemberController.class)
-@Import(EncryptionConfiguration.class)
-@WithPostprocessors
+@MembersWebMvcTest
 class UpdateMemberApiTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private com.klabis.members.application.MemberCompletenessPort memberCompletenessPort;
 
-    @MockitoBean
+    @Autowired
     private com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort legalGuardianGroupPort;
 
-    @MockitoBean
+    @Autowired
     private ManagementPort memberService;
 
-    @MockitoBean
+    @Autowired
     private MemberRepository memberRepository;
 
-    @MockitoBean
-    private PagedResourcesAssembler<?> pagedResourcesAssembler;
+    @Autowired
+    private MemberDiscoveryPort memberDiscoveryJob;
 
-    @MockitoBean
-    private MemberDiscoveryJob memberDiscoveryJob;
-
-    @MockitoBean
+    @Autowired
     private OrisClubKeyPort orisClubKeyPort;
 
     @Autowired

@@ -1,18 +1,15 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.members.MemberId;
+import com.klabis.members.MembersWebMvcTest;
 import com.klabis.members.application.MemberAccountActivationPort;
 import com.klabis.members.application.MemberNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,9 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("POST /api/members/{id}/account-activation")
-@WebMvcTest(controllers = MemberAccountActivationController.class)
-@Import(HalFormsSupport.class)
-@WithPostprocessors
+@MembersWebMvcTest
 class MemberAccountActivationControllerTest {
 
     @Autowired

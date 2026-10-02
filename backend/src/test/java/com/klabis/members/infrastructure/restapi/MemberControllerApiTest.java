@@ -1,10 +1,9 @@
 package com.klabis.members.infrastructure.restapi;
 
-import com.klabis.common.HateoasTestingSupport;
+import com.klabis.members.application.MemberDiscoveryPort;
+import com.klabis.members.MembersWebMvcTest;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
 import com.klabis.common.settings.OrisClubKeyPort;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.groups.traininggroup.domain.TrainingGroupFilter;
@@ -19,24 +18,17 @@ import com.klabis.members.domain.Gender;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
-import com.klabis.members.legalguardiangroup.infrastructure.restapi.MemberLegalGuardianGroupLinkProcessor;
-import com.klabis.members.infrastructure.orissync.MemberDiscoveryJob;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.*;
 import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.convention.TestBean;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -73,12 +65,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * </ul>
  */
 @DisplayName("Member Controller API Tests")
-@WebMvcTest(controllers = {MemberController.class, RegistrationController.class, MembersExceptionHandler.class})
-@Import({MemberMapperImpl.class, HalFormsSupport.class,
-        com.klabis.groups.traininggroup.infrastructure.restapi.MemberTrainingGroupLinkProcessor.class,
-        MemberLegalGuardianGroupLinkProcessor.class,
-        com.klabis.calendar.infrastructure.restapi.IcalTokenMemberDetailLinkProcessor.class})
-@WithPostprocessors
+@MembersWebMvcTest
 class MemberControllerApiTest {
 
     private static final String ADMIN_USERNAME = "ZBM0001";
@@ -87,22 +74,22 @@ class MemberControllerApiTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private com.klabis.members.application.MemberCompletenessPort memberCompletenessPort;
 
-    @MockitoBean
+    @Autowired
     private ManagementPort managementService;
 
-    @MockitoBean
+    @Autowired
     private MemberRepository memberRepository;
 
-    @MockitoBean
+    @Autowired
     private RegistrationPort registrationService;
 
-    @MockitoBean
-    private MemberDiscoveryJob memberDiscoveryJob;
+    @Autowired
+    private MemberDiscoveryPort memberDiscoveryJob;
 
-    @MockitoBean
+    @Autowired
     private OrisClubKeyPort orisClubKeyPort;
 
     @Autowired
@@ -119,15 +106,9 @@ class MemberControllerApiTest {
     @Autowired
     private com.klabis.groups.traininggroup.domain.TrainingGroupRepository trainingGroupRepository;
 
-    @MockitoBean
+    @Autowired
     private LegalGuardianGroupPort legalGuardianGroupPort;
 
-    @TestBean
-    private EntityLinks entityLinks;
-
-    static EntityLinks entityLinks() {
-        return HateoasTestingSupport.createModuleEntityLinks(MemberController.class);
-    }
 
     @Nested
     @DisplayName("GET /api/members/{id}")
@@ -2590,6 +2571,359 @@ class MemberControllerApiTest {
             mockMvc.perform(get("/api/members/options")
                             .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
+    @DisplayName("Endpoint security (401 / 403 / authorization passes)")
+    class EndpointSecurityTests {
+
+        private static final String REGISTER_BODY = """
+                {
+                    "firstName": "Jan",
+                    "lastName": "Novák",
+                    "dateOfBirth": "2005-05-15",
+                    "nationality": "CZ",
+                    "gender": "MALE",
+                    "email": "jan@example.com",
+                    "phone": "+420777123456",
+                    "birthNumber": "050515/1234",
+                    "address": {
+                        "street": "Hlavní 123",
+                        "city": "Praha",
+                        "postalCode": "11000",
+                        "country": "CZ"
+                    }
+                }
+                """;
+
+        private static final String SUSPEND_BODY = """
+                {
+                    "reason": "ODHLASKA",
+                    "note": "Test termination"
+                }
+                """;
+
+        @Test
+        @DisplayName("POST /api/members without authentication should return 401")
+        void shouldReturn401WhenUnauthenticated() throws Exception {
+            mockMvc.perform(post("/api/members").contentType("application/json").content(REGISTER_BODY))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.type").exists())
+                    .andExpect(jsonPath("$.title").value("Unauthorized"))
+                    .andExpect(jsonPath("$.status").value(401));
+        }
+
+        @Test
+        @DisplayName("POST /api/members with wrong authority should return 403")
+        @WithKlabisMockUser(username = "ZBM0102", authorities = {Authority.MEMBERS_READ})
+        void shouldReturn403WhenInsufficientAuthority() throws Exception {
+            mockMvc.perform(post("/api/members").contentType("application/json").content(REGISTER_BODY))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.type").exists())
+                    .andExpect(jsonPath("$.title").value("Forbidden"))
+                    .andExpect(jsonPath("$.status").value(403));
+        }
+
+        @Test
+        @DisplayName("POST /api/members with MEMBERS:MANAGE authority should return 201")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn201WhenAuthorized() throws Exception {
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class)))
+                    .thenReturn(MemberTestDataBuilder.aMember().build());
+
+            mockMvc.perform(post("/api/members").contentType("application/json").content(REGISTER_BODY))
+                    .andExpect(status().isCreated())
+                    .andExpect(header().exists(HttpHeaders.LOCATION));
+        }
+
+        @Test
+        @DisplayName("GET /api/members/{id} without authentication should return 401")
+        void shouldReturn401WhenGettingMemberUnauthenticated() throws Exception {
+            mockMvc.perform(get("/api/members/" + UUID.randomUUID()).contentType("application/json"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.type").exists())
+                    .andExpect(jsonPath("$.title").value("Unauthorized"));
+        }
+
+        @Test
+        @DisplayName("GET /api/members/{id} with wrong authority should return 403")
+        @WithKlabisMockUser(username = "ZBM0102", authorities = {})
+        void shouldReturn403WhenGettingMemberWithoutReadAuthority() throws Exception {
+            mockMvc.perform(get("/api/members/" + UUID.randomUUID()).contentType("application/json"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.type").exists())
+                    .andExpect(jsonPath("$.title").value("Forbidden"));
+        }
+
+        @Test
+        @DisplayName("GET /api/members/{id} with MEMBERS:READ authority should pass authorization")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldPassAuthorizationWhenGettingMemberWithReadAuthority() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenThrow(new MemberNotFoundException(new MemberId(memberId)));
+
+            mockMvc.perform(get("/api/members/" + memberId).contentType("application/json"))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.type").exists())
+                    .andExpect(jsonPath("$.title").value("Resource Not Found"));
+        }
+
+        @Test
+        @DisplayName("GET /api/members without authentication should return 401")
+        void shouldReturn401WhenListingMembersUnauthenticated() throws Exception {
+            mockMvc.perform(get("/api/members").contentType("application/json"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.type").exists())
+                    .andExpect(jsonPath("$.title").value("Unauthorized"))
+                    .andExpect(jsonPath("$.status").value(401));
+        }
+
+        @Test
+        @DisplayName("GET /api/members with wrong authority should return 403")
+        @WithKlabisMockUser(username = "ZBM0102", authorities = {Authority.CALENDAR_MANAGE})
+        void shouldReturn403WhenListingMembersWithoutReadAuthority() throws Exception {
+            mockMvc.perform(get("/api/members").contentType("application/json"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.type").exists())
+                    .andExpect(jsonPath("$.title").value("Forbidden"))
+                    .andExpect(jsonPath("$.status").value(403));
+        }
+
+        @Test
+        @DisplayName("GET /api/members with MEMBERS:READ authority should return 200")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldReturn200WhenListingMembersWithReadAuthority() throws Exception {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+
+            mockMvc.perform(get("/api/members").contentType("application/json"))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("POST /api/members/{id}/suspend without authentication should return 401")
+        void shouldReturn401WhenSuspendingMemberUnauthenticated() throws Exception {
+            mockMvc.perform(post("/api/members/" + UUID.randomUUID() + "/suspend")
+                            .contentType("application/json").content(SUSPEND_BODY))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.type").exists())
+                    .andExpect(jsonPath("$.title").value("Unauthorized"))
+                    .andExpect(jsonPath("$.status").value(401));
+        }
+
+        @Test
+        @DisplayName("POST /api/members/{id}/suspend with wrong authority should return 403")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void shouldReturn403WhenSuspendingMemberWithoutUpdateAuthority() throws Exception {
+            mockMvc.perform(post("/api/members/" + UUID.randomUUID() + "/suspend")
+                            .contentType("application/json").content(SUSPEND_BODY))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.type").exists())
+                    .andExpect(jsonPath("$.title").value("Forbidden"))
+                    .andExpect(jsonPath("$.status").value(403));
+        }
+
+        @Test
+        @DisplayName("POST /api/members/{id}/suspend with MEMBERS:MANAGE authority should pass authorization")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldPassAuthorizationWhenSuspendingMemberWithUpdateAuthority() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            when(managementService.suspendMember(any(MemberId.class), any(Member.SuspendMembership.class)))
+                    .thenThrow(new MemberNotFoundException(new MemberId(memberId)));
+
+            mockMvc.perform(post("/api/members/" + memberId + "/suspend")
+                            .contentType("application/json").content(SUSPEND_BODY))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/members/oris-import")
+    class ImportFromOrisTests {
+
+        @Test
+        @DisplayName("SYNC:MANAGE holder -> runs the same discovery job, 204")
+        @WithKlabisMockUser(authorities = Authority.SYNC_MANAGE)
+        void runsTheSameDiscoveryJob() throws Exception {
+            mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isNoContent());
+
+            Mockito.verify(memberDiscoveryJob).discoverNewMembers();
+        }
+
+        @Test
+        @DisplayName("running twice invokes the discovery job twice, not a reimplementation")
+        @WithKlabisMockUser(authorities = Authority.SYNC_MANAGE)
+        void runningTwiceInvokesTheJobTwice() throws Exception {
+            mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isNoContent());
+            mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isNoContent());
+
+            Mockito.verify(memberDiscoveryJob, Mockito.times(2)).discoverNewMembers();
+        }
+
+        @Test
+        @DisplayName("user without SYNC:MANAGE -> 403, job never invoked")
+        @WithKlabisMockUser(authorities = Authority.MEMBERS_MANAGE)
+        void withoutSyncManageAuthority_returns403() throws Exception {
+            mockMvc.perform(post("/api/members/oris-import").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isForbidden());
+
+            Mockito.verify(memberDiscoveryJob, Mockito.times(0)).discoverNewMembers();
+        }
+    }
+
+    @Nested
+    @DisplayName("importFromOris affordance on GET /api/members (design.md D11)")
+    class ImportFromOrisAffordanceTests {
+
+        private void givenEmptyMemberList() {
+            when(memberRepository.findAll(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of()));
+        }
+
+        @Test
+        @DisplayName("SYNC:MANAGE held and club key held -> affordance present")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.SYNC_MANAGE})
+        void syncManageAndKeyHeld_affordancePresent() throws Exception {
+            givenEmptyMemberList();
+            when(orisClubKeyPort.isSet()).thenReturn(true);
+
+            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.importFromOris").exists())
+                    .andExpect(jsonPath("$._templates.importFromOris.method").value("POST"));
+        }
+
+        @Test
+        @DisplayName("SYNC:MANAGE held but no club key held -> affordance absent")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.SYNC_MANAGE})
+        void syncManageHeldButNoKey_affordanceAbsent() throws Exception {
+            givenEmptyMemberList();
+            when(orisClubKeyPort.isSet()).thenReturn(false);
+
+            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.importFromOris").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("club key held but no SYNC:MANAGE -> affordance absent")
+        @WithKlabisMockUser(authorities = Authority.MEMBERS_READ)
+        void keyHeldButNoSyncManage_affordanceAbsent() throws Exception {
+            givenEmptyMemberList();
+            when(orisClubKeyPort.isSet()).thenReturn(true);
+
+            mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.importFromOris").doesNotExist());
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/members/{id} — legal guardian group links")
+    class LegalGuardianGroupLinksTests {
+
+        private static final String CHILD_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        private static final MemberId CHILD = new MemberId(UUID.fromString(CHILD_ID));
+        private static final String OTHER_CHILD_ID = "33333333-3333-3333-3333-333333333333";
+        private static final MemberId GUARDIAN = new MemberId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+
+        private LegalGuardianGroup groupOfChild() {
+            return LegalGuardianGroup.create(
+                    java.util.Set.of(new LegalGuardianGroup.Guardian(GUARDIAN.toUserId(), "Novák")),
+                    new LegalGuardianGroup.Minor(CHILD, LocalDate.now().minusYears(9)));
+        }
+
+        private void givenMember(LocalDate dateOfBirth, LegalGuardianGroup group) {
+            Member member = MemberTestDataBuilder.aMemberWithId(CHILD.uuid()).withDateOfBirth(dateOfBirth).build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+                    .thenReturn(member);
+            when(legalGuardianGroupPort.findGroupOf(any(MemberId.class))).thenReturn(Optional.ofNullable(group));
+        }
+
+        private org.springframework.test.web.servlet.ResultActions getChild() throws Exception {
+            return mockMvc.perform(get("/api/members/{id}", CHILD_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("adds legalGuardianGroup link pointing at the group the minor belongs to")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void addsLinkForMinor() throws Exception {
+            LegalGuardianGroup group = groupOfChild();
+            givenMember(LocalDate.now().minusYears(9), group);
+
+            getChild().andExpect(jsonPath("$._links.legalGuardianGroup.href")
+                    .value(org.hamcrest.Matchers.endsWith("/api/legal-guardian-groups/" + group.getId().uuid())));
+        }
+
+        @Test
+        @DisplayName("adds no legalGuardianGroup link when the caller lacks MEMBERS:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
+        void addsNoLinkWithoutManageAuthority() throws Exception {
+            givenMember(LocalDate.now().minusYears(9), groupOfChild());
+
+            getChild().andExpect(jsonPath("$._links.legalGuardianGroup").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("adds no legalGuardianGroup link when the member is not in any group")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void addsNoLinkWithoutGroup() throws Exception {
+            givenMember(LocalDate.now().minusYears(9), null);
+
+            getChild().andExpect(jsonPath("$._links.legalGuardianGroup").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("adds legalGuardians link to the guardians of the group for MEMBERS:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void addsGuardiansLinkForAdmin() throws Exception {
+            LegalGuardianGroup group = groupOfChild();
+            givenMember(LocalDate.now().minusYears(9), group);
+
+            getChild().andExpect(jsonPath("$._links.legalGuardians.href")
+                    .value(org.hamcrest.Matchers.endsWith("/api/legal-guardian-groups/" + group.getId().uuid() + "/guardians")));
+        }
+
+        @Test
+        @DisplayName("adds legalGuardians link on the minor's own detail without MEMBERS:MANAGE")
+        @WithKlabisMockUser(memberId = CHILD_ID, authorities = {Authority.MEMBERS_READ})
+        void addsGuardiansLinkForTheMinorThemself() throws Exception {
+            givenMember(LocalDate.now().minusYears(9), groupOfChild());
+
+            getChild().andExpect(jsonPath("$._links.legalGuardians").exists());
+        }
+
+        @Test
+        @DisplayName("adds no legalGuardians link on another member's detail without MEMBERS:MANAGE")
+        @WithKlabisMockUser(memberId = OTHER_CHILD_ID, authorities = {Authority.MEMBERS_READ})
+        void addsNoGuardiansLinkForOthers() throws Exception {
+            givenMember(LocalDate.now().minusYears(9), groupOfChild());
+
+            getChild().andExpect(jsonPath("$._links.legalGuardians").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("adds no legalGuardians link for a member who has turned 18 but is still in a group")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void addsNoGuardiansLinkForAdult() throws Exception {
+            givenMember(LocalDate.now().minusYears(18), groupOfChild());
+
+            getChild().andExpect(jsonPath("$._links.legalGuardians").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("adds no legalGuardians link for a minor without a group")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void addsNoGuardiansLinkWithoutGroup() throws Exception {
+            givenMember(LocalDate.now().minusYears(9), null);
+
+            getChild().andExpect(jsonPath("$._links.legalGuardians").doesNotExist());
         }
     }
 }
