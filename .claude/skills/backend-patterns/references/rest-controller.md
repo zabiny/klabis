@@ -184,7 +184,7 @@ Use `@ActingUser` when the endpoint is accessible to non-member users (admins). 
 class MvcConfiguration implements WebMvcConfigurer { ... }
 ```
 
-Test-slice consequences (global scan, `@WithPostprocessors`) are in `testing-guide.md`, "Controller Tests".
+A controller/postprocessor/converter depends only on primary ports (`@PrimaryPort`) — never on repositories or secondary ports — so REST tests mock nothing else. Test-slice consequences (module slicing, `*WebMvcMockitoBeans`) are in `testing-guide.md`, "Controller Tests".
 
 **Consequences for production code:**
 - `@MvcComponent` is the correct annotation for presentation-layer beans in `infrastructure/restapi/` — postprocessors (`ModelWithDomainPostprocessor`, plain `RepresentationModelProcessor`), Jackson modules, HAL helpers. Controllers keep `@RestController`.

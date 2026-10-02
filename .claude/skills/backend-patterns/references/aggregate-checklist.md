@@ -55,6 +55,6 @@ Walk the layers in order when adding a new aggregate or Spring Modulith module. 
 - [ ] `<Aggregate>TestDataBuilder` and `<Aggregate>Assert`
 - [ ] Domain unit tests, service unit tests
 - [ ] Memento round-trip test, repository test
-- [ ] `@WebMvcTest` with `@WithPostprocessors` (incl. affordances in the response)
+- [ ] Controller test on the module's shared `@<Module>WebMvcTest` (incl. security and links/affordances in the response)
 - [ ] Converter tests
 - [ ] Integration test (happy path) and one E2E lifecycle test
