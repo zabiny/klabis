@@ -1,6 +1,6 @@
 package com.klabis.members;
 
-import com.klabis.calendar.infrastructure.restapi.CalendarWebMvcMockitoBeans;
+import com.klabis.calendar.CalendarWebMvcMockitoBeans;
 import com.klabis.common.ClockConfiguration;
 import com.klabis.common.CommonWebMvcMockitoBeans;
 import com.klabis.common.encryption.EncryptionConfiguration;
