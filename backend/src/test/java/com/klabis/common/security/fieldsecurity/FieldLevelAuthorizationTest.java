@@ -2,7 +2,7 @@ package com.klabis.common.security.fieldsecurity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
+import com.klabis.common.CommonInfrastructureWebMvcSetup;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
@@ -39,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = FieldLevelAuthorizationTest.TestController.class)
 @DisplayName("Field-level authorization on response DTOs")
-@WithPostprocessors
+@CommonInfrastructureWebMvcSetup
 class FieldLevelAuthorizationTest {
 
     private static final String OWNER_ID_STRING = "aaaaaaaa-0000-0000-0000-000000000001";

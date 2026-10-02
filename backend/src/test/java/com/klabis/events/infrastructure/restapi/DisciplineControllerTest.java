@@ -63,6 +63,29 @@ class DisciplineControllerTest {
     }
 
     @Nested
+    @DisplayName("GET /api - disciplines navigation link")
+    class RootNavigationLinkTests {
+
+        @Test
+        @DisplayName("should expose disciplines link for user with EVENTS:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
+        void shouldExposeLinkForEventsManage() throws Exception {
+            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.disciplines.href").exists());
+        }
+
+        @Test
+        @DisplayName("should omit disciplines link for user with only EVENTS:READ")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        void shouldOmitLinkForEventsReadOnly() throws Exception {
+            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.disciplines").doesNotExist());
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/disciplines")
     class ListDisciplinesTests {
 

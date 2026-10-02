@@ -1,8 +1,7 @@
 package com.klabis.common.users.passwordsetup;
 
 import tools.jackson.databind.ObjectMapper;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.CommonWebMvcTest;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.application.PasswordSetupService;
 import com.klabis.common.users.domain.PasswordSetupToken;
@@ -16,10 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
@@ -33,10 +29,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = PasswordSetupController.class)
-@Import(EncryptionConfiguration.class)
+@CommonWebMvcTest
 @DisplayName("PasswordSetupController API tests")
-@WithPostprocessors
 class PasswordSetupControllerTest {
 
     @Autowired
@@ -45,7 +39,7 @@ class PasswordSetupControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean
+    @Autowired
     private PasswordSetupService passwordSetupServiceMock;
 
     @Nested

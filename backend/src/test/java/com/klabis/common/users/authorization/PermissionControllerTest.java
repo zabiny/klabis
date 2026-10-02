@@ -1,25 +1,20 @@
 package com.klabis.common.users.authorization;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.CommonWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.application.PermissionService;
 import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
-import com.klabis.common.users.infrastructure.restapi.PermissionController;
 import com.klabis.common.users.infrastructure.restapi.UpdatePermissionsRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
@@ -38,10 +33,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(PermissionController.class)
-@Import({EncryptionConfiguration.class})
+@CommonWebMvcTest
 @DisplayName("PermissionController permissions endpoints tests")
-@WithPostprocessors
 class PermissionControllerTest {
 
     @Autowired
@@ -50,7 +43,7 @@ class PermissionControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean
+    @Autowired
     private PermissionService permissionService;
 
     private static final UserId USER_ID = new UserId(UUID.randomUUID());
