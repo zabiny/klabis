@@ -7,17 +7,15 @@ import com.klabis.calendar.application.CalendarNotFoundException;
 import com.klabis.calendar.domain.CalendarItem;
 import com.klabis.calendar.domain.CalendarItemReadOnlyException;
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
+import com.klabis.calendar.CalendarWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.Sort;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
@@ -35,8 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("CalendarController API tests")
-@WebMvcTest(controllers = CalendarController.class)
-@WithPostprocessors
+@CalendarWebMvcTest
 class CalendarControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";
@@ -44,7 +41,7 @@ class CalendarControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private CalendarManagementPort calendarManagementService;
 
     @Nested
@@ -881,6 +878,20 @@ class CalendarControllerTest {
                             delete("/api/calendar-items/{id}", calendarItemId)
                     )
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("Root index link")
+    class RootLinkTests {
+
+        @Test
+        @DisplayName("GET /api contains the calendar link pointing to calendar items")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
+        void rootContainsCalendarLink() throws Exception {
+            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.calendar.href").value(org.hamcrest.Matchers.containsString("/api/calendar-items")));
         }
     }
 }

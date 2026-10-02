@@ -13,9 +13,9 @@
 
 ## 3. Module `calendar`
 
-- [ ] 3.1 Add `@CalendarWebMvcTest`; migrate `CalendarControllerTest` and merge `CalendarRootPostprocessorTest`, `IcalTokenMemberDetailLinkProcessorTest` as controller-level expectations; add unit tests for link-processor branches unreachable from a response
-- [ ] 3.2 Resolve the package-private `@Import(CalendarInfrastructureConfiguration)` coupling in `CalendarWebMvcMockitoBeans`
-- [ ] 3.3 Run `calendar` tests, review, commit
+- [x] 3.1 Add `@CalendarWebMvcTest`; migrate `CalendarControllerTest` and merge `CalendarRootPostprocessorTest`, `IcalTokenMemberDetailLinkProcessorTest` as controller-level expectations; add unit tests for link-processor branches unreachable from a response
+- [x] 3.2 Resolve the package-private `@Import(CalendarInfrastructureConfiguration)` coupling in `CalendarWebMvcMockitoBeans`
+- [x] 3.3 Run `calendar` tests, review, commit
 
 ## 4. Module `sync`
 

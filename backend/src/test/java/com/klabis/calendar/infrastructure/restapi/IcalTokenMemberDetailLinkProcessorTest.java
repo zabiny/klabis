@@ -16,11 +16,14 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Own-profile and other-member branches are covered at controller level in MemberControllerApiTest;
+ * this class holds only branches that cannot be reached from a response.
+ */
 @DisplayName("IcalTokenMemberDetailLinkProcessor")
 class IcalTokenMemberDetailLinkProcessorTest {
 
     private static final UUID MEMBER_UUID = UUID.fromString("11111111-1111-1111-1111-111111111111");
-    private static final UUID OTHER_MEMBER_UUID = UUID.fromString("22222222-2222-2222-2222-222222222222");
 
     private final IcalTokenMemberDetailLinkProcessor processor = new IcalTokenMemberDetailLinkProcessor();
 
@@ -48,56 +51,6 @@ class IcalTokenMemberDetailLinkProcessorTest {
                 .id(memberId)
                 .build();
         return EntityModel.of(resource);
-    }
-
-    @Nested
-    @DisplayName("when authenticated user views their own member detail")
-    class SelfDetail {
-
-        @BeforeEach
-        void setUp() {
-            authenticateAsMember(MEMBER_UUID);
-        }
-
-        @Test
-        @DisplayName("ical-token link is added")
-        void icalTokenLinkIsAdded() {
-            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
-
-            processor.process(model);
-
-            assertThat(model.getLink("ical-token")).isPresent();
-        }
-
-        @Test
-        @DisplayName("ical-token link points to GET /api/me/ical-token")
-        void icalTokenLinkPointsToCorrectEndpoint() {
-            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
-
-            processor.process(model);
-
-            assertThat(model.getLink("ical-token").get().getHref()).contains("/api/me/ical-token");
-        }
-    }
-
-    @Nested
-    @DisplayName("when authenticated user views another member's detail")
-    class OtherMemberDetail {
-
-        @BeforeEach
-        void setUp() {
-            authenticateAsMember(OTHER_MEMBER_UUID);
-        }
-
-        @Test
-        @DisplayName("ical-token link is NOT added")
-        void icalTokenLinkIsNotAdded() {
-            EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
-
-            processor.process(model);
-
-            assertThat(model.getLink("ical-token")).isEmpty();
-        }
     }
 
     @Nested
@@ -129,6 +82,22 @@ class IcalTokenMemberDetailLinkProcessorTest {
         void icalTokenLinkIsNotAdded() {
             SecurityContextHolder.clearContext();
             EntityModel<MemberDetailsResponse> model = modelForMember(MEMBER_UUID);
+
+            processor.process(model);
+
+            assertThat(model.getLink("ical-token")).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("when the resource has no id")
+    class NoResourceId {
+
+        @Test
+        @DisplayName("ical-token link is NOT added")
+        void icalTokenLinkIsNotAdded() {
+            authenticateAsMember(MEMBER_UUID);
+            EntityModel<MemberDetailsResponse> model = EntityModel.of(MemberDetailsResponseBuilder.builder().build());
 
             processor.process(model);
 

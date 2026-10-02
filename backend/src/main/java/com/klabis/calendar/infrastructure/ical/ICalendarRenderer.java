@@ -1,6 +1,7 @@
 package com.klabis.calendar.infrastructure.ical;
 
 import com.klabis.calendar.application.IcalFeedPort.EventScheduleEntry;
+import com.klabis.common.mvc.MvcComponent;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventStatus;
 
@@ -14,6 +15,7 @@ import java.util.List;
  * Manual serialization — no third-party library dependency.
  * Output uses CRLF line endings and UTF-8 encoding per RFC 5545.
  */
+@MvcComponent
 public class ICalendarRenderer {
 
     private static final DateTimeFormatter DTSTAMP_FORMAT =
