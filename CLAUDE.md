@@ -98,7 +98,7 @@ browser_evaluate: async () => {
 
 ### Backend Development
 
-For backend development, use the `backend-developer` agent which always loads `backend-patterns`, `developer:tdd-best-practices`, and `developer:spring-conventions` skills, and loads additional skills on-demand (e.g., `developer:spring-modulith`, `developer:spring-data-jdbc`, `developer:spring-hateoas-api`).
+For backend development, use the `backend-developer` agent which always loads the `backend-patterns` skill.
 
 ### Commit changes to version system (git)
 

@@ -118,15 +118,6 @@
 <table class="ref-table">
     <thead><tr><th>Skill</th><th>Účel</th></tr></thead>
     <tbody>
-        <tr><td><code>developer:tdd-best-practices</code></td><td>Red-Green-Refactor cyklus.</td></tr>
-        <tr><td><code>developer:spring-conventions</code></td><td>Spring naming + organizace.</td></tr>
-        <tr><td><code>developer:spring-modulith</code></td><td>Vzory pro Spring Modulith (modul, listener, eventy).</td></tr>
-        <tr><td><code>developer:spring-data-jdbc</code></td><td>JDBC repository, vlastní dotazy.</td></tr>
-        <tr><td><code>developer:spring-hateoas-api</code></td><td>HATEOAS API building.</td></tr>
-        <tr><td><code>developer:ddd-domain-modeling</code></td><td>Tactical DDD (agregáty, value objects).</td></tr>
-        <tr><td><code>developer:hexagonal-architecture</code></td><td>Ports and adapters.</td></tr>
-        <tr><td><code>developer:event-driven-integration</code></td><td>Cross-modul event flows, idempotence.</td></tr>
-        <tr><td><code>developer:kiss-principle</code></td><td>Boj proti over-engineeringu.</td></tr>
         <tr><td><code>developer:test-runner-skill</code></td><td>Spouštění testů. <strong>Vždy</strong> přes tento skill, ne přímo Gradle.</td></tr>
         <tr><td><code>developer:frontend-qa-testing</code></td><td>Manuální QA přes Playwright.</td></tr>
         <tr><td><code>developer:frontend-ux-review</code></td><td>UX review přes Playwright.</td></tr>
@@ -145,14 +136,12 @@
 
 <dl class="api-list">
     <dt>backend-developer</dt>
-    <dd>Java vývojář pro Spring/Modulith. Auto-load: <code>backend-patterns</code>,
-        <code>developer:spring-conventions</code>, <code>developer:tdd-best-practices</code>.
-        On-demand: spring-modulith, spring-data-jdbc, spring-hateoas-api, ddd-domain-modeling, …
+    <dd>Java vývojář pro Spring/Modulith. Auto-load: <code>backend-patterns</code>.
         <strong>Použijte na jakoukoli implementaci/oprava backend kódu.</strong></dd>
 
     <dt>frontend-developer</dt>
     <dd>React/TypeScript vývojář. Auto-load: <code>hal-navigator-patterns</code>,
-        <code>developer:test-runner-skill</code>, <code>developer:tdd-best-practices</code>.
+        <code>developer:test-runner-skill</code>.
         Pre-flight: vždy nejdřív projde existující vzory.</dd>
 
     <dt>git-operator</dt>

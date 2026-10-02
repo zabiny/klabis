@@ -94,7 +94,6 @@ Spring Modulith application modules under `com.klabis.*`: `members`, `events`, `
 
 - **Always use `test-runner` agent to run tests** — never invoke Gradle test commands directly
 - Prefer running single tests and not the whole test suite - for performance
-- Use `developer:tdd-best-practices` skill for TDD workflow guidance
 
 ### Large Refactorings with OpenSpec
 
