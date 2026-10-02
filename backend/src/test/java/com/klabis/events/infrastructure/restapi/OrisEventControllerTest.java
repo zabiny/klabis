@@ -1,9 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.events.EventsWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
@@ -25,8 +23,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
@@ -48,10 +44,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @DisplayName("OrisEventController API tests")
-@WebMvcTest(controllers = {EventController.class, OrisEventController.class, EventsExceptionHandler.class})
-@ActiveProfiles("oris")
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+/**
+ * ORIS-enabled variant: the {@code oris} profile and the ORIS ports exist only with the feature on, so they are
+ * declared here (own Spring context) while the "disabled" behaviour is covered by
+ * {@code EventControllerTest.OrisImportDisabledTests} in the shared context.
+ */
+@EventsWebMvcTest
+@ActiveProfiles({"test", "oris"})
+@MockitoBean(types = {OrisEventImportPort.class, OrisEventBulkImportPort.class, OrisBulkSyncPort.class})
 class OrisEventControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";
@@ -59,26 +59,23 @@ class OrisEventControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private EventManagementPort eventManagementService;
 
-    @MockitoBean
+    @Autowired
     private EventRegistrationPort eventRegistrationService;
 
-    @MockitoBean
+    @Autowired
     private Members members;
 
-    @MockitoBean
+    @Autowired
     private OrisEventImportPort orisEventImportPort;
 
-    @MockitoBean
+    @Autowired
     private OrisEventBulkImportPort orisEventBulkImportPort;
 
-    @MockitoBean
+    @Autowired
     private OrisBulkSyncPort orisBulkSyncPort;
-
-    @MockitoBean
-    private AccommodationListCsvRenderer csvRenderer;
 
     @Autowired
     private SynchronizationPort synchronizationPort;
@@ -114,6 +111,8 @@ class OrisEventControllerTest {
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldReturn403WithoutEventsManageAuthority() throws Exception {
+            when(orisEventImportPort.importEventFromOris(org.mockito.ArgumentMatchers.anyInt())).thenReturn(EventTestDataBuilder.anEvent().build());
+
             mockMvc.perform(
                             post("/api/events/import")
                                     .contentType("application/json")
@@ -280,6 +279,8 @@ class OrisEventControllerTest {
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldReturn403WithoutEventsManageAuthority() throws Exception {
+            when(orisBulkSyncPort.syncAllUpcoming()).thenReturn(new BulkSyncResult(0, List.of(), List.of(), List.of()));
+
             mockMvc.perform(post("/api/events/sync-from-oris/all-upcoming")
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
@@ -409,6 +410,8 @@ class OrisEventControllerTest {
         @DisplayName("should return 403 without EVENTS:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldReturn403WithoutEventsManageAuthority() throws Exception {
+            when(orisEventBulkImportPort.importEventsFromOris(any())).thenReturn(new BulkImportResult(0, 0, 0, List.of()));
+
             mockMvc.perform(
                             post("/api/events/import-batch")
                                     .contentType("application/json")

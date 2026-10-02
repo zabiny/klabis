@@ -26,7 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("RegistrationRecordTransactionLinkProcessor Unit Tests")
+@DisplayName("RegistrationRecordTransactionLinkProcessor Unit Tests (branches not reachable from a controller response; the rest is covered in EventRegistrationControllerTest)")
 class RegistrationRecordTransactionLinkProcessorTest {
 
     @Mock
@@ -38,35 +38,6 @@ class RegistrationRecordTransactionLinkProcessorTest {
     void setUp() {
         testedSubject = new RegistrationRecordTransactionLinkProcessor(financeAccountLinkSupport);
         SecurityContextHolder.clearContext();
-    }
-
-    @Test
-    @DisplayName("adds recordTransaction link pointing to member account when caller has FINANCE:MANAGE")
-    void shouldAddRecordTransactionLinkWhenCallerHasFinanceManage() {
-        UUID memberUuid = UUID.randomUUID();
-        EntityModel<RegistrationSummaryDto> model = modelFor(memberUuid);
-        when(financeAccountLinkSupport.accountLink(memberUuid))
-                .thenReturn(Optional.of(Link.of("/api/members/" + memberUuid + "/account", "account")));
-
-        mockSecurityContext(List.of(new SimpleGrantedAuthority("FINANCE:MANAGE")));
-
-        EntityModel<RegistrationSummaryDto> result = testedSubject.process(model);
-
-        assertThat(result.getLink("recordTransaction")).isPresent();
-        assertThat(result.getLink("recordTransaction").get().getHref())
-                .contains("/api/members/" + memberUuid + "/account");
-    }
-
-    @Test
-    @DisplayName("does not add recordTransaction link when caller lacks FINANCE:MANAGE")
-    void shouldNotAddLinkWhenCallerLacksFinanceManage() {
-        EntityModel<RegistrationSummaryDto> model = modelFor(UUID.randomUUID());
-
-        mockSecurityContext(List.of(new SimpleGrantedAuthority("MEMBERS:READ")));
-
-        EntityModel<RegistrationSummaryDto> result = testedSubject.process(model);
-
-        assertThat(result.getLink("recordTransaction")).isEmpty();
     }
 
     @Test

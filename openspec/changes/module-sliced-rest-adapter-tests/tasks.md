@@ -38,10 +38,10 @@
 
 ## 7. Module `events`
 
-- [ ] 7.1 Resolve `AccommodationListCsvRenderer` mock; update `EventsWebMvcMockitoBeans` (no `OrisEventImportPort`)
-- [ ] 7.2 Add `@EventsWebMvcTest`; migrate `EventControllerTest`, `EventRegistrationControllerTest`, `EventTypeControllerTest`, `CategoryPresetControllerTest`, `DisciplineControllerTest`; merge `EventTypesRootPostprocessorTest`, `RegistrationRecordTransactionLinkProcessorTest`, `DashboardUpcomingRegistrationsLinkProcessorTest`
-- [ ] 7.3 `OrisEventController` / `OrisEventControllerTest`: local `OrisEventImportPort` mock in a dedicated class, with the "ORIS off" variant in the shared context
-- [ ] 7.4 Run `events` tests, review, commit
+- [x] 7.1 Resolve `AccommodationListCsvRenderer` mock; update `EventsWebMvcMockitoBeans` (no `OrisEventImportPort`)
+- [x] 7.2 Add `@EventsWebMvcTest`; migrate `EventControllerTest`, `EventRegistrationControllerTest`, `EventTypeControllerTest`, `CategoryPresetControllerTest`, `DisciplineControllerTest`; merge `EventTypesRootPostprocessorTest`, `RegistrationRecordTransactionLinkProcessorTest`, `DashboardUpcomingRegistrationsLinkProcessorTest`
+- [x] 7.3 `OrisEventController` / `OrisEventControllerTest`: local `OrisEventImportPort` mock in a dedicated class, with the "ORIS off" variant in the shared context
+- [x] 7.4 Run `events` tests, review, commit
 
 ## 8. Module `oris`
 

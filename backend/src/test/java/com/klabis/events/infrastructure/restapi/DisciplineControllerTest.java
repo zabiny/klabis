@@ -1,9 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.events.EventsWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.events.DisciplineId;
 import com.klabis.events.application.DisciplineManagementPort;
@@ -24,12 +22,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -45,15 +40,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("DisciplineController API tests")
-@WebMvcTest(controllers = {DisciplineController.class})
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@EventsWebMvcTest
 class DisciplineControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private DisciplineManagementPort disciplineManagementService;
 
     @Autowired
@@ -95,6 +88,8 @@ class DisciplineControllerTest {
         @DisplayName("should return 403 for user with only EVENTS:READ")
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
         void shouldReturn403ForEventsReadOnly() throws Exception {
+            when(disciplineManagementService.list(any())).thenReturn(org.springframework.data.domain.Page.empty());
+
             mockMvc.perform(get("/api/disciplines").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
         }
@@ -168,6 +163,8 @@ class DisciplineControllerTest {
         @DisplayName("should return 403 when user has no event authorities at all")
         @WithKlabisMockUser(authorities = {})
         void shouldReturn403WhenMissingAuthority() throws Exception {
+            when(disciplineManagementService.list(any())).thenReturn(org.springframework.data.domain.Page.empty());
+
             mockMvc.perform(get("/api/disciplines").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
         }
@@ -313,6 +310,8 @@ class DisciplineControllerTest {
         @DisplayName("should return 403 when user has no event authorities at all")
         @WithKlabisMockUser(authorities = {})
         void shouldReturn403WhenMissingAuthority() throws Exception {
+            when(disciplineManagementService.get(any())).thenReturn(Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh")));
+
             mockMvc.perform(get("/api/disciplines/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isForbidden());
         }
@@ -357,6 +356,8 @@ class DisciplineControllerTest {
         @DisplayName("should return 403 when missing authority")
         @WithKlabisMockUser(authorities = {})
         void shouldReturn403WhenMissingAuthority() throws Exception {
+            when(disciplineManagementService.create(any())).thenReturn(Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh")));
+
             mockMvc.perform(post("/api/disciplines")
                             .contentType("application/json")
                             .content("""
@@ -422,6 +423,8 @@ class DisciplineControllerTest {
         @DisplayName("should return 403 when missing authority")
         @WithKlabisMockUser(authorities = {})
         void shouldReturn403WhenMissingAuthority() throws Exception {
+            when(disciplineManagementService.update(any(), any(), any())).thenReturn(Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh")));
+
             mockMvc.perform(put("/api/disciplines/{id}", UUID.randomUUID())
                             .contentType("application/json")
                             .content("""

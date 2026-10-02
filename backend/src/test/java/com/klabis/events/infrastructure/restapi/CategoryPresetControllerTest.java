@@ -1,9 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
+import com.klabis.events.EventsWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.events.CategoryPresetId;
 import com.klabis.events.application.CategoryPresetManagementPort;
@@ -13,10 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -30,15 +25,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("CategoryPresetController API tests")
-@WebMvcTest(controllers = {CategoryPresetController.class})
-@Import({EncryptionConfiguration.class, HalFormsSupport.class})
-@WithPostprocessors
+@EventsWebMvcTest
 class CategoryPresetControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @Autowired
     private CategoryPresetManagementPort categoryPresetManagementService;
 
     @Nested
@@ -180,6 +173,8 @@ class CategoryPresetControllerTest {
         @DisplayName("should return 403 when missing authority")
         @WithKlabisMockUser(authorities = {})
         void shouldReturn403WhenMissingAuthority() throws Exception {
+            when(categoryPresetManagementService.createPreset(any())).thenReturn(CategoryPreset.create(new CategoryPreset.CreateCategoryPreset("Sprint Cup", List.of("M21"))));
+
             mockMvc.perform(post("/api/category-presets")
                             .contentType("application/json")
                             .content("""
