@@ -1,7 +1,7 @@
 package com.klabis.sync.infrastructure.restapi;
 
+import com.klabis.sync.application.SyncProjectionFieldsPort;
 import com.klabis.sync.application.SynchronizationPort;
-import com.klabis.sync.domain.SyncProjectionFieldReader;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.lang.annotation.Documented;
@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
 @Documented
 @MockitoBean(types = {
         SynchronizationPort.class,
-        SyncProjectionFieldReader.class
+        SyncProjectionFieldsPort.class
 })
 public @interface SyncWebMvcMockitoBeans {
 }

@@ -1,10 +1,9 @@
 package com.klabis.sync.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.sync.SyncRecordId;
+import com.klabis.sync.SyncWebMvcTest;
 import com.klabis.sync.application.*;
 import com.klabis.sync.domain.*;
 import com.klabis.sync.fixtures.TestSyncProjection;
@@ -13,10 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -38,9 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * state-changing operations, and the 404 cases (unenrolled entity, unknown entity type).
  */
 @DisplayName("SynchronizationController")
-@WebMvcTest(controllers = {SynchronizationController.class, SyncExceptionHandler.class})
-@Import(HalFormsSupport.class)
-@WithPostprocessors
+@SyncWebMvcTest
 class SynchronizationControllerTest {
 
     @Autowired
@@ -49,8 +43,8 @@ class SynchronizationControllerTest {
     @Autowired
     private SynchronizationPort synchronizationPort;
 
-    @MockitoBean
-    private SyncProjectionFieldReader fieldReader;
+    @Autowired
+    private SyncProjectionFieldsPort fieldReader;
 
     private static final SyncTarget TARGET = new SyncTarget(SyncEntityType.EVENT, "event-1");
     private static final ExternalReference EXTERNAL_REF = new ExternalReference(ExternalSystem.ORIS, "8123");
@@ -81,6 +75,21 @@ class SynchronizationControllerTest {
         SyncRecord record = inSyncRecord();
         record.recordTerminalFailure(5, "boom", Instant.now());
         return record;
+    }
+
+    /**
+     * Stubs every port return so that, were {@code @HasAuthority} missing, the controller body would run to
+     * completion and the 403 assertion (not an NPE) would fail.
+     */
+    private void stubPortsForSuccessfulCall() {
+        SyncRecord record = inSyncRecord();
+        when(fieldReader.fields(any())).thenReturn(java.util.Map.of());
+        when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(record));
+        when(synchronizationPort.synchronizeNow(any(), any())).thenReturn(record);
+        when(synchronizationPort.acknowledgeConflict(any(), any())).thenReturn(record);
+        when(synchronizationPort.resolveConflict(any(), any(), any())).thenReturn(record);
+        when(synchronizationPort.reset(any(), any())).thenReturn(record);
+        when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
     }
 
     @BeforeEach
@@ -408,6 +417,8 @@ class SynchronizationControllerTest {
         @DisplayName("requires SYNC:MANAGE")
         @WithKlabisMockUser(authorities = {})
         void requiresAuthority() throws Exception {
+            stubPortsForSuccessfulCall();
+
             mockMvc.perform(post("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isForbidden());
         }
@@ -456,6 +467,8 @@ class SynchronizationControllerTest {
         @DisplayName("requires SYNC:MANAGE")
         @WithKlabisMockUser(authorities = {})
         void requiresAuthority() throws Exception {
+            stubPortsForSuccessfulCall();
+
             mockMvc.perform(post("/api/events/{id}/sync/acknowledgement", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isForbidden());
         }
@@ -536,6 +549,8 @@ class SynchronizationControllerTest {
         @DisplayName("requires SYNC:MANAGE")
         @WithKlabisMockUser(authorities = {})
         void requiresAuthority() throws Exception {
+            stubPortsForSuccessfulCall();
+
             mockMvc.perform(post("/api/events/{id}/sync/resolution", "event-1")
                             .contentType("application/json")
                             .content("{\"resolution\":\"INWARD\"}")
@@ -603,6 +618,8 @@ class SynchronizationControllerTest {
         @DisplayName("requires SYNC:MANAGE")
         @WithKlabisMockUser(authorities = {})
         void requiresAuthority() throws Exception {
+            stubPortsForSuccessfulCall();
+
             mockMvc.perform(post("/api/events/{id}/sync/reset", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isForbidden());
         }
