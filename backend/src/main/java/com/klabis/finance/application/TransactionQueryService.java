@@ -2,6 +2,7 @@ package com.klabis.finance.application;
 
 import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.MemberAccountRepository;
+import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.Transaction;
 import com.klabis.finance.domain.TransactionId;
 import com.klabis.members.MemberId;
@@ -60,5 +61,21 @@ class TransactionQueryService implements TransactionQueryPort {
                 .filter(tx -> tx.getId().equals(transactionId))
                 .findFirst()
                 .orElseThrow(() -> new TransactionNotFoundException(transactionId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TransactionWithReversal findTransactionWithReversal(MemberId memberId, TransactionId transactionId) {
+        Transaction tx = findTransaction(memberId, transactionId);
+        return memberAccountRepository.findReversalOf(tx.getId())
+                .map(reversal -> TransactionWithReversal.withReversal(tx, reversal.getId()))
+                .orElseGet(() -> TransactionWithReversal.withoutReversal(tx));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Money findBalance(MemberId memberId) {
+        return memberAccountRepository.findBalanceById(memberId)
+                .orElseThrow(() -> new MemberAccountNotFoundException(memberId));
     }
 }

@@ -1,5 +1,6 @@
 package com.klabis.finance.application;
 
+import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.Transaction;
 import com.klabis.finance.domain.TransactionId;
 import com.klabis.finance.domain.TransactionType;
@@ -25,4 +26,8 @@ public interface TransactionQueryPort {
     Page<TransactionWithReversal> findTransactionsWithReversals(TransactionQuery query);
 
     Transaction findTransaction(MemberId memberId, TransactionId transactionId);
+
+    TransactionWithReversal findTransactionWithReversal(MemberId memberId, TransactionId transactionId);
+
+    Money findBalance(MemberId memberId);
 }

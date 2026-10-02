@@ -5,11 +5,9 @@ import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.finance.application.ChargePort;
 import com.klabis.finance.application.DepositPort;
-import com.klabis.finance.application.MemberAccountNotFoundException;
 import com.klabis.finance.application.ReversePort;
 import com.klabis.finance.application.TransactionQueryPort;
 import com.klabis.finance.application.TransactionWithReversal;
-import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.Transaction;
 import com.klabis.finance.domain.TransactionId;
@@ -46,19 +44,16 @@ class MemberAccountController implements FinanceApi {
     private final DepositPort depositPort;
     private final ChargePort chargePort;
     private final ReversePort reversePort;
-    private final MemberAccountRepository memberAccountRepository;
     private final TransactionQueryPort transactionQueryPort;
     private final ConversionService conversionService;
 
     MemberAccountController(DepositPort depositPort, ChargePort chargePort,
                             ReversePort reversePort,
-                            MemberAccountRepository memberAccountRepository,
                             TransactionQueryPort transactionQueryPort,
                             ConversionService conversionService) {
         this.depositPort = depositPort;
         this.chargePort = chargePort;
         this.reversePort = reversePort;
-        this.memberAccountRepository = memberAccountRepository;
         this.transactionQueryPort = transactionQueryPort;
         this.conversionService = conversionService;
     }
@@ -69,8 +64,7 @@ class MemberAccountController implements FinanceApi {
             UUID memberId,
             @ActingUser CurrentUserData currentUser) {
         MemberId id = new MemberId(memberId);
-        Money balance = memberAccountRepository.findBalanceById(id)
-                .orElseThrow(() -> new MemberAccountNotFoundException(id));
+        Money balance = transactionQueryPort.findBalance(id);
         MemberAccountResource resource = conversionService.convert(
                 new MemberAccountResourceConverter.MemberBalance(id, balance), MemberAccountResource.class);
         HalResponseContext.setDomain(id);
@@ -105,14 +99,10 @@ class MemberAccountController implements FinanceApi {
             UUID txId,
             @ActingUser CurrentUserData currentUser) {
         MemberId id = new MemberId(memberId);
-        Transaction tx = transactionQueryPort.findTransaction(id, new TransactionId(txId));
-
-        TransactionWithReversal twr = memberAccountRepository.findReversalOf(tx.getId())
-                .map(reversal -> TransactionWithReversal.withReversal(tx, reversal.getId()))
-                .orElseGet(() -> TransactionWithReversal.withoutReversal(tx));
+        TransactionWithReversal twr = transactionQueryPort.findTransactionWithReversal(id, new TransactionId(txId));
 
         HalResponseContext.setDomain(new AccountTransaction(id, twr));
-        return ResponseEntity.ok(conversionService.convert(tx, TransactionResource.class));
+        return ResponseEntity.ok(conversionService.convert(twr.transaction(), TransactionResource.class));
     }
 
     @Override

@@ -25,10 +25,10 @@
 
 ## 5. Module `finance`
 
-- [ ] 5.1 Extend the finance primary port with what `MemberAccountController` reads from `MemberAccountRepository` (unit test first); controller no longer injects the repository
-- [ ] 5.2 Resolve `FinanceAccountLinkSupport` (real helper in the slice or primary port); remove its mock
-- [ ] 5.3 Add `@FinanceWebMvcTest` and `FinanceWebMvcMockitoBeans`; migrate `MemberAccountControllerTest`, merge `AccountMemberDetailLinkProcessorTest`, `AccountRootLinkProcessorTest`, `AccountMemberSummaryLinkProcessorTest`
-- [ ] 5.4 Run `finance` tests, review, commit
+- [x] 5.1 Extend the finance primary port with what `MemberAccountController` reads from `MemberAccountRepository` (unit test first); controller no longer injects the repository
+- [x] 5.2 Resolve `FinanceAccountLinkSupport` (real helper in the slice or primary port); remove its mock
+- [x] 5.3 Add `@FinanceWebMvcTest` and `FinanceWebMvcMockitoBeans`; migrate `MemberAccountControllerTest`, merge `AccountMemberDetailLinkProcessorTest`, `AccountRootLinkProcessorTest`, `AccountMemberSummaryLinkProcessorTest`
+- [x] 5.4 Run `finance` tests, review, commit
 
 ## 6. Module `membershipfees`
 
