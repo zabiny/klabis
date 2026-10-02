@@ -1,9 +1,9 @@
 ## 1. Preparation
 
-- [ ] 1.1 Record baseline per module (`events`, `finance`, `membershipfees`, `groups`, `calendar`, `sync`, `oris`, `common`): test counts, Spring contexts and test time using the spring-test-profiler skill with `SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true`
-- [ ] 1.2 Re-verify the findings in design D4 in code (which REST adapters inject non-primary beans, which mocks exist) and correct the table if needed
-- [ ] 1.3 Inventory Optional / profile-gated beans injected in REST adapters of the modules above (e.g. `OrisEventImportPort`) and decide per bean: feature flag (local mock) or required dependency
-- [ ] 1.4 Resolve open questions from design (`OrisClubKeyPort` primary port name, `AccommodationListCsvRenderer` loading, `common` test classification)
+- [x] 1.1 Record baseline per module (`events`, `finance`, `membershipfees`, `groups`, `calendar`, `sync`, `oris`, `common`): test counts, Spring contexts and test time using the spring-test-profiler skill with `SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true`
+- [x] 1.2 Re-verify the findings in design D4 in code (which REST adapters inject non-primary beans, which mocks exist) and correct the table if needed
+- [x] 1.3 Inventory Optional / profile-gated beans injected in REST adapters of the modules above (e.g. `OrisEventImportPort`) and decide per bean: feature flag (local mock) or required dependency
+- [x] 1.4 Resolve open questions from design (`OrisClubKeyPort` primary port name, `AccommodationListCsvRenderer` loading, `common` test classification)
 
 ## 2. Module `groups`
 

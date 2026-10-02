@@ -49,15 +49,19 @@ PoC result on `members`: contexts 16 → 8, test time 121 s → 97 s, tests 930 
 ### D4: REST adapters depend only on primary ports
 Fixes made in production code (no behavior change):
 
-| Module | Finding | Fix |
+| Module | Finding (verified 2026-10-02) | Fix |
 |---|---|---|
-| events | `AccommodationListCsvRenderer` mocked | Check whether it is a pure adapter component; instantiate it via `@Import` of its configuration (or real bean) instead of mocking |
-| finance | `MemberAccountController` uses `MemberAccountRepository` | Add the needed queries to the finance primary port; controller uses the port |
-| finance | `FinanceAccountLinkSupport` implemented in the adapter package | Mock removed; the real helper is loaded with the slice (or exposed as a primary port if it needs application data) |
-| sync | `SyncProjectionFieldReader` | Expose through a primary port used by `SynchronizationController` and `SyncStateResponseConverter` |
-| membershipfees | `EventTypeOptionsPort`, `RankingOptionsPort` only `@Port` | Mark as `@PrimaryPort` if they are consumed by the adapter and have no secondary implementation role; otherwise add primary ports |
-| common.settings | `OrisClubKeyPort` is a secondary port (`@PrimaryPort` breaks `JMoleculesArchitectureTest`) | Add a dedicated primary port over it; mock that |
-| oris | `OrisApiClient` used directly by `OrisController` | Justified exception, documented in the skill |
+| events | `AccommodationListCsvRenderer` is a package-private `@Component` in `restapi` with no dependencies, injected by `EventController`; mocked in `EventsWebMvcMockitoBeans`, `EventControllerTest`, `OrisEventControllerTest` | Load the real bean (see D9); remove all three mocks |
+| finance | `MemberAccountController` injects `MemberAccountRepository` (`findBalanceById`, `findReversalOf`); mocked in `FinanceWebMvcMockitoBeans` | Add the two queries to the finance primary ports (e.g. `TransactionQueryPort`); controller uses the port; remove the repository mock |
+| finance | `FinanceAccountLinkSupport` is an interface in `finance.application` (no `@PrimaryPort`), implemented by `@MvcComponent FinanceAccountLinkSupportImpl` in `restapi`; consumed only by `events.RegistrationRecordTransactionLinkProcessor`; mocked in `FinanceWebMvcMockitoBeans` | Add `finance` to events `extraIncludes` so the real impl loads (it only wraps static `FinanceLinks`); remove the mock (see D9) |
+| sync | `SynchronizationController` injects `SyncProjectionFieldReader` (`sync.domain` port) and builds `SyncStateResponseConverter` (not a bean) from it; the converter also passes it to `SyncRecord.changedSides(...)`; mocked in `SyncWebMvcMockitoBeans` | New primary port `SyncProjectionFieldsPort` in `sync.application` with `fields(SyncProjection)`, implemented by a service delegating to the domain reader; converter passes `port::fields` to `changedSides` |
+| membershipfees | `EventTypeOptionsPort` and `RankingOptionsPort` are `@Port`, but implemented by `@SecondaryAdapter` classes (`EventTypeOptionsAdapter`, `OrisRankingOptionsAdapter`) - they are secondary ports, so marking them `@PrimaryPort` is wrong | New primary port `MembershipFeeTierOptionsPort` (`listRankingOptions`, `listEventTypeOptions`) implemented in `application`, delegating to the two secondary ports; `MembershipFeeTierController` uses it; both secondary ports stay |
+| common.settings | `OrisClubKeyPort` is a secondary port (its implementation `InMemoryOrisClubKeyAdapter` is `@SecondaryAdapter`), injected by `oris.OrisClubKeyController` and also by `members.MemberController` (`isSet()`); already mocked in `CommonWebMvcMockitoBeans` | New primary port `OrisClubKeyManagementPort` (`store`, `isSet`, `clear`) in `common.settings`, delegating to `OrisClubKeyPort`; both controllers use it; `CommonWebMvcMockitoBeans` mocks the new port (members tests are affected, see D9) |
+| oris | `OrisController` injects `OrisApiClient` (external client `com.dpolach.api.orisclient`) next to `ImportedOrisEventsPort` (`@PrimaryPort`, owned by `oris.application`, implemented in `events`) | Justified exception for `OrisApiClient`, documented in the skill |
+| calendar | `ICalendarRenderer` (adapter-package bean) is loaded for real via package-private `CalendarInfrastructureConfiguration`; no mock | No production change; coupling resolved in D9 |
+| common | `RootController`, `DashboardController`, `PermissionController` (`PermissionService`), `PasswordSetupController` (`PasswordSetupService`) - all `@PrimaryPort`; `PasswordChangeController` is already `@E2ETest` | No finding |
+| groups | controllers and `MemberTrainingGroupLinkProcessor` use only `FreeGroupManagementPort`, `TrainingGroupManagementPort` | No finding |
+| membershipfees (rest) | other controllers/link processor use only `@PrimaryPort`s (+ `Clock`, `Members`) | No finding |
 
 Each finding is re-verified in the code before the change; the table is the starting hypothesis from the PoC review.
 
@@ -92,8 +96,44 @@ They become `@Nested` groups in the same class; expectations move from "processo
 
 Rollback: each module slice is a separate commit and can be reverted independently; the legacy form keeps working next to the migrated one until step 3.
 
+### D9: Resolved open questions and inventories (task group 1)
+
+**Optional / profile-gated beans in REST adapters** (inventory; all injected into `restapi` beans of the migrated modules):
+
+| Bean | Gate | Injected by | Decision |
+|---|---|---|---|
+| `OrisEventImportPort` | `@OrisIntegrationComponent` (profile `oris`), injected as `Optional` | `EventController`, `EventController.EventListPostprocessor` | Feature flag: never in group mocks; the "ORIS on" variant is the dedicated `OrisEventControllerTest` (mock + `@ActiveProfiles("oris")`), the "ORIS off" variant (no import affordance, no `/api/oris/...` endpoint 404) is nested in the shared `EventsWebMvcTest` class |
+| `OrisEventBulkImportPort`, `OrisBulkSyncPort` | profile `oris` (`OrisEventController` is `@OrisIntegrationComponent`) | `OrisEventController` | Same dedicated class: local `@MockitoBean`s |
+| `OrisController` | profile `oris` | itself | Dedicated class in `oris` with `@ActiveProfiles("oris")` + local `OrisApiClient` mock; `ImportedOrisEventsPort` is an always-available primary port, mocked in `OrisWebMvcMockitoBeans` |
+| `MemberDiscoveryPort` | profile `oris`, `Optional` | `members.MemberController` | Already handled in the PoC (local mock) |
+| `OrisApiClient` | `Optional` in `OrisRankingOptionsAdapter` (secondary adapter, not loaded in web slices) | not a REST adapter | Not relevant to REST slices |
+| `MemberFinancialStatePort` | `Optional` in `ManagementService` (application layer) | not a REST adapter | Not relevant |
+| `SynchronizationPort`, `FeeSelectionCampaignManagementPort` | required (PoC already made them required) | `EventController`, `DisciplineController`, `SyncStatePostprocessor`, `MemberFeeSummaryLinkProcessor` | Required dependency, provided via `extraIncludes` + owning `*WebMvcMockitoBeans` |
+| `ObjectProvider<OwnershipResolver>`, `ObjectProvider<ActivationContactVerifier>` etc. | lazy resolution in `common` | `common` internals | Not feature flags; no action |
+
+No other `Optional<port>` or `@Profile` bean is injected into the REST adapters of `events`, `finance`, `membershipfees`, `groups`, `calendar`, `sync`, `oris`, `common`.
+
+**`OrisClubKeyPort` primary port.** Name `OrisClubKeyManagementPort` (same `*ManagementPort` convention as `EventManagementPort`, `FreeGroupManagementPort`), `@PrimaryPort` in `com.klabis.common.settings`, implemented by a small `@Service` that delegates to `OrisClubKeyPort`. `OrisClubKeyPort` stays a secondary port with its adapter, `OrisClubKeyAccessor` unchanged. `members.MemberController` and `oris.OrisClubKeyController` switch to the new port (so `members` mocks change too). `members.MemberOrisImportAffordancePostprocessor` and `DefaultOrisClubMembers` are not REST adapter controllers and keep using the secondary port/accessor. `InMemoryOrisClubKeyAdapterTest` stays; add a unit test for the delegating service first.
+
+**`AccommodationListCsvRenderer` loading.** Real bean, no mock. `WebMvcTest` filters out a plain `@Component`, so it is not picked up automatically. Preferred: make it an `@MvcComponent` (the stereotype `MvcConfiguration` uses to include `restapi` beans in web slices; it is a plain `@Component` today). It is a one-word production change with no behavior change, and the existing `AccommodationListCsvRendererTest` stays valid. To be confirmed in 7.1 by checking that `MvcComponent` is included by the slice filter (as it is for postprocessors).
+
+**`CalendarInfrastructureConfiguration` coupling.** Same fix as the renderer: `ICalendarRenderer` is a stateless adapter bean; make it `@MvcComponent` (or give it the same stereotype) so the slice loads it, and drop `@Import(CalendarInfrastructureConfiguration)` from `CalendarWebMvcMockitoBeans`. Keeps the annotation free from a package-private class and from `com.klabis.calendar.infrastructure.restapi` placement.
+
+**`common` test classification** (13 classes with class-level `@WebMvcTest`; all use `@WithPostprocessors`):
+
+| Class | Form |
+|---|---|
+| `PermissionControllerTest`, `PasswordSetupControllerTest`, `DashboardControllerTest`, `RootControllerTest` | migrate to `@CommonWebMvcTest` (real controllers of `common`) |
+| `RootProfileLinkProcessorTest`, `OrisClubKeyRootLinkProcessorTest` | merge into `RootControllerTest` as `@Nested` link groups; `OrisClubKeyRootLinkProcessor` lives in `members.infrastructure.orissync` so its expectation needs `members` in `extraIncludes` or stays a members-owned test (decided in 9.2) |
+| `AffordanceAuthorizationTest`, `HalResponseBodyAdviceTest`, `HalResponseBodyAdviceCollectionTest`, `HalResponseContextLeakTest` | infrastructure tests with their own inner test controllers: keep a dedicated setup, but drop `@WithPostprocessors` (replace by a minimal local equivalent) |
+| `FieldLevelAuthorizationTest`, `AccountStatusValidationFilterTest`, `RateLimitExceptionHandlerTest` | infrastructure/filter/advice tests with inner test controllers: keep dedicated setup, drop `@WithPostprocessors` |
+| `HalCollectionCrossModuleLeakIntegrationTest`, `HasAuthorityAspectTest`, `PasswordChangeControllerTest` (`@E2ETest`) | not `@WebMvcTest`; untouched |
+
+Out of `common` but also using `@WithPostprocessors`: `members/.../CurrentUserIntegrationTest` (task group 10/11 must cover it).
+
+**Test count remark.** `common` has 715 tests (10 skipped, all pre-existing `@Disabled`/conditional).
+
 ## Open Questions
 
-- `OrisClubKeyPort`: new primary port name and whether the existing secondary port keeps its role.
-- `events`: how `AccommodationListCsvRenderer` is best loaded in the slice.
-- `common`: which of the 16 `@WebMvcTest` classes belong to the module-sliced form and which test infrastructure (filters, advice) and need dedicated contexts.
+- Decision for the user (not made here): the 7 infrastructure tests in `common` each use their own inner test controller, so they stay at one context each (7 contexts). They could be consolidated into one shared "common infrastructure" context by registering all inner test controllers in a single test configuration; this lowers contexts further but couples unrelated test controllers. Proposed default: keep them dedicated, only remove `@WithPostprocessors`.
+- Decision for the user: `FinanceAccountLinkSupport` through `extraIncludes = "finance"` in the events slice (proposed) pulls all finance web beans (and `FinanceWebMvcMockitoBeans`) into the events context. Alternative: make the interface a `@PrimaryPort` and mock it in the events annotation (one-line change, but the helper is mocked again, contradicting "load real adapter helpers").
