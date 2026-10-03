@@ -1,14 +1,14 @@
 ## 1. Aplikační služba
 
-- [ ] 1.1 Přidat do `events.application` record `AccommodationList` a `AccommodationListRow` a metodu služby (autorizace, filtr `wantsSharedAccommodation`, dohledání `MemberAccommodationDto`)
-- [ ] 1.2 Unit test služby: oprávnění (koordinátor, `EVENTS:REGISTRATIONS`, jinak odepřeno), vypnuté sdílené ubytování, filtr registrací, chybějící údaje člena
+- [x] 1.1 Přidat do `events.application` record `AccommodationList` a `AccommodationListRow` a metodu služby (autorizace, filtr `wantsSharedAccommodation`, dohledání `MemberAccommodationDto`)
+- [x] 1.2 Unit test služby: oprávnění (koordinátor, `EVENTS:REGISTRATIONS`, jinak odepřeno), vypnuté sdílené ubytování, filtr registrací, chybějící údaje člena
 
 ## 2. Controller a postprocessory
 
-- [ ] 2.1 `EventController.getAccommodationList` a `getAccommodationListAsCsv` volají službu, odstranit privátní helpery a závislosti, které controller už nepotřebuje
-- [ ] 2.2 `AccommodationListItemPostprocessor` čte `eventId` z `AccommodationListRow`; `AccommodationListPostprocessor` z domény seznamu
-- [ ] 2.3 Odstranit `AccommodationListContext` a jeho `setContext`/`findContext`
-- [ ] 2.4 Upravit `EventControllerTest` (mock služby) a testy postprocessorů
+- [x] 2.1 `EventController.getAccommodationList` a `getAccommodationListAsCsv` volají službu, odstranit privátní helpery a závislosti, které controller už nepotřebuje
+- [x] 2.2 `AccommodationListItemPostprocessor` čte `eventId` z `AccommodationListRow`; `AccommodationListPostprocessor` z domény seznamu
+- [x] 2.3 Odstranit `AccommodationListContext` a jeho `setContext`/`findContext`
+- [x] 2.4 Upravit `EventControllerTest` (mock služby) a testy postprocessorů
 
 ## 3. Kontexty, které si postprocessor zjistí sám
 
