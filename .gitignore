@@ -43,3 +43,5 @@ backend/local.env
 
 # scratch space for local logs and throwaway scripts
 /.tmp/
+.factorypath
+backend/.factorypath
