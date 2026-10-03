@@ -87,15 +87,14 @@ class MemberGroupTest {
     class ReconstructMethod {
 
         @Test
-        @DisplayName("should drop an owner that is also present among the restored members")
-        void shouldDropOwnerFromRestoredMembers() {
-            TestGroup group = TestGroup.reconstruct("Training A",
+        @DisplayName("should reject restoring an owner that is also present among the members")
+        void shouldRejectRestoredOwnerFromMembers() {
+            assertThatThrownBy(() -> TestGroup.reconstruct("Training A",
                     Set.of(OWNER),
-                    Set.of(GroupMembership.of(OWNER), GroupMembership.of(MEMBER)));
-
-            assertThat(group.getOwners()).containsExactly(OWNER);
-            assertThat(group.hasMember(OWNER)).isFalse();
-            assertThat(group.hasMember(MEMBER)).isTrue();
+                    Set.of(GroupMembership.of(OWNER), GroupMembership.of(MEMBER))))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining(OWNER.toString())
+                    .hasMessageContaining(MEMBER.toString());
         }
     }
 

@@ -80,7 +80,7 @@
 
 <aside class="note">
     Výhoda kompozice (vs. dědičnost): různé agregáty mají různé další chování (TrainingGroup při
-    automatickém přidání přeskočí vlastníky, FamilyGroup ne) a nepotřebují dědit konkrétní
+    automatickém přidání přeskočí vlastníky, LegalGuardianGroup ne) a nepotřebují dědit konkrétní
     invariants.
 </aside>
 
@@ -97,6 +97,8 @@
     <li>Stejný uživatel nemůže být přidán dvakrát — <code>MemberAlreadyInGroupException</code>.</li>
     <li>Odstranění neexistujícího člena vyhodí <code>MemberNotInGroupException</code>. Vlastník mezi
         členy nepatří, takže <code>removeMember</code> na vlastníku vyhodí právě tuto výjimku.</li>
+    <li>Obnovení skupiny s překryvem (vlastník, který je zároveň v tabulce členů) je chyba dat a
+        skončí <code>IllegalStateException</code> — stej jako každý jiný rozpor v uloženém stavu.</li>
 </ul>
 
 <h3>WithInvitations — invitation flow</h3>

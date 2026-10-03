@@ -81,6 +81,7 @@ export const labels = {
         addGroupOwner: 'Přidat správce',
         removeGroupOwner: 'Odebrat správce',
         removeGroupOwnerLeavesGroup: 'Odebráním správce dotčená osoba opustí skupinu.',
+        removeSelfAsOwnerLeavesGroup: 'Odebráním sebe ze správců opustíte skupinu.',
         leaveGroup: 'Opustit skupinu',
         leaveGroupConfirm: 'Opuštěním skupiny ztratíte členství ve skupině.',
         addTrainer: 'Přidat trenéra',

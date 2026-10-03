@@ -8,17 +8,22 @@ import {GroupDetailPage} from './GroupDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 
-const {MEMBER_DATA, mockNavigate} = vi.hoisted(() => ({
+const {MEMBER_DATA, mockNavigate, currentMemberId} = vi.hoisted(() => ({
     // Keyed by the path HalRouteProvider requests — the /api prefix is stripped by normalizeKlabisApiPath.
     MEMBER_DATA: {
         '/members/owner-1': {firstName: 'Jana', lastName: 'Nováková', registrationNumber: 'ZBM9000'},
         '/members/member-1': {firstName: 'Petr', lastName: 'Svoboda', registrationNumber: 'ZBM9500'},
     } as Record<string, {firstName: string; lastName: string; registrationNumber: string}>,
     mockNavigate: vi.fn(),
+    currentMemberId: {value: 'owner-1' as string | null},
 }));
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
+}));
+
+vi.mock('../../contexts/authContext.ts', () => ({
+    useAuth: () => ({getUser: () => ({memberId: currentMemberId.value})}),
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -61,7 +66,7 @@ vi.mock('../../components/UI', async (importOriginal) => {
     };
 });
 
-const createMockPageData = (resourceData: HalResponse | null) => ({
+const createMockPageData = (resourceData: HalResponse | null, routeOverrides?: Record<string, unknown>) => ({
     resourceData,
     isLoading: false,
     error: null,
@@ -69,9 +74,10 @@ const createMockPageData = (resourceData: HalResponse | null) => ({
     route: {
         pathname: '/groups/group-1',
         navigateToResource: vi.fn(),
-        refetch: async () => {},
+        refetch: vi.fn(async () => {}),
         queryState: 'success' as const,
         getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/groups/group-1'}),
+        ...routeOverrides,
     },
     actions: {handleNavigateToItem: vi.fn()},
     getLinks: vi.fn(() => undefined),
@@ -85,8 +91,10 @@ const createMockPageData = (resourceData: HalResponse | null) => ({
     getPageMetadata: vi.fn(() => undefined),
 });
 
-const renderPage = (resourceData: HalResponse) => {
-    vi.mocked(useHalPageData).mockReturnValue(createMockPageData(resourceData) as ReturnType<typeof useHalPageData>);
+const renderPage = (resourceData: HalResponse, routeOverrides?: Record<string, unknown>) => {
+    vi.mocked(useHalPageData).mockReturnValue(
+        createMockPageData(resourceData, routeOverrides) as ReturnType<typeof useHalPageData>
+    );
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
@@ -121,14 +129,29 @@ const buildGroupDetail = (overrides?: Record<string, unknown>): HalResponse => (
 });
 
 const leaveTemplate = () => mockHalFormsTemplate({
-    title: 'Opustit skupinu',
+    title: 'removeGroupMember',
     method: 'DELETE',
     target: '/api/groups/group-1/members/member-1',
+});
+
+const ownerWithRemoveTemplate = () => buildOwner({
+    _links: {
+        member: {href: '/api/members/owner-1'},
+        self: {href: '/api/groups/group-1/owners/owner-1'},
+    },
+    _templates: {
+        removeGroupOwner: mockHalFormsTemplate({
+            title: 'Odebrat správce',
+            method: 'DELETE',
+            target: '/api/groups/group-1/owners/owner-1',
+        }),
+    },
 });
 
 describe('GroupDetailPage — owners and members are disjoint', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        currentMemberId.value = 'owner-1';
     });
 
     it('shows every person exactly once — the owner is not repeated in the member list', () => {
@@ -147,50 +170,67 @@ describe('GroupDetailPage — owners and members are disjoint', () => {
         expect(screen.getAllByText('Jana Nováková (ZBM9000)')).toHaveLength(1);
     });
 
-    it('warns that removing an owner removes them from the group', () => {
-        renderPage(buildGroupDetail({
-            owners: [buildOwner({
-                _links: {
-                    member: {href: '/api/members/owner-1'},
-                    self: {href: '/api/groups/group-1/owners/owner-1'},
-                },
-                _templates: {
-                    removeGroupOwner: mockHalFormsTemplate({
-                        title: 'Odebrat správce',
-                        method: 'DELETE',
-                        target: '/api/groups/group-1/owners/owner-1',
-                    }),
-                },
-            })],
-        }));
+    it('warns that removing another owner removes them from the group, and stays on the page', () => {
+        currentMemberId.value = 'someone-else';
+        renderPage(buildGroupDetail({owners: [ownerWithRemoveTemplate()]}));
         fireEvent.click(screen.getByRole('button', {name: /odebrat správce/i}));
 
         expect(screen.getByTestId('modal-overlay')).toHaveAttribute('data-title', 'Odebrat správce');
         expect(screen.getByTestId('modal-note')).toHaveTextContent(
             'Odebráním správce dotčená osoba opustí skupinu.'
         );
+
+        fireEvent.click(screen.getByRole('button', {name: 'submit-form'}));
+        expect(mockNavigate).not.toHaveBeenCalled();
+    });
+});
+
+describe('GroupDetailPage — an owner giving up their own ownership', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        currentMemberId.value = 'owner-1';
+    });
+
+    it('warns in the second person that the caller is the one leaving', () => {
+        renderPage(buildGroupDetail({owners: [ownerWithRemoveTemplate()]}));
+        fireEvent.click(screen.getByRole('button', {name: /odebrat správce/i}));
+
+        expect(screen.getByTestId('modal-note')).toHaveTextContent(
+            'Odebráním sebe ze správců opustíte skupinu.'
+        );
+    });
+
+    it('returns to the group list instead of refetching the now-unreadable detail', () => {
+        const refetch = vi.fn().mockResolvedValue(undefined);
+        renderPage(buildGroupDetail({owners: [ownerWithRemoveTemplate()]}), {refetch});
+        fireEvent.click(screen.getByRole('button', {name: /odebrat správce/i}));
+        fireEvent.click(screen.getByRole('button', {name: 'submit-form'}));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/groups');
+        expect(refetch).not.toHaveBeenCalled();
     });
 });
 
 describe('GroupDetailPage — member leaves the free group', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        currentMemberId.value = 'member-1';
     });
 
-    it('offers "Opustit skupinu" when the backend sends the leaveGroup template', () => {
-        renderPage(buildGroupDetail({_templates: {leaveGroup: leaveTemplate()}}));
+    it('offers "Opustit skupinu" when the backend sends removeGroupMember on the self link', () => {
+        renderPage(buildGroupDetail({_templates: {removeGroupMember: leaveTemplate()}}));
 
         expect(screen.getByRole('button', {name: /opustit skupinu/i})).toBeInTheDocument();
     });
 
-    it('offers nothing to leave with when no leaveGroup template is present (owners)', () => {
+    it('offers nothing to leave with when the self link has no removeGroupMember (owners)', () => {
         renderPage(buildGroupDetail());
 
         expect(screen.queryByRole('button', {name: /opustit skupinu/i})).not.toBeInTheDocument();
     });
 
     it('asks for confirmation and explains the consequence', () => {
-        renderPage(buildGroupDetail({_templates: {leaveGroup: leaveTemplate()}}));
+        renderPage(buildGroupDetail({_templates: {removeGroupMember: leaveTemplate()}}));
         fireEvent.click(screen.getByRole('button', {name: /opustit skupinu/i}));
 
         expect(screen.getByTestId('modal-overlay')).toHaveAttribute('data-title', 'Opustit skupinu');
@@ -200,7 +240,7 @@ describe('GroupDetailPage — member leaves the free group', () => {
     });
 
     it('returns the user to the group list after leaving', () => {
-        renderPage(buildGroupDetail({_templates: {leaveGroup: leaveTemplate()}}));
+        renderPage(buildGroupDetail({_templates: {removeGroupMember: leaveTemplate()}}));
         fireEvent.click(screen.getByRole('button', {name: /opustit skupinu/i}));
         fireEvent.click(screen.getByRole('button', {name: 'submit-form'}));
 
@@ -208,7 +248,7 @@ describe('GroupDetailPage — member leaves the free group', () => {
     });
 
     it('does not navigate away when the leave is cancelled', () => {
-        renderPage(buildGroupDetail({_templates: {leaveGroup: leaveTemplate()}}));
+        renderPage(buildGroupDetail({_templates: {removeGroupMember: leaveTemplate()}}));
         fireEvent.click(screen.getByRole('button', {name: /opustit skupinu/i}));
 
         expect(mockNavigate).not.toHaveBeenCalled();

@@ -26,11 +26,19 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID, M>, ID, M> extend
     protected MemberGroup(String name, Set<M> owners, Set<GroupMembership<M>> members) {
         Assert.hasText(name, "Group name is required");
         Assert.notEmpty(owners, "Group must have at least one owner");
-        this.name = name;
-        this.owners = new HashSet<>(owners);
-        this.members = members.stream()
-                .filter(m -> !owners.contains(m.memberId()))
+        Set<M> ownerIds = new HashSet<>(owners);
+        Set<M> alsoMembers = members.stream()
+                .map(GroupMembership::memberId)
+                .filter(ownerIds::contains)
                 .collect(Collectors.toCollection(HashSet::new));
+        // Restoring an overlap means the stored rows contradict this aggregate's own rule; surface it
+        // rather than silently healing it, or the aggregate would differ from the database until the
+        // next save deleted the member row.
+        Assert.state(alsoMembers.isEmpty(),
+                () -> "Owner(s) %s cannot be members of the same group".formatted(alsoMembers));
+        this.name = name;
+        this.owners = ownerIds;
+        this.members = new HashSet<>(members);
         this.memberIds = this.members.stream()
                 .map(GroupMembership::memberId)
                 .collect(Collectors.toCollection(HashSet::new));

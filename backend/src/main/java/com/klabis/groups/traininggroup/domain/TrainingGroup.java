@@ -103,6 +103,15 @@ public class TrainingGroup extends MemberGroup<TrainingGroup, TrainingGroupId, M
     }
 
     /**
+     * Manual path: the caller named a specific person, so being a trainer of this group is rejected by
+     * {@link #addMember} rather than silently skipped the way the automatic age-based paths skip.
+     */
+    public void addTrainee(MemberId memberId) {
+        addMember(memberId);
+        registerEvent(new MemberAssignedToTrainingGroupEvent(memberId, id, getName(), Instant.now()));
+    }
+
+    /**
      * Age-based assignment runs over every eligible member, including the group's own trainers. A trainer
      * is never a trainee of the group they train, so those are skipped silently rather than reported.
      */
@@ -110,8 +119,7 @@ public class TrainingGroup extends MemberGroup<TrainingGroup, TrainingGroupId, M
         if (hasTrainer(memberId)) {
             return;
         }
-        addMember(memberId);
-        registerEvent(new MemberAssignedToTrainingGroupEvent(memberId, id, getName(), Instant.now()));
+        addTrainee(memberId);
     }
 
     public void removeMember(MemberId memberId) {

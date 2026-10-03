@@ -193,12 +193,13 @@ paths:
             inviteMember:
               operation: inviteMember
               description: Present only for group owners
-            leaveGroup:
+            removeGroupMember:
               operation: removeGroupMember
               description: >
-                Present only for members who are not owners. It is the removeGroupMember affordance
-                with the caller's own memberId substituted for the path variable, i.e. "leave this
-                group".
+                The caller's own "leave this group" — the removeGroupMember operation with the
+                caller's memberId substituted for the path variable. Present only for members who
+                are not owners, and only on this self link, so it does not collide with the
+                per-row removeGroupMember an owner sees on the member list.
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':

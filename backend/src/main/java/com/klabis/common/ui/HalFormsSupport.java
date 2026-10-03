@@ -103,41 +103,6 @@ public class HalFormsSupport {
         return List.of(modifiedResult);
     }
 
-    /**
-     * Like {@link #klabisAfford}, but publishes the affordance under a different template name.
-     * <p>
-     * Used where one operation serves two distinct intents in the UI — {@code removeGroupMember} is an
-     * owner's action on someone else in one place and the caller's own "leave this group" in another,
-     * and the client renders the two differently. Only the name changes; field-level authorization and
-     * {@code @HalForms} handling are applied exactly as in {@link #klabisAfford}.
-     */
-    public static List<Affordance> klabisAffordAs(String templateName, Object invocation) {
-        LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
-
-        if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
-            return Collections.emptyList();
-        }
-
-        Affordance original = modifyAffordanceForHalForms(afford(lastInvocationAware), lastInvocationAware, Map.of());
-        Optional<AffordanceModelFactory> halFormsFactoryOpt = getHalFormsModelFactory();
-        if (halFormsFactoryOpt.isEmpty()) {
-            return List.of(original);
-        }
-        AffordanceModelFactory halFormsFactory = halFormsFactoryOpt.get();
-
-        Map<MediaType, AffordanceModel> renamed = new HashMap<>();
-        getModelsFromAffordance(original).forEach((mediaType, model) -> {
-            if (isHalFormsModel(model)) {
-                renamed.put(mediaType, halFormsFactory.getAffordanceModel(
-                        new RenamedAffordance(templateName, model)));
-            } else {
-                renamed.put(mediaType, model);
-            }
-        });
-
-        return List.of(new Affordance(renamed));
-    }
-
     public static <T, D> EntityModel<T> entityModelWithDomain(T dto, D domain) {
         return new EntityModelWithDomain<>(dto, domain);
     }
@@ -306,7 +271,7 @@ public class HalFormsSupport {
             AffordanceModel model = entry.getValue();
 
             // For HAL-FORMS models, use our modified version
-            if (isHalFormsModel(model)) {
+            if (model.getClass().getSimpleName().contains("HalForms")) {
                 ConfiguredAffordance configured = new HalFormsConfiguredAffordance(model, optionsDef);
                 AffordanceModel newModel = halFormsFactory.getAffordanceModel(configured);
                 newModels.put(mediaType, newModel);
@@ -317,10 +282,6 @@ public class HalFormsSupport {
         }
 
         return new Affordance(newModels);
-    }
-
-    private static boolean isHalFormsModel(AffordanceModel model) {
-        return model.getClass().getSimpleName().contains("HalForms");
     }
 
     /**
@@ -341,15 +302,17 @@ public class HalFormsSupport {
     }
 
     /**
-     * ConfiguredAffordance that delegates everything to an existing model. Subclasses override only the
-     * template name or the input metadata, so the two variations cannot drift apart.
+     * ConfiguredAffordance wrapper that modifies InputPayloadMetadata based on @HalForms annotations
      */
-    private static class DelegatingConfiguredAffordance implements ConfiguredAffordance {
+    private static class HalFormsConfiguredAffordance implements ConfiguredAffordance {
 
-        protected final AffordanceModel delegate;
+        private final AffordanceModel delegate;
+        private final HalFormsInputPayloadMetadata modifiedInput;
 
-        private DelegatingConfiguredAffordance(AffordanceModel delegate) {
+        private HalFormsConfiguredAffordance(AffordanceModel delegate,
+                                             Map<String, HalFormsOptionsDef> optionsDef) {
             this.delegate = delegate;
+            this.modifiedInput = new HalFormsInputPayloadMetadata(delegate.getInput(), optionsDef);
         }
 
         @Override
@@ -369,7 +332,7 @@ public class HalFormsSupport {
 
         @Override
         public AffordanceModel.InputPayloadMetadata getInputMetadata() {
-            return delegate.getInput();
+            return modifiedInput;
         }
 
         @Override
@@ -380,44 +343,6 @@ public class HalFormsSupport {
         @Override
         public AffordanceModel.PayloadMetadata getOutputMetadata() {
             return delegate.getOutput();
-        }
-    }
-
-    /**
-     * Publishes the affordance under the caller's template name instead of the one derived from the
-     * controller method, for when one operation serves two distinct intents in the UI.
-     */
-    private static class RenamedAffordance extends DelegatingConfiguredAffordance {
-
-        private final String templateName;
-
-        private RenamedAffordance(String templateName, AffordanceModel delegate) {
-            super(delegate);
-            this.templateName = templateName;
-        }
-
-        @Override
-        public String getNameOrDefault() {
-            return templateName;
-        }
-    }
-
-    /**
-     * ConfiguredAffordance wrapper that modifies InputPayloadMetadata based on @HalForms annotations
-     */
-    private static class HalFormsConfiguredAffordance extends DelegatingConfiguredAffordance {
-
-        private final HalFormsInputPayloadMetadata modifiedInput;
-
-        private HalFormsConfiguredAffordance(AffordanceModel delegate,
-                                             Map<String, HalFormsOptionsDef> optionsDef) {
-            super(delegate);
-            this.modifiedInput = new HalFormsInputPayloadMetadata(delegate.getInput(), optionsDef);
-        }
-
-        @Override
-        public AffordanceModel.InputPayloadMetadata getInputMetadata() {
-            return modifiedInput;
         }
     }
 

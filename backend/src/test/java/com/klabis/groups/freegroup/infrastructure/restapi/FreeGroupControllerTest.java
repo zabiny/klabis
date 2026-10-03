@@ -320,9 +320,9 @@ class FreeGroupControllerTest {
         }
 
         @Test
-        @DisplayName("should expose a leaveGroup affordance targeting the caller's own memberId for a member")
+        @DisplayName("should expose removeGroupMember on the self link, targeting the caller's own memberId, for a member")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
-        void shouldExposeLeaveGroupAffordanceForMember() throws Exception {
+        void shouldExposeSelfRemoveGroupMemberAffordanceForMember() throws Exception {
             FreeGroup group = buildGroupWithMember(GROUP_UUID, "Sprint Team", MEMBER_ID, OTHER_MEMBER_ID);
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
 
@@ -331,15 +331,15 @@ class FreeGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.leaveGroup.method").value("DELETE"))
-                    .andExpect(jsonPath("$._templates.leaveGroup.target")
+                    .andExpect(jsonPath("$._templates.removeGroupMember.method").value("DELETE"))
+                    .andExpect(jsonPath("$._templates.removeGroupMember.target")
                             .value("http://localhost/api/groups/" + GROUP_UUID + "/members/" + OTHER_MEMBER_ID));
         }
 
         @Test
-        @DisplayName("should not expose a leaveGroup affordance to an owner")
+        @DisplayName("should not expose removeGroupMember on the self link to an owner")
         @WithKlabisMockUser(memberId = MEMBER_ID)
-        void shouldNotExposeLeaveGroupAffordanceForOwner() throws Exception {
+        void shouldNotExposeSelfRemoveGroupMemberForOwner() throws Exception {
             FreeGroup group = buildGroupWithMember(GROUP_UUID, "Sprint Team", MEMBER_ID, OTHER_MEMBER_ID);
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
 
@@ -348,7 +348,7 @@ class FreeGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._templates.leaveGroup").doesNotExist());
+                    .andExpect(jsonPath("$._templates.removeGroupMember").doesNotExist());
         }
 
         @Test

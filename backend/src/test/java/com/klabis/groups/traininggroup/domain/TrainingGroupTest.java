@@ -1,6 +1,7 @@
 package com.klabis.groups.traininggroup.domain;
 
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
+import com.klabis.common.groups.domain.OwnerCannotBeMemberException;
 import com.klabis.groups.MemberAssignedToTrainingGroupEvent;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.members.MemberId;
@@ -417,6 +418,29 @@ class TrainingGroupTest {
 
             assertThat(group.hasMember(REGULAR_MEMBER)).isTrue();
             assertThat(group.getTrainers()).doesNotContain(REGULAR_MEMBER);
+        }
+
+        @Test
+        @DisplayName("addTrainee() rejects a trainer of this group, unlike the silent assignEligibleMember skip")
+        void shouldRejectTrainerAsTrainee() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+
+            assertThatThrownBy(() -> group.addTrainee(TRAINER))
+                    .isInstanceOf(OwnerCannotBeMemberException.class);
+            assertThat(group.hasMember(TRAINER)).isFalse();
+        }
+
+        @Test
+        @DisplayName("addTrainee() adds the trainee and publishes the assignment event")
+        void shouldAddTraineeAndPublishEvent() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+
+            group.addTrainee(REGULAR_MEMBER);
+
+            assertThat(group.hasMember(REGULAR_MEMBER)).isTrue();
+            assertThat(group.getDomainEvents()).hasSize(1);
         }
 
         @Test

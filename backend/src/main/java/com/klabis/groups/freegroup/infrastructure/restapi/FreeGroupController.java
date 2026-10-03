@@ -267,10 +267,13 @@ class FreeGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<GroupRe
                     .flatMap(List::stream)
                     .toList();
         }
-        // Owners give up ownership through removeGroupOwner, so the leave affordance is for plain members only.
+        // Owners give up ownership through removeGroupOwner, so the self link only offers "leave the group"
+        // to plain members. It reuses removeGroupMember with the caller's own id; the client renders it as
+        // "Opustit skupinu" and reads it off the self link, where it cannot collide with the per-row
+        // removeGroupMember affordance an owner sees on the member list.
         return actingMember
                 .filter(group::hasMember)
-                .map(member -> klabisAffordAs("leaveGroup",
+                .map(member -> klabisAfford(
                         methodOn(GroupsApi.class).removeGroupMember(id, member.uuid(), null)))
                 .orElseGet(List::of);
     }
