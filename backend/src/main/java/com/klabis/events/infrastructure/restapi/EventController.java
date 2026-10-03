@@ -665,8 +665,8 @@ class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<
 
 /**
  * Contributes the {@code event} relation to the accommodation list. The list is published by
- * {@code EventController#getAccommodationList} through {@link HalResponseContext#setContext}, because
- * a collection payload carries no domain object and an empty one carries no eventId.
+ * {@code EventController#getAccommodationList} through {@link HalResponseContext#setContext}, so the
+ * collection postprocessor can read the eventId even when the list is empty.
  */
 @MvcComponent
 class AccommodationListPostprocessor

@@ -184,9 +184,7 @@ public class MemberController implements MembersApi {
 
         Page<Member> memberPage = managementService.listMembers(filter, pageable);
 
-        // Same reasoning as getMember: one enrolment lookup per request, scoped to this page's
-        // member ids rather than every active MEMBER sync record, read back by the postprocessor
-        // via HalResponseContext (design.md D4).
+        // One batch lookup per page, read by MemberSummaryPostprocessor.
         List<String> pageMemberIds = memberPage.getContent().stream().map(m -> m.getId().uuid().toString()).toList();
         Set<String> enrolledMemberIds = pageMemberIds.isEmpty()
                 ? Set.of()

@@ -3,7 +3,6 @@ package com.klabis.members.infrastructure.orissync;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.members.application.MemberDiscoveryPort;
-import java.util.Optional;
 import com.klabis.members.infrastructure.restapi.MemberSummaryResponse;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import org.springframework.hateoas.EntityModel;
@@ -11,6 +10,8 @@ import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
+
+import java.util.Optional;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
