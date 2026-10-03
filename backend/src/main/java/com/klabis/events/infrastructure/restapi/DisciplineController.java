@@ -204,6 +204,8 @@ class DisciplineDetailsPostprocessor extends ModelWithDomainPostprocessor<Discip
         }
     }
 
+    // List rows share this postprocessor with the detail: the page's batch context is used when present,
+    // otherwise (detail) the pairing is looked up for the single discipline.
     private boolean isEnrolled(UUID disciplineId) {
         return HalResponseContext.findContext(EnrolledDisciplineIds.class)
                 .map(enrolled -> enrolled.contains(disciplineId))
