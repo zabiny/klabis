@@ -23,6 +23,26 @@ The system SHALL support permissions that apply to a specific target (for exampl
 - **THEN** the action is allowed
 - **AND** performing it on member B is refused with a permission denied error
 
+### Requirement: Global Permission Applies To Every Target
+
+A permission held globally SHALL be equivalent to holding it over every target, including targets created later.
+
+#### Scenario: Global permission covers a newly registered member
+
+- **GIVEN** a user with MEMBERS:MANAGE authority
+- **WHEN** a new member is registered
+- **THEN** the user can manage the new member without any further permission change
+
+### Requirement: Permissions Are Consistent Within A Request
+
+All permission decisions made while serving one request, including which actions are offered in the response, SHALL be based on the same set of permissions.
+
+#### Scenario: Offered actions match the permission check
+
+- **GIVEN** a user who holds MEMBER:EDIT_DETAILS over a member through a group
+- **WHEN** the user opens the member's detail and then submits the offered edit
+- **THEN** the edit is allowed
+
 ### Requirement: Groups Delegate Permissions To Their Owners
 
 A group SHALL be able to define a set of delegated permissions. The owners of such a group SHALL hold each delegated permission over every member of the group. Only permissions that are not global administrator permissions MAY be delegated. Owners lose a delegated permission over a member as soon as the member leaves the group, and lose all delegated permissions when they stop being owners.

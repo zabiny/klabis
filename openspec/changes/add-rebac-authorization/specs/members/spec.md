@@ -10,6 +10,18 @@ The system SHALL allow editing a member's details by a user who holds the MEMBER
 - **WHEN** the user edits the member's details and saves
 - **THEN** the updated information is saved
 
+#### Scenario: Delegated holder sees the editable details
+
+- **GIVEN** a user who holds MEMBER:EDIT_DETAILS over a member and has no MEMBERS:MANAGE
+- **WHEN** the user opens the member's detail and the edit form
+- **THEN** the details a member may edit on their own profile are shown and pre-filled
+- **AND** fields reserved for administrators are not shown
+
+#### Scenario: Member sees own details
+
+- **WHEN** a member (including a minor) opens their own profile
+- **THEN** the details a member may edit on their own profile are shown
+
 #### Scenario: Delegated permission does not allow editing administrator-only fields
 
 - **GIVEN** a user who holds MEMBER:EDIT_DETAILS over a member and has no MEMBERS:MANAGE
