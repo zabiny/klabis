@@ -1,18 +1,17 @@
 package com.klabis.members.infrastructure.mvc;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.common.WithPostprocessors;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.members.ActingMember;
 import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
+import com.klabis.members.MembersWebMvcTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -28,9 +27,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = CurrentUserIntegrationTest.TestController.class)
-@Import({CurrentUserArgumentResolver.class, MvcConfigurerMembers.class})
-@WithPostprocessors
+@MembersWebMvcTest
+@Import(CurrentUserIntegrationTest.TestController.class)
 class CurrentUserIntegrationTest {
 
     private static final String TEST_USER_ID = "123e4567-e89b-12d3-a456-426614174000";
