@@ -57,9 +57,9 @@
 
 ## 10. Members follow-ups
 
-- [ ] 10.1 Unit test for the `addsNoLinkWithoutContext` branch of the members link processor
-- [ ] 10.2 Verify `POST /api/members` returning 201 is covered end-to-end elsewhere; add a test if not
-- [ ] 10.3 Run `members` tests, review, commit
+- [x] 10.1 Unit test for the `addsNoLinkWithoutContext` branch of the members link processor
+- [x] 10.2 Verify `POST /api/members` returning 201 is covered end-to-end elsewhere; add a test if not
+- [x] 10.3 Run `members` tests, review, commit
 
 ## 11. Remove legacy form
 
