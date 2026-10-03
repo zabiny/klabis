@@ -12,13 +12,13 @@
 
 ## 3. Kontexty, které si postprocessor zjistí sám
 
-- [ ] 3.1 `ClubKeyHeld`: `MemberOrisImportAffordancePostprocessor` injektuje porty, odstranit record a `setContext` v `MemberController.listMembers`
-- [ ] 3.2 `EnrolledMemberIds` v detailu: `MemberDetailsPostprocessor` používá `SynchronizationPort`, `getMember` kontext nenastavuje
-- [ ] 3.3 `EnrolledEventIds` v detailu: totéž pro `EventDetailsPostprocessor` / `EventController.getEvent`
-- [ ] 3.4 `EnrolledDisciplineIds` v detailu: totéž pro `DisciplineDetailsPostprocessor` / `DisciplineController.getDiscipline`
-- [ ] 3.5 Doplnit `WebMvcMockitoBeans` / testy postprocessorů o potřebné porty
+- [x] 3.1 `ClubKeyHeld`: `MemberOrisImportAffordancePostprocessor` injektuje porty, odstranit record a `setContext` v `MemberController.listMembers`
+- [x] 3.2 `EnrolledMemberIds` v detailu: `MemberDetailsPostprocessor` používá `SynchronizationPort`, `getMember` kontext nenastavuje
+- [x] 3.3 `EnrolledEventIds` v detailu: totéž pro `EventDetailsPostprocessor` / `EventController.getEvent`
+- [x] 3.4 `EnrolledDisciplineIds` v detailu: totéž pro `DisciplineDetailsPostprocessor` / `DisciplineController.getDiscipline`
+- [x] 3.5 Doplnit `WebMvcMockitoBeans` / testy postprocessorů o potřebné porty
 
 ## 4. Ověření
 
-- [ ] 4.1 Existující testy (včetně 403 a CSV) projdou beze změny asercí
-- [ ] 4.2 Spustit celou backend sadu a architektonické testy
+- [x] 4.1 Existující testy (včetně 403 a CSV) projdou beze změny asercí
+- [x] 4.2 Spustit celou backend sadu a architektonické testy
