@@ -20,7 +20,7 @@ All three group aggregates (free, training, legal guardian) extend `MemberGroup`
 - Editing the delegated set of an existing group (immutable for now).
 - Delegation of `GLOBAL` authorities.
 - Event-scoped relations (`eventId` target types); the model must allow them, but no use case is implemented.
-- Replacing `@OwnerVisible` (stays for the "target is me" case and field security).
+- Replacing `@OwnerVisible` outside the members module (events, finance, membershipfees, groups, calendar keep it; their migration is a follow-up).
 - Frontend permission editor; the frontend only displays the set in invitations and chooses it at free group creation.
 
 ## Decisions
@@ -35,30 +35,41 @@ Alternatives: keep the custom advisor and only add `target` (smaller change, but
 
 `target` as SpEL depends on parameter names matching between the generated `*Api` method and its implementation. Names are read from the annotated interface method; the build keeps `-parameters`.
 
-### D2: One evaluator, two callers
+### D2: Authorities carry targets; the snapshot is built once per request
+
+The acting user's authorities are held as *targeted authorities*: an authority plus the set of targets it applies to. The wildcard target `"*"` means "over everything".
+
+| Source | Resulting targeted authority |
+|---|---|
+| Global authority from the access token (e.g. `MEMBERS:MANAGE`) | authority with target `*` |
+| Authority delegated by groups the user owns (e.g. `MEMBER:EDIT_DETAILS` over members A, B, C) | authority with targets `A|B|C` (notation only; held as a set of ids) |
+
+The snapshot is created when the request's authentication is built (the `KlabisJwtAuthenticationToken`, which `CurrentUserData` is a view of), memoized, and never changes during the request. Every check in the request, whether method security or HAL affordances and links, therefore sees identical authorities, and rendering a list performs no per-row queries. `CurrentUserData.hasAuthority(a)` keeps meaning "held with target `*`"; a new `hasAuthority(a, target)` accepts either `*` or the target.
+
+`AuthorityEvaluator.isGranted(authentication, authority, target)` reads only this snapshot: granted when the authority is held with `*`, or (target given) with a target set containing it. Targets from the same authority held through several sources are unioned.
 
 ```mermaid
 flowchart TD
-    M[Method security: AuthorizationManager] --> E[AuthorityEvaluator]
+    JWT[Access token authorities] --> S[Authorities snapshot on authentication]
+    P[RelationshipAuthorityProvider beans] --> S
+    S --> E[AuthorityEvaluator]
+    M[Method security: AuthorizationManager] --> E
     H[HalFormsSupport afford and link] --> E
-    E --> G[Global authority on Authentication]
-    E --> R[RelationshipAuthorityProvider SPI]
-    R --> Q[Groups: delegated authorities per owner]
 ```
-
-`AuthorityEvaluator.isGranted(authentication, authority, target)`:
-1. true if the user holds the authority globally;
-2. otherwise, if a target is given, true if any `RelationshipAuthorityProvider` reports the user holds the authority over the target.
 
 `HalFormsSupport` builds the SpEL evaluation context from the dummy invocation's method and arguments (the same arguments it gets from `methodOn(...)`), then calls the same evaluator for every `@HasAuthority`, OR-ing them. Its static per-`Method` cache stores only parsed annotation metadata, never results. Plain `@PreAuthorize` on controller methods is evaluated by HAL through the standard `PreAuthorizeAuthorizationManager`, so affordance and call stay in agreement for both.
 
-`@OwnerVisible` keeps working as an additional OR alternative; the evaluator is called first, ownership second.
+`@OwnerVisible` keeps working as an additional OR alternative for modules that have not migrated; the evaluator is called first, ownership second. Members-module operations and fields migrate off it (D5).
 
-### D3: The relationship SPI is implemented once, in the groups shared kernel
+Alternatives: query providers on every check (simple, but one query per affordance when rendering lists, and checks within a request could see different data); cache in `HalResponseContext` (HAL-only, method security would not share it).
 
-`RelationshipAuthorityProvider` (in `common.security`) is implemented in `common.groups` infrastructure with one query over the unified tables: the user is in `user_group_owners` of a group that lists the authority in `user_group_authorities` and has the target in `user_group_members`. It therefore covers all three group types without per-module code. A user's owned-group delegations are loaded once per request (`authority → set of member ids`) and kept in `HalResponseContext`; rendering a member list performs one query, not one per row.
+### D3: Relationship providers are pluggable; groups provide the first one
 
-Alternative: ask each module's repository separately (N modules, N queries) — rejected.
+`common.security` defines the SPI `RelationshipAuthorityProvider`: given the acting user, it returns the targeted authorities that user holds through relationships. Any module may register a provider bean. The snapshot is the union of all providers' results (targets of the same authority are merged; a provider returning `*` makes the authority global). With no provider registered, there are no relationships and only token authorities apply.
+
+`common.groups` implements one provider for all three group types, using one query over the unified tables: groups where the user is in `user_group_owners`, joined to `user_group_authorities` and `user_group_members`, grouped by authority. It therefore covers all three group types without per-module code.
+
+Alternative: each module's repository queried separately by the security core — rejected, the core would depend on the modules.
 
 ### D4: Delegated authorities live on the group, immutable
 
@@ -70,17 +81,21 @@ Alternative: ask each module's repository separately (N modules, N queries) — 
 
 Because the set is fixed at creation there is no escalation path: nobody can grant themselves rights later, and invitees see the delegation before accepting (consent). Training and legal guardian members are assigned without invitation; their sets are predefined by the system, not by a user.
 
-### D5: `MEMBER:EDIT_DETAILS` and the member update endpoint
+### D5: `MEMBER:EDIT_DETAILS` replaces owner access in the members module
 
-New `Authority.MEMBER_EDIT_DETAILS("MEMBER:EDIT_DETAILS", CONTEXT_SPECIFIC)`. `updateMember` is declared with `@HasAuthority(MEMBERS_MANAGE)` and `@HasAuthority(value = MEMBER_EDIT_DETAILS, target = "#id")` (OR), in addition to the existing `@OwnerVisible`. The spec extension `x-klabis-authority` accepts a list of entries `{authority, target}`; the generator templates emit repeated annotations.
+New `Authority.MEMBER_EDIT_DETAILS("MEMBER:EDIT_DETAILS", MEMBER)`. It is a distinct authority from `MEMBERS_MANAGE` (a delegated edit right must not open admin-only fields or future management endpoints).
 
-`OwnProfileEditRule` currently blocks every non-admin from editing a minor. It narrows to: blocked only when the target member is the acting user and is a minor and the user lacks `MEMBERS_MANAGE`. A guardian acting on another member (holding `MEMBER_EDIT_DETAILS` over them) is never blocked by it. The rule is shared by the "Upravit" affordance and the update itself, as before.
+**Operations.** `updateMember` (and the other members-module operations that carry `x-klabis-owner-visible` today) are declared with `@HasAuthority(MEMBERS_MANAGE)` and `@HasAuthority(value = MEMBER_EDIT_DETAILS, target = "#id")` (OR). The spec extension `x-klabis-authority` accepts a list of entries `{authority, target}`; the generator templates emit repeated annotations.
 
-Field-level security is unchanged: admin-only fields stay admin-only (`MEMBERS_MANAGE`); `MEMBER_EDIT_DETAILS` grants the member-editable field set only.
+**Fields.** Member fields that are readable/editable by the member themselves (`x-klabis-owner-visible` in `members.yaml`) become `x-klabis-authority: [MEMBERS_MANAGE, MEMBER_EDIT_DETAILS]`; for fields the target is implicitly the `@OwnerId` component of the same record (already present on the members records). Admin-only fields (names, date of birth, gender, birth number…) keep `MEMBERS_MANAGE` alone, so they are evaluated against `*` only. Rule: the right to see a field is the right to change it. A delegated holder therefore sees the member's details and gets a pre-filled form, but never the admin-only fields.
+
+**Self relationship.** A provider in the members module grants every authenticated user `MEMBER_EDIT_DETAILS` over themselves (their user id, which equals the member id). This replaces `@OwnerVisible` in the members module; the mechanism stays for other modules.
+
+**Minor self-edit.** `OwnProfileEditRule` stays as an extra condition on `updateMember` and the "Upravit" affordance: editing is refused when the target is the acting user, the member is a minor, and the user lacks global `MEMBERS_MANAGE`. A minor still sees their own data (self-grant); a guardian editing a minor is never blocked by it.
 
 ### D6: `MEMBER:EDIT_DETAILS` is not assignable as a global permission
 
-Global permission assignment (`MEMBERS:PERMISSIONS` dialog) lists only `GLOBAL`-scope authorities plus those already assignable; `MEMBER_EDIT_DETAILS` is `MEMBER` and arises only from group delegation, so the dialog does not offer it. Resolving authorities in the JWT is unchanged: the token carries only global authorities.
+Global permission assignment (`MEMBERS:PERMISSIONS` dialog) lists only `GLOBAL`-scope authorities plus those already assignable; `MEMBER_EDIT_DETAILS` is `MEMBER` and arises only from group delegation or the self relationship, so the dialog does not offer it. Resolving authorities in the JWT is unchanged: the token carries only global authorities.
 
 ## Domain model
 
@@ -112,6 +127,7 @@ classDiagram
 | `MemberGroup.delegatedAuthorities` | added; immutable set of `MEMBER` authorities, validated on construction |
 | `FreeGroup` creation | accepts the set; the set is shown on invitations |
 | `TrainingGroup`, `LegalGuardianGroup` | constructed with predefined sets |
+| Authorities snapshot on the authentication | added; authority → targets (`*` or a set of ids); `CurrentUserData` exposes it |
 | `Authority.MEMBER_EDIT_DETAILS` | added, `MEMBER`; new `Authority.Scope.MEMBER` |
 | `groups.user_group_authorities(user_group_id, authority)` | new table in V001, FK to `user_groups` with cascade delete |
 
@@ -133,7 +149,8 @@ Links and affordance names are unchanged; the difference is who sees them. A gua
 
 - [SpEL `target` depends on parameter names across the `*Api` interface and controller] → startup/test check that every `@HasAuthority(target=…)` resolves; WebMvc tests for the PoC endpoint (403 and 200 paths).
 - [HAL and method security drifting again] → both call `AuthorityEvaluator`; a shared test asserts the same user/target matrix against the call and the affordance.
-- [Per-request cache holds stale delegations within one request] → acceptable; request scoped.
+- [Snapshot is stale within one request, and costs one provider query on first use] → acceptable; request scoped, memoized lazily so requests that never check authorities do not pay.
+- [Large target sets for a user who owns many big groups] → sets of UUIDs, bounded by group sizes; revisit if lists grow beyond thousands.
 - [Free group creator delegates rights over invitees] → consent via invitation display; immutable set; only `MEMBER` authorities delegable.
 - [Replacing `HasAuthorityMethodInterceptor` touches every secured endpoint] → keep behaviour-preserving tests first (existing 403/200 slice tests), swap manager, run the full suite once.
 - [Generator template change for repeated annotations] → covered by the zero-diff baseline check on untouched operations.
@@ -151,4 +168,8 @@ None. Free group creation offers every `MEMBER` authority (today only `MEMBER:ED
 - **Target**: the object (member, event, …) an authority is evaluated against.
 - **Delegated authority**: an authority a group grants to its owners over the group's members.
 - **Relationship-based authorization (ReBAC)**: deciding access from the relation between the acting user and the target (here: owner of a group containing the target).
-- **Global authority**: an authority held by the user directly, valid for any target.
+- **Global authority**: an authority held by the user directly, valid for any target; equivalent to a targeted authority with target `*`.
+- **Wildcard target (`*`)**: the target that means "every target".
+- **Targeted authority**: an authority together with the targets it applies to.
+- **Authorities snapshot**: the targeted authorities of the acting user, fixed for the duration of a request.
+- **Relationship provider**: a module-supplied source of targeted authorities derived from relationships (groups are the first).

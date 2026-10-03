@@ -9,15 +9,16 @@ Legal guardians must be able to maintain their minor children's data, and the sa
 - Groups (all three types, shared persistence) can carry an immutable set of delegated member-scoped authorities. Owners of such a group hold those authorities over every member of the group.
   - Free groups: the set is chosen only when the group is created, cannot be edited afterwards, and is shown to invitees in the invitation.
   - Training groups and legal guardian groups: a fixed, predefined set; not changeable through the UI.
-- Ownership of groups is resolved once per request and cached (via `HalResponseContext`), so rendering lists does not issue a query per affordance.
+- The acting user's authorities become *targeted authorities* (authority plus the targets it applies to; target `*` means everything). Token authorities are held with `*`; authorities obtained through relationships carry explicit targets. The set is built once per request, so all checks see the same authorities and rendering lists issues no per-row queries.
+- Relationships are pluggable: `common.security` defines a `RelationshipAuthorityProvider` SPI whose results are unioned (none registered means no relationships); `common.groups` provides the implementation for groups.
+- In the members module, `@OwnerVisible` is replaced by `MEMBER:EDIT_DETAILS`: every user is granted it over themselves (a self relationship), fields and operations list `MEMBERS_MANAGE` OR `MEMBER:EDIT_DETAILS`. Other modules keep `@OwnerVisible` until migrated.
 - Proof of concept: new authority `MEMBER:EDIT_DETAILS`. The member-details update endpoint is callable with `MEMBERS:MANAGE`, or with `MEMBER:EDIT_DETAILS` over that member. The minor self-edit restriction (`OwnProfileEditRule`) applies only when the target is the acting user.
 
 ```mermaid
 flowchart LR
     Call[Controller method with HasAuthority] --> Eval[Authorization evaluator]
     Hal[klabisAfford and klabisLinkTo] --> Eval
-    Eval --> Global[Global authority held]
-    Eval --> Rel[Owner of a group delegating the authority over target]
+    Eval --> Snap[Authorities snapshot: token authorities with star target plus relationship providers]
 ```
 
 ## Capabilities
@@ -33,7 +34,7 @@ flowchart LR
 
 ## Impact
 
-- Backend `common.security` (`HasAuthority`, `HasAuthorityMethodInterceptor`, new evaluator, `MethodSecurityAnnotations`), `common.ui.HalFormsSupport` and `HalResponseContext`, `common.users.Authority`.
+- Backend `common.security` (`HasAuthority`, `HasAuthorityMethodInterceptor`, new evaluator, `MethodSecurityAnnotations`), `common.ui.HalFormsSupport`, `KlabisJwtAuthenticationToken` / `CurrentUserData`, `common.users.Authority`.
 - Groups: `GroupMemento` / `GroupJdbcRepository` (V001 DDL), the three group aggregates, invitation API and DTOs, group creation request and its HAL-FORMS template.
 - Members: `MemberController.updateMember`, `OwnProfileEditRule`, `docs/openapi/spec/members.yaml` and group specs (`x-klabis-authority` extended to repeated entries with a target; code generator templates).
 - Frontend: invitation view shows delegated authorities; free group create form selects them.
