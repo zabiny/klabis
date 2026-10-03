@@ -63,8 +63,8 @@
 
 ## 11. Remove legacy form
 
-- [ ] 11.1 Confirm no test uses `@WithPostprocessors` or `@WebMvcTest(controllers = ...)`, then delete `WithPostprocessors`
-- [ ] 11.2 Update `backend-patterns` skill (testing-guide, checklists): module-sliced form is the only form; remove references to the legacy form
+- [x] 11.1 Confirm no test uses `@WithPostprocessors` or `@WebMvcTest(controllers = ...)`, then delete `WithPostprocessors`
+- [x] 11.2 Update `backend-patterns` skill (testing-guide, checklists): module-sliced form is the only form; remove references to the legacy form
 
 ## 12. Final verification
 

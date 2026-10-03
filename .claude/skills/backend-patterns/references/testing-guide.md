@@ -89,7 +89,7 @@ Notes:
 
 The REST adapter is tested by **one primary test per controller: a `@WebMvcTest`** sharing a **single Spring context per module**. Everything that concerns the controller's HTTP contract lives there — request mapping, status codes, security (401/403 via the real filter chain with `@WithKlabisMockUser`), and links/affordances rendered by postprocessors (assert them on the controller's response in a `@Nested` class; no separate postprocessor/link-processor unit tests, no `@KlabisModuleTest` security tests). Full-stack scenarios stay in `@E2ETest` classes in the module root package (e.g. `com.klabis.members.MemberLifecycleE2ETest`), not in `restapi`.
 
-Reference implementation: `com.klabis.members.MembersWebMvcTest` (members module). Modules not migrated yet still use the legacy `@WithPostprocessors` form (below).
+Reference implementation: `com.klabis.members.MembersWebMvcTest` (members module). This module-sliced form is the only form for REST adapter tests. The sole exception are the `common` infrastructure tests with their own test controller (`@WebMvcTest(controllers = ...)` + `CommonInfrastructureWebMvcSetup`), which deliberately keep their own contexts.
 
 ### Per-module meta-annotation
 
@@ -132,11 +132,8 @@ Slice-context rules:
 - **One context per module.** Tests declare no `@MockitoBean`, `@Import`, `@ActiveProfiles` or `@TestPropertySource` of their own — any difference creates a new context and loses the sharing. Stub mocks via `@Autowired` fields (`reset` is automatic). A genuinely different configuration (e.g. feature flag on via a locally mocked `Optional` bean) is a separate, deliberately named test class — keep their number minimal, each one is an extra context.
 - `Converter<S,T>` beans are always included by `WebMvcTypeExcludeFilter` — never `@Import` or mock a converter. The same visibility is why a `Converter` must have no module-specific constructor dependencies and no `uses = <PlainMapper>` (see `dto-mapping.md`).
 - `EntityLinks` comes from the real context; no `@TestBean EntityLinks`.
+- 403 tests run against the shared context: stub the primary ports via `@Autowired` mocks so a permitted request would succeed, then assert the real filter chain rejects it.
 - Duplicate `@MockitoBean` of the same type (including via two composed annotations) fails context bootstrap — keep type ownership in one `*WebMvcMockitoBeans`.
-
-### Legacy form (modules not yet migrated)
-
-Every `@WebMvcTest(controllers = ...)` carries `@WithPostprocessors` (`com.klabis.common`) — a meta-annotation with `@MockitoBean`s for security infra and every dependency of an `@MvcComponent` postprocessor; per-test `@MockitoBean` for the controller's ports; a postprocessor's new dependency is added to `@WithPostprocessors`, stubbed in tests via `@Autowired`; feature-flag (`Optional<T>`) beans are never added there. `@TestBean EntityLinks` via `HateoasTestingSupport.createModuleEntityLinks(Controller.class)` only when the controller uses `EntityLinks`. `@MvcComponent` beans are never listed in `controllers`/`@Import`. Migrate a module to the per-module form above when touching its REST tests.
 
 ## Integration Tests (@KlabisModuleTest)
 
@@ -331,13 +328,13 @@ Use `@CleanupTestData` on E2E tests — tests share a single H2 instance.
 
 | Problem | Solution |
 |---------|----------|
-| `@WebMvcTest` fails with `UnsatisfiedDependencyException` / `NoSuchBeanDefinition` | Migrated module: a web bean's dependency is missing in a `*WebMvcMockitoBeans` (also check `common` and `extraIncludes` modules). Legacy: missing `@WithPostprocessors` or a dependency not listed in it |
+| `@WebMvcTest` fails with `UnsatisfiedDependencyException` / `NoSuchBeanDefinition` | A web bean's dependency is missing in a `*WebMvcMockitoBeans` (also check `common` and `extraIncludes` modules) |
 | Asserting published domain events | `@RecordApplicationEvents` + `ApplicationEvents`, not a custom `@EventListener` bean (`@Import` on the class splits the context cache key) |
 | Domain events not fired in E2E test | Add `SyncTaskExecutor` `@TestConfiguration` |
 | `@DataJdbcTest` doesn't find custom repos | Add `includeFilters = @Filter(type = ANNOTATION, value = Repository.class)` |
 | Tests interfere with each other in H2 | Use `@CleanupTestData` or `@Sql(statements = "DELETE FROM ...")` |
-| `EntityLinks` not available in legacy `@WebMvcTest(controllers=...)` | Provide `@TestBean EntityLinks` via `HateoasTestingSupport.createModuleEntityLinks()` (not needed with `@ModuleSlicing`) |
-| Duplicate-mock error on context bootstrap | Type already mocked by `@WithPostprocessors` or a `*WebMvcMockitoBeans` — use `@Autowired` |
+| `EntityLinks` not available in a `common` infrastructure `@WebMvcTest(controllers=...)` | Provide `@TestBean EntityLinks` via `HateoasTestingSupport.createModuleEntityLinks()` (not needed with `@ModuleSlicing`) |
+| Duplicate-mock error on context bootstrap | Type already mocked by a `*WebMvcMockitoBeans` — use `@Autowired` |
 | Test needs a mock of a repository, secondary port or adapter-package bean | Design smell — expose the data via a primary port (and load adapter beans for real); see "Mock only primary ports" |
 | Another Spring context is created for a controller test | The test class adds its own `@MockitoBean`/`@Import`/profile — move it into the module's meta-annotation |
 | `@WithMockUser` causes ClassCastException | Replace with `@WithKlabisMockUser` |
