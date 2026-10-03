@@ -21,8 +21,6 @@ import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.infrastructure.restapi.MemberLegalGuardianGroup;
-import com.klabis.common.settings.OrisClubKeyManagementPort;
-import com.klabis.members.infrastructure.orissync.ClubKeyHeld;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncTarget;
@@ -69,7 +67,6 @@ public class MemberController implements MembersApi {
     private final ManagementPort managementService;
     private final ConversionService conversionService;
     private final Optional<MemberDiscoveryPort> memberDiscoveryPort;
-    private final OrisClubKeyManagementPort orisClubKeyManagementPort;
     private final SynchronizationPort synchronizationPort;
     private final MemberCompletenessPort memberCompletenessPort;
     private final LegalGuardianGroupPort legalGuardianGroupPort;
@@ -79,7 +76,6 @@ public class MemberController implements MembersApi {
             ManagementPort managementService,
             ConversionService conversionService,
             Optional<MemberDiscoveryPort> memberDiscoveryPort,
-            OrisClubKeyManagementPort orisClubKeyManagementPort,
             SynchronizationPort synchronizationPort,
             MemberCompletenessPort memberCompletenessPort,
             LegalGuardianGroupPort legalGuardianGroupPort,
@@ -90,7 +86,6 @@ public class MemberController implements MembersApi {
         this.managementService = managementService;
         this.conversionService = conversionService;
         this.memberDiscoveryPort = memberDiscoveryPort;
-        this.orisClubKeyManagementPort = orisClubKeyManagementPort;
         this.synchronizationPort = synchronizationPort;
     }
 
@@ -200,7 +195,6 @@ public class MemberController implements MembersApi {
                         .collect(Collectors.toSet());
         HalResponseContext.setContext(new EnrolledMemberIds(enrolledMemberIds));
 
-        HalResponseContext.setContext(new ClubKeyHeld(memberDiscoveryPort.isPresent() && orisClubKeyManagementPort.isSet()));
         HalResponseContext.setDomainList(memberPage.getContent());
 
         return ResponseEntity.ok(memberPage.map(member -> conversionService.convert(member, MemberSummaryResponse.class)));
@@ -258,10 +252,6 @@ public class MemberController implements MembersApi {
         MemberId memberId = new MemberId(id);
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(), viewAccessTo(memberId));
 
-        boolean isEnrolled = synchronizationPort.findByTarget(targetFor(memberId)).isPresent();
-        Set<String> enrolledIds = isEnrolled ? Set.of(memberId.uuid().toString()) : Set.of();
-        HalResponseContext.setContext(new EnrolledMemberIds(enrolledIds));
-
         Optional<LegalGuardianGroup> guardianGroup = legalGuardianGroupPort.findGroupOf(memberId);
         HalResponseContext.setContext(new MemberLegalGuardianGroup(guardianGroup.orElse(null)));
 
@@ -289,17 +279,11 @@ public class MemberController implements MembersApi {
                 .toList();
     }
 
-    private static SyncTarget targetFor(MemberId memberId) {
-        return new SyncTarget(SyncEntityType.MEMBER, memberId.uuid().toString());
-    }
-
 }
 
 /**
- * Carries which member (by id) is currently paired for synchronisation, from
- * {@code MemberController#getMember} to {@code MemberDetailsPostprocessor} — one lookup per
- * request rather than injecting {@link SynchronizationPort} into the postprocessor, mirroring
- * {@code DisciplineController}'s {@code EnrolledDisciplineIds} (design.md D12).
+ * Carries which members of the listed page are paired for synchronisation, from
+ * {@code MemberController#listMembers} to {@code MemberSummaryPostprocessor} (one batch lookup per page).
  */
 record EnrolledMemberIds(Set<String> memberIds) {
 
@@ -314,9 +298,12 @@ record EnrolledMemberIds(Set<String> memberIds) {
 class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDetailsResponse, Member> {
 
     private final MemberAccountActivationPort accountActivationPort;
+    private final SynchronizationPort synchronizationPort;
 
-    MemberDetailsPostprocessor(MemberAccountActivationPort accountActivationPort) {
+    MemberDetailsPostprocessor(MemberAccountActivationPort accountActivationPort,
+                               SynchronizationPort synchronizationPort) {
         this.accountActivationPort = accountActivationPort;
+        this.synchronizationPort = synchronizationPort;
     }
 
     @Override
@@ -333,7 +320,9 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
 
         UUID memberId = member.getId().uuid();
-        MemberSelfLinkSupport.addSyncLinkIfEnrolled(dtoModel, memberId);
+        boolean enrolled = synchronizationPort.findByTarget(
+                new SyncTarget(SyncEntityType.MEMBER, memberId.toString())).isPresent();
+        MemberSelfLinkSupport.addSyncLinkIfEnrolled(dtoModel, memberId, enrolled);
     }
 }
 
@@ -345,7 +334,13 @@ class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSumm
         MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
 
         UUID memberId = member.getId().uuid();
-        MemberSelfLinkSupport.addSyncLinkIfEnrolled(dtoModel, memberId);
+        MemberSelfLinkSupport.addSyncLinkIfEnrolled(dtoModel, memberId, isEnrolledInList(memberId));
+    }
+
+    private static boolean isEnrolledInList(UUID memberId) {
+        return HalResponseContext.findContext(EnrolledMemberIds.class)
+                .map(enrolled -> enrolled.contains(memberId))
+                .orElse(false);
     }
 }
 
@@ -375,17 +370,11 @@ final class MemberSelfLinkSupport {
         }).ifPresent(dtoModel::add);
     }
 
-    static void addSyncLinkIfEnrolled(RepresentationModel<?> dtoModel, UUID memberId) {
-        if (isEnrolled(memberId)) {
+    static void addSyncLinkIfEnrolled(RepresentationModel<?> dtoModel, UUID memberId, boolean enrolled) {
+        if (enrolled) {
             klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.MEMBERS, memberId.toString()))
                     .ifPresent(link -> dtoModel.add(link.withRel("sync")));
         }
-    }
-
-    private static boolean isEnrolled(UUID memberId) {
-        return HalResponseContext.findContext(EnrolledMemberIds.class)
-                .map(enrolled -> enrolled.contains(memberId))
-                .orElse(false);
     }
 }
 

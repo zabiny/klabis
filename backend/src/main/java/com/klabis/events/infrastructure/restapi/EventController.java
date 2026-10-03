@@ -149,13 +149,6 @@ public class EventController implements EventsApi {
         HalResponseContext.setDomain(event);
         HalResponseContext.embed(buildRegistrationDtos(event), RegistrationSummaryDto.class);
 
-        // Same reasoning for SynchronizationPort (task 8.6): the postprocessor reads this from
-        // HalResponseContext instead of holding the port itself, so unrelated @WebMvcTest slices need not mock it.
-        boolean isEnrolled = synchronizationPort.findByTarget(
-                new SyncTarget(SyncEntityType.EVENT, event.getId().value().toString())).isPresent();
-        Set<String> enrolledIds = isEnrolled ? Set.of(event.getId().value().toString()) : Set.of();
-        HalResponseContext.setContext(new EnrolledEventIds(enrolledIds));
-
         return ResponseEntity.ok(dto);
     }
 
@@ -218,9 +211,6 @@ public class EventController implements EventsApi {
         Page<Event> page = eventManagementService.listEvents(filter, pageable,
                 authorizationEvaluator.has(Authority.EVENTS_MANAGE), currentUser.memberId());
 
-        // Same reasoning as getEvent (task 8.6): one enrolment lookup per request, scoped to this
-        // page's event ids rather than every active EVENT sync record, read back by the
-        // postprocessor via HalResponseContext, rather than injecting SynchronizationPort there.
         List<String> pageEventIds = page.getContent().stream().map(e -> e.getId().value().toString()).toList();
         Set<String> enrolledEventIds = pageEventIds.isEmpty()
                 ? Set.of()
@@ -421,11 +411,8 @@ public class EventController implements EventsApi {
 }
 
 /**
- * Carries which events (by id) are enrolled for synchronisation, from
- * {@code EventController#getEvent}/{@code #listEvents} to {@code EventDetailsPostprocessor}/
- * {@code EventSummaryPostprocessor} — one lookup per request rather than one per row, and rather
- * than injecting {@code SynchronizationPort} into the postprocessors. {@code getEvent} populates
- * this with a zero-or-one-element set from its single-target lookup.
+ * Carries which events of the listed page are enrolled for synchronisation, from
+ * {@code EventController#listEvents} to {@code EventSummaryPostprocessor} (one batch lookup per page).
  */
 record EnrolledEventIds(Set<String> eventIds) {
 
@@ -498,17 +485,11 @@ class EventAffordanceSupport {
                 .toList();
     }
 
-    static void addSyncLinkIfEnrolled(RepresentationModel<?> dtoModel, UUID eventId) {
-        if (isEnrolled(eventId)) {
+    static void addSyncLinkIfEnrolled(RepresentationModel<?> dtoModel, UUID eventId, boolean enrolled) {
+        if (enrolled) {
             klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENTS, eventId.toString()))
                     .ifPresent(link -> dtoModel.add(link.withRel("sync")));
         }
-    }
-
-    private static boolean isEnrolled(UUID eventId) {
-        return HalResponseContext.findContext(EnrolledEventIds.class)
-                .map(enrolled -> enrolled.contains(eventId))
-                .orElse(false);
     }
 }
 
@@ -517,10 +498,12 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
 
     private final MemberRegistrationSanctionPort sanctionPort;
     private final AuthorizationEvaluator authorizationEvaluator;
+    private final SynchronizationPort synchronizationPort;
 
-    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, AuthorizationEvaluator authorizationEvaluator) {
+    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, SynchronizationPort synchronizationPort, AuthorizationEvaluator authorizationEvaluator) {
         this.sanctionPort = sanctionPort;
         this.authorizationEvaluator = authorizationEvaluator;
+        this.synchronizationPort = synchronizationPort;
     }
 
     @Override
@@ -579,7 +562,9 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
 
-        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId);
+        boolean enrolled = synchronizationPort.findByTarget(
+                new SyncTarget(SyncEntityType.EVENT, eventId.toString())).isPresent();
+        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId, enrolled);
     }
 }
 
@@ -636,7 +621,10 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                 klabisLinkTo(methodOn(EventTypesApi.class).getEventType(eventTypeId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
 
-        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId);
+        boolean enrolled = HalResponseContext.findContext(EnrolledEventIds.class)
+                .map(ids -> ids.contains(eventId))
+                .orElse(false);
+        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId, enrolled);
     }
 }
 
