@@ -24,6 +24,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -222,6 +223,44 @@ class FreeGroupControllerTest {
         }
 
         @Test
+        @DisplayName("should not list the owner among the members")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldNotListOwnerAmongMembers() throws Exception {
+            MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
+            MemberId member = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
+            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Sprint Team", Set.of(owner),
+                    Set.of(GroupMembership.of(member)), Set.of(), null);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.owners.length()").value(1))
+                    .andExpect(jsonPath("$.owners[0].memberId").value(MEMBER_ID))
+                    .andExpect(jsonPath("$.members.length()").value(1))
+                    .andExpect(jsonPath("$.members[0].memberId").value(OTHER_MEMBER_ID));
+        }
+
+        @Test
+        @DisplayName("should return no members for a freshly created group — the creator is its owner only")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturnNoMembersForFreshlyCreatedGroup() throws Exception {
+            MemberId creator = new MemberId(UUID.fromString(MEMBER_ID));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Sprint Team", creator));
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.owners[0].memberId").value(MEMBER_ID))
+                    .andExpect(jsonPath("$.members.length()").value(0));
+        }
+
+        @Test
         @DisplayName("should return owner-only affordances on self link when acting member is owner")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnOwnerAffordancesForGroupOwner() throws Exception {
@@ -278,6 +317,38 @@ class FreeGroupControllerTest {
                     .andExpect(jsonPath("$._templates.deleteGroup").doesNotExist())
                     .andExpect(jsonPath("$._templates.addGroupOwner").doesNotExist())
                     .andExpect(jsonPath("$._templates.inviteMember").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should expose a leaveGroup affordance targeting the caller's own memberId for a member")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldExposeLeaveGroupAffordanceForMember() throws Exception {
+            FreeGroup group = buildGroupWithMember(GROUP_UUID, "Sprint Team", MEMBER_ID, OTHER_MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.leaveGroup.method").value("DELETE"))
+                    .andExpect(jsonPath("$._templates.leaveGroup.target")
+                            .value("http://localhost/api/groups/" + GROUP_UUID + "/members/" + OTHER_MEMBER_ID));
+        }
+
+        @Test
+        @DisplayName("should not expose a leaveGroup affordance to an owner")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldNotExposeLeaveGroupAffordanceForOwner() throws Exception {
+            FreeGroup group = buildGroupWithMember(GROUP_UUID, "Sprint Team", MEMBER_ID, OTHER_MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.leaveGroup").doesNotExist());
         }
 
         @Test
@@ -553,6 +624,20 @@ class FreeGroupControllerTest {
         }
 
         @Test
+        @DisplayName("should pass the caller through as both the target and the acting member when leaving")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldReturn204WhenMemberLeavesGroup() throws Exception {
+            MemberId self = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
+
+            mockMvc.perform(
+                            delete("/api/groups/{id}/members/{memberId}", GROUP_UUID, UUID.fromString(OTHER_MEMBER_ID))
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isNoContent());
+            verify(membersGroupManagementService).removeMember(GROUP_ID, self, self);
+        }
+
+        @Test
         @DisplayName("should return 403 when acting member is not owner")
         @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
         void shouldReturn403WhenNotOwner() throws Exception {
@@ -561,7 +646,7 @@ class FreeGroupControllerTest {
                     .when(membersGroupManagementService).removeMember(any(FreeGroupId.class), any(MemberId.class), any(MemberId.class));
 
             mockMvc.perform(
-                            delete("/api/groups/{id}/members/{memberId}", GROUP_UUID, UUID.fromString(OTHER_MEMBER_ID))
+                            delete("/api/groups/{id}/members/{memberId}", GROUP_UUID, UUID.fromString(MEMBER_ID))
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isForbidden());

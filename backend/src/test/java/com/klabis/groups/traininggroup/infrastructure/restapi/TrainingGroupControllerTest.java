@@ -4,6 +4,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.groups.domain.GroupMembership;
+import com.klabis.common.groups.domain.OwnerCannotBeMemberException;
 import com.klabis.common.users.Authority;
 import com.klabis.groups.GroupsWebMvcTest;
 import com.klabis.groups.traininggroup.TrainingGroupId;
@@ -523,6 +524,26 @@ class TrainingGroupControllerTest {
                                             """.formatted(MEMBER_ID))
                     )
                     .andExpect(status().isConflict());
+        }
+
+        @Test
+        @DisplayName("should return 422 when the member is a trainer of this group")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldReturn422WhenMemberIsTrainerOfThisGroup() throws Exception {
+            MemberId trainer = new MemberId(UUID.fromString(MEMBER_ID));
+            doThrow(new OwnerCannotBeMemberException(trainer))
+                    .when(trainingGroupManagementService).addMemberToTrainingGroup(any(TrainingGroupId.class), any(MemberId.class));
+
+            mockMvc.perform(
+                            post("/api/training-groups/{id}/members", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"memberId": "%s"}
+                                            """.formatted(MEMBER_ID))
+                    )
+                    .andExpect(status().is(422))
+                    .andExpect(jsonPath("$.title").value("Owner Cannot Be Member"));
         }
     }
 

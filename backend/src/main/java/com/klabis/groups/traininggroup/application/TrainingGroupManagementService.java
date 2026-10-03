@@ -1,6 +1,7 @@
 package com.klabis.groups.traininggroup.application;
 
 import com.klabis.common.groups.domain.GroupNotFoundException;
+import com.klabis.common.groups.domain.OwnerCannotBeMemberException;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.groups.traininggroup.domain.*;
 import com.klabis.members.ActiveMembersByAgeProvider;
@@ -108,6 +109,11 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
                     throw new MemberAlreadyInTrainingGroupException(memberId, existing.getId());
                 });
         TrainingGroup group = loadTrainingGroup(id);
+        // assignEligibleMember skips the group's own trainers silently, which suits the automatic
+        // age-based paths. Here the caller asked for a specific person, so say so instead.
+        if (group.hasTrainer(memberId)) {
+            throw new OwnerCannotBeMemberException(memberId);
+        }
         group.assignEligibleMember(memberId);
         trainingGroupRepository.save(group);
     }

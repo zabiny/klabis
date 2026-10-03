@@ -113,6 +113,8 @@ public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGua
     public void addMinor(Minor minor) {
         Assert.notNull(minor, "Minor is required");
         UserId minorUserId = minor.id().toUserId();
+        // MemberGroup.addMember rejects owners too; this check wins the race so the caller gets the
+        // member id in the message and the established 400 rather than the generic owner rejection.
         if (isOwner(minorUserId)) {
             throw new MemberAlreadyInGroupException(minor.id());
         }

@@ -102,7 +102,14 @@ public class TrainingGroup extends MemberGroup<TrainingGroup, TrainingGroupId, M
         }
     }
 
+    /**
+     * Age-based assignment runs over every eligible member, including the group's own trainers. A trainer
+     * is never a trainee of the group they train, so those are skipped silently rather than reported.
+     */
     public void assignEligibleMember(MemberId memberId) {
+        if (hasTrainer(memberId)) {
+            return;
+        }
         addMember(memberId);
         registerEvent(new MemberAssignedToTrainingGroupEvent(memberId, id, getName(), Instant.now()));
     }

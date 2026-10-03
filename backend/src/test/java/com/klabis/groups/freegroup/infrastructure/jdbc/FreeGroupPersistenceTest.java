@@ -1,7 +1,6 @@
 package com.klabis.groups.freegroup.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
-import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.*;
 import com.klabis.members.MemberId;
@@ -14,6 +13,7 @@ import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -42,6 +42,9 @@ class FreeGroupPersistenceTest {
     @Autowired
     private FreeGroupRepository freeGroupRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private static final MemberId CREATOR = new MemberId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
     private static final MemberId MEMBER_A = new MemberId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
     private static final MemberId INVITED_MEMBER = new MemberId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
@@ -64,7 +67,7 @@ class FreeGroupPersistenceTest {
             assertThat(retrieved.getId()).isEqualTo(saved.getId());
             assertThat(retrieved.getName()).isEqualTo("Orienteering Friends");
             assertThat(retrieved.getOwners()).containsExactly(CREATOR);
-            assertThat(retrieved.hasMember(CREATOR)).isTrue();
+            assertThat(retrieved.hasMember(CREATOR)).isFalse();
             assertThat(retrieved.isOwner(CREATOR)).isTrue();
             assertThat(retrieved.getAuditMetadata()).isNotNull();
         }
@@ -202,7 +205,7 @@ class FreeGroupPersistenceTest {
     class UpdateOwnerAndMember {
 
         @Test
-        @DisplayName("should persist added owner after save")
+        @DisplayName("should persist added owner and delete their member row after save")
         void shouldPersistAddedOwner() {
             FreeGroup group = freeGroupRepository.save(
                     FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR)));
@@ -213,15 +216,21 @@ class FreeGroupPersistenceTest {
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
             assertThat(retrieved.isOwner(MEMBER_A)).isTrue();
+            assertThat(retrieved.hasMember(MEMBER_A)).isFalse();
+            // The member row must actually be gone, not just filtered out when the aggregate is rebuilt.
+            Integer memberRows = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM groups.user_group_members WHERE user_group_id = ? AND member_id = ?",
+                    Integer.class, group.getId().uuid().toString(), MEMBER_A.uuid().toString());
+            assertThat(memberRows).isZero();
         }
 
         @Test
-        @DisplayName("should persist removed owner after save")
+        @DisplayName("should persist removed owner out of the group after save")
         void shouldPersistRemovedOwner() {
             FreeGroup group = FreeGroup.reconstruct(
                     new FreeGroupId(UUID.randomUUID()), "Test Group",
                     Set.of(CREATOR, MEMBER_A),
-                    Set.of(GroupMembership.of(CREATOR), GroupMembership.of(MEMBER_A)),
+                    Set.of(),
                     Set.of(), null);
             group = freeGroupRepository.save(group);
             group.removeOwner(MEMBER_A, CREATOR);
@@ -229,7 +238,7 @@ class FreeGroupPersistenceTest {
 
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
             assertThat(retrieved.isOwner(MEMBER_A)).isFalse();
-            assertThat(retrieved.hasMember(MEMBER_A)).isTrue();
+            assertThat(retrieved.hasMember(MEMBER_A)).isFalse();
         }
 
         @Test

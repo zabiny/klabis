@@ -51,14 +51,14 @@ class FreeGroupManagementServiceTest {
     class CreateGroupMethod {
 
         @Test
-        @DisplayName("should create group and save it")
+        @DisplayName("should create group with the creator as its only owner and save it")
         void shouldCreateGroupAndSaveIt() {
             when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
             FreeGroup result = service.createGroup("Test Group", CREATOR);
 
             assertThat(result.getOwners()).containsExactly(CREATOR);
-            assertThat(result.hasMember(CREATOR)).isTrue();
+            assertThat(result.hasMember(CREATOR)).isFalse();
             assertThat(result.getName()).isEqualTo("Test Group");
             verify(freeGroupRepository).save(any(FreeGroup.class));
         }
@@ -293,7 +293,7 @@ class FreeGroupManagementServiceTest {
         @DisplayName("should remove non-owner member and save")
         void shouldRemoveMemberAndSave() {
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
-                    Set.of(GroupMembership.of(CREATOR), GroupMembership.of(OTHER_MEMBER)),
+                    Set.of(GroupMembership.of(OTHER_MEMBER)),
                     Set.of(), null);
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
             when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -306,14 +306,30 @@ class FreeGroupManagementServiceTest {
         }
 
         @Test
-        @DisplayName("should throw GroupOwnershipRequiredException when acting member is not owner")
-        void shouldThrowWhenNotOwner() {
+        @DisplayName("should let a member remove themselves and save")
+        void shouldLetMemberRemoveThemselves() {
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
                     Set.of(GroupMembership.of(CREATOR), GroupMembership.of(OTHER_MEMBER)),
                     Set.of(), null);
             when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+            when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            assertThatThrownBy(() -> service.removeMember(GROUP_ID, OTHER_MEMBER, OTHER_MEMBER))
+            service.removeMember(GROUP_ID, OTHER_MEMBER, OTHER_MEMBER);
+
+            ArgumentCaptor<FreeGroup> captor = ArgumentCaptor.forClass(FreeGroup.class);
+            verify(freeGroupRepository).save(captor.capture());
+            assertThat(captor.getValue().hasMember(OTHER_MEMBER)).isFalse();
+        }
+
+        @Test
+        @DisplayName("should throw GroupOwnershipRequiredException when a non-owner removes someone else")
+        void shouldThrowWhenNotOwner() {
+            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(CREATOR),
+                    Set.of(GroupMembership.of(OTHER_MEMBER), GroupMembership.of(ANOTHER_MEMBER)),
+                    Set.of(), null);
+            when(freeGroupRepository.findById(GROUP_ID)).thenReturn(Optional.of(group));
+
+            assertThatThrownBy(() -> service.removeMember(GROUP_ID, ANOTHER_MEMBER, OTHER_MEMBER))
                     .isInstanceOf(GroupOwnershipRequiredException.class);
         }
 

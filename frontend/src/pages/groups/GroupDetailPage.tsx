@@ -9,7 +9,7 @@ import type {PendingInvitation} from './types.ts';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {labels} from '../../localization';
-import {Ban, Crown, Pencil, Trash2, UserPlus} from 'lucide-react';
+import {Ban, Crown, LogOut, Pencil, Trash2, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRegNumber.tsx';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
@@ -69,6 +69,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
     const [addMemberModal, setAddMemberModal] = useState(false);
     const [inviteMemberModal, setInviteMemberModal] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
+    const [leaveGroupModal, setLeaveGroupModal] = useState(false);
     const [removeMemberModal, setRemoveMemberModal] = useState<MemberActionModalState | null>(null);
     const [addOwnerModal, setAddOwnerModal] = useState(false);
     const [removeOwnerModal, setRemoveOwnerModal] = useState<{template: HalFormsTemplate; ownerSelfHref: string} | null>(null);
@@ -79,6 +80,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
     const addMemberTemplate = resourceData._templates?.addGroupMember ?? null;
     const inviteMemberTemplate = resourceData._templates?.inviteMember ?? null;
     const addOwnerTemplate = resourceData._templates?.addGroupOwner ?? null;
+    const leaveGroupTemplate = resourceData._templates?.leaveGroup ?? null;
 
     const handleRemoveMember = (member: GroupMember) => {
         const template = member._templates?.removeGroupMember;
@@ -121,6 +123,15 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                             startIcon={<Trash2 className="w-4 h-4"/>}
                         >
                             {labels.templates.deleteGroup}
+                        </Button>
+                    )}
+                    {leaveGroupTemplate && (
+                        <Button
+                            variant="secondary"
+                            onClick={() => setLeaveGroupModal(true)}
+                            startIcon={<LogOut className="w-4 h-4"/>}
+                        >
+                            {labels.templates.leaveGroup}
                         </Button>
                     )}
                 </div>
@@ -305,12 +316,27 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
             {removeOwnerModal && (
                 <HalFormModal
                     title={labels.templates.removeGroupOwner}
+                    note={<span className="text-sm text-text-secondary">{labels.templates.removeGroupOwnerLeavesGroup}</span>}
                     template={removeOwnerModal.template}
                     templateName="removeGroupOwner"
                     resourceData={{}}
                     pathname={removeOwnerModal.ownerSelfHref ? '/groups/' + removeOwnerModal.ownerSelfHref.split('/groups/')[1] : route.pathname}
                     onClose={() => { setRemoveOwnerModal(null); void route.refetch(); }}
                     successMessage={labels.ui.savedSuccessfully}
+                />
+            )}
+
+            {leaveGroupTemplate && leaveGroupModal && (
+                <HalFormModal
+                    title={labels.templates.leaveGroup}
+                    note={<span className="text-sm text-text-secondary">{labels.templates.leaveGroupConfirm}</span>}
+                    template={leaveGroupTemplate}
+                    templateName="leaveGroup"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => setLeaveGroupModal(false)}
+                    onSubmitSuccess={() => navigate('/groups')}
+                    navigateOnSuccess={false}
                 />
             )}
 

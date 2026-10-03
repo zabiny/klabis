@@ -35,7 +35,7 @@ class MemberGroupTest {
                     new MemberId(UUID.randomUUID()),
                     name,
                     Set.of(owner),
-                    Set.of(GroupMembership.of(owner))
+                    Set.of()
             );
         }
 
@@ -58,13 +58,13 @@ class MemberGroupTest {
     class CreateMethod {
 
         @Test
-        @DisplayName("should create group with name and owner as member")
-        void shouldCreateGroupWithNameAndOwnerAsMember() {
+        @DisplayName("should create group with name and owner who is not a member")
+        void shouldCreateGroupWithNameAndOwnerWhoIsNotMember() {
             TestGroup group = TestGroup.create("Training A", OWNER);
 
             assertThat(group.getName()).isEqualTo("Training A");
             assertThat(group.getOwners()).containsExactly(OWNER);
-            assertThat(group.hasMember(OWNER)).isTrue();
+            assertThat(group.hasMember(OWNER)).isFalse();
         }
 
         @Test
@@ -79,6 +79,23 @@ class MemberGroupTest {
         void shouldRejectNullName() {
             assertThatThrownBy(() -> TestGroup.create(null, OWNER))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("reconstruct()")
+    class ReconstructMethod {
+
+        @Test
+        @DisplayName("should drop an owner that is also present among the restored members")
+        void shouldDropOwnerFromRestoredMembers() {
+            TestGroup group = TestGroup.reconstruct("Training A",
+                    Set.of(OWNER),
+                    Set.of(GroupMembership.of(OWNER), GroupMembership.of(MEMBER)));
+
+            assertThat(group.getOwners()).containsExactly(OWNER);
+            assertThat(group.hasMember(OWNER)).isFalse();
+            assertThat(group.hasMember(MEMBER)).isTrue();
         }
     }
 
@@ -151,6 +168,21 @@ class MemberGroupTest {
         }
 
         @Test
+        @DisplayName("should move an existing member to owners")
+        void shouldMoveExistingMemberToOwners() {
+            TestGroup group = groupWithOwner(OWNER);
+            group.addMember(MEMBER);
+
+            group.addOwner(MEMBER);
+
+            assertThat(group.isOwner(MEMBER)).isTrue();
+            assertThat(group.hasMember(MEMBER)).isFalse();
+            assertThat(group.getMembers())
+                    .extracting(GroupMembership::memberId)
+                    .doesNotContain(MEMBER);
+        }
+
+        @Test
         @DisplayName("should throw for null memberId")
         void shouldRejectNullMemberId() {
             TestGroup group = groupWithOwner(OWNER);
@@ -169,11 +201,23 @@ class MemberGroupTest {
         void shouldRemoveOwnerWhenMultipleExist() {
             TestGroup group = TestGroup.reconstruct("Group",
                     Set.of(OWNER, SECOND_OWNER),
-                    Set.of(GroupMembership.of(OWNER), GroupMembership.of(SECOND_OWNER)));
+                    Set.of());
 
             group.removeOwner(SECOND_OWNER);
 
             assertThat(group.getOwners()).containsExactly(OWNER);
+        }
+
+        @Test
+        @DisplayName("should not leave the removed owner behind as a member")
+        void shouldNotLeaveRemovedOwnerAsMember() {
+            // Loaded in the overlapping shape older data has, so the assertion is about removal, not about promotion.
+            TestGroup group = TestGroup.reconstruct("Group", Set.of(OWNER, MEMBER), Set.of());
+
+            group.removeOwner(MEMBER);
+
+            assertThat(group.getOwners()).containsExactly(OWNER);
+            assertThat(group.getMembers()).isEmpty();
         }
 
         @Test
@@ -229,7 +273,7 @@ class MemberGroupTest {
         void shouldReturnFalseWhenMultipleOwners() {
             TestGroup group = TestGroup.reconstruct("Group",
                     Set.of(OWNER, SECOND_OWNER),
-                    Set.of(GroupMembership.of(OWNER), GroupMembership.of(SECOND_OWNER)));
+                    Set.of());
 
             assertThat(group.isLastOwner(OWNER)).isFalse();
             assertThat(group.isLastOwner(SECOND_OWNER)).isFalse();
@@ -276,6 +320,17 @@ class MemberGroupTest {
             assertThatThrownBy(() -> group.addMember(MEMBER))
                     .isInstanceOf(MemberAlreadyInGroupException.class)
                     .hasMessageContaining(MEMBER.toString());
+        }
+
+        @Test
+        @DisplayName("should throw OwnerCannotBeMemberException when the person is an owner")
+        void shouldThrowWhenOwnerIsAddedAsMember() {
+            TestGroup group = groupWithOwner(OWNER);
+
+            assertThatThrownBy(() -> group.addMember(OWNER))
+                    .isInstanceOf(OwnerCannotBeMemberException.class)
+                    .hasMessageContaining(OWNER.toString());
+            assertThat(group.hasMember(OWNER)).isFalse();
         }
 
         @Test
@@ -328,12 +383,12 @@ class MemberGroupTest {
         }
 
         @Test
-        @DisplayName("should throw OwnerCannotBeRemovedFromGroupException when removing owner")
+        @DisplayName("should throw MemberNotInGroupException when the person is only an owner")
         void shouldThrowWhenRemovingOwner() {
             TestGroup group = groupWithOwner(OWNER);
 
             assertThatThrownBy(() -> group.removeMember(OWNER))
-                    .isInstanceOf(OwnerCannotBeRemovedFromGroupException.class)
+                    .isInstanceOf(MemberNotInGroupException.class)
                     .hasMessageContaining(OWNER.toString());
         }
 
@@ -385,7 +440,7 @@ class MemberGroupTest {
         static class StringKeyedGroup extends MemberGroup<StringKeyedGroup, String, String> {
 
             StringKeyedGroup(String owner) {
-                super("Users", Set.of(owner), Set.of(GroupMembership.of(owner)));
+                super("Users", Set.of(owner), Set.of());
             }
 
             @Override

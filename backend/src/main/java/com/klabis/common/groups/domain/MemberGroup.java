@@ -12,7 +12,8 @@ import java.util.stream.Collectors;
  * Abstract base class for all member-based groups in the domain.
  * <p>
  * Encapsulates the common membership and ownership logic for groups whose members
- * are identified by the member id type {@code M}. Subclasses add identity, domain events,
+ * are identified by the member id type {@code M}. Owners and members are disjoint:
+ * nobody owns and belongs to the same group at once. Subclasses add identity, domain events,
  * and group-specific business rules (e.g. invitation flow, age constraints).
  */
 public abstract class MemberGroup<A extends MemberGroup<A, ID, M>, ID, M> extends KlabisAggregateRoot<A, ID> {
@@ -27,8 +28,10 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID, M>, ID, M> extend
         Assert.notEmpty(owners, "Group must have at least one owner");
         this.name = name;
         this.owners = new HashSet<>(owners);
-        this.members = new HashSet<>(members);
-        this.memberIds = members.stream()
+        this.members = members.stream()
+                .filter(m -> !owners.contains(m.memberId()))
+                .collect(Collectors.toCollection(HashSet::new));
+        this.memberIds = this.members.stream()
                 .map(GroupMembership::memberId)
                 .collect(Collectors.toCollection(HashSet::new));
     }
@@ -38,11 +41,19 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID, M>, ID, M> extend
         this.name = newName;
     }
 
+    /**
+     * Promoting a member moves them out of the member list — an owner never belongs to the group.
+     */
     public void addOwner(M memberId) {
         Assert.notNull(memberId, "Member id is required");
+        members.removeIf(m -> m.memberId().equals(memberId));
+        memberIds.remove(memberId);
         owners.add(memberId);
     }
 
+    /**
+     * The person leaves the group entirely; giving up ownership never downgrades them to a member.
+     */
     public void removeOwner(M memberId) {
         Assert.notNull(memberId, "Member id is required");
         if (isLastOwner(memberId)) {
@@ -65,6 +76,9 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID, M>, ID, M> extend
 
     protected void addMember(M memberId) {
         Assert.notNull(memberId, "Member id is required");
+        if (owners.contains(memberId)) {
+            throw new OwnerCannotBeMemberException(memberId);
+        }
         if (memberIds.contains(memberId)) {
             throw new MemberAlreadyInGroupException(memberId);
         }
@@ -74,9 +88,6 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID, M>, ID, M> extend
 
     protected void removeMember(M memberId) {
         Assert.notNull(memberId, "Member id is required");
-        if (owners.contains(memberId)) {
-            throw new OwnerCannotBeRemovedFromGroupException(memberId);
-        }
         boolean removed = members.removeIf(m -> m.memberId().equals(memberId));
         if (!removed) {
             throw new MemberNotInGroupException(memberId);
