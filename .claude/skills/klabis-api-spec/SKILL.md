@@ -276,7 +276,7 @@ for any authenticated user, `@ActingMember` + `MemberId` to require a member pro
   request attribute because an *empty* registration list has no item to recover it from, which is a
   different problem from type dispatch.
 - Injecting a new port into an `@MvcComponent` postprocessor **without** adding it to
-  `WithPostprocessors`. The scan is global, not scoped to a slice's `controllers=`, so every
+  the owning module's `*WebMvcMockitoBeans`. The scan is global, so every
   unrelated `@WebMvcTest` fails to start. Injecting the port is the right design (the postprocessor
   owns the affordance logic — e.g. `SyncStatePostprocessor` → `SynchronizationPort`); passing
   port-derived data from the controller through a request attribute is the old workaround, don't
