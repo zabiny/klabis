@@ -1,4 +1,4 @@
-package com.klabis.oris.infrastructure.restapi;
+package com.klabis.oris;
 
 import com.klabis.oris.application.ImportedOrisEventsPort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;

@@ -1,4 +1,4 @@
-package com.klabis.finance.infrastructure.restapi;
+package com.klabis.finance;
 
 import com.klabis.finance.application.DepositPort;
 import com.klabis.finance.application.ChargePort;

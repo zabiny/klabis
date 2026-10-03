@@ -1,4 +1,4 @@
-package com.klabis.events.infrastructure.restapi;
+package com.klabis.events;
 
 import com.klabis.events.application.CategoryPresetManagementPort;
 import com.klabis.events.application.DisciplineManagementPort;

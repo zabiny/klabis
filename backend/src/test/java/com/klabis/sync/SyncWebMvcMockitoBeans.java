@@ -1,4 +1,4 @@
-package com.klabis.sync.infrastructure.restapi;
+package com.klabis.sync;
 
 import com.klabis.sync.application.SyncProjectionFieldsPort;
 import com.klabis.sync.application.SynchronizationPort;

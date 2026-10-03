@@ -137,3 +137,66 @@ Out of `common` but also using `@WithPostprocessors`: `members/.../CurrentUserIn
 
 - Decision for the user (not made here): the 7 infrastructure tests in `common` each use their own inner test controller, so they stay at one context each (7 contexts). They could be consolidated into one shared "common infrastructure" context by registering all inner test controllers in a single test configuration; this lowers contexts further but couples unrelated test controllers. Proposed default: keep them dedicated, only remove `@WithPostprocessors`.
 - Decision for the user: `FinanceAccountLinkSupport` through `extraIncludes = "finance"` in the events slice (proposed) pulls all finance web beans (and `FinanceWebMvcMockitoBeans`) into the events context. Alternative: make the interface a `@PrimaryPort` and mock it in the events annotation (one-line change, but the helper is mocked again, contradicting "load real adapter helpers").
+
+### D7 mutation check result (task 12.3)
+
+Mutation: opening and closing tag `vendorExtensions.x-klabis-authority` in `api.mustache` renamed; regenerated interfaces carried no interface-level `@HasAuthority` (only model-field annotations remained). Run: `SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true ./gradlew test --rerun-tasks --tests '*.restapi.*' --tests 'com.klabis.members.infrastructure.mvc.*'` (1042 test cases, fresh XML). The template was restored with `git checkout`.
+
+**Result:** all 403 tests in the REST adapter test classes (counted as unique class + display name: 41 fail under mutation, 41 pass) were inspected. Every failing 403 test failed on the status assertion (`Status expected:<403> but was:<2xx>`), except one that failed with an NPE in the controller (group b).
+
+**(b) Failed for a reason other than status — fixed:**
+- `calendar`: `CalendarControllerTest$CreateCalendarItemTests` `should return 403 without CALENDAR:MANAGE authority` - `createCalendarItem` returned null (unstubbed port, NPE in `CalendarController.createCalendarItem`). Now stubs `calendarManagementService.createCalendarItem(...)`; re-verified under mutation: fails with `expected:<403> but was:<201>`, green after restoring the template.
+
+**(a) 403 tests that still pass without the generated `@HasAuthority`** (enforced by another mechanism: ownership / principal==memberId / feature flag / missing member profile / `@PreAuthorize` or service-level checks):
+
+- `events`:
+  - `EventControllerTest` - coordinator of event A cannot update event B — returns 403
+  - `EventControllerTest` - member without EVENTS:MANAGE who is not a coordinator is rejected — returns 403
+  - `EventControllerTest` - should return 403 without EVENTS:MANAGE authority
+  - `EventControllerTest` - unauthorized member gets 403
+  - `EventControllerTest` - 2.5: unauthorized user gets 403 for text/csv request — existing authorization check covers CSV path
+  - `EventControllerTest` - 5.3 CSV: authorized caller gets 403 when sharedAccommodationEnabled is false
+  - `EventControllerTest` - 5.3 HAL: authorized caller gets 403 when sharedAccommodationEnabled is false
+  - `EventControllerTest` - 5.3 unauthorized caller still gets 403 when offer is off (auth check runs first)
+  - `EventRegistrationControllerTest` - new=true for admin with EVENTS:REGISTRATIONS authority but different memberId returns 403 — authority must not bypass principal==memberId check
+  - `EventRegistrationControllerTest` - new=true for different memberId (not the principal) returns 403
+  - `EventRegistrationControllerTest` - should return 403 Forbidden when user has no member profile
+  - `EventRegistrationControllerTest` - 1.3 non-owner without any special authority gets 403
+  - `EventRegistrationControllerTest` - 2.2 user with only EVENTS:MANAGE (not owner, not EVENTS:REGISTRATIONS) gets 403
+  - `EventRegistrationControllerTest` - 3.2 user without EVENTS:REGISTRATIONS (and not the owner) receives 403 on PUT
+  - `EventRegistrationControllerTest` - 4.2 PUT by different member returns 403
+  - `EventRegistrationE2ETest` - 5.3 Member cannot edit another member's registration (403)
+- `finance`:
+  - `MemberAccountControllerTest` - 5.2 non-owner without FINANCE:MANAGE gets 403
+  - `MemberAccountControllerTest` - 5.5 returns 403 for non-owner without FINANCE:MANAGE
+- `groups`:
+  - `FreeGroupControllerTest` - should return 403 when acting member is not owner
+  - `FreeGroupControllerTest` - should return 403 when caller is not a current owner
+  - `FreeGroupControllerTest` - should return 403 when user has no member profile
+  - `FreeGroupControllerTest` - should return 403 when user is neither owner nor member of the group
+  - `TrainingGroupControllerTest` - should return 403 when user is not a member of the training group and lacks GROUPS:TRAINING
+- `members`:
+  - `MemberControllerApiTest` - authenticated user without a member record should get 403 Forbidden
+  - `MemberControllerApiTest` - member attempting to edit another member's profile should get 403 Forbidden
+  - `UpdateMemberApiTest` - minor updating own profile should return 403 and save nothing
+  - `UpdateMemberApiTest` - non-admin editing another member should return 403
+  - `UpdateMemberApiTest` - updating admin-only fields without MEMBERS:MANAGE authority should return 403
+  - `UpdateMemberApiTest` - updating items editable only by member himself without beeing that member should return 403 Forbidden
+  - `UpdateMemberApiTest` - updating own gender should return 403 — it needs MEMBERS:MANAGE
+  - `LegalGuardianGroupControllerTest` - returns 403 to a member who is not a minor of the group and lacks MEMBERS:MANAGE
+  - `LegalGuardianControllerTest` - returns 403 for a stranger
+- `membershipfees`:
+  - `MemberFeeChoiceControllerTest` - should return 403 for another member's choice even with MEMBERS:MANAGE
+  - `MemberFeeChoiceControllerTest` - should return 403 choosing for another member even with MEMBERS:MANAGE
+  - `MemberFeeChoiceControllerTest` - should return 403 removing another member's choice even with MEMBERS:MANAGE
+  - `MemberFeeChoiceControllerTest` - should return 403 when member accesses another member's choice
+  - `MemberFeeChoiceControllerTest` - should return 403 when member acts as another member
+  - `MemberFeeSummaryControllerTest` - should return 403 for another member's history even with MEMBERS:MANAGE
+  - `MemberFeeSummaryControllerTest` - should return 403 for another member's summary even with MEMBERS:MANAGE
+  - `MemberFeeSummaryControllerTest` - should return 403 when member accesses another member's history
+  - `MemberFeeSummaryControllerTest` - should return 403 when member accesses another member's summary
+- `members` (`CurrentUserIntegrationTest.shouldReturn403WhenActingMemberHasNoMemberProfile`): enforced by the test's own `TestController` / acting-member resolution, not by a generated API interface.
+
+Out of the mutation scope (not generated REST adapter tests; mechanism is not `x-klabis-authority`): `AccountStatusValidationFilterTest`, `OidcUserInfoEndpointTest`, `FieldLevelAuthorizationTest`, `MemberLifecycleE2ETest`.
+
+Note: under mutation, affordance tests (HAL-FORMS `_templates` / `_links` present or absent per authority) also fail, since affordances are derived from the same annotation; this is expected collateral and not a 403 test.

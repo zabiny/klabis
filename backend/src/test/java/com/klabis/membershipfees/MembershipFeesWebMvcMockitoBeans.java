@@ -1,4 +1,4 @@
-package com.klabis.membershipfees.infrastructure.restapi;
+package com.klabis.membershipfees;
 
 import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;

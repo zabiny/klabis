@@ -4,7 +4,6 @@ import com.klabis.common.ClockConfiguration;
 import com.klabis.common.CommonWebMvcMockitoBeans;
 import com.klabis.common.encryption.EncryptionConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
-import com.klabis.oris.infrastructure.restapi.OrisWebMvcMockitoBeans;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
