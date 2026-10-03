@@ -68,7 +68,7 @@
 
 ## 12. Final verification
 
-- [ ] 12.1 Run the full backend suite with `SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true --rerun-tasks`; confirm only the known failures (`ModularEventsTest`, `EventLoggingTests`) and skipped counts from XML results
-- [ ] 12.2 Compare per-module test counts, contexts and test time with the baseline from 1.1; explain every difference
-- [ ] 12.3 One-time mutation check of all migrated 403 tests (design D7): rename the `x-klabis-authority` section (open and close tag) in `api.mustache`, run all REST adapter tests of the migrated modules with `SKIP_OPTIMIZATIONS=true --rerun-tasks`, confirm every 403 test fails on the status assertion (not NPE/ServletException), fix tests that do not, document those enforced by another mechanism (ownership, field-level), restore the template with `git checkout` and confirm via `git status`
-- [ ] 12.4 Run `ModuleStructureVerificationTest`, `JMoleculesArchitectureTest`, `LayerArchitectureTest`, `SecurityArchitectureTest`, `AffordanceRoutingArchitectureTest`
+- [x] 12.1 Run the full backend suite with `SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true --rerun-tasks`; confirm only the known failures (`ModularEventsTest`, `EventLoggingTests`) and skipped counts from XML results
+- [x] 12.2 Compare per-module test counts, contexts and test time with the baseline from 1.1; explain every difference
+- [x] 12.3 One-time mutation check of all migrated 403 tests (design D7): rename the `x-klabis-authority` section (open and close tag) in `api.mustache`, run all REST adapter tests of the migrated modules with `SKIP_OPTIMIZATIONS=true --rerun-tasks`, confirm every 403 test fails on the status assertion (not NPE/ServletException), fix tests that do not, document those enforced by another mechanism (ownership, field-level), restore the template with `git checkout` and confirm via `git status`
+- [x] 12.4 Run `ModuleStructureVerificationTest`, `JMoleculesArchitectureTest`, `LayerArchitectureTest`, `SecurityArchitectureTest`, `AffordanceRoutingArchitectureTest`

@@ -1,4 +1,4 @@
-package com.klabis.members.infrastructure.restapi;
+package com.klabis.members;
 
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberAccountActivationPort;

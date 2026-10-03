@@ -489,6 +489,9 @@ class CalendarControllerTest {
         @DisplayName("should return 403 without CALENDAR:MANAGE authority")
         @WithKlabisMockUser(username = ADMIN_USERNAME)
         void shouldReturn403WithoutCalendarManageAuthority() throws Exception {
+            when(calendarManagementService.createCalendarItem(any(CalendarItem.CreateCalendarItem.class)))
+                    .thenReturn(CalendarItemTestDataBuilder.aCalendarItem().buildManual());
+
             mockMvc.perform(
                             post("/api/calendar-items")
                                     .contentType("application/json")
