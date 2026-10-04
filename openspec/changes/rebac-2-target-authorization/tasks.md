@@ -28,9 +28,9 @@
 
 ## 5. Field visibility and request-body field checks through the evaluator
 
-- [ ] 5.1 Write failing tests: response field with `[A, B]` visible with a targeted `B` grant on the record's target and hidden on another record; request field rejected without write authority; verify they fail
-- [ ] 5.2 Route `FieldSecurityBeanSerializerModifier` / `SecuredBeanPropertyWriter` and `RequestBodyFieldAuthorizationAdvice` through the evaluator; verify 5.1 and existing field-security tests pass
-- [ ] 5.3 Add `@ReadAuthority` and make HAL-FORMS properties readable-but-not-writable render as `readOnly: true` (unreadable stay hidden); verify with a `HalFormsSupport` test
+- [x] 5.1 Write failing tests: response field with `[A, B]` visible with a targeted `B` grant on the record's target and hidden on another record; request field rejected without write authority; verify they fail
+- [x] 5.2 Route `FieldSecurityBeanSerializerModifier` / `SecuredBeanPropertyWriter` and `RequestBodyFieldAuthorizationAdvice` through the evaluator; verify 5.1 and existing field-security tests pass
+- [x] 5.3 Add `@ReadAuthority` and make HAL-FORMS properties readable-but-not-writable render as `readOnly: true` (unreadable stay hidden); verify with a `HalFormsSupport` test
 
 ## 6. OpenAPI extensions and generator
 

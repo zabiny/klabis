@@ -1,9 +1,9 @@
 package com.klabis.common.security.fieldsecurity;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import tools.jackson.databind.module.SimpleModule;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.jackson.JacksonComponent;
-import org.springframework.core.convert.ConversionService;
 
 /**
  * Jackson module that registers {@link FieldSecurityBeanSerializerModifier} so that
@@ -11,13 +11,13 @@ import org.springframework.core.convert.ConversionService;
  * Spring Boot auto-discovers this module via {@link JsonComponent}.
  * <p>
  * Uses {@link ObjectProvider} to break the circular dependency that arises when Jackson
- * is initialized before the full MVC context (including ConversionService) is ready.
+ * is initialized before the full MVC context is ready.
  */
 @JacksonComponent
 class FieldSecurityJacksonModule extends SimpleModule {
 
-    FieldSecurityJacksonModule(ObjectProvider<OwnershipResolver> ownershipResolver, ObjectProvider<ConversionService> conversionService) {
+    FieldSecurityJacksonModule(ObjectProvider<AuthorizationEvaluator> evaluator) {
         super("FieldSecurityJacksonModule");
-        setSerializerModifier(new FieldSecurityBeanSerializerModifier(ownershipResolver, conversionService));
+        setSerializerModifier(new FieldSecurityBeanSerializerModifier(evaluator));
     }
 }

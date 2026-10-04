@@ -1,19 +1,16 @@
 package com.klabis.common.security.fieldsecurity;
 
 import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
 import org.aopalliance.intercept.MethodInvocation;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.expression.Expression;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -58,26 +55,5 @@ public class SecuritySpelEvaluator {
         String value = required.getValue();
         return authentication.getAuthorities().stream()
                 .anyMatch(granted -> granted.getAuthority().equals(value));
-    }
-
-    public static boolean isFieldAuthorized(
-            @Nullable PreAuthorize preAuthorize,
-            @Nullable HasAuthority hasAuthority,
-            boolean ownerVisible,
-            Method accessorMethod,
-            @Nullable Object ownerIdValue,
-            @Nullable Authentication authentication,
-            @Nullable OwnershipResolver ownershipResolver) {
-
-        if (preAuthorize != null && evaluate(preAuthorize.value(), accessorMethod, authentication)) {
-            return true;
-        }
-        if (hasAuthority != null && Arrays.stream(hasAuthority.value()).anyMatch(a -> hasAuthority(authentication, a))) {
-            return true;
-        }
-        if (ownerVisible && ownershipResolver != null && ownerIdValue != null) {
-            return ownershipResolver.isOwner(ownerIdValue, authentication);
-        }
-        return preAuthorize == null && hasAuthority == null && !ownerVisible;
     }
 }

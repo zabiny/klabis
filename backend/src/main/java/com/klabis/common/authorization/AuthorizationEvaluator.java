@@ -4,6 +4,8 @@ import com.klabis.common.security.MethodSecurityAnnotations;
 import com.klabis.common.security.fieldsecurity.OwnerId;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.security.fieldsecurity.OwnershipResolver;
+import com.klabis.common.security.fieldsecurity.ReadAuthority;
+import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.jspecify.annotations.Nullable;
@@ -17,10 +19,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 /**
@@ -37,6 +44,8 @@ public class AuthorizationEvaluator {
     private final ObjectProvider<OwnershipResolver> ownershipResolver;
     private final ObjectProvider<ConversionService> conversionService;
     private final ConcurrentHashMap<InvocationKey, InvocationRules> rulesCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Method, FieldRules> fieldRulesCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Class<?>, Optional<RecordTarget>> recordTargetCache = new ConcurrentHashMap<>();
 
     public AuthorizationEvaluator(AuthorizationSnapshotProvider snapshots,
                            ObjectProvider<OwnershipResolver> ownershipResolver,
@@ -87,8 +96,7 @@ public class AuthorizationEvaluator {
      * Outside of an HTTP request there is no permission snapshot and nothing is allowed.
      */
     public boolean canInvoke(Method method, Class<?> targetClass, Object @Nullable [] arguments) {
-        InvocationRules rules = rulesCache.computeIfAbsent(new InvocationKey(method, targetClass),
-                key -> InvocationRules.of(method, targetClass));
+        InvocationRules rules = invocationRules(method, targetClass);
         if (rules.isOpen()) {
             return true;
         }
@@ -102,6 +110,184 @@ public class AuthorizationEvaluator {
             LOG.warn("Authorization of {} requested outside of an HTTP request, denying", method);
             return false;
         }
+    }
+
+    /**
+     * The target an invocation of {@code method} with {@code arguments} is about, or {@code null} when the
+     * method has no {@link TargetId} parameter or its argument is absent or not convertible to a UUID.
+     */
+    public @Nullable TargetRef targetOf(Method method, Class<?> targetClass, Object @Nullable [] arguments) {
+        return invocationRules(method, targetClass).targetOf(arguments, this::toUuid);
+    }
+
+    /**
+     * The parameter of {@code method} that identifies the target, for callers that read the target from the
+     * request before the method is invoked (the request body is read before the arguments are resolved).
+     */
+    public @Nullable TargetParameter targetParameterOf(Method method, Class<?> targetClass) {
+        InvocationRules rules = invocationRules(method, targetClass);
+        return rules.targetType() != null && rules.targetIndex() >= 0
+                ? new TargetParameter(rules.targetIndex(), rules.targetType())
+                : null;
+    }
+
+    /**
+     * Whether the current user may see the response field guarded by the annotations of {@code accessor}.
+     * The record the field belongs to supplies the target: the component marked {@link TargetId} (or, for owner-visible
+     * fields, the single component convertible to a UUID). A component holding several ids is a set of owners, not a
+     * target: authorities must then be held over everything and the field is also visible to any of the owners.
+     */
+    public boolean canReadField(Method accessor, Object record) {
+        FieldRules rules = fieldRules(accessor);
+        if (rules.isOpen()) {
+            return true;
+        }
+        return decide(accessor, () -> isFieldAllowed(rules, targetsOf(record)));
+    }
+
+    /**
+     * Whether the current user may change the request field guarded by the annotations of {@code accessor}
+     * on the record identified by {@code target}.
+     */
+    public boolean canWriteField(Method accessor, @Nullable TargetRef target) {
+        FieldRules rules = fieldRules(accessor);
+        if (rules.isOpen()) {
+            return true;
+        }
+        return decide(accessor, () -> isFieldAllowed(rules, targetList(target)));
+    }
+
+    /**
+     * Whether the current user may see the request field, either because they may change it or because they
+     * hold one of its {@link ReadAuthority} authorities.
+     */
+    public boolean canReadRequestField(Method accessor, @Nullable TargetRef target) {
+        if (canWriteField(accessor, target)) {
+            return true;
+        }
+        FieldRules rules = fieldRules(accessor);
+        if (rules.readAuthorities().isEmpty()) {
+            return false;
+        }
+        return decide(accessor, () -> isAllowedOver(rules.readAuthorities(), targetList(target), false));
+    }
+
+    private boolean isFieldAllowed(FieldRules rules, List<TargetRef> targets) {
+        if (rules.preAuthorize() != null && SecuritySpelEvaluator.evaluate(rules.preAuthorize().value(),
+                rules.accessor(), SecurityContextHolder.getContext().getAuthentication())) {
+            return true;
+        }
+        return isAllowedOver(rules.authorities(), targets, rules.ownerVisible());
+    }
+
+    private boolean isAllowedOver(Collection<Authority> authorities, List<TargetRef> targets, boolean ownerVisible) {
+        if (targets.size() == 1) {
+            return isAllowed(authorities, targets.get(0), ownerVisible);
+        }
+        return authorities.stream().anyMatch(authority -> has(authority))
+                || (ownerVisible && targets.stream().anyMatch(this::isSelf));
+    }
+
+    private boolean decide(Method accessor, BooleanSupplier decision) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return false;
+        }
+        try {
+            return decision.getAsBoolean();
+        } catch (ScopeNotActiveException e) {
+            LOG.warn("Authorization of field {} requested outside of an HTTP request, denying", accessor);
+            return false;
+        }
+    }
+
+    private static List<TargetRef> targetList(@Nullable TargetRef target) {
+        return target != null ? List.of(target) : List.of();
+    }
+
+    private FieldRules fieldRules(Method accessor) {
+        return fieldRulesCache.computeIfAbsent(accessor, FieldRules::of);
+    }
+
+    private InvocationRules invocationRules(Method method, Class<?> targetClass) {
+        return rulesCache.computeIfAbsent(new InvocationKey(method, targetClass),
+                key -> InvocationRules.of(method, targetClass));
+    }
+
+    private List<TargetRef> targetsOf(Object record) {
+        RecordTarget recordTarget = recordTargetOf(record.getClass());
+        if (recordTarget == null) {
+            return List.of();
+        }
+        Object value;
+        try {
+            value = recordTarget.accessor().invoke(record);
+        } catch (ReflectiveOperationException e) {
+            LOG.warn("Failed to read target id from {}", record.getClass().getSimpleName(), e);
+            return List.of();
+        }
+        Collection<?> values = value instanceof Collection<?> collection ? collection : value == null ? List.of() : List.of(value);
+        return values.stream()
+                .map(this::toUuid)
+                .filter(Objects::nonNull)
+                .map(id -> new TargetRef(recordTarget.type(), id))
+                .toList();
+    }
+
+    private @Nullable RecordTarget recordTargetOf(Class<?> recordClass) {
+        Optional<RecordTarget> cached = recordTargetCache.get(recordClass);
+        if (cached != null) {
+            return cached.orElse(null);
+        }
+        RecordComponent[] components = recordClass.getRecordComponents();
+        if (components == null) {
+            recordTargetCache.put(recordClass, Optional.empty());
+            return null;
+        }
+        for (RecordComponent component : components) {
+            Method accessor = component.getAccessor();
+            TargetId targetId = accessor.getAnnotation(TargetId.class);
+            if (targetId != null) {
+                return cache(recordClass, new RecordTarget(accessor, targetId.value()));
+            }
+            if (accessor.getAnnotation(OwnerId.class) != null) {
+                return cache(recordClass, new RecordTarget(accessor, TargetType.MEMBER));
+            }
+        }
+        return discoverOwnerTarget(recordClass, components);
+    }
+
+    private @Nullable RecordTarget discoverOwnerTarget(Class<?> recordClass, RecordComponent[] components) {
+        boolean anyOwnerVisible = Arrays.stream(components)
+                .anyMatch(component -> component.getAccessor().getAnnotation(OwnerVisible.class) != null);
+        if (!anyOwnerVisible) {
+            recordTargetCache.put(recordClass, Optional.empty());
+            return null;
+        }
+        ConversionService conversions = conversionService.getIfAvailable();
+        if (conversions == null) {
+            LOG.warn("Cannot resolve owner id of {}: ConversionService not available.", recordClass.getSimpleName());
+            return null;
+        }
+        List<RecordComponent> candidates = Arrays.stream(components)
+                .filter(component -> conversions.canConvert(component.getType(), UUID.class))
+                .toList();
+        if (candidates.size() == 1) {
+            return cache(recordClass, new RecordTarget(candidates.get(0).getAccessor(), TargetType.MEMBER));
+        }
+        LOG.warn("Cannot resolve owner id of {}: found {} UUID-convertible components. Annotate the owner component with @TargetId.",
+                recordClass.getSimpleName(), candidates.size());
+        recordTargetCache.put(recordClass, Optional.empty());
+        return null;
+    }
+
+    private RecordTarget cache(Class<?> recordClass, RecordTarget target) {
+        target.accessor().trySetAccessible();
+        recordTargetCache.put(recordClass, Optional.of(target));
+        return target;
+    }
+
+    private record RecordTarget(Method accessor, TargetType type) {
     }
 
     private @Nullable UUID toUuid(@Nullable Object value) {
