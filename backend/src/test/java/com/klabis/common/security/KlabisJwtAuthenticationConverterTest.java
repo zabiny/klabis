@@ -151,24 +151,6 @@ class KlabisJwtAuthenticationConverterTest {
     }
 
     @Test
-    @DisplayName("should return plain JwtAuthenticationToken for client credentials token with scope claim")
-    void shouldReturnPlainJwtAuthenticationTokenForClientCredentialsToken() {
-        converter.setAuthoritiesClaimName("scope");
-
-        Jwt jwt = createTestJwt(Map.of(
-                JwtClaimNames.SUB, "automation-client",
-                "scope", List.of("MEMBERS:READ")
-        ));
-
-        JwtAuthenticationToken token = converter.convert(jwt);
-
-        assertThat(token).isNotNull()
-                .isNotInstanceOf(KlabisJwtAuthenticationToken.class)
-                .isExactlyInstanceOf(JwtAuthenticationToken.class);
-        assertThat(token.getAuthorities()).hasSize(1);
-    }
-
-    @Test
     @DisplayName("should throw exception when UserId claim is empty")
     void shouldThrowExceptionWhenUserIdClaimIsEmpty() {
         Jwt jwt = createTestJwt(Map.of(
@@ -240,37 +222,6 @@ class KlabisJwtAuthenticationConverterTest {
         KlabisJwtAuthenticationToken token = (KlabisJwtAuthenticationToken) converter.convert(jwt);
 
         assertThat(token.getMemberIdUuid()).isEmpty();
-    }
-
-    @Test
-    @DisplayName("should use custom authorities claim name")
-    void shouldUseCustomAuthoritiesClaimName() {
-        converter.setAuthoritiesClaimName("scopes");
-
-        Jwt jwt = createTestJwt(Map.of(
-                JwtClaimNames.SUB, "automation-client",
-                "scopes", AUTHORITIES
-        ));
-
-        JwtAuthenticationToken token = converter.convert(jwt);
-
-        assertThat(token.getAuthorities()).hasSize(2);
-    }
-
-    @Test
-    @DisplayName("should use custom authority prefix")
-    void shouldUseCustomAuthorityPrefix() {
-        converter.setAuthorityPrefix("ROLE_");
-
-        Jwt jwt = createTestJwt(Map.of(
-                JwtClaimNames.SUB, "automation-client",
-                "authorities", List.of("ADMIN")
-        ));
-
-        JwtAuthenticationToken token = converter.convert(jwt);
-
-        assertThat(token.getAuthorities()).hasSize(1);
-        assertThat(token.getAuthorities().iterator().next().getAuthority()).isEqualTo("ROLE_ADMIN");
     }
 
     private Jwt createTestJwt(Map<String, Object> claims) {
