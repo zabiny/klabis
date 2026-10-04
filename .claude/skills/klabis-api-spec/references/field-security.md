@@ -63,8 +63,10 @@ A list means "any of": `x-klabis-authority: [MEMBERS_MANAGE, EVENTS_REGISTRATION
 `@HasAuthority({Authority.MEMBERS_MANAGE, Authority.EVENTS_REGISTRATIONS})`. The same affordance and
 enforcement code evaluates it, so a HAL template is offered exactly when the call would pass.
 
-The overridden `api.mustache` reads this key directly and emits the annotation above the method —
-the same way `pojo.mustache` reads it off a schema property. Nothing rewrites it, so the published
+`KlabisSpringCodegen` renders the full `@HasAuthority({...})` text into the vendor extension
+`x-klabis-authority-annotation` (and `x-klabis-read-authority-annotation` for `@ReadAuthority`), which
+the overridden `api.mustache` / `pojo.mustache` print verbatim — the same pattern as
+`x-klabis-halforms-annotation`. That happens inside the generator, so the published
 `klabis-full.json` carries the spec key alone, not a Java string derived from it.
 
 Do not also annotate the controller. The authority is stated once, in the spec; a second copy in

@@ -27,6 +27,8 @@ class AccountMemberDetailLinkProcessor implements RepresentationModelProcessor<E
 
     @Override
     public EntityModel<MemberDetailsResponse> process(EntityModel<MemberDetailsResponse> model) {
+        // getAccount is also open to the account owner (x-klabis-owner-visible); the link is for
+        // managers browsing someone else's profile, so it stays hidden on the owner's own profile.
         if (!authorizationEvaluator.has(Authority.FINANCE_MANAGE)) {
             return model;
         }

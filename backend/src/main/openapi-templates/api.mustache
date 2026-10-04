@@ -14,8 +14,8 @@
   the pair — an operation declaring x-klabis-owner-visible must have exactly one parameter marked
   x-klabis-target-id.
 
-  x-klabis-authority reaches this template as a list even when the spec spells a single name
-  (KlabisSpringCodegen.asLists), which is what lets one section emit the whole array.
+  The complete @HasAuthority({...}) text arrives pre-rendered in x-klabis-authority-annotation
+  (KlabisSpringCodegen.renderAuthorityAnnotations), so this template prints it verbatim.
 
   Maintenance: this is a vendor fork and nothing detects drift. On an openapi-generator upgrade,
   diff it against the new stock JavaSpring/api.mustache and port the addition across.
@@ -288,9 +288,9 @@ public interface {{classname}} {
     {{{.}}}
     {{/vendorExtensions.x-operation-extra-annotation}}
     {{! Klabis customization — see the note at the top of this file. }}
-    {{#vendorExtensions.x-klabis-authority}}{{#-first}}
-    @com.klabis.common.users.HasAuthority({ {{/-first}}com.klabis.common.users.Authority.{{.}}{{#-last}} })
-    {{/-last}}{{^-last}}, {{/-last}}{{/vendorExtensions.x-klabis-authority}}
+    {{#vendorExtensions.x-klabis-authority-annotation}}
+    {{{.}}}
+    {{/vendorExtensions.x-klabis-authority-annotation}}
     {{#vendorExtensions.x-klabis-owner-visible}}
     @com.klabis.common.security.fieldsecurity.OwnerVisible
     {{/vendorExtensions.x-klabis-owner-visible}}

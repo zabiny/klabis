@@ -280,7 +280,7 @@ describe('validateSpec — x-klabis-owner-visible on operations', () => {
     // (-> @OwnerVisible, api.mustache) and x-klabis-target-id: MEMBER on one of its parameters
     // (-> @TargetId, pathParams.mustache). Neither template can see the other, so validation is
     // the only thing keeping them together — @OwnerVisible without @TargetId makes
-    // checkOwnership() deny instead of resolving ownership, silently dropping the
+    // the evaluator find no target to resolve ownership against, silently dropping the
     // owner-or-authority semantics the endpoint advertises.
     const docWithParams = (operationExtra, parameters) => ({
         paths: {
@@ -325,7 +325,7 @@ describe('validateSpec — x-klabis-owner-visible on operations', () => {
              {name: 'other', in: 'path', required: true, schema: {type: 'string'}, 'x-klabis-target-id': 'MEMBER'}],
         ));
         expect(errors).toHaveLength(1);
-        expect(errors[0].message).toContain('2 parameters are marked');
+        expect(errors[0].message).toContain('found 2');
     });
 
     it('rejects an target-id parameter that is not a path parameter', () => {
@@ -1163,6 +1163,15 @@ describe('validateSpec — authorities held over specific targets', () => {
         ));
         expect(errors).toHaveLength(1);
         expect(errors[0].message).toContain('found 2');
+    });
+
+    it('reports a missing target parameter once when authority and owner-visible both demand it', () => {
+        const errors = validate(docWithOperation(
+            {'x-klabis-authority': 'MEMBERS_EDIT_PROFILE', 'x-klabis-owner-visible': true},
+            [idParam()],
+        ));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('exactly one parameter marked x-klabis-target-id: MEMBER (found 0)');
     });
 
     it('does not require a target parameter for an {ALL}-only authority', () => {

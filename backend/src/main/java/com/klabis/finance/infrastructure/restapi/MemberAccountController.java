@@ -1,6 +1,5 @@
 package com.klabis.finance.infrastructure.restapi;
 
-import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
@@ -14,7 +13,6 @@ import com.klabis.finance.domain.Transaction;
 import com.klabis.finance.domain.TransactionId;
 import com.klabis.finance.domain.TransactionType;
 import com.klabis.common.users.ActingUser;
-import com.klabis.common.users.Authority;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;
@@ -180,24 +178,17 @@ class MemberAccountPostprocessor extends ModelWithDomainPostprocessor<MemberAcco
 @MvcComponent
 class TransactionPostprocessor extends ModelWithDomainPostprocessor<TransactionResource, AccountTransaction> {
 
-    private final AuthorizationEvaluator authorizationEvaluator;
-
-    TransactionPostprocessor(AuthorizationEvaluator authorizationEvaluator) {
-        this.authorizationEvaluator = authorizationEvaluator;
-    }
-
     @Override
     public void process(EntityModel<TransactionResource> model, AccountTransaction accountTransaction) {
         TransactionWithReversal twr = accountTransaction.transactionWithReversal();
         Transaction tx = twr.transaction();
         UUID memberId = accountTransaction.memberId().uuid();
         UUID txId = tx.getId().value();
-        boolean canReverse = authorizationEvaluator.has(Authority.FINANCE_MANAGE);
         Optional<UUID> reversedByTxId = twr.reversedBy().map(TransactionId::value);
 
         klabisLinkTo(methodOn(FinanceApi.class).getTransaction(memberId, txId, null))
                 .map(link -> {
-                    if (reversedByTxId.isEmpty() && !tx.isReversal() && canReverse) {
+                    if (reversedByTxId.isEmpty() && !tx.isReversal()) {
                         return link.withSelfRel()
                                 .andAffordances(klabisAfford(
                                         methodOn(FinanceApi.class).reverse(memberId, txId, null, null)));

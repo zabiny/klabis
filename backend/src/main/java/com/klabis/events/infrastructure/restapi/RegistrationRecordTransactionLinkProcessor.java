@@ -28,6 +28,8 @@ class RegistrationRecordTransactionLinkProcessor implements RepresentationModelP
 
     @Override
     public EntityModel<RegistrationSummaryDto> process(EntityModel<RegistrationSummaryDto> model) {
+        // The link points at getAccount, which the account owner may also open; recording a
+        // transaction is a manager action, so the owner's own registration row must not carry it.
         if (!authorizationEvaluator.has(Authority.FINANCE_MANAGE)) {
             return model;
         }

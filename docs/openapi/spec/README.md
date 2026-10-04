@@ -106,6 +106,9 @@ Field-level authorization, on schema properties:
 | `x-klabis-read-authority: [MEMBERS_READ]` | `@ReadAuthority({Authority.MEMBERS_READ})` — **request schemas only**: HAL-FORMS shows the field read-only to a user who holds one of these but may not change it |
 | `x-klabis-halforms-access: READ_ONLY` | `@HalForms(access = READ_ONLY)` |
 
+The generator renders the complete annotation text from these keys (`x-klabis-authority` /
+`x-klabis-read-authority` accept a single name or a list) and the templates print it verbatim.
+
 Endpoint authorization uses the same keys one level up: `x-klabis-authority` and
 `x-klabis-owner-visible: true` on the **operation**, `x-klabis-target-id: <TYPE>` on one of its **path
 parameters** (`TYPE` is `MEMBER` or `EVENT`). The target-id parameter may be a shared `$ref` —
@@ -117,7 +120,9 @@ parameters** (`TYPE` is `MEMBER` or `EVENT`). The target-id parameter may be a s
   has exactly one `x-klabis-target-id` parameter, and its type equals that authority's `targetType`.
   `ALL`-only authorities are target-agnostic and need none;
 - an operation declaring `x-klabis-owner-visible` has exactly one `x-klabis-target-id` parameter —
-  `@OwnerVisible` without `@TargetId` denies instead of resolving ownership;
+  `@OwnerVisible` without `@TargetId` denies instead of resolving ownership. Both rules are one check
+  per operation: a wrong parameter count is reported once, whatever combination of authority and
+  owner-visible demands the target;
 - `x-klabis-target-id` sits on a path parameter or a schema property, never on an operation;
 - `x-klabis-read-authority` sits only on properties of schemas reachable from a request body.
 
