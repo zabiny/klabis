@@ -5,7 +5,6 @@ import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
-import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUserData;
@@ -18,13 +17,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.access.AccessDeniedException;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -42,7 +39,7 @@ class AccommodationListServiceTest {
     private static final MemberId OTHER_MEMBER = new MemberId(UUID.randomUUID());
 
     @Mock
-    private EventRepository eventRepository;
+    private EventManagementPort eventManagement;
 
     @Mock
     private Members members;
@@ -51,7 +48,7 @@ class AccommodationListServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AccommodationListService(eventRepository, members);
+        service = new AccommodationListService(eventManagement, members);
     }
 
     private static CurrentUserData caller(MemberId memberId, Authority... authorities) {
@@ -69,7 +66,7 @@ class AccommodationListServiceTest {
     }
 
     private EventId stubEvent(Event event) {
-        when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
+        when(eventManagement.getEvent(event.getId(), false)).thenReturn(event);
         return event.getId();
     }
 
@@ -121,8 +118,22 @@ class AccommodationListServiceTest {
         EventId eventId = stubEvent(event);
         CurrentUserData caller = caller(OTHER_MEMBER);
 
-        assertThatThrownBy(() -> service.getAccommodationList(eventId, caller)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> service.getAccommodationList(eventId, caller))
+                .isInstanceOf(AccommodationListAccessDeniedException.class)
+                .hasMessage(AccommodationListAccessDeniedException.callerNotPermitted().getMessage());
         verifyNoInteractions(members);
+    }
+
+    @Test
+    @DisplayName("unauthorized caller is denied for lacking permission even when shared accommodation is not offered")
+    void permissionIsCheckedBeforeSharedAccommodationOffer() {
+        Event event = accommodationEvent().withSharedAccommodationEnabled(false).buildPublished();
+        EventId eventId = stubEvent(event);
+        CurrentUserData caller = caller(OTHER_MEMBER);
+
+        assertThatThrownBy(() -> service.getAccommodationList(eventId, caller))
+                .isInstanceOf(AccommodationListAccessDeniedException.class)
+                .hasMessage(AccommodationListAccessDeniedException.callerNotPermitted().getMessage());
     }
 
     @Test
@@ -132,7 +143,9 @@ class AccommodationListServiceTest {
         EventId eventId = stubEvent(event);
         CurrentUserData caller = caller(COORDINATOR);
 
-        assertThatThrownBy(() -> service.getAccommodationList(eventId, caller)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> service.getAccommodationList(eventId, caller))
+                .isInstanceOf(AccommodationListAccessDeniedException.class)
+                .hasMessage(AccommodationListAccessDeniedException.sharedAccommodationNotOffered().getMessage());
     }
 
     @Test
@@ -151,22 +164,13 @@ class AccommodationListServiceTest {
     }
 
     @Test
-    @DisplayName("unknown event is reported as not found")
-    void unknownEventIsNotFound() {
+    @DisplayName("propagates EventNotFoundException from the event management port")
+    void propagatesEventNotFound() {
         EventId eventId = EventId.generate();
-        when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
+        when(eventManagement.getEvent(eventId, false)).thenThrow(new EventNotFoundException(eventId));
         CurrentUserData caller = caller(COORDINATOR);
 
         assertThatThrownBy(() -> service.getAccommodationList(eventId, caller)).isInstanceOf(EventNotFoundException.class);
-    }
-
-    @Test
-    @DisplayName("draft event is reported as not found")
-    void draftEventIsNotFound() {
-        Event event = accommodationEvent().build();
-        EventId eventId = stubEvent(event);
-        CurrentUserData caller = caller(COORDINATOR);
-
-        assertThatThrownBy(() -> service.getAccommodationList(eventId, caller)).isInstanceOf(EventNotFoundException.class);
+        verifyNoInteractions(members);
     }
 }
