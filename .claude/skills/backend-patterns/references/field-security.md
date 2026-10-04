@@ -76,7 +76,7 @@ In collections (`GET /members`), each item is evaluated independently — owner 
 
 ## Field-Level Authorization on Request DTOs (PATCH)
 
-`JsonNullable<T>` components with `@HasAuthority`, or `@OwnerVisible` are enforced by `RequestBodyFieldAuthorizationAdvice` via `AuthorizationEvaluator.canWriteField`. Only present fields are checked — absent (undefined) fields are skipped. An explicit `null` counts as present, so it is still authorized. The target is read from the handler method's `@TargetId @PathVariable` parameter.
+`JsonNullable<T>` components with `@HasAuthority`, or `@OwnerVisible` are enforced by `RequestBodyFieldAuthorizationAdvice` via `AuthorizationEvaluator.canWriteField`. Only present fields are checked — absent (undefined) fields are skipped. An explicit `null` counts as present, so it is still authorized. The target is read from the handler method's `@TargetId` parameter, whose `@PathVariable` may be declared on the generated `*Api` interface; the raw URI variable is converted by `AuthorizationEvaluator.toTarget`. The check stays in `afterBodyRead`, so a forbidden field answers 403 before bean validation can answer 400. A denial is reported with `describeRequirement` — callers never compose the required-authority text themselves.
 
 ```java
 record UpdateMemberRequest(
@@ -116,11 +116,11 @@ If an unauthorized user sends a present `JsonNullable` for a protected field, `F
 
 ## HAL+FORMS template filtering
 
-`klabisAfford()` decides each request-record property through the same evaluator, using the target of the afforded invocation (its `@TargetId` argument):
+`klabisAfford()` decides each request-record property with one `AuthorizationEvaluator.requestFieldAccess` call, using the target of the afforded invocation (its `@TargetId` argument):
 
-- `canWriteField` → the property is offered as editable;
-- otherwise `canReadRequestField` (a `@ReadAuthority` authority is held) → the property is offered `readOnly`;
-- otherwise the property is omitted from the template.
+- `FieldAccess.WRITE` (same rule as `canWriteField`) → the property is offered as editable;
+- otherwise a `@ReadAuthority` authority is held → the property is offered `readOnly`;
+- otherwise (`FieldAccess.NONE`) the property is omitted from the template.
 
 No extra configuration needed. The template itself is offered only when `canInvoke` passes for the afforded method.
 
@@ -128,7 +128,7 @@ No extra configuration needed. The template itself is offered only when `canInvo
 
 - Serializer: `com.klabis.common.security.fieldsecurity.FieldSecurityBeanSerializerModifier`, `SecuredBeanPropertyWriter`
 - Request auth: `com.klabis.common.security.fieldsecurity.RequestBodyFieldAuthorizationAdvice`
-- Decisions: `com.klabis.common.authorization.AuthorizationEvaluator` (`canReadField`, `canWriteField`, `canReadRequestField`)
+- Decisions: `com.klabis.common.authorization.AuthorizationEvaluator` (`canReadField`, `canWriteField`, `requestFieldAccess`, `describeRequirement`)
 - Annotations: `@HasAuthority`, `@TargetId`, `@OwnerVisible`, `@ReadAuthority`
 - Handlers: `com.klabis.common.security.fieldsecurity.NullDeniedHandler`, `MaskDeniedHandler`
 - Tests: `FieldLevelAuthorizationTest`, `TargetedFieldAuthorizationTest`, `HalFormsReadOnlyPropertiesTest`

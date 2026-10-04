@@ -250,7 +250,9 @@ public record TargetRef(TargetType type, UUID id) { ... }</code></pre>
     <tbody>
         <tr><td><code>canInvoke(method, targetClass, args)</code></td><td><code>HasAuthorityMethodInterceptor</code>, <code>HalFormsSupport</code> (affordance, <code>klabisLinkTo</code>)</td></tr>
         <tr><td><code>canReadField(accessor, record)</code></td><td><code>SecuredBeanPropertyWriter</code> (pole response)</td></tr>
-        <tr><td><code>canWriteField(accessor, target)</code>, <code>canReadRequestField(...)</code></td><td><code>RequestBodyFieldAuthorizationAdvice</code>, HAL-FORMS <code>readOnly</code> / skrytí property</td></tr>
+        <tr><td><code>canWriteField(accessor, target)</code></td><td><code>RequestBodyFieldAuthorizationAdvice</code></td></tr>
+        <tr><td><code>requestFieldAccess(payloadType, property, target)</code> → <code>FieldAccess</code> (<code>WRITE</code> / <code>READ</code> / <code>NONE</code>)</td><td>HAL-FORMS <code>readOnly</code> / skrytí property (<code>HalFormsSupport</code>)</td></tr>
+        <tr><td><code>describeRequirement(method, class)</code>, <code>describeRequirement(accessor)</code></td><td>text „Required: …“ každého zamítnutí — volající ho neskládají z anotací sami</td></tr>
         <tr><td><code>has(authority)</code>, <code>has(authority, target)</code>, <code>isSelf(target)</code></td><td>aplikační kód — controllery, postprocessory</td></tr>
     </tbody>
 </table>
@@ -338,7 +340,8 @@ public @interface TargetId {      // com.klabis.common.authorization
 
     <dt>Request DTO (PATCH)</dt>
     <dd><code>JsonNullable</code> pole s anotacemi kontroluje <code>RequestBodyFieldAuthorizationAdvice</code>
-        přes <code>canWriteField</code>; cíl čte z <code>@TargetId @PathVariable</code> handleru.
+        přes <code>canWriteField</code>; cíl čte z <code>@TargetId</code> parametru handleru (<code>@PathVariable</code> může být
+        deklarovaný na generovaném <code>*Api</code> rozhraní) a surovou hodnotu převádí <code>toTarget</code>.
         Nepovolené přítomné pole → 403.</dd>
 </dl>
 

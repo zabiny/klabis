@@ -1,5 +1,6 @@
 package com.klabis.common.security;
 
+import org.springframework.beans.factory.BeanFactory;
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.authorization.AuthorizationSnapshot;
 import com.klabis.common.authorization.AuthorizationSnapshotProvider;
@@ -103,8 +104,8 @@ class SnapshotAuthoritiesInMethodSecurityTest {
         }
 
         @Bean
-        HasAuthorityMethodInterceptor hasAuthorityMethodInterceptor() {
-            return new HasAuthorityMethodInterceptor();
+        HasAuthorityMethodInterceptor hasAuthorityMethodInterceptor(BeanFactory beanFactory) {
+            return new HasAuthorityMethodInterceptor(beanFactory);
         }
 
         @Bean

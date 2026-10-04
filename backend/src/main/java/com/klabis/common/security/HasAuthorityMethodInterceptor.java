@@ -1,7 +1,6 @@
 package com.klabis.common.security;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
-import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import org.aopalliance.aop.Advice;
@@ -15,14 +14,11 @@ import org.springframework.security.authorization.method.AuthorizationAdvisor;
 import org.springframework.security.authorization.method.AuthorizationInterceptorsOrder;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 import org.springframework.security.authorization.method.MethodAuthorizationDeniedHandler;
-import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.util.Assert;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.util.function.SingletonSupplier;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.stream.Collectors;
+import java.util.function.Supplier;
 
 /**
  * Spring Security {@link AuthorizationAdvisor} that enforces {@link HasAuthority} annotations.
@@ -37,10 +33,10 @@ import java.util.stream.Collectors;
  * <p>
  * Registered as a {@code @Bean} so {@code AuthorizationAdvisorProxyFactory} auto-discovers it.
  */
-public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, ApplicationContextAware {
+public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor {
 
-    private ApplicationContext applicationContext;
-    private volatile AuthorizationEvaluator evaluator;
+    private final BeanFactory beanFactory;
+    private final Supplier<AuthorizationEvaluator> evaluator;
 
     private static final AuthorizationResult DENY = () -> false;
 
@@ -66,9 +62,7 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
             return new MethodMatcher() {
                 @Override
                 public boolean matches(Method method, Class<?> targetClass) {
-                    return MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, HasAuthority.class) != null
-                           || MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, OwnerVisible.class) != null
-                           || MethodSecurityAnnotations.findClassAnnotation(targetClass, HasAuthority.class) != null;
+                    return AuthorizationEvaluator.isGuarded(method, targetClass);
                 }
 
                 @Override
@@ -84,13 +78,22 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
         }
     };
 
+    /**
+     * The evaluator is resolved on first use because this advisor is created while the proxy infrastructure
+     * is being set up, before the evaluator's own dependencies are available.
+     */
+    public HasAuthorityMethodInterceptor(BeanFactory beanFactory) {
+        this.beanFactory = beanFactory;
+        this.evaluator = SingletonSupplier.of(() -> beanFactory.getBean(AuthorizationEvaluator.class));
+    }
+
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
         Method method = invocation.getMethod();
         Object target = invocation.getThis();
         Class<?> targetClass = target != null ? target.getClass() : method.getDeclaringClass();
 
-        if (evaluator().canInvoke(method, targetClass, invocation.getArguments())) {
+        if (evaluator.get().canInvoke(method, targetClass, invocation.getArguments())) {
             return invocation.proceed();
         }
 
@@ -100,25 +103,8 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
             return handler.handleDeniedInvocation(invocation, DENY);
         }
 
-        throw new AccessDeniedException(denyReason(method, targetClass));
-    }
-
-    private String denyReason(Method method, Class<?> targetClass) {
-        HasAuthority required = resolveHasAuthority(method, targetClass);
-        if (required == null) {
-            return "Access denied. Ownership required.";
-        }
-        return "Access denied. Required authority: " + Arrays.stream(required.value())
-                .map(Authority::getValue)
-                .collect(Collectors.joining(" or "));
-    }
-
-    private AuthorizationEvaluator evaluator() {
-        if (evaluator == null) {
-            Assert.state(applicationContext != null, "HasAuthorityMethodInterceptor is not attached to an application context");
-            evaluator = applicationContext.getBean(AuthorizationEvaluator.class);
-        }
-        return evaluator;
+        throw new AccessDeniedException(
+                "Access denied. Required: " + evaluator.get().describeRequirement(method, targetClass));
     }
 
     @Override
@@ -136,13 +122,6 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
         return AuthorizationInterceptorsOrder.PRE_AUTHORIZE.getOrder() + 1;
     }
 
-
-
-    private HasAuthority resolveHasAuthority(Method method, Class<?> targetClass) {
-        HasAuthority methodAnnotation = MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, HasAuthority.class);
-        return methodAnnotation != null ? methodAnnotation : MethodSecurityAnnotations.findClassAnnotation(targetClass, HasAuthority.class);
-    }
-
     private HandleAuthorizationDenied resolveDeniedHandler(Method method, Class<?> targetClass) {
         HandleAuthorizationDenied methodLevel = MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, HandleAuthorizationDenied.class);
         if (methodLevel != null) {
@@ -151,23 +130,15 @@ public class HasAuthorityMethodInterceptor implements AuthorizationAdvisor, Appl
         return MethodSecurityAnnotations.findClassAnnotation(targetClass, HandleAuthorizationDenied.class);
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
+    private <H extends MethodAuthorizationDeniedHandler> H resolveHandler(Class<H> handlerClass) {
+        return beanFactory.getBeanProvider(handlerClass).getIfAvailable(() -> instantiate(handlerClass));
     }
 
-    private MethodAuthorizationDeniedHandler resolveHandler(Class<? extends MethodAuthorizationDeniedHandler> handlerClass) {
-        if (applicationContext != null) {
-            try {
-                return applicationContext.getBean(handlerClass);
-            } catch (BeansException ignored) {
-            }
-        }
+    private static <H extends MethodAuthorizationDeniedHandler> H instantiate(Class<H> handlerClass) {
         try {
             return handlerClass.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             throw new IllegalStateException("Failed to resolve MethodAuthorizationDeniedHandler: " + handlerClass, e);
         }
     }
-
 }

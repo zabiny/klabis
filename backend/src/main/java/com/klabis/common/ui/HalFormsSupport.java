@@ -1,6 +1,7 @@
 package com.klabis.common.ui;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.FieldAccess;
 import com.klabis.common.authorization.TargetRef;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -41,6 +42,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 @Component
 public class HalFormsSupport {
 
+    // static because the affordance helpers are called from controllers and postprocessors that have no
+    // access to the Spring context
     private static HalFormsSupport INSTANCE;
 
     private final AuthorizationEvaluator authorizationEvaluator;
@@ -49,8 +52,6 @@ public class HalFormsSupport {
         this.authorizationEvaluator = authorizationEvaluator;
     }
 
-    // TODO: this static causes troubles in tests (some tests are not starting full context and this post construct may not be called yet, so tests are working without ownership resolver)
-    // (try to find out way how to do this resolved directly from data)
     @PostConstruct
     void init() {
         INSTANCE = this;
@@ -71,10 +72,16 @@ public class HalFormsSupport {
         INSTANCE = instance;
     }
 
+    private static HalFormsSupport instance() {
+        HalFormsSupport instance = INSTANCE;
+        Assert.state(instance != null, "HalFormsSupport is not initialised: no HalFormsSupport bean in the application context");
+        return instance;
+    }
+
     public static Optional<WebMvcLinkBuilder> klabisLinkTo(Object invocation) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
-        if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
+        if (!instance().isMethodAuthorized(lastInvocationAware)) {
             return Optional.empty();
         }
 
@@ -84,7 +91,7 @@ public class HalFormsSupport {
     public static List<Affordance> klabisAfford(Object invocation) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
-        if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
+        if (!instance().isMethodAuthorized(lastInvocationAware)) {
             return Collections.emptyList();
         }
 
@@ -134,7 +141,7 @@ public class HalFormsSupport {
     public static List<Affordance> klabisAffordWithOptions(Object invocation, Map<String, HalFormsOptionsDef> optionsDef) {
         LastInvocationAware lastInvocationAware = getLastInvocationAware(invocation);
 
-        if (INSTANCE != null && !INSTANCE.isMethodAuthorized(lastInvocationAware)) {
+        if (!instance().isMethodAuthorized(lastInvocationAware)) {
             return Collections.emptyList();
         }
 
@@ -150,28 +157,20 @@ public class HalFormsSupport {
     }
 
     private static FieldAuthorization fieldAuthorizationFor(MethodInvocation invocation) {
-        if (INSTANCE == null) {
-            return FieldAuthorization.UNRESTRICTED;
-        }
+        AuthorizationEvaluator evaluator = instance().authorizationEvaluator;
         Method method = invocation.getMethod();
-        TargetRef target = INSTANCE.authorizationEvaluator.targetOf(method, method.getDeclaringClass(), invocation.getArguments());
-        return new FieldAuthorization(INSTANCE.authorizationEvaluator, target);
+        TargetRef target = evaluator.targetOf(method, method.getDeclaringClass(), invocation.getArguments());
+        return new FieldAuthorization(evaluator, target);
     }
 
     /**
      * Decides, through the same evaluator that enforces request bodies, what the user may do with a template
      * property: change it, only see it, or neither.
      */
-    private record FieldAuthorization(@Nullable AuthorizationEvaluator evaluator, @Nullable TargetRef target) {
+    private record FieldAuthorization(AuthorizationEvaluator evaluator, @Nullable TargetRef target) {
 
-        static final FieldAuthorization UNRESTRICTED = new FieldAuthorization(null, null);
-
-        boolean canWrite(@Nullable Method accessor) {
-            return evaluator == null || accessor == null || evaluator.canWriteField(accessor, target);
-        }
-
-        boolean canRead(@Nullable Method accessor) {
-            return evaluator == null || accessor == null || evaluator.canReadRequestField(accessor, target);
+        FieldAccess accessTo(@Nullable Class<?> payloadType, String property) {
+            return evaluator.requestFieldAccess(payloadType, property, target);
         }
     }
 
@@ -353,14 +352,12 @@ public class HalFormsSupport {
             boolean isPayloadClassRecord = inputPayloadMetadata.getType() != null && inputPayloadMetadata.getType()
                     .isRecord();
 
-            Method accessor = findSecuredAccessor(inputPayloadMetadata.getType(), metadata.getName());
             AffordanceModel.PropertyMetadata wrapped = getAnnotatedElementForProperty(inputPayloadMetadata, metadata)
                     .map(annotatedElement -> (AffordanceModel.PropertyMetadata) new KlabisHalFormsPropertyMetadataWrapper(
                             metadata,
                             annotatedElement,
                             isPayloadClassRecord,
-                            fieldAuthorization.canRead(accessor),
-                            fieldAuthorization.canWrite(accessor)))
+                            fieldAuthorization.accessTo(inputPayloadMetadata.getType(), metadata.getName())))
                     .orElse(metadata);
 
             if (wrapped instanceof KlabisHalFormsPropertyMetadataWrapper wrapper && wrapper.isCollectionType()) {
@@ -384,35 +381,6 @@ public class HalFormsSupport {
                 return wrapper.isDisplayed();
             }
             return true;
-        }
-
-        /**
-         * Finds the method carrying the security annotations of the given property: the record component
-         * accessor, or for non-record payloads the interface method of that name — the same annotations that
-         * control JSON field visibility for the response DTO. Returns null when the property is not secured.
-         */
-        private static Method findSecuredAccessor(Class<?> payloadType, String propertyName) {
-            if (payloadType == null) {
-                return null;
-            }
-            if (payloadType.isRecord()) {
-                return Arrays.stream(payloadType.getRecordComponents())
-                        .filter(c -> c.getName().equals(propertyName))
-                        .map(RecordComponent::getAccessor)
-                        .filter(HalFormsInputPayloadMetadata::isSecured)
-                        .findFirst()
-                        .orElse(null);
-            }
-            return Arrays.stream(payloadType.getInterfaces())
-                    .flatMap(iface -> Arrays.stream(iface.getMethods()))
-                    .filter(m -> m.getName().equals(propertyName) && m.getParameterCount() == 0)
-                    .filter(HalFormsInputPayloadMetadata::isSecured)
-                    .findFirst()
-                    .orElse(null);
-        }
-
-        private static boolean isSecured(Method m) {
-            return AuthorizationEvaluator.isSecured(m);
         }
 
         private static Optional<AnnotatedElement> getAnnotatedElementForProperty(AffordanceModel.PayloadMetadata payloadMetadata, AffordanceModel.PropertyMetadata delegate) {
@@ -472,16 +440,14 @@ public class HalFormsSupport {
         private final AffordanceModel.PropertyMetadata delegate;
         private final HalForms propertyAnnotation;
         private final boolean defaultIsReadOnly;
-        private final boolean readable;
-        private final boolean writable;
+        private final FieldAccess access;
 
-        public KlabisHalFormsPropertyMetadataWrapper(AffordanceModel.PropertyMetadata delegate, AnnotatedElement propertyElement, boolean isRecord, boolean readable, boolean writable) {
+        public KlabisHalFormsPropertyMetadataWrapper(AffordanceModel.PropertyMetadata delegate, AnnotatedElement propertyElement, boolean isRecord, FieldAccess access) {
             this.delegate = delegate;
             this.defaultIsReadOnly = isRecord ? false : delegate.isReadOnly();
             this.propertyAnnotation = propertyElement.isAnnotationPresent(HalForms.class) ? propertyElement.getAnnotation(
                     HalForms.class) : null;
-            this.readable = readable;
-            this.writable = writable;
+            this.access = access;
         }
 
         @Override
@@ -496,7 +462,7 @@ public class HalFormsSupport {
 
         @Override
         public boolean isReadOnly() {
-            if (!writable) {
+            if (access != FieldAccess.WRITE) {
                 return true;
             }
             if (propertyAnnotation != null) {
@@ -544,7 +510,7 @@ public class HalFormsSupport {
         }
 
         public boolean isDisplayed() {
-            if (!readable) {
+            if (access == FieldAccess.NONE) {
                 return false;
             }
             return propertyAnnotation == null || !HalForms.Access.NONE.equals(propertyAnnotation.access());

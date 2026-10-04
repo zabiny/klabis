@@ -1,5 +1,6 @@
 package com.klabis.common.users.infrastructure.restapi;
 
+import org.springframework.beans.factory.BeanFactory;
 import com.klabis.common.authorization.AuthorizationSnapshotProvider;
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.security.HasAuthorityMethodInterceptor;
@@ -278,8 +279,8 @@ class HasAuthorityAspectTest {
     static class HasAuthorityInterceptorTestConfiguration {
 
         @Bean
-        HasAuthorityMethodInterceptor testHasAuthorityMethodInterceptor() {
-            return new HasAuthorityMethodInterceptor();
+        HasAuthorityMethodInterceptor testHasAuthorityMethodInterceptor(BeanFactory beanFactory) {
+            return new HasAuthorityMethodInterceptor(beanFactory);
         }
 
         @Bean

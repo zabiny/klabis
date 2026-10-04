@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.aop.ClassFilter;
 import org.springframework.aop.MethodMatcher;
+import org.springframework.beans.factory.support.StaticListableBeanFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,7 +20,7 @@ class HasAuthorityMethodInterceptorPointcutTest {
         }
     }
 
-    private final HasAuthorityMethodInterceptor interceptor = new HasAuthorityMethodInterceptor();
+    private final HasAuthorityMethodInterceptor interceptor = new HasAuthorityMethodInterceptor(new StaticListableBeanFactory());
 
     @Test
     @DisplayName("class filter accepts application classes")
