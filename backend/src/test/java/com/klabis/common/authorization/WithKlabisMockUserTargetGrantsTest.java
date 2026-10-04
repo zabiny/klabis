@@ -1,7 +1,6 @@
 package com.klabis.common.authorization;
 
 import com.klabis.common.CommonInfrastructureWebMvcSetup;
-import com.klabis.common.FixedAuthorizationSnapshotConfiguration;
 import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.mvc.MvcComponent;
@@ -11,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +24,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = WithKlabisMockUserTargetGrantsTest.ProbeController.class)
 @CommonInfrastructureWebMvcSetup
-@Import({FixedAuthorizationSnapshotConfiguration.class, AuthorizationEvaluator.class})
 @DisplayName("@WithKlabisMockUser target grants installed as the request snapshot")
 class WithKlabisMockUserTargetGrantsTest {
 

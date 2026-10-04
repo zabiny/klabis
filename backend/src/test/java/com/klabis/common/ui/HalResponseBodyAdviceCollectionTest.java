@@ -7,7 +7,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.IanaLinkRelations;
@@ -34,7 +33,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = HalResponseBodyAdviceCollectionTest.CollectionTestController.class)
 @DisplayName("HalResponseBodyAdvice collection (List) handling")
 @CommonInfrastructureWebMvcSetup
-@Import(HalFormsSupport.class)
 class HalResponseBodyAdviceCollectionTest {
 
     @Autowired

@@ -10,7 +10,6 @@ import com.klabis.common.users.HasAuthority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 
 import java.lang.reflect.Method;
@@ -19,7 +18,7 @@ import java.util.List;
 
 /**
  * Jackson {@link ValueSerializerModifier} that wraps {@link BeanPropertyWriter} instances
- * for record components annotated with {@link PreAuthorize}, {@link HasAuthority}, or
+ * for record components annotated with {@link HasAuthority} or
  * {@link OwnerVisible}. Authorization is evaluated during serialization — no interface or
  * proxy needed.
  * <p>
@@ -84,11 +83,10 @@ class FieldSecurityBeanSerializerModifier extends ValueSerializerModifier {
             }
 
             Method accessor = component.getAccessor();
-            PreAuthorize preAuthorize = accessor.getAnnotation(PreAuthorize.class);
             HasAuthority hasAuthority = accessor.getAnnotation(HasAuthority.class);
             boolean ownerVisible = accessor.getAnnotation(OwnerVisible.class) != null;
 
-            if (preAuthorize == null && hasAuthority == null && !ownerVisible) {
+            if (hasAuthority == null && !ownerVisible) {
                 continue;
             }
 

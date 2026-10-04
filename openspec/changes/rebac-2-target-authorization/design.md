@@ -91,9 +91,9 @@ classDiagram
 
 - `has(A, t) = A ∈ overAll ∨ t ∈ overTargets[A]`. Grants from a source are accepted only for authorities with `SPECIFIC` and matching `targetType` (a defensive check — a misbehaving source cannot hand out an administrator authority).
 - `overAll` comes from `PermissionService` (the `user_permissions` row, plus standard authorities). `overTargets` is the union of all `RelationshipSource` beans.
-- **Lazy and memoized per request** (request-scoped holder): the first authorization question in a request loads the whole snapshot (global + all sources) once; every later decision in the same request reads the same immutable object. That guarantees "one permission set per request" by construction.
+- **Lazy and memoized per request, carried by the authentication token**: the resource server builds a new `KlabisJwtAuthenticationToken` for every request; the token holds a memoized supplier of the snapshot. The first authorization question in a request loads the whole snapshot (global + all sources) once; every later decision in the same request reads the same immutable object. That guarantees "one permission set per request" by construction, without a request-scoped bean. `AuthorizationSnapshotProvider.current()` reads the snapshot from the current authentication (a `client_credentials` token yields a snapshot from its token authorities).
 - Sources return all grants of a user at once rather than answering per-target checks: one query per source per request, cheap per-row evaluation in lists, and it already supports a future "my wards" lookup. Volume is bounded by club size (hundreds).
-- **Outside an HTTP request** (listeners, scheduled jobs) there is no snapshot; method security does not apply there today either.
+- **Outside an HTTP request** (listeners, scheduled jobs) there is no user token and therefore no snapshot; method security does not apply there today either.
 
 *Alternatives considered:* (a) eager load in `AccountStatusValidationFilter` — wastes the relationship queries on the many requests that never ask; (b) per-check `check(user, A, target)` queries — N queries for a list and no single-set guarantee; (c) a materialized grants table maintained by domain events — risk of drift and backfills for every new relationship kind.
 
@@ -112,14 +112,16 @@ New package `com.klabis.common.authorization` exposed as a named interface (`@Na
 
 ### D5. One evaluator for every decision
 
-`AuthorizationEvaluator` (request-scoped, over the snapshot) is the only component that answers authorization questions:
+`AuthorizationEvaluator` (over the current snapshot) is the only component that answers authorization questions:
 
 | Question | Used by |
 |---|---|
 | `canInvoke(method, targetClass, args)` | `HasAuthorityMethodInterceptor`, `HalFormsSupport` (affordances), `klabisLinkTo` link filtering |
 | `canReadField(element, record)` | `FieldSecurityBeanSerializerModifier` / `SecuredBeanPropertyWriter` |
-| `canWriteField(element, targetId)` / `canReadRequestField(…)` | `RequestBodyFieldAuthorizationAdvice`, HAL-FORMS property `isDisplayed` / `isReadOnly` |
+| `canWriteField(element, targetId)` / `canReadRequestField(…)` | `RequestBodyFieldAuthorizationAdvice.afterBodyRead` (runs before bean validation; the target is the `@TargetId` path variable converted through the evaluator's conversion), HAL-FORMS property `isDisplayed` / `isReadOnly` |
 | `has(authority)` / `has(authority, target)` / `isSelf(target)` | application code (replaces `CurrentUserData.hasAuthority`, `canManage…` flags, `SecuritySpelEvaluator.hasAuthority`) |
+
+Field rules are expressed only with `@HasAuthority`, `@OwnerVisible`, `@TargetId` and `@ReadAuthority`; SpEL `@PreAuthorize` on fields is not supported.
 
 Rule for an operation or field with `authorities = [A1..An]`, optional target `t`, optional owner-visible:
 
@@ -148,7 +150,7 @@ Each listed imperative check (see Context) is rewritten to ask the evaluator. Be
 
 ### D8. Testing support
 
-- `@WithKlabisMockUser(authorities = {...}, targetGrants = {@TargetGrant(authority = …, type = MEMBER, ids = {...})})` installs a fixed snapshot through a test `AuthorizationSnapshotProvider`, so `@WebMvcTest`s need no database.
+- `@WithKlabisMockUser(authorities = {...}, targetGrants = {@TargetGrant(authority = …, type = MEMBER, ids = {...})})` installs a token carrying a fixed snapshot, so `@WebMvcTest`s need no database.
 - Integration tests use the real provider and real sources.
 - Existing tests that only set `authorities` keep working unchanged.
 

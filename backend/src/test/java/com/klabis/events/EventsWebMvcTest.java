@@ -1,14 +1,10 @@
 package com.klabis.events;
 
-import com.klabis.common.ClockConfiguration;
 import com.klabis.common.CommonWebMvcMockitoBeans;
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.authorization.AuthorizationEvaluator;
-import com.klabis.common.FixedAuthorizationSnapshotConfiguration;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.finance.FinanceWebMvcMockitoBeans;
 import com.klabis.members.MembersWebMvcMockitoBeans;
 import com.klabis.sync.SyncWebMvcMockitoBeans;
+import com.klabis.common.KlabisWebMvcSliceConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
@@ -38,8 +34,7 @@ import java.lang.annotation.*;
 @WebMvcTest
 @ModuleSlicing(module = "events", extraIncludes = {"members", "sync", "finance"}, mode = ApplicationModuleTest.BootstrapMode.STANDALONE, verifyAutomatically = false)
 @ActiveProfiles("test")
-@Import({ClockConfiguration.class, EncryptionConfiguration.class, HalFormsSupport.class,
-        AuthorizationEvaluator.class, FixedAuthorizationSnapshotConfiguration.class})
+@Import(KlabisWebMvcSliceConfiguration.class)
 @EventsWebMvcMockitoBeans
 @CommonWebMvcMockitoBeans
 @MembersWebMvcMockitoBeans

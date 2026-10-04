@@ -36,8 +36,8 @@
         <tr><td><code>AuthorizationServerConfiguration</code></td><td>Setup Spring Authorization Serveru (issuer, JWK, token endpointy).</td></tr>
         <tr><td><code>AuthorizationServerCustomizer</code> (interface)</td><td>SPI bod pro přizpůsobení AS chainu — moduly mohou registrovat <code>@Component</code>.</td></tr>
         <tr><td><code>KlabisJwtAuthenticationConverter</code></td><td>Z JWT vyrobí <code>KlabisJwtAuthenticationToken</code> s typovaným <code>UserId</code> + <code>memberIdUuid</code>.</td></tr>
-        <tr><td><code>KlabisJwtAuthenticationToken</code></td><td>Vlastní <code>Authentication</code> typ s <code>getUserId()</code>, <code>getMemberIdUuid()</code>; <code>getAuthorities()</code> čte snapshot requestu.</td></tr>
-        <tr><td><code>AuthorizationSnapshot</code> + <code>RequestScopedAuthorizationSnapshotProvider</code></td><td>Neměnná sada oprávnění uživatele pro jeden request (nad vším + nad konkrétními cíli), načtená líně.</td></tr>
+        <tr><td><code>KlabisJwtAuthenticationToken</code></td><td>Vlastní <code>Authentication</code> typ s <code>getUserId()</code>, <code>getMemberIdUuid()</code>; nese snapshot oprávnění requestu (<code>snapshot()</code>), z něhož odvozuje <code>getAuthorities()</code>.</td></tr>
+        <tr><td><code>AuthorizationSnapshot</code> + <code>AuthorizationSnapshotLoader</code> + <code>AuthorizationSnapshotProvider</code></td><td>Neměnná sada oprávnění uživatele pro jeden request (nad vším + nad konkrétními cíli), načtená líně tokenem; provider ji čte z aktuální autentizace.</td></tr>
         <tr><td><code>AuthorizationEvaluator</code></td><td>Jediné místo, které odpovídá na autorizační otázky (metody, affordance, pole, aplikační kód).</td></tr>
         <tr><td><code>HasAuthorityMethodInterceptor</code></td><td><code>AuthorizationAdvisor</code> — vynucuje <code>@HasAuthority</code> + <code>@OwnerVisible</code> přes <code>AuthorizationEvaluator.canInvoke</code>.</td></tr>
         <tr><td><code>FieldSecurityJacksonModule</code></td><td>Jackson modul, který při serializaci response filtruje pole bez oprávnění.</td></tr>
@@ -126,20 +126,22 @@
 <h2>KlabisJwtAuthenticationToken</h2>
 
 <pre class="signature"><code>public class KlabisJwtAuthenticationToken extends JwtAuthenticationToken {
-    public Collection&lt;GrantedAuthority&gt; getAuthorities();   // overAll ze snapshotu requestu
+    public AuthorizationSnapshot snapshot();                // líně načtený, memoizovaný (jednou na token = jednou na request)
+    public Collection&lt;GrantedAuthority&gt; getAuthorities();   // overAll ze snapshotu
     public UserId getUserId();
     public Optional&lt;UUID&gt; getMemberIdUuid();
     public boolean hasMemberProfile();
-    public boolean hasAuthority(Authority authority);    // jen pro common.security — viz ArchUnit níže
+    public boolean isSelf(UUID id);                         // id uživatele nebo člena — používá jen evaluator
     public String getUsername();
 }</code></pre>
 
 <p>
-    <code>KlabisJwtAuthenticationConverter</code> předá tokenu supplier, který při každém volání
-    <code>getAuthorities()</code> vrátí oprávnění „nad vším“ ze snapshotu aktuálního requestu.
-    Spring <code>hasAuthority(...)</code> SpEL tak vidí stejná oprávnění nad vším jako evaluator
-    (granty nad konkrétními cíli ale nevidí — pro ty používejte <code>@HasAuthority</code> + <code>@TargetId</code>). Mimo HTTP request
-    (listenery, scheduled joby) snapshot neexistuje a uživatelský token nemá žádná oprávnění.
+    Resource server vyrobí nový token pro každý request. <code>KlabisJwtAuthenticationConverter</code> mu předá
+    supplier snapshotu (volá <code>AuthorizationSnapshotLoader</code>), který token zmemoizuje: první autorizační
+    otázka requestu snapshot načte, všechny další ho čtou. <code>getAuthorities()</code> vrací oprávnění „nad vším“
+    z tohoto snapshotu, takže Spring <code>hasAuthority(...)</code> SpEL na metodě vidí stejná oprávnění nad vším jako evaluator
+    (granty nad konkrétními cíli ale nevidí — pro ty používejte <code>@HasAuthority</code> + <code>@TargetId</code>).
+    Bez přihlášeného uživatele (listenery, scheduled joby) je snapshot prázdný a nic se neautorizuje.
 </p>
 
 <aside class="note">
@@ -228,10 +230,15 @@ public record TargetRef(TargetType type, UUID id) { ... }</code></pre>
         administrátorskou autoritu. Implementace patří do <code>infrastructure</code> vlastnícího
         modulu a čte jen jeho repository (ADR-001). Zatím žádná neexistuje.</dd>
 
-    <dt>RequestScopedAuthorizationSnapshotProvider</dt>
-    <dd>Request-scoped, líný: snapshot se načte při první autorizační otázce requestu
-        (1 + N(zdrojů) dotazů) a pak se drží. Všechna rozhodnutí v jednom requestu tak vidí jednu
-        sadu oprávnění; requesty bez autorizační otázky neplatí nic.</dd>
+    <dt>AuthorizationSnapshotLoader</dt>
+    <dd>Načte snapshot uživatele (<code>PermissionService</code> + všechny <code>RelationshipSource</code>,
+        1 + N(zdrojů) dotazů). Volá ho jen token, a to nejvýše jednou na request; requesty bez autorizační
+        otázky neplatí nic.</dd>
+
+    <dt>AuthorizationSnapshotProvider</dt>
+    <dd><code>current()</code> vrací snapshot aktuální autentizace: u uživatelského tokenu ten, který token nese
+        (všechna rozhodnutí v jednom requestu tak vidí jednu sadu oprávnění), u <code>client_credentials</code>
+        snapshot z autorit tokenu bez cílových grantů, bez autentizace prázdný.</dd>
 </dl>
 
 <p>
@@ -260,9 +267,8 @@ public record TargetRef(TargetType type, UUID id) { ... }</code></pre>
 <aside class="note warn">
     ArchUnit test <code>AuthorizationArchitectureTest</code> shodí build, pokud kód mimo
     <code>common.authorization</code> a <code>common.security</code> čte <code>@HasAuthority</code>,
-    <code>@OwnerVisible</code>, <code>@TargetId</code>, <code>@ReadAuthority</code>,
-    <code>OwnershipResolver</code>, <code>SecuritySpelEvaluator</code>,
-    <code>Authentication.getAuthorities()</code> nebo <code>KlabisJwtAuthenticationToken.hasAuthority(..)</code>.
+    <code>@OwnerVisible</code>, <code>@TargetId</code>, <code>@ReadAuthority</code>
+    nebo <code>Authentication.getAuthorities()</code>.
     Imperativní kontrolu v controlleru napište jako
     <code>authorizationEvaluator.has(Authority.MEMBERS_MANAGE, TargetRef.member(id))</code>.
 </aside>
@@ -336,20 +342,19 @@ public @interface TargetId {      // com.klabis.common.authorization
         Nepovolené přítomné pole → 403.</dd>
 </dl>
 
-<h2>OwnershipResolver</h2>
+<h2>isSelf</h2>
 
 <p>
-    Strategy interface, který určí, zda je cíl aktuální uživatel. Používá ho výhradně
-    <code>AuthorizationEvaluator.isSelf</code>. Výchozí implementace (<code>DefaultOwnershipResolver</code>)
-    porovná hodnotu cíle s <code>memberIdUuid</code> z <code>KlabisJwtAuthenticationToken</code>. Konverze
-    typu na UUID probíhá přes Spring <code>ConversionService</code> — proto např. modul <code>members</code>
+    <code>AuthorizationEvaluator.isSelf(target)</code> porovná členský cíl s id uživatele a s <code>memberIdUuid</code>
+    z <code>KlabisJwtAuthenticationToken</code> (<code>token.isSelf(id)</code>). Hodnoty cílů (např. <code>MemberId</code>)
+    se na UUID převádějí přes Spring <code>ConversionService</code> — proto modul <code>members</code>
     registruje <code>MemberIdToUuidConverter</code>.
 </p>
 
-<aside class="note warn">
-    Bean <code>OwnershipResolver</code> je web-layer bean a evaluator ho resolvuje
-    <strong>lazy</strong> přes <code>ObjectProvider</code>. Eager injection způsobí
-    <em>"No ServletContext set"</em> při startu (security advisor se inicializuje dříve než web kontext).
+<aside class="note">
+    Pravidla polí se vyjadřují jen anotacemi <code>@HasAuthority</code>, <code>@OwnerVisible</code>,
+    <code>@TargetId</code> a <code>@ReadAuthority</code>; SpEL <code>@PreAuthorize</code> na polích se nepodporuje
+    (na metodách dál funguje přes <code>getAuthorities()</code>).
 </aside>
 
 <h2>Pomocné komponenty</h2>
@@ -395,8 +400,8 @@ public @interface TargetId {      // com.klabis.common.authorization
     <dt>MemberIdToUuidConverter</dt>
     <dd>Spring <code>Converter&lt;MemberId, UUID&gt;</code> registrovaný do
         <code>ConversionService</code>. Vyžadovaný pro field-level autorizaci —
-        <code>DefaultOwnershipResolver</code> potřebuje generic konverzi <code>@TargetId</code>
-        hodnoty na UUID, aby ji mohl porovnat s <code>memberIdUuid</code> z JWT.</dd>
+        <code>AuthorizationEvaluator</code> potřebuje generic konverzi <code>@TargetId</code>
+        hodnoty na UUID, aby ji mohl porovnat s identitou uživatele z JWT.</dd>
 </dl>
 
 <h2>Související zdroje</h2>

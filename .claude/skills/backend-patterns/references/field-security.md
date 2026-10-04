@@ -60,7 +60,7 @@ record MemberDetailResponse(
 
 - Without `@TargetId`, when some component is `@OwnerVisible`, the single component convertible to UUID via `ConversionService` is taken as a member target. If ambiguous, mark it with `@TargetId` (spec: `x-klabis-target-id: MEMBER`).
 - A `@TargetId` component holding a **collection** of ids is a set of owners, not one target: authorities must then be held over everything, and an `@OwnerVisible` field is visible to any of the owners.
-- `isSelf` compares a member target with `KlabisJwtAuthenticationToken.getMemberIdUuid()` (through `OwnershipResolver`, used only inside the evaluator).
+- `isSelf` compares a member target with the user id and member id of `KlabisJwtAuthenticationToken` (`token.isSelf(id)`, used only inside the evaluator).
 
 In collections (`GET /members`), each item is evaluated independently — owner sees more on their own record.
 
@@ -69,14 +69,14 @@ In collections (`GET /members`), each item is evaluated independently — owner 
 - `@JsonInclude(NON_NULL)` on the record — denied fields (handled by `NullDeniedHandler`) disappear from JSON
 - Class-level `@HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)` sets default deny behavior
 - Per-field override with `@HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)` for masked fields
-- `@HasAuthority({...})` lists authorities of which any one suffices; a legacy `@PreAuthorize` (SpEL) on a component still works but sees only grants over everything
+- `@HasAuthority({...})` lists authorities of which any one suffices; SpEL `@PreAuthorize` on a field or record component is **not** supported — express the rule with `@HasAuthority`
 - `@OwnerVisible` adds ownership-based access with OR semantics
 - No interface, no proxy — `FieldSecurityBeanSerializerModifier` handles everything during serialization
 - Never read these annotations yourself — `AuthorizationArchitectureTest` fails the build; ask the evaluator
 
 ## Field-Level Authorization on Request DTOs (PATCH)
 
-`JsonNullable<T>` components with `@HasAuthority`, `@OwnerVisible` (or `@PreAuthorize`) are enforced by `RequestBodyFieldAuthorizationAdvice` via `AuthorizationEvaluator.canWriteField`. Only present fields are checked — absent (undefined) fields are skipped. An explicit `null` counts as present, so it is still authorized. The target is read from the handler method's `@TargetId @PathVariable` parameter.
+`JsonNullable<T>` components with `@HasAuthority`, or `@OwnerVisible` are enforced by `RequestBodyFieldAuthorizationAdvice` via `AuthorizationEvaluator.canWriteField`. Only present fields are checked — absent (undefined) fields are skipped. An explicit `null` counts as present, so it is still authorized. The target is read from the handler method's `@TargetId @PathVariable` parameter.
 
 ```java
 record UpdateMemberRequest(

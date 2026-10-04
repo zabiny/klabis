@@ -65,9 +65,11 @@ public @interface WithKlabisMockUser {
 }</code></pre>
 
 <p>
-    Anotace připojí k autentizaci pevný <code>AuthorizationSnapshot</code> (kap. 06), takže
-    <code>@WebMvcTest</code> nepotřebuje tabulky oprávnění. Slice testy importují
-    <code>AuthorizationEvaluator</code> a <code>FixedAuthorizationSnapshotConfiguration</code>;
+    Anotace vyrobí <code>KlabisJwtAuthenticationToken</code>, který nese pevný <code>AuthorizationSnapshot</code> (kap. 06), takže
+    <code>@WebMvcTest</code> nepotřebuje tabulky oprávnění. Slice testy importují společnou
+    <code>KlabisWebMvcSliceConfiguration</code> (hodiny, šifrování, <code>HalFormsSupport</code>, <code>AuthorizationEvaluator</code>,
+    <code>AuthorizationSnapshotProvider</code>); token ručně v testu vyrobíte přes
+    <code>KlabisAuthenticationFactory.createAuthenticationToken(jwtParams, snapshot)</code>;
     ručně sestavené komponenty v unit testech dostanou <code>SecurityContextAuthorizationEvaluator.create()</code>.
 </p>
 

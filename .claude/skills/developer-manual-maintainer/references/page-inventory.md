@@ -65,13 +65,12 @@ Onboarding pro vývojáře bez Spring/DDD znalostí. Žádný projektový kód �
 ### `06-security.html` — Bezpečnost
 - OAuth2 AS + RS přehled
 - JWT s vlastními claims (user_id, memberIdUuid, registrationNumber; uživatelský token bez authorities)
-- `KlabisJwtAuthenticationToken` (`getAuthorities()` ze snapshotu requestu)
+- `KlabisJwtAuthenticationToken` (nese snapshot oprávnění requestu, `getAuthorities()` z něj)
 - `Authority` enum (`targetType` MEMBER/EVENT/NONE, `grantForms` ALL/SPECIFIC)
-- Snapshot oprávnění: `AuthorizationSnapshot`, `RequestScopedAuthorizationSnapshotProvider`, `RelationshipSource`, `TargetRef`
+- Snapshot oprávnění: `AuthorizationSnapshot`, `AuthorizationSnapshotLoader`, `AuthorizationSnapshotProvider`, `RelationshipSource`, `TargetRef`
 - `AuthorizationEvaluator` + ArchUnit `AuthorizationArchitectureTest`
 - `@HasAuthority` (seznam) + `@TargetId` (method-level)
 - `@OwnerVisible`, `@ReadAuthority` (field-level)
-- `OwnershipResolver`
 - Pomocné komponenty: `AccountStatusValidationFilter`, `CorsConfiguration`, `FrontendProperties`, `PasswordEncoderConfiguration`
 - Custom AuthenticationEntryPoint
 - **OAuth2 customizace v `members`:** `KlabisAuthorizationServerCustomizer`, `KlabisUserDetailsService`, `MemberIdToUuidConverter`

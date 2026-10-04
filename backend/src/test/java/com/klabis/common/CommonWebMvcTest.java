@@ -1,8 +1,5 @@
 package com.klabis.common;
 
-import com.klabis.common.encryption.EncryptionConfiguration;
-import com.klabis.common.authorization.AuthorizationEvaluator;
-import com.klabis.common.ui.HalFormsSupport;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
@@ -28,8 +25,7 @@ import java.lang.annotation.*;
 @WebMvcTest
 @ModuleSlicing(module = "common", mode = ApplicationModuleTest.BootstrapMode.STANDALONE, verifyAutomatically = false)
 @ActiveProfiles("test")
-@Import({ClockConfiguration.class, EncryptionConfiguration.class, HalFormsSupport.class,
-        AuthorizationEvaluator.class, FixedAuthorizationSnapshotConfiguration.class})
+@Import(KlabisWebMvcSliceConfiguration.class)
 @CommonWebMvcMockitoBeans
 public @interface CommonWebMvcTest {
 }

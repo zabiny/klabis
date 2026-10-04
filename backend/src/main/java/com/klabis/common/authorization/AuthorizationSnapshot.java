@@ -1,6 +1,7 @@
 package com.klabis.common.authorization;
 
 import com.klabis.common.users.Authority;
+import org.springframework.security.core.GrantedAuthority;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -44,6 +45,20 @@ public final class AuthorizationSnapshot {
      */
     public static AuthorizationSnapshot of(Set<Authority> overAll, Map<Authority, Set<TargetRef>> overTargets) {
         return new AuthorizationSnapshot(overAll, overTargets);
+    }
+
+    /**
+     * Snapshot of an authentication that carries its authorities itself (machine-to-machine tokens): the known
+     * authorities are held over everything, there are no targeted grants.
+     */
+    public static AuthorizationSnapshot ofGrantedAuthorities(Collection<? extends GrantedAuthority> granted) {
+        Set<Authority> known = EnumSet.noneOf(Authority.class);
+        for (GrantedAuthority authority : granted) {
+            if (Authority.isKnownAuthority(authority.getAuthority())) {
+                known.add(Authority.fromString(authority.getAuthority()));
+            }
+        }
+        return new AuthorizationSnapshot(known, Map.of());
     }
 
     public static AuthorizationSnapshot fromSources(Set<Authority> overAll,

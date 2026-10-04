@@ -6,7 +6,6 @@ import com.klabis.common.authorization.TargetId;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.CommonInfrastructureWebMvcSetup;
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.junit.jupiter.api.DisplayName;
@@ -15,12 +14,10 @@ import org.junit.jupiter.api.Test;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -44,7 +41,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = FieldLevelAuthorizationTest.TestController.class)
 @DisplayName("Field-level authorization on response DTOs")
 @CommonInfrastructureWebMvcSetup
-@Import(HalFormsSupport.class)
 class FieldLevelAuthorizationTest {
 
     private static final String OWNER_ID_STRING = "aaaaaaaa-0000-0000-0000-000000000001";
@@ -52,7 +48,7 @@ class FieldLevelAuthorizationTest {
     private static final UUID OWNER_ID = UUID.fromString(OWNER_ID_STRING);
     private static final UUID OTHER_ID = UUID.fromString(OTHER_ID_STRING);
 
-    private static final String FIELD_READ_AUTHORITY = "FIELD:READ";
+    private static final String FIELD_READ_AUTHORITY = "MEMBERS:READ";
 
     @Autowired
     MockMvc mockMvc;
@@ -61,9 +57,9 @@ class FieldLevelAuthorizationTest {
     @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
     record SensitiveDataResponse(
             String publicField,
-            @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
+            @HasAuthority(Authority.MEMBERS_READ)
             String hiddenField,
-            @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
+            @HasAuthority(Authority.MEMBERS_READ)
             @HandleAuthorizationDenied(handlerClass = MaskDeniedHandler.class)
             String maskedField,
             @HasAuthority(Authority.MEMBERS_MANAGE)
@@ -77,10 +73,10 @@ class FieldLevelAuthorizationTest {
     record PatchSensitiveDataRequest(
             JsonNullable<String> publicField,
 
-            @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
+            @HasAuthority(Authority.MEMBERS_READ)
             JsonNullable<String> hiddenField,
 
-            @PreAuthorize("hasAuthority('" + FIELD_READ_AUTHORITY + "')")
+            @HasAuthority(Authority.MEMBERS_READ)
             JsonNullable<String> maskedField,
 
             @HasAuthority(Authority.MEMBERS_MANAGE)
@@ -209,7 +205,7 @@ class FieldLevelAuthorizationTest {
     }
 
     @Nested
-    @DisplayName("authorized user with FIELD:READ authority")
+    @DisplayName("authorized user with MEMBERS:READ authority")
     class AuthorizedUser {
 
         @Test
@@ -240,8 +236,8 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser(authorities = {FIELD_READ_AUTHORITY})
-        @DisplayName("PATCH with JsonNullable request should succeed when user has required authority from @PreAuthorize")
-        void patchShouldSucceedWithRequiredAuthorityForPreAuthorize() throws Exception {
+        @DisplayName("PATCH with JsonNullable request should succeed when user has required authority from @HasAuthority")
+        void patchShouldSucceedWithRequiredAuthorityForMembersRead() throws Exception {
             mockMvc.perform(patch("/test/field-auth")
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -281,8 +277,8 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser(authorities = {FIELD_READ_AUTHORITY})
-        @DisplayName("user with FIELD:READ sees hiddenField and maskedField but not hasAuthority* fields")
-        void fieldReadUserSeesPreAuthorizeFieldsOnly() throws Exception {
+        @DisplayName("user with MEMBERS:READ sees hiddenField and maskedField but not hasAuthority* fields")
+        void fieldReadUserSeesMembersReadFieldsOnly() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.publicField").value("public-value"))
@@ -307,7 +303,7 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser(authorities = {FIELD_READ_AUTHORITY})
-        @DisplayName("PATCH with FIELD:READ sending authorized field and unauthorized hasAuthorityHiddenField returns 403")
+        @DisplayName("PATCH with MEMBERS:READ sending authorized field and unauthorized hasAuthorityHiddenField returns 403")
         void patchWithMixedAuthoritiesReturns403() throws Exception {
             mockMvc.perform(patch("/test/field-auth")
                             .with(csrf())
@@ -318,8 +314,8 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser(authorities = {FIELD_READ_AUTHORITY})
-        @DisplayName("HAL+FORMS template with FIELD:READ shows hiddenField and maskedField, hides hasAuthority* fields")
-        void halFormsTemplateWithFieldReadShowsPreAuthorizeProperties() throws Exception {
+        @DisplayName("HAL+FORMS template with MEMBERS:READ shows hiddenField and maskedField, hides hasAuthority* fields")
+        void halFormsTemplateWithFieldReadShowsMembersReadProperties() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.updateSensitiveData.properties[?(@.name == 'publicField')]").exists())
@@ -344,7 +340,7 @@ class FieldLevelAuthorizationTest {
     }
 
     @Nested
-    @DisplayName("user without FIELD:READ authority")
+    @DisplayName("user without MEMBERS:READ authority")
     class UnauthorizedUser {
 
         @Test
@@ -362,7 +358,7 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser
-        @DisplayName("HAL+FORMS template should only contain publicField when user lacks FIELD:READ and MEMBERS:MANAGE authority")
+        @DisplayName("HAL+FORMS template should only contain publicField when user lacks MEMBERS:READ and MEMBERS:MANAGE authority")
         void shouldFilterTemplatePropertiesBasedOnAuthorization() throws Exception {
             mockMvc.perform(get("/test/field-auth").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
@@ -375,8 +371,8 @@ class FieldLevelAuthorizationTest {
 
         @Test
         @WithMockUser
-        @DisplayName("PATCH with JsonNullable request should return 403 when user attempts to update field where he lacks required authority defined by @PreAuthorize")
-        void patchShouldReturn403WithoutRequiredAuthorityPreAuthorize() throws Exception {
+        @DisplayName("PATCH with JsonNullable request should return 403 when user attempts to update field where he lacks required authority defined by @HasAuthority")
+        void patchShouldReturn403WithoutRequiredAuthority() throws Exception {
             mockMvc.perform(patch("/test/field-auth")
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)

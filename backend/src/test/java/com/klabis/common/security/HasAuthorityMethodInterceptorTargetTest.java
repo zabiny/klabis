@@ -7,7 +7,6 @@ import com.klabis.common.authorization.TargetId;
 import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
-import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.junit.jupiter.api.AfterEach;
@@ -20,15 +19,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jose.jws.JwsAlgorithms;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,7 +32,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("HasAuthorityMethodInterceptor over any-of authorities and targeted grants")
 class HasAuthorityMethodInterceptorTargetTest {
 
-    private static final AtomicReference<AuthorizationSnapshot> SNAPSHOT = new AtomicReference<>();
     private static final UUID MY_ID = UUID.randomUUID();
     private static final UUID CHILD_ID = UUID.randomUUID();
     private static final UUID STRANGER_ID = UUID.randomUUID();
@@ -45,20 +39,14 @@ class HasAuthorityMethodInterceptorTargetTest {
     @Autowired
     private GuardedService service;
 
-    @Autowired
-    private KlabisJwtAuthenticationConverter converter;
-
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
     private void authenticate(Set<Authority> overAll, Map<Authority, Set<TargetRef>> overTargets) {
-        SNAPSHOT.set(AuthorizationSnapshot.of(overAll, overTargets));
-        Jwt jwt = Jwt.withTokenValue("t").header("alg", JwsAlgorithms.RS256)
-                .subject("ZBM8001").claim("user_id", MY_ID.toString())
-                .issuedAt(Instant.now()).expiresAt(Instant.now().plusSeconds(60)).build();
-        SecurityContextHolder.getContext().setAuthentication(converter.convert(jwt));
+        SecurityContextHolder.getContext().setAuthentication(KlabisAuthenticationFactory.createAuthenticationToken(
+                JwtParams.jwtTokenParams("ZBM8001", MY_ID), AuthorizationSnapshot.of(overAll, overTargets)));
     }
 
     private void authenticateOverAll(Authority... authorities) {
@@ -205,7 +193,7 @@ class HasAuthorityMethodInterceptorTargetTest {
 
     @org.springframework.boot.test.context.TestConfiguration
     @EnableMethodSecurity(proxyTargetClass = true)
-    @Import(AuthorizationEvaluator.class)
+    @Import({AuthorizationEvaluator.class, AuthorizationSnapshotProvider.class})
     static class Configuration {
 
         @Bean
@@ -223,22 +211,6 @@ class HasAuthorityMethodInterceptorTargetTest {
             var creator = new org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator();
             creator.setProxyTargetClass(true);
             return creator;
-        }
-
-        @Bean
-        AuthorizationSnapshotProvider snapshotProvider() {
-            return SNAPSHOT::get;
-        }
-
-        @Bean
-        OwnershipResolver ownershipResolver() {
-            return (ownerId, authentication) -> MY_ID.equals(ownerId);
-        }
-
-        @Bean
-        KlabisJwtAuthenticationConverter converter(
-                org.springframework.beans.factory.ObjectProvider<AuthorizationSnapshotProvider> provider) {
-            return new KlabisJwtAuthenticationConverter(provider);
         }
     }
 }

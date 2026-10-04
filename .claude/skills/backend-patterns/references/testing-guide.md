@@ -232,7 +232,7 @@ void memberCanUpdateOwnProfile() { }
 void delegateCanActForThatMemberOnly() { }
 ```
 
-The annotation attaches a fixed `AuthorizationSnapshot` to the authentication, so `@WebMvcTest`s never touch the permission tables. A `targetGrants` authority must be one with `GrantForm.SPECIFIC` in a real deployment — the test snapshot does not filter. See `authorization.md`.
+The annotation builds a `KlabisJwtAuthenticationToken` carrying a fixed `AuthorizationSnapshot`, so `@WebMvcTest`s never touch the permission tables. The `*WebMvcTest` meta-annotations import the shared `KlabisWebMvcSliceConfiguration` (clock, encryption, `HalFormsSupport`, `AuthorizationEvaluator`, `AuthorizationSnapshotProvider`) — a new slice imports that one class instead of listing the beans. Tokens built by hand in unit tests: `KlabisAuthenticationFactory.createAuthenticationToken(JwtParams, AuthorizationSnapshot)`. A `targetGrants` authority must be one with `GrantForm.SPECIFIC` in a real deployment — the test snapshot does not filter. See `authorization.md`.
 
 Never use `@WithMockUser` — it creates a generic principal incompatible with `KlabisJwtAuthenticationToken`.
 
