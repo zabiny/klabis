@@ -94,7 +94,7 @@ class MemberGroupTest {
                     Set.of(GroupMembership.of(OWNER), GroupMembership.of(MEMBER))))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining(OWNER.toString())
-                    .hasMessageContaining(MEMBER.toString());
+                    .hasMessageNotContaining(MEMBER.toString());
         }
     }
 
