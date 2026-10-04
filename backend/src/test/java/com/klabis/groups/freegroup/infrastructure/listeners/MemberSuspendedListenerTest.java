@@ -66,11 +66,7 @@ class MemberSuspendedListenerTest {
         @DisplayName("should cancel all pending invitations for the deactivated member and save the group")
         void shouldCancelAllPendingInvitationsForDeactivatedMember() {
             Invitation pending = Invitation.createPending(OWNER, INVITEE);
-            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group",
-                    Set.of(OWNER),
-                    Set.of(GroupMembership.of(OWNER)),
-                    Set.of(pending),
-                    null);
+            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Test Group", Set.of(OWNER), Set.of(), Set.of(pending), null);
 
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(INVITEE)))
                     .thenReturn(List.of(group));
@@ -87,10 +83,8 @@ class MemberSuspendedListenerTest {
         void shouldCancelPendingInvitationsAcrossMultipleGroups() {
             Invitation pending1 = Invitation.createPending(OWNER, INVITEE);
             Invitation pending2 = Invitation.createPending(OWNER, INVITEE);
-            FreeGroup group1 = FreeGroup.reconstruct(GROUP_ID, "Group One",
-                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER)), Set.of(pending1), null);
-            FreeGroup group2 = FreeGroup.reconstruct(SECOND_GROUP_ID, "Group Two",
-                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER)), Set.of(pending2), null);
+            FreeGroup group1 = FreeGroup.reconstruct(GROUP_ID, "Group One", Set.of(OWNER), Set.of(), Set.of(pending1), null);
+            FreeGroup group2 = FreeGroup.reconstruct(SECOND_GROUP_ID, "Group Two", Set.of(OWNER), Set.of(), Set.of(pending2), null);
 
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(INVITEE)))
                     .thenReturn(List.of(group1, group2));
@@ -128,10 +122,8 @@ class MemberSuspendedListenerTest {
         void shouldContinueWhenOneGroupSaveFails() {
             Invitation pending1 = Invitation.createPending(OWNER, INVITEE);
             Invitation pending2 = Invitation.createPending(OWNER, INVITEE);
-            FreeGroup group1 = FreeGroup.reconstruct(GROUP_ID, "Group One",
-                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER)), Set.of(pending1), null);
-            FreeGroup group2 = FreeGroup.reconstruct(SECOND_GROUP_ID, "Group Two",
-                    Set.of(OWNER), Set.of(GroupMembership.of(OWNER)), Set.of(pending2), null);
+            FreeGroup group1 = FreeGroup.reconstruct(GROUP_ID, "Group One", Set.of(OWNER), Set.of(), Set.of(pending1), null);
+            FreeGroup group2 = FreeGroup.reconstruct(SECOND_GROUP_ID, "Group Two", Set.of(OWNER), Set.of(), Set.of(pending2), null);
 
             when(freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(INVITEE)))
                     .thenReturn(List.of(group1, group2));

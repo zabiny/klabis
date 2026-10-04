@@ -39,6 +39,8 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
 
     const trainerIds = useMemo(() => trainers.map(t => t.memberId), [trainers]);
     const memberIds = useMemo(() => members.map(m => m.memberId), [members]);
+    // A trainer is never a trainee of the group they train, so the picker must not offer them.
+    const nonTraineeIds = useMemo(() => [...memberIds, ...trainerIds], [memberIds, trainerIds]);
 
     const handleRemoveMember = (member: TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }) => {
         const template = member._templates?.removeTrainingGroupMember;
@@ -176,7 +178,7 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                     pathname={route.pathname}
                     onClose={() => { setAddMemberModal(false); void route.refetch(); }}
                     successMessage={labels.ui.savedSuccessfully}
-                    excludeMemberIds={memberIds}
+                    excludeMemberIds={nonTraineeIds}
                 />
             )}
 

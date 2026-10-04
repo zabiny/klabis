@@ -3,6 +3,7 @@ package com.klabis.groups.freegroup.domain;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
+import com.klabis.common.groups.domain.MemberNotInGroupException;
 import com.klabis.groups.freegroup.FreeGroupInvitationCancelledEvent;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +29,7 @@ class FreeGroupTest {
     class CreateMethod {
 
         @Test
-        @DisplayName("should create group with name and creator as owner and first member")
+        @DisplayName("should create group with name and creator as its only owner")
         void shouldCreateGroupWithNameAndCreator() {
             FreeGroup.CreateFreeGroup command = new FreeGroup.CreateFreeGroup("Orienteering Friends", CREATOR);
 
@@ -37,8 +38,8 @@ class FreeGroupTest {
             assertThat(group.getId()).isNotNull();
             assertThat(group.getName()).isEqualTo("Orienteering Friends");
             assertThat(group.getOwners()).containsExactly(CREATOR);
-            assertThat(group.getMembers()).hasSize(1);
-            assertThat(group.hasMember(CREATOR)).isTrue();
+            assertThat(group.getMembers()).isEmpty();
+            assertThat(group.hasMember(CREATOR)).isFalse();
             assertThat(group.isOwner(CREATOR)).isTrue();
         }
 
@@ -129,7 +130,7 @@ class FreeGroupTest {
             group.removeMember(OTHER_MEMBER, CREATOR);
 
             assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
-            assertThat(group.getMembers()).hasSize(1);
+            assertThat(group.getMembers()).isEmpty();
         }
 
         @Test
@@ -162,6 +163,57 @@ class FreeGroupTest {
         }
 
         @Test
+        @DisplayName("should let a member remove themselves to leave the group")
+        void shouldLetMemberLeaveThemselves() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            addMemberViaInvitation(group, OTHER_MEMBER);
+            addMemberViaInvitation(group, ANOTHER_MEMBER);
+
+            group.removeMember(OTHER_MEMBER, OTHER_MEMBER);
+
+            assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
+            assertThat(group.hasMember(ANOTHER_MEMBER)).isTrue();
+            assertThat(group.getOwners()).containsExactly(CREATOR);
+        }
+
+        @Test
+        @DisplayName("should throw MemberNotInGroupException when the caller was never a member")
+        void shouldRejectLeavingWhenNotAMember() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            addMemberViaInvitation(group, OTHER_MEMBER);
+
+            assertThatThrownBy(() -> group.removeMember(ANOTHER_MEMBER, ANOTHER_MEMBER))
+                    .isInstanceOf(MemberNotInGroupException.class)
+                    .hasMessageContaining(ANOTHER_MEMBER.toString());
+        }
+
+        @Test
+        @DisplayName("should not let an owner use the leave path — owners leave via removeOwner")
+        void shouldNotLetOwnerUseLeavePath() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            addMemberViaInvitation(group, OTHER_MEMBER);
+
+            assertThatThrownBy(() -> group.removeMember(CREATOR, CREATOR))
+                    .isInstanceOf(MemberNotInGroupException.class);
+            assertThat(group.isOwner(CREATOR)).isTrue();
+        }
+
+        @Test
+        @DisplayName("should allow re-inviting a member who left the group")
+        void shouldAllowReInviteAfterLeaving() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            addMemberViaInvitation(group, OTHER_MEMBER);
+            group.removeMember(OTHER_MEMBER, OTHER_MEMBER);
+
+            group.invite(CREATOR, OTHER_MEMBER);
+
+            List<Invitation> pending = group.getPendingInvitations();
+            assertThat(pending).hasSize(1);
+            assertThat(pending.get(0).getInvitedMember()).isEqualTo(OTHER_MEMBER);
+            assertThat(pending.get(0).getStatus()).isEqualTo(InvitationStatus.PENDING);
+        }
+
+        @Test
         @DisplayName("should allow removing one of multiple non-owner members")
         void shouldRemoveOneOfMultipleMembers() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
@@ -172,7 +224,7 @@ class FreeGroupTest {
 
             assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
             assertThat(group.hasMember(ANOTHER_MEMBER)).isTrue();
-            assertThat(group.getMembers()).hasSize(2);
+            assertThat(group.getMembers()).hasSize(1);
         }
     }
 
@@ -203,31 +255,20 @@ class FreeGroupTest {
         }
 
         @Test
-        @DisplayName("should promote existing member to owner without duplicating membership")
-        void shouldPromoteExistingMemberToOwnerWithoutDuplicatingMembership() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
-            addMemberViaInvitation(group, OTHER_MEMBER);
-            int memberCountBefore = group.getMembers().size();
-
-            group.addOwner(OTHER_MEMBER, CREATOR);
-
-            assertThat(group.isOwner(OTHER_MEMBER)).isTrue();
-            assertThat(group.getMembers()).hasSize(memberCountBefore);
-        }
-
-        @Test
-        @DisplayName("should add owner and make them a member")
-        void shouldAddOwner() {
+        @DisplayName("should move the promoted member out of the member list")
+        void shouldMovePromotedMemberOutOfMembers() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
             group.addOwner(OTHER_MEMBER, CREATOR);
 
             assertThat(group.isOwner(OTHER_MEMBER)).isTrue();
+            assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
+            assertThat(group.getMembers()).isEmpty();
         }
 
         @Test
-        @DisplayName("should remove owner without removing them from members")
+        @DisplayName("should remove owner from the group entirely")
         void shouldRemoveOwner() {
             FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
             addMemberViaInvitation(group, OTHER_MEMBER);
@@ -236,7 +277,7 @@ class FreeGroupTest {
             group.removeOwner(OTHER_MEMBER, CREATOR);
 
             assertThat(group.isOwner(OTHER_MEMBER)).isFalse();
-            assertThat(group.hasMember(OTHER_MEMBER)).isTrue();
+            assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
         }
 
         @Test

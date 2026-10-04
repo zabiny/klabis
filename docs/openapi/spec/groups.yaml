@@ -193,6 +193,13 @@ paths:
             inviteMember:
               operation: inviteMember
               description: Present only for group owners
+            removeGroupMember:
+              operation: removeGroupMember
+              description: >
+                The caller's own "leave this group" — the removeGroupMember operation with the
+                caller's memberId substituted for the path variable. Present only for members who
+                are not owners, and only on this self link, so it does not collide with the
+                per-row removeGroupMember an owner sees on the member list.
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -275,8 +282,11 @@ paths:
     delete:
       operationId: removeGroupMember
       tags: [Groups]
-      summary: Remove a member from group (owner only)
-      description: Removes a member from a group. Caller must be an owner of this group.
+      summary: Remove a member from group (owner, or the member themselves)
+      description: >-
+        Removes a member from a group. The caller must either be an owner of this group or the
+        member identified by memberId themselves. Owners are not members of their own group and are
+        removed through removeGroupOwner instead.
       security:
         - KlabisAuth: [MEMBERS]
       x-spring-provide-args:

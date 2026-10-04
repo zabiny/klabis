@@ -198,7 +198,7 @@ class TrainingGroupController implements TrainingGroupsApi {
                 .toList();
 
         List<EntityModel<GroupMembershipResponse>> memberModels = group.getMembers().stream()
-                .map(m -> buildMemberModel(m, groupUuid, hasTrainingAuthority, trainerIds))
+                .map(m -> buildMemberModel(m, groupUuid, hasTrainingAuthority))
                 .toList();
 
         return TrainingGroupResponseBuilder.builder()
@@ -214,7 +214,7 @@ class TrainingGroupController implements TrainingGroupsApi {
     }
 
     private EntityModel<GroupMembershipResponse> buildMemberModel(
-            GroupMembership<MemberId> membership, UUID groupUuid, boolean hasTrainingAuthority, Set<MemberId> trainerIds) {
+            GroupMembership<MemberId> membership, UUID groupUuid, boolean hasTrainingAuthority) {
 
         MemberId memberId = membership.memberId();
         GroupMembershipResponse response = GroupMembershipResponseBuilder.builder()
@@ -226,8 +226,7 @@ class TrainingGroupController implements TrainingGroupsApi {
                 .map(link -> link.withRel("member"))
                 .ifPresent(model::add);
 
-        boolean memberIsTrainer = trainerIds.contains(memberId);
-        if (hasTrainingAuthority && !memberIsTrainer) {
+        if (hasTrainingAuthority) {
             klabisLinkTo(methodOn(TrainingGroupsApi.class)
                     .removeTrainingGroupMember(groupUuid, memberId.uuid()))
                     .ifPresent(link -> model.add(link.withSelfRel()
