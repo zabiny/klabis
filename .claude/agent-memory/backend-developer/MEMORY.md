@@ -48,3 +48,7 @@
 - `FieldSecurityBeanSerializerModifier` + `SecuredBeanPropertyWriter` evaluate auth during Jackson serialization
 - `FieldSecurityJacksonModule` registered via `@JsonComponent` — auto-discovered in `@WebMvcTest` and `@SpringBootTest`
 - HAL+FORMS template filtering (`HalFormsSupport`) already reads the same record component annotations — no extra wiring needed
+- [Test snapshot infra for canInvoke](project_rebac2_test_snapshot_infra.md) — slice vs full-context snapshot providers; scanned nested configs pitfall
+- [Field security via evaluator](project_rebac2_field_security_evaluator.md) — serializer/advice/HAL-FORMS share evaluator; HalFormsSupport comes from KlabisWebMvcSliceConfiguration
+- [Authority list in templates](project_authority_list_mustache.md) — codegen renders full @HasAuthority text into x-klabis-authority-annotation; templates print verbatim
+- [HalFormsSupport static instance](project_halformssupport_static_instance.md) — fail-fast; listener for Spring tests, extension for plain tests

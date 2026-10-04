@@ -1,5 +1,7 @@
 # Test Runner Agent Memory
 
+- [Backend test run (2026-10-04) worktree-next-proposal](backend_test_run_2026_10_04_worktree.md) — 4087/4087 passed
+- [Backend test run (2026-10-04) full suite](backend_test_run_2026_10_04_full_suite.md) — 4068/4068 passed
 - [Frontend test hang (2026-09-30) MemberRegistration.integration.test.tsx](frontend_test_hang_2026_09_30.md) — hangs on execution, no test names printed
 - [Frontend test run (2026-09-30) legal-guardians-refactor](frontend_test_run_2026_09_30.md) — 2124/2124 passed
 - [Backend test run (2026-09-30) full suite](backend_test_run_2026_09_30_full_suite.md) — 3936/3936 passed with SPRING_MODULITH_TEST_SKIP_OPTIMIZATIONS=true

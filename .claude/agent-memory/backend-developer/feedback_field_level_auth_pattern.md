@@ -4,6 +4,8 @@ description: How to implement field-level authorization on Java records using a 
 type: feedback
 ---
 
+> Update (rebac-2): SpEL `@PreAuthorize` on fields and `SecuritySpelEvaluator` were removed; field rules are `@HasAuthority`/`@OwnerVisible`/`@TargetId`/`@ReadAuthority` decided by `AuthorizationEvaluator`. Mentions of `@PreAuthorize` below are historical.
+
 # Field-Level Authorization Pattern for Java Records
 
 ## Pattern Overview
