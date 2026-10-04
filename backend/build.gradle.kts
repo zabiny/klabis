@@ -77,6 +77,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-authorization-server")
 
     // ORIS API client
+    implementation("org.springframework.boot:spring-boot-starter-restclient")
     implementation("com.dpolach.api:oris-client:0.2.2")
 
     // Spring Modulith
