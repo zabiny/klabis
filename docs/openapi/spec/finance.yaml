@@ -8,7 +8,7 @@
 # the account owner OR hold FINANCE:MANAGE. That maps to x-klabis-authority + x-klabis-owner-visible
 # (OR semantics) on each GET operation. The three POST operations are FINANCE:MANAGE only — never
 # owner-accessible — so they carry x-klabis-authority alone. They still share
-# AccountMemberIdParam and so inherit its @OwnerId, which is inert without @OwnerVisible.
+# AccountMemberIdParam and so inherit its @TargetId, which is inert without @OwnerVisible (FINANCE_MANAGE has no target type).
 
 # Standalone OpenAPI document: this file renders on its own in Swagger UI / Redoc, served
 # from this directory so its ./_shared/*.yaml refs resolve. info is duplicated from
@@ -362,9 +362,9 @@ components:
       in: path
       description: Member UUID
       required: true
-      # Marks the owner for operations that declare x-klabis-owner-visible. Inert on its own:
-      # @OwnerId is only consulted for a method or field already marked @OwnerVisible, so the
-      # operations here that do not opt into ownership are unaffected.
+      # Identifies the target member. Inert on its own: @TargetId is only consulted for a method
+      # marked @OwnerVisible or guarded by an authority held over specific targets, so the
+      # operations here that do neither are unaffected.
       x-klabis-target-id: MEMBER
       schema:
         type: string

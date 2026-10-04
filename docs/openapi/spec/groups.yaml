@@ -23,7 +23,7 @@
 #      passes @ActingMember into FreeGroupManagementPort and the ownership rule (owner-only /
 #      member-only) is enforced down in FreeGroup itself. The controller carries NO @HasAuthority.
 #      These 13 operations get NO x-klabis-authority / x-klabis-owner-visible — the check is neither
-#      an authority nor an owner-id-vs-caller comparison the framework can express, it is "is the
+#      an authority nor a target-is-caller comparison the framework can express, it is "is the
 #      caller a member of THIS group's owner/member set", which only the aggregate can answer.
 #   c) Imperative in the method body — TrainingGroupController.getTrainingGroup throws
 #      InsufficientAuthorityException unless the caller has GROUPS:TRAINING OR is a member of the specific group.
@@ -69,7 +69,7 @@ paths:
   # NONE of these carry x-klabis-authority / x-klabis-owner-visible. Authorization is enforced
   # inside FreeGroupManagementPort/FreeGroup itself from the @ActingMember passed by the controller
   # (module header comment, pattern b) — "is the caller a member/owner of THIS group", which is not
-  # an authority check and not a simple owner-id-vs-path-variable comparison. Do not add either
+  # an authority check and not a simple target-is-caller comparison on a path variable. Do not add either
   # extension here; that would either lock out legitimate callers or grant access the domain does not.
   # ---------------------------------------------------------------------------------------------
 

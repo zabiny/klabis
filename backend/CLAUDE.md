@@ -56,8 +56,10 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 - `spring.modulith.test.file-modification-detector=default` is configured as system property in `build.gradle.kts` — no
   need to pass it manually
 
-**Field-Level Authorization Pattern** — see `backend-patterns` skill for full details. Key gotchas:
-- `OwnershipResolver` is lazy-resolved from `ApplicationContext` — eager injection causes `No ServletContext set` startup error
+**Authorization** — see `backend-patterns` skill (`authorization.md`, `field-security.md`) and ADR-010. Key gotchas:
+- Every decision goes through `AuthorizationEvaluator` (request-scoped permission snapshot); `AuthorizationArchitectureTest` (ArchUnit) fails the build when code outside `common.authorization`/`common.security` reads security annotations or `Authentication.getAuthorities()`
+- `OwnershipResolver` is a web-layer bean that the evaluator resolves lazily (`ObjectProvider`) — eager injection causes `No ServletContext set` startup error
+- `@WithKlabisMockUser(authorities = …, targetGrants = @TargetGrant(…))` attaches a fixed snapshot — `@WebMvcTest`s need no permission tables
 - Ownership tests require `@WithKlabisMockUser(memberId = "...")` — `@WithMockUser` creates plain token without `memberIdUuid`
 - Record component annotations with `@Target(METHOD)` propagate to accessor method per JLS §8.10.1
 
@@ -118,11 +120,12 @@ These are the Klabis-specific hooks on top of Spring Security / Spring Authoriza
 - **`KlabisAuthorizationServerCustomizer`** (`com.klabis.authorizationserver`) — Spring AS customizer that wires Klabis-specific behaviour into the authorization server chain (registered clients, token customizers).
 - **JWT custom claims** — user access tokens carry `registrationNumber`, `memberIdUuid` and `user_id`, but no `authorities`: `KlabisJwtAuthenticationToken.getAuthorities()` reads them per request from the `AuthorizationSnapshot` (so permission changes apply without re-login; outside an HTTP request a user token grants nothing). `client_credentials` tokens keep scope-derived `authorities`. `Authority.isKnownAuthority()` filters out the `FACTOR_PASSWORD` authority that `DaoAuthenticationProvider` auto-adds for the MFA framework.
 - **`MemberIdToUuidConverter` + `CurrentUserArgumentResolver`** (`members.infrastructure.mvc`) — resolve `@CurrentUser Member` parameters in controllers from the JWT subject (`memberIdUuid` claim). See `backend-patterns` skill.
-- **`@HasAuthority(Authority.X)`** — type-safe alternative to `@PreAuthorize("hasAuthority('X:Y')")` for single-authority global checks. Method/class level. See `backend-patterns` skill.
-- **Field-level authorization** — `@OwnerVisible`, `@HasAuthority`, `JsonNullable<T>` on record components. See `backend-patterns` skill.
+- **`AuthorizationEvaluator`** (`common.authorization`) — the single place that answers authorization questions, over a lazily loaded, request-scoped `AuthorizationSnapshot` (grants over everything from `PermissionService` + grants over specific targets from `RelationshipSource` beans). Used by method security, affordances, field security and application code (`has(authority)`, `has(authority, target)`, `isSelf(target)`). See ADR-010.
+- **`@HasAuthority({Authority.X, …})`** — any of the listed authorities; with a `@TargetId(TargetType.X)` parameter an authority may also be held over just that target. Generated from `x-klabis-authority` / `x-klabis-target-id` in the spec. See `backend-patterns` skill.
+- **Field-level authorization** — `@HasAuthority`, `@OwnerVisible`, `@TargetId`, `@ReadAuthority`, `JsonNullable<T>` on record components. See `backend-patterns` skill.
 - **`KlabisUserDetailsService`** (`com.klabis.authorizationserver`) — bridges `users` aggregate + `Authority` enum into Spring Security `UserDetails`.
 - **Custom `AuthenticationEntryPoint`** — validates the OAuth2 `redirect_uri` against `RegisteredClientRepository` before redirecting (prevents open-redirector).
-- **`Authority.SYNC_MANAGE`** (`SYNC:MANAGE`, global scope) — gates every `sync` module operation (`/api/{entityType}/{id}/sync…`): reading state, triggering a pass, acknowledging/resolving a conflict, resetting a terminally failed record.
+- **`Authority.SYNC_MANAGE`** (`SYNC:MANAGE`, held over everything only) — gates every `sync` module operation (`/api/{entityType}/{id}/sync…`): reading state, triggering a pass, acknowledging/resolving a conflict, resetting a terminally failed record.
 
 ### Synchronisation Engine Configuration (`sync` module)
 

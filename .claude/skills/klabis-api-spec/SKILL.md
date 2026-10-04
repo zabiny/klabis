@@ -2,7 +2,7 @@
 name: klabis-api-spec
 description: Authoring the hand-written OpenAPI spec in docs/openapi/spec/ — x-klabis-* field-security and x-hal-* hypermedia extensions, module layout, and the spec-first workflow. Use whenever adding, changing or removing a REST endpoint, request/response field, HAL link or HAL+FORMS template; when writing the API chapter of an OpenSpec design.md; or when migrating a module from code-first to spec-first.
 user-invocable: false
-version: 0.8.1
+version: 0.9.0
 ---
 
 # Klabis API Spec
@@ -33,7 +33,7 @@ differ enough between them that generalising from one to another produces broken
 | Working on | Read |
 |---|---|
 | Any response: media types, the derived HAL envelope, `_embedded` keys, `x-hal-entity-items`/`x-hal-embedded`, `x-hal-links`/`x-hal-templates` | `references/hypermedia.md` |
-| Hiding/masking a response field, authorizing a request field, endpoint authorization (`x-klabis-authority`, `x-klabis-owner-visible`) | `references/field-security.md` |
+| Hiding/masking a response field, authorizing a request field, endpoint authorization (`x-klabis-authority`, `x-klabis-target-id`, `x-klabis-owner-visible`, `x-klabis-read-authority`) | `references/field-security.md` |
 | Constraints on request fields, cross-field rules | `references/validation.md` |
 | A PATCH endpoint (the `JsonNullable<T>` tri-state) | `references/patch-bodies.md` |
 | Registering a new module for codegen, or migrating one to spec-first | `references/adding-a-module.md` |
@@ -229,8 +229,9 @@ for any authenticated user, `@ActingMember` + `MemberId` to require a member pro
 - Concluding an endpoint needs no authority because the controller has no annotation — check the
   method body for an imperative `checkXxxAccess()` first
 - Relaxing an assertion in a link/affordance unit test that started failing after authorization moved
-  into the spec — the test was passing only because `HalFormsSupport.INSTANCE` was null; wire it a
-  real `OwnershipResolver` instead
+  into the spec — the test was passing only because `HalFormsSupport.INSTANCE` was null; test it
+  through a `@WebMvcTest` slice with `@WithKlabisMockUser` (or `SecurityContextAuthorizationEvaluator`)
+  instead
 - Writing `@HasAuthority` on a controller method — the authority belongs in `x-klabis-authority`,
   stated once
 - Writing `@Operation` / `@ApiResponse` / `@Parameter` on a controller — the generator emits them

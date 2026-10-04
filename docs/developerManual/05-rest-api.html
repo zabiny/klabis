@@ -276,19 +276,19 @@ public ... register(@PathVariable EventId id,
 <pre class="signature"><code>public record CurrentUserData(
         String userName,
         UserId userId,
-        @Nullable MemberId memberId,
-        Set&lt;Authority&gt; authorities) {
+        @Nullable MemberId memberId) {
 
     public boolean isMember();
-    public boolean hasAuthority(Authority authority);
     public boolean isMemberOf(Predicate&lt;MemberId&gt; membershipCheck);
 }</code></pre>
 
 <aside class="note">
-    Pro autorizaci v rámci kontextu metody preferujte <code>@HasAuthority</code> nebo
-    <code>@OwnerVisible</code> (kap. 06). <code>currentUser.hasAuthority(...)</code> v těle metody
-    používejte jen pro <em>obsahové</em> rozhodování (např. které pole vyplnit), ne pro security
-    checky.
+    <code>CurrentUserData</code> nese jen identitu, ne oprávnění. Autorizaci deklarujte ve specu
+    (<code>@HasAuthority</code>, <code>@TargetId</code>, <code>@OwnerVisible</code> — kap. 06); co deklarovat
+    nejde (příznak měnící dotaz, podmíněný link v postprocessoru), se ptá injektovaného
+    <code>AuthorizationEvaluator</code>u (<code>has(authority)</code>, <code>has(authority, target)</code>,
+    <code>isSelf(target)</code>). Přímé čtení oprávnění z <code>Authentication</code> zakazuje
+    ArchUnit test <code>AuthorizationArchitectureTest</code>.
 </aside>
 
 <h3>CurrentUserArgumentResolver</h3>

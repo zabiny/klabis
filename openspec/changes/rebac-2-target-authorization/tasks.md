@@ -48,9 +48,9 @@
 
 ## 8. Documentation
 
-- [ ] 8.1 Add ADR-010 "Relationship-based authorization" to `docs/design-decisions.md` (D1, D2, D4, D5 with alternatives); verify it follows the existing ADR structure
-- [ ] 8.2 Update `backend-patterns` and `klabis-api-spec` skills for `@HasAuthority` lists, `@TargetId`, `@ReadAuthority`, `RelationshipSource`, `AuthorizationEvaluator`; verify no stale `@OwnerId` references remain (`grep`)
-- [ ] 8.3 Update the developer manual via the `developer-manual-maintainer` skill; verify the security page describes the snapshot and evaluator
+- [x] 8.1 Add ADR-010 "Relationship-based authorization" to `docs/design-decisions.md` (D1, D2, D4, D5 with alternatives); verify it follows the existing ADR structure
+- [x] 8.2 Update `backend-patterns` and `klabis-api-spec` skills for `@HasAuthority` lists, `@TargetId`, `@ReadAuthority`, `RelationshipSource`, `AuthorizationEvaluator`; verify no stale `@OwnerId` references remain (`grep`)
+- [x] 8.3 Update the developer manual via the `developer-manual-maintainer` skill; verify the security page describes the snapshot and evaluator
 
 ## 9. Integration checks
 

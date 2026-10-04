@@ -86,7 +86,7 @@ Why this works without an ordering conflict: Spring HATEOAS's own postprocessing
 
 **Context:**
 
-After the spec-first migration (ADR-002), every REST controller implements a generated `*Api` interface that carries `@RequestMapping`, `@RequestBody`, `@HasAuthority` and `@OwnerId`. Affordances, however, still recorded the **controller** method: `klabisAfford(methodOn(MemberController.class).updateMember(...))`.
+After the spec-first migration (ADR-002), every REST controller implements a generated `*Api` interface that carries `@RequestMapping`, `@RequestBody`, `@HasAuthority` and `@TargetId`. Affordances, however, still recorded the **controller** method: `klabisAfford(methodOn(MemberController.class).updateMember(...))`.
 
 `HalFormsSupport.modifyAffordanceForHalForms` walks the parameters of whatever method `methodOn(...)` recorded, looking for `@RequestBody`. Java does not inherit parameter annotations from an interface, so the lookup only succeeds when the override happens to repeat the annotation. When it does not, the method returns the affordance untouched and `HalFormsInputPayloadMetadata` never runs — the code that supplies inline `options`, `@HalForms(access = …)` and the `readOnly` flag.
 
@@ -297,3 +297,61 @@ Guardianship is a relation to the child; grouping by the exact guardian set shar
 - Ciphertext format differs from the jasypt one; there was no production data, so no migration exists.
 - The password is the only real secret: the salt is not secret and only separates derived keys. Use a long random password (e.g. `openssl rand -base64 32`). `AesGcmBytesEncryptor.withPassword` derives the key with PBKDF2WithHmacSHA256, 600,000 iterations, 256-bit key (verified in spring-security-crypto 7.1.1); the count is a private constant and not configurable, so a weak password is not compensated by key stretching.
 - The salt must be a non-empty, even-length hex string (generate with `openssl rand -hex 16`); the application fails at startup otherwise. The example salt in dev configs (`.env.example`, run scripts, test properties) is public and must never be reused in a deployed environment.
+
+## ADR-010: Relationship-based authorization over a per-request permission snapshot
+
+**Status:** Accepted
+
+**Context:**
+
+Authorization used global authorities (`MEMBERS:MANAGE`, `EVENTS:MANAGE`, …) plus one hard-wired relation, "the target is me" (`@OwnerVisible`). The club needs permissions that hold only over specific targets and that come from relationships — a legal guardian over their children (ADR-008), owners of a group over its members — with more to follow. At the same time the authorities were a JWT claim frozen at login, so a revoked permission kept working until the token expired, and relationship-derived permissions change whenever a group changes, so they cannot live in a token at all. The decision was also taken in four different places with separate code: `HasAuthorityMethodInterceptor`, `HalFormsSupport` (affordances), field security, and imperative checks in controllers (`CurrentUserData.hasAuthority`, `canManage…` flags). `Authority.Scope` (`GLOBAL` / `CONTEXT_SPECIFIC`) existed but had no runtime effect.
+
+**Decision:**
+
+1. **An authority describes its target and its grant forms.** `Authority` carries `targetType` (`MEMBER`, `EVENT`, `NONE`) and `grantForms` (`ALL` = may be held over everything, including targets created later; `SPECIFIC` = may be held over specific targets). Assignable in the permissions dialog ⇔ `ALL` (minus standard authorities and `DEVELOPER`); delegatable / derivable from a relationship ⇔ `SPECIFIC`. An administrator authority is `{ALL}`-only and can never be delegated. `Authority.Scope` and `AuthorizationPolicy.checkGlobalAuthorityNotGrantedViaGroup` are removed.
+2. **Grants are united into an immutable per-request snapshot.** `AuthorizationSnapshot` holds `overAll` (from `PermissionService`, plus standard authorities) and `overTargets` (the union of all `RelationshipSource` beans — an SPI in `common.authorization` that any module implements in its `infrastructure`, querying its own repositories per ADR-001). `has(A, t) = A ∈ overAll ∨ t ∈ overTargets[A]`. A source's grant is accepted only for a `SPECIFIC` authority whose `targetType` matches, so a misbehaving source cannot hand out an administrator authority. `RequestScopedAuthorizationSnapshotProvider` loads the snapshot lazily on the first authorization question of a request and memoizes it, so every decision in a request sees one permission set; requests that ask nothing pay nothing. Each source returns all grants of a user in one query. Outside an HTTP request there is no snapshot and nothing is granted.
+3. **Tokens stop carrying authorities.** User access tokens no longer have an `authorities` claim; `KlabisJwtAuthenticationToken.getAuthorities()` delegates to the snapshot's `overAll`, so Spring's own `hasAuthority` SpEL stays consistent with the evaluator and a grant or revocation applies on the user's next request. `client_credentials` tokens (no `user_id`) keep their scope-derived authorities and have no targeted grants.
+4. **One evaluator answers every authorization question.** `AuthorizationEvaluator` is used by method security (`HasAuthorityMethodInterceptor`), affordances and link filtering (`HalFormsSupport`), response-field visibility (`SecuredBeanPropertyWriter`), request-body field checks (`RequestBodyFieldAuthorizationAdvice`), HAL-FORMS property `readOnly`, and application code (`has(authority)`, `has(authority, target)`, `isSelf(target)`). The rule for an element guarded by `authorities = [A1..An]`, optional target `t` and optional owner-visibility is:
+
+   ```
+   allowed ⇔ ∃ Ai: (t present ? has(Ai, t) : hasOverAll(Ai))   ∨   (ownerVisible ∧ isSelf(t))
+   ```
+
+   The target is declared by `@TargetId(TargetType.X)` on a path parameter or record component (spec: `x-klabis-target-id: X`); `@HasAuthority` takes a list (any of). `AuthorizationArchitectureTest` (ArchUnit) forbids reading the security annotations, `OwnershipResolver`, `SecuritySpelEvaluator` or `Authentication.getAuthorities()` outside `common.authorization` and `common.security`.
+
+```mermaid
+flowchart LR
+    PS[PermissionService] -->|grants over everything| SP[AuthorizationSnapshotProvider]
+    RS[RelationshipSource beans] -->|grants over targets| SP
+    SP -->|one snapshot per request| EV[AuthorizationEvaluator]
+    EV --> MI[HasAuthorityMethodInterceptor]
+    EV --> HF[HalFormsSupport affordances and links]
+    EV --> FS[field security and request-body advice]
+    EV --> APP[controllers and postprocessors]
+    SP -->|overAll| TOK[KlabisJwtAuthenticationToken.getAuthorities]
+```
+
+**Rationale:**
+
+"Global" becomes simply a grant over every target of a kind, so one model covers administrators, owners and delegates, and the same authority (e.g. `EVENTS_REGISTRATIONS`) can be held both ways. Loading permissions per request is what makes revocation immediate; memoizing them makes "one permission set per request" true by construction. A single code path makes an offered action always one the user may perform — parity between separate implementations cannot drift because there is only one.
+
+**Alternatives considered:**
+
+- *Separate enums for global and targeted permissions* (D1): rejected — the same authority must be holdable over everything and over specific targets.
+- *Eager snapshot load in `AccountStatusValidationFilter`* (D2): wastes the relationship queries on the many requests that never ask an authorization question.
+- *Per-check queries `check(user, A, target)`* (D2): N queries for a list and no single-set guarantee within a request.
+- *A materialized grants table maintained by domain events* (D2): risk of drift and a backfill for every new relationship kind.
+- *Keep global authorities in the token, load only targeted grants per request* (D4): revocation would still wait for token expiry, and two sources with different freshness break "one set per request".
+- *Keep the separate code paths and add a parity test* (D5): parity tests only cover the cases someone thought of.
+- *An external authorization engine (SpiceDB, OpenFGA)*: the club has hundreds of members and few relationship kinds; an in-process model is sufficient.
+
+**Consequences:**
+
+- An authenticated request that asks an authorization question costs 1 + N(sources) queries; volume is bounded by club size.
+- Application code never reads authorities itself: it injects `AuthorizationEvaluator` (`CurrentUserData` carries no authorities). The ArchUnit rule fails the build otherwise.
+- A Spring `@PreAuthorize("hasAuthority(...)")` sees only grants over everything; anything that may be held over a target must go through `@HasAuthority` + `@TargetId` or the evaluator.
+- A new delegated authority needs `SPECIFIC` in its `grantForms`, a `RelationshipSource` producing its grants, and `x-klabis-target-id` on the operations it guards (`validate.mjs` requires a target of the matching type).
+- Tests install a fixed snapshot through `@WithKlabisMockUser(authorities = …, targetGrants = @TargetGrant(...))`; `@WebMvcTest`s need no database.
+- After a rollback to a version that reads the claim, users must log in again, because tokens issued by this version lack it.
+
+**References:** OpenSpec change `rebac-2-target-authorization` (`design.md` D1, D2, D4, D5), ADR-001, ADR-008.

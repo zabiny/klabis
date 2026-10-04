@@ -64,17 +64,19 @@ Onboarding pro vývojáře bez Spring/DDD znalostí. Žádný projektový kód �
 
 ### `06-security.html` — Bezpečnost
 - OAuth2 AS + RS přehled
-- JWT s vlastními claims (user_id, memberIdUuid, authorities, registrationNumber)
-- `KlabisJwtAuthenticationToken`
-- `Authority` enum (vč. Scope GLOBAL/CONTEXT_SPECIFIC)
-- `@HasAuthority` (method-level)
-- `@OwnerVisible` + `@OwnerId` (field-level)
+- JWT s vlastními claims (user_id, memberIdUuid, registrationNumber; uživatelský token bez authorities)
+- `KlabisJwtAuthenticationToken` (`getAuthorities()` ze snapshotu requestu)
+- `Authority` enum (`targetType` MEMBER/EVENT/NONE, `grantForms` ALL/SPECIFIC)
+- Snapshot oprávnění: `AuthorizationSnapshot`, `RequestScopedAuthorizationSnapshotProvider`, `RelationshipSource`, `TargetRef`
+- `AuthorizationEvaluator` + ArchUnit `AuthorizationArchitectureTest`
+- `@HasAuthority` (seznam) + `@TargetId` (method-level)
+- `@OwnerVisible`, `@ReadAuthority` (field-level)
 - `OwnershipResolver`
 - Pomocné komponenty: `AccountStatusValidationFilter`, `CorsConfiguration`, `FrontendProperties`, `PasswordEncoderConfiguration`
 - Custom AuthenticationEntryPoint
 - **OAuth2 customizace v `members`:** `KlabisAuthorizationServerCustomizer`, `KlabisUserDetailsService`, `MemberIdToUuidConverter`
 
-**Zdroj:** `backend/src/main/java/com/klabis/common/security/`, `common/security/fieldsecurity/`, `common/users/Authority.java`, `common/users/HasAuthority.java`, `members/infrastructure/authorizationserver/KlabisAuthorizationServerCustomizer.java`, `members/infrastructure/authorizationserver/KlabisUserDetailsService.java`, `members/infrastructure/authorizationserver/MemberIdToUuidConverter.java`
+**Zdroj:** `backend/src/main/java/com/klabis/common/security/`, `common/security/fieldsecurity/`, `common/authorization/`, `common/users/Authority.java`, `common/users/HasAuthority.java`, `members/infrastructure/authorizationserver/KlabisAuthorizationServerCustomizer.java`, `members/infrastructure/authorizationserver/KlabisUserDetailsService.java`, `members/infrastructure/authorizationserver/MemberIdToUuidConverter.java`
 
 ### `07-common.html` — Common — sdílené stavební bloky
 - `UserGroup` building block — kompozice, invariants

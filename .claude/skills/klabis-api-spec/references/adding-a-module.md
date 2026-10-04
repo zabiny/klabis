@@ -80,8 +80,9 @@ reference for how the existing ones are put together.
    tests will necessarily catch
    Authorization is not always an annotation. A controller may enforce it **imperatively** — a
    private `checkXxxAccess()` throwing `AccessDeniedException`, typically "owner OR MANAGE
-   authority". That is the `x-klabis-authority` + `x-klabis-owner-visible` pair; move it into the
-   spec and delete the helper. A helper that permits *only* the caller themselves, with no authority
+   authority". That is the `x-klabis-authority` + `x-klabis-owner-visible` pair (plus
+   `x-klabis-target-id: MEMBER` on the path parameter); move it into the spec and delete the helper.
+   A check that cannot be declared stays in the body but asks `AuthorizationEvaluator`. A helper that permits *only* the caller themselves, with no authority
    alternative, is `x-klabis-owner-visible` on its own — declaring it alone does not widen access
    (see that extension's section). Read each method body before concluding an endpoint is
    unprotected, because an imperative check is invisible both to reflection and to the drift check.
@@ -141,21 +142,19 @@ can break a passing unit test without any behaviour changing, and the failure lo
 link silently disappears.
 
 The cause is in `HalFormsSupport`: every `klabisLinkTo` / `klabisAfford*` guard reads
-`INSTANCE != null && !INSTANCE.isMethodAuthorized(...)`. `INSTANCE` is a static set by
-`@PostConstruct`, so in a plain unit test with no Spring context it is null and **authorization is
-skipped entirely**. Such a test passes without ever exercising the check. Once the target method
-carries `@HasAuthority` / `@OwnerVisible`, a leftover `INSTANCE` from another test class's context in
-the same fork activates the real check — and `isMethodAuthorized` returns `false` unless an
-`OwnershipResolver` is actually available, since the ownership branch falls through to `return false`
-when `ownershipResolverProvider.getIfAvailable()` is null.
-
-Symptom: the test passes standalone and fails when run after any `@SpringBootTest` in the same fork.
+`INSTANCE != null && !INSTANCE.isMethodAuthorized(...)`, and `isMethodAuthorized` asks
+`AuthorizationEvaluator.canInvoke`. `INSTANCE` is a static set by `@PostConstruct`, so in a plain unit
+test with no Spring context it is null and **authorization is skipped entirely** — such a test passes
+without ever exercising the check. `HalFormsSupportInstanceTestExecutionListener` (registered in the
+test `spring.factories`) binds `INSTANCE` to the running test's context and clears it afterwards, so a
+leftover instance from another context no longer leaks in; but a test that relied on the null
+instance still asserts nothing about authorization.
 
 Fix the test, not the assertion — and verify the production behaviour separately (the module's
 MockMvc controller test with `@WithKlabisMockUser` is the real evidence, since it exercises genuine
-authentication). Either wire a real `OwnershipResolver` into a `HalFormsSupport` and set `INSTANCE`
-for the test's duration (`AccountRootLinkProcessorTest` and `AccountMemberDetailLinkProcessorTest`
-do this, and must restore the previous value afterwards or they leak the same problem onward), or use
-the `@WebMvcTest` + `@Import(HalFormsSupport.class)` + `@WithKlabisMockUser` slice that
-`AffordanceAuthorizationTest` uses. Give the resolver the real UUID-comparison semantics; one that
-returns `true` unconditionally makes the test assert nothing.
+authentication and the real evaluator). For a hand-built postprocessor that asks the evaluator
+itself, pass `SecurityContextAuthorizationEvaluator.create()` (decides over the authentication in the
+`SecurityContextHolder`, no database — see `AccountLinkProcessorBranchesTest`). For affordance
+filtering, use the `@WebMvcTest` + `@Import(HalFormsSupport.class)` + `@WithKlabisMockUser` slice
+that `AffordanceAuthorizationTest` uses. A stub evaluator that allows everything makes the test
+assert nothing.
