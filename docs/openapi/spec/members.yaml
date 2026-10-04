@@ -263,7 +263,8 @@ paths:
               operation: listLegalGuardianGroupGuardians
               description: |
                 Legal guardians of a minor who belongs to a legal guardian group; present for callers with
-                MEMBERS:MANAGE and for the minor themself. Absent for adults and for minors without a group.
+                MEMBERS:MANAGE, for the minor themself and for holders of MEMBERS:EDIT_PROFILE over a minor
+                of the group (the minor's legal guardians). Absent for adults and for minors without a group.
             trainingGroup:
               description: Training group the member belongs to, when there is one
             ical-token:
@@ -590,8 +591,8 @@ paths:
       summary: List the guardians of a legal guardian group
       description: |
         Guardians of the group with their contacts; each item links to the guardian's member detail
-        (member) or non-member profile (legalGuardian). Requires MEMBERS:MANAGE or being a minor of the
-        group.
+        (member) or non-member profile (legalGuardian). Requires MEMBERS:MANAGE, being a minor of the
+        group, or holding MEMBERS:EDIT_PROFILE over a minor of the group.
       security:
         - KlabisAuth: [MEMBERS]
       x-spring-provide-args:

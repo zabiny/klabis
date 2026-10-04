@@ -589,7 +589,7 @@ class ManagementServiceTest {
             Member activeMember = MemberTestDataBuilder.aMember().withId(testMemberId).withActive(true).build();
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(activeMember));
 
-            Member result = testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), false);
+            Member result = testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), new MemberViewAccess(false, false));
 
             assertThat(result.isActive()).isTrue();
         }
@@ -600,7 +600,7 @@ class ManagementServiceTest {
             Member inactiveMember = MemberTestDataBuilder.aMember().withId(testMemberId).withActive(false).build();
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(inactiveMember));
 
-            assertThatThrownBy(() -> testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), false))
+            assertThatThrownBy(() -> testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), new MemberViewAccess(false, false)))
                     .isInstanceOf(MemberNotFoundException.class);
 
             verify(memberRepository, never()).save(any(Member.class));
@@ -612,7 +612,7 @@ class ManagementServiceTest {
             Member inactiveMember = MemberTestDataBuilder.aMember().withId(testMemberId).withActive(false).build();
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(inactiveMember));
 
-            Member result = testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), true);
+            Member result = testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), new MemberViewAccess(true, true));
 
             assertThat(result.isActive()).isFalse();
         }
@@ -622,7 +622,7 @@ class ManagementServiceTest {
         void shouldThrowWhenMemberNotFound() {
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), false))
+            assertThatThrownBy(() -> testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), new MemberViewAccess(false, false)))
                     .isInstanceOf(MemberNotFoundException.class);
         }
 
@@ -636,9 +636,55 @@ class ManagementServiceTest {
                     .build();
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(memberWithBirthNumber));
 
-            testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), true);
+            testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), new MemberViewAccess(true, true));
 
             verify(eventPublisher).publishEvent(any(BirthNumberAccessedEvent.class));
+        }
+
+        @Test
+        @DisplayName("should return inactive member for a holder of profile editing over it")
+        void shouldReturnInactiveMemberWhenSuspendedMembersAreVisible() {
+            Member inactiveMember = MemberTestDataBuilder.aMember().withId(testMemberId).withActive(false).build();
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(inactiveMember));
+
+            Member result = testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId),
+                    new MemberViewAccess(true, true));
+
+            assertThat(result.isActive()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should publish BirthNumberAccessedEvent for a viewer who sees the birth number without managing members")
+        void shouldPublishBirthNumberAccessedEventForHolderOfProfileEditing() {
+            Member memberWithBirthNumber = MemberTestDataBuilder.aMember()
+                    .withId(testMemberId)
+                    .withNationality("CZ")
+                    .withBirthNumber("900101/1234")
+                    .build();
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(memberWithBirthNumber));
+
+            testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId),
+                    new MemberViewAccess(true, true));
+
+            ArgumentCaptor<BirthNumberAccessedEvent> event = ArgumentCaptor.forClass(BirthNumberAccessedEvent.class);
+            verify(eventPublisher).publishEvent(event.capture());
+            assertThat(event.getValue().memberId()).isEqualTo(new MemberId(testMemberId));
+        }
+
+        @Test
+        @DisplayName("should not publish BirthNumberAccessedEvent when the viewer does not see the birth number")
+        void shouldNotPublishEventWhenBirthNumberIsNotVisible() {
+            Member memberWithBirthNumber = MemberTestDataBuilder.aMember()
+                    .withId(testMemberId)
+                    .withNationality("CZ")
+                    .withBirthNumber("900101/1234")
+                    .build();
+            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(memberWithBirthNumber));
+
+            testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId),
+                    new MemberViewAccess(false, false));
+
+            verify(eventPublisher, never()).publishEvent(any(BirthNumberAccessedEvent.class));
         }
 
         @Test
@@ -650,7 +696,7 @@ class ManagementServiceTest {
                     .build();
             when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(memberWithoutBirthNumber));
 
-            testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), true);
+            testedSubject.getMemberAndRecordView(new MemberId(testMemberId), new UserId(viewerUserId), new MemberViewAccess(true, true));
 
             verify(eventPublisher, never()).publishEvent(any(BirthNumberAccessedEvent.class));
         }

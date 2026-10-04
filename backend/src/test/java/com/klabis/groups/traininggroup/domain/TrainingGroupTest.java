@@ -26,6 +26,20 @@ class TrainingGroupTest {
     private static final MemberId REGULAR_MEMBER = new MemberId(UUID.fromString("44444444-4444-4444-4444-444444444444"));
 
     @Nested
+    @DisplayName("TrainingGroup.delegatedAuthorities()")
+    class DelegatedAuthorities {
+
+        @Test
+        @DisplayName("should delegate nothing to trainers")
+        void shouldDelegateNothing() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Junior Sprint", TRAINER, new AgeRange(10, 18)));
+
+            assertThat(group.delegatedAuthorities()).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("TrainingGroup.create()")
     class CreateMethod {
 

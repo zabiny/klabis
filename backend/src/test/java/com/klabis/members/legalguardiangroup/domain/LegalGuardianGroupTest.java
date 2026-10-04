@@ -2,6 +2,7 @@ package com.klabis.members.legalguardiangroup.domain;
 
 import com.klabis.common.groups.domain.MemberAlreadyInGroupException;
 import com.klabis.common.groups.domain.MemberNotInGroupException;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +41,19 @@ class LegalGuardianGroupTest {
             group.addMinor(minors[i]);
         }
         return group;
+    }
+
+    @Nested
+    @DisplayName("delegatedAuthorities()")
+    class DelegatedAuthorities {
+
+        @Test
+        @DisplayName("guardians always hold profile editing over the minors")
+        void delegatesProfileEditing() {
+            LegalGuardianGroup group = LegalGuardianGroup.create(Set.of(NOVAK), MINOR_A);
+
+            assertThat(group.delegatedAuthorities()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
+        }
     }
 
     @Nested

@@ -1,6 +1,7 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
@@ -14,6 +15,7 @@ import com.klabis.members.application.MemberAccountActivationPort;
 import com.klabis.members.application.MemberCompletenessPort;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberDiscoveryPort;
+import com.klabis.members.application.MemberViewAccess;
 import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
@@ -254,8 +256,7 @@ public class MemberController implements MembersApi {
             @ActingUser CurrentUserData currentUser) {
 
         MemberId memberId = new MemberId(id);
-        Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
-                authorizationEvaluator.has(Authority.MEMBERS_MANAGE));
+        Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(), viewAccessTo(memberId));
 
         boolean isEnrolled = synchronizationPort.findByTarget(targetFor(memberId)).isPresent();
         Set<String> enrolledIds = isEnrolled ? Set.of(memberId.uuid().toString()) : Set.of();
@@ -269,6 +270,14 @@ public class MemberController implements MembersApi {
         return ResponseEntity.ok(MemberDetailsResponseBuilder.builder(response)
                 .missingData(liveMissingData(member, guardianGroup))
                 .build());
+    }
+
+    // The birth number rule is asked of the response field itself so the audit can never disagree with what is serialized.
+    private MemberViewAccess viewAccessTo(MemberId memberId) {
+        TargetRef member = TargetRef.member(memberId.uuid());
+        return new MemberViewAccess(
+                authorizationEvaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_EDIT_PROFILE), member, false),
+                authorizationEvaluator.canReadField(MemberDetailsResponse.class, "birthNumber", member));
     }
 
     // The detail is computed live (the guardians' contacts may have changed since the member was last saved),

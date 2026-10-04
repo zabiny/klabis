@@ -1,6 +1,7 @@
 package com.klabis.common.groups.domain;
 
 import com.klabis.common.domain.KlabisAggregateRoot;
+import com.klabis.common.users.Authority;
 import org.springframework.util.Assert;
 
 import java.util.Collections;
@@ -43,6 +44,12 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID, M>, ID, M> extend
                 .map(GroupMembership::memberId)
                 .collect(Collectors.toCollection(HashSet::new));
     }
+
+    /**
+     * What the owners of this group hold over each member of it; only authorities that may be held over
+     * specific members can be delegated.
+     */
+    public abstract Set<Authority> delegatedAuthorities();
 
     public void rename(String newName) {
         Assert.hasText(newName, "Group name is required");

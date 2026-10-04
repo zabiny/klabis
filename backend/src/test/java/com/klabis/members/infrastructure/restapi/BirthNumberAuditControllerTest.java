@@ -7,6 +7,7 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.ManagementPort;
+import com.klabis.members.application.MemberViewAccess;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.Member;
@@ -75,13 +76,13 @@ class BirthNumberAuditControllerTest {
                     .withBirthNumber(BirthNumber.of("900101/1234"))
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(member);
 
             mockMvc.perform(get("/api/members/{id}", memberId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
 
-            verify(managementService).getMemberAndRecordView(eq(new MemberId(memberId)), any(UserId.class), anyBoolean());
+            verify(managementService).getMemberAndRecordView(eq(new MemberId(memberId)), any(UserId.class), any(MemberViewAccess.class));
         }
     }
 

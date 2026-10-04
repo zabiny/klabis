@@ -134,7 +134,7 @@ class MemberControllerApiTest {
                     .withNationality("CZ")
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(member.getId()))
                     .andDo(MockMvcResultHandlers.print())
@@ -163,7 +163,7 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ})
         void shouldReturn404WhenMemberNotFound() throws Exception {
             UUID nonExistentId = UUID.randomUUID();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenThrow(new MemberNotFoundException(new MemberId(nonExistentId)));
 
             mockMvc.perform(getMemberById(nonExistentId))
@@ -178,7 +178,7 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn403WhenUnauthorized() throws Exception {
             UUID memberId = UUID.randomUUID();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(MemberTestDataBuilder.aMemberWithId(memberId).build());
 
             mockMvc.perform(getMemberById(memberId))
@@ -203,7 +203,7 @@ class MemberControllerApiTest {
                     .withActive(false)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -219,7 +219,7 @@ class MemberControllerApiTest {
                     .withActive(false)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -235,7 +235,7 @@ class MemberControllerApiTest {
                     .withAddress(new Address("Main Street 123", "Bratislava", "81101", "SK"))
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -268,7 +268,7 @@ class MemberControllerApiTest {
                     .withEmail(email)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -288,7 +288,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
@@ -306,7 +306,7 @@ class MemberControllerApiTest {
                     .withActive(false)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
@@ -324,7 +324,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -346,7 +346,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -369,7 +369,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -388,7 +388,7 @@ class MemberControllerApiTest {
                     .withActive(false)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -415,7 +415,7 @@ class MemberControllerApiTest {
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
@@ -437,7 +437,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
                     .build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             var result = mockMvc.perform(getMemberById(memberId)).andExpect(status().isOk());
 
@@ -458,7 +458,7 @@ class MemberControllerApiTest {
         void adminTemplateShouldKeepReservedFieldsEditable() throws Exception {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).withActive(true).build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -479,7 +479,7 @@ class MemberControllerApiTest {
                     .withDateOfBirth(LocalDate.of(1990, 1, 1))
                     .withDietaryRestrictions("vegan")
                     .build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -503,7 +503,7 @@ class MemberControllerApiTest {
                     .withDateOfBirth(LocalDate.now().minusYears(15))
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -522,7 +522,7 @@ class MemberControllerApiTest {
                     .withDateOfBirth(LocalDate.now().minusYears(18))
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -539,7 +539,7 @@ class MemberControllerApiTest {
                     .withDateOfBirth(LocalDate.now().minusYears(15))
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -555,7 +555,7 @@ class MemberControllerApiTest {
                     .withActive(true)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andDo(MockMvcResultHandlers.print())
@@ -568,7 +568,7 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void nonAdminUserGets404ForInactiveMember() throws Exception {
             UUID memberId = UUID.randomUUID();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), eq(false)))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), eq(new MemberViewAccess(false, false))))
                     .thenThrow(new MemberNotFoundException(new MemberId(memberId)));
 
             mockMvc.perform(get("/api/members/{id}", memberId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -581,7 +581,7 @@ class MemberControllerApiTest {
         void adminUserCanAccessInactiveMember() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member inactiveMember = MemberTestDataBuilder.aMemberWithId(memberId).withActive(false).build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), eq(true)))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), eq(new MemberViewAccess(true, true))))
                     .thenReturn(inactiveMember);
 
             mockMvc.perform(get("/api/members/{id}", memberId).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -596,7 +596,7 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             UUID groupId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(member);
             com.klabis.groups.traininggroup.domain.TrainingGroup mockTrainingGroup =
                     Mockito.mock(com.klabis.groups.traininggroup.domain.TrainingGroup.class);
@@ -621,7 +621,7 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             UUID groupId = UUID.fromString("11111111-2222-3333-4444-555555555555");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(member);
             when(trainingGroupManagementPort.findTrainingGroupOfMember(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
@@ -645,7 +645,7 @@ class MemberControllerApiTest {
         void shouldNotIncludeGroupLinksWhenMemberBelongsToNoGroups() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(member);
             when(trainingGroupManagementPort.findTrainingGroupOfMember(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
@@ -664,7 +664,7 @@ class MemberControllerApiTest {
         void ownProfileShouldIncludeIcalTokenLink() throws Exception {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).withActive(true).build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(member);
             when(trainingGroupManagementPort.findTrainingGroupOfMember(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
@@ -682,7 +682,7 @@ class MemberControllerApiTest {
         void otherMemberProfileShouldNotIncludeIcalTokenLink() throws Exception {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).withActive(true).build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(member);
             when(trainingGroupManagementPort.findTrainingGroupOfMember(any(MemberId.class)))
                     .thenReturn(java.util.Optional.empty());
@@ -704,8 +704,8 @@ class MemberControllerApiTest {
                     .withDateOfBirth(LocalDate.now().minusYears(10)).build();
             Member adult = MemberTestDataBuilder.aMemberWithId(adultId)
                     .withDateOfBirth(LocalDate.of(1990, 1, 1)).build();
-            when(managementService.getMemberAndRecordView(eq(new MemberId(minorId)), any(UserId.class), anyBoolean())).thenReturn(minor);
-            when(managementService.getMemberAndRecordView(eq(new MemberId(adultId)), any(UserId.class), anyBoolean())).thenReturn(adult);
+            when(managementService.getMemberAndRecordView(eq(new MemberId(minorId)), any(UserId.class), any(MemberViewAccess.class))).thenReturn(minor);
+            when(managementService.getMemberAndRecordView(eq(new MemberId(adultId)), any(UserId.class), any(MemberViewAccess.class))).thenReturn(adult);
 
             mockMvc.perform(getMemberById(minorId))
                     .andExpect(status().isOk())
@@ -725,8 +725,8 @@ class MemberControllerApiTest {
                     .withDateOfBirth(LocalDate.now().minusYears(10)).build();
             Member unavailable = MemberTestDataBuilder.aMemberWithId(unavailableId)
                     .withDateOfBirth(LocalDate.now().minusYears(10)).build();
-            when(managementService.getMemberAndRecordView(eq(new MemberId(availableId)), any(UserId.class), anyBoolean())).thenReturn(available);
-            when(managementService.getMemberAndRecordView(eq(new MemberId(unavailableId)), any(UserId.class), anyBoolean())).thenReturn(unavailable);
+            when(managementService.getMemberAndRecordView(eq(new MemberId(availableId)), any(UserId.class), any(MemberViewAccess.class))).thenReturn(available);
+            when(managementService.getMemberAndRecordView(eq(new MemberId(unavailableId)), any(UserId.class), any(MemberViewAccess.class))).thenReturn(unavailable);
             when(accountActivationPort.isAvailableFor(available)).thenReturn(true);
             when(accountActivationPort.isAvailableFor(unavailable)).thenReturn(false);
 
@@ -747,7 +747,7 @@ class MemberControllerApiTest {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
                     .withDateOfBirth(LocalDate.now().minusYears(10)).build();
-            when(managementService.getMemberAndRecordView(eq(new MemberId(memberId)), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(eq(new MemberId(memberId)), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
             when(accountActivationPort.isAvailableFor(member)).thenReturn(true);
 
             mockMvc.perform(getMemberById(memberId))
@@ -765,7 +765,7 @@ class MemberControllerApiTest {
                     .withAddress(null)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
             when(memberCompletenessPort.missingData(eq(member), any())).thenReturn(java.util.Set.of(com.klabis.members.domain.MissingDataItem.ADDRESS));
 
             mockMvc.perform(getMemberById(memberId))
@@ -784,7 +784,7 @@ class MemberControllerApiTest {
                     .withPhone((PhoneNumber) null)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
             when(memberCompletenessPort.missingData(eq(member), any())).thenReturn(java.util.Set.of(com.klabis.members.domain.MissingDataItem.PHONE));
 
             mockMvc.perform(getMemberById(memberId))
@@ -803,7 +803,7 @@ class MemberControllerApiTest {
                     .withPhone((PhoneNumber) null)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -820,7 +820,7 @@ class MemberControllerApiTest {
                     .withPhone((PhoneNumber) null)
                     .build();
 
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
@@ -833,7 +833,7 @@ class MemberControllerApiTest {
         void shouldIncludeSyncLinkForOrisLinkedMember() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(member);
             SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), targetFor(new MemberId(memberId)),
                     new ExternalReference(ExternalSystem.ORIS, "100"));
@@ -850,7 +850,7 @@ class MemberControllerApiTest {
         void shouldNotIncludeSyncLinkForHandRegisteredMember() throws Exception {
             UUID memberId = UUID.randomUUID();
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(member);
 
             mockMvc.perform(getMemberById(memberId))
@@ -2721,7 +2721,7 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = "ZBM0102", authorities = {})
         void shouldReturn403WhenGettingMemberWithoutReadAuthority() throws Exception {
             UUID memberId = UUID.randomUUID();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(MemberTestDataBuilder.aMemberWithId(memberId).build());
 
             mockMvc.perform(get("/api/members/" + memberId).contentType("application/json"))
@@ -2735,7 +2735,7 @@ class MemberControllerApiTest {
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
         void shouldPassAuthorizationWhenGettingMemberWithReadAuthority() throws Exception {
             UUID memberId = UUID.randomUUID();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenThrow(new MemberNotFoundException(new MemberId(memberId)));
 
             mockMvc.perform(get("/api/members/" + memberId).contentType("application/json"))
@@ -2859,7 +2859,7 @@ class MemberControllerApiTest {
 
         private void givenMember(LocalDate dateOfBirth, LegalGuardianGroup group) {
             Member member = MemberTestDataBuilder.aMemberWithId(CHILD.uuid()).withDateOfBirth(dateOfBirth).build();
-            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(member);
             when(legalGuardianGroupPort.findGroupOf(any(MemberId.class))).thenReturn(Optional.ofNullable(group));
         }

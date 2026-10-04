@@ -4,6 +4,7 @@ import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.MemberGroup;
+import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.FreeGroupInvitationCancelledEvent;
 import com.klabis.members.MemberId;
@@ -52,6 +53,11 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         FreeGroup group = new FreeGroup(id, name, owners, members, invitations);
         group.updateAuditMetadata(auditMetadata);
         return group;
+    }
+
+    @Override
+    public Set<Authority> delegatedAuthorities() {
+        return Set.of();
     }
 
     @Override

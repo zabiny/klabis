@@ -7,6 +7,7 @@ import com.klabis.finance.domain.Money;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.ManagementPort;
+import com.klabis.members.application.MemberViewAccess;
 import com.klabis.common.users.UserId;
 import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
@@ -259,7 +260,7 @@ class MemberFeeSummaryControllerTest {
 
         @BeforeEach
         void stubMember() {
-            when(memberManagementPort.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean()))
+            when(memberManagementPort.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(MemberTestDataBuilder.aMemberWithId(MEMBER_UUID).build());
         }
 
