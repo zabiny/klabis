@@ -151,7 +151,7 @@ public interface RegistrationPort {
         <tr><td><code>common.validation</code></td><td>@ValidOptionalSize</td><td><a href="05-rest-api.html">05</a></td></tr>
         <tr><td><code>common.mvc</code></td><td>MvcExceptionHandler, MvcComponent</td><td><a href="05-rest-api.html">05</a></td></tr>
         <tr><td>members (ActingUser/ActingMember)</td><td>@ActingUser, @ActingMember, CurrentUserData, CurrentUserArgumentResolver</td><td><a href="05-rest-api.html">05</a></td></tr>
-        <tr><td><code>common.security</code>, <code>common.security.fieldsecurity</code></td><td>SecurityConfiguration, OwnerVisible, OwnerId, KlabisJwtAuthenticationToken, Authority</td><td><a href="06-security.html">06</a></td></tr>
+        <tr><td><code>common.security</code>, <code>common.security.fieldsecurity</code>, <code>common.authorization</code></td><td>SecurityConfiguration, KlabisJwtAuthenticationToken, OwnerVisible, ReadAuthority, AuthorizationEvaluator, AuthorizationSnapshot, RelationshipSource, TargetId</td><td><a href="06-security.html">06</a></td></tr>
         <tr><td>members (OAuth2 přizpůsobení)</td><td>KlabisAuthorizationServerCustomizer, KlabisUserDetailsService, MemberIdToUuidConverter</td><td><a href="06-security.html">06</a></td></tr>
         <tr><td><code>common.usergroup</code></td><td>UserGroup, GroupMembership, Invitation</td><td><a href="07-common.html">07</a></td></tr>
         <tr><td><code>common.email</code>, <code>common.templating</code></td><td>EmailService, TemplateRenderer</td><td><a href="07-common.html">07</a></td></tr>

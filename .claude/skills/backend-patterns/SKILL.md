@@ -1,8 +1,8 @@
 ---
 name: backend-patterns
-description: This skill should be used when implementing, modifying or fixing any backend Java code in the Klabis project — e.g. "add an aggregate", "new REST endpoint", "implement the generated *Api interface", "add a postprocessor / affordance / HAL-FORMS options", "PATCH endpoint with JsonNullable", "map DTO to domain", "add a memento / repository adapter", "publish or listen to a domain event", "hide a field for non-admins", "write a @WebMvcTest", "add a sync adapter", or "create a new module". It is the authoritative source for Klabis-specific backend structure (HalResponseContext, klabisAfford, ConversionService converters, @OwnerVisible/@HasAuthority, memento pattern).
+description: This skill should be used when implementing, modifying or fixing any backend Java code in the Klabis project — e.g. "add an aggregate", "new REST endpoint", "implement the generated *Api interface", "add a postprocessor / affordance / HAL-FORMS options", "PATCH endpoint with JsonNullable", "map DTO to domain", "add a memento / repository adapter", "publish or listen to a domain event", "hide a field for non-admins", "write a @WebMvcTest", "add a sync adapter", or "create a new module". It is the authoritative source for Klabis-specific backend structure (HalResponseContext, klabisAfford, ConversionService converters, @HasAuthority/@TargetId/@OwnerVisible and AuthorizationEvaluator, memento pattern).
 user-invocable: false
-version: 0.13.0
+version: 0.14.0
 ---
 
 # Klabis Backend Patterns
@@ -23,7 +23,8 @@ The layer being changed decides what to load. Read the matching file **before** 
 | DTO↔domain `Converter`s, `ConversionService`, Jackson 3 annotations | `references/dto-mapping.md` |
 | Mementos, repository adapters, Spring Data repositories | `references/jdbc-adapter.md` |
 | Publishing or consuming domain events, cross-module listeners | `references/domain-events.md` |
-| Hiding/masking response fields, authorizing PATCH request fields | `references/field-security.md` |
+| Who may do what: `@HasAuthority`/`@TargetId`, `AuthorizationEvaluator`, imperative checks, `RelationshipSource` | `references/authorization.md` |
+| Hiding/masking response fields, authorizing PATCH request fields, `@ReadAuthority` | `references/field-security.md` |
 | Adding a whole new aggregate end-to-end | `references/aggregate-checklist.md` (walks every layer in order) |
 | Plugging a new entity into the `sync` engine (`SynchronizationAdapter`, projections) | `references/synchronization-adapter.md` |
 | Writing tests for any of the above | `references/testing-guide.md` |

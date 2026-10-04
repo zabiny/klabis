@@ -211,7 +211,8 @@ public @interface WithKlabisMockUser {
     String userId() default "";      // Random UUID if blank
     String memberId() default "";    // Blank = user without member record
     String username() default "";    // Default "ZBM8001"
-    Authority[] authorities() default {};
+    Authority[] authorities() default {};      // grants over everything
+    TargetGrant[] targetGrants() default {};   // grants over specific targets
 }
 ```
 
@@ -224,7 +225,14 @@ void adminCanReadMembers() { }
 @Test
 @WithKlabisMockUser(memberId = "uuid", username = "ZBM0101")
 void memberCanUpdateOwnProfile() { }
+
+@Test
+@WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+        type = TargetType.MEMBER, ids = {"<member uuid>"}))
+void delegateCanActForThatMemberOnly() { }
 ```
+
+The annotation attaches a fixed `AuthorizationSnapshot` to the authentication, so `@WebMvcTest`s never touch the permission tables. A `targetGrants` authority must be one with `GrantForm.SPECIFIC` in a real deployment — the test snapshot does not filter. See `authorization.md`.
 
 Never use `@WithMockUser` — it creates a generic principal incompatible with `KlabisJwtAuthenticationToken`.
 

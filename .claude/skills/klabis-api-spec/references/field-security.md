@@ -2,23 +2,27 @@
 
 Per-field visibility on response DTOs, per-field write authorization on request DTOs, and
 per-operation endpoint authorization. These extensions are what the generator turns into
-`@HasAuthority` / `@OwnerVisible` annotations — see the `backend-patterns` skill for how the
-backend then enforces them.
+`@HasAuthority` / `@TargetId` / `@OwnerVisible` / `@ReadAuthority` annotations — see the
+`backend-patterns` skill (`authorization.md`, `field-security.md`) for how `AuthorizationEvaluator`
+then enforces them, and ADR-010 for the model (an authority held over everything or over specific
+targets).
 
 # `x-klabis-*` — field-level security
 
 On schema properties. Each maps to exactly one existing Java annotation.
 
 (`x-klabis-authority` and `x-klabis-owner-visible` also work one level up, on an operation, and
-`x-klabis-owner-id` also works on a path parameter — see
-[endpoint authorization](#x-klabis-authority-on-an-operation--endpoint-authorization) below. The
-remaining one is property-only and the bundler rejects it on an operation.)
+`x-klabis-target-id` also works on a path parameter — see
+[endpoint authorization](#x-klabis-authority-on-an-operation--endpoint-authorization) below.
+`x-klabis-read-authority` and `x-klabis-halforms-access` are property-only and the bundler rejects
+them on an operation.)
 
 | extension | value | generates | semantics |
 |---|---|---|---|
-| `x-klabis-owner-id` | `true` | `@OwnerId` | Marks the field — or, on an operation's path parameter, the parameter — holding the owner's ID, used to evaluate `x-klabis-owner-visible`. On a property without it, the single UUID-convertible field is used. |
-| `x-klabis-owner-visible` | `true` | `@OwnerVisible` | Visible/permitted to the owner even without the authority (OR semantics with `x-klabis-authority`; **alone = owner-only**). |
-| `x-klabis-authority` | e.g. `MEMBERS_MANAGE` | `@HasAuthority(Authority.MEMBERS_MANAGE)` | Requires the authority. Must be a constant of `Authority.java`. |
+| `x-klabis-target-id` | `MEMBER` \| `EVENT` | `@TargetId(TargetType.MEMBER)` | Marks the field — or, on an operation's path parameter, the parameter — identifying the target the record/operation is about. Authorities may then be held over just that target, and `x-klabis-owner-visible` compares it with the caller. On a record without it, the single UUID-convertible field is taken as a member target for owner-visible fields. |
+| `x-klabis-owner-visible` | `true` | `@OwnerVisible` | Visible/permitted when the target is the caller, even without the authority (OR semantics with `x-klabis-authority`; **alone = owner-only**). |
+| `x-klabis-authority` | `MEMBERS_MANAGE` or `[MEMBERS_MANAGE, EVENTS_MANAGE]` | `@HasAuthority({Authority.MEMBERS_MANAGE, …})` | Any one of the listed authorities suffices — held over everything, or over the target when there is one. Each must be a constant of `Authority.java`. |
+| `x-klabis-read-authority` | e.g. `[MEMBERS_READ]` | `@ReadAuthority({Authority.MEMBERS_READ})` | **Request schemas only.** A user holding one of these but not allowed to change the field sees it `readOnly` in the HAL-FORMS template instead of not at all. |
 | `x-klabis-halforms-access` | `READ_ONLY` \| `NONE` \| `READ_WRITE` \| `DEFAULT` | `@HalForms(access = …)` | Controls `readOnly` in HAL+FORMS `_templates`. |
 
 ```yaml
@@ -28,17 +32,19 @@ MemberDetailsResponse:
     id:
       type: string
       format: uuid
-      x-klabis-owner-id: true
+      x-klabis-target-id: MEMBER
     dateOfBirth:
       type: string
       format: date
       x-klabis-authority: MEMBERS_MANAGE
-      x-klabis-owner-visible: true   # admins OR the member themselves
+      x-klabis-owner-visible: true   # MEMBERS_MANAGE holders OR the member themselves
 ```
 
-Enforcement lives in `FieldSecurityBeanSerializerModifier`, which works **only on records** and reads
-annotations off the accessor method. A denied field is omitted or masked per
-`@HandleAuthorizationDenied`.
+`x-klabis-owner-id: true` no longer exists — `validate.mjs` rejects it; use `x-klabis-target-id: MEMBER`.
+
+Enforcement lives in `FieldSecurityBeanSerializerModifier`, which works **only on records**; the
+decision for each annotated accessor is made by `AuthorizationEvaluator`. A denied field is omitted
+or masked per `@HandleAuthorizationDenied`.
 
 # `x-klabis-authority` on an operation — endpoint authorization
 
@@ -50,8 +56,12 @@ paths:
   /api/members/{id}:
     get:
       operationId: getMember
-      x-klabis-authority: MEMBERS_READ    # -> @HasAuthority(Authority.MEMBERS_READ) on MembersApi.getMember
+      x-klabis-authority: MEMBERS_READ    # -> @HasAuthority({Authority.MEMBERS_READ}) on MembersApi.getMember
 ```
+
+A list means "any of": `x-klabis-authority: [MEMBERS_MANAGE, EVENTS_REGISTRATIONS]` generates
+`@HasAuthority({Authority.MEMBERS_MANAGE, Authority.EVENTS_REGISTRATIONS})`. The same affordance and
+enforcement code evaluates it, so a HAL template is offered exactly when the call would pass.
 
 The overridden `api.mustache` reads this key directly and emits the annotation above the method —
 the same way `pojo.mustache` reads it off a schema property. Nothing rewrites it, so the published
@@ -64,13 +74,17 @@ This relies on `MethodSecurityAnnotations`, which resolves security annotations 
 boundary — Java does not inherit method annotations from an interface, so without it the generated
 annotation would compile and silently enforce nothing.
 
-## `x-klabis-owner-visible` on an operation — ownership authorization
+## `x-klabis-target-id` and `x-klabis-owner-visible` on an operation
 
-`@OwnerVisible` and `@OwnerId` are a pair: `HasAuthorityMethodInterceptor.checkOwnership()` scans the
-method's parameters for the one carrying `@OwnerId` to know whose ownership to check.
-`@OwnerVisible` on a method without a matching `@OwnerId` parameter enforces nothing — it denies
-rather than resolving ownership, silently dropping the owner-or-authority semantics the endpoint
-advertises. The two halves are declared on two different nodes:
+`@TargetId` tells `AuthorizationEvaluator.canInvoke` which argument is the target. Two things need it:
+
+- `@OwnerVisible` — it compares the target with the caller; without a `@TargetId` parameter it
+  denies rather than resolving ownership, silently dropping the owner-or-authority semantics the
+  endpoint advertises.
+- an authority that may be held over specific targets (`GrantForm.SPECIFIC` in `Authority.java`) —
+  without a target only grants over everything count, so a delegate would be refused.
+
+The halves are declared on two different nodes:
 
 ```yaml
 paths:
@@ -88,34 +102,35 @@ components:
       name: id
       in: path
       required: true
-      x-klabis-owner-id: true            # -> @OwnerId on the parameter
+      x-klabis-target-id: MEMBER         # -> @TargetId(TargetType.MEMBER) on the parameter
 ```
 
-`api.mustache` emits `@OwnerVisible`, `pathParams.mustache` emits `@OwnerId`, and neither can see
-the other — so **`validate.mjs` is the only thing keeping the pair together.** It requires an
-operation declaring `x-klabis-owner-visible` to have exactly one parameter marked
-`x-klabis-owner-id` (zero denies; two would silently resolve against whichever came first).
+`api.mustache` emits `@HasAuthority`/`@OwnerVisible`, `pathParams.mustache` emits `@TargetId`, and
+neither can see the other — so **`validate.mjs` is the only thing keeping them together.** It requires:
 
-**`x-klabis-owner-id` may sit on a `$ref` parameter shared with operations that never opt into
-ownership.** `MemberIdParam` is used by `getMember`, `updateMember`, `suspendMember` and
-`resumeMember`, but only `updateMember` declares `x-klabis-owner-visible`; the other three get an
-inert `@OwnerId`. That is harmless because nothing reads `@OwnerId` on its own — both
-`checkOwnership()` and `RequestBodyFieldAuthorizationAdvice` only consult it for a method or field
-already marked `@OwnerVisible`. `@OwnerId` on a parameter is only allowed on a **path** parameter —
-`pathParams.mustache` is the only parameter template with a branch for it, so anywhere else the key
-would be silently dropped. `validate.mjs` rejects that too, along with an owner-id parameter that
-`x-spring-paginated` would fold into `Pageable` (`page`/`size`/`sort` are query parameters, so the
-same check covers them).
+- an operation declaring `x-klabis-owner-visible` to have exactly one `x-klabis-target-id` parameter
+  (zero denies; two would silently resolve against whichever came first);
+- an operation listing an authority with `SPECIFIC` to have exactly one `x-klabis-target-id`
+  parameter whose type equals that authority's `targetType`. `ALL`-only authorities are
+  target-agnostic and need none.
 
-Combined with `x-klabis-authority`, this reproduces the OR semantics used everywhere else in the
-codebase (MANAGE authority OR ownership) — see `FieldLevelAuthorizationTest` /
-`MemberControllerApiTest` for the enforcement tests.
+**`x-klabis-target-id` may sit on a `$ref` parameter shared with operations that need no target.**
+`MemberIdParam` is used by `getMember`, `updateMember`, `suspendMember` and `resumeMember`, but only
+`updateMember` declares `x-klabis-owner-visible`; on the others the `@TargetId` is inert while their
+authorities are `ALL`-only (a grant over everything passes regardless of the target). It is only
+allowed on a **path** parameter — `pathParams.mustache` is the only parameter template with a branch
+for it, so anywhere else the key would be silently dropped. `validate.mjs` rejects that too, along
+with a target-id parameter that `x-spring-paginated` would fold into `Pageable` (`page`/`size`/`sort`
+are query parameters, so the same check covers them), and `x-klabis-target-id` on an operation itself.
+
+Combined with `x-klabis-authority`, owner-visible reproduces the OR semantics used everywhere else in
+the codebase (MANAGE authority OR ownership) — see `FieldLevelAuthorizationTest` /
+`HasAuthorityMethodInterceptorTargetTest` for the enforcement tests.
 
 **Declared alone, it means owner-only.** The OR is with whatever authority is declared, so with none
-declared there is nothing to OR against: `HasAuthorityMethodInterceptor.invoke()` computes
-`authorityGranted` as `requiredAuthority != null && hasAuthority(...)`, leaving ownership the sole
-path to `proceed()`. A lone `x-klabis-owner-visible` therefore *narrows* access to the owner rather
-than widening it, and is the right way to model "only the member themselves, no MANAGE alternative"
+declared there is nothing to OR against: `AuthorizationEvaluator.isAllowed` finds no authority in
+an empty list, leaving ownership the sole path to `proceed()`. A lone `x-klabis-owner-visible`
+therefore *narrows* access to the owner rather than widening it, and is the right way to model "only the member themselves, no MANAGE alternative"
 — `MemberFeeChoice`'s and `MemberFeeSummary`'s 5 operations use exactly this. Do not reach for an
 imperative controller check for that case.
 
