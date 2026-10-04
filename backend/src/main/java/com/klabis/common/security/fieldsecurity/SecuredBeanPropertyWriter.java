@@ -4,16 +4,14 @@ import tools.jackson.core.JsonGenerator;
 import tools.jackson.databind.PropertyName;
 import tools.jackson.databind.ser.BeanPropertyWriter;
 import tools.jackson.databind.util.NameTransformer;
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.users.HasAuthority;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import tools.jackson.databind.SerializationContext;
 
 import java.lang.reflect.Method;
+import java.util.function.Supplier;
 
 /**
  * Wraps a {@link BeanPropertyWriter} to evaluate security annotations ({@link PreAuthorize},
@@ -21,8 +19,8 @@ import java.lang.reflect.Method;
  * denied the field is either masked or skipped entirely, depending on the
  * {@link HandleAuthorizationDenied} configuration resolved from the record component or class level.
  * <p>
- * Authorization logic uses OR semantics: a field is visible if the authority check passes
- * OR the ownership check passes (when {@link OwnerVisible} is present).
+ * The decision is made by {@link AuthorizationEvaluator#canReadField}, so it is the same one that guards the
+ * request fields and the HAL-FORMS properties.
  * <p>
  * Overrides {@link #_new(PropertyName)} and {@link #unwrappingWriter(NameTransformer)} rather than
  * relying on the {@link BeanPropertyWriter} base implementations. Jackson calls these when a
@@ -44,35 +42,21 @@ import java.lang.reflect.Method;
  */
 class SecuredBeanPropertyWriter extends BeanPropertyWriter {
 
-    private static final Logger log = LoggerFactory.getLogger(SecuredBeanPropertyWriter.class);
-
     private final BeanPropertyWriter delegate;
-    private final PreAuthorize preAuthorize;
-    private final HasAuthority hasAuthority;
-    private final HandleAuthorizationDenied deniedHandler;
     private final Method accessorMethod;
-    private final boolean ownerVisible;
-    private final Method ownerIdAccessor;
-    private final OwnershipResolver ownershipResolver;
+    private final HandleAuthorizationDenied deniedHandler;
+    private final Supplier<AuthorizationEvaluator> evaluator;
 
     SecuredBeanPropertyWriter(
             BeanPropertyWriter delegate,
-            PreAuthorize preAuthorize,
-            HasAuthority hasAuthority,
-            HandleAuthorizationDenied deniedHandler,
             Method accessorMethod,
-            boolean ownerVisible,
-            Method ownerIdAccessor,
-            OwnershipResolver ownershipResolver) {
+            HandleAuthorizationDenied deniedHandler,
+            Supplier<AuthorizationEvaluator> evaluator) {
         super(delegate);
         this.delegate = delegate;
-        this.preAuthorize = preAuthorize;
-        this.hasAuthority = hasAuthority;
-        this.deniedHandler = deniedHandler;
         this.accessorMethod = accessorMethod;
-        this.ownerVisible = ownerVisible;
-        this.ownerIdAccessor = ownerIdAccessor;
-        this.ownershipResolver = ownershipResolver;
+        this.deniedHandler = deniedHandler;
+        this.evaluator = evaluator;
     }
 
     @Override
@@ -124,36 +108,17 @@ class SecuredBeanPropertyWriter extends BeanPropertyWriter {
                 return transformed;
             }
         };
-        return new SecuredBeanPropertyWriter(
-                delegate.rename(toNewName), preAuthorize, hasAuthority, deniedHandler, accessorMethod,
-                ownerVisible, ownerIdAccessor, ownershipResolver);
+        return new SecuredBeanPropertyWriter(delegate.rename(toNewName), accessorMethod, deniedHandler, evaluator);
     }
 
     @Override
     public BeanPropertyWriter unwrappingWriter(NameTransformer transformer) {
-        return new SecuredBeanPropertyWriter(
-                delegate.unwrappingWriter(transformer), preAuthorize, hasAuthority, deniedHandler, accessorMethod,
-                ownerVisible, ownerIdAccessor, ownershipResolver);
+        return new SecuredBeanPropertyWriter(delegate.unwrappingWriter(transformer), accessorMethod, deniedHandler, evaluator);
     }
 
     private boolean isAuthorized(Object bean) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Object ownerIdValue = resolveOwnerIdValue(bean);
-        return SecuritySpelEvaluator.isFieldAuthorized(
-                preAuthorize, hasAuthority, ownerVisible,
-                accessorMethod, ownerIdValue, authentication, ownershipResolver);
-    }
-
-    private Object resolveOwnerIdValue(Object bean) {
-        if (!ownerVisible || ownerIdAccessor == null) {
-            return null;
-        }
-        try {
-            return ownerIdAccessor.invoke(bean);
-        } catch (Exception e) {
-            log.warn("Failed to read owner ID from bean {}", bean.getClass().getSimpleName(), e);
-            return null;
-        }
+        AuthorizationEvaluator resolved = evaluator.get();
+        return resolved != null && resolved.canReadField(accessorMethod, bean);
     }
 
     private boolean shouldMask() {

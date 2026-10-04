@@ -1,6 +1,8 @@
 package com.klabis.common.security.fieldsecurity;
 
-import com.klabis.common.security.MethodSecurityAnnotations;
+import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.TargetParameter;
+import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.jspecify.annotations.Nullable;
@@ -9,8 +11,6 @@ import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -30,10 +30,10 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
 
-    private final OwnershipResolver ownershipResolver;
+    private final AuthorizationEvaluator evaluator;
 
-    RequestBodyFieldAuthorizationAdvice(OwnershipResolver ownershipResolver) {
-        this.ownershipResolver = ownershipResolver;
+    RequestBodyFieldAuthorizationAdvice(AuthorizationEvaluator evaluator) {
+        this.evaluator = evaluator;
     }
 
     @Override
@@ -48,10 +48,9 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
             return body;
         }
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         RecordComponent[] components = record.getClass().getRecordComponents();
 
-        UUID ownerIdFromPath = resolveOwnerIdFromPath(parameter.getMethod());
+        TargetRef target = resolveTargetFromPath(parameter.getMethod());
 
         for (RecordComponent component : components) {
             if (!JsonNullable.class.isAssignableFrom(component.getType())) {
@@ -73,41 +72,36 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
                 continue;
             }
 
-            checkFieldAuthorization(component, accessor, authentication, ownerIdFromPath);
+            checkFieldAuthorization(component, accessor, target);
         }
 
         return body;
     }
 
-    private void checkFieldAuthorization(RecordComponent component, Method accessor,
-                                         @Nullable Authentication authentication,
-                                         @Nullable UUID ownerIdFromPath) {
-        PreAuthorize preAuthorize = accessor.getAnnotation(PreAuthorize.class);
-        HasAuthority hasAuthority = accessor.getAnnotation(HasAuthority.class);
-        boolean ownerVisible = accessor.getAnnotation(OwnerVisible.class) != null;
-
-        if (preAuthorize == null && hasAuthority == null && !ownerVisible) {
+    private void checkFieldAuthorization(RecordComponent component, Method accessor, @Nullable TargetRef target) {
+        if (evaluator.canWriteField(accessor, target)) {
             return;
         }
-
-        if (!SecuritySpelEvaluator.isFieldAuthorized(
-                preAuthorize, hasAuthority, ownerVisible,
-                accessor, ownerIdFromPath, authentication, ownershipResolver)) {
-            String requiredAuthority = hasAuthority != null ? Arrays.stream(hasAuthority.value()).map(Authority::getValue).collect(Collectors.joining(" or "))
-                    : preAuthorize != null ? preAuthorize.value()
-                    : "@OwnerVisible";
-            throw new FieldAuthorizationException(component.getName(), requiredAuthority);
-        }
+        PreAuthorize preAuthorize = accessor.getAnnotation(PreAuthorize.class);
+        HasAuthority hasAuthority = accessor.getAnnotation(HasAuthority.class);
+        String requiredAuthority = hasAuthority != null ? Arrays.stream(hasAuthority.value()).map(Authority::getValue).collect(Collectors.joining(" or "))
+                : preAuthorize != null ? preAuthorize.value()
+                : "@OwnerVisible";
+        throw new FieldAuthorizationException(component.getName(), requiredAuthority);
     }
 
     @Nullable
-    private UUID resolveOwnerIdFromPath(@Nullable Method handlerMethod) {
+    private TargetRef resolveTargetFromPath(@Nullable Method handlerMethod) {
         if (handlerMethod == null) {
             return null;
         }
 
-        String ownerParamName = findOwnerIdParameterName(handlerMethod);
-        if (ownerParamName == null) {
+        TargetParameter targetParameter = evaluator.targetParameterOf(handlerMethod, handlerMethod.getDeclaringClass());
+        if (targetParameter == null) {
+            return null;
+        }
+        String paramName = findPathVariableName(handlerMethod, targetParameter.index());
+        if (paramName == null) {
             return null;
         }
 
@@ -124,28 +118,26 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
             return null;
         }
 
-        String rawValue = uriVariables.get(ownerParamName);
+        String rawValue = uriVariables.get(paramName);
         if (rawValue == null) {
             return null;
         }
 
         try {
-            return UUID.fromString(rawValue);
+            return new TargetRef(targetParameter.type(), UUID.fromString(rawValue));
         } catch (IllegalArgumentException e) {
             return null;
         }
     }
 
     @Nullable
-    private String findOwnerIdParameterName(Method handlerMethod) {
+    private String findPathVariableName(Method handlerMethod, int parameterIndex) {
         Parameter[] parameters = handlerMethod.getParameters();
-        int ownerIdIndex = MethodSecurityAnnotations.findAnnotatedParameterIndex(
-                handlerMethod, handlerMethod.getDeclaringClass(), OwnerId.class);
-        if (ownerIdIndex < 0 || ownerIdIndex >= parameters.length) {
+        if (parameterIndex >= parameters.length) {
             return null;
         }
 
-        Parameter parameter = parameters[ownerIdIndex];
+        Parameter parameter = parameters[parameterIndex];
         // @PathVariable itself is a method parameter — not inherited from the interface either,
         // so it must still be present directly on the concrete handler method's parameter.
         if (!parameter.isAnnotationPresent(PathVariable.class)) {
