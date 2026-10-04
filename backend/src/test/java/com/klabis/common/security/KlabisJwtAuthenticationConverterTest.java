@@ -1,8 +1,14 @@
 package com.klabis.common.security;
 
+import com.klabis.common.authorization.AuthorizationSnapshot;
+import com.klabis.common.authorization.AuthorizationSnapshotProvider;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.support.ScopeNotActiveException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jose.jws.JwsAlgorithms;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
@@ -10,12 +16,15 @@ import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for KlabisJwtAuthenticationConverter.
@@ -27,7 +36,16 @@ class KlabisJwtAuthenticationConverterTest {
     private static final String TEST_USERNAME = "123456";
     private static final List<String> AUTHORITIES = List.of("MEMBERS:READ", "MEMBERS:WRITE");
 
-    private final KlabisJwtAuthenticationConverter converter = new KlabisJwtAuthenticationConverter();
+    private final AuthorizationSnapshotProvider snapshotProvider = mock(AuthorizationSnapshotProvider.class);
+    private final ObjectProvider<AuthorizationSnapshotProvider> snapshotProviderBean = providerOf(snapshotProvider);
+    private final KlabisJwtAuthenticationConverter converter = new KlabisJwtAuthenticationConverter(snapshotProviderBean);
+
+    @SuppressWarnings("unchecked")
+    private static ObjectProvider<AuthorizationSnapshotProvider> providerOf(AuthorizationSnapshotProvider provider) {
+        ObjectProvider<AuthorizationSnapshotProvider> objectProvider = mock(ObjectProvider.class);
+        when(objectProvider.getObject()).thenReturn(provider);
+        return objectProvider;
+    }
 
     @Test
     @DisplayName("should convert JWT with UserId only")
@@ -45,8 +63,59 @@ class KlabisJwtAuthenticationConverterTest {
         assertThat(token.getMemberIdUuid()).isEmpty();
         assertThat(token.hasMemberProfile()).isFalse();
         assertThat(token.getUsername()).isEqualTo(TEST_USERNAME);
-        assertThat(token.getAuthorities()).hasSize(2);
-        assertThat(token.getAuthorities()).allMatch(auth -> auth.getAuthority().startsWith("MEMBERS:"));
+    }
+
+    @Test
+    @DisplayName("should ignore authorities claim of a user token and take authorities from the request snapshot")
+    void shouldTakeUserAuthoritiesFromSnapshotNotFromClaim() {
+        when(snapshotProvider.current()).thenReturn(
+                AuthorizationSnapshot.of(Set.of(Authority.EVENTS_MANAGE, Authority.GROUPS_TRAINING), Map.of()));
+        Jwt jwt = createTestJwt(Map.of(
+                JwtClaimNames.SUB, TEST_USERNAME,
+                "user_id", TEST_USER_ID.toString(),
+                "authorities", AUTHORITIES
+        ));
+
+        KlabisJwtAuthenticationToken token = (KlabisJwtAuthenticationToken) converter.convert(jwt);
+
+        assertThat(token.getAuthorities()).extracting(GrantedAuthority::getAuthority)
+                .containsExactlyInAnyOrder("EVENTS:MANAGE", "GROUPS:TRAINING");
+    }
+
+    @Test
+    @DisplayName("should reflect a changed snapshot on the next authorities lookup of the same token")
+    void shouldReadSnapshotOnEveryLookup() {
+        when(snapshotProvider.current())
+                .thenReturn(AuthorizationSnapshot.of(Set.of(Authority.GROUPS_TRAINING), Map.of()))
+                .thenReturn(AuthorizationSnapshot.empty());
+        Jwt jwt = createTestJwt(Map.of(JwtClaimNames.SUB, TEST_USERNAME, "user_id", TEST_USER_ID.toString()));
+
+        KlabisJwtAuthenticationToken token = (KlabisJwtAuthenticationToken) converter.convert(jwt);
+
+        assertThat(token.getAuthorities()).hasSize(1);
+        assertThat(token.getAuthorities()).isEmpty();
+        assertThat(token.hasAuthority(Authority.GROUPS_TRAINING)).isFalse();
+    }
+
+    @Test
+    @DisplayName("should grant no authorities to a user token outside of a request")
+    void shouldGrantNothingOutsideOfRequest() {
+        when(snapshotProvider.current()).thenThrow(new ScopeNotActiveException("request", "snapshot", new IllegalStateException()));
+        Jwt jwt = createTestJwt(Map.of(JwtClaimNames.SUB, TEST_USERNAME, "user_id", TEST_USER_ID.toString()));
+
+        KlabisJwtAuthenticationToken token = (KlabisJwtAuthenticationToken) converter.convert(jwt);
+
+        assertThat(token.getAuthorities()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("should not touch the snapshot while converting a token")
+    void shouldNotLoadSnapshotOnConversion() {
+        Jwt jwt = createTestJwt(Map.of(JwtClaimNames.SUB, TEST_USERNAME, "user_id", TEST_USER_ID.toString()));
+
+        converter.convert(jwt);
+
+        org.mockito.Mockito.verifyNoInteractions(snapshotProvider);
     }
 
     @Test
@@ -182,12 +251,11 @@ class KlabisJwtAuthenticationConverterTest {
         converter.setAuthoritiesClaimName("scopes");
 
         Jwt jwt = createTestJwt(Map.of(
-                JwtClaimNames.SUB, TEST_USERNAME,
-                "user_id", TEST_USER_ID.toString(),
+                JwtClaimNames.SUB, "automation-client",
                 "scopes", AUTHORITIES
         ));
 
-        KlabisJwtAuthenticationToken token = (KlabisJwtAuthenticationToken) converter.convert(jwt);
+        JwtAuthenticationToken token = converter.convert(jwt);
 
         assertThat(token.getAuthorities()).hasSize(2);
     }
@@ -198,12 +266,11 @@ class KlabisJwtAuthenticationConverterTest {
         converter.setAuthorityPrefix("ROLE_");
 
         Jwt jwt = createTestJwt(Map.of(
-                JwtClaimNames.SUB, TEST_USERNAME,
-                "user_id", TEST_USER_ID.toString(),
+                JwtClaimNames.SUB, "automation-client",
                 "authorities", List.of("ADMIN")
         ));
 
-        KlabisJwtAuthenticationToken token = (KlabisJwtAuthenticationToken) converter.convert(jwt);
+        JwtAuthenticationToken token = converter.convert(jwt);
 
         assertThat(token.getAuthorities()).hasSize(1);
         assertThat(token.getAuthorities().iterator().next().getAuthority()).isEqualTo("ROLE_ADMIN");

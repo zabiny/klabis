@@ -14,7 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
@@ -36,7 +35,6 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
@@ -117,16 +115,8 @@ public class AuthorizationServerConfiguration {
                             .map(Authority::getValue)
                             .collect(Collectors.toCollection(HashSet::new));
                     context.getClaims().claim(KlabisOAuth2ClaimNames.CLAIM_AUTHORITIES, authorities);
-                } else {
-                    // For user-based grants (authorization_code, etc.), use user authorities
-                    // Only include known Klabis authorities, filtering out framework-added
-                    // authorities like Spring Security 7 MFA factors (FACTOR_PASSWORD)
-                    context.getClaims().claim(KlabisOAuth2ClaimNames.CLAIM_AUTHORITIES,
-                            context.getPrincipal().getAuthorities().stream()
-                                    .map(GrantedAuthority::getAuthority)
-                                    .filter(Authority::isKnownAuthority)
-                                    .collect(Collectors.toCollection(ArrayList::new)));
                 }
+                // User access tokens carry no authorities: the resource server reads them per request
 
                 authorizationServerCustomizer.customizeAccessTokenClaims(context.getPrincipal().getName(),
                         context.getClaims(),

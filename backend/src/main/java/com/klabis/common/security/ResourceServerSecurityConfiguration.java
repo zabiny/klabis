@@ -1,7 +1,9 @@
 package com.klabis.common.security;
 
+import com.klabis.common.authorization.AuthorizationSnapshotProvider;
 import com.klabis.common.users.UserService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -36,8 +38,9 @@ import java.net.URI;
 public class ResourceServerSecurityConfiguration {
 
     @Bean
-    public Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter() {
-        return new KlabisJwtAuthenticationConverter();
+    public Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter(
+            ObjectProvider<AuthorizationSnapshotProvider> snapshotProvider) {
+        return new KlabisJwtAuthenticationConverter(snapshotProvider);
     }
 
     @Bean
