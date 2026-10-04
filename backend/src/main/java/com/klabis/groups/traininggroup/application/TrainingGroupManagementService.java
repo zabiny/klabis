@@ -108,7 +108,7 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
                     throw new MemberAlreadyInTrainingGroupException(memberId, existing.getId());
                 });
         TrainingGroup group = loadTrainingGroup(id);
-        group.assignEligibleMember(memberId);
+        group.addTrainee(memberId);
         trainingGroupRepository.save(group);
     }
 

@@ -43,8 +43,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
 
     public static FreeGroup create(CreateFreeGroup command) {
         FreeGroupId id = new FreeGroupId(UUID.randomUUID());
-        return new FreeGroup(id, command.name(), Set.of(command.creator()),
-                Set.of(GroupMembership.of(command.creator())), Set.of());
+        return new FreeGroup(id, command.name(), Set.of(command.creator()), Set.of(), Set.of());
     }
 
     public static FreeGroup reconstruct(FreeGroupId id, String name, Set<MemberId> owners,
@@ -80,9 +79,15 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         removeOwner(memberId);
     }
 
+    /**
+     * Removing a member is an owner action; a member may also remove themselves to leave the group.
+     * Owners never reach this path — they give up ownership via {@link #removeOwner}.
+     */
     public void removeMember(MemberId memberId, MemberId actingMember) {
         Assert.notNull(memberId, "MemberId is required");
-        requireOwner(actingMember);
+        if (!memberId.equals(actingMember)) {
+            requireOwner(actingMember);
+        }
         removeMember(memberId);
     }
 
@@ -118,8 +123,9 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
     public void acceptInvitation(InvitationId invitationId) {
         Assert.notNull(invitationId, "invitationId is required");
         Invitation invitation = findPendingInvitation(invitationId);
-        invitation.accept();
+        // Membership first: addMember rejects an owner, and a half-accepted invitation is not a state to persist.
         super.addMember(invitation.getInvitedMember());
+        invitation.accept();
     }
 
     public void acceptInvitation(InvitationId invitationId, MemberId acceptingMember) {

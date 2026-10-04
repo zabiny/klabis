@@ -2,7 +2,7 @@ package com.klabis.common.groups.infrastructure.restapi;
 
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
-import com.klabis.common.groups.domain.OwnerCannotBeRemovedFromGroupException;
+import com.klabis.common.groups.domain.OwnerCannotBeMemberException;
 import com.klabis.common.mvc.MvcComponent;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -50,18 +50,18 @@ class GroupsExceptionHandler {
                 .build();
     }
 
-    @ExceptionHandler(OwnerCannotBeRemovedFromGroupException.class)
+    @ExceptionHandler(OwnerCannotBeMemberException.class)
     @ApiResponse(
             responseCode = "422",
-            description = "Unprocessable entity - owner cannot be removed from a group directly",
+            description = "Unprocessable entity - an owner cannot be a member of the same group",
             content = @Content(
                     mediaType = "application/problem+json",
                     schema = @Schema(implementation = ProblemDetail.class)
             )
     )
-    public ErrorResponse handleOwnerCannotBeRemovedFromGroup(OwnerCannotBeRemovedFromGroupException ex) {
+    public ErrorResponse handleOwnerCannotBeMember(OwnerCannotBeMemberException ex) {
         return ErrorResponse.builder(ex, HttpStatusCode.valueOf(422), ex.getMessage())
-                .title("Owner Cannot Be Removed From Group")
+                .title("Owner Cannot Be Member")
                 .build();
     }
 }
