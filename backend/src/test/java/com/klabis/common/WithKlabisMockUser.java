@@ -26,4 +26,7 @@ public @interface WithKlabisMockUser {
 
     // authorities what will be available for authenticated user. Allows to easily test authorizations of the API endpoints.
     Authority[] authorities() default {};
+
+    // authorities held only over specific targets, on top of the (global) authorities above
+    TargetGrant[] targetGrants() default {};
 }
