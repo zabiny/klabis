@@ -358,10 +358,10 @@ paths:
 
 describe('x-klabis-owner-visible on an operation', () => {
     // Both halves of the pair are now emitted by the templates from their own spec key —
-    // @OwnerVisible from the operation (api.mustache), @OwnerId from the parameter
+    // @OwnerVisible from the operation (api.mustache), @TargetId from the parameter
     // (pathParams.mustache). The bundler used to synthesise both, which forced it to inline any
-    // shared $ref parameter so @OwnerId reached one operation only. It no longer needs to:
-    // @OwnerId is inert without @OwnerVisible, so it can sit on the shared parameter.
+    // shared $ref parameter so @TargetId reached one operation only. It no longer needs to:
+    // @TargetId is inert without @OwnerVisible, so it can sit on the shared parameter.
     // validate.mjs enforces that the pair stays together; see validate.test.mjs.
     it('is carried through untouched, and leaves a shared parameter $ref intact', () => {
         const readYaml = fakeReader({
@@ -392,7 +392,7 @@ components:
       name: id
       in: path
       required: true
-      x-klabis-owner-id: true
+      x-klabis-target-id: MEMBER
       schema:
         type: string
         format: uuid
@@ -412,10 +412,10 @@ components:
         const get = document.paths['/api/members/{id}'].get;
         expect(get.parameters[0].$ref).toBe('#/components/parameters/MemberIdParam');
 
-        // getMember shares the owner-id parameter but never opted into ownership. That is
-        // harmless: @OwnerId is only consulted for a method already marked @OwnerVisible.
+        // getMember shares the target-id parameter but never opted into ownership. That is
+        // harmless: @TargetId is only consulted for a method already marked @OwnerVisible.
         expect(get['x-klabis-owner-visible']).toBeUndefined();
-        expect(document.components.parameters.MemberIdParam['x-klabis-owner-id']).toBe(true);
+        expect(document.components.parameters.MemberIdParam['x-klabis-target-id']).toBe('MEMBER');
     });
 });
 

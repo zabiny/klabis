@@ -70,7 +70,7 @@ class TargetedFieldAuthorizationTest {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
     record CoordinatedResponse(
-            @OwnerId List<UUID> coordinators,
+            @TargetId(TargetType.MEMBER) List<UUID> coordinators,
             @HasAuthority(Authority.EVENTS_REGISTRATIONS) @OwnerVisible
             String coordinatorsField
     ) {

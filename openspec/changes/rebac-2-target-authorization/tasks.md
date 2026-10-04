@@ -34,10 +34,10 @@
 
 ## 6. OpenAPI extensions and generator
 
-- [ ] 6.1 Extend `tools/openapi-bundle/lib/validate.mjs` (and its tests) for list `x-klabis-authority`, `x-klabis-target-id: <TYPE>` with target-type matching, `x-klabis-read-authority` on request schemas only, reading `targetType`/`grantForms` from `Authority.java`; verify `npm test` in `tools/openapi-bundle` passes
-- [ ] 6.2 Update `api.mustache`, `pojo.mustache`, `pathParams.mustache` to emit `@HasAuthority({…})`, `@TargetId(…)`, `@ReadAuthority(…)`; verify generated sources compile
-- [ ] 6.3 Replace every `x-klabis-owner-id: true` in `docs/openapi/spec/*.yaml` with `x-klabis-target-id: MEMBER`; verify the bundle validates and the backend builds with all tests green
-- [ ] 6.4 Update `docs/openapi/spec/README.md` extension tables; verify the documented examples match the validator
+- [x] 6.1 Extend `tools/openapi-bundle/lib/validate.mjs` (and its tests) for list `x-klabis-authority`, `x-klabis-target-id: <TYPE>` with target-type matching, `x-klabis-read-authority` on request schemas only, reading `targetType`/`grantForms` from `Authority.java`; verify `npm test` in `tools/openapi-bundle` passes
+- [x] 6.2 Update `api.mustache`, `pojo.mustache`, `pathParams.mustache` to emit `@HasAuthority({…})`, `@TargetId(…)`, `@ReadAuthority(…)`; verify generated sources compile
+- [x] 6.3 Replace every `x-klabis-owner-id: true` in `docs/openapi/spec/*.yaml` with `x-klabis-target-id: MEMBER`; verify the bundle validates and the backend builds with all tests green
+- [x] 6.4 Update `docs/openapi/spec/README.md` extension tables; verify the documented examples match the validator
 
 ## 7. Imperative checks migrated (behavior preserved)
 

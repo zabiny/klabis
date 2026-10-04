@@ -6,7 +6,6 @@ import com.klabis.common.authorization.AuthorizationSnapshotProvider;
 import com.klabis.common.authorization.TargetId;
 import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.authorization.TargetType;
-import com.klabis.common.security.fieldsecurity.OwnerId;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.users.Authority;
@@ -147,13 +146,6 @@ class HasAuthorityMethodInterceptorTargetTest {
             assertThatThrownBy(() -> service.targetedAnyOf(STRANGER_ID)).isInstanceOf(AccessDeniedException.class);
         }
 
-        @Test
-        void shouldTreatOwnerIdLikeMemberTarget() {
-            authenticateOverTargets(Authority.EVENTS_REGISTRATIONS, CHILD_ID);
-
-            assertThat(service.legacyOwnerId(CHILD_ID)).isEqualTo("ok");
-            assertThatThrownBy(() -> service.legacyOwnerId(STRANGER_ID)).isInstanceOf(AccessDeniedException.class);
-        }
     }
 
     @Nested
@@ -201,11 +193,6 @@ class HasAuthorityMethodInterceptorTargetTest {
 
         @HasAuthority({Authority.MEMBERS_READ, Authority.EVENTS_REGISTRATIONS})
         String targetedAnyOf(@TargetId(TargetType.MEMBER) UUID memberId) {
-            return "ok";
-        }
-
-        @HasAuthority(Authority.EVENTS_REGISTRATIONS)
-        String legacyOwnerId(@OwnerId UUID memberId) {
             return "ok";
         }
 

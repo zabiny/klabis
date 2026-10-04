@@ -819,7 +819,7 @@ components:
       # Marks the owner for operations that declare x-klabis-owner-visible. Inert on its own:
       # @OwnerId is only consulted for a method or field already marked @OwnerVisible, so the
       # operations here that do not opt into ownership are unaffected.
-      x-klabis-owner-id: true
+      x-klabis-target-id: MEMBER
       schema:
         type: string
         format: uuid
@@ -851,7 +851,7 @@ components:
       in: path
       required: true
       description: User UUID of the non-member legal guardian
-      x-klabis-owner-id: true
+      x-klabis-target-id: MEMBER
       schema:
         type: string
         format: uuid
@@ -870,7 +870,7 @@ components:
         id:
           type: string
           format: uuid
-          x-klabis-owner-id: true
+          x-klabis-target-id: MEMBER
         registrationNumber:
           type: string
         firstName:
@@ -1469,7 +1469,7 @@ components:
         userId:
           type: string
           format: uuid
-          x-klabis-owner-id: true
+          x-klabis-target-id: MEMBER
         loginName:
           type: string
           description: Login number of the guardian (EXTnnnn)

@@ -100,17 +100,28 @@ Field-level authorization, on schema properties:
 
 | extension | generates |
 |---|---|
-| `x-klabis-owner-id: true` | `@OwnerId` |
-| `x-klabis-owner-visible: true` | `@OwnerVisible` |
-| `x-klabis-authority: MEMBERS_MANAGE` | `@HasAuthority(Authority.MEMBERS_MANAGE)` |
+| `x-klabis-target-id: MEMBER` | `@TargetId(TargetType.MEMBER)` — the property identifies the target the record is about |
+| `x-klabis-owner-visible: true` | `@OwnerVisible` — the target being the caller is enough |
+| `x-klabis-authority: MEMBERS_MANAGE` or `[MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]` | `@HasAuthority({Authority.MEMBERS_MANAGE, ...})` — any one of the listed authorities suffices |
+| `x-klabis-read-authority: [MEMBERS_READ]` | `@ReadAuthority({Authority.MEMBERS_READ})` — **request schemas only**: HAL-FORMS shows the field read-only to a user who holds one of these but may not change it |
 | `x-klabis-halforms-access: READ_ONLY` | `@HalForms(access = READ_ONLY)` |
 
-Endpoint authorization uses the same three keys one level up: `x-klabis-authority` and
-`x-klabis-owner-visible: true` on the **operation**, `x-klabis-owner-id: true` on one of its **path
-parameters**. The owner-id parameter may be a shared `$ref` — `@OwnerId` is inert unless the method
-is also `@OwnerVisible` — but an operation declaring `x-klabis-owner-visible` must have exactly one,
-which `validate.mjs` enforces during bundling: `@OwnerVisible` without `@OwnerId` denies instead of
-resolving ownership.
+Endpoint authorization uses the same keys one level up: `x-klabis-authority` and
+`x-klabis-owner-visible: true` on the **operation**, `x-klabis-target-id: <TYPE>` on one of its **path
+parameters** (`TYPE` is `MEMBER` or `EVENT`). The target-id parameter may be a shared `$ref` —
+`@TargetId` is inert unless the method is guarded by an authority held over specific targets or is
+`@OwnerVisible`. `validate.mjs` enforces during bundling that:
+
+- every authority in the list is a constant of `Authority.java`;
+- an operation listing an authority that may be held over specific targets (`GrantForm.SPECIFIC`)
+  has exactly one `x-klabis-target-id` parameter, and its type equals that authority's `targetType`.
+  `ALL`-only authorities are target-agnostic and need none;
+- an operation declaring `x-klabis-owner-visible` has exactly one `x-klabis-target-id` parameter —
+  `@OwnerVisible` without `@TargetId` denies instead of resolving ownership;
+- `x-klabis-target-id` sits on a path parameter or a schema property, never on an operation;
+- `x-klabis-read-authority` sits only on properties of schemas reachable from a request body.
+
+`x-klabis-owner-id: true` no longer exists; the validator rejects it.
 
 Codegen directives, on schema properties (consumed by `KlabisSpringCodegen` and stripped from the
 bundle by `derive.mjs`, so frontend types never see them):
@@ -177,8 +188,8 @@ Two exceptions to "never write an envelope", both in `common.yaml`: `EntityModel
 is nothing but `_links`, so there is no payload to derive from, and a `schemaMappings` entry keeps
 each from being emitted as a Java class.
 
-Extension values are validated during bundling: `x-klabis-authority` must be a constant of
-`Authority.java`, and `operation:` inside `x-hal-*` must match an existing `operationId`. The
+Extension values are validated during bundling: authorities must be constants of
+`Authority.java` (see above), and `operation:` inside `x-hal-*` must match an existing `operationId`. The
 codegen directives are validated too — `x-hal-input-type` must be a non-empty string, and
 `x-klabis-nullable` must be a plain boolean, must not sit next to `oneOf`/`allOf` on the same
 property, and must not declare a nullability the type already states. A `@HalForms(...)`

@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 /**
  * Resolves method/class/parameter-level security annotations ({@code @HasAuthority},
- * {@code @OwnerVisible}, {@code @OwnerId}, {@code @HandleAuthorizationDenied}, ...) across
+ * {@code @OwnerVisible}, {@code @TargetId}, {@code @HandleAuthorizationDenied}, ...) across
  * interface boundaries.
  * <p>
  * Java does not inherit method annotations from implemented interfaces: given
