@@ -1,6 +1,7 @@
 package com.klabis.common.security;
 
 import com.klabis.common.authorization.AuthorizationSnapshot;
+import com.klabis.common.authorization.TestSnapshots;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.DisplayName;
@@ -131,7 +132,7 @@ class KlabisJwtAuthenticationTokenTest {
     @DisplayName("should expose the overAll authorities of its snapshot as granted authorities")
     void shouldExposeSnapshotAuthoritiesAsGrantedAuthorities() {
         Jwt jwt = createTestJwt(Map.of(JwtClaimNames.SUB, TEST_USERNAME, "user_id", TEST_USER_ID.toString()));
-        AuthorizationSnapshot snapshot = AuthorizationSnapshot.of(Set.of(Authority.MEMBERS_READ), Map.of());
+        AuthorizationSnapshot snapshot = TestSnapshots.of(Set.of(Authority.MEMBERS_READ), Map.of());
 
         KlabisJwtAuthenticationToken token = new KlabisJwtAuthenticationToken(
                 jwt, new UserId(TEST_USER_ID), null, () -> snapshot);

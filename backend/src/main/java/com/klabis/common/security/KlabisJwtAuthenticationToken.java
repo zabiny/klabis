@@ -32,6 +32,9 @@ import java.util.function.Supplier;
  * permission change applies to the next request of an already issued access token, while all decisions within
  * one request see the same snapshot.
  * <p>
+ * The snapshot suppliers are {@code transient}: the token is never serialized, because the resource server is
+ * stateless and builds it from the JWT for each request. A deserialized token would have no snapshot.
+ * <p>
  * Note: MemberId is stored as UUID (not MemberId type) to avoid module dependency
  * from common to members. Use MemberId.fromUuid() to convert in members module.
  */

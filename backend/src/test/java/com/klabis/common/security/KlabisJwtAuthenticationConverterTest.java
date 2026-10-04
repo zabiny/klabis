@@ -1,6 +1,7 @@
 package com.klabis.common.security;
 
 import com.klabis.common.authorization.AuthorizationSnapshot;
+import com.klabis.common.authorization.TestSnapshots;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.DisplayName;
@@ -63,7 +64,7 @@ class KlabisJwtAuthenticationConverterTest {
     @DisplayName("should ignore authorities claim of a user token and take authorities from the loaded snapshot")
     void shouldTakeUserAuthoritiesFromSnapshotNotFromClaim() {
         when(snapshotLoader.apply(new UserId(TEST_USER_ID))).thenReturn(
-                AuthorizationSnapshot.of(Set.of(Authority.EVENTS_MANAGE, Authority.GROUPS_TRAINING), Map.of()));
+                TestSnapshots.of(Set.of(Authority.EVENTS_MANAGE, Authority.GROUPS_TRAINING), Map.of()));
         Jwt jwt = createTestJwt(Map.of(
                 JwtClaimNames.SUB, TEST_USERNAME,
                 "user_id", TEST_USER_ID.toString(),
@@ -80,7 +81,7 @@ class KlabisJwtAuthenticationConverterTest {
     @DisplayName("should load the snapshot once per token, however many questions it answers")
     void shouldLoadSnapshotOncePerToken() {
         when(snapshotLoader.apply(new UserId(TEST_USER_ID)))
-                .thenReturn(AuthorizationSnapshot.of(Set.of(Authority.GROUPS_TRAINING), Map.of()))
+                .thenReturn(TestSnapshots.of(Set.of(Authority.GROUPS_TRAINING), Map.of()))
                 .thenReturn(AuthorizationSnapshot.empty());
         Jwt jwt = createTestJwt(Map.of(JwtClaimNames.SUB, TEST_USERNAME, "user_id", TEST_USER_ID.toString()));
 
@@ -96,7 +97,7 @@ class KlabisJwtAuthenticationConverterTest {
     @DisplayName("should load the snapshot anew for the token of the next request")
     void shouldLoadSnapshotAnewForNextToken() {
         when(snapshotLoader.apply(new UserId(TEST_USER_ID)))
-                .thenReturn(AuthorizationSnapshot.of(Set.of(Authority.GROUPS_TRAINING), Map.of()))
+                .thenReturn(TestSnapshots.of(Set.of(Authority.GROUPS_TRAINING), Map.of()))
                 .thenReturn(AuthorizationSnapshot.empty());
         Jwt jwt = createTestJwt(Map.of(JwtClaimNames.SUB, TEST_USERNAME, "user_id", TEST_USER_ID.toString()));
 

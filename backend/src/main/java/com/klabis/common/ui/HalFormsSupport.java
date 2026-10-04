@@ -156,18 +156,18 @@ public class HalFormsSupport {
         return authorizationEvaluator.canInvoke(method, method.getDeclaringClass(), methodInvocation.getArguments());
     }
 
-    private static FieldAuthorization fieldAuthorizationFor(MethodInvocation invocation) {
-        AuthorizationEvaluator evaluator = instance().authorizationEvaluator;
-        Method method = invocation.getMethod();
-        TargetRef target = evaluator.targetOf(method, method.getDeclaringClass(), invocation.getArguments());
-        return new FieldAuthorization(evaluator, target);
-    }
-
     /**
      * Decides, through the same evaluator that enforces request bodies, what the user may do with a template
      * property: change it, only see it, or neither.
      */
     private record FieldAuthorization(AuthorizationEvaluator evaluator, @Nullable TargetRef target) {
+
+        static FieldAuthorization of(MethodInvocation invocation) {
+            AuthorizationEvaluator evaluator = instance().authorizationEvaluator;
+            Method method = invocation.getMethod();
+            return new FieldAuthorization(evaluator,
+                    evaluator.targetOf(method, method.getDeclaringClass(), invocation.getArguments()));
+        }
 
         FieldAccess accessTo(@Nullable Class<?> payloadType, String property) {
             return evaluator.requestFieldAccess(payloadType, property, target);
@@ -203,7 +203,7 @@ public class HalFormsSupport {
 
                 // Check if it's a record
                 if (requestBodyType.isRecord()) {
-                    return createModifiedAffordance(affordance, optionsDef, fieldAuthorizationFor(methodInvocation));
+                    return createModifiedAffordance(affordance, optionsDef, FieldAuthorization.of(methodInvocation));
                 }
             }
         }

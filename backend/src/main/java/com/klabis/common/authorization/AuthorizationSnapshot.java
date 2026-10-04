@@ -40,10 +40,10 @@ public final class AuthorizationSnapshot {
     }
 
     /**
-     * Builds a snapshot from grants taken as given. Relationship grants must go through
-     * {@link #fromSources(Set, Collection)}, which discards the ones a source is not entitled to hand out.
+     * Builds a snapshot from grants taken as given, for tests. Production snapshots go through
+     * {@link #fromSources(Set, Collection)}, which discards the grants a source is not entitled to hand out.
      */
-    public static AuthorizationSnapshot of(Set<Authority> overAll, Map<Authority, Set<TargetRef>> overTargets) {
+    static AuthorizationSnapshot of(Set<Authority> overAll, Map<Authority, Set<TargetRef>> overTargets) {
         return new AuthorizationSnapshot(overAll, overTargets);
     }
 

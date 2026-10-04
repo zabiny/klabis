@@ -51,7 +51,7 @@ class UsersDataBootstrap implements BootstrapDataInitializer {
 
         String passwordHash = passwordEncoder.encode(password);
 
-        Set<Authority> authorities = Set.of(Authority.values());
+        Set<Authority> authorities = Authority.grantableOverAll();
 
         userService.createActiveUser(username, passwordHash, authorities);
 

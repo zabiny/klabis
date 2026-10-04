@@ -39,26 +39,6 @@ public class KlabisJwtAuthenticationConverter implements Converter<Jwt, JwtAuthe
         this.authoritiesConverter.setAuthorityPrefix("");
     }
 
-    /**
-     * Sets the authorities claim name in the JWT.
-     * Default is "authorities".
-     *
-     * @param authoritiesClaimName the claim name containing authorities
-     */
-    public void setAuthoritiesClaimName(String authoritiesClaimName) {
-        this.authoritiesConverter.setAuthoritiesClaimName(authoritiesClaimName);
-    }
-
-    /**
-     * Sets the authority prefix.
-     * Default is empty string (no prefix).
-     *
-     * @param authorityPrefix the prefix to add to authorities
-     */
-    public void setAuthorityPrefix(String authorityPrefix) {
-        this.authoritiesConverter.setAuthorityPrefix(authorityPrefix);
-    }
-
     @Override
     public JwtAuthenticationToken convert(Jwt jwt) {
         String userIdClaim = jwt.getClaim("user_id");

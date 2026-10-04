@@ -38,7 +38,7 @@ public final class UserTestDataConstants {
      * Full admin authority set.
      * Admins have all available permissions.
      */
-    public static final Set<Authority> ADMIN_AUTHORITIES = Set.of(Authority.values());
+    public static final Set<Authority> ADMIN_AUTHORITIES = Set.copyOf(Authority.grantableOverAll());
 
     // Private constructor to prevent instantiation
     private UserTestDataConstants() {

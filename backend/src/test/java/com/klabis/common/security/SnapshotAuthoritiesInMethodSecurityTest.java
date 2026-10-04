@@ -2,7 +2,7 @@ package com.klabis.common.security;
 
 import org.springframework.beans.factory.BeanFactory;
 import com.klabis.common.authorization.AuthorizationEvaluator;
-import com.klabis.common.authorization.AuthorizationSnapshot;
+import com.klabis.common.authorization.TestSnapshots;
 import com.klabis.common.authorization.AuthorizationSnapshotProvider;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
@@ -40,7 +40,7 @@ class SnapshotAuthoritiesInMethodSecurityTest {
     private void authenticateWithSnapshot(Authority... overAll) {
         SecurityContextHolder.getContext().setAuthentication(KlabisAuthenticationFactory.createAuthenticationToken(
                 JwtParams.jwtTokenParams("ZBM8001", UUID.randomUUID()),
-                AuthorizationSnapshot.of(Set.of(overAll), Map.of())));
+                TestSnapshots.of(Set.of(overAll), Map.of())));
     }
 
     @Test

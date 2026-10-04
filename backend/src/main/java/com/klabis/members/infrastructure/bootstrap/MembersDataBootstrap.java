@@ -58,7 +58,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
         Member jan = createMember("Jan", "Novák", LocalDate.of(1990, 3, 15),
                 "jan.novak@example.com", "+420 601 111 222",
                 "Hlavní 10", "Praha", "11000",
-                passwordHash, Set.of(Authority.values()), Gender.MALE,
+                passwordHash, Authority.grantableOverAll(), Gender.MALE,
                 BirthNumber.of("900315/1234"), "8012345");
 
         Member eva = createMember("Eva", "Svobodová", LocalDate.of(1995, 7, 22),
@@ -247,7 +247,7 @@ class MembersDataBootstrap implements BootstrapDataInitializer {
 
         LOG.info("Created bootstrap member: {} {} (username: {}, authorities: {})",
                 firstName, lastName, registrationNumber.getValue(),
-                authorities.size() == Authority.values().length ? "ALL" : "STANDARD");
+                authorities.equals(Authority.grantableOverAll()) ? "ALL" : "STANDARD");
         return member;
     }
 }

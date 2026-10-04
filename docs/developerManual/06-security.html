@@ -175,6 +175,7 @@
     public String getValue();                       // "MEMBERS:MANAGE"
     public TargetType getTargetType();
     public Set&lt;GrantForm&gt; getGrantForms();
+    public static Set&lt;Authority&gt; grantableOverAll();
     public static Set&lt;Authority&gt; assignableAuthorities();
     public static Set&lt;Authority&gt; delegatable();
     public static boolean isKnownAuthority(String value);
@@ -186,8 +187,10 @@
 
     <dt>GrantForm.ALL</dt>
     <dd>Autoritu lze držet <em>nad vším</em> daného typu (včetně později vytvořených cílů) — to je
-        dřívější „globální“ oprávnění. Jen tyto autority nabízí dialog oprávnění
-        (<code>assignableAuthorities()</code>, bez standardních autorit a <code>DEVELOPER</code>).</dd>
+        dřívější „globální“ oprávnění. Jen tyto autority může mít uživatel přidělené přímo
+        (<code>grantableOverAll()</code>); <code>UserPermissions</code> jinou odmítne výjimkou
+        <code>AuthorityNotGrantableOverAllException</code> (HTTP 400). Dialog oprávnění nabízí
+        <code>assignableAuthorities()</code> — totéž bez standardních autorit a <code>DEVELOPER</code>.</dd>
 
     <dt>GrantForm.SPECIFIC</dt>
     <dd>Autoritu lze držet <em>nad konkrétními cíli</em>, odvozenými ze vztahu (<code>delegatable()</code>).

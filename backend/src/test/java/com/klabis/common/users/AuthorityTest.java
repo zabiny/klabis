@@ -64,6 +64,16 @@ class AuthorityTest {
     }
 
     @Test
+    @DisplayName("authorities grantable over everything are exactly those holdable over everything")
+    void shouldDeriveGrantableOverAllFromGrantForms() {
+        for (Authority authority : Authority.values()) {
+            assertThat(Authority.grantableOverAll().contains(authority))
+                    .as(authority.getValue())
+                    .isEqualTo(authority.getGrantForms().contains(GrantForm.ALL));
+        }
+    }
+
+    @Test
     @DisplayName("no authority is delegatable yet")
     void shouldHaveNoDelegatableAuthorities() {
         assertThat(Authority.delegatable()).isEmpty();

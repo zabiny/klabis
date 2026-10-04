@@ -2,7 +2,7 @@ package com.klabis.common.security;
 
 import org.springframework.beans.factory.BeanFactory;
 import com.klabis.common.authorization.AuthorizationEvaluator;
-import com.klabis.common.authorization.AuthorizationSnapshot;
+import com.klabis.common.authorization.TestSnapshots;
 import com.klabis.common.authorization.AuthorizationSnapshotProvider;
 import com.klabis.common.authorization.TargetId;
 import com.klabis.common.authorization.TargetRef;
@@ -47,7 +47,7 @@ class HasAuthorityMethodInterceptorTargetTest {
 
     private void authenticate(Set<Authority> overAll, Map<Authority, Set<TargetRef>> overTargets) {
         SecurityContextHolder.getContext().setAuthentication(KlabisAuthenticationFactory.createAuthenticationToken(
-                JwtParams.jwtTokenParams("ZBM8001", MY_ID), AuthorizationSnapshot.of(overAll, overTargets)));
+                JwtParams.jwtTokenParams("ZBM8001", MY_ID), TestSnapshots.of(overAll, overTargets)));
     }
 
     private void authenticateOverAll(Authority... authorities) {
