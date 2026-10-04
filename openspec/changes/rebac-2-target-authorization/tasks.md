@@ -16,9 +16,9 @@
 
 ## 3. Permissions read per request instead of from the token
 
-- [ ] 3.1 Write a failing integration test: user logs in, admin revokes `GROUPS:TRAINING`, the same access token no longer reaches the training groups API; and the reverse for granting; verify it fails
-- [ ] 3.2 Make `KlabisJwtAuthenticationToken.getAuthorities()` delegate to the snapshot for user tokens, stop reading the `authorities` claim for them, stop emitting it in the authorization server token customizer (keep `client_credentials` expansion); verify 3.1 passes and the `client_credentials` tests pass
-- [ ] 3.3 Verify `@PreAuthorize` SpEL usages still evaluate correctly with a test covering one existing `@PreAuthorize` endpoint
+- [x] 3.1 Write a failing integration test: user logs in, admin revokes `GROUPS:TRAINING`, the same access token no longer reaches the training groups API; and the reverse for granting; verify it fails
+- [x] 3.2 Make `KlabisJwtAuthenticationToken.getAuthorities()` delegate to the snapshot for user tokens, stop reading the `authorities` claim for them, stop emitting it in the authorization server token customizer (keep `client_credentials` expansion); verify 3.1 passes and the `client_credentials` tests pass
+- [x] 3.3 Verify `@PreAuthorize` SpEL usages still evaluate correctly with a test covering one existing `@PreAuthorize` endpoint
 
 ## 4. Method security and offered actions through the evaluator
 
