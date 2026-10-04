@@ -278,6 +278,8 @@ class MembershipFeeTierListPostprocessor
                 .andAffordances(klabisAfford(methodOn(FeeSelectionCampaignsApi.class).publishYear(null)))
                 .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).createTier(null))));
 
+        // getPublication/listPublications are readable by any authenticated caller; the campaign
+        // links are management navigation and are offered to managers only.
         if (authorizationEvaluator.has(Authority.MEMBERS_MANAGE)) {
             activeCampaignAttr.get().ifPresent(campaign ->
                     klabisLinkTo(methodOn(FeeSelectionCampaignsApi.class).getPublication(campaign.getId()
@@ -411,6 +413,8 @@ class MembershipFeesRootPostprocessor implements RepresentationModelProcessor<En
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        // listTiers is readable by any authenticated caller, but the navigation entry is an
+        // administration screen, so it is offered to managers only.
         if (!authorizationEvaluator.has(Authority.MEMBERS_MANAGE)) {
             return model;
         }

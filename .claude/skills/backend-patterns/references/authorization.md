@@ -109,8 +109,9 @@ authority that may be held over a target. On a field or record component `@PreAu
 
 ## Imperative checks in application code
 
-When a decision cannot be declared (a flag that changes a query, a conditional link in a
-postprocessor, a rule combining domain data), inject `AuthorizationEvaluator`:
+When a decision cannot be declared (a flag that changes a query, a rule combining domain data,
+a link or affordance that is offered under a condition other than the target operation's own
+authorization), inject `AuthorizationEvaluator`:
 
 ```java
 boolean canManage = authorizationEvaluator.has(Authority.MEMBERS_MANAGE);                      // over everything
@@ -120,6 +121,11 @@ boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id));
 
 - `CurrentUserData` (`@ActingUser`) identifies the caller (`userId`, `memberId`) — it carries no
   authorities. Never read `Authentication.getAuthorities()` / `SecurityContextHolder` for a decision.
+- Never put a `has(A)` gate in front of `klabisLinkTo` / `klabisAfford*` when `A` is what the target
+  operation already declares — those helpers ask `canInvoke` and drop the link or affordance
+  themselves. Keep a gate only when the offering rule genuinely differs (e.g. a navigation entry for
+  an operation any authenticated user may call, or hiding an owner-accessible link from the owner),
+  and say why in a one-line comment.
 - Prefer `has(authority, target)` whenever the question is about a specific member or event, so a
   future targeted grant works without touching the code.
 - In plain unit tests of a hand-built component pass `SecurityContextAuthorizationEvaluator.create()`

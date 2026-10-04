@@ -17,9 +17,9 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@code x-klabis-authority} accepts a single name or a list, but the templates can only emit the
- * comma-separated {@code @HasAuthority({...})} array from a list — mustache cannot tell the last
- * element of a bare string. The codegen therefore hands the templates a list in both cases.
+ * {@code x-klabis-authority} accepts a single name or a list; the codegen renders either into the
+ * complete {@code @HasAuthority({...})} / {@code @ReadAuthority({...})} text the templates print
+ * verbatim.
  */
 class KlabisSpringCodegenAuthorityListTest {
 
@@ -56,35 +56,43 @@ class KlabisSpringCodegenAuthorityListTest {
         return model.vars.get(0).getVendorExtensions();
     }
 
+    private static final String HAS = "@com.klabis.common.users.HasAuthority";
+    private static final String READ = "@com.klabis.common.security.fieldsecurity.ReadAuthority";
+    private static final String AUTH = "com.klabis.common.users.Authority.";
+
     @Test
-    void operationAuthorityGivenAsStringBecomesAList() {
+    void operationAuthorityGivenAsStringRendersSingleElementAnnotation() {
         assertThat(operationWith(Map.of("x-klabis-authority", "MEMBERS_MANAGE")).vendorExtensions)
-            .containsEntry("x-klabis-authority", List.of("MEMBERS_MANAGE"));
+            .containsEntry("x-klabis-authority-annotation", HAS + "({ " + AUTH + "MEMBERS_MANAGE })");
     }
 
     @Test
-    void operationAuthorityGivenAsListStaysAList() {
+    void operationAuthorityGivenAsListRendersCommaSeparatedAnnotation() {
         assertThat(operationWith(Map.of("x-klabis-authority", List.of("MEMBERS_MANAGE", "EVENTS_MANAGE"))).vendorExtensions)
-            .containsEntry("x-klabis-authority", List.of("MEMBERS_MANAGE", "EVENTS_MANAGE"));
+            .containsEntry("x-klabis-authority-annotation",
+                HAS + "({ " + AUTH + "MEMBERS_MANAGE, " + AUTH + "EVENTS_MANAGE })");
     }
 
     @Test
-    void operationWithoutAuthorityGainsNoKey() {
-        assertThat(operationWith(Map.of()).vendorExtensions).doesNotContainKey("x-klabis-authority");
+    void operationWithoutAuthorityGainsNoAnnotation() {
+        assertThat(operationWith(Map.of()).vendorExtensions)
+            .doesNotContainKey("x-klabis-authority-annotation")
+            .doesNotContainKey("x-klabis-read-authority-annotation");
     }
 
     @Test
-    void propertyAuthorityAndReadAuthorityGivenAsStringBecomeLists() {
+    void propertyAuthorityAndReadAuthorityGivenAsStringRenderAnnotations() {
         assertThat(propertyExtensions(Map.of(
             "x-klabis-authority", "MEMBERS_MANAGE",
             "x-klabis-read-authority", "MEMBERS_READ")))
-            .containsEntry("x-klabis-authority", List.of("MEMBERS_MANAGE"))
-            .containsEntry("x-klabis-read-authority", List.of("MEMBERS_READ"));
+            .containsEntry("x-klabis-authority-annotation", HAS + "({ " + AUTH + "MEMBERS_MANAGE })")
+            .containsEntry("x-klabis-read-authority-annotation", READ + "({ " + AUTH + "MEMBERS_READ })");
     }
 
     @Test
-    void propertyAuthorityGivenAsListStaysAList() {
+    void propertyAuthorityGivenAsListRendersCommaSeparatedAnnotation() {
         assertThat(propertyExtensions(Map.of("x-klabis-authority", List.of("MEMBERS_MANAGE", "MEMBERS_READ"))))
-            .containsEntry("x-klabis-authority", List.of("MEMBERS_MANAGE", "MEMBERS_READ"));
+            .containsEntry("x-klabis-authority-annotation",
+                HAS + "({ " + AUTH + "MEMBERS_MANAGE, " + AUTH + "MEMBERS_READ })");
     }
 }

@@ -123,7 +123,7 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .map(EventRegistration::memberId)
                 .toList());
 
-        boolean callerCanSortByRegistrationTime = EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(authorizationEvaluator, auth,
+        boolean callerCanSortByRegistrationTime = EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_REGISTRATIONS, auth,
                 event);
         List<EventRegistration> sorted = RegistrationSortApplier.sort(registrations,
                 memberIndex,

@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 
 import {HTTP_METHODS, sortKeysDeep} from './bundle.mjs';
-import {forEachHalResponse, halResponsePayloadNames, isEnvelopeShaped} from './derive.mjs';
+import {forEachHalResponse, halResponsePayloadNames, isEnvelopeShaped, schemaName} from './derive.mjs';
 
 /**
  * Validation of Klabis-specific OpenAPI extensions.
@@ -126,6 +126,52 @@ function targetIdParameters(document, operation) {
         .filter((p) => typeof p?.['x-klabis-target-id'] === 'string');
 }
 
+/**
+ * What an operation's `x-klabis-authority` / `x-klabis-owner-visible` demand of its parameters,
+ * stated once per operation: both are evaluated against the operation's single target, which only
+ * a path parameter marked `x-klabis-target-id` can name. Authorities held over `{ALL}` only are
+ * target-agnostic and ask for nothing.
+ *
+ * One error for a wrong parameter count however many reasons demand it; the target type is checked
+ * per authority, since each may name a different one.
+ */
+function operationTargetErrors(document, operation, path, authorities) {
+    const reasons = [];
+    const expectedTypes = new Set();
+    const specificAuthorities = [];
+
+    const names = authorityNames(operation['x-klabis-authority']) ?? [];
+    for (const name of names.filter((n) => authorities.get(n)?.grantForms.has('SPECIFIC'))) {
+        const {targetType} = authorities.get(name);
+        specificAuthorities.push({name, targetType});
+        expectedTypes.add(targetType);
+        reasons.push(`"${name}" may be held over specific ${targetType} targets`);
+    }
+    if (operation['x-klabis-owner-visible'] === true) {
+        reasons.push('x-klabis-owner-visible resolves ownership against the target');
+    }
+    if (reasons.length === 0) return [];
+
+    const targetParams = targetIdParameters(document, operation);
+    if (targetParams.length !== 1) {
+        const type = expectedTypes.size > 0 ? `: ${[...expectedTypes].join(', ')}` : '';
+        return [{
+            path,
+            message: `${reasons.join('; ')}, so the operation needs exactly one parameter marked `
+                + `x-klabis-target-id${type} (found ${targetParams.length})`,
+        }];
+    }
+
+    const actualType = targetParams[0]['x-klabis-target-id'];
+    return specificAuthorities
+        .filter(({targetType}) => actualType !== targetType)
+        .map(({name, targetType}) => ({
+            path,
+            message: `"${name}" is about ${targetType} targets but parameter `
+                + `"${targetParams[0].name}" is marked x-klabis-target-id: ${actualType}`,
+        }));
+}
+
 /** Authority names named by an `x-klabis-authority` / `x-klabis-read-authority` value, or null if malformed. */
 function authorityNames(value) {
     if (typeof value === 'string') return [value];
@@ -146,16 +192,13 @@ function requestSchemaNames(document) {
     const visitSchema = (node) => {
         if (Array.isArray(node)) return node.forEach(visitSchema);
         if (!isPlainObject(node)) return;
+        const name = schemaName(node);
+        if (name !== undefined && !reached.has(name)) {
+            reached.add(name);
+            visitSchema(schemas[name]);
+        }
         for (const [key, value] of Object.entries(node)) {
-            const name = key === '$ref' && typeof value === 'string'
-                ? value.match(/^#\/components\/schemas\/(.+)$/)?.[1]
-                : undefined;
-            if (name === undefined) {
-                visitSchema(value);
-            } else if (!reached.has(name)) {
-                reached.add(name);
-                visitSchema(schemas[name]);
-            }
+            if (key !== '$ref') visitSchema(value);
         }
     };
 
@@ -310,6 +353,8 @@ export function validateSpec(document, {authorities}) {
     walk(document, '', (node, path, context) => {
         if (!isPlainObject(node)) return;
 
+        if (context === 'operation') errors.push(...operationTargetErrors(document, node, path, authorities));
+
         for (const [key, value] of Object.entries(node)) {
             if (!key.startsWith('x-klabis-')) continue;
 
@@ -367,37 +412,12 @@ export function validateSpec(document, {authorities}) {
                     }
                 }
 
-                // An authority that may be held over specific targets is evaluated against the
-                // operation's target, which only an x-klabis-target-id parameter can name.
-                // {ALL}-only authorities are target-agnostic and need none.
-                if (key === 'x-klabis-authority' && context === 'operation' && names !== null) {
-                    const targetParams = targetIdParameters(document, node);
-                    for (const name of names.filter((n) => authorities.get(n)?.grantForms.has('SPECIFIC'))) {
-                        const {targetType} = authorities.get(name);
-                        if (targetParams.length !== 1) {
-                            errors.push({
-                                path: `${path}/${key}`,
-                                message: `"${name}" may be held over specific ${targetType} targets, so the operation `
-                                    + `needs exactly one parameter marked x-klabis-target-id: ${targetType} `
-                                    + `(found ${targetParams.length})`,
-                            });
-                        } else if (targetParams[0]['x-klabis-target-id'] !== targetType) {
-                            errors.push({
-                                path: `${path}/${key}`,
-                                message: `"${name}" is about ${targetType} targets but parameter `
-                                    + `"${targetParams[0].name}" is marked x-klabis-target-id: `
-                                    + `${targetParams[0]['x-klabis-target-id']}`,
-                            });
-                        }
-                    }
-                }
-
                 // Request schemas only: a response has no form to render a field read-only in.
                 if (key === 'x-klabis-read-authority') {
-                    const schemaName = path.match(/^\/components\/schemas\/([^/]+)/)?.[1];
-                    const inRequest = schemaName === undefined
+                    const pathSchemaName = path.match(/^\/components\/schemas\/([^/]+)/)?.[1];
+                    const inRequest = pathSchemaName === undefined
                         ? /^\/(paths\/.*\/requestBody|components\/requestBodies)\//.test(path)
-                        : requestSchemas.has(schemaName);
+                        : requestSchemas.has(pathSchemaName);
                     if (!inRequest) {
                         errors.push({
                             path: `${path}/${key}`,
@@ -547,31 +567,6 @@ export function validateSpec(document, {authorities}) {
             if (key === 'x-klabis-owner-visible' && value !== true) {
                 errors.push({path: `${path}/${key}`, message: 'must be true when present'});
             }
-
-            // @OwnerVisible without a @TargetId parameter is the dangerous half of the pair:
-            // checkOwnership() finds no target to compare against and denies, so the endpoint
-            // silently loses the owner-or-authority semantics it claims to have. The templates
-            // emit each annotation from its own node and cannot see the other, so this is the
-            // only thing keeping the two together.
-            if (key === 'x-klabis-owner-visible' && context === 'operation' && value === true) {
-                const targetParams = targetIdParameters(document, node);
-
-                if (targetParams.length === 0) {
-                    errors.push({
-                        path: `${path}/${key}`,
-                        message: 'requires exactly one parameter marked x-klabis-target-id — '
-                            + '@OwnerVisible without @TargetId denies instead of resolving ownership',
-                    });
-                } else if (targetParams.length > 1) {
-                    // findAnnotatedParameterIndex returns the first match, so a second one would
-                    // be silently ignored — and which parameter wins would depend on spec order.
-                    errors.push({
-                        path: `${path}/${key}`,
-                        message: `${targetParams.length} parameters are marked x-klabis-target-id; `
-                            + 'ownership resolves against exactly one',
-                    });
-                }
-            }
         }
 
         // The x-hal-* mirror of the x-klabis-* allowlist above (see KNOWN_HAL_EXTENSIONS).
@@ -612,12 +607,12 @@ export function validateSpec(document, {authorities}) {
                     message: 'requires the array\'s "items" to be a $ref to a payload schema',
                 });
             } else {
-                const match = node.items.$ref.match(/^#\/components\/schemas\/(.+)$/);
-                const target = match ? document.components?.schemas?.[match[1]] : undefined;
+                const itemsName = schemaName(node.items);
+                const target = itemsName ? document.components?.schemas?.[itemsName] : undefined;
                 if (isEnvelopeShaped(target)) {
                     errors.push({
                         path: `${path}/x-hal-entity-items`,
-                        message: `"${match[1]}" is already shaped as a HAL envelope — `
+                        message: `"${itemsName}" is already shaped as a HAL envelope — `
                             + 'the marker would wrap it a second time',
                     });
                 }

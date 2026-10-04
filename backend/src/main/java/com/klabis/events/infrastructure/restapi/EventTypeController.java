@@ -148,6 +148,8 @@ class EventTypesRootPostprocessor implements RepresentationModelProcessor<Entity
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
+        // listEventTypes only needs EVENTS_READ, but the navigation entry is an administration
+        // screen, so it is offered to managers only.
         if (!authorizationEvaluator.has(Authority.EVENTS_MANAGE)) {
             return model;
         }

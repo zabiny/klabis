@@ -115,7 +115,7 @@ public class EventController implements EventsApi {
         EventId eventId = new EventId(id);
         Event existingEvent = eventManagementService.getEvent(eventId, true);
 
-        if (!EventAffordanceSupport.isCoordinatorOrHasManageAuthority(authorizationEvaluator, auth, existingEvent)) {
+        if (!EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_MANAGE, auth, existingEvent)) {
             throw new AccessDeniedException("Access to event update requires EVENTS:MANAGE authority or being the event coordinator");
         }
 
@@ -166,7 +166,7 @@ public class EventController implements EventsApi {
         boolean anyOfferEnabled = event.isSharedTransportEnabled() || event.isSharedAccommodationEnabled();
         if (event.getStatus() != com.klabis.events.domain.EventStatus.ACTIVE
                 || !anyOfferEnabled
-                || !EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(authorizationEvaluator, auth, event)) {
+                || !EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_REGISTRATIONS, auth, event)) {
             return null;
         }
 
@@ -388,7 +388,7 @@ public class EventController implements EventsApi {
     private Event loadAuthorizedEventForAccommodation(UUID eventId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Event event = eventManagementService.getEvent(new EventId(eventId), false);
-        if (!EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(authorizationEvaluator, auth, event)) {
+        if (!EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_REGISTRATIONS, auth, event)) {
             throw new AccessDeniedException("Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator");
         }
         if (!event.isSharedAccommodationEnabled()) {
@@ -451,10 +451,7 @@ class EventAffordanceSupport {
                                          AuthorizationEvaluator authorizationEvaluator) {
         UUID eventId = event.getId().value();
 
-        boolean canManage = authorizationEvaluator.has(Authority.EVENTS_MANAGE);
-        boolean canUpdate = isCoordinatorOrHasManageAuthority(authorizationEvaluator, auth, event);
-
-        if (!canUpdate) {
+        if (!isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_MANAGE, auth, event)) {
             return selfLink;
         }
 
@@ -465,18 +462,14 @@ class EventAffordanceSupport {
             case DRAFT:
                 selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                         methodOn(EventsApi.class).updateEvent(eventId, null), coordinatorsOptions));
-                if (canManage) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).publishEvent(eventId)));
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
-                }
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).publishEvent(eventId)));
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
                 break;
 
             case ACTIVE:
                 selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                         methodOn(EventsApi.class).updateEvent(eventId, null), coordinatorsOptions));
-                if (canManage) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
-                }
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventsApi.class).cancelEvent(eventId, null)));
                 break;
 
             case FINISHED:
@@ -501,16 +494,9 @@ class EventAffordanceSupport {
         return event.getStatus() == com.klabis.events.domain.EventStatus.ACTIVE && event.areRegistrationsOpen();
     }
 
-    static boolean isCoordinatorOrHasManageAuthority(AuthorizationEvaluator authorizationEvaluator, Authentication auth, Event event) {
-        if (authorizationEvaluator.has(Authority.EVENTS_MANAGE)) {
-            return true;
-        }
-        MemberId memberId = resolveMemberId(auth);
-        return memberId != null && event.isCoordinator(memberId);
-    }
-
-    static boolean isCoordinatorOrHasRegistrationsAuthority(AuthorizationEvaluator authorizationEvaluator, Authentication auth, Event event) {
-        if (authorizationEvaluator.has(Authority.EVENTS_REGISTRATIONS)) {
+    static boolean isCoordinatorOrHas(AuthorizationEvaluator authorizationEvaluator, Authority authority,
+                                      Authentication auth, Event event) {
+        if (authorizationEvaluator.has(authority)) {
             return true;
         }
         MemberId memberId = resolveMemberId(auth);
@@ -599,7 +585,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
 
         if (event.isSharedAccommodationEnabled()
-                && EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(authorizationEvaluator, auth, event)) {
+                && EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_REGISTRATIONS, auth, event)) {
             klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }

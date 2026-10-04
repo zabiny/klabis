@@ -31,7 +31,7 @@ const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArr
 const uncapitalize = (name) => name.charAt(0).toLowerCase() + name.slice(1);
 
 /** Local `#/components/schemas/X` ref -> `X`; anything else -> undefined. */
-function schemaName(node) {
+export function schemaName(node) {
     if (!isPlainObject(node) || typeof node.$ref !== 'string') return undefined;
     const match = node.$ref.match(/^#\/components\/schemas\/(.+)$/);
     return match ? match[1] : undefined;

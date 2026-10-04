@@ -16,6 +16,7 @@ import org.openapitools.codegen.utils.ModelUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Klabis-specific fork of the stock {@code spring} OpenAPI generator.
@@ -66,7 +67,13 @@ public class KlabisSpringCodegen extends SpringCodegen {
     private static final String HAL_INPUT_TYPE_EXTENSION = "x-hal-input-type";
     private static final String HALFORMS_ANNOTATION_EXTENSION = "x-klabis-halforms-annotation";
     private static final String KLABIS_NULLABLE_EXTENSION = "x-klabis-nullable";
-    private static final List<String> AUTHORITY_LIST_EXTENSIONS = List.of("x-klabis-authority", "x-klabis-read-authority");
+    private static final String AUTHORITY_EXTENSION = "x-klabis-authority";
+    private static final String READ_AUTHORITY_EXTENSION = "x-klabis-read-authority";
+    private static final String AUTHORITY_ANNOTATION_EXTENSION = "x-klabis-authority-annotation";
+    private static final String READ_AUTHORITY_ANNOTATION_EXTENSION = "x-klabis-read-authority-annotation";
+    private static final String HAS_AUTHORITY_FQN = "com.klabis.common.users.HasAuthority";
+    private static final String READ_AUTHORITY_FQN = "com.klabis.common.security.fieldsecurity.ReadAuthority";
+    private static final String AUTHORITY_ENUM_FQN = "com.klabis.common.users.Authority";
     private static final String HAL_FORMS_FQN = "com.klabis.common.ui.HalForms";
 
     /**
@@ -191,7 +198,7 @@ public class KlabisSpringCodegen extends SpringCodegen {
         try {
             addDerivedHalFormsContentType(operation);
             CodegenOperation codegenOperation = super.fromOperation(path, httpMethod, operation, servers);
-            asLists(codegenOperation.vendorExtensions, AUTHORITY_LIST_EXTENSIONS);
+            renderAuthorityAnnotations(codegenOperation.vendorExtensions);
             return codegenOperation;
         } finally {
             currentOperation = null;
@@ -404,7 +411,7 @@ public class KlabisSpringCodegen extends SpringCodegen {
             property.isNullable = explicitNullable;
         }
         super.postProcessModelProperty(model, property);
-        asLists(property.getVendorExtensions(), AUTHORITY_LIST_EXTENSIONS);
+        renderAuthorityAnnotations(property.getVendorExtensions());
         String annotation = halFormsAnnotation(property.getVendorExtensions());
         if (annotation != null) {
             property.getVendorExtensions().put(HALFORMS_ANNOTATION_EXTENSION, annotation);
@@ -412,19 +419,32 @@ public class KlabisSpringCodegen extends SpringCodegen {
     }
 
     /**
-     * Rewrites a single-string extension value as a one-element list, so the templates can emit the
-     * comma-separated {@code @HasAuthority({...})} / {@code @ReadAuthority({...})} array from one
-     * code path: mustache cannot tell the last element of a bare string.
+     * Renders {@code x-klabis-authority} / {@code x-klabis-read-authority} (a single name or a
+     * list, meaning any-of) into the complete {@code @HasAuthority({...})} / {@code
+     * @ReadAuthority({...})} text under {@code x-klabis-authority-annotation} / {@code
+     * x-klabis-read-authority-annotation}, which the templates print verbatim — mustache cannot
+     * tell the last element of a bare string, so joining the list here keeps the templates free of
+     * comma handling. Idempotent, like {@link #halFormsAnnotation}: {@code postProcessModelProperty}
+     * runs twice per property.
      */
-    static void asLists(Map<String, Object> vendorExtensions, List<String> keys) {
+    static void renderAuthorityAnnotations(Map<String, Object> vendorExtensions) {
         if (vendorExtensions == null) {
             return;
         }
-        for (String key : keys) {
-            if (vendorExtensions.get(key) instanceof String single) {
-                vendorExtensions.put(key, List.of(single));
-            }
+        putAnnotation(vendorExtensions, AUTHORITY_EXTENSION, AUTHORITY_ANNOTATION_EXTENSION, HAS_AUTHORITY_FQN);
+        putAnnotation(vendorExtensions, READ_AUTHORITY_EXTENSION, READ_AUTHORITY_ANNOTATION_EXTENSION, READ_AUTHORITY_FQN);
+    }
+
+    private static void putAnnotation(Map<String, Object> vendorExtensions, String source, String target, String annotationFqn) {
+        Object value = vendorExtensions.get(source);
+        List<?> names = value instanceof List<?> list ? list : value == null ? List.of() : List.of(value);
+        if (names.isEmpty()) {
+            return;
         }
+        String authorities = names.stream()
+            .map(name -> AUTHORITY_ENUM_FQN + "." + name)
+            .collect(Collectors.joining(", "));
+        vendorExtensions.put(target, "@" + annotationFqn + "({ " + authorities + " })");
     }
 
     /**
