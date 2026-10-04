@@ -7,12 +7,12 @@
 
 ## 2. Permission snapshot, relationship sources and evaluator core
 
-- [ ] 2.1 Write failing unit tests for `AuthorizationSnapshot` (`has` over everything vs. over a target, target created later covered by over-everything, union of two sources, source grant for an `{ALL}`-only authority ignored); verify they fail
-- [ ] 2.2 Create `com.klabis.common.authorization` (named interface), `TargetType`, `TargetRef`, `RelationshipSource`, `AuthorizationSnapshot`; verify 2.1 passes and `ModuleStructureVerificationTest` passes
-- [ ] 2.3 Write failing tests for the request-scoped lazy `AuthorizationSnapshotProvider`: loads once per request, not at all when nothing asks, `client_credentials` uses token authorities and no targets; verify they fail
-- [ ] 2.4 Implement the provider over `PermissionService` + all `RelationshipSource` beans; verify 2.3 passes
-- [ ] 2.5 Write failing unit tests for `AuthorizationEvaluator` rule (D5: any-of authorities, with/without target, owner-visible self path); implement it; verify tests pass
-- [ ] 2.6 Extend `WithKlabisMockUser` with `targetGrants` installing a fixed snapshot (D8); verify an existing `@WebMvcTest` and a new one using `targetGrants` pass
+- [x] 2.1 Write failing unit tests for `AuthorizationSnapshot` (`has` over everything vs. over a target, target created later covered by over-everything, union of two sources, source grant for an `{ALL}`-only authority ignored); verify they fail
+- [x] 2.2 Create `com.klabis.common.authorization` (named interface), `TargetType`, `TargetRef`, `RelationshipSource`, `AuthorizationSnapshot`; verify 2.1 passes and `ModuleStructureVerificationTest` passes
+- [x] 2.3 Write failing tests for the request-scoped lazy `AuthorizationSnapshotProvider`: loads once per request, not at all when nothing asks, `client_credentials` uses token authorities and no targets; verify they fail
+- [x] 2.4 Implement the provider over `PermissionService` + all `RelationshipSource` beans; verify 2.3 passes
+- [x] 2.5 Write failing unit tests for `AuthorizationEvaluator` rule (D5: any-of authorities, with/without target, owner-visible self path); implement it; verify tests pass
+- [x] 2.6 Extend `WithKlabisMockUser` with `targetGrants` installing a fixed snapshot (D8); verify an existing `@WebMvcTest` and a new one using `targetGrants` pass
 
 ## 3. Permissions read per request instead of from the token
 
