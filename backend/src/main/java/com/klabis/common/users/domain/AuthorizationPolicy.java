@@ -9,8 +9,6 @@ import com.klabis.common.users.UserId;
  * This class encapsulates authorization business rules that must be enforced
  * when granting or revoking authorities. It provides:
  * - Admin lockout prevention
- * - Authority scope validation (global vs context-specific)
- * - Group authorization validation (future)
  * <p>
  * Design principles:
  * - Stateless: all context passed as method parameters
@@ -19,7 +17,6 @@ import com.klabis.common.users.UserId;
  * <p>
  * Usage:
  * - Call checkAdminLockoutPrevention() before revoking MEMBERS:PERMISSIONS
- * - Call checkGlobalAuthorityNotGrantedViaGroup() before group authority grants
  *
  * @see Authority
  * @see UserPermissions
@@ -68,36 +65,6 @@ public final class AuthorizationPolicy {
                             "This would leave the system with zero permission managers. " +
                             "Grant MEMBERS:PERMISSIONS to another user first.",
                             targetUserId.uuid()
-                    )
-            );
-        }
-    }
-
-    /**
-     * Checks if a global authority is being granted via group mechanism.
-     * <p>
-     * Global authorities (MEMBERS:PERMISSIONS, SYSTEM:ADMIN) cannot be granted
-     * via groups to prevent privilege escalation. They must be granted directly.
-     * <p>
-     * Business rules:
-     * - Global authorities cannot be granted via groups
-     * - Context-specific authorities can be granted via groups
-     * <p>
-     * Note: This is designed for future group-based authorization.
-     * Currently, no group authorization exists, so this validates future design.
-     *
-     * @param authority the authority being granted via group
-     * @throws IllegalArgumentException if authority is global and grant is via group
-     */
-    public static void checkGlobalAuthorityNotGrantedViaGroup(Authority authority) {
-        if (authority.getScope() == Authority.Scope.GLOBAL) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Global authority %s cannot be granted via groups. " +
-                            "Global authorities must be granted directly to users. " +
-                            "Authority scope: %s",
-                            authority.getValue(),
-                            authority.getScope()
                     )
             );
         }

@@ -2,8 +2,8 @@
 
 ## 1. Authority describes target type and grant forms
 
-- [ ] 1.1 Write failing unit tests for `Authority`: every constant has `targetType` and `grantForms` per design D1; `assignableAuthorities()` equals authorities with `ALL` minus standard and `DEVELOPER`; `delegatable()` is empty today; verify they fail
-- [ ] 1.2 Implement D1, remove `Authority.Scope` and `AuthorizationPolicy.checkGlobalAuthorityNotGrantedViaGroup` (and its test); verify 1.1 passes and `PermissionController` tests still list the same dialog options
+- [x] 1.1 Write failing unit tests for `Authority`: every constant has `targetType` and `grantForms` per design D1; `assignableAuthorities()` equals authorities with `ALL` minus standard and `DEVELOPER`; `delegatable()` is empty today; verify they fail
+- [x] 1.2 Implement D1, remove `Authority.Scope` and `AuthorizationPolicy.checkGlobalAuthorityNotGrantedViaGroup` (and its test); verify 1.1 passes and `PermissionController` tests still list the same dialog options
 
 ## 2. Permission snapshot, relationship sources and evaluator core
 

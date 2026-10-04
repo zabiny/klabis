@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.*;
  * <p>
  * Tests authorization business rules:
  * - Admin lockout prevention
- * - Authority scope validation (global vs context-specific)
  */
 class AuthorizationPolicyTest {
 
@@ -55,49 +54,6 @@ class AuthorizationPolicyTest {
         assertThatCode(() ->
                 AuthorizationPolicy.checkAdminLockoutPrevention(TEST_USER_ID, adminAuthority, adminCount)
         ).doesNotThrowAnyException();
-    }
-
-    @Test
-    void shouldAllowGrantingContextSpecificAuthorityViaGroup() {
-        // Given
-        Authority contextSpecificAuthority = Authority.MEMBERS_READ;
-
-        // When/Then - should not throw exception
-        assertThatCode(() ->
-                AuthorizationPolicy.checkGlobalAuthorityNotGrantedViaGroup(contextSpecificAuthority)
-        ).doesNotThrowAnyException();
-    }
-
-    @Test
-    void shouldPreventGrantingGlobalAuthorityViaGroup() {
-        // Given
-        Authority globalAuthority = Authority.MEMBERS_PERMISSIONS;
-
-        // When/Then
-        assertThatThrownBy(() ->
-                AuthorizationPolicy.checkGlobalAuthorityNotGrantedViaGroup(globalAuthority)
-        )
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Global authority")
-                .hasMessageContaining("cannot be granted via groups")
-                .hasMessageContaining("must be granted directly");
-    }
-
-    @Test
-    void shouldIncludeAuthorityDetailsInGroupValidationError() {
-        // Given
-        Authority globalAuthority = Authority.MEMBERS_PERMISSIONS;
-
-        // When
-        Throwable thrown = catchThrowable(() ->
-                AuthorizationPolicy.checkGlobalAuthorityNotGrantedViaGroup(globalAuthority)
-        );
-
-        // Then
-        assertThat(thrown)
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(Authority.MEMBERS_PERMISSIONS.getValue())
-                .hasMessageContaining(Authority.Scope.GLOBAL.toString());
     }
 
     @Test

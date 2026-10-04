@@ -2,7 +2,11 @@ package com.klabis.common.users;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.klabis.common.authorization.GrantForm;
+import com.klabis.common.authorization.TargetType;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -25,17 +29,17 @@ import java.util.Set;
  * </ul>
  */
 public enum Authority {
-    CALENDAR_MANAGE("CALENDAR:MANAGE", Scope.CONTEXT_SPECIFIC),
-    MEMBERS_MANAGE("MEMBERS:MANAGE", Scope.CONTEXT_SPECIFIC),
-    MEMBERS_READ("MEMBERS:READ", Scope.CONTEXT_SPECIFIC),
-    MEMBERS_PERMISSIONS("MEMBERS:PERMISSIONS", Scope.GLOBAL),
-    EVENTS_READ("EVENTS:READ", Scope.GLOBAL),
-    EVENTS_MANAGE("EVENTS:MANAGE", Scope.GLOBAL),
-    EVENTS_REGISTRATIONS("EVENTS:REGISTRATIONS", Scope.CONTEXT_SPECIFIC),
-    GROUPS_TRAINING("GROUPS:TRAINING", Scope.GLOBAL),
-    FINANCE_MANAGE("FINANCE:MANAGE", Scope.GLOBAL),
-    SYNC_MANAGE("SYNC:MANAGE", Scope.GLOBAL),
-    DEVELOPER("DEVELOPER", Scope.GLOBAL);
+    CALENDAR_MANAGE("CALENDAR:MANAGE", TargetType.NONE, GrantForm.ALL),
+    MEMBERS_MANAGE("MEMBERS:MANAGE", TargetType.MEMBER, GrantForm.ALL),
+    MEMBERS_READ("MEMBERS:READ", TargetType.MEMBER, GrantForm.ALL),
+    MEMBERS_PERMISSIONS("MEMBERS:PERMISSIONS", TargetType.MEMBER, GrantForm.ALL),
+    EVENTS_READ("EVENTS:READ", TargetType.EVENT, GrantForm.ALL),
+    EVENTS_MANAGE("EVENTS:MANAGE", TargetType.EVENT, GrantForm.ALL),
+    EVENTS_REGISTRATIONS("EVENTS:REGISTRATIONS", TargetType.MEMBER, GrantForm.ALL),
+    GROUPS_TRAINING("GROUPS:TRAINING", TargetType.NONE, GrantForm.ALL),
+    FINANCE_MANAGE("FINANCE:MANAGE", TargetType.NONE, GrantForm.ALL),
+    SYNC_MANAGE("SYNC:MANAGE", TargetType.NONE, GrantForm.ALL),
+    DEVELOPER("DEVELOPER", TargetType.NONE, GrantForm.ALL);
 
     public static final String CALENDAR_SCOPE = "CALENDAR";
     public static final String MEMBERS_SCOPE = "MEMBERS";
@@ -45,31 +49,21 @@ public enum Authority {
     public static final String SYNC_SCOPE = "SYNC";
 
     private final String value;
-    private final Scope scope;
+    private final TargetType targetType;
+    private final Set<GrantForm> grantForms;
 
-    Authority(String value, Scope scope) {
+    Authority(String value, TargetType targetType, GrantForm... grantForms) {
         this.value = value;
-        this.scope = scope;
+        this.targetType = targetType;
+        this.grantForms = EnumSet.copyOf(Arrays.asList(grantForms));
     }
 
-    /**
-     * Scope classification for authorities.
-     * <p>
-     * GLOBAL: Cannot be granted via groups (admin-level permissions)
-     * CONTEXT_SPECIFIC: Can be granted via groups in future group-based authorization
-     */
-    public enum Scope {
-        GLOBAL,
-        CONTEXT_SPECIFIC
+    public TargetType getTargetType() {
+        return targetType;
     }
 
-    /**
-     * Gets the scope classification for this authority.
-     *
-     * @return the scope (GLOBAL or CONTEXT_SPECIFIC)
-     */
-    public Scope getScope() {
-        return scope;
+    public Set<GrantForm> getGrantForms() {
+        return Collections.unmodifiableSet(grantForms);
     }
 
     /**
@@ -125,16 +119,35 @@ public enum Authority {
     }
 
     /**
-     * The authorities that may be granted through the permissions API: every authority
-     * except the standard user authorities (held by every user) and the internal-only
-     * {@link #DEVELOPER}. Used to offer the assignable catalogue in HAL-FORMS options —
+     * The authorities that may be granted over everything through the permissions API: every authority
+     * holdable in {@link GrantForm#ALL} except the standard user authorities (held by every user) and
+     * the internal-only {@link #DEVELOPER}. Used to offer the assignable catalogue in HAL-FORMS options —
      * not the target user's current authorities.
      */
     public static Set<Authority> assignableAuthorities() {
-        EnumSet<Authority> assignable = EnumSet.allOf(Authority.class);
+        EnumSet<Authority> assignable = EnumSet.noneOf(Authority.class);
+        for (Authority authority : values()) {
+            if (authority.grantForms.contains(GrantForm.ALL)) {
+                assignable.add(authority);
+            }
+        }
         assignable.removeAll(getStandardUserAuthorities());
         assignable.remove(DEVELOPER);
         return assignable;
+    }
+
+    /**
+     * Authorities that may be held over specific targets, i.e. derived from relationships. Administrator
+     * authorities are {@link GrantForm#ALL}-only and therefore never delegatable.
+     */
+    public static Set<Authority> delegatable() {
+        EnumSet<Authority> delegatable = EnumSet.noneOf(Authority.class);
+        for (Authority authority : values()) {
+            if (authority.grantForms.contains(GrantForm.SPECIFIC)) {
+                delegatable.add(authority);
+            }
+        }
+        return delegatable;
     }
 
     public static boolean isKnownAuthority(String value) {
