@@ -351,9 +351,10 @@ public class EventController implements EventsApi {
     @GetMapping(value = EventsApi.PATH_GET_ACCOMMODATION_LIST, produces = {MediaTypes.HAL_FORMS_JSON_VALUE, "application/problem+json"})
     @Override
     public ResponseEntity<List<AccommodationListItemDto>> getAccommodationList(
-            @PathVariable UUID eventId) {
+            @PathVariable UUID eventId,
+            @ActingUser CurrentUserData currentUser) {
 
-        AccommodationList accommodationList = accommodationListService.getAccommodationList(new EventId(eventId), currentUser());
+        AccommodationList accommodationList = accommodationListService.getAccommodationList(new EventId(eventId), currentUser);
         List<AccommodationListItemDto> items = toAccommodationListItems(accommodationList);
 
         HalResponseContext.setDomainList(accommodationList.rows());
@@ -363,9 +364,10 @@ public class EventController implements EventsApi {
 
     @GetMapping(value = "/api/events/{eventId}/accommodation-list", produces = "text/csv")
     public ResponseEntity<byte[]> getAccommodationListAsCsv(
-            @PathVariable UUID eventId) {
+            @PathVariable UUID eventId,
+            @ActingUser CurrentUserData currentUser) {
 
-        AccommodationList accommodationList = accommodationListService.getAccommodationList(new EventId(eventId), currentUser());
+        AccommodationList accommodationList = accommodationListService.getAccommodationList(new EventId(eventId), currentUser);
         List<AccommodationListItemDto> items = toAccommodationListItems(accommodationList);
         byte[] csv = csvRenderer.renderToBytes(items);
 
@@ -375,11 +377,6 @@ public class EventController implements EventsApi {
                 .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
                 .header("Content-Type", "text/csv; charset=UTF-8")
                 .body(csv);
-    }
-
-    private static CurrentUserData currentUser() {
-        return CurrentUserData.from(SecurityContextHolder.getContext().getAuthentication())
-                .orElseThrow(() -> new AccessDeniedException("Authenticated user required"));
     }
 
     private static List<AccommodationListItemDto> toAccommodationListItems(AccommodationList accommodationList) {
@@ -571,7 +568,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
 
         if (event.isSharedAccommodationEnabled()
                 && EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
-            klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId))
+            klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId, null))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
 
