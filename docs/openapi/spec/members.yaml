@@ -230,7 +230,7 @@ paths:
       description: |
         Detailed member information. Which fields are present depends on the caller: fields marked
         with x-klabis-authority / x-klabis-owner-visible are omitted unless the caller holds
-        MEMBERS:MANAGE or is the member themselves.
+        MEMBERS:MANAGE or MEMBERS:EDIT_PROFILE over this member, or is the member themselves.
       security:
         - KlabisAuth: [MEMBERS]
       x-klabis-authority: MEMBERS_READ
@@ -314,8 +314,7 @@ paths:
         Fields the caller is not authorized to change are rejected.
       security:
         - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
-      x-klabis-owner-visible: true
+      x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
       x-spring-provide-args:
         - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
       parameters:
@@ -880,15 +879,15 @@ components:
         dateOfBirth:
           type: string
           format: date
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         nationality:
           type: string
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         gender:
           $ref: '#/components/schemas/Gender'
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         email:
           type: string
@@ -902,39 +901,39 @@ components:
           description: Whether the member is active (visible to admins only)
         chipNumber:
           type: string
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         identityCard:
           $ref: '#/components/schemas/IdentityCardDto'
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         medicalCourse:
           $ref: '#/components/schemas/MedicalCourseDto'
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         trainerLicense:
           $ref: '#/components/schemas/TrainerLicenseDto'
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         refereeLicense:
           $ref: '#/components/schemas/RefereeLicenseDto'
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         drivingLicenseGroup:
           $ref: '#/components/schemas/DrivingLicenseGroup'
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         dietaryRestrictions:
           type: string
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         birthNumber:
           type: string
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         bankAccountNumber:
           type: string
-          x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-klabis-owner-visible: true
         suspensionReason:
           $ref: '#/components/schemas/DeactivationReason'
@@ -1112,15 +1111,18 @@ components:
           maxLength: 100
           x-klabis-not-blank: true
           x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-read-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
         lastName:
           type: ['string', 'null']
           maxLength: 100
           x-klabis-not-blank: true
           x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-read-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
         dateOfBirth:
           type: ['string', 'null']
           format: date
           x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-read-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
         # gender re-declares the Gender enum inline instead of $ref-ing it. Both composition
         # keywords are unusable here: oneOf/allOf strip property-level vendor extensions, and an
         # allOf that keeps x-klabis-authority still generates a bare `Gender`, not
@@ -1133,6 +1135,7 @@ components:
           type: ['string', 'null']
           enum: ['MALE', 'FEMALE', null]
           x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-read-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
           x-hal-input-type: Gender
         chipNumber:
           type: ['string', 'null']
@@ -1164,6 +1167,7 @@ components:
         birthNumber:
           type: ['string', 'null']
           x-klabis-authority: MEMBERS_MANAGE
+          x-klabis-read-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
         bankAccountNumber:
           type: ['string', 'null']
           maxLength: 50

@@ -1,7 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
-import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
@@ -121,9 +120,6 @@ public class MemberController implements MembersApi {
 
         MemberId memberId = new MemberId(id);
         var prefilled = managementService.prefilledUpdateCommand(memberId);
-        if (OwnProfileEditRule.isForbidden(prefilled.dateOfBirth(), authorizationEvaluator)) {
-            throw new InsufficientAuthorityException(Authority.MEMBERS_MANAGE.getValue());
-        }
         var command = UpdateMemberRequestMapper.toCommand(request, prefilled, currentUser.userId());
         Member updatedMember = managementService.updateMember(memberId, command);
 
@@ -309,17 +305,14 @@ record EnrolledMemberIds(Set<String> memberIds) {
 class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDetailsResponse, Member> {
 
     private final MemberAccountActivationPort accountActivationPort;
-    private final AuthorizationEvaluator authorizationEvaluator;
 
-    MemberDetailsPostprocessor(MemberAccountActivationPort accountActivationPort,
-                               AuthorizationEvaluator authorizationEvaluator) {
+    MemberDetailsPostprocessor(MemberAccountActivationPort accountActivationPort) {
         this.accountActivationPort = accountActivationPort;
-        this.authorizationEvaluator = authorizationEvaluator;
     }
 
     @Override
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
-        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member, authorizationEvaluator);
+        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
 
         if (accountActivationPort.isAvailableFor(member)) {
             UUID id = member.getId().uuid();
@@ -338,15 +331,9 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
 @MvcComponent
 class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSummaryResponse, Member> {
 
-    private final AuthorizationEvaluator authorizationEvaluator;
-
-    MemberSummaryPostprocessor(AuthorizationEvaluator authorizationEvaluator) {
-        this.authorizationEvaluator = authorizationEvaluator;
-    }
-
     @Override
     public void process(EntityModel<MemberSummaryResponse> dtoModel, Member member) {
-        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member, authorizationEvaluator);
+        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
 
         UUID memberId = member.getId().uuid();
         MemberSelfLinkSupport.addSyncLinkIfEnrolled(dtoModel, memberId);
@@ -363,15 +350,12 @@ final class MemberSelfLinkSupport {
     private MemberSelfLinkSupport() {
     }
 
-    static void addSelfLinkWithAffordances(RepresentationModel<?> dtoModel, Member member,
-                                           AuthorizationEvaluator authorizationEvaluator) {
+    static void addSelfLinkWithAffordances(RepresentationModel<?> dtoModel, Member member) {
         UUID memberId = member.getId().uuid();
 
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId, null)).map(link -> {
-            var self = link.withSelfRel();
-            if (!OwnProfileEditRule.isForbidden(member.getDateOfBirth(), authorizationEvaluator)) {
-                self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(memberId, null, null)));
-            }
+            var self = link.withSelfRel()
+                    .andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(memberId, null, null)));
             if (member.isActive()) {
                 self = self.andAffordances(klabisAfford(
                         methodOn(MembersApi.class).suspendMember(memberId, null, null)));

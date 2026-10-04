@@ -47,6 +47,27 @@ describe('HalFormsForm readOnly field rendering', () => {
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     });
 
+    it('does not block submit on a required readOnly property with an empty value', async () => {
+        const onSubmit = vi.fn();
+        const user = userEvent.setup();
+        const template = createTemplate([
+            createProperty({name: 'locked', readOnly: true, required: true}),
+            createProperty({name: 'free', prompt: 'Free'}),
+        ]);
+        render(
+            <HalFormsForm
+                data={{free: 'x'}}
+                template={template}
+                onSubmit={onSubmit}
+                submitButtonLabel="Send"
+            />
+        );
+
+        await user.click(screen.getByRole('button', {name: 'Send'}));
+
+        await vi.waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    });
+
     it('uses property prompt as label for readOnly field', () => {
         const prop = createProperty({readOnly: true, prompt: 'My Label'});
         const template = createTemplate([prop]);

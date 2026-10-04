@@ -11,6 +11,7 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MemberDetailPage} from './MemberDetailPage';
 import {vi} from 'vitest';
 import type {HalFormsTemplate, HalResponse} from '../../api';
+import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -115,6 +116,20 @@ const selfEditTemplate: HalFormsTemplate = {
     method: 'PATCH',
     target: '/api/members/123e4567-e89b-12d3-a456-426614174000/profile',
     properties: [
+        {name: 'email', type: 'email', prompt: 'E-mail'},
+        {name: 'phone', type: 'tel', prompt: 'Telefon'},
+    ],
+};
+
+const selfEditTemplateWithReservedFields: HalFormsTemplate = {
+    method: 'PATCH',
+    target: '/api/members/123e4567-e89b-12d3-a456-426614174000',
+    properties: [
+        {name: 'firstName', type: 'text', prompt: 'Jméno', readOnly: true},
+        {name: 'lastName', type: 'text', prompt: 'Příjmení', readOnly: true},
+        {name: 'dateOfBirth', type: 'date', prompt: 'Datum narození', readOnly: true},
+        {name: 'gender', type: 'Gender', prompt: 'Pohlaví', readOnly: true, options: {inline: ['MALE', 'FEMALE']}},
+        {name: 'birthNumber', type: 'text', prompt: 'Rodné číslo', readOnly: true},
         {name: 'email', type: 'email', prompt: 'E-mail'},
         {name: 'phone', type: 'tel', prompt: 'Telefon'},
     ],
@@ -661,6 +676,101 @@ describe('MemberDetailPage', () => {
             const genderSelect = document.querySelector('select[name="gender"]');
             expect(genderSelect).toBeInTheDocument();
             expect(genderSelect).toHaveValue('MALE');
+        });
+
+        describe('self-edit template with reserved fields marked readOnly', () => {
+            const selfData = () => mockMemberDetailData({
+                gender: 'FEMALE',
+                birthNumber: '9003151234',
+                _templates: {updateMember: selfEditTemplateWithReservedFields},
+            });
+
+            it('renders the five reserved fields without inputs', async () => {
+                const user = userEvent.setup();
+                renderPage(createMockPageData(selfData()));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+                expect(screen.queryByDisplayValue('Jan')).not.toBeInTheDocument();
+                expect(screen.queryByDisplayValue('Novák')).not.toBeInTheDocument();
+                expect(document.querySelector('[name="firstName"]')).not.toBeInTheDocument();
+                expect(document.querySelector('[name="lastName"]')).not.toBeInTheDocument();
+                expect(document.querySelector('[name="dateOfBirth"]')).not.toBeInTheDocument();
+                expect(document.querySelector('[name="gender"]')).not.toBeInTheDocument();
+                expect(document.querySelector('[name="birthNumber"]')).not.toBeInTheDocument();
+            });
+
+            it('still displays the reserved values, localized, while editing', async () => {
+                const user = userEvent.setup();
+                renderPage(createMockPageData(selfData()));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+                expect(screen.getByText('Jan')).toBeInTheDocument();
+                expect(screen.getByText('Novák')).toBeInTheDocument();
+                expect(screen.getByText('Žena')).toBeInTheDocument();
+                expect(screen.getByText('15. 3. 1990')).toBeInTheDocument();
+                expect(screen.queryByText('FEMALE')).not.toBeInTheDocument();
+            });
+
+            it('keeps the non-reserved fields editable', async () => {
+                const user = userEvent.setup();
+                renderPage(createMockPageData(selfData()));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+                expect(screen.getByDisplayValue('jan.novak@email.cz')).toBeInTheDocument();
+                expect(screen.getByDisplayValue('+420777123456')).toBeInTheDocument();
+            });
+
+            it('omits the reserved fields from the PATCH body', async () => {
+                const user = userEvent.setup();
+                const mutate = vi.fn();
+                vi.mocked(useAuthorizedMutation).mockReturnValue({
+                    mutate,
+                    mutateAsync: vi.fn(),
+                    isPending: false,
+                    error: null,
+                } as unknown as ReturnType<typeof useAuthorizedMutation>);
+                renderPage(createMockPageData(selfData()));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+                const phone = screen.getByDisplayValue('+420777123456');
+                await user.clear(phone);
+                await user.type(phone, '+420111222333');
+                await user.click(screen.getByRole('button', {name: /uložit změny/i}));
+
+                await vi.waitFor(() => expect(mutate).toHaveBeenCalled());
+                const body = mutate.mock.calls[0][0].data as Record<string, unknown>;
+                expect(body.phone).toBe('+420111222333');
+                for (const reserved of ['firstName', 'lastName', 'dateOfBirth', 'gender', 'birthNumber']) {
+                    expect(body).not.toHaveProperty(reserved);
+                }
+            });
+        });
+
+        describe('admin edit template', () => {
+            it('sends reserved fields in the body when they are editable', async () => {
+                const user = userEvent.setup();
+                const mutate = vi.fn();
+                vi.mocked(useAuthorizedMutation).mockReturnValue({
+                    mutate,
+                    mutateAsync: vi.fn(),
+                    isPending: false,
+                    error: null,
+                } as unknown as ReturnType<typeof useAuthorizedMutation>);
+                renderPage(createMockPageData(mockMemberDetailData({
+                    gender: 'MALE',
+                    _templates: {updateMember: adminEditTemplateWithGender},
+                })));
+
+                await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+                await user.click(screen.getByRole('button', {name: /uložit změny/i}));
+
+                await vi.waitFor(() => expect(mutate).toHaveBeenCalled());
+                const body = mutate.mock.calls[0][0].data as Record<string, unknown>;
+                expect(body).toMatchObject({firstName: 'Jan', lastName: 'Novák', gender: 'MALE'});
+            });
         });
 
         describe('birth number conditional on nationality in edit mode', () => {

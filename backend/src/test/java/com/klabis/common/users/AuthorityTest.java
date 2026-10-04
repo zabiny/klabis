@@ -21,6 +21,7 @@ class AuthorityTest {
                 Arguments.of(Authority.MEMBERS_MANAGE, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.MEMBERS_READ, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.MEMBERS_PERMISSIONS, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
+                Arguments.of(Authority.MEMBERS_EDIT_PROFILE, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_REGISTRATIONS, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.EVENTS_READ, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.EVENTS_MANAGE, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
@@ -74,9 +75,23 @@ class AuthorityTest {
     }
 
     @Test
-    @DisplayName("no authority is delegatable yet")
-    void shouldHaveNoDelegatableAuthorities() {
-        assertThat(Authority.delegatable()).isEmpty();
+    @DisplayName("profile editing is the only delegatable authority")
+    void shouldHaveProfileEditingAsOnlyDelegatableAuthority() {
+        assertThat(Authority.delegatable()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
+    }
+
+    @Test
+    @DisplayName("profile editing has the wire value MEMBERS:EDIT_PROFILE")
+    void shouldExposeProfileEditingWireValue() {
+        assertThat(Authority.MEMBERS_EDIT_PROFILE.getValue()).isEqualTo("MEMBERS:EDIT_PROFILE");
+        assertThat(Authority.fromString("MEMBERS:EDIT_PROFILE")).isEqualTo(Authority.MEMBERS_EDIT_PROFILE);
+    }
+
+    @Test
+    @DisplayName("profile editing is neither assignable in the permissions dialog nor grantable over everything")
+    void shouldNotOfferProfileEditingForDirectGrant() {
+        assertThat(Authority.assignableAuthorities()).doesNotContain(Authority.MEMBERS_EDIT_PROFILE);
+        assertThat(Authority.grantableOverAll()).doesNotContain(Authority.MEMBERS_EDIT_PROFILE);
     }
 
     @Test

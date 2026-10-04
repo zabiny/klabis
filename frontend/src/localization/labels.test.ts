@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {czechPlural, getEnumLabel, getFieldLabel, getNavLabel, getTemplateLabel, labels, t,} from './labels';
+import {czechPlural, getPermissionInfo, getEnumLabel, getFieldLabel, getNavLabel, getTemplateLabel, labels, t,} from './labels';
 
 describe('labels', () => {
     it('has nav labels', () => {
@@ -193,5 +193,11 @@ describe('czechPlural()', () => {
         expect(forms(4)).toBe('členové');
         expect(forms(5)).toBe('členů');
         expect(forms(12)).toBe('členů');
+    });
+});
+
+describe('getPermissionInfo()', () => {
+    it('labels MEMBERS:EDIT_PROFILE as "Úprava údajů člena"', () => {
+        expect(getPermissionInfo('MEMBERS:EDIT_PROFILE')?.label).toBe('Úprava údajů člena');
     });
 });

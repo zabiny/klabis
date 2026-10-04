@@ -37,7 +37,9 @@ export function useInlineEditing(
         [enrichedTemplate]);
 
     const originalEditableFieldNames = useMemo(() =>
-        template ? new Set(template.properties.map(p => p.name)) : new Set<string>(),
+        template
+            ? new Set(template.properties.filter(p => p.readOnly !== true).map(p => p.name))
+            : new Set<string>(),
         [template]);
 
     const startEditing = () => setIsEditing(true);
