@@ -1,15 +1,18 @@
 package com.klabis.common.security;
 
+import com.klabis.common.authorization.AuthorizationSnapshot;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jose.jws.JwsAlgorithms;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +37,8 @@ class KlabisJwtAuthenticationTokenTest {
         KlabisJwtAuthenticationToken token = new KlabisJwtAuthenticationToken(
                 jwt,
                 new UserId(TEST_USER_ID),
-                List.of()
+                null,
+                AuthorizationSnapshot::empty
         );
 
         assertThat(token.getUserId()).isEqualTo(new UserId(TEST_USER_ID));
@@ -56,7 +60,7 @@ class KlabisJwtAuthenticationTokenTest {
                 jwt,
                 new UserId(TEST_USER_ID),
                 TEST_MEMBER_ID,
-                List.of()
+                AuthorizationSnapshot::empty
         );
 
         assertThat(token.getUserId()).isEqualTo(new UserId(TEST_USER_ID));
@@ -77,8 +81,8 @@ class KlabisJwtAuthenticationTokenTest {
         KlabisJwtAuthenticationToken token = new KlabisJwtAuthenticationToken(
                 jwt,
                 new UserId(TEST_USER_ID),
-                (UUID) null,
-                List.of()
+                null,
+                AuthorizationSnapshot::empty
         );
 
         assertThat(token.getUserId()).isEqualTo(new UserId(TEST_USER_ID));
@@ -97,11 +101,42 @@ class KlabisJwtAuthenticationTokenTest {
         KlabisJwtAuthenticationToken token = new KlabisJwtAuthenticationToken(
                 jwt,
                 new UserId(TEST_USER_ID),
-                List.of()
+                null,
+                AuthorizationSnapshot::empty
         );
 
         assertThat(token.getToken()).isEqualTo(jwt);
         assertThat(token.getAuthorities()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("should identify itself by user id and by member id")
+    void shouldIdentifySelfByUserAndMemberId() {
+        Jwt jwt = createTestJwt(Map.of(JwtClaimNames.SUB, TEST_USERNAME, "user_id", TEST_USER_ID.toString()));
+        UUID stranger = UUID.randomUUID();
+
+        KlabisJwtAuthenticationToken withProfile = new KlabisJwtAuthenticationToken(
+                jwt, new UserId(TEST_USER_ID), TEST_MEMBER_ID, AuthorizationSnapshot::empty);
+        KlabisJwtAuthenticationToken withoutProfile = new KlabisJwtAuthenticationToken(
+                jwt, new UserId(TEST_USER_ID), null, AuthorizationSnapshot::empty);
+
+        assertThat(withProfile.isSelf(TEST_USER_ID)).isTrue();
+        assertThat(withProfile.isSelf(TEST_MEMBER_ID)).isTrue();
+        assertThat(withProfile.isSelf(stranger)).isFalse();
+        assertThat(withoutProfile.isSelf(TEST_USER_ID)).isTrue();
+        assertThat(withoutProfile.isSelf(TEST_MEMBER_ID)).isFalse();
+    }
+
+    @Test
+    @DisplayName("should expose the overAll authorities of its snapshot as granted authorities")
+    void shouldExposeSnapshotAuthoritiesAsGrantedAuthorities() {
+        Jwt jwt = createTestJwt(Map.of(JwtClaimNames.SUB, TEST_USERNAME, "user_id", TEST_USER_ID.toString()));
+        AuthorizationSnapshot snapshot = AuthorizationSnapshot.of(Set.of(Authority.MEMBERS_READ), Map.of());
+
+        KlabisJwtAuthenticationToken token = new KlabisJwtAuthenticationToken(
+                jwt, new UserId(TEST_USER_ID), null, () -> snapshot);
+
+        assertThat(token.getAuthorities()).extracting(GrantedAuthority::getAuthority).containsExactly("MEMBERS:READ");
     }
 
     private Jwt createTestJwt(Map<String, Object> claims) {

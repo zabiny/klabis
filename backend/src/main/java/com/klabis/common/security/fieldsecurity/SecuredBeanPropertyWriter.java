@@ -6,7 +6,6 @@ import tools.jackson.databind.ser.BeanPropertyWriter;
 import tools.jackson.databind.util.NameTransformer;
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.users.HasAuthority;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
 import tools.jackson.databind.SerializationContext;
 
@@ -14,8 +13,8 @@ import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
 /**
- * Wraps a {@link BeanPropertyWriter} to evaluate security annotations ({@link PreAuthorize},
- * {@link HasAuthority}, or {@link OwnerVisible}) during serialization. When authorization is
+ * Wraps a {@link BeanPropertyWriter} to evaluate security annotations ({@link HasAuthority} or
+ * {@link OwnerVisible}) during serialization. When authorization is
  * denied the field is either masked or skipped entirely, depending on the
  * {@link HandleAuthorizationDenied} configuration resolved from the record component or class level.
  * <p>

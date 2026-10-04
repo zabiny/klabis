@@ -1,19 +1,16 @@
 package com.klabis.common.authorization;
 
+import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.security.MethodSecurityAnnotations;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
-import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.security.fieldsecurity.ReadAuthority;
-import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.support.ScopeNotActiveException;
 import org.springframework.core.convert.ConversionService;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
@@ -26,13 +23,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 /**
  * The single place that answers authorization questions, over the permission snapshot of the current request.
- * <p>
- * The {@link OwnershipResolver} is resolved on demand: it is a web-layer bean that cannot be injected eagerly.
  */
 @Component
 public class AuthorizationEvaluator {
@@ -40,17 +34,14 @@ public class AuthorizationEvaluator {
     private static final Logger LOG = LoggerFactory.getLogger(AuthorizationEvaluator.class);
 
     private final AuthorizationSnapshotProvider snapshots;
-    private final ObjectProvider<OwnershipResolver> ownershipResolver;
     private final ObjectProvider<ConversionService> conversionService;
     private final ConcurrentHashMap<InvocationKey, InvocationRules> rulesCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Method, FieldRules> fieldRulesCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Class<?>, Optional<RecordTarget>> recordTargetCache = new ConcurrentHashMap<>();
 
     public AuthorizationEvaluator(AuthorizationSnapshotProvider snapshots,
-                           ObjectProvider<OwnershipResolver> ownershipResolver,
-                           ObjectProvider<ConversionService> conversionService) {
+                                  ObjectProvider<ConversionService> conversionService) {
         this.snapshots = snapshots;
-        this.ownershipResolver = ownershipResolver;
         this.conversionService = conversionService;
     }
 
@@ -74,12 +65,9 @@ public class AuthorizationEvaluator {
      * (a user's id is its member id).
      */
     public boolean isSelf(TargetRef target) {
-        if (target.type() != TargetType.MEMBER) {
-            return false;
-        }
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        OwnershipResolver resolver = ownershipResolver.getIfAvailable();
-        return authentication != null && resolver != null && resolver.isOwner(target.id(), authentication);
+        return target.type() == TargetType.MEMBER
+                && SecurityContextHolder.getContext().getAuthentication() instanceof KlabisJwtAuthenticationToken token
+                && token.isSelf(target.id());
     }
 
     /**
@@ -99,23 +87,14 @@ public class AuthorizationEvaluator {
      * for the authorities). A method without any of them is open. The target is the argument of the parameter
      * annotated with {@link TargetId}; an absent or non-convertible value means the invocation has no target.
      * <p>
-     * Outside of an HTTP request there is no permission snapshot and nothing is allowed.
+     * Without an authenticated user the snapshot is empty and nothing is allowed.
      */
     public boolean canInvoke(Method method, Class<?> targetClass, Object @Nullable [] arguments) {
         InvocationRules rules = invocationRules(method, targetClass);
         if (rules.isOpen()) {
             return true;
         }
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        try {
-            return isAllowed(rules.authorities(), rules.targetOf(arguments, this::toUuid), rules.ownerVisible());
-        } catch (ScopeNotActiveException e) {
-            LOG.warn("Authorization of {} requested outside of an HTTP request, denying", method);
-            return false;
-        }
+        return isAllowed(rules.authorities(), rules.targetOf(arguments, this::toUuid), rules.ownerVisible());
     }
 
     /**
@@ -148,7 +127,7 @@ public class AuthorizationEvaluator {
         if (rules.isOpen()) {
             return true;
         }
-        return decide(accessor, () -> isFieldAllowed(rules, targetsOf(record)));
+        return isAllowedOver(rules.authorities(), targetsOf(record), rules.ownerVisible());
     }
 
     /**
@@ -160,7 +139,7 @@ public class AuthorizationEvaluator {
         if (rules.isOpen()) {
             return true;
         }
-        return decide(accessor, () -> isFieldAllowed(rules, targetList(target)));
+        return isAllowedOver(rules.authorities(), targetList(target), rules.ownerVisible());
     }
 
     /**
@@ -175,15 +154,7 @@ public class AuthorizationEvaluator {
         if (rules.readAuthorities().isEmpty()) {
             return false;
         }
-        return decide(accessor, () -> isAllowedOver(rules.readAuthorities(), targetList(target), false));
-    }
-
-    private boolean isFieldAllowed(FieldRules rules, List<TargetRef> targets) {
-        if (rules.preAuthorize() != null && SecuritySpelEvaluator.evaluate(rules.preAuthorize().value(),
-                rules.accessor(), SecurityContextHolder.getContext().getAuthentication())) {
-            return true;
-        }
-        return isAllowedOver(rules.authorities(), targets, rules.ownerVisible());
+        return isAllowedOver(rules.readAuthorities(), targetList(target), false);
     }
 
     private boolean isAllowedOver(Collection<Authority> authorities, List<TargetRef> targets, boolean ownerVisible) {
@@ -192,19 +163,6 @@ public class AuthorizationEvaluator {
         }
         return authorities.stream().anyMatch(authority -> has(authority))
                 || (ownerVisible && targets.stream().anyMatch(this::isSelf));
-    }
-
-    private boolean decide(Method accessor, BooleanSupplier decision) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        try {
-            return decision.getAsBoolean();
-        } catch (ScopeNotActiveException e) {
-            LOG.warn("Authorization of field {} requested outside of an HTTP request, denying", accessor);
-            return false;
-        }
     }
 
     private static List<TargetRef> targetList(@Nullable TargetRef target) {

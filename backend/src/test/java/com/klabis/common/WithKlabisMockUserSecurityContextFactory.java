@@ -34,10 +34,9 @@ final class WithKlabisMockUserSecurityContextFactory implements WithSecurityCont
         // if no memberId is given, do not generate random or use userId => memberId is not required (may be null), we can simulate users who are not members by that
         final UUID memberId = StringUtils.isBlank(withUser.memberId()) ? null : UUID.fromString(withUser.memberId());
 
-        KlabisJwtAuthenticationToken authentication = KlabisAuthenticationFactory.createAuthenticationToken(JwtParams.jwtTokenParams(
-                userName,
-                userId).withMemberId(memberId).withAuthorities(withUser.authorities()));
-        authentication.setDetails(fixedSnapshot(withUser));
+        KlabisJwtAuthenticationToken authentication = KlabisAuthenticationFactory.createAuthenticationToken(
+                JwtParams.jwtTokenParams(userName, userId).withMemberId(memberId).withAuthorities(withUser.authorities()),
+                fixedSnapshot(withUser));
         SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
         context.setAuthentication(authentication);
         return context;

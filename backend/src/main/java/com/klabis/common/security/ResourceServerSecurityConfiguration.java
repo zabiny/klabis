@@ -1,6 +1,6 @@
 package com.klabis.common.security;
 
-import com.klabis.common.authorization.AuthorizationSnapshotProvider;
+import com.klabis.common.authorization.AuthorizationSnapshotLoader;
 import com.klabis.common.users.UserService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.ObjectProvider;
@@ -39,8 +39,9 @@ public class ResourceServerSecurityConfiguration {
 
     @Bean
     public Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter(
-            ObjectProvider<AuthorizationSnapshotProvider> snapshotProvider) {
-        return new KlabisJwtAuthenticationConverter(snapshotProvider);
+            ObjectProvider<AuthorizationSnapshotLoader> snapshotLoader) {
+        // resolved on the first authorization question: @WebMvcTest slices have no permission tables
+        return new KlabisJwtAuthenticationConverter(userId -> snapshotLoader.getObject().loadFor(userId));
     }
 
     @Bean

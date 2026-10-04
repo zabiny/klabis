@@ -1,7 +1,6 @@
 package com.klabis.common.users.infrastructure.restapi;
 
-import com.klabis.common.FixedAuthorizationSnapshotProvider;
-import com.klabis.common.security.fieldsecurity.OwnershipResolver;
+import com.klabis.common.authorization.AuthorizationSnapshotProvider;
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.security.HasAuthorityMethodInterceptor;
 import com.klabis.common.users.Authority;
@@ -292,9 +291,8 @@ class HasAuthorityAspectTest {
 
         // not a candidate: this configuration is also picked up by full-context tests, which have their own evaluator
         @Bean(autowireCandidate = false)
-        AuthorizationEvaluator hasAuthorityTestEvaluator(ObjectProvider<OwnershipResolver> ownershipResolver,
-                                                         ObjectProvider<ConversionService> conversionService) {
-            return new AuthorizationEvaluator(new FixedAuthorizationSnapshotProvider(), ownershipResolver, conversionService);
+        AuthorizationEvaluator hasAuthorityTestEvaluator(ObjectProvider<ConversionService> conversionService) {
+            return new AuthorizationEvaluator(new AuthorizationSnapshotProvider(), conversionService);
         }
 
         @Bean

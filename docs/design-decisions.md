@@ -309,26 +309,28 @@ Authorization used global authorities (`MEMBERS:MANAGE`, `EVENTS:MANAGE`, …) p
 **Decision:**
 
 1. **An authority describes its target and its grant forms.** `Authority` carries `targetType` (`MEMBER`, `EVENT`, `NONE`) and `grantForms` (`ALL` = may be held over everything, including targets created later; `SPECIFIC` = may be held over specific targets). Assignable in the permissions dialog ⇔ `ALL` (minus standard authorities and `DEVELOPER`); delegatable / derivable from a relationship ⇔ `SPECIFIC`. An administrator authority is `{ALL}`-only and can never be delegated. `Authority.Scope` and `AuthorizationPolicy.checkGlobalAuthorityNotGrantedViaGroup` are removed.
-2. **Grants are united into an immutable per-request snapshot.** `AuthorizationSnapshot` holds `overAll` (from `PermissionService`, plus standard authorities) and `overTargets` (the union of all `RelationshipSource` beans — an SPI in `common.authorization` that any module implements in its `infrastructure`, querying its own repositories per ADR-001). `has(A, t) = A ∈ overAll ∨ t ∈ overTargets[A]`. A source's grant is accepted only for a `SPECIFIC` authority whose `targetType` matches, so a misbehaving source cannot hand out an administrator authority. `RequestScopedAuthorizationSnapshotProvider` loads the snapshot lazily on the first authorization question of a request and memoizes it, so every decision in a request sees one permission set; requests that ask nothing pay nothing. Each source returns all grants of a user in one query. Outside an HTTP request there is no snapshot and nothing is granted.
-3. **Tokens stop carrying authorities.** User access tokens no longer have an `authorities` claim; `KlabisJwtAuthenticationToken.getAuthorities()` delegates to the snapshot's `overAll`, so Spring's own `hasAuthority` SpEL stays consistent with the evaluator and a grant or revocation applies on the user's next request. `client_credentials` tokens (no `user_id`) keep their scope-derived authorities and have no targeted grants.
+2. **Grants are united into an immutable per-request snapshot.** `AuthorizationSnapshot` holds `overAll` (from `PermissionService`, plus standard authorities) and `overTargets` (the union of all `RelationshipSource` beans — an SPI in `common.authorization` that any module implements in its `infrastructure`, querying its own repositories per ADR-001). `has(A, t) = A ∈ overAll ∨ t ∈ overTargets[A]`. A source's grant is accepted only for a `SPECIFIC` authority whose `targetType` matches, so a misbehaving source cannot hand out an administrator authority. The snapshot is carried by the authentication: the resource server builds a new `KlabisJwtAuthenticationToken` per request, and the token memoizes a supplier that calls `AuthorizationSnapshotLoader` on the first authorization question, so every decision in a request sees one permission set without a request-scoped bean; requests that ask nothing pay nothing. `AuthorizationSnapshotProvider.current()` reads the snapshot from the current authentication. Each source returns all grants of a user in one query. Without an authenticated user (listeners, scheduled jobs) the snapshot is empty and nothing is granted.
+3. **Tokens stop carrying authorities.** User access tokens no longer have an `authorities` claim; `KlabisJwtAuthenticationToken.getAuthorities()` returns the snapshot's `overAll` (memoized), so Spring's own `hasAuthority` SpEL stays consistent with the evaluator and a grant or revocation applies on the user's next request. `client_credentials` tokens (no `user_id`) keep their scope-derived authorities and have no targeted grants.
 4. **One evaluator answers every authorization question.** `AuthorizationEvaluator` is used by method security (`HasAuthorityMethodInterceptor`), affordances and link filtering (`HalFormsSupport`), response-field visibility (`SecuredBeanPropertyWriter`), request-body field checks (`RequestBodyFieldAuthorizationAdvice`), HAL-FORMS property `readOnly`, and application code (`has(authority)`, `has(authority, target)`, `isSelf(target)`). The rule for an element guarded by `authorities = [A1..An]`, optional target `t` and optional owner-visibility is:
 
    ```
    allowed ⇔ ∃ Ai: (t present ? has(Ai, t) : hasOverAll(Ai))   ∨   (ownerVisible ∧ isSelf(t))
    ```
 
-   The target is declared by `@TargetId(TargetType.X)` on a path parameter or record component (spec: `x-klabis-target-id: X`); `@HasAuthority` takes a list (any of). `AuthorizationArchitectureTest` (ArchUnit) forbids reading the security annotations, `OwnershipResolver`, `SecuritySpelEvaluator` or `Authentication.getAuthorities()` outside `common.authorization` and `common.security`.
+   Field rules are expressed only with `@HasAuthority`, `@OwnerVisible`, `@TargetId` and `@ReadAuthority`; SpEL `@PreAuthorize` on fields is not supported. The target is declared by `@TargetId(TargetType.X)` on a path parameter or record component (spec: `x-klabis-target-id: X`); `@HasAuthority` takes a list (any of). `AuthorizationArchitectureTest` (ArchUnit) forbids reading the security annotations or `Authentication.getAuthorities()` outside `common.authorization` and `common.security`.
 
 ```mermaid
 flowchart LR
-    PS[PermissionService] -->|grants over everything| SP[AuthorizationSnapshotProvider]
-    RS[RelationshipSource beans] -->|grants over targets| SP
-    SP -->|one snapshot per request| EV[AuthorizationEvaluator]
+    PS[PermissionService] -->|grants over everything| LD[AuthorizationSnapshotLoader]
+    RS[RelationshipSource beans] -->|grants over targets| LD
+    LD -->|once per token| TOK[KlabisJwtAuthenticationToken]
+    TOK -->|snapshot of the request| SP[AuthorizationSnapshotProvider]
+    SP --> EV[AuthorizationEvaluator]
     EV --> MI[HasAuthorityMethodInterceptor]
     EV --> HF[HalFormsSupport affordances and links]
     EV --> FS[field security and request-body advice]
     EV --> APP[controllers and postprocessors]
-    SP -->|overAll| TOK[KlabisJwtAuthenticationToken.getAuthorities]
+    TOK -->|overAll as getAuthorities| SPR[Spring method security]
 ```
 
 **Rationale:**
@@ -349,9 +351,9 @@ flowchart LR
 
 - An authenticated request that asks an authorization question costs 1 + N(sources) queries; volume is bounded by club size.
 - Application code never reads authorities itself: it injects `AuthorizationEvaluator` (`CurrentUserData` carries no authorities). The ArchUnit rule fails the build otherwise.
-- A Spring `@PreAuthorize("hasAuthority(...)")` sees only grants over everything; anything that may be held over a target must go through `@HasAuthority` + `@TargetId` or the evaluator.
+- A Spring `@PreAuthorize("hasAuthority(...)")` on a method sees only grants over everything; anything that may be held over a target must go through `@HasAuthority` + `@TargetId` or the evaluator.
 - A new delegated authority needs `SPECIFIC` in its `grantForms`, a `RelationshipSource` producing its grants, and `x-klabis-target-id` on the operations it guards (`validate.mjs` requires a target of the matching type).
-- Tests install a fixed snapshot through `@WithKlabisMockUser(authorities = …, targetGrants = @TargetGrant(...))`; `@WebMvcTest`s need no database.
+- Tests build a token carrying a fixed snapshot through `@WithKlabisMockUser(authorities = …, targetGrants = @TargetGrant(...))`; `@WebMvcTest`s need no database.
 - After a rollback to a version that reads the claim, users must log in again, because tokens issued by this version lack it.
 
 **References:** OpenSpec change `rebac-2-target-authorization` (`design.md` D1, D2, D4, D5), ADR-001, ADR-008.

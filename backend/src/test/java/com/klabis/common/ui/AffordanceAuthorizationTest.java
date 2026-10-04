@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +32,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = AffordanceAuthorizationTest.AffordanceTestController.class)
 @DisplayName("klabisAfford authorization filtering")
 @CommonInfrastructureWebMvcSetup
-@Import(HalFormsSupport.class)
 class AffordanceAuthorizationTest {
 
     private static final String OWNER_ID_STRING = "aaaaaaaa-0000-0000-0000-000000000001";

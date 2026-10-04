@@ -1,6 +1,5 @@
 package com.klabis;
 
-import com.klabis.common.MockUserAwareAuthorizationSnapshotConfiguration;
 import com.klabis.config.TestSslConfiguration;
 import com.klabis.authorizationserver.KlabisUserDetailsService;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -27,7 +26,7 @@ import org.springframework.test.context.ActiveProfiles;
  * </p>
  */
 @TestConfiguration
-@Import({TestSslConfiguration.class, KlabisUserDetailsService.class, MockUserAwareAuthorizationSnapshotConfiguration.class})
+@Import({TestSslConfiguration.class, KlabisUserDetailsService.class})
 @ActiveProfiles("test")
 @CleanupTestData    // tests are sharing single H2 - need to find out why so we can remove this cleanup (it deletes also bootstrap data what can cause issues somewhere)
 public class TestApplicationConfiguration {

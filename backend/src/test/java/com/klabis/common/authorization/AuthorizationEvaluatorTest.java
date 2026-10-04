@@ -2,13 +2,14 @@ package com.klabis.common.authorization;
 
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.security.KlabisAuthenticationFactory;
-import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.users.Authority;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
+import org.springframework.core.convert.ConversionService;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
@@ -33,18 +34,11 @@ class AuthorizationEvaluatorTest {
         SecurityContextHolder.clearContext();
     }
 
-    private void authenticateAsMember() {
-        SecurityContextHolder.getContext().setAuthentication(KlabisAuthenticationFactory.createAuthenticationToken(
-                JwtParams.member(myId)));
-    }
-
     private AuthorizationEvaluator evaluatorOver(AuthorizationSnapshot snapshot) {
-        OwnershipResolver resolver = (ownerId, authentication) ->
-                authentication instanceof com.klabis.common.security.KlabisJwtAuthenticationToken token
-                && token.getMemberIdUuid().filter(ownerId::equals).isPresent();
-        var beans = new StaticListableBeanFactory(Map.of("resolver", resolver));
-        return new AuthorizationEvaluator(() -> snapshot, beans.getBeanProvider(OwnershipResolver.class),
-                beans.getBeanProvider(org.springframework.core.convert.ConversionService.class));
+        SecurityContextHolder.getContext().setAuthentication(
+                KlabisAuthenticationFactory.createAuthenticationToken(JwtParams.member(myId), snapshot));
+        var noBeans = new StaticListableBeanFactory();
+        return new AuthorizationEvaluator(new AuthorizationSnapshotProvider(), noBeans.getBeanProvider(ConversionService.class));
     }
 
     private static AuthorizationSnapshot overAll(Authority... authorities) {
@@ -80,39 +74,61 @@ class AuthorizationEvaluatorTest {
 
         @Test
         void shouldBeTrueForOwnMemberTarget() {
-            authenticateAsMember();
 
             assertThat(evaluatorOver(AuthorizationSnapshot.empty()).isSelf(me)).isTrue();
         }
 
         @Test
         void shouldBeFalseForSomeoneElse() {
-            authenticateAsMember();
 
             assertThat(evaluatorOver(AuthorizationSnapshot.empty()).isSelf(stranger)).isFalse();
         }
 
         @Test
         void shouldBeFalseForTargetOfAnotherType() {
-            authenticateAsMember();
 
             assertThat(evaluatorOver(AuthorizationSnapshot.empty()).isSelf(TargetRef.event(myId))).isFalse();
         }
 
         @Test
         void shouldBeFalseWithoutAuthentication() {
-            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).isSelf(me)).isFalse();
+            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
+            SecurityContextHolder.clearContext();
+
+            assertThat(evaluator.isSelf(me)).isFalse();
         }
 
         @Test
-        void shouldBeFalseWhenNoOwnershipResolverIsAvailable() {
-            authenticateAsMember();
-            var noBeans = new StaticListableBeanFactory();
-            var evaluator = new AuthorizationEvaluator(AuthorizationSnapshot::empty,
-                    noBeans.getBeanProvider(OwnershipResolver.class),
-                    noBeans.getBeanProvider(org.springframework.core.convert.ConversionService.class));
+        void shouldBeFalseForTokenWithoutUser() {
+            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
+            SecurityContextHolder.getContext().setAuthentication(
+                    new TestingAuthenticationToken("client", "n/a", Authority.MEMBERS_MANAGE.getValue()));
 
             assertThat(evaluator.isSelf(me)).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("authentication that carries no user snapshot")
+    class WithoutAuthentication {
+
+        @Test
+        void shouldGrantNothing() {
+            var evaluator = evaluatorOver(overAll(Authority.MEMBERS_MANAGE));
+            SecurityContextHolder.clearContext();
+
+            assertThat(evaluator.has(Authority.MEMBERS_MANAGE)).isFalse();
+            assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), child, true)).isFalse();
+        }
+
+        @Test
+        void shouldUseAuthoritiesOfNonUserToken() {
+            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
+            SecurityContextHolder.getContext().setAuthentication(
+                    new TestingAuthenticationToken("client", "n/a", Authority.SYNC_MANAGE.getValue(), "FACTOR_PASSWORD"));
+
+            assertThat(evaluator.has(Authority.SYNC_MANAGE)).isTrue();
+            assertThat(evaluator.has(Authority.MEMBERS_MANAGE)).isFalse();
         }
     }
 
@@ -153,7 +169,6 @@ class AuthorizationEvaluatorTest {
 
         @Test
         void shouldAllowSelfWhenOwnerVisible() {
-            authenticateAsMember();
             var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
 
             assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), me, true)).isTrue();
@@ -162,7 +177,6 @@ class AuthorizationEvaluatorTest {
 
         @Test
         void shouldDenyOtherThanSelfWhenOwnerVisible() {
-            authenticateAsMember();
             var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
 
             assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), stranger, true)).isFalse();
@@ -170,7 +184,6 @@ class AuthorizationEvaluatorTest {
 
         @Test
         void shouldNotTreatOwnerVisibleAsSelfWithoutTarget() {
-            authenticateAsMember();
             var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
 
             assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), null, true)).isFalse();
@@ -178,7 +191,6 @@ class AuthorizationEvaluatorTest {
 
         @Test
         void shouldNotAllowSelfWhenNotOwnerVisible() {
-            authenticateAsMember();
             var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
 
             assertThat(evaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE), me, false)).isFalse();

@@ -10,7 +10,6 @@ import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -82,10 +81,8 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
         if (evaluator.canWriteField(accessor, target)) {
             return;
         }
-        PreAuthorize preAuthorize = accessor.getAnnotation(PreAuthorize.class);
         HasAuthority hasAuthority = accessor.getAnnotation(HasAuthority.class);
         String requiredAuthority = hasAuthority != null ? Arrays.stream(hasAuthority.value()).map(Authority::getValue).collect(Collectors.joining(" or "))
-                : preAuthorize != null ? preAuthorize.value()
                 : "@OwnerVisible";
         throw new FieldAuthorizationException(component.getName(), requiredAuthority);
     }

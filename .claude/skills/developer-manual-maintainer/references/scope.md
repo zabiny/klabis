@@ -21,8 +21,8 @@ Vše v `backend/src/main/java/com/klabis/common/` — celý package:
 - `common.pagination` — TranslatedPageable
 - `common.patch` — JsonNullable wiring (JsonNullableConfiguration)
 - `common.ratelimit` — PerKeyRateLimiter
-- `common.security` (vč. `fieldsecurity`) — SecurityConfiguration, Authority, OwnerVisible, ReadAuthority, KlabisJwtAuthenticationToken, OwnershipResolver
-- `common.authorization` — AuthorizationSnapshot, AuthorizationEvaluator, RelationshipSource, TargetId, TargetRef, TargetType, GrantForm
+- `common.security` (vč. `fieldsecurity`) — SecurityConfiguration, Authority, OwnerVisible, ReadAuthority, KlabisJwtAuthenticationToken
+- `common.authorization` — AuthorizationSnapshot, AuthorizationSnapshotLoader, AuthorizationSnapshotProvider, AuthorizationEvaluator, RelationshipSource, TargetId, TargetRef, TargetType, GrantForm
 - `common.templating` — TemplateRenderer
 - `common.ui` — HalFormsSupport, RootController, EntityModelWithDomain, SpaFallbackController
 - `common.usergroup` — UserGroup, GroupMembership, Invitation, WithInvitations

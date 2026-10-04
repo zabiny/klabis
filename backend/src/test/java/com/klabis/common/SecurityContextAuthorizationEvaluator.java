@@ -1,7 +1,7 @@
 package com.klabis.common;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
-import com.klabis.common.security.fieldsecurity.OwnershipResolver;
+import com.klabis.common.authorization.AuthorizationSnapshotProvider;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.core.convert.ConversionService;
 
@@ -16,7 +16,6 @@ public final class SecurityContextAuthorizationEvaluator {
 
     public static AuthorizationEvaluator create() {
         StaticListableBeanFactory noBeans = new StaticListableBeanFactory();
-        return new AuthorizationEvaluator(new FixedAuthorizationSnapshotProvider(),
-                noBeans.getBeanProvider(OwnershipResolver.class), noBeans.getBeanProvider(ConversionService.class));
+        return new AuthorizationEvaluator(new AuthorizationSnapshotProvider(), noBeans.getBeanProvider(ConversionService.class));
     }
 }

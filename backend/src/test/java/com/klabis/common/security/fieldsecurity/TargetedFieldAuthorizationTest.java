@@ -7,7 +7,6 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.authorization.TargetId;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.junit.jupiter.api.DisplayName;
@@ -16,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
@@ -44,7 +42,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = TargetedFieldAuthorizationTest.TargetedFieldController.class)
 @DisplayName("Field authorization over the target of a record")
 @CommonInfrastructureWebMvcSetup
-@Import(HalFormsSupport.class)
 class TargetedFieldAuthorizationTest {
 
     private static final String TARGET_ID_STRING = "aaaaaaaa-0000-0000-0000-000000000001";

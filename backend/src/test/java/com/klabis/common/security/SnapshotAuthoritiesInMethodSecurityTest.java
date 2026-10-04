@@ -1,10 +1,10 @@
 package com.klabis.common.security;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.authorization.AuthorizationSnapshot;
 import com.klabis.common.authorization.AuthorizationSnapshotProvider;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
-import com.klabis.common.users.UserId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,14 +15,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jose.jws.JwsAlgorithms;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -31,13 +28,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("Spring method security over authorities delegated to the request snapshot")
 class SnapshotAuthoritiesInMethodSecurityTest {
 
-    private static final AtomicReference<AuthorizationSnapshot> SNAPSHOT = new AtomicReference<>();
-
     @Autowired
     private GuardedService guardedService;
-
-    @Autowired
-    private KlabisJwtAuthenticationConverter converter;
 
     @AfterEach
     void tearDown() {
@@ -45,11 +37,9 @@ class SnapshotAuthoritiesInMethodSecurityTest {
     }
 
     private void authenticateWithSnapshot(Authority... overAll) {
-        SNAPSHOT.set(AuthorizationSnapshot.of(Set.of(overAll), Map.of()));
-        Jwt jwt = Jwt.withTokenValue("t").header("alg", JwsAlgorithms.RS256)
-                .subject("ZBM8001").claim("user_id", UserId.newId().uuid().toString())
-                .issuedAt(Instant.now()).expiresAt(Instant.now().plusSeconds(60)).build();
-        SecurityContextHolder.getContext().setAuthentication(converter.convert(jwt));
+        SecurityContextHolder.getContext().setAuthentication(KlabisAuthenticationFactory.createAuthenticationToken(
+                JwtParams.jwtTokenParams("ZBM8001", UUID.randomUUID()),
+                AuthorizationSnapshot.of(Set.of(overAll), Map.of())));
     }
 
     @Test
@@ -69,12 +59,12 @@ class SnapshotAuthoritiesInMethodSecurityTest {
     }
 
     @Test
-    @DisplayName("@PreAuthorize follows a change of the snapshot between calls")
-    void preAuthorizeFollowsSnapshotChange() {
+    @DisplayName("@PreAuthorize follows the snapshot of the token of the next request")
+    void preAuthorizeFollowsSnapshotOfNextToken() {
         authenticateWithSnapshot(Authority.MEMBERS_READ);
         assertThat(guardedService.preAuthorized()).isEqualTo("ok");
 
-        SNAPSHOT.set(AuthorizationSnapshot.empty());
+        authenticateWithSnapshot();
 
         assertThatThrownBy(guardedService::preAuthorized).isInstanceOf(AccessDeniedException.class);
     }
@@ -104,7 +94,7 @@ class SnapshotAuthoritiesInMethodSecurityTest {
 
     @org.springframework.boot.test.context.TestConfiguration
     @EnableMethodSecurity(proxyTargetClass = true)
-    @org.springframework.context.annotation.Import(com.klabis.common.authorization.AuthorizationEvaluator.class)
+    @org.springframework.context.annotation.Import({AuthorizationEvaluator.class, AuthorizationSnapshotProvider.class})
     static class Configuration {
 
         @Bean
@@ -122,17 +112,6 @@ class SnapshotAuthoritiesInMethodSecurityTest {
             var creator = new org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator();
             creator.setProxyTargetClass(true);
             return creator;
-        }
-
-        @Bean
-        AuthorizationSnapshotProvider snapshotProvider() {
-            return SNAPSHOT::get;
-        }
-
-        @Bean
-        KlabisJwtAuthenticationConverter converter(
-                org.springframework.beans.factory.ObjectProvider<AuthorizationSnapshotProvider> provider) {
-            return new KlabisJwtAuthenticationConverter(provider);
         }
     }
 }

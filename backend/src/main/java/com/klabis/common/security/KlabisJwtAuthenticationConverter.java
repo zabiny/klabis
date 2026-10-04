@@ -1,28 +1,21 @@
 package com.klabis.common.security;
 
-import com.klabis.common.authorization.AuthorizationSnapshotProvider;
+import com.klabis.common.authorization.AuthorizationSnapshot;
 import com.klabis.common.users.UserId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.support.ScopeNotActiveException;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * Converts JWT tokens into KlabisJwtAuthenticationToken with strongly-typed UserId.
  * <p>
  * Extracts user_id claim from JWT and creates KlabisJwtAuthenticationToken.
- * Authorities of a user token come from the permission snapshot of the current request, never from the
- * token, so revoked or granted permissions apply without a new login. Tokens without {@code user_id}
+ * The permissions of a user token come from a snapshot the token loads on demand, never from the
+ * token itself, so revoked or granted permissions apply without a new login. Tokens without {@code user_id}
  * (machine-to-machine {@code client_credentials}) keep the authorities carried by the token, extracted
  * with the standard JwtGrantedAuthoritiesConverter.
  * Account-status validation (suspended/deactivated users) is handled separately
@@ -36,13 +29,11 @@ import java.util.UUID;
  */
 public class KlabisJwtAuthenticationConverter implements Converter<Jwt, JwtAuthenticationToken> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(KlabisJwtAuthenticationConverter.class);
-
     private final JwtGrantedAuthoritiesConverter authoritiesConverter;
-    private final ObjectProvider<AuthorizationSnapshotProvider> snapshotProvider;
+    private final Function<UserId, AuthorizationSnapshot> snapshotLoader;
 
-    public KlabisJwtAuthenticationConverter(ObjectProvider<AuthorizationSnapshotProvider> snapshotProvider) {
-        this.snapshotProvider = snapshotProvider;
+    public KlabisJwtAuthenticationConverter(Function<UserId, AuthorizationSnapshot> snapshotLoader) {
+        this.snapshotLoader = snapshotLoader;
         this.authoritiesConverter = new JwtGrantedAuthoritiesConverter();
         this.authoritiesConverter.setAuthoritiesClaimName("authorities");
         this.authoritiesConverter.setAuthorityPrefix("");
@@ -78,19 +69,7 @@ public class KlabisJwtAuthenticationConverter implements Converter<Jwt, JwtAuthe
         UserId userId = extractUserId(jwt);
         UUID memberIdUuid = extractMemberIdUuid(jwt);
 
-        return new KlabisJwtAuthenticationToken(jwt, userId, memberIdUuid, this::currentSnapshotAuthorities);
-    }
-
-    // A snapshot exists only within an HTTP request; without one nothing is granted rather than failing the caller.
-    private Collection<? extends GrantedAuthority> currentSnapshotAuthorities() {
-        try {
-            return snapshotProvider.getObject().current().overAll().stream()
-                    .map(authority -> new SimpleGrantedAuthority(authority.getValue()))
-                    .toList();
-        } catch (ScopeNotActiveException e) {
-            LOG.warn("Authorities of a user token requested outside of an HTTP request, granting none");
-            return List.of();
-        }
+        return new KlabisJwtAuthenticationToken(jwt, userId, memberIdUuid, () -> snapshotLoader.apply(userId));
     }
 
     /**

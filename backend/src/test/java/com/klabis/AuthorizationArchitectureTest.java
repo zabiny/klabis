@@ -1,11 +1,8 @@
 package com.klabis;
 
 import com.klabis.common.authorization.TargetId;
-import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
-import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.security.fieldsecurity.ReadAuthority;
-import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.users.HasAuthority;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaCall;
@@ -43,8 +40,7 @@ class AuthorizationArchitectureTest {
     private static final String[] ALLOWED_PACKAGES = {"com.klabis.common.authorization..", "com.klabis.common.security.."};
 
     private static final Set<Class<?>> EVALUATOR_ONLY_TYPES = Set.of(
-            HasAuthority.class, OwnerVisible.class, TargetId.class, ReadAuthority.class,
-            OwnershipResolver.class, SecuritySpelEvaluator.class);
+            HasAuthority.class, OwnerVisible.class, TargetId.class, ReadAuthority.class);
 
     private static JavaClasses classes;
 
@@ -66,14 +62,9 @@ class AuthorizationArchitectureTest {
                 JavaCall.Predicates.target(name("getAuthorities"))
                         .and(JavaCall.Predicates.target(owner(assignableTo(Authentication.class))))
                         .as("Authentication.getAuthorities()");
-        DescribedPredicate<JavaCall<?>> tokenHasAuthority =
-                JavaCall.Predicates.target(name("hasAuthority"))
-                        .and(JavaCall.Predicates.target(owner(assignableTo(KlabisJwtAuthenticationToken.class))))
-                        .as("KlabisJwtAuthenticationToken.hasAuthority(..)");
 
         noClasses().that(outsideAuthorizationPackages())
                 .should().callMethodWhere(authenticationAuthorities)
-                .orShould().callMethodWhere(tokenHasAuthority)
                 .because("authorization questions are answered by AuthorizationEvaluator")
                 .check(classes);
     }
@@ -85,8 +76,6 @@ class AuthorizationArchitectureTest {
 
         noClasses().that(outsideAuthorizationPackages())
                 .should().callMethodWhere(JavaCall.Predicates.target(owner(evaluatorOnlyType)))
-                .orShould().dependOnClassesThat(equivalentTo(OwnershipResolver.class))
-                .orShould().dependOnClassesThat(equivalentTo(SecuritySpelEvaluator.class))
                 .orShould(referenceClassObjectOf(evaluatorOnlyType))
                 .because("annotations are interpreted by AuthorizationEvaluator; applying them is fine, reading them is not")
                 .check(classes);

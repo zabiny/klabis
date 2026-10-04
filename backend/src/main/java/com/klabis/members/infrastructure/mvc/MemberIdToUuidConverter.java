@@ -9,8 +9,8 @@ import java.util.UUID;
 /**
  * Registers {@link MemberId} as a UUID-convertible type with Spring's {@code ConversionService}.
  * <p>
- * Required by {@code DefaultOwnershipResolver} in the common security module, which converts
- * owner identifier values to UUID generically — avoiding a direct dependency from common to members.
+ * Required by {@code AuthorizationEvaluator} in the common module, which converts
+ * target identifier values to UUID generically — avoiding a direct dependency from common to members.
  */
 @Component
 class MemberIdToUuidConverter implements Converter<MemberId, UUID> {

@@ -36,14 +36,18 @@ A target is a `TargetRef(TargetType type, UUID id)` (`TargetRef.member(id)`, `Ta
 
 `AuthorizationSnapshot` is the immutable set of a user's grants for one request:
 `overAll` (from `PermissionService` + standard authorities) and `overTargets` (union of all
-`RelationshipSource` beans). `RequestScopedAuthorizationSnapshotProvider` builds it lazily on the
-first authorization question of a request and keeps it for the rest of the request.
+`RelationshipSource` beans). The snapshot is carried by the authentication: the resource server builds a new
+`KlabisJwtAuthenticationToken` per request, and the token holds a memoized supplier that calls
+`AuthorizationSnapshotLoader.loadFor(userId)` on the first authorization question. Every later decision of
+the request reads the same instance — one permission set per request, no request-scoped bean.
+`AuthorizationSnapshotProvider.current()` just reads the snapshot from the current authentication.
 
 - Access tokens of users carry **no** `authorities` claim. `KlabisJwtAuthenticationToken.getAuthorities()`
   returns the snapshot's `overAll`, so a grant or revocation applies on the next request.
-- `client_credentials` tokens (no `user_id`) keep their scope-derived authorities; no targeted grants.
-- Outside an HTTP request (event listeners, scheduled jobs) there is no snapshot: the evaluator
-  denies and a user token has no authorities. Do not authorize in listeners.
+- `client_credentials` tokens (no `user_id`) keep their scope-derived authorities; the provider turns
+  them into a snapshot with no targeted grants (`AuthorizationSnapshot.ofGrantedAuthorities`).
+- Without an authenticated user (event listeners, scheduled jobs) the snapshot is empty: the evaluator
+  denies. Do not authorize in listeners.
 
 ## `AuthorizationEvaluator` — the only place that decides
 
@@ -67,8 +71,7 @@ the user may invoke — never compute "can the user do X" separately for a link.
 
 `AuthorizationArchitectureTest` (ArchUnit) fails the build when code outside `common.authorization`
 / `common.security` reads `@HasAuthority`, `@OwnerVisible`, `@TargetId`, `@ReadAuthority`,
-`OwnershipResolver`, `SecuritySpelEvaluator`, `Authentication.getAuthorities()` or
-`KlabisJwtAuthenticationToken.hasAuthority(..)`. *Applying* the annotations is fine; *reading* them is not.
+or `Authentication.getAuthorities()`. *Applying* the annotations is fine; *reading* them is not.
 
 ## Annotations
 
@@ -96,8 +99,9 @@ Without a `@TargetId` parameter an authority must be held over everything. `@Own
 `MethodSecurityAnnotations` resolves these annotations across the interface boundary; the
 interceptor's pointcut only considers classes under `com.klabis.*`.
 
-A hand-written Spring `@PreAuthorize("hasAuthority(...)")` sees only grants over everything. Use it
-only for logic the annotations cannot express, and never for an authority that may be held over a target.
+A hand-written Spring `@PreAuthorize("hasAuthority(...)")` on a **method** sees only grants over everything
+(through `getAuthorities()`). Use it only for logic the annotations cannot express, and never for an
+authority that may be held over a target. On a field or record component `@PreAuthorize` is not supported.
 
 ## Imperative checks in application code
 
@@ -144,19 +148,21 @@ boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id));
 
 - `@WithKlabisMockUser(authorities = {...})` installs grants over everything; add
   `targetGrants = @TargetGrant(authority = Authority.X, type = TargetType.MEMBER, ids = {"<uuid>"})`
-  for grants over specific targets. The snapshot rides on the authentication, so `@WebMvcTest`s need
-  no database (`FixedAuthorizationSnapshotProvider` / `MockUserAwareAuthorizationSnapshotConfiguration`).
+  for grants over specific targets. The token carries a fixed snapshot, so `@WebMvcTest`s need no database;
+  slices get the evaluator and provider from `KlabisWebMvcSliceConfiguration`.
+- Tokens built by hand: `KlabisAuthenticationFactory.createAuthenticationToken(jwtParams[, snapshot])` —
+  never construct a `Jwt` and a converter in a test.
 - Integration tests with real tokens use the real provider and real sources.
-- Ownership tests need `@WithKlabisMockUser(memberId = "...")`; `isSelf` compares with the token's member id.
+- Ownership tests need `@WithKlabisMockUser(memberId = "...")`; `isSelf` compares with the token's user id and member id.
 - `HalFormsSupportInstanceTestExecutionListener` binds the static `HalFormsSupport` instance to the
   running test's context; in a plain unit test without a context, affordances are not filtered at all.
 
 ## Reference implementation
 
-- Model: `common.authorization` — `AuthorizationSnapshot`, `RequestScopedAuthorizationSnapshotProvider`,
+- Model: `common.authorization` — `AuthorizationSnapshot`, `AuthorizationSnapshotLoader`, `AuthorizationSnapshotProvider`,
   `AuthorizationEvaluator`, `RelationshipSource`, `TargetRef`, `TargetType`, `GrantForm`, `TargetId`
 - Authorities: `common.users.Authority`, `common.users.HasAuthority`
 - Enforcement: `common.security.HasAuthorityMethodInterceptor`, `common.ui.HalFormsSupport`
-- Token: `common.security.KlabisJwtAuthenticationConverter`, `KlabisJwtAuthenticationToken`
+- Token: `common.security.KlabisJwtAuthenticationConverter`, `KlabisJwtAuthenticationToken` (carries the snapshot)
 - Tests: `AuthorizationArchitectureTest`, `HasAuthorityMethodInterceptorTargetTest`,
   `AffordanceAuthorizationTest`, `PermissionChangesTakeEffectIntegrationTest`
