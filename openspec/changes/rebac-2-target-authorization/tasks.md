@@ -54,6 +54,6 @@
 
 ## 9. Integration checks
 
-- [ ] 9.1 Run full backend, tooling and frontend test suites; verify all green
-- [ ] 9.2 On http://localhost:3000: as ZBM9500, revoke/grant a permission as ZBM9000 in another session and verify the change applies after a page reload without re-login; spot-check that admin and member see the same actions as before the change
-- [ ] 9.3 Measure member list and member detail response time with the snapshot (example-data); verify it stays under 500 ms
+- [x] 9.1 Run full backend, tooling and frontend test suites; verify all green
+- [x] 9.2 On http://localhost:3000: as ZBM9500, revoke/grant a permission as ZBM9000 in another session and verify the change applies after a page reload without re-login; spot-check that admin and member see the same actions as before the change
+- [x] 9.3 Measure member list and member detail response time with the snapshot (example-data); verify it stays under 500 ms
