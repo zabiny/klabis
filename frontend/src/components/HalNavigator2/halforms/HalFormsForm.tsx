@@ -37,6 +37,9 @@ type YupSchemaMap = Record<string, Yup.AnySchema>;
 function createValidationSchema(template: HalFormsTemplate): Yup.ObjectSchema<Record<string, unknown>> {
     const shape: YupSchemaMap = {};
     template.properties.forEach((prop) => {
+        if (prop.readOnly === true) {
+            return;
+        }
         let validator: Yup.AnySchema;
 
         if (prop.type === "number") {

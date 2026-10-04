@@ -1,7 +1,9 @@
 package com.klabis.members.infrastructure.restapi;
 
 import com.klabis.members.MembersWebMvcTest;
+import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
@@ -403,7 +405,9 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("HAL+FORMS: member viewing own profile — should include update affordance pointing to PATCH /{id}")
-        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ},
+                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                        ids = "11111111-1111-1111-1111-111111111111"))
         void ownProfileShouldReturnUpdateAffordance() throws Exception {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
@@ -419,6 +423,73 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._templates").exists())
                     .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))
                     .andExpect(jsonPath("$._templates.updateMember.target").doesNotExist())
+                    .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: self-edit template shows reserved fields read-only and the other fields editable")
+        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ},
+                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                        ids = "11111111-1111-1111-1111-111111111111"))
+        void selfEditTemplateShouldMarkReservedFieldsReadOnly() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            var result = mockMvc.perform(getMemberById(memberId)).andExpect(status().isOk());
+
+            for (String reserved : List.of("firstName", "lastName", "dateOfBirth", "gender", "birthNumber")) {
+                result.andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + reserved + "')].readOnly")
+                        .value(true));
+            }
+            for (String editable : List.of("email", "phone", "dietaryRestrictions", "chipNumber")) {
+                result.andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + editable + "')]").exists())
+                        .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='" + editable + "')].readOnly")
+                                .value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(true))));
+            }
+        }
+
+        @Test
+        @DisplayName("HAL+FORMS: administrator's template has reserved fields editable")
+        @WithKlabisMockUser(username = "ZBM0001", authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void adminTemplateShouldKeepReservedFieldsEditable() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId).withActive(true).build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='firstName')]").exists())
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='firstName')].readOnly")
+                            .value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem(true))));
+        }
+
+        @Test
+        @DisplayName("holder of EDIT_PROFILE over another member sees all data and the edit template, but not admin-only data")
+        @WithKlabisMockUser(username = "ZBM0101", memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.MEMBERS_READ},
+                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                        ids = "11111111-1111-1111-1111-111111111111"))
+        void holderShouldSeeAllDataAndEditTemplate() throws Exception {
+            UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withActive(true)
+                    .withDateOfBirth(LocalDate.of(1990, 1, 1))
+                    .withDietaryRestrictions("vegan")
+                    .build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), anyBoolean())).thenReturn(member);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.dateOfBirth").value("1990-01-01"))
+                    .andExpect(jsonPath("$.dietaryRestrictions").value("vegan"))
+                    .andExpect(jsonPath("$.gender").exists())
+                    .andExpect(jsonPath("$.missingData").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateMember.method").value("PATCH"))
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='firstName')].readOnly")
+                            .value(true))
                     .andExpect(jsonPath("$._templates.suspendMember").doesNotExist());
         }
 
@@ -441,7 +512,9 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("HAL+FORMS: member who turned 18 today viewing own profile - should include update affordance")
-        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(username = "ZBM0101", memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ},
+                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                        ids = "11111111-1111-1111-1111-111111111111"))
         void justTurnedAdultOwnProfileShouldReturnUpdateAffordance() throws Exception {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)
@@ -2428,7 +2501,9 @@ class MemberControllerApiTest {
 
         @Test
         @DisplayName("self-update should only pass allowed fields (email, phone, address, dietaryRestrictions) to service")
-        @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ})
+        @WithKlabisMockUser(username = MEMBER_USERNAME, memberId = "11111111-1111-1111-1111-111111111111", authorities = {Authority.MEMBERS_READ},
+                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                        ids = "11111111-1111-1111-1111-111111111111"))
         void selfUpdateShouldOnlyPassAllowedFieldsToService() throws Exception {
             UUID memberId = UUID.fromString("11111111-1111-1111-1111-111111111111");
             Member member = MemberTestDataBuilder.aMemberWithId(memberId)

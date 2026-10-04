@@ -519,6 +519,7 @@ components:
         - MEMBERS:MANAGE
         - MEMBERS:READ
         - MEMBERS:PERMISSIONS
+        - MEMBERS:EDIT_PROFILE
         - EVENTS:READ
         - EVENTS:MANAGE
         - EVENTS:REGISTRATIONS

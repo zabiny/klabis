@@ -61,6 +61,12 @@ describe('PermissionsDialog', () => {
             expect(switches.length).toBeGreaterThan(0);
         });
 
+        it('does not offer MEMBERS:EDIT_PROFILE because the backend options never include relationship-granted authorities', () => {
+            renderDialog();
+
+            expect(screen.queryByRole('switch', {name: /Úprava údajů člena/i})).not.toBeInTheDocument();
+        });
+
         it('pre-selects permissions currently assigned to the user', () => {
             renderDialog();
 

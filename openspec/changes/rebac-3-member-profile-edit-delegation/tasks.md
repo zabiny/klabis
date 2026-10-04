@@ -4,10 +4,10 @@ Prerequisites: `rebac-1-groups-owners-not-members` and `rebac-2-target-authoriza
 
 ## 1. Self-edit through the new permission (behavior preserved)
 
-- [ ] 1.1 Add `MEMBERS_EDIT_PROFILE` (MEMBER, {SPECIFIC}) with the label "Úprava údajů člena"; verify the `Authority` tests and that the permissions dialog options are unchanged
-- [ ] 1.2 Write failing tests for `SelfProfileRelationshipSource`: adult gets `EDIT_PROFILE` over self, minor gets nothing, member turning 18 today gets it; verify they fail, implement, verify they pass
-- [ ] 1.3 Switch `updateMember` and the member detail field rules in `members.yaml` to D4 (`[MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]`, reserved request fields with `x-klabis-read-authority`); remove `OwnProfileEditRule`; verify existing members `@WebMvcTest`s (adult self-edit, minor refused, admin edit) pass unchanged
-- [ ] 1.4 Verify the self-edit template now carries reserved fields as read-only (`@WebMvcTest` on the member detail template) and the frontend edit form renders them read-only including gender and date of birth and omits them from the PATCH body; verify with component tests
+- [x] 1.1 Add `MEMBERS_EDIT_PROFILE` (MEMBER, {SPECIFIC}) with the label "Úprava údajů člena"; verify the `Authority` tests and that the permissions dialog options are unchanged
+- [x] 1.2 Write failing tests for `SelfProfileRelationshipSource`: adult gets `EDIT_PROFILE` over self, minor gets nothing, member turning 18 today gets it; verify they fail, implement, verify they pass
+- [x] 1.3 Switch `updateMember` and the member detail field rules in `members.yaml` to D4 (`[MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]`, reserved request fields with `x-klabis-read-authority`); remove `OwnProfileEditRule`; verify existing members `@WebMvcTest`s (adult self-edit, minor refused, admin edit) pass unchanged
+- [x] 1.4 Verify the self-edit template now carries reserved fields as read-only (`@WebMvcTest` on the member detail template) and the frontend edit form renders them read-only including gender and date of birth and omits them from the PATCH body; verify with component tests
 
 ## 2. Legal guardians edit their minors (vertical slice)
 
