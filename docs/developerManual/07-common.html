@@ -79,8 +79,8 @@
 }</code></pre>
 
 <aside class="note">
-    Výhoda kompozice (vs. dědičnost): různé agregáty mají různé další chování (FamilyGroup
-    automaticky přidá ownera i jako membera, TrainingGroup ne) a nepotřebují dědit konkrétní
+    Výhoda kompozice (vs. dědičnost): různé agregáty mají různé další chování (TrainingGroup při
+    automatickém přidání přeskočí vlastníky, LegalGuardianGroup ne) a nepotřebují dědit konkrétní
     invariants.
 </aside>
 
@@ -90,10 +90,15 @@
     <li>Jméno skupiny nesmí být prázdné.</li>
     <li>Skupina musí mít aspoň jednoho vlastníka. Pokus o odstranění posledního vyhodí
         <code>CannotRemoveLastOwnerException</code>.</li>
-    <li>Vlastník nemůže být odstraněn jako člen (pouze jako vlastník) —
-        <code>OwnerCannotBeRemovedFromGroupException</code>.</li>
+    <li>Vlastník a člen jsou disjunktní sady — nikdo není současně vlastníkem i členem téže
+        skupiny. <code>addOwner</code> člena přesune mezi vlastníky, <code>removeOwner</code> ho ze
+        skupiny úplně odstraní (nestane členem), <code>addMember</code> vlastníka odmítne
+        <code>OwnerCannotBeMemberException</code>.</li>
     <li>Stejný uživatel nemůže být přidán dvakrát — <code>MemberAlreadyInGroupException</code>.</li>
-    <li>Odstranění neexistujícího člena vyhodí <code>MemberNotInGroupException</code>.</li>
+    <li>Odstranění neexistujícího člena vyhodí <code>MemberNotInGroupException</code>. Vlastník mezi
+        členy nepatří, takže <code>removeMember</code> na vlastníku vyhodí právě tuto výjimku.</li>
+    <li>Obnovení skupiny s překryvem (vlastník, který je zároveň v tabulce členů) je chyba dat a
+        skončí <code>IllegalStateException</code> — stej jako každý jiný rozpor v uloženém stavu.</li>
 </ul>
 
 <h3>WithInvitations — invitation flow</h3>

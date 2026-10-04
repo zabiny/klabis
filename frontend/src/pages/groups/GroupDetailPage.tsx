@@ -9,8 +9,9 @@ import type {PendingInvitation} from './types.ts';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {labels} from '../../localization';
-import {Ban, Crown, Pencil, Trash2, UserPlus} from 'lucide-react';
+import {Ban, Crown, LogOut, Pencil, Trash2, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
+import {useAuth} from '../../contexts/authContext.ts';
 import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRegNumber.tsx';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
@@ -48,6 +49,13 @@ interface MemberActionModalState {
     template: HalFormsTemplate;
 }
 
+interface RemoveOwnerModalState {
+    template: HalFormsTemplate;
+    ownerSelfHref: string;
+    /** Giving up your own ownership removes you from the group, so the detail page stops being readable. */
+    isSelf: boolean;
+}
+
 // Spring HATEOAS does not emit properties for DELETE affordances. The backend does
 // accept a reason body — inject the property client-side so the form renders the field.
 const withReasonProperty = (template: HalFormsTemplate): HalFormsTemplate => {
@@ -69,16 +77,22 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
     const [addMemberModal, setAddMemberModal] = useState(false);
     const [inviteMemberModal, setInviteMemberModal] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
+    const [leaveGroupModal, setLeaveGroupModal] = useState(false);
     const [removeMemberModal, setRemoveMemberModal] = useState<MemberActionModalState | null>(null);
     const [addOwnerModal, setAddOwnerModal] = useState(false);
-    const [removeOwnerModal, setRemoveOwnerModal] = useState<{template: HalFormsTemplate; ownerSelfHref: string} | null>(null);
+    const [removeOwnerModal, setRemoveOwnerModal] = useState<RemoveOwnerModalState | null>(null);
     const [cancelInvitationModal, setCancelInvitationModal] = useState<{invitation: PendingInvitation; template: HalFormsTemplate} | null>(null);
+
+    const currentMemberId = useAuth().getUser()?.memberId ?? null;
 
     const editTemplate = resourceData._templates?.updateGroup ?? null;
     const deleteTemplate = resourceData._templates?.deleteGroup ?? null;
     const addMemberTemplate = resourceData._templates?.addGroupMember ?? null;
     const inviteMemberTemplate = resourceData._templates?.inviteMember ?? null;
     const addOwnerTemplate = resourceData._templates?.addGroupOwner ?? null;
+    // The backend sends the caller's own removeGroupMember here when the caller is a member but not
+    // an owner. It means "leave this group", so it is rendered under its own label.
+    const leaveGroupTemplate = resourceData._templates?.removeGroupMember ?? null;
 
     const handleRemoveMember = (member: GroupMember) => {
         const template = member._templates?.removeGroupMember;
@@ -121,6 +135,15 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                             startIcon={<Trash2 className="w-4 h-4"/>}
                         >
                             {labels.templates.deleteGroup}
+                        </Button>
+                    )}
+                    {leaveGroupTemplate && (
+                        <Button
+                            variant="secondary"
+                            onClick={() => setLeaveGroupModal(true)}
+                            startIcon={<LogOut className="w-4 h-4"/>}
+                        >
+                            {labels.templates.leaveGroup}
                         </Button>
                     )}
                 </div>
@@ -170,7 +193,13 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                                     memberId={owner.memberId}
                                     memberLink={owner._links.member}
                                     removeAriaLabel={labels.templates.removeOwner}
-                                    onRemove={removeOwnerTpl ? () => setRemoveOwnerModal({template: removeOwnerTpl, ownerSelfHref: selfHref}) : undefined}
+                                    onRemove={removeOwnerTpl
+                                    ? () => setRemoveOwnerModal({
+                                        template: removeOwnerTpl,
+                                        ownerSelfHref: selfHref,
+                                        isSelf: owner.memberId === currentMemberId,
+                                    })
+                                    : undefined}
                                 />
                             );
                         })}
@@ -305,12 +334,39 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
             {removeOwnerModal && (
                 <HalFormModal
                     title={labels.templates.removeGroupOwner}
+                    note={<span className="text-sm text-text-secondary">
+                        {removeOwnerModal.isSelf
+                            ? labels.templates.removeSelfAsOwnerLeavesGroup
+                            : labels.templates.removeGroupOwnerLeavesGroup}
+                    </span>}
                     template={removeOwnerModal.template}
                     templateName="removeGroupOwner"
                     resourceData={{}}
                     pathname={removeOwnerModal.ownerSelfHref ? '/groups/' + removeOwnerModal.ownerSelfHref.split('/groups/')[1] : route.pathname}
-                    onClose={() => { setRemoveOwnerModal(null); void route.refetch(); }}
+                    onClose={() => {
+                        setRemoveOwnerModal(null);
+                        // Refetching is only valid while the caller is still in the group; giving up
+                        // your own ownership removes you from it and getGroup would then deny access.
+                        if (!removeOwnerModal.isSelf) void route.refetch();
+                    }}
+                    onSubmitSuccess={() => {
+                        if (removeOwnerModal.isSelf) navigate('/groups');
+                    }}
                     successMessage={labels.ui.savedSuccessfully}
+                />
+            )}
+
+            {leaveGroupTemplate && leaveGroupModal && (
+                <HalFormModal
+                    title={labels.templates.leaveGroup}
+                    note={<span className="text-sm text-text-secondary">{labels.templates.leaveGroupConfirm}</span>}
+                    template={leaveGroupTemplate}
+                    templateName="removeGroupMember"
+                    resourceData={resourceData as unknown as Record<string, unknown>}
+                    pathname={route.pathname}
+                    onClose={() => setLeaveGroupModal(false)}
+                    onSubmitSuccess={() => navigate('/groups')}
+                    navigateOnSuccess={false}
                 />
             )}
 

@@ -50,6 +50,10 @@ vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     HalRouteProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
 }));
 
+vi.mock('../../contexts/authContext.ts', () => ({
+    useAuth: () => ({getUser: () => ({memberId: null})}),
+}));
+
 vi.mock('../../contexts/halRouteContext.ts', () => ({
     useHalRoute: vi.fn(() => ({
         resourceData: {firstName: 'Jana', lastName: 'Nováková', registrationNumber: 'ZBM9500', _links: {self: {href: '/api/members/member-1'}}},

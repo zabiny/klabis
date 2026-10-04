@@ -18,6 +18,7 @@ import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
+import org.springframework.hateoas.Affordance;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
@@ -31,8 +32,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -174,7 +177,7 @@ class FreeGroupController implements GroupsApi {
                 .toList();
 
         List<EntityModel<FreeGroupMembershipResponse>> memberModels = group.getMembers().stream()
-                .map(m -> buildMemberModel(m, groupUuid, requestingUserIsOwner, ownerIds))
+                .map(m -> buildMemberModel(m, groupUuid, requestingUserIsOwner))
                 .toList();
 
         List<EntityModel<PendingInvitationResponse>> pendingInvitationModels = List.of();
@@ -208,7 +211,7 @@ class FreeGroupController implements GroupsApi {
     }
 
     private EntityModel<FreeGroupMembershipResponse> buildMemberModel(
-            GroupMembership<MemberId> membership, UUID groupUuid, boolean isOwner, Set<MemberId> ownerIds) {
+            GroupMembership<MemberId> membership, UUID groupUuid, boolean isOwner) {
 
         MemberId memberId = membership.memberId();
         FreeGroupMembershipResponse response = FreeGroupMembershipResponseBuilder.builder()
@@ -221,8 +224,7 @@ class FreeGroupController implements GroupsApi {
                 .map(link -> link.withRel("member"))
                 .ifPresent(model::add);
 
-        boolean memberIsOwner = ownerIds.contains(memberId);
-        if (isOwner && !memberIsOwner) {
+        if (isOwner) {
             klabisLinkTo(methodOn(GroupsApi.class)
                     .removeGroupMember(groupUuid, memberId.uuid(), null))
                     .ifPresent(link -> model.add(link.withSelfRel()
@@ -245,35 +247,43 @@ class FreeGroupDetailsPostprocessor extends ModelWithDomainPostprocessor<GroupRe
     @Override
     public void process(EntityModel<GroupResponse> dtoModel, FreeGroup group) {
         UUID id = group.getId().uuid();
-        klabisLinkTo(methodOn(GroupsApi.class).getGroup(id, null)).ifPresent(link -> {
-            var selfLink = link.withSelfRel();
-            if (isActingMemberOwner(group)) {
-                Map<String, HalFormsOptionsDef> memberIdOptions = Map.of("memberId",
-                        HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()));
-                selfLink = selfLink
-                        .andAffordances(klabisAfford(methodOn(GroupsApi.class).updateGroup(id, null, null)))
-                        .andAffordances(klabisAfford(methodOn(GroupsApi.class).deleteGroup(id, null)))
-                        .andAffordances(klabisAffordWithOptions(
-                                methodOn(GroupsApi.class).addGroupOwner(id, null, null), memberIdOptions))
-                        .andAffordances(klabisAffordWithOptions(
-                                methodOn(GroupsApi.class).inviteMember(id, null, null), memberIdOptions));
-            }
-            dtoModel.add(selfLink);
-        });
-
+        klabisLinkTo(methodOn(GroupsApi.class).getGroup(id, null)).ifPresent(link ->
+                dtoModel.add(link.withSelfRel().andAffordances(selfLinkAffordances(group))));
         klabisLinkTo(methodOn(GroupsApi.class).listGroups(null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
     }
 
-    private boolean isActingMemberOwner(FreeGroup group) {
+    private List<Affordance> selfLinkAffordances(FreeGroup group) {
+        UUID id = group.getId().uuid();
+        Optional<MemberId> actingMember = actingMember();
+        if (actingMember.map(group::isOwner).orElse(false)) {
+            Map<String, HalFormsOptionsDef> memberIdOptions = Map.of("memberId",
+                    HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()));
+            return Stream.<List<Affordance>>of(
+                    klabisAfford(methodOn(GroupsApi.class).updateGroup(id, null, null)),
+                    klabisAfford(methodOn(GroupsApi.class).deleteGroup(id, null)),
+                    klabisAffordWithOptions(methodOn(GroupsApi.class).addGroupOwner(id, null, null), memberIdOptions),
+                    klabisAffordWithOptions(methodOn(GroupsApi.class).inviteMember(id, null, null), memberIdOptions))
+                    .flatMap(List::stream)
+                    .toList();
+        }
+        // Owners give up ownership through removeGroupOwner, so the self link only offers "leave the group"
+        // to plain members. It reuses removeGroupMember with the caller's own id; the client renders it as
+        // "Opustit skupinu" and reads it off the self link, where it cannot collide with the per-row
+        // removeGroupMember affordance an owner sees on the member list.
+        return actingMember
+                .filter(group::hasMember)
+                .map(member -> klabisAfford(
+                        methodOn(GroupsApi.class).removeGroupMember(id, member.uuid(), null)))
+                .orElseGet(List::of);
+    }
+
+    private Optional<MemberId> actingMember() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth instanceof KlabisJwtAuthenticationToken token) {
-            return token.getMemberIdUuid()
-                    .map(MemberId::new)
-                    .map(group::isOwner)
-                    .orElse(false);
+            return token.getMemberIdUuid().map(MemberId::new);
         }
-        return false;
+        return Optional.empty();
     }
 }
 

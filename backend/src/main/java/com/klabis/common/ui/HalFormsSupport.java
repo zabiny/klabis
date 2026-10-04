@@ -309,7 +309,7 @@ public class HalFormsSupport {
         private final AffordanceModel delegate;
         private final HalFormsInputPayloadMetadata modifiedInput;
 
-        public HalFormsConfiguredAffordance(AffordanceModel delegate,
+        private HalFormsConfiguredAffordance(AffordanceModel delegate,
                                              Map<String, HalFormsOptionsDef> optionsDef) {
             this.delegate = delegate;
             this.modifiedInput = new HalFormsInputPayloadMetadata(delegate.getInput(), optionsDef);

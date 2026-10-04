@@ -1,6 +1,7 @@
 package com.klabis.groups.traininggroup.domain;
 
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
+import com.klabis.common.groups.domain.OwnerCannotBeMemberException;
 import com.klabis.groups.MemberAssignedToTrainingGroupEvent;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.members.MemberId;
@@ -364,8 +365,8 @@ class TrainingGroupTest {
         }
 
         @Test
-        @DisplayName("addTrainer() on existing member keeps them in both trainers and members")
-        void shouldKeepExistingMemberInMembersAfterPromotion() {
+        @DisplayName("addTrainer() on an existing trainee moves them out of the trainees")
+        void shouldMoveExistingTraineeOutOfMembersAfterPromotion() {
             TrainingGroup group = TrainingGroup.create(
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
             group.assignEligibleMember(REGULAR_MEMBER);
@@ -374,7 +375,7 @@ class TrainingGroupTest {
             group.addTrainer(REGULAR_MEMBER);
 
             assertThat(group.getTrainers()).containsExactlyInAnyOrder(TRAINER, REGULAR_MEMBER);
-            assertThat(group.hasMember(REGULAR_MEMBER)).isTrue();
+            assertThat(group.hasMember(REGULAR_MEMBER)).isFalse();
         }
 
         @Test
@@ -394,6 +395,20 @@ class TrainingGroupTest {
         }
 
         @Test
+        @DisplayName("replaceTrainers() promotes an existing trainee out of the trainees")
+        void shouldMovePromotedTraineeOutOfMembersOnReplace() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+            group.assignEligibleMember(REGULAR_MEMBER);
+            group.clearDomainEvents();
+
+            group.replaceTrainers(Set.of(TRAINER, REGULAR_MEMBER));
+
+            assertThat(group.getTrainers()).containsExactlyInAnyOrder(TRAINER, REGULAR_MEMBER);
+            assertThat(group.hasMember(REGULAR_MEMBER)).isFalse();
+        }
+
+        @Test
         @DisplayName("assignEligibleMember() adds trainee as member without granting trainer role")
         void shouldAddTraineeAsMemberOnly() {
             TrainingGroup group = TrainingGroup.create(
@@ -403,6 +418,70 @@ class TrainingGroupTest {
 
             assertThat(group.hasMember(REGULAR_MEMBER)).isTrue();
             assertThat(group.getTrainers()).doesNotContain(REGULAR_MEMBER);
+        }
+
+        @Test
+        @DisplayName("addTrainee() rejects a trainer of this group, unlike the silent assignEligibleMember skip")
+        void shouldRejectTrainerAsTrainee() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+
+            assertThatThrownBy(() -> group.addTrainee(TRAINER))
+                    .isInstanceOf(OwnerCannotBeMemberException.class);
+            assertThat(group.hasMember(TRAINER)).isFalse();
+        }
+
+        @Test
+        @DisplayName("addTrainee() adds the trainee and publishes the assignment event")
+        void shouldAddTraineeAndPublishEvent() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+
+            group.addTrainee(REGULAR_MEMBER);
+
+            assertThat(group.hasMember(REGULAR_MEMBER)).isTrue();
+            assertThat(group.getDomainEvents()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("assignEligibleMember() skips the group's own trainer and publishes no event")
+        void shouldSkipGroupsOwnTrainer() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+
+            group.assignEligibleMember(TRAINER);
+
+            assertThat(group.hasMember(TRAINER)).isFalse();
+            assertThat(group.getMembers()).isEmpty();
+            assertThat(group.getDomainEvents()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("assignEligibleMember() still assigns a co-trainer added later and skips the trainer list")
+        void shouldSkipAllTrainersAndAssignOthers() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+            group.addTrainer(TRAINER_2);
+
+            group.assignEligibleMember(TRAINER_2);
+            group.assignEligibleMember(REGULAR_MEMBER);
+
+            assertThat(group.hasMember(TRAINER_2)).isFalse();
+            assertThat(group.hasMember(REGULAR_MEMBER)).isTrue();
+        }
+
+        @Test
+        @DisplayName("removeTrainer() leaves the former trainer out of the trainees")
+        void shouldNotAddRemovedTrainerAsTrainee() {
+            TrainingGroup group = TrainingGroup.create(
+                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
+            group.assignEligibleMember(REGULAR_MEMBER);
+            group.addTrainer(REGULAR_MEMBER);
+
+            group.removeTrainer(REGULAR_MEMBER);
+
+            assertThat(group.getTrainers()).containsExactly(TRAINER);
+            assertThat(group.hasMember(REGULAR_MEMBER)).isFalse();
         }
     }
 
