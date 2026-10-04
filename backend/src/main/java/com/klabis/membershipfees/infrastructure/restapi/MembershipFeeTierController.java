@@ -1,7 +1,7 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.ui.HalFormsInlineOption;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
@@ -21,8 +21,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -49,12 +47,15 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     // isn't reachable via ConversionService.convert(source, TargetClass) — that only dispatches
     // to the registered Converter<S,T> pair. Inject the generated Converter bean directly for it.
     private final MembershipFeeTierResponseConverter tierResponseConverter;
+    private final AuthorizationEvaluator authorizationEvaluator;
 
     MembershipFeeTierController(MembershipFeeTierManagementPort managementPort,
                                 MembershipFeeTierOptionsPort optionsPort,
                                 FeeSelectionCampaignManagementPort campaignManagementPort,
                                 ConversionService conversionService,
-                                MembershipFeeTierResponseConverter tierResponseConverter) {
+                                MembershipFeeTierResponseConverter tierResponseConverter,
+                                AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
         this.managementPort = managementPort;
         this.optionsPort = optionsPort;
         this.campaignManagementPort = campaignManagementPort;
@@ -90,9 +91,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     private boolean isAdmin() {
-        return SecuritySpelEvaluator.hasAuthority(
-                SecurityContextHolder.getContext().getAuthentication(),
-                Authority.MEMBERS_MANAGE);
+        return authorizationEvaluator.has(Authority.MEMBERS_MANAGE);
     }
 
     @Override
@@ -244,6 +243,12 @@ class MembershipFeeTierListPostprocessor
 
     private static final String ACTIVE_CAMPAIGN_ATTR = MembershipFeeTierListPostprocessor.class.getName() + ".activeCampaign";
 
+    private final AuthorizationEvaluator authorizationEvaluator;
+
+    MembershipFeeTierListPostprocessor(AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
+    }
+
     static void setActiveCampaign(Optional<FeeSelectionCampaign> activeCampaign) {
         org.springframework.web.context.request.RequestAttributes attrs =
                 org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
@@ -273,8 +278,7 @@ class MembershipFeeTierListPostprocessor
                 .andAffordances(klabisAfford(methodOn(FeeSelectionCampaignsApi.class).publishYear(null)))
                 .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).createTier(null))));
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (SecuritySpelEvaluator.hasAuthority(auth, Authority.MEMBERS_MANAGE)) {
+        if (authorizationEvaluator.has(Authority.MEMBERS_MANAGE)) {
             activeCampaignAttr.get().ifPresent(campaign ->
                     klabisLinkTo(methodOn(FeeSelectionCampaignsApi.class).getPublication(campaign.getId()
                             .value()))
@@ -399,10 +403,15 @@ class MembershipFeeTierListRulesPostprocessor
 @MvcComponent
 class MembershipFeesRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
+    private final AuthorizationEvaluator authorizationEvaluator;
+
+    MembershipFeesRootPostprocessor(AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
+    }
+
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!SecuritySpelEvaluator.hasAuthority(auth, Authority.MEMBERS_MANAGE)) {
+        if (!authorizationEvaluator.has(Authority.MEMBERS_MANAGE)) {
             return model;
         }
         klabisLinkTo(methodOn(MembershipFeeTiersApi.class).listTiers())

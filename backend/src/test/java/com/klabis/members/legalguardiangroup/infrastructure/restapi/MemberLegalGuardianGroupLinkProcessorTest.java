@@ -1,5 +1,6 @@
 package com.klabis.members.legalguardiangroup.infrastructure.restapi;
 
+import com.klabis.common.SecurityContextAuthorizationEvaluator;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.domain.Member;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
@@ -21,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("MemberLegalGuardianGroupLinkProcessor")
 class MemberLegalGuardianGroupLinkProcessorTest {
 
-    private final MemberLegalGuardianGroupLinkProcessor processor = new MemberLegalGuardianGroupLinkProcessor();
+    private final MemberLegalGuardianGroupLinkProcessor processor = new MemberLegalGuardianGroupLinkProcessor(SecurityContextAuthorizationEvaluator.create());
 
     @AfterEach
     void clearState() {

@@ -26,7 +26,6 @@ import java.io.UnsupportedEncodingException;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -353,7 +352,7 @@ class MemberLifecycleE2ETest {
             Map<String, Object> attributes = new JsonMapper().readValue(memberDetailResponse, Map.class);
             String registrationNumberValue = (String) attributes.get("registrationNumber");
             MemberId memberId = new MemberId(UUID.fromString((String) attributes.get("id")));
-            return new CurrentUserData(registrationNumberValue, memberId.toUserId(), memberId, Set.of());
+            return new CurrentUserData(registrationNumberValue, memberId.toUserId(), memberId);
         } catch (JacksonException e) {
             throw new RuntimeException(e);
         }

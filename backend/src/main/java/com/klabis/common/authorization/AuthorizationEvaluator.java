@@ -54,6 +54,13 @@ public class AuthorizationEvaluator {
         this.conversionService = conversionService;
     }
 
+    /**
+     * Whether the annotations of {@code accessor} restrict who may see or change the field it exposes.
+     */
+    public static boolean isSecured(Method accessor) {
+        return !FieldRules.of(accessor).isOpen();
+    }
+
     public boolean has(Authority authority) {
         return snapshots.current().hasOverAll(authority);
     }

@@ -2,8 +2,6 @@ package com.klabis.common.ui;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.authorization.TargetRef;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
-import com.klabis.common.users.HasAuthority;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,7 +20,6 @@ import org.springframework.hateoas.server.core.MethodInvocation;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -415,9 +412,7 @@ public class HalFormsSupport {
         }
 
         private static boolean isSecured(Method m) {
-            return m.isAnnotationPresent(PreAuthorize.class)
-                   || m.isAnnotationPresent(HasAuthority.class)
-                   || m.isAnnotationPresent(OwnerVisible.class);
+            return AuthorizationEvaluator.isSecured(m);
         }
 
         private static Optional<AnnotatedElement> getAnnotatedElementForProperty(AffordanceModel.PayloadMetadata payloadMetadata, AffordanceModel.PropertyMetadata delegate) {

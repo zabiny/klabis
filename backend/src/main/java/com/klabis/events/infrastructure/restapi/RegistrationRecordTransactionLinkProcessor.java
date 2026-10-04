@@ -1,11 +1,11 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.application.FinanceAccountLinkSupport;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.UUID;
 
@@ -18,23 +18,17 @@ import java.util.UUID;
 class RegistrationRecordTransactionLinkProcessor implements RepresentationModelProcessor<EntityModel<RegistrationSummaryDto>> {
 
     private final FinanceAccountLinkSupport financeAccountLinkSupport;
+    private final AuthorizationEvaluator authorizationEvaluator;
 
-    RegistrationRecordTransactionLinkProcessor(FinanceAccountLinkSupport financeAccountLinkSupport) {
+    RegistrationRecordTransactionLinkProcessor(FinanceAccountLinkSupport financeAccountLinkSupport,
+                                               AuthorizationEvaluator authorizationEvaluator) {
         this.financeAccountLinkSupport = financeAccountLinkSupport;
-    }
-
-    private static boolean callerHasFinanceManage() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null) {
-            return false;
-        }
-        return authentication.getAuthorities().stream()
-                .anyMatch(a -> Authority.FINANCE_MANAGE.getValue().equals(a.getAuthority()));
+        this.authorizationEvaluator = authorizationEvaluator;
     }
 
     @Override
     public EntityModel<RegistrationSummaryDto> process(EntityModel<RegistrationSummaryDto> model) {
-        if (!callerHasFinanceManage()) {
+        if (!authorizationEvaluator.has(Authority.FINANCE_MANAGE)) {
             return model;
         }
         RegistrationSummaryDto dto = model.getContent();

@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
@@ -53,8 +54,11 @@ class EventRegistrationController implements EventRegistrationsApi {
     private final EventRegistrationPort registrationService;
     private final Members members;
     private final EntityLinks entityLinks;
+    private final AuthorizationEvaluator authorizationEvaluator;
 
-    public EventRegistrationController(EventManagementPort eventManagementService, EventRegistrationPort registrationService, Members members, EntityLinks entityLinks) {
+    public EventRegistrationController(EventManagementPort eventManagementService, EventRegistrationPort registrationService, Members members, EntityLinks entityLinks,
+                                       AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
         this.eventManagementService = eventManagementService;
         this.registrationService = registrationService;
         this.members = members;
@@ -119,7 +123,7 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .map(EventRegistration::memberId)
                 .toList());
 
-        boolean callerCanSortByRegistrationTime = EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth,
+        boolean callerCanSortByRegistrationTime = EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(authorizationEvaluator, auth,
                 event);
         List<EventRegistration> sorted = RegistrationSortApplier.sort(registrations,
                 memberIndex,
@@ -169,7 +173,7 @@ class EventRegistrationController implements EventRegistrationsApi {
         }
 
         Event event = eventManagementService.getEvent(new EventId(eventId),
-                EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_REGISTRATIONS));
+                authorizationEvaluator.has(Authority.EVENTS_REGISTRATIONS));
         EventRegistration registration = event.findRegistration(targetMember)
                 .orElseThrow(() -> new RegistrationNotFoundException(targetMember, new EventId(eventId)));
 

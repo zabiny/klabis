@@ -1,5 +1,6 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
+import com.klabis.common.SecurityContextAuthorizationEvaluator;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.Authority;
 import org.junit.jupiter.api.*;
@@ -40,7 +41,7 @@ class MembershipFeesRootPostprocessorTest {
                     new TestingAuthenticationToken("admin", "pw",
                             List.of(new SimpleGrantedAuthority(Authority.MEMBERS_MANAGE.getValue()))));
 
-            EntityModel<RootModel> result = new MembershipFeesRootPostprocessor().process(EntityModel.of(new RootModel()));
+            EntityModel<RootModel> result = new MembershipFeesRootPostprocessor(SecurityContextAuthorizationEvaluator.create()).process(EntityModel.of(new RootModel()));
 
             assertThat(result.getLink("membership-fees")).isPresent();
             assertThat(result.getLink("membership-fees").get().getHref()).contains("/api/membership-fee-tiers");
@@ -53,7 +54,7 @@ class MembershipFeesRootPostprocessorTest {
                     new TestingAuthenticationToken("member", "pw",
                             List.of(new SimpleGrantedAuthority(Authority.MEMBERS_READ.getValue()))));
 
-            EntityModel<RootModel> result = new MembershipFeesRootPostprocessor().process(EntityModel.of(new RootModel()));
+            EntityModel<RootModel> result = new MembershipFeesRootPostprocessor(SecurityContextAuthorizationEvaluator.create()).process(EntityModel.of(new RootModel()));
 
             assertThat(result.getLink("membership-fees")).isEmpty();
         }
@@ -63,7 +64,7 @@ class MembershipFeesRootPostprocessorTest {
         void shouldNotAddLinkWhenNotAuthenticated() {
             SecurityContextHolder.clearContext();
 
-            EntityModel<RootModel> result = new MembershipFeesRootPostprocessor().process(EntityModel.of(new RootModel()));
+            EntityModel<RootModel> result = new MembershipFeesRootPostprocessor(SecurityContextAuthorizationEvaluator.create()).process(EntityModel.of(new RootModel()));
 
             assertThat(result.getLink("membership-fees")).isEmpty();
         }

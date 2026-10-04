@@ -1,11 +1,12 @@
 package com.klabis.finance.infrastructure.restapi;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.mvc.MvcComponent;
+import com.klabis.common.users.Authority;
 import com.klabis.members.infrastructure.restapi.MemberSummaryResponse;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 
-import static com.klabis.finance.infrastructure.restapi.FinanceSecurityHelper.callerHasFinanceManage;
 
 /**
  * Adds an {@code account} HAL link to member summary responses (list rows) for users with FINANCE:MANAGE authority.
@@ -14,9 +15,15 @@ import static com.klabis.finance.infrastructure.restapi.FinanceSecurityHelper.ca
 @MvcComponent
 class AccountMemberSummaryLinkProcessor implements RepresentationModelProcessor<EntityModel<MemberSummaryResponse>> {
 
+    private final AuthorizationEvaluator authorizationEvaluator;
+
+    AccountMemberSummaryLinkProcessor(AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
+    }
+
     @Override
     public EntityModel<MemberSummaryResponse> process(EntityModel<MemberSummaryResponse> model) {
-        if (!callerHasFinanceManage()) {
+        if (!authorizationEvaluator.has(Authority.FINANCE_MANAGE)) {
             return model;
         }
         MemberSummaryResponse response = model.getContent();

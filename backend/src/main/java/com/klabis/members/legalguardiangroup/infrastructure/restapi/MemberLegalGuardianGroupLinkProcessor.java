@@ -1,5 +1,6 @@
 package com.klabis.members.legalguardiangroup.infrastructure.restapi;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
@@ -22,6 +23,12 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @MvcComponent
 public class MemberLegalGuardianGroupLinkProcessor extends ModelWithDomainPostprocessor<MemberDetailsResponse, Member> {
+
+    private final AuthorizationEvaluator authorizationEvaluator;
+
+    public MemberLegalGuardianGroupLinkProcessor(AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
+    }
 
     @Override
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
@@ -50,9 +57,9 @@ public class MemberLegalGuardianGroupLinkProcessor extends ModelWithDomainPostpr
                 });
     }
 
-    private static boolean mayViewGuardians(LegalGuardianGroup group) {
+    private boolean mayViewGuardians(LegalGuardianGroup group) {
         return CurrentUserData.from(SecurityContextHolder.getContext().getAuthentication())
-                .map(user -> GuardianListAccess.permits(user, group))
+                .map(user -> GuardianListAccess.permits(authorizationEvaluator, user, group))
                 .orElse(false);
     }
 }
