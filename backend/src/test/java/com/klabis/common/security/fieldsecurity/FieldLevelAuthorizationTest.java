@@ -2,6 +2,8 @@ package com.klabis.common.security.fieldsecurity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.authorization.TargetId;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.CommonInfrastructureWebMvcSetup;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsSupport;
@@ -92,7 +94,7 @@ class FieldLevelAuthorizationTest {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @HandleAuthorizationDenied(handlerClass = NullDeniedHandler.class)
     record OwnershipDataResponse(
-            @OwnerId UUID ownerId,
+            @TargetId(TargetType.MEMBER) UUID ownerId,
             String publicField,
             @HasAuthority(Authority.MEMBERS_MANAGE) @OwnerVisible String ownerOrAdminField,
             @OwnerVisible String ownerOnlyField,
@@ -170,20 +172,20 @@ class FieldLevelAuthorizationTest {
         }
 
         @PatchMapping("/api/test/ownership-auth/{id}")
-        ResponseEntity<Void> updateOwnershipData(@PathVariable @OwnerId UUID id, @RequestBody OwnershipPatchRequest body) {
+        ResponseEntity<Void> updateOwnershipData(@PathVariable @TargetId(TargetType.MEMBER) UUID id, @RequestBody OwnershipPatchRequest body) {
             return ResponseEntity.noContent().build();
         }
 
         @GetMapping("/api/test/ownership-method/{id}")
         @com.klabis.common.users.HasAuthority(Authority.MEMBERS_MANAGE)
         @OwnerVisible
-        ResponseEntity<String> getOwnershipProtectedResource(@PathVariable @OwnerId UUID id) {
+        ResponseEntity<String> getOwnershipProtectedResource(@PathVariable @TargetId(TargetType.MEMBER) UUID id) {
             return ResponseEntity.ok("protected-data");
         }
 
         @GetMapping("/api/test/owner-only-method/{id}")
         @OwnerVisible
-        ResponseEntity<String> getOwnerOnlyResource(@PathVariable @OwnerId UUID id) {
+        ResponseEntity<String> getOwnerOnlyResource(@PathVariable @TargetId(TargetType.MEMBER) UUID id) {
             return ResponseEntity.ok("owner-only-data");
         }
 

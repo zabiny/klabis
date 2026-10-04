@@ -10,6 +10,9 @@ import java.lang.annotation.*;
  * target with the authenticated user.
  * <p>
  * The value may be a UUID or any type convertible to one through {@code ConversionService}.
+ * <p>
+ * On a record, the component may be left unmarked when it is the only one convertible to a UUID and some
+ * component is {@code @OwnerVisible}; the target is then taken to be a member.
  *
  * @see AuthorizationEvaluator#canInvoke
  */

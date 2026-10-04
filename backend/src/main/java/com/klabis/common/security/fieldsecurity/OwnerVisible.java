@@ -13,10 +13,10 @@ import java.lang.annotation.*;
  * only to the owner.
  * <p>
  * Owner identity is resolved by {@link OwnershipResolver}, which compares the owner
- * identifier (found via {@link OwnerId}) against the current user's member ID from
+ * identifier (found via {@link com.klabis.common.authorization.TargetId}) against the current user's member ID from
  * the JWT token.
  *
- * @see OwnerId
+ * @see com.klabis.common.authorization.TargetId
  * @see OwnershipResolver
  */
 @Target({ElementType.METHOD, ElementType.TYPE, ElementType.RECORD_COMPONENT})

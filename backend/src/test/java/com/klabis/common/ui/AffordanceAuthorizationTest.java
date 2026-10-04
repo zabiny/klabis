@@ -6,7 +6,6 @@ import com.klabis.common.authorization.TargetId;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.CommonInfrastructureWebMvcSetup;
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.security.fieldsecurity.OwnerId;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
@@ -93,7 +92,7 @@ class AffordanceAuthorizationTest {
 
         @PatchMapping("/api/afford-test/owner-visible/{id}")
         @OwnerVisible
-        ResponseEntity<Void> updateOwnerVisible(@PathVariable @OwnerId UUID id, @RequestBody AffordanceTestRequest body) {
+        ResponseEntity<Void> updateOwnerVisible(@PathVariable @TargetId(TargetType.MEMBER) UUID id, @RequestBody AffordanceTestRequest body) {
             return ResponseEntity.noContent().build();
         }
 
@@ -109,7 +108,7 @@ class AffordanceAuthorizationTest {
         @PatchMapping("/api/afford-test/owner-or-admin/{id}")
         @HasAuthority(Authority.MEMBERS_MANAGE)
         @OwnerVisible
-        ResponseEntity<Void> updateOwnerOrAdmin(@PathVariable @OwnerId UUID id, @RequestBody AffordanceTestRequest body) {
+        ResponseEntity<Void> updateOwnerOrAdmin(@PathVariable @TargetId(TargetType.MEMBER) UUID id, @RequestBody AffordanceTestRequest body) {
             return ResponseEntity.noContent().build();
         }
 
@@ -124,7 +123,7 @@ class AffordanceAuthorizationTest {
 
         @PatchMapping("/api/afford-test/owner-null/{id}")
         @OwnerVisible
-        ResponseEntity<Void> updateOwnerNullId(@PathVariable @OwnerId UUID id, @RequestBody AffordanceTestRequest body) {
+        ResponseEntity<Void> updateOwnerNullId(@PathVariable @TargetId(TargetType.MEMBER) UUID id, @RequestBody AffordanceTestRequest body) {
             return ResponseEntity.noContent().build();
         }
 
@@ -274,7 +273,7 @@ class AffordanceAuthorizationTest {
     }
 
     @Nested
-    @DisplayName("method with @OwnerVisible + @OwnerId")
+    @DisplayName("method with @OwnerVisible + @TargetId")
     class OwnerVisibleMethod {
 
         @Test
@@ -297,7 +296,7 @@ class AffordanceAuthorizationTest {
 
         @Test
         @WithKlabisMockUser(memberId = OWNER_ID_STRING)
-        @DisplayName("affordance absent when @OwnerId argument is null — conservative approach")
+        @DisplayName("affordance absent when @TargetId(TargetType.MEMBER) argument is null — conservative approach")
         void affordanceAbsentWhenOwnerIdArgumentIsNull() throws Exception {
             mockMvc.perform(get("/api/afford-test/owner-null/{id}", OWNER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())

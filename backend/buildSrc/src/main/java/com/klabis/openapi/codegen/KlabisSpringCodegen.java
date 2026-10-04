@@ -66,6 +66,7 @@ public class KlabisSpringCodegen extends SpringCodegen {
     private static final String HAL_INPUT_TYPE_EXTENSION = "x-hal-input-type";
     private static final String HALFORMS_ANNOTATION_EXTENSION = "x-klabis-halforms-annotation";
     private static final String KLABIS_NULLABLE_EXTENSION = "x-klabis-nullable";
+    private static final List<String> AUTHORITY_LIST_EXTENSIONS = List.of("x-klabis-authority", "x-klabis-read-authority");
     private static final String HAL_FORMS_FQN = "com.klabis.common.ui.HalForms";
 
     /**
@@ -189,7 +190,9 @@ public class KlabisSpringCodegen extends SpringCodegen {
         currentOperation = operation;
         try {
             addDerivedHalFormsContentType(operation);
-            return super.fromOperation(path, httpMethod, operation, servers);
+            CodegenOperation codegenOperation = super.fromOperation(path, httpMethod, operation, servers);
+            asLists(codegenOperation.vendorExtensions, AUTHORITY_LIST_EXTENSIONS);
+            return codegenOperation;
         } finally {
             currentOperation = null;
         }
@@ -401,9 +404,26 @@ public class KlabisSpringCodegen extends SpringCodegen {
             property.isNullable = explicitNullable;
         }
         super.postProcessModelProperty(model, property);
+        asLists(property.getVendorExtensions(), AUTHORITY_LIST_EXTENSIONS);
         String annotation = halFormsAnnotation(property.getVendorExtensions());
         if (annotation != null) {
             property.getVendorExtensions().put(HALFORMS_ANNOTATION_EXTENSION, annotation);
+        }
+    }
+
+    /**
+     * Rewrites a single-string extension value as a one-element list, so the templates can emit the
+     * comma-separated {@code @HasAuthority({...})} / {@code @ReadAuthority({...})} array from one
+     * code path: mustache cannot tell the last element of a bare string.
+     */
+    static void asLists(Map<String, Object> vendorExtensions, List<String> keys) {
+        if (vendorExtensions == null) {
+            return;
+        }
+        for (String key : keys) {
+            if (vendorExtensions.get(key) instanceof String single) {
+                vendorExtensions.put(key, List.of(single));
+            }
         }
     }
 

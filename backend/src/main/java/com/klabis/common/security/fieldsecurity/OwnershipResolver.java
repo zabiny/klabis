@@ -14,7 +14,7 @@ public interface OwnershipResolver {
      * Returns {@code true} if the authenticated user is the owner identified by
      * {@code ownerIdValue}.
      *
-     * @param ownerIdValue the value of the field annotated with {@link OwnerId};
+     * @param ownerIdValue the value of the field annotated with {@link com.klabis.common.authorization.TargetId};
      *                     may be any type that can be converted to UUID via
      *                     {@code ConversionService}
      * @param authentication the current authentication

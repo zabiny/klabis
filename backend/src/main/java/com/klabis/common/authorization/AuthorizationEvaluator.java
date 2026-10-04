@@ -1,7 +1,6 @@
 package com.klabis.common.authorization;
 
 import com.klabis.common.security.MethodSecurityAnnotations;
-import com.klabis.common.security.fieldsecurity.OwnerId;
 import com.klabis.common.security.fieldsecurity.OwnerVisible;
 import com.klabis.common.security.fieldsecurity.OwnershipResolver;
 import com.klabis.common.security.fieldsecurity.ReadAuthority;
@@ -250,9 +249,6 @@ public class AuthorizationEvaluator {
             if (targetId != null) {
                 return cache(recordClass, new RecordTarget(accessor, targetId.value()));
             }
-            if (accessor.getAnnotation(OwnerId.class) != null) {
-                return cache(recordClass, new RecordTarget(accessor, TargetType.MEMBER));
-            }
         }
         return discoverOwnerTarget(recordClass, components);
     }
@@ -319,13 +315,10 @@ public class AuthorizationEvaluator {
             boolean ownerVisible = MethodSecurityAnnotations.findMethodAnnotation(method, targetClass, OwnerVisible.class) != null;
 
             int index = MethodSecurityAnnotations.findAnnotatedParameterIndex(method, targetClass, TargetId.class);
-            if (index >= 0) {
-                TargetId targetId = MethodSecurityAnnotations.findParameterAnnotation(method, targetClass, index, TargetId.class);
-                return new InvocationRules(authorities, ownerVisible, index, targetId != null ? targetId.value() : null);
-            }
-            int ownerIdIndex = MethodSecurityAnnotations.findAnnotatedParameterIndex(method, targetClass, OwnerId.class);
-            return new InvocationRules(authorities, ownerVisible, ownerIdIndex,
-                    ownerIdIndex >= 0 ? TargetType.MEMBER : null);
+            TargetId targetId = index >= 0
+                    ? MethodSecurityAnnotations.findParameterAnnotation(method, targetClass, index, TargetId.class)
+                    : null;
+            return new InvocationRules(authorities, ownerVisible, index, targetId != null ? targetId.value() : null);
         }
 
         boolean isOpen() {
