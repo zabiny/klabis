@@ -1,5 +1,6 @@
 package com.klabis.members.legalguardiangroup.infrastructure.restapi;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.users.Authority;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
@@ -10,13 +11,13 @@ final class GuardianListAccess {
     private GuardianListAccess() {
     }
 
-    static boolean permits(CurrentUserData user, LegalGuardianGroup group) {
-        return user.hasAuthority(Authority.MEMBERS_MANAGE)
+    static boolean permits(AuthorizationEvaluator authorizationEvaluator, CurrentUserData user, LegalGuardianGroup group) {
+        return authorizationEvaluator.has(Authority.MEMBERS_MANAGE)
                || user.isMemberOf(memberId -> group.hasMember(memberId.toUserId()));
     }
 
-    static void require(CurrentUserData user, LegalGuardianGroup group) {
-        if (!permits(user, group)) {
+    static void require(AuthorizationEvaluator authorizationEvaluator, CurrentUserData user, LegalGuardianGroup group) {
+        if (!permits(authorizationEvaluator, user, group)) {
             throw new AccessDeniedException(
                     "Access to legal guardians requires MEMBERS:MANAGE authority or being a minor of the group");
         }

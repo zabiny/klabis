@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.SecurityContextAuthorizationEvaluator;
 import com.klabis.finance.application.FinanceAccountLinkSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -9,10 +10,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Instant;
@@ -22,8 +22,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RegistrationRecordTransactionLinkProcessor Unit Tests (branches not reachable from a controller response; the rest is covered in EventRegistrationControllerTest)")
@@ -36,7 +34,7 @@ class RegistrationRecordTransactionLinkProcessorTest {
 
     @BeforeEach
     void setUp() {
-        testedSubject = new RegistrationRecordTransactionLinkProcessor(financeAccountLinkSupport);
+        testedSubject = new RegistrationRecordTransactionLinkProcessor(financeAccountLinkSupport, SecurityContextAuthorizationEvaluator.create());
         SecurityContextHolder.clearContext();
     }
 
@@ -83,12 +81,6 @@ class RegistrationRecordTransactionLinkProcessorTest {
     }
 
     private void mockSecurityContext(Collection<? extends GrantedAuthority> authorities) {
-        Authentication authenticationMock = mock(Authentication.class);
-        when(authenticationMock.getAuthorities()).thenAnswer(invocation -> authorities);
-
-        SecurityContext securityContextMock = mock(SecurityContext.class);
-        when(securityContextMock.getAuthentication()).thenReturn(authenticationMock);
-
-        SecurityContextHolder.setContext(securityContextMock);
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("user", "pw", List.copyOf(authorities)));
     }
 }

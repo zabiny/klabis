@@ -1,5 +1,6 @@
 package com.klabis.finance.infrastructure.restapi;
 
+import com.klabis.common.SecurityContextAuthorizationEvaluator;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.ui.RootModel;
 import com.klabis.members.infrastructure.restapi.MemberDetailsResponse;
@@ -39,7 +40,7 @@ class AccountLinkProcessorBranchesTest {
         authenticateAsFinanceManager();
         EntityModel<MemberDetailsResponse> model = EntityModel.of(MemberDetailsResponseBuilder.builder().build());
 
-        var result = new AccountMemberDetailLinkProcessor().process(model);
+        var result = new AccountMemberDetailLinkProcessor(SecurityContextAuthorizationEvaluator.create()).process(model);
 
         assertThat(result.getLinks()).isEmpty();
     }
@@ -51,7 +52,7 @@ class AccountLinkProcessorBranchesTest {
         EntityModel<MemberDetailsResponse> model = mock(EntityModel.class);
         when(model.getContent()).thenReturn(null);
 
-        new AccountMemberDetailLinkProcessor().process(model);
+        new AccountMemberDetailLinkProcessor(SecurityContextAuthorizationEvaluator.create()).process(model);
 
         org.mockito.Mockito.verify(model, org.mockito.Mockito.never()).add(org.mockito.ArgumentMatchers.any(org.springframework.hateoas.Link.class));
     }
@@ -62,7 +63,7 @@ class AccountLinkProcessorBranchesTest {
         authenticateAsFinanceManager();
         EntityModel<MemberSummaryResponse> model = EntityModel.of(MemberSummaryResponseBuilder.builder().build());
 
-        var result = new AccountMemberSummaryLinkProcessor().process(model);
+        var result = new AccountMemberSummaryLinkProcessor(SecurityContextAuthorizationEvaluator.create()).process(model);
 
         assertThat(result.getLinks()).isEmpty();
     }
@@ -74,7 +75,7 @@ class AccountLinkProcessorBranchesTest {
         EntityModel<MemberSummaryResponse> model = mock(EntityModel.class);
         when(model.getContent()).thenReturn(null);
 
-        new AccountMemberSummaryLinkProcessor().process(model);
+        new AccountMemberSummaryLinkProcessor(SecurityContextAuthorizationEvaluator.create()).process(model);
 
         org.mockito.Mockito.verify(model, org.mockito.Mockito.never()).add(org.mockito.ArgumentMatchers.any(org.springframework.hateoas.Link.class));
     }

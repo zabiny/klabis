@@ -41,10 +41,10 @@
 
 ## 7. Imperative checks migrated (behavior preserved)
 
-- [ ] 7.1 `members`: `MemberController`, `OwnProfileEditRule`, `ManagementService.getMemberAndRecordView` caller, `GuardianListAccess`, `CurrentUserData.hasAuthority` ask the evaluator; verify members tests pass unchanged
-- [ ] 7.2 `events`: `EventController`, `EventManagementService` flags; verify events tests pass unchanged
-- [ ] 7.3 `groups` (`TrainingGroupController`) and `membershipfees` (`MembershipFeeTierController`); verify their tests pass unchanged
-- [ ] 7.4 Add the ArchUnit rule from D5; verify it passes and fails on a deliberately introduced direct `getAuthorities()` check (then remove it)
+- [x] 7.1 `members`: `MemberController`, `OwnProfileEditRule`, `ManagementService.getMemberAndRecordView` caller, `GuardianListAccess`, `CurrentUserData.hasAuthority` ask the evaluator; verify members tests pass unchanged
+- [x] 7.2 `events`: `EventController`, `EventManagementService` flags; verify events tests pass unchanged
+- [x] 7.3 `groups` (`TrainingGroupController`) and `membershipfees` (`MembershipFeeTierController`); verify their tests pass unchanged
+- [x] 7.4 Add the ArchUnit rule from D5; verify it passes and fails on a deliberately introduced direct `getAuthorities()` check (then remove it)
 
 ## 8. Documentation
 

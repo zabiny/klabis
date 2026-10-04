@@ -1,5 +1,6 @@
 package com.klabis.common.ui;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.users.Authority;
@@ -43,12 +44,18 @@ class RootController implements RootApi {
 @MvcComponent
 class RootAdminLinkProcessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
+    private final AuthorizationEvaluator authorizationEvaluator;
+
+    RootAdminLinkProcessor(AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
+    }
+
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication instanceof KlabisJwtAuthenticationToken klabisAuth
-            && klabisAuth.isAuthenticated()
-            && klabisAuth.hasAuthority(Authority.DEVELOPER)) {
+        if (authentication instanceof KlabisJwtAuthenticationToken
+            && authentication.isAuthenticated()
+            && authorizationEvaluator.has(Authority.DEVELOPER)) {
             model.add(Link.of("/admin").withRel("admin"));
         }
         return model;

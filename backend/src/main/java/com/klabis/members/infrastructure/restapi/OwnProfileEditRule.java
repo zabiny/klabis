@@ -1,9 +1,8 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.users.Authority;
-import com.klabis.members.CurrentUserData;
 import com.klabis.members.domain.PersonalInformation;
-import org.springframework.security.core.Authentication;
 
 import java.time.LocalDate;
 
@@ -18,10 +17,7 @@ final class OwnProfileEditRule {
     private OwnProfileEditRule() {
     }
 
-    static boolean isForbidden(LocalDate dateOfBirth, Authentication authentication) {
-        boolean canManageMembers = CurrentUserData.from(authentication)
-                .map(user -> user.hasAuthority(Authority.MEMBERS_MANAGE))
-                .orElse(false);
-        return PersonalInformation.isMinor(dateOfBirth) && !canManageMembers;
+    static boolean isForbidden(LocalDate dateOfBirth, AuthorizationEvaluator authorizationEvaluator) {
+        return PersonalInformation.isMinor(dateOfBirth) && !authorizationEvaluator.has(Authority.MEMBERS_MANAGE);
     }
 }

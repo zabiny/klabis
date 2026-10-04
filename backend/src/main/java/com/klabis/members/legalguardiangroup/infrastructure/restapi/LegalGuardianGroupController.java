@@ -1,6 +1,7 @@
 package com.klabis.members.legalguardiangroup.infrastructure.restapi;
 
 import org.jspecify.annotations.Nullable;
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
@@ -44,10 +45,13 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
 
     private final LegalGuardianGroupPort legalGuardianGroupService;
     private final Members members;
+    private final AuthorizationEvaluator authorizationEvaluator;
 
-    LegalGuardianGroupController(LegalGuardianGroupPort legalGuardianGroupService, Members members) {
+    LegalGuardianGroupController(LegalGuardianGroupPort legalGuardianGroupService, Members members,
+                                 AuthorizationEvaluator authorizationEvaluator) {
         this.legalGuardianGroupService = legalGuardianGroupService;
         this.members = members;
+        this.authorizationEvaluator = authorizationEvaluator;
     }
 
     @Override
@@ -77,7 +81,7 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
     public ResponseEntity<List<LegalGuardianGroupGuardianResponse>> listLegalGuardianGroupGuardians(
             UUID id, CurrentUserData currentUser) {
         LegalGuardianGroup group = legalGuardianGroupService.getGroup(new LegalGuardianGroupId(id));
-        GuardianListAccess.require(currentUser, group);
+        GuardianListAccess.require(authorizationEvaluator, currentUser, group);
 
         List<GuardianContact> contacts = legalGuardianGroupService.listGuardians(group);
         HalResponseContext.setDomainList(contacts);

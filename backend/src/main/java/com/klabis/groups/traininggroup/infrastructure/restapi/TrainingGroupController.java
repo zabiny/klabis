@@ -1,5 +1,6 @@
 package com.klabis.groups.traininggroup.infrastructure.restapi;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.mvc.MvcComponent;
@@ -43,9 +44,12 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class TrainingGroupController implements TrainingGroupsApi {
 
     private final TrainingGroupManagementPort trainingGroupManagementService;
+    private final AuthorizationEvaluator authorizationEvaluator;
 
-    TrainingGroupController(TrainingGroupManagementPort trainingGroupManagementService) {
+    TrainingGroupController(TrainingGroupManagementPort trainingGroupManagementService,
+                            AuthorizationEvaluator authorizationEvaluator) {
         this.trainingGroupManagementService = trainingGroupManagementService;
+        this.authorizationEvaluator = authorizationEvaluator;
     }
 
     @Override
@@ -81,7 +85,7 @@ class TrainingGroupController implements TrainingGroupsApi {
         TrainingGroupId groupId = new TrainingGroupId(id);
         TrainingGroup group = trainingGroupManagementService.getTrainingGroup(groupId);
 
-        boolean hasTrainingAuthority = currentUser.hasAuthority(Authority.GROUPS_TRAINING);
+        boolean hasTrainingAuthority = authorizationEvaluator.has(Authority.GROUPS_TRAINING);
         boolean isMember = currentUser.isMemberOf(group::hasMember);
         boolean isTrainer = currentUser.isMemberOf(group::hasTrainer);
 

@@ -1,6 +1,5 @@
 package com.klabis.common.security.fieldsecurity;
 
-import com.klabis.common.users.Authority;
 import org.aopalliance.intercept.MethodInvocation;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -46,14 +45,5 @@ public class SecuritySpelEvaluator {
             LOG.debug("Failed to evaluate @PreAuthorize expression '{}' on method {}: {}", expression, method.getName(), e.getMessage());
             return false;
         }
-    }
-
-    public static boolean hasAuthority(@Nullable Authentication authentication, Authority required) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-        String value = required.getValue();
-        return authentication.getAuthorities().stream()
-                .anyMatch(granted -> granted.getAuthority().equals(value));
     }
 }

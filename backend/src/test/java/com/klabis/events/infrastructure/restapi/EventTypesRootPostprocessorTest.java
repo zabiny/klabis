@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.SecurityContextAuthorizationEvaluator;
 import com.klabis.common.ui.RootModel;
 import org.junit.jupiter.api.*;
 import org.springframework.hateoas.EntityModel;
@@ -33,7 +34,7 @@ class EventTypesRootPostprocessorTest {
         void shouldNotAddLinkWhenNotAuthenticated() {
             SecurityContextHolder.clearContext();
 
-            EntityModel<RootModel> result = new EventTypesRootPostprocessor().process(EntityModel.of(new RootModel()));
+            EntityModel<RootModel> result = new EventTypesRootPostprocessor(SecurityContextAuthorizationEvaluator.create()).process(EntityModel.of(new RootModel()));
 
             assertThat(result.getLink("event-types")).isEmpty();
         }

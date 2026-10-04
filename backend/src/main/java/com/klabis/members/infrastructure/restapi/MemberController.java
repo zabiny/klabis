@@ -1,5 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
@@ -42,7 +43,6 @@ import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
@@ -72,6 +72,7 @@ public class MemberController implements MembersApi {
     private final SynchronizationPort synchronizationPort;
     private final MemberCompletenessPort memberCompletenessPort;
     private final LegalGuardianGroupPort legalGuardianGroupPort;
+    private final AuthorizationEvaluator authorizationEvaluator;
 
     public MemberController(
             ManagementPort managementService,
@@ -80,7 +81,9 @@ public class MemberController implements MembersApi {
             OrisClubKeyManagementPort orisClubKeyManagementPort,
             SynchronizationPort synchronizationPort,
             MemberCompletenessPort memberCompletenessPort,
-            LegalGuardianGroupPort legalGuardianGroupPort) {
+            LegalGuardianGroupPort legalGuardianGroupPort,
+            AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
         this.memberCompletenessPort = memberCompletenessPort;
         this.legalGuardianGroupPort = legalGuardianGroupPort;
         this.managementService = managementService;
@@ -118,8 +121,7 @@ public class MemberController implements MembersApi {
 
         MemberId memberId = new MemberId(id);
         var prefilled = managementService.prefilledUpdateCommand(memberId);
-        if (OwnProfileEditRule.isForbidden(prefilled.dateOfBirth(),
-                SecurityContextHolder.getContext().getAuthentication())) {
+        if (OwnProfileEditRule.isForbidden(prefilled.dateOfBirth(), authorizationEvaluator)) {
             throw new InsufficientAuthorityException(Authority.MEMBERS_MANAGE.getValue());
         }
         var command = UpdateMemberRequestMapper.toCommand(request, prefilled, currentUser.userId());
@@ -185,7 +187,7 @@ public class MemberController implements MembersApi {
 
         validateSortFields(pageable.getSort());
 
-        MemberFilter filter = buildFilter(q, status, incomplete, currentUser);
+        MemberFilter filter = buildFilter(q, status, incomplete);
 
         Page<Member> memberPage = managementService.listMembers(filter, pageable);
 
@@ -206,9 +208,9 @@ public class MemberController implements MembersApi {
         return ResponseEntity.ok(memberPage.map(member -> conversionService.convert(member, MemberSummaryResponse.class)));
     }
 
-    private MemberFilter buildFilter(String q, String status, Boolean incomplete, CurrentUserData currentUser) {
+    private MemberFilter buildFilter(String q, String status, Boolean incomplete) {
         MemberFilter.StatusFilter resolvedStatus = parseStatus(status);
-        boolean canManage = currentUser.hasAuthority(Authority.MEMBERS_MANAGE);
+        boolean canManage = authorizationEvaluator.has(Authority.MEMBERS_MANAGE);
 
         MemberFilter filter = new MemberFilter(resolvedStatus, q, canManage && Boolean.TRUE.equals(incomplete));
 
@@ -257,7 +259,7 @@ public class MemberController implements MembersApi {
 
         MemberId memberId = new MemberId(id);
         Member member = managementService.getMemberAndRecordView(memberId, currentUser.userId(),
-                currentUser.hasAuthority(Authority.MEMBERS_MANAGE));
+                authorizationEvaluator.has(Authority.MEMBERS_MANAGE));
 
         boolean isEnrolled = synchronizationPort.findByTarget(targetFor(memberId)).isPresent();
         Set<String> enrolledIds = isEnrolled ? Set.of(memberId.uuid().toString()) : Set.of();
@@ -307,14 +309,17 @@ record EnrolledMemberIds(Set<String> memberIds) {
 class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDetailsResponse, Member> {
 
     private final MemberAccountActivationPort accountActivationPort;
+    private final AuthorizationEvaluator authorizationEvaluator;
 
-    MemberDetailsPostprocessor(MemberAccountActivationPort accountActivationPort) {
+    MemberDetailsPostprocessor(MemberAccountActivationPort accountActivationPort,
+                               AuthorizationEvaluator authorizationEvaluator) {
         this.accountActivationPort = accountActivationPort;
+        this.authorizationEvaluator = authorizationEvaluator;
     }
 
     @Override
     public void process(EntityModel<MemberDetailsResponse> dtoModel, Member member) {
-        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
+        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member, authorizationEvaluator);
 
         if (accountActivationPort.isAvailableFor(member)) {
             UUID id = member.getId().uuid();
@@ -333,9 +338,15 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
 @MvcComponent
 class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSummaryResponse, Member> {
 
+    private final AuthorizationEvaluator authorizationEvaluator;
+
+    MemberSummaryPostprocessor(AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
+    }
+
     @Override
     public void process(EntityModel<MemberSummaryResponse> dtoModel, Member member) {
-        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
+        MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member, authorizationEvaluator);
 
         UUID memberId = member.getId().uuid();
         MemberSelfLinkSupport.addSyncLinkIfEnrolled(dtoModel, memberId);
@@ -352,13 +363,13 @@ final class MemberSelfLinkSupport {
     private MemberSelfLinkSupport() {
     }
 
-    static void addSelfLinkWithAffordances(RepresentationModel<?> dtoModel, Member member) {
+    static void addSelfLinkWithAffordances(RepresentationModel<?> dtoModel, Member member,
+                                           AuthorizationEvaluator authorizationEvaluator) {
         UUID memberId = member.getId().uuid();
 
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId, null)).map(link -> {
             var self = link.withSelfRel();
-            if (!OwnProfileEditRule.isForbidden(member.getDateOfBirth(),
-                    SecurityContextHolder.getContext().getAuthentication())) {
+            if (!OwnProfileEditRule.isForbidden(member.getDateOfBirth(), authorizationEvaluator)) {
                 self = self.andAffordances(klabisAfford(methodOn(MembersApi.class).updateMember(memberId, null, null)));
             }
             if (member.isActive()) {

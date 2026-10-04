@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
@@ -19,8 +20,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -141,11 +140,15 @@ class EventTypeListPostprocessor
 @MvcComponent
 class EventTypesRootPostprocessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
+    private final AuthorizationEvaluator authorizationEvaluator;
+
+    EventTypesRootPostprocessor(AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
+    }
+
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals(Authority.EVENTS_MANAGE.toString()))) {
+        if (!authorizationEvaluator.has(Authority.EVENTS_MANAGE)) {
             return model;
         }
         klabisLinkTo(methodOn(EventTypesApi.class).listEventTypes())
