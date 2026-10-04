@@ -64,10 +64,6 @@ public class DisciplineController implements DisciplinesApi {
 
         Page<Discipline> page = disciplineManagementService.list(pageable);
 
-        // Mirrors EventController#listEvents (design.md D9): one batched enrolment lookup for
-        // the whole page rather than one per row, read back by the postprocessor via
-        // HalResponseContext instead of injecting SynchronizationPort into it (an @MvcComponent,
-        // scanned by every @WebMvcTest slice).
         List<String> pageDisciplineIds = page.getContent().stream()
                 .map(discipline -> discipline.getId().value().toString())
                 .toList();
@@ -111,15 +107,6 @@ public class DisciplineController implements DisciplinesApi {
         DisciplineId disciplineId = new DisciplineId(id);
         Discipline discipline = disciplineManagementService.get(disciplineId);
 
-        // Mirrors EventController#getEvent (design.md D9): one lookup per request, feeding both
-        // DisciplineManagementService.update's own pairing check (D7 — whether to offer
-        // updateDiscipline) and the "sync" link, read back by the postprocessor via
-        // HalResponseContext rather than injecting SynchronizationPort into it (an @MvcComponent,
-        // scanned by every @WebMvcTest slice).
-        boolean isEnrolled = synchronizationPort.findByTarget(targetFor(disciplineId)).isPresent();
-        Set<String> enrolledIds = isEnrolled ? Set.of(disciplineId.value().toString()) : Set.of();
-        HalResponseContext.setContext(new EnrolledDisciplineIds(enrolledIds));
-
         HalResponseContext.setDomain(discipline);
         return ResponseEntity.ok(conversionService.convert(discipline, DisciplineDto.class));
     }
@@ -150,10 +137,6 @@ public class DisciplineController implements DisciplinesApi {
         return ResponseEntity.noContent().build();
     }
 
-    private static SyncTarget targetFor(DisciplineId id) {
-        return new SyncTarget(SyncEntityType.DISCIPLINE, id.value().toString());
-    }
-
     private static String actingUserId(CurrentUserData currentUser) {
         return currentUser.userId().uuid().toString();
     }
@@ -175,13 +158,8 @@ class DisciplinesRootPostprocessor implements RepresentationModelProcessor<Entit
 }
 
 /**
- * Carries which disciplines (by id) are currently paired for synchronisation, from
- * {@code DisciplineController#getDiscipline}/{@code #listDisciplines} to {@code
- * DisciplineDetailsPostprocessor} — one lookup per request rather than one per row, and rather than
- * injecting {@link SynchronizationPort} into the postprocessor, mirroring {@code EventController}'s
- * {@code EnrolledEventIds} (design.md D9). Doubles as the "is this discipline ORIS-managed" signal
- * D7 needs to gate {@code updateDiscipline}, and as the set driving the {@code sync} link.
- * {@code getDiscipline} populates this with a zero-or-one-element set from its single-target lookup.
+ * Carries which disciplines of the listed page are paired for synchronisation, from
+ * {@code DisciplineController#listDisciplines} to {@code DisciplineDetailsPostprocessor} (one batch lookup per page).
  */
 record EnrolledDisciplineIds(Set<String> disciplineIds) {
 
@@ -192,6 +170,12 @@ record EnrolledDisciplineIds(Set<String> disciplineIds) {
 
 @MvcComponent
 class DisciplineDetailsPostprocessor extends ModelWithDomainPostprocessor<DisciplineDto, Discipline> {
+
+    private final SynchronizationPort synchronizationPort;
+
+    DisciplineDetailsPostprocessor(SynchronizationPort synchronizationPort) {
+        this.synchronizationPort = synchronizationPort;
+    }
 
     @Override
     public void process(EntityModel<DisciplineDto> dtoModel, Discipline discipline) {
@@ -220,10 +204,13 @@ class DisciplineDetailsPostprocessor extends ModelWithDomainPostprocessor<Discip
         }
     }
 
-    static boolean isEnrolled(UUID disciplineId) {
+    // List rows share this postprocessor with the detail: the page's batch context is used when present,
+    // otherwise (detail) the pairing is looked up for the single discipline.
+    private boolean isEnrolled(UUID disciplineId) {
         return HalResponseContext.findContext(EnrolledDisciplineIds.class)
                 .map(enrolled -> enrolled.contains(disciplineId))
-                .orElse(false);
+                .orElseGet(() -> synchronizationPort.findByTarget(
+                        new SyncTarget(SyncEntityType.DISCIPLINE, disciplineId.toString())).isPresent());
     }
 }
 

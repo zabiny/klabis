@@ -12,6 +12,8 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.ActingUser;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
+import com.klabis.events.application.AccommodationList;
+import com.klabis.events.application.AccommodationListPort;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.application.MemberRegistrationSanctionPort;
@@ -71,6 +73,7 @@ public class EventController implements EventsApi {
     private final EventManagementPort eventManagementService;
     private final EventRegistrationPort eventRegistrationService;
     private final Members members;
+    private final AccommodationListPort accommodationListService;
     private final AccommodationListCsvRenderer csvRenderer;
     private final ConversionService conversionService;
     private final SynchronizationPort synchronizationPort;
@@ -79,6 +82,7 @@ public class EventController implements EventsApi {
             EventManagementPort eventManagementService,
             EventRegistrationPort eventRegistrationService,
             Members members,
+            AccommodationListPort accommodationListService,
             java.util.Optional<OrisEventImportPort> orisEventImportPort,
             AccommodationListCsvRenderer csvRenderer,
             ConversionService conversionService,
@@ -86,6 +90,7 @@ public class EventController implements EventsApi {
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
+        this.accommodationListService = accommodationListService;
         this.csvRenderer = csvRenderer;
         this.conversionService = conversionService;
         this.synchronizationPort = synchronizationPort;
@@ -140,13 +145,6 @@ public class EventController implements EventsApi {
         // they are scanned by every @WebMvcTest, so unrelated slice tests would have to mock them.
         HalResponseContext.setDomain(event);
         HalResponseContext.embed(buildRegistrationDtos(event), RegistrationSummaryDto.class);
-
-        // Same reasoning for SynchronizationPort (task 8.6): the postprocessor reads this from
-        // HalResponseContext instead of holding the port itself, so unrelated @WebMvcTest slices need not mock it.
-        boolean isEnrolled = synchronizationPort.findByTarget(
-                new SyncTarget(SyncEntityType.EVENT, event.getId().value().toString())).isPresent();
-        Set<String> enrolledIds = isEnrolled ? Set.of(event.getId().value().toString()) : Set.of();
-        HalResponseContext.setContext(new EnrolledEventIds(enrolledIds));
 
         return ResponseEntity.ok(dto);
     }
@@ -211,9 +209,6 @@ public class EventController implements EventsApi {
         Page<Event> page = eventManagementService.listEvents(filter, pageable,
                 EventAffordanceSupport.hasAuthority(auth, Authority.EVENTS_MANAGE), currentUser.memberId());
 
-        // Same reasoning as getEvent (task 8.6): one enrolment lookup per request, scoped to this
-        // page's event ids rather than every active EVENT sync record, read back by the
-        // postprocessor via HalResponseContext, rather than injecting SynchronizationPort there.
         List<String> pageEventIds = page.getContent().stream().map(e -> e.getId().value().toString()).toList();
         Set<String> enrolledEventIds = pageEventIds.isEmpty()
                 ? Set.of()
@@ -356,26 +351,27 @@ public class EventController implements EventsApi {
     @GetMapping(value = EventsApi.PATH_GET_ACCOMMODATION_LIST, produces = {MediaTypes.HAL_FORMS_JSON_VALUE, "application/problem+json"})
     @Override
     public ResponseEntity<List<AccommodationListItemDto>> getAccommodationList(
-            @PathVariable UUID eventId) {
+            @PathVariable UUID eventId,
+            @ActingUser CurrentUserData currentUser) {
 
-        Event event = loadAuthorizedEventForAccommodation(eventId);
-        List<EventRegistration> accommodationRegistrations = registrationsWantingSharedAccommodation(event);
-        List<AccommodationListItemDto> items = assembleAccommodationItems(accommodationRegistrations);
+        AccommodationList accommodationList = accommodationListService.getAccommodationList(new EventId(eventId), currentUser);
+        List<AccommodationListItemDto> items = toAccommodationListItems(accommodationList);
 
-        HalResponseContext.setDomainList(accommodationRegistrations);
-        HalResponseContext.setContext(new AccommodationListContext(eventId));
+        HalResponseContext.setDomainList(accommodationList.rows());
+        HalResponseContext.setContext(accommodationList);
         return ResponseEntity.ok(items);
     }
 
     @GetMapping(value = "/api/events/{eventId}/accommodation-list", produces = "text/csv")
     public ResponseEntity<byte[]> getAccommodationListAsCsv(
-            @PathVariable UUID eventId) {
+            @PathVariable UUID eventId,
+            @ActingUser CurrentUserData currentUser) {
 
-        Event event = loadAuthorizedEventForAccommodation(eventId);
-        List<AccommodationListItemDto> items = assembleAccommodationItems(registrationsWantingSharedAccommodation(event));
+        AccommodationList accommodationList = accommodationListService.getAccommodationList(new EventId(eventId), currentUser);
+        List<AccommodationListItemDto> items = toAccommodationListItems(accommodationList);
         byte[] csv = csvRenderer.renderToBytes(items);
 
-        String filename = "ubytovani-" + EventNameSlugifier.slugify(event.getName()) + ".csv";
+        String filename = "ubytovani-" + EventNameSlugifier.slugify(accommodationList.eventName()) + ".csv";
 
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
@@ -383,34 +379,14 @@ public class EventController implements EventsApi {
                 .body(csv);
     }
 
-    private Event loadAuthorizedEventForAccommodation(UUID eventId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Event event = eventManagementService.getEvent(new EventId(eventId), false);
-        if (!EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
-            throw new AccessDeniedException("Access to accommodation list requires EVENTS:REGISTRATIONS authority or being the event coordinator");
-        }
-        if (!event.isSharedAccommodationEnabled()) {
-            throw new AccessDeniedException("Accommodation list is available only when the event offers shared accommodation");
-        }
-        return event;
-    }
-
-    private static List<EventRegistration> registrationsWantingSharedAccommodation(Event event) {
-        return event.getRegistrations().stream()
-                .filter(EventRegistration::wantsSharedAccommodation)
+    private static List<AccommodationListItemDto> toAccommodationListItems(AccommodationList accommodationList) {
+        return accommodationList.rows().stream()
+                .map(EventController::toAccommodationListItem)
                 .toList();
     }
 
-    private List<AccommodationListItemDto> assembleAccommodationItems(List<EventRegistration> registrations) {
-        List<MemberId> memberIds = registrations.stream().map(EventRegistration::memberId).toList();
-        Map<MemberId, MemberAccommodationDto> accommodationIndex = members.findAccommodationDataByIds(memberIds);
-        return registrations.stream()
-                .map(registration -> toAccommodationListItem(registration, accommodationIndex))
-                .toList();
-    }
-
-    private AccommodationListItemDto toAccommodationListItem(EventRegistration registration, Map<MemberId, MemberAccommodationDto> accommodationIndex) {
-        MemberAccommodationDto accommodationData = accommodationIndex.get(registration.memberId());
+    private static AccommodationListItemDto toAccommodationListItem(AccommodationList.AccommodationListRow row) {
+        MemberAccommodationDto accommodationData = row.memberData();
         if (accommodationData == null) {
             return AccommodationListItemDtoBuilder.builder().build();
         }
@@ -430,11 +406,8 @@ public class EventController implements EventsApi {
 }
 
 /**
- * Carries which events (by id) are enrolled for synchronisation, from
- * {@code EventController#getEvent}/{@code #listEvents} to {@code EventDetailsPostprocessor}/
- * {@code EventSummaryPostprocessor} — one lookup per request rather than one per row, and rather
- * than injecting {@code SynchronizationPort} into the postprocessors. {@code getEvent} populates
- * this with a zero-or-one-element set from its single-target lookup.
+ * Carries which events of the listed page are enrolled for synchronisation, from
+ * {@code EventController#listEvents} to {@code EventSummaryPostprocessor} (one batch lookup per page).
  */
 record EnrolledEventIds(Set<String> eventIds) {
 
@@ -524,17 +497,11 @@ class EventAffordanceSupport {
                 .toList();
     }
 
-    static void addSyncLinkIfEnrolled(RepresentationModel<?> dtoModel, UUID eventId) {
-        if (isEnrolled(eventId)) {
+    static void addSyncLinkIfEnrolled(RepresentationModel<?> dtoModel, UUID eventId, boolean enrolled) {
+        if (enrolled) {
             klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENTS, eventId.toString()))
                     .ifPresent(link -> dtoModel.add(link.withRel("sync")));
         }
-    }
-
-    private static boolean isEnrolled(UUID eventId) {
-        return HalResponseContext.findContext(EnrolledEventIds.class)
-                .map(enrolled -> enrolled.contains(eventId))
-                .orElse(false);
     }
 }
 
@@ -542,9 +509,11 @@ class EventAffordanceSupport {
 class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, Event> {
 
     private final MemberRegistrationSanctionPort sanctionPort;
+    private final SynchronizationPort synchronizationPort;
 
-    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort) {
+    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, SynchronizationPort synchronizationPort) {
         this.sanctionPort = sanctionPort;
+        this.synchronizationPort = synchronizationPort;
     }
 
     @Override
@@ -599,11 +568,13 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
 
         if (event.isSharedAccommodationEnabled()
                 && EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority(auth, event)) {
-            klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId))
+            klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId, null))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
 
-        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId);
+        boolean enrolled = synchronizationPort.findByTarget(
+                new SyncTarget(SyncEntityType.EVENT, eventId.toString())).isPresent();
+        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId, enrolled);
     }
 }
 
@@ -658,7 +629,10 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                 klabisLinkTo(methodOn(EventTypesApi.class).getEventType(eventTypeId.value()))
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
 
-        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId);
+        boolean enrolled = HalResponseContext.findContext(EnrolledEventIds.class)
+                .map(ids -> ids.contains(eventId))
+                .orElse(false);
+        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId, enrolled);
     }
 }
 
@@ -697,18 +671,9 @@ class EventListPostprocessor implements RepresentationModelProcessor<PagedModel<
 }
 
 /**
- * Carries the {@code eventId} of the accommodation-list request from
- * {@code EventController#getAccommodationList} to the two postprocessors below. The id cannot come
- * from the payload: an event with no registrations yields an empty collection, and
- * {@link EventRegistration} carries no reference back to its event.
- */
-record AccommodationListContext(UUID eventId) {
-}
-
-/**
- * Contributes the {@code event} relation to the accommodation list. The eventId is published by
- * {@code EventController#getAccommodationList} through {@link HalResponseContext}, because the
- * payload cannot supply it — an event with no registrations yields an empty collection.
+ * Contributes the {@code event} relation to the accommodation list. The list is published by
+ * {@code EventController#getAccommodationList} through {@link HalResponseContext#setContext}, so the
+ * collection postprocessor can read the eventId even when the list is empty.
  */
 @MvcComponent
 class AccommodationListPostprocessor
@@ -717,8 +682,8 @@ class AccommodationListPostprocessor
     @Override
     public CollectionModel<EntityModel<AccommodationListItemDto>> process(
             CollectionModel<EntityModel<AccommodationListItemDto>> model) {
-        HalResponseContext.findContext(AccommodationListContext.class)
-                .map(AccommodationListContext::eventId)
+        HalResponseContext.findContext(AccommodationList.class)
+                .map(AccommodationList::eventId)
                 .ifPresent(eventId -> klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
                         .ifPresent(link -> model.add(link.withRel("event"))));
         return model;
@@ -726,22 +691,17 @@ class AccommodationListPostprocessor
 }
 
 /**
- * Gives each accommodation row a {@code self} link pointing at the registration it projects. The
- * eventId is published by {@code EventController#getAccommodationList} through
- * {@link HalResponseContext}, because {@link EventRegistration} carries no reference back to its
- * event. The read is non-consuming, so every row still resolves the id.
+ * Gives each accommodation row a {@code self} link pointing at the registration it projects.
  */
 @MvcComponent
 class AccommodationListItemPostprocessor
-        extends ModelWithDomainPostprocessor<AccommodationListItemDto, EventRegistration> {
+        extends ModelWithDomainPostprocessor<AccommodationListItemDto, AccommodationList.AccommodationListRow> {
 
     @Override
-    public void process(EntityModel<AccommodationListItemDto> dtoModel, EventRegistration registration) {
-        HalResponseContext.findContext(AccommodationListContext.class)
-                .map(AccommodationListContext::eventId)
-                .ifPresent(eventId -> klabisLinkTo(methodOn(EventRegistrationsApi.class)
-                        .getRegistration(registration.memberId().value(), eventId, false))
-                        .ifPresent(link -> dtoModel.add(link.withSelfRel())));
+    public void process(EntityModel<AccommodationListItemDto> dtoModel, AccommodationList.AccommodationListRow row) {
+        klabisLinkTo(methodOn(EventRegistrationsApi.class)
+                .getRegistration(row.registration().memberId().value(), row.eventId(), false))
+                .ifPresent(link -> dtoModel.add(link.withSelfRel()));
     }
 }
 
