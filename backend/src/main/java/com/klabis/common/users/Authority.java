@@ -125,15 +125,24 @@ public enum Authority {
      * not the target user's current authorities.
      */
     public static Set<Authority> assignableAuthorities() {
-        EnumSet<Authority> assignable = EnumSet.noneOf(Authority.class);
-        for (Authority authority : values()) {
-            if (authority.grantForms.contains(GrantForm.ALL)) {
-                assignable.add(authority);
-            }
-        }
+        EnumSet<Authority> assignable = EnumSet.copyOf(grantableOverAll());
         assignable.removeAll(getStandardUserAuthorities());
         assignable.remove(DEVELOPER);
         return assignable;
+    }
+
+    /**
+     * Every authority that may be held over everything ({@link GrantForm#ALL}), i.e. may be a user's direct
+     * authority, including the standard user authorities and {@link #DEVELOPER}.
+     */
+    public static Set<Authority> grantableOverAll() {
+        EnumSet<Authority> grantable = EnumSet.noneOf(Authority.class);
+        for (Authority authority : values()) {
+            if (authority.grantForms.contains(GrantForm.ALL)) {
+                grantable.add(authority);
+            }
+        }
+        return grantable;
     }
 
     /**

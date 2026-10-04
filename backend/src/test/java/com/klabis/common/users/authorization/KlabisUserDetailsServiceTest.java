@@ -20,7 +20,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -92,7 +91,7 @@ class KlabisUserDetailsServiceTest {
 
         assertThat(userDetails.getAuthorities())
                 .extracting(GrantedAuthority::getAuthority)
-                .containsExactlyInAnyOrder(Arrays.stream(Authority.values()).map(Authority::getValue).toArray(String[]::new));
+                .containsExactlyInAnyOrder(Authority.grantableOverAll().stream().map(Authority::getValue).toArray(String[]::new));
     }
 
     @Test

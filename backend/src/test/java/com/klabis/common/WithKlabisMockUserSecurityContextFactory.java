@@ -1,6 +1,7 @@
 package com.klabis.common;
 
 import com.klabis.common.authorization.AuthorizationSnapshot;
+import com.klabis.common.authorization.TestSnapshots;
 import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.security.KlabisAuthenticationFactory;
@@ -50,7 +51,7 @@ final class WithKlabisMockUserSecurityContextFactory implements WithSecurityCont
                 targets.add(new TargetRef(grant.type(), UUID.fromString(id)));
             }
         }
-        return AuthorizationSnapshot.of(Set.of(withUser.authorities()), overTargets);
+        return TestSnapshots.of(Set.of(withUser.authorities()), overTargets);
     }
 
     @Autowired(required = false)

@@ -26,9 +26,13 @@ SYNC_MANAGE("SYNC:MANAGE", TargetType.NONE, GrantForm.ALL),
 ```
 
 - `targetType` (`common.authorization.TargetType`): `MEMBER`, `EVENT`, or `NONE` (not about a target).
-- `grantForms` (`GrantForm`): `ALL` = assignable in the permissions dialog (`Authority.assignableAuthorities()`);
-  `SPECIFIC` = may come from a relationship (`Authority.delegatable()`). An `{ALL}`-only authority is
-  an administrator authority and can never be delegated.
+- `grantForms` (`GrantForm`): `ALL` = may be held over everything, i.e. be a user's direct authority
+  (`Authority.grantableOverAll()`; the permissions dialog offers `Authority.assignableAuthorities()`, which drops
+  the standard authorities and `DEVELOPER`); `SPECIFIC` = may come from a relationship (`Authority.delegatable()`).
+  An `{ALL}`-only authority is an administrator authority and can never be delegated. `UserPermissions` rejects
+  a direct authority without `ALL` (`AuthorityNotGrantableOverAllException`, HTTP 400), so a `{SPECIFIC}`-only
+  authority can never be held over everything; bootstrap code grants `Authority.grantableOverAll()`, never
+  `Authority.values()`.
 
 A target is a `TargetRef(TargetType type, UUID id)` (`TargetRef.member(id)`, `TargetRef.event(id)`).
 

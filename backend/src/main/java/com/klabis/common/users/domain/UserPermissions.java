@@ -10,6 +10,7 @@ import org.springframework.util.Assert;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * UserPermissions aggregate.
@@ -21,6 +22,8 @@ import java.util.Set;
  * Business invariants:
  * - User must have a valid UserId
  * - Direct authorities set cannot be null (but can be empty)
+ * - Every direct authority is held over everything, so it must be one that may be held that way
+ *   ({@link Authority#grantableOverAll()}); an authority held only over specific targets comes from relationships
  * - Granting authorities must respect admin lockout prevention
  * - Revoking authorities must respect admin lockout prevention
  * <p>
@@ -65,6 +68,7 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
     private UserPermissions(UserId userId, Set<Authority> directAuthorities, AuditMetadata auditMetadata) {
         Assert.notNull(userId, "UserId must not be null");
         Assert.notNull(directAuthorities, "Direct authorities must not be null");
+        requireGrantableOverAll(directAuthorities);
 
         this.userId = userId;
         this.directAuthorities = new HashSet<>(directAuthorities);
@@ -165,6 +169,7 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
      */
     public void grantAuthority(Authority authority) {
         Assert.notNull(authority, "Authority must not be null");
+        requireGrantableOverAll(Set.of(authority));
 
         // Idempotent: if authority already exists, no change needed
         if (directAuthorities.contains(authority)) {
@@ -215,8 +220,22 @@ public class UserPermissions extends KlabisAggregateRoot<UserPermissions, UserId
      */
     public void replaceAuthorities(Set<Authority> newAuthorities) {
         Assert.notNull(newAuthorities, "New authorities must not be null");
+        requireGrantableOverAll(newAuthorities);
 
         this.directAuthorities = new HashSet<>(newAuthorities);
+    }
+
+    private static void requireGrantableOverAll(Set<Authority> authorities) {
+        requireGrantableOverAll(authorities, Authority.grantableOverAll());
+    }
+
+    static void requireGrantableOverAll(Set<Authority> authorities, Set<Authority> grantableOverAll) {
+        Set<Authority> notGrantable = authorities.stream()
+                .filter(authority -> !grantableOverAll.contains(authority))
+                .collect(Collectors.toSet());
+        if (!notGrantable.isEmpty()) {
+            throw new AuthorityNotGrantableOverAllException(notGrantable);
+        }
     }
 
     @Override
