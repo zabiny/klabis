@@ -43,7 +43,8 @@ class AuthorizationEvaluatorTest {
                 authentication instanceof com.klabis.common.security.KlabisJwtAuthenticationToken token
                 && token.getMemberIdUuid().filter(ownerId::equals).isPresent();
         var beans = new StaticListableBeanFactory(Map.of("resolver", resolver));
-        return new AuthorizationEvaluator(() -> snapshot, beans.getBeanProvider(OwnershipResolver.class));
+        return new AuthorizationEvaluator(() -> snapshot, beans.getBeanProvider(OwnershipResolver.class),
+                beans.getBeanProvider(org.springframework.core.convert.ConversionService.class));
     }
 
     private static AuthorizationSnapshot overAll(Authority... authorities) {
@@ -106,8 +107,10 @@ class AuthorizationEvaluatorTest {
         @Test
         void shouldBeFalseWhenNoOwnershipResolverIsAvailable() {
             authenticateAsMember();
+            var noBeans = new StaticListableBeanFactory();
             var evaluator = new AuthorizationEvaluator(AuthorizationSnapshot::empty,
-                    new StaticListableBeanFactory().getBeanProvider(OwnershipResolver.class));
+                    noBeans.getBeanProvider(OwnershipResolver.class),
+                    noBeans.getBeanProvider(org.springframework.core.convert.ConversionService.class));
 
             assertThat(evaluator.isSelf(me)).isFalse();
         }

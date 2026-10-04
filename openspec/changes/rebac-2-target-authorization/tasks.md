@@ -22,9 +22,9 @@
 
 ## 4. Method security and offered actions through the evaluator
 
-- [ ] 4.1 Change `@HasAuthority` to accept a list (any of) and introduce `@TargetId(TargetType)` replacing `@OwnerId`; write failing interceptor tests for list semantics and targeted grants; verify they fail
-- [ ] 4.2 Rewrite `HasAuthorityMethodInterceptor` to delegate to `AuthorizationEvaluator.canInvoke`; verify 4.1 passes and all existing security tests pass
-- [ ] 4.3 Rewrite `HalFormsSupport` method authorization to the same `canInvoke`; add a test that an affordance is present exactly when the invocation is allowed for: over-everything grant, targeted grant on the target, targeted grant on another target, self; verify it passes
+- [x] 4.1 Change `@HasAuthority` to accept a list (any of) and introduce `@TargetId(TargetType)` replacing `@OwnerId`; write failing interceptor tests for list semantics and targeted grants; verify they fail
+- [x] 4.2 Rewrite `HasAuthorityMethodInterceptor` to delegate to `AuthorizationEvaluator.canInvoke`; verify 4.1 passes and all existing security tests pass
+- [x] 4.3 Rewrite `HalFormsSupport` method authorization to the same `canInvoke`; add a test that an affordance is present exactly when the invocation is allowed for: over-everything grant, targeted grant on the target, targeted grant on another target, self; verify it passes
 
 ## 5. Field visibility and request-body field checks through the evaluator
 

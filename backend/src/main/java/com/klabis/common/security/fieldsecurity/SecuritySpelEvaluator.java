@@ -13,6 +13,7 @@ import org.springframework.security.core.Authentication;
 
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -71,7 +72,7 @@ public class SecuritySpelEvaluator {
         if (preAuthorize != null && evaluate(preAuthorize.value(), accessorMethod, authentication)) {
             return true;
         }
-        if (hasAuthority != null && hasAuthority(authentication, hasAuthority.value())) {
+        if (hasAuthority != null && Arrays.stream(hasAuthority.value()).anyMatch(a -> hasAuthority(authentication, a))) {
             return true;
         }
         if (ownerVisible && ownershipResolver != null && ownerIdValue != null) {

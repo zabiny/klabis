@@ -1,5 +1,8 @@
 package com.klabis.common.users.infrastructure.restapi;
 
+import com.klabis.common.FixedAuthorizationSnapshotProvider;
+import com.klabis.common.security.fieldsecurity.OwnershipResolver;
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.security.HasAuthorityMethodInterceptor;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
@@ -11,7 +14,9 @@ import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreato
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -283,6 +288,13 @@ class HasAuthorityAspectTest {
             DefaultAdvisorAutoProxyCreator creator = new DefaultAdvisorAutoProxyCreator();
             creator.setProxyTargetClass(true);
             return creator;
+        }
+
+        // not a candidate: this configuration is also picked up by full-context tests, which have their own evaluator
+        @Bean(autowireCandidate = false)
+        AuthorizationEvaluator hasAuthorityTestEvaluator(ObjectProvider<OwnershipResolver> ownershipResolver,
+                                                         ObjectProvider<ConversionService> conversionService) {
+            return new AuthorizationEvaluator(new FixedAuthorizationSnapshotProvider(), ownershipResolver, conversionService);
         }
 
         @Bean

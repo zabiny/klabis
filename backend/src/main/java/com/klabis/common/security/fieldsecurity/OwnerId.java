@@ -15,6 +15,9 @@ import java.lang.annotation.*;
  * converted to UUID via {@code ConversionService}, that field is used automatically.
  * Use {@code @OwnerId} explicitly when multiple such candidates exist.
  *
+ * Equivalent to {@code @TargetId(TargetType.MEMBER)}; kept until the generated API code is switched to
+ * {@link com.klabis.common.authorization.TargetId}.
+ *
  * @see OwnerVisible
  * @see OwnershipResolver
  */

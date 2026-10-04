@@ -1,9 +1,6 @@
 package com.klabis.common.ui;
 
-import com.klabis.common.security.MethodSecurityAnnotations;
-import com.klabis.common.security.fieldsecurity.OwnerId;
-import com.klabis.common.security.fieldsecurity.OwnerVisible;
-import com.klabis.common.security.fieldsecurity.OwnershipResolver;
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.security.fieldsecurity.SecuritySpelEvaluator;
 import com.klabis.common.users.HasAuthority;
 import jakarta.annotation.PostConstruct;
@@ -12,7 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.io.support.SpringFactoriesLoader;
 import org.springframework.hateoas.*;
 import org.springframework.hateoas.mediatype.AffordanceModelFactory;
@@ -38,7 +34,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import static com.klabis.common.ui.CollectionPropertyContext.markCollectionProperty;
@@ -50,10 +45,10 @@ public class HalFormsSupport {
 
     private static HalFormsSupport INSTANCE;
 
-    private final ObjectProvider<OwnershipResolver> ownershipResolverProvider;
+    private final AuthorizationEvaluator authorizationEvaluator;
 
-    public HalFormsSupport(ObjectProvider<OwnershipResolver> ownershipResolverProvider) {
-        this.ownershipResolverProvider = ownershipResolverProvider;
+    public HalFormsSupport(AuthorizationEvaluator authorizationEvaluator) {
+        this.authorizationEvaluator = authorizationEvaluator;
     }
 
     // TODO: this static causes troubles in tests (some tests are not starting full context and this post construct may not be called yet, so tests are working without ownership resolver)
@@ -150,65 +145,10 @@ public class HalFormsSupport {
         return List.of(modifiedResult);
     }
 
-    private record MethodAuthMeta(HasAuthority hasAuthority, OwnerVisible ownerVisible, int ownerIdParamIndex) {
-        boolean hasSecurityAnnotations() {
-            return hasAuthority != null || ownerVisible != null;
-        }
-    }
-
-    /**
-     * Keyed by {@code Method} alone even though the cached value also depends on {@code targetClass}.
-     * That is only sound while every caller derives {@code targetClass} from the method itself
-     * (today: {@code method.getDeclaringClass()}). A second call site passing an unrelated class —
-     * a CGLIB proxy type, say — would silently receive the entry computed for the first caller.
-     */
-    private static final ConcurrentHashMap<Method, MethodAuthMeta> METHOD_AUTH_CACHE = new ConcurrentHashMap<>();
-
-    private static MethodAuthMeta resolveMethodAuthMeta(Method method, Class<?> targetClass) {
-        return METHOD_AUTH_CACHE.computeIfAbsent(method, m -> {
-            HasAuthority ha = MethodSecurityAnnotations.findMethodAnnotation(m, targetClass, HasAuthority.class);
-            OwnerVisible ov = MethodSecurityAnnotations.findMethodAnnotation(m, targetClass, OwnerVisible.class);
-            int ownerIdx = ov != null
-                    ? MethodSecurityAnnotations.findAnnotatedParameterIndex(m, targetClass, OwnerId.class)
-                    : -1;
-            return new MethodAuthMeta(ha, ov, ownerIdx);
-        });
-    }
-
     private boolean isMethodAuthorized(LastInvocationAware invocation) {
         MethodInvocation methodInvocation = invocation.getLastInvocation();
         Method method = methodInvocation.getMethod();
-        Class<?> targetClass = method.getDeclaringClass();
-        MethodAuthMeta meta = resolveMethodAuthMeta(method, targetClass);
-
-        if (!meta.hasSecurityAnnotations()) {
-            return true;
-        }
-
-        org.springframework.security.core.Authentication authentication =
-                SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return false;
-        }
-
-        if (meta.hasAuthority() != null && SecuritySpelEvaluator.hasAuthority(authentication,
-                meta.hasAuthority().value())) {
-            return true;
-        }
-
-        if (meta.ownerVisible() != null && meta.ownerIdParamIndex() >= 0) {
-            Object[] arguments = methodInvocation.getArguments();
-            Object ownerIdValue = (arguments != null && meta.ownerIdParamIndex() < arguments.length)
-                    ? arguments[meta.ownerIdParamIndex()] : null;
-            if (ownerIdValue != null) {
-                OwnershipResolver resolver = ownershipResolverProvider.getIfAvailable();
-                if (resolver != null) {
-                    return resolver.isOwner(ownerIdValue, authentication);
-                }
-            }
-        }
-
-        return false;
+        return authorizationEvaluator.canInvoke(method, method.getDeclaringClass(), methodInvocation.getArguments());
     }
 
     private static LastInvocationAware getLastInvocationAware(Object invocation) {
@@ -457,9 +397,10 @@ public class HalFormsSupport {
 
         private static boolean evaluateHasAuthority(Method method) {
             HasAuthority annotation = method.getAnnotation(HasAuthority.class);
-            return SecuritySpelEvaluator.hasAuthority(
-                    SecurityContextHolder.getContext().getAuthentication(),
-                    annotation.value());
+            org.springframework.security.core.Authentication authentication =
+                    SecurityContextHolder.getContext().getAuthentication();
+            return Arrays.stream(annotation.value())
+                    .anyMatch(authority -> SecuritySpelEvaluator.hasAuthority(authentication, authority));
         }
 
         private static boolean evaluatePreAuthorize(Method method) {

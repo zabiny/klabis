@@ -102,8 +102,9 @@ class SnapshotAuthoritiesInMethodSecurityTest {
         }
     }
 
-    @org.springframework.context.annotation.Configuration
+    @org.springframework.boot.test.context.TestConfiguration
     @EnableMethodSecurity(proxyTargetClass = true)
+    @org.springframework.context.annotation.Import(com.klabis.common.authorization.AuthorizationEvaluator.class)
     static class Configuration {
 
         @Bean
