@@ -2,13 +2,17 @@ package com.klabis.common.authorization;
 
 import com.klabis.common.security.JwtParams;
 import com.klabis.common.security.KlabisAuthenticationFactory;
+import com.klabis.common.security.fieldsecurity.OwnerVisible;
+import com.klabis.common.security.fieldsecurity.ReadAuthority;
 import com.klabis.common.users.Authority;
+import com.klabis.common.users.HasAuthority;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -199,6 +203,118 @@ class AuthorizationEvaluatorTest {
         @Test
         void shouldDenyWhenNothingGrantsAccess() {
             assertThat(evaluatorOver(overAll(Authority.MEMBERS_MANAGE)).isAllowed(List.of(), child, false)).isFalse();
+        }
+    }
+
+    record Payload(String open,
+                   @HasAuthority({Authority.MEMBERS_MANAGE, Authority.EVENTS_REGISTRATIONS}) @OwnerVisible String secured,
+                   @HasAuthority(Authority.MEMBERS_MANAGE) @ReadAuthority(Authority.MEMBERS_READ) String readable) {
+    }
+
+    static class Operations {
+
+        @HasAuthority({Authority.MEMBERS_MANAGE, Authority.EVENTS_REGISTRATIONS})
+        @OwnerVisible
+        public void targeted(@TargetId(TargetType.MEMBER) UUID id) {
+        }
+
+        @HasAuthority(Authority.EVENTS_MANAGE)
+        public void global() {
+        }
+
+        public void open() {
+        }
+    }
+
+    @Nested
+    @DisplayName("requestFieldAccess")
+    class RequestFieldAccess {
+
+        @Test
+        void shouldBeWriteForUnsecuredProperty() {
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "open", null))
+                    .isEqualTo(FieldAccess.WRITE);
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "missing", null))
+                    .isEqualTo(FieldAccess.WRITE);
+        }
+
+        @Test
+        void shouldBeWriteWithAuthorityOverTarget() {
+            assertThat(evaluatorOver(delegatedOver(child)).requestFieldAccess(Payload.class, "secured", child))
+                    .isEqualTo(FieldAccess.WRITE);
+            assertThat(evaluatorOver(delegatedOver(child)).requestFieldAccess(Payload.class, "secured", stranger))
+                    .isEqualTo(FieldAccess.NONE);
+        }
+
+        @Test
+        void shouldBeReadWithReadAuthorityOnly() {
+            assertThat(evaluatorOver(overAll(Authority.MEMBERS_READ)).requestFieldAccess(Payload.class, "readable", null))
+                    .isEqualTo(FieldAccess.READ);
+            assertThat(evaluatorOver(overAll(Authority.MEMBERS_MANAGE)).requestFieldAccess(Payload.class, "readable", null))
+                    .isEqualTo(FieldAccess.WRITE);
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).requestFieldAccess(Payload.class, "readable", null))
+                    .isEqualTo(FieldAccess.NONE);
+        }
+    }
+
+    @Nested
+    @DisplayName("describeRequirement")
+    class DescribeRequirement {
+
+        @Test
+        void shouldDescribeOperationWithAuthoritiesTargetAndOwner() throws NoSuchMethodException {
+            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
+
+            assertThat(evaluator.describeRequirement(Operations.class.getMethod("targeted", UUID.class), Operations.class))
+                    .isEqualTo("authority MEMBERS:MANAGE or EVENTS:REGISTRATIONS (over everything or over the MEMBER), or being the owner");
+        }
+
+        @Test
+        void shouldDescribeOperationWithAuthorityOnly() throws NoSuchMethodException {
+            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
+
+            assertThat(evaluator.describeRequirement(Operations.class.getMethod("global"), Operations.class))
+                    .isEqualTo("authority EVENTS:MANAGE");
+        }
+
+        @Test
+        void shouldDescribeField() throws NoSuchMethodException {
+            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
+
+            assertThat(evaluator.describeRequirement(Payload.class.getMethod("secured")))
+                    .isEqualTo("authority MEMBERS:MANAGE or EVENTS:REGISTRATIONS, or being the owner");
+        }
+    }
+
+    @Nested
+    @DisplayName("guarded and targets")
+    class GuardedAndTargets {
+
+        @Test
+        void shouldTellGuardedFromOpenMethods() throws NoSuchMethodException {
+            assertThat(AuthorizationEvaluator.isGuarded(Operations.class.getMethod("global"), Operations.class)).isTrue();
+            assertThat(AuthorizationEvaluator.isGuarded(Operations.class.getMethod("open"), Operations.class)).isFalse();
+        }
+
+        @Test
+        void shouldConvertTargetIdThroughTheSameConversionAsArguments() {
+            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
+
+            assertThat(evaluator.toTarget(TargetType.MEMBER, myId)).isEqualTo(me);
+            assertThat(evaluator.toTarget(TargetType.MEMBER, null)).isNull();
+            assertThat(evaluator.toTarget(TargetType.MEMBER, "not-convertible-without-conversion-service")).isNull();
+        }
+
+        @Test
+        void shouldConvertStringTargetIdWithConversionService() {
+            SecurityContextHolder.getContext().setAuthentication(
+                    KlabisAuthenticationFactory.createAuthenticationToken(JwtParams.member(myId), AuthorizationSnapshot.empty()));
+            var beans = new StaticListableBeanFactory();
+            beans.addBean("conversionService", new DefaultConversionService());
+            var evaluator = new AuthorizationEvaluator(new AuthorizationSnapshotProvider(), beans.getBeanProvider(ConversionService.class));
+
+            assertThat(evaluator.toTarget(TargetType.MEMBER, myId.toString())).isEqualTo(me);
+            assertThat(evaluator.toTarget(TargetType.MEMBER, "not-a-uuid")).isNull();
         }
     }
 }

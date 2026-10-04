@@ -3,8 +3,7 @@ package com.klabis.common.security.fieldsecurity;
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.authorization.TargetParameter;
 import com.klabis.common.authorization.TargetRef;
-import com.klabis.common.users.Authority;
-import com.klabis.common.users.HasAuthority;
+import com.klabis.common.security.MethodSecurityAnnotations;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.core.MethodParameter;
@@ -18,13 +17,9 @@ import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.mvc.method.annotation.RequestBodyAdviceAdapter;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
-import java.util.Arrays;
 import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestControllerAdvice
 class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
@@ -78,13 +73,9 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
     }
 
     private void checkFieldAuthorization(RecordComponent component, Method accessor, @Nullable TargetRef target) {
-        if (evaluator.canWriteField(accessor, target)) {
-            return;
+        if (!evaluator.canWriteField(accessor, target)) {
+            throw new FieldAuthorizationException(component.getName(), evaluator.describeRequirement(accessor));
         }
-        HasAuthority hasAuthority = accessor.getAnnotation(HasAuthority.class);
-        String requiredAuthority = hasAuthority != null ? Arrays.stream(hasAuthority.value()).map(Authority::getValue).collect(Collectors.joining(" or "))
-                : "@OwnerVisible";
-        throw new FieldAuthorizationException(component.getName(), requiredAuthority);
     }
 
     @Nullable
@@ -93,12 +84,14 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
             return null;
         }
 
-        TargetParameter targetParameter = evaluator.targetParameterOf(handlerMethod, handlerMethod.getDeclaringClass());
+        Class<?> handlerClass = handlerMethod.getDeclaringClass();
+        TargetParameter targetParameter = evaluator.targetParameterOf(handlerMethod, handlerClass);
         if (targetParameter == null) {
             return null;
         }
-        String paramName = findPathVariableName(handlerMethod, targetParameter.index());
-        if (paramName == null) {
+        PathVariable pathVariable = MethodSecurityAnnotations.findParameterAnnotation(
+                handlerMethod, handlerClass, targetParameter.index(), PathVariable.class);
+        if (pathVariable == null) {
             return null;
         }
 
@@ -110,41 +103,14 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
         @SuppressWarnings("unchecked")
         Map<String, String> uriVariables = (Map<String, String>) requestAttributes.getRequest()
                 .getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-
         if (uriVariables == null) {
             return null;
         }
 
-        String rawValue = uriVariables.get(paramName);
-        if (rawValue == null) {
-            return null;
-        }
-
-        try {
-            return new TargetRef(targetParameter.type(), UUID.fromString(rawValue));
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
-
-    @Nullable
-    private String findPathVariableName(Method handlerMethod, int parameterIndex) {
-        Parameter[] parameters = handlerMethod.getParameters();
-        if (parameterIndex >= parameters.length) {
-            return null;
-        }
-
-        Parameter parameter = parameters[parameterIndex];
-        // @PathVariable itself is a method parameter — not inherited from the interface either,
-        // so it must still be present directly on the concrete handler method's parameter.
-        if (!parameter.isAnnotationPresent(PathVariable.class)) {
-            return null;
-        }
-        PathVariable pathVariable = parameter.getAnnotation(PathVariable.class);
         String name = pathVariable.value().isEmpty() ? pathVariable.name() : pathVariable.value();
         if (name.isEmpty()) {
-            name = parameter.getName();
+            name = handlerMethod.getParameters()[targetParameter.index()].getName();
         }
-        return name;
+        return evaluator.toTarget(targetParameter.type(), uriVariables.get(name));
     }
 }

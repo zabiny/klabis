@@ -39,7 +39,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = TargetedFieldAuthorizationTest.TargetedFieldController.class)
+@WebMvcTest(controllers = {TargetedFieldAuthorizationTest.TargetedFieldController.class,
+        TargetedFieldAuthorizationTest.InheritedPathVariableController.class})
 @DisplayName("Field authorization over the target of a record")
 @CommonInfrastructureWebMvcSetup
 class TargetedFieldAuthorizationTest {
@@ -103,6 +104,23 @@ class TargetedFieldAuthorizationTest {
         @GetMapping(value = "/api/test/coordinated", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
         EntityModel<CoordinatedResponse> getCoordinated() {
             return EntityModel.of(new CoordinatedResponse(List.of(OTHER_ID, TARGET_ID), "coordinators-value"));
+        }
+    }
+
+    interface InheritedPathVariableApi {
+
+        @PatchMapping("/api/test/inherited/{memberId}")
+        ResponseEntity<Void> update(@PathVariable("memberId") @TargetId(TargetType.MEMBER) UUID id,
+                                    @RequestBody TargetedPatchRequest body);
+    }
+
+    @MvcComponent
+    @RestController
+    static class InheritedPathVariableController implements InheritedPathVariableApi {
+
+        @Override
+        public ResponseEntity<Void> update(UUID id, TargetedPatchRequest body) {
+            return ResponseEntity.noContent().build();
         }
     }
 
@@ -193,6 +211,19 @@ class TargetedFieldAuthorizationTest {
         @DisplayName("is rejected with a grant over another target")
         void rejectedWithGrantOverAnotherTarget() throws Exception {
             mockMvc.perform(patch("/api/test/targeted/" + OTHER_ID).with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON).content(BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+                type = TargetType.MEMBER, ids = TARGET_ID_STRING))
+        @DisplayName("finds the path variable declared on the interface the handler implements")
+        void findsPathVariableDeclaredOnInterface() throws Exception {
+            mockMvc.perform(patch("/api/test/inherited/" + TARGET_ID).with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON).content(BODY))
+                    .andExpect(status().isNoContent());
+            mockMvc.perform(patch("/api/test/inherited/" + OTHER_ID).with(csrf())
                             .contentType(MediaType.APPLICATION_JSON).content(BODY))
                     .andExpect(status().isForbidden());
         }

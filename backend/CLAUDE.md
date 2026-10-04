@@ -61,6 +61,8 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 - The permission snapshot is loaded lazily by `KlabisJwtAuthenticationToken` (memoized, once per token = once per request) through `AuthorizationSnapshotLoader`; the converter bean resolves the loader through an `ObjectProvider` because `@WebMvcTest` slices have no permission tables
 - Field rules are `@HasAuthority` / `@OwnerVisible` / `@TargetId` / `@ReadAuthority` only — SpEL `@PreAuthorize` on a field is not supported (on a method it still works over `getAuthorities()`)
 - `@WithKlabisMockUser(authorities = …, targetGrants = @TargetGrant(…))` builds a token with a fixed snapshot (`KlabisAuthenticationFactory.createAuthenticationToken(jwtParams, snapshot)`) — `@WebMvcTest`s need no permission tables; slice tests get the authorization beans from `KlabisWebMvcSliceConfiguration`
+- Denial texts come from `AuthorizationEvaluator.describeRequirement(...)` — never compose "Required authority …" from annotations in a caller
+- `HalFormsSupport.klabisAfford*`/`klabisLinkTo` fail fast when no `HalFormsSupport` bean is bound (the static instance is bound per test by `HalFormsSupportInstanceTestExecutionListener`); `@WebMvcTest` slices get it from `KlabisWebMvcSliceConfiguration`
 - Ownership tests require `@WithKlabisMockUser(memberId = "...")` — `@WithMockUser` creates plain token without `memberIdUuid`
 - Record component annotations with `@Target(METHOD)` propagate to accessor method per JLS §8.10.1
 

@@ -7,14 +7,14 @@ import tools.jackson.databind.ser.BeanSerializerBuilder;
 import tools.jackson.databind.ser.ValueSerializerModifier;
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.users.HasAuthority;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.authorization.method.HandleAuthorizationDenied;
+import org.springframework.util.function.SingletonSupplier;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Jackson {@link ValueSerializerModifier} that wraps {@link BeanPropertyWriter} instances
@@ -39,26 +39,10 @@ import java.util.List;
  */
 class FieldSecurityBeanSerializerModifier extends ValueSerializerModifier {
 
-    private static final Logger log = LoggerFactory.getLogger(FieldSecurityBeanSerializerModifier.class);
-
-    private final ObjectProvider<AuthorizationEvaluator> evaluatorProvider;
-    private volatile AuthorizationEvaluator evaluator;
+    private final Supplier<AuthorizationEvaluator> evaluator;
 
     FieldSecurityBeanSerializerModifier(ObjectProvider<AuthorizationEvaluator> evaluatorProvider) {
-        this.evaluatorProvider = evaluatorProvider;
-    }
-
-    private AuthorizationEvaluator evaluator() {
-        AuthorizationEvaluator resolved = evaluator;
-        if (resolved == null) {
-            resolved = evaluatorProvider.getIfAvailable();
-            if (resolved == null) {
-                log.warn("AuthorizationEvaluator not available, secured fields are hidden");
-                return null;
-            }
-            evaluator = resolved;
-        }
-        return resolved;
+        this.evaluator = SingletonSupplier.of(() -> evaluatorProvider.getObject());
     }
 
     @Override
@@ -83,15 +67,12 @@ class FieldSecurityBeanSerializerModifier extends ValueSerializerModifier {
             }
 
             Method accessor = component.getAccessor();
-            HasAuthority hasAuthority = accessor.getAnnotation(HasAuthority.class);
-            boolean ownerVisible = accessor.getAnnotation(OwnerVisible.class) != null;
-
-            if (hasAuthority == null && !ownerVisible) {
+            if (!AuthorizationEvaluator.isSecured(accessor)) {
                 continue;
             }
 
             HandleAuthorizationDenied deniedHandler = resolveDeniedHandler(accessor, beanClass);
-            beanProperties.set(i, new SecuredBeanPropertyWriter(writer, accessor, deniedHandler, this::evaluator));
+            beanProperties.set(i, new SecuredBeanPropertyWriter(writer, accessor, deniedHandler, evaluator));
         }
         builder.setProperties(beanProperties);
 

@@ -116,8 +116,7 @@ class SecuredBeanPropertyWriter extends BeanPropertyWriter {
     }
 
     private boolean isAuthorized(Object bean) {
-        AuthorizationEvaluator resolved = evaluator.get();
-        return resolved != null && resolved.canReadField(accessorMethod, bean);
+        return evaluator.get().canReadField(accessorMethod, bean);
     }
 
     private boolean shouldMask() {

@@ -57,7 +57,11 @@ Every decision goes through `com.klabis.common.authorization.AuthorizationEvalua
 |---|---|
 | `canInvoke(method, targetClass, args)` | `HasAuthorityMethodInterceptor`, `HalFormsSupport` (`klabisAfford*`, `klabisLinkTo`) |
 | `canReadField(accessor, record)` | `SecuredBeanPropertyWriter` (response fields) |
-| `canWriteField(accessor, target)` / `canReadRequestField(accessor, target)` | `RequestBodyFieldAuthorizationAdvice`, HAL-FORMS property visibility / `readOnly` |
+| `canWriteField(accessor, target)` | `RequestBodyFieldAuthorizationAdvice` |
+| `requestFieldAccess(payloadType, property, target)` → `FieldAccess` (`WRITE` / `READ` / `NONE`) | HAL-FORMS property visibility / `readOnly` (`HalFormsSupport`) |
+| `describeRequirement(method, class)` / `describeRequirement(accessor)` | the "Required: …" text of every denial — never compose it from annotations in the caller |
+| `isGuarded(method, class)` (static) | the pointcut of `HasAuthorityMethodInterceptor` |
+| `toTarget(type, rawId)` | converts a raw id (URI variable, argument) to a `TargetRef` through the same `ConversionService` as `canInvoke`; `null` when not convertible |
 | `has(authority)` / `has(authority, target)` / `isSelf(target)` | application code (controllers, postprocessors) |
 
 Rule for an element guarded by authorities `[A1..An]`, an optional target `t` and optional `@OwnerVisible`:
@@ -155,7 +159,8 @@ boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id));
 - Integration tests with real tokens use the real provider and real sources.
 - Ownership tests need `@WithKlabisMockUser(memberId = "...")`; `isSelf` compares with the token's user id and member id.
 - `HalFormsSupportInstanceTestExecutionListener` binds the static `HalFormsSupport` instance to the
-  running test's context; in a plain unit test without a context, affordances are not filtered at all.
+  running test's context; a plain unit test (no Spring extension) gets one from `PlainHalFormsSupportExtension` (auto-detected) deciding over the
+  authentication in the `SecurityContextHolder`. `klabisAfford*` / `klabisLinkTo` fail fast (`IllegalStateException`) when no instance is bound.
 
 ## Reference implementation
 

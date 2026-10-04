@@ -1,5 +1,6 @@
 package com.klabis.common.security;
 
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -64,8 +65,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebSecurityCommonConfiguration implements WebMvcConfigurer {
 
     @Bean
-    public HasAuthorityMethodInterceptor hasAuthorityMethodInterceptor() {
-        return new HasAuthorityMethodInterceptor();
+    public HasAuthorityMethodInterceptor hasAuthorityMethodInterceptor(BeanFactory beanFactory) {
+        return new HasAuthorityMethodInterceptor(beanFactory);
     }
 
     @Bean
