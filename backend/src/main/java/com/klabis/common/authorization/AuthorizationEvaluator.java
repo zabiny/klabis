@@ -136,10 +136,28 @@ public class AuthorizationEvaluator {
     }
 
     /**
+     * Whether the current user may see the property {@code property} of the response record {@code recordType}
+     * when the record is about {@code target}, by the same rule {@link #canReadField(Method, Object)} applies to the
+     * serialized field. For callers that must decide before the response record exists. A property without
+     * security annotations is not restricted.
+     */
+    public boolean canReadField(@Nullable Class<?> recordType, String property, @Nullable TargetRef target) {
+        Method accessor = securedAccessorCache
+                .computeIfAbsent(new PropertyKey(recordType, property),
+                        key -> Optional.ofNullable(FieldRules.securedAccessor(recordType, property)))
+                .orElse(null);
+        return accessor == null || isFieldAllowed(accessor, target);
+    }
+
+    /**
      * Whether the current user may change the request field guarded by the annotations of {@code accessor}
      * on the record identified by {@code target}.
      */
     public boolean canWriteField(Method accessor, @Nullable TargetRef target) {
+        return isFieldAllowed(accessor, target);
+    }
+
+    private boolean isFieldAllowed(Method accessor, @Nullable TargetRef target) {
         FieldRules rules = fieldRules(accessor);
         if (rules.isOpen()) {
             return true;

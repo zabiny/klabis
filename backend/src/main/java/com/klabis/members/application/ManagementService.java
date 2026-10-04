@@ -146,18 +146,15 @@ public class ManagementService implements ManagementPort {
 
     @Transactional
     @Override
-    public Member getMemberAndRecordView(MemberId memberId, UserId viewedBy, boolean canManageMembers) {
+    public Member getMemberAndRecordView(MemberId memberId, UserId viewedBy, MemberViewAccess access) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(memberId));
 
-        if (!canManageMembers && !member.isActive()) {
+        if (!access.suspendedVisible() && !member.isActive()) {
             throw new MemberNotFoundException(memberId);
         }
 
-        boolean isOwner = member.getUserId().equals(viewedBy);
-        boolean canSeeBirthNumber = canManageMembers || isOwner;
-
-        if (member.getBirthNumber() != null && canSeeBirthNumber) {
+        if (member.getBirthNumber() != null && access.birthNumberVisible()) {
             eventPublisher.publishEvent(BirthNumberAccessedEvent.viewed(viewedBy, memberId));
         }
 

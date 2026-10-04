@@ -1,5 +1,6 @@
 package com.klabis.common.groups.domain;
 
+import com.klabis.common.users.Authority;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -46,6 +47,11 @@ class MemberGroupTest {
         @Override
         public MemberId getId() {
             return id;
+        }
+
+        @Override
+        public Set<Authority> delegatedAuthorities() {
+            return Set.of();
         }
     }
 
@@ -445,6 +451,11 @@ class MemberGroupTest {
             @Override
             public String getId() {
                 return "id";
+            }
+
+            @Override
+            public Set<Authority> delegatedAuthorities() {
+                return Set.of();
             }
 
             void add(String member) {

@@ -17,6 +17,7 @@ import com.klabis.finance.domain.TransactionType;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.ManagementPort;
+import com.klabis.members.application.MemberViewAccess;
 import com.klabis.members.domain.Member;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -722,7 +723,7 @@ class MemberAccountControllerTest {
         }
 
         private void stubMember(boolean active) {
-            when(managementPort.getMemberAndRecordView(any(), any(), anyBoolean()))
+            when(managementPort.getMemberAndRecordView(any(), any(), any(MemberViewAccess.class)))
                     .thenReturn(MemberTestDataBuilder.aMemberWithId(OTHER_MEMBER_UUID).withActive(active).build());
         }
 

@@ -4,6 +4,7 @@ import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.MemberGroup;
+import com.klabis.common.users.Authority;
 import com.klabis.groups.MemberAssignedToTrainingGroupEvent;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.members.MemberId;
@@ -61,6 +62,11 @@ public class TrainingGroup extends MemberGroup<TrainingGroup, TrainingGroupId, M
     @Override
     public TrainingGroupId getId() {
         return id;
+    }
+
+    @Override
+    public Set<Authority> delegatedAuthorities() {
+        return Set.of();
     }
 
     public AgeRange getAgeRange() {

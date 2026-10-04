@@ -4,6 +4,7 @@ import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.MemberAlreadyInGroupException;
 import com.klabis.common.groups.domain.MemberGroup;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.PersonalInformation;
@@ -80,6 +81,11 @@ public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGua
     @Override
     public LegalGuardianGroupId getId() {
         return id;
+    }
+
+    @Override
+    public Set<Authority> delegatedAuthorities() {
+        return Set.of(Authority.MEMBERS_EDIT_PROFILE);
     }
 
     public Set<UserId> getGuardians() {

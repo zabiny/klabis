@@ -11,12 +11,12 @@ Prerequisites: `rebac-1-groups-owners-not-members` and `rebac-2-target-authoriza
 
 ## 2. Legal guardians edit their minors (vertical slice)
 
-- [ ] 2.1 Add `delegatedAuthorities()` to `MemberGroup` with `LegalGuardianGroup` = {EDIT_PROFILE} and `TrainingGroup` = ∅; verify domain tests
-- [ ] 2.2 Write failing tests for `LegalGuardianGroupRelationshipSource` (guardian over each minor, not over other minors, removed guardian loses it, minor who left loses it); implement; verify they pass
-- [ ] 2.3 Write failing `@WebMvcTest`s: guardian sees the minor's full detail including birth number and guardians section, gets the edit template with reserved fields read-only, saves a phone change; guardian of another child is refused; verify they fail, then pass after wiring
-- [ ] 2.4 Route suspended-member visibility and the birth-number access audit in `ManagementService.getMemberAndRecordView` through the evaluator (D4); write tests that a guardian sees a suspended child and that their birth-number view is audited; verify they pass
-- [ ] 2.5 Frontend: holder layout (edit button only, no "Členské příspěvky"/"Oprávnění"/"Ukončit členství"), guardians section without "Upravit zástupce"; verify component tests and manually on http://localhost:3000 with a guardian from example data (add one if missing in bootstrap)
-- [ ] 2.6 Verify a non-member EXT guardian can open and edit their child's profile (integration test)
+- [x] 2.1 Add `delegatedAuthorities()` to `MemberGroup` with `LegalGuardianGroup` = {EDIT_PROFILE} and `TrainingGroup` = ∅; verify domain tests
+- [x] 2.2 Write failing tests for `LegalGuardianGroupRelationshipSource` (guardian over each minor, not over other minors, removed guardian loses it, minor who left loses it); implement; verify they pass
+- [x] 2.3 Write failing `@WebMvcTest`s: guardian sees the minor's full detail including birth number and guardians section, gets the edit template with reserved fields read-only, saves a phone change; guardian of another child is refused; verify they fail, then pass after wiring
+- [x] 2.4 Route suspended-member visibility and the birth-number access audit in `ManagementService.getMemberAndRecordView` through the evaluator (D4); write tests that a guardian sees a suspended child and that their birth-number view is audited; verify they pass
+- [x] 2.5 Frontend: holder layout (edit button only, no "Členské příspěvky"/"Oprávnění"/"Ukončit členství"), guardians section without "Upravit zástupce"; verify component tests and manually on http://localhost:3000 with a guardian from example data (add one if missing in bootstrap)
+- [x] 2.6 Verify a non-member EXT guardian can open and edit their child's profile (integration test)
 
 ## 3. Free group delegation (vertical slice)
 

@@ -1,7 +1,9 @@
 package com.klabis.members.legalguardiangroup.infrastructure.restapi;
 
 import com.klabis.members.MembersWebMvcTest;
+import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.GroupNotFoundException;
 import com.klabis.common.users.Authority;
@@ -362,6 +364,32 @@ class LegalGuardianGroupControllerTest {
             mockMvc.perform(get("/api/legal-guardian-groups/{id}/guardians", GROUP_UUID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("is visible to a holder of profile editing over a minor of the group")
+        @WithKlabisMockUser(memberId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
+                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                        ids = MINOR_ID))
+        void listsGuardiansForHolderOfProfileEditingOverMinor() throws Exception {
+            stubGroupWithContacts();
+
+            mockMvc.perform(get("/api/legal-guardian-groups/{id}/guardians", GROUP_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("returns 403 to a holder of profile editing over a member who is not a minor of the group")
+        @WithKlabisMockUser(memberId = OTHER_GUARDIAN_ID, authorities = {Authority.MEMBERS_READ},
+                targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                        ids = "dddddddd-dddd-dddd-dddd-dddddddddddd"))
+        void forbiddenForHolderOverUnrelatedMember() throws Exception {
+            stubGroupWithContacts();
+
+            mockMvc.perform(get("/api/legal-guardian-groups/{id}/guardians", GROUP_UUID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
         }
 
         @Test

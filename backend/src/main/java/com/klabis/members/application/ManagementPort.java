@@ -40,9 +40,10 @@ public interface ManagementPort {
      * publishes a VIEW_BIRTH_NUMBER audit event within the transaction so it is captured
      * by Spring Modulith's outbox.
      *
-     * @param canManageMembers true when the caller holds MEMBERS_MANAGE authority
+     * @param access what the caller may see, as decided by the authorization rules
+     * @throws MemberNotFoundException if the member does not exist, or is suspended and {@code access} hides suspended members
      */
-    Member getMemberAndRecordView(MemberId memberId, UserId viewedBy, boolean canManageMembers);
+    Member getMemberAndRecordView(MemberId memberId, UserId viewedBy, MemberViewAccess access);
 
     /**
      * Plain read with no audit-event side effect — for system-triggered reads (e.g.

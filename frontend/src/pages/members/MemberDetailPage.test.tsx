@@ -11,7 +11,7 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MemberDetailPage} from './MemberDetailPage';
 import {vi} from 'vitest';
 import type {HalFormsTemplate, HalResponse} from '../../api';
-import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
+import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -843,6 +843,95 @@ describe('MemberDetailPage', () => {
 
                 expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
             });
+        });
+    });
+
+    describe('holder of profile editing over another member (legal guardian of a minor)', () => {
+        const minorId = '223e4567-e89b-12d3-a456-426614174000';
+        const holderLinks = {
+            self: {href: `/api/members/${minorId}`},
+            legalGuardians: {href: '/api/legal-guardian-groups/g-1/guardians'},
+        };
+        const holderData = () => mockMemberDetailData({
+            id: minorId,
+            firstName: 'Sofie',
+            lastName: 'Svobodová',
+            dateOfBirth: '2015-05-01',
+            _links: holderLinks,
+            _templates: {updateMember: selfEditTemplateWithReservedFields},
+        });
+        const guardiansResponse = {
+            _embedded: {
+                legalGuardianGroupGuardianResponseList: [{
+                    userId: 'u-eva',
+                    firstName: 'Eva',
+                    lastName: 'Svobodová',
+                    email: 'eva@example.com',
+                    phone: '+420777000111',
+                    _links: {member: {href: '/api/members/eva'}},
+                }],
+            },
+        };
+
+        beforeEach(() => {
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => ({
+                data: url.includes('/guardians') ? guardiansResponse : undefined,
+                isLoading: false,
+                error: null,
+            })) as unknown as typeof useAuthorizedQuery);
+        });
+
+        afterEach(() => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((() => ({
+                data: undefined,
+                isLoading: false,
+                error: null,
+            })) as unknown as typeof useAuthorizedQuery);
+        });
+
+        it('shows the edit button and the full two-column layout driven by the update template', () => {
+            const {container} = renderPage(createMockPageData(holderData()));
+            expect(screen.getByRole('button', {name: /upravit profil/i})).toBeInTheDocument();
+            expect(container.querySelector('.grid.lg\\:grid-cols-2')).toBeInTheDocument();
+            expect(screen.getByText('OSOBNÍ ÚDAJE')).toBeInTheDocument();
+        });
+
+        it('shows no fee, permissions, suspension or account actions', () => {
+            renderPage(createMockPageData(holderData()));
+            expect(screen.queryByRole('button', {name: /členské příspěvky/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('heading', {name: /Členský příspěvek/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /oprávnění/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /ukončit členství/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /založit účet/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /změnit heslo/i})).not.toBeInTheDocument();
+        });
+
+        it('lists the guardians without the "Upravit zástupce" action', () => {
+            renderPage(createMockPageData(holderData()));
+            expect(screen.getByText('ZÁKONNÍ ZÁSTUPCI')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'Eva Svobodová'})).toBeInTheDocument();
+            expect(screen.getByText('eva@example.com')).toBeInTheDocument();
+            expect(screen.getByText('+420777000111')).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: 'Upravit zástupce'})).not.toBeInTheDocument();
+        });
+
+        it('shows the birth number of the minor masked', () => {
+            const data = holderData();
+            data.birthNumber = '1505010012';
+            renderPage(createMockPageData(data));
+            expect(screen.getByText('Rodné číslo')).toBeInTheDocument();
+        });
+
+        it('keeps reserved fields read-only and editable fields editable in the edit form', async () => {
+            const user = userEvent.setup();
+            renderPage(createMockPageData(holderData()));
+            await user.click(screen.getByRole('button', {name: /upravit profil/i}));
+
+            expect(screen.getByDisplayValue('+420777123456')).toBeInTheDocument();
+            expect(document.querySelector('[name="firstName"]')).not.toBeInTheDocument();
+            expect(document.querySelector('[name="dateOfBirth"]')).not.toBeInTheDocument();
+            expect(document.querySelector('[name="birthNumber"]')).not.toBeInTheDocument();
+            expect(screen.getAllByText('Sofie').length).toBeGreaterThan(0);
         });
     });
 

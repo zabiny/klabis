@@ -258,6 +258,37 @@ class AuthorizationEvaluatorTest {
     }
 
     @Nested
+    @DisplayName("canReadField by property")
+    class CanReadFieldByProperty {
+
+        @Test
+        void shouldBeAllowedForUnsecuredOrUnknownProperty() {
+            var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
+
+            assertThat(evaluator.canReadField(Payload.class, "open", child)).isTrue();
+            assertThat(evaluator.canReadField(Payload.class, "missing", child)).isTrue();
+        }
+
+        @Test
+        void shouldFollowTheSameRuleAsTheSerializedField() {
+            assertThat(evaluatorOver(delegatedOver(child)).canReadField(Payload.class, "secured", child)).isTrue();
+            assertThat(evaluatorOver(delegatedOver(child)).canReadField(Payload.class, "secured", stranger)).isFalse();
+            assertThat(evaluatorOver(overAll(Authority.MEMBERS_MANAGE)).canReadField(Payload.class, "secured", stranger)).isTrue();
+        }
+
+        @Test
+        void shouldBeAllowedToOwnerOfOwnerVisibleField() {
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).canReadField(Payload.class, "secured", me)).isTrue();
+            assertThat(evaluatorOver(AuthorizationSnapshot.empty()).canReadField(Payload.class, "secured", stranger)).isFalse();
+        }
+
+        @Test
+        void shouldIgnoreReadAuthorityBecauseItOnlyAffectsRequestTemplates() {
+            assertThat(evaluatorOver(overAll(Authority.MEMBERS_READ)).canReadField(Payload.class, "readable", child)).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("describeRequirement")
     class DescribeRequirement {
 
