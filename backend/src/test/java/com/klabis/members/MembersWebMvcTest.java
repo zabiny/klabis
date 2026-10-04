@@ -4,6 +4,8 @@ import com.klabis.calendar.CalendarWebMvcMockitoBeans;
 import com.klabis.common.ClockConfiguration;
 import com.klabis.common.CommonWebMvcMockitoBeans;
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.FixedAuthorizationSnapshotConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import com.klabis.groups.GroupsWebMvcMockitoBeans;
 import com.klabis.sync.SyncWebMvcMockitoBeans;
@@ -36,7 +38,8 @@ import java.lang.annotation.*;
 @WebMvcTest
 @ModuleSlicing(module = "members", extraIncludes = {"groups", "calendar", "sync"}, mode = ApplicationModuleTest.BootstrapMode.STANDALONE, verifyAutomatically = false)
 @ActiveProfiles("test")
-@Import({ClockConfiguration.class, EncryptionConfiguration.class, HalFormsSupport.class})
+@Import({ClockConfiguration.class, EncryptionConfiguration.class, HalFormsSupport.class,
+        AuthorizationEvaluator.class, FixedAuthorizationSnapshotConfiguration.class})
 @MembersWebMvcMockitoBeans
 @CommonWebMvcMockitoBeans
 @GroupsWebMvcMockitoBeans

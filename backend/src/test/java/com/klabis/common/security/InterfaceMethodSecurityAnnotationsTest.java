@@ -102,7 +102,7 @@ class InterfaceMethodSecurityAnnotationsTest {
                     method, ImplementingClass.class, HasAuthority.class);
 
             assertThat(found).isNotNull();
-            assertThat(found.value()).isEqualTo(Authority.MEMBERS_READ);
+            assertThat(found.value()).containsExactly(Authority.MEMBERS_READ);
         }
 
         @Test
@@ -136,7 +136,7 @@ class InterfaceMethodSecurityAnnotationsTest {
                     method, OverridingImplementingClass.class, HasAuthority.class);
 
             assertThat(found).isNotNull();
-            assertThat(found.value()).isEqualTo(Authority.MEMBERS_MANAGE);
+            assertThat(found.value()).containsExactly(Authority.MEMBERS_MANAGE);
         }
     }
 
@@ -151,7 +151,7 @@ class InterfaceMethodSecurityAnnotationsTest {
                     ClassAnnotatedImplementation.class, HasAuthority.class);
 
             assertThat(found).isNotNull();
-            assertThat(found.value()).isEqualTo(Authority.MEMBERS_MANAGE);
+            assertThat(found.value()).containsExactly(Authority.MEMBERS_MANAGE);
         }
 
         @Test
@@ -177,7 +177,7 @@ class InterfaceMethodSecurityAnnotationsTest {
                     method, ImplementingExtendingInterface.class, HasAuthority.class);
 
             assertThat(found).isNotNull();
-            assertThat(found.value()).isEqualTo(Authority.MEMBERS_READ);
+            assertThat(found.value()).containsExactly(Authority.MEMBERS_READ);
         }
 
         @Test

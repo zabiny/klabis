@@ -3,6 +3,8 @@ package com.klabis.oris;
 import com.klabis.common.ClockConfiguration;
 import com.klabis.common.CommonWebMvcMockitoBeans;
 import com.klabis.common.encryption.EncryptionConfiguration;
+import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.FixedAuthorizationSnapshotConfiguration;
 import com.klabis.common.ui.HalFormsSupport;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -28,7 +30,8 @@ import java.lang.annotation.*;
 @WebMvcTest
 @ModuleSlicing(module = "oris", mode = ApplicationModuleTest.BootstrapMode.STANDALONE, verifyAutomatically = false)
 @ActiveProfiles("test")
-@Import({ClockConfiguration.class, EncryptionConfiguration.class, HalFormsSupport.class})
+@Import({ClockConfiguration.class, EncryptionConfiguration.class, HalFormsSupport.class,
+        AuthorizationEvaluator.class, FixedAuthorizationSnapshotConfiguration.class})
 @OrisWebMvcMockitoBeans
 @CommonWebMvcMockitoBeans
 public @interface OrisWebMvcTest {

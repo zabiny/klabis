@@ -1,6 +1,9 @@
 package com.klabis.common.ui;
 
+import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.authorization.TargetId;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.CommonInfrastructureWebMvcSetup;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.fieldsecurity.OwnerId;
@@ -122,6 +125,22 @@ class AffordanceAuthorizationTest {
         @PatchMapping("/api/afford-test/owner-null/{id}")
         @OwnerVisible
         ResponseEntity<Void> updateOwnerNullId(@PathVariable @OwnerId UUID id, @RequestBody AffordanceTestRequest body) {
+            return ResponseEntity.noContent().build();
+        }
+
+        @GetMapping(value = "/api/afford-test/targeted/{id}", produces = MediaTypes.HAL_FORMS_JSON_VALUE)
+        EntityModel<AffordanceTestResponse> getTargeted(@PathVariable UUID id) {
+            EntityModel<AffordanceTestResponse> model = EntityModel.of(new AffordanceTestResponse("data"));
+            klabisLinkTo(methodOn(AffordanceTestController.class).getTargeted(id))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(AffordanceTestController.class).updateTargeted(id, null)))));
+            return model;
+        }
+
+        @PatchMapping("/api/afford-test/targeted/{id}")
+        @HasAuthority({Authority.EVENTS_REGISTRATIONS, Authority.MEMBERS_MANAGE})
+        @OwnerVisible
+        ResponseEntity<Void> updateTargeted(@PathVariable @TargetId(TargetType.MEMBER) UUID id, @RequestBody AffordanceTestRequest body) {
             return ResponseEntity.noContent().build();
         }
 
@@ -315,6 +334,63 @@ class AffordanceAuthorizationTest {
             mockMvc.perform(get("/api/afford-test/owner-or-admin/{id}", OWNER_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates").doesNotExist());
+        }
+    }
+
+    @Nested
+    @DisplayName("method with @HasAuthority list + @OwnerVisible + @TargetId")
+    class TargetedMethod {
+
+        private void assertAffordance(UUID target, boolean present) throws Exception {
+            var result = mockMvc.perform(get("/api/afford-test/targeted/{id}", target).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+            result.andExpect(present ? jsonPath("$._templates").exists() : jsonPath("$._templates").doesNotExist());
+        }
+
+        @Test
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_REGISTRATIONS})
+        @DisplayName("present for a grant over everything, whichever the target")
+        void presentForGrantOverEverything() throws Exception {
+            assertAffordance(OWNER_ID, true);
+            assertAffordance(OTHER_ID, true);
+        }
+
+        @Test
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        @DisplayName("present for another authority of the list")
+        void presentForAnotherListedAuthority() throws Exception {
+            assertAffordance(OWNER_ID, true);
+        }
+
+        @Test
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+                type = TargetType.MEMBER, ids = OWNER_ID_STRING))
+        @DisplayName("present for a grant over the target")
+        void presentForGrantOverTheTarget() throws Exception {
+            assertAffordance(OWNER_ID, true);
+        }
+
+        @Test
+        @WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+                type = TargetType.MEMBER, ids = OTHER_ID_STRING))
+        @DisplayName("absent for a grant over another target")
+        void absentForGrantOverAnotherTarget() throws Exception {
+            assertAffordance(OWNER_ID, false);
+        }
+
+        @Test
+        @WithKlabisMockUser(memberId = OWNER_ID_STRING)
+        @DisplayName("present for the target themself, absent for somebody else")
+        void presentForSelf() throws Exception {
+            assertAffordance(OWNER_ID, true);
+            assertAffordance(OTHER_ID, false);
+        }
+
+        @Test
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ})
+        @DisplayName("absent for an unrelated authority")
+        void absentForUnrelatedAuthority() throws Exception {
+            assertAffordance(OWNER_ID, false);
         }
     }
 

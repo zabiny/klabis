@@ -7,7 +7,7 @@ import java.lang.annotation.*;
 /**
  * Annotation for method-level authorization checking.
  * <p>
- * Checks that the authenticated user has a specific global authority.
+ * Checks that the authenticated user holds at least one of the listed authorities.
  * Works like {@link PreAuthorize} but provides type-safe authority checking.
  * <p>
  * <b>Usage:</b>
@@ -20,7 +20,9 @@ import java.lang.annotation.*;
  * <b>Behavior:</b>
  * <ul>
  *   <li>Requires authentication (user must be logged in)</li>
- *   <li>Requires user to have the specified authority</li>
+ *   <li>Requires user to have any of the specified authorities</li>
+ *   <li>Without a {@code @TargetId} parameter an authority must be held over everything; with one it may also
+ *       be held over just the target the parameter identifies</li>
  *   <li>Throws {@code AccessDeniedException} if user lacks the authority</li>
  *   <li>Can be applied to class or method level</li>
  *   <li>Method-level annotation overrides class-level annotation</li>
@@ -38,9 +40,9 @@ import java.lang.annotation.*;
 public @interface HasAuthority {
 
     /**
-     * The authority required to access the annotated method/class.
+     * The authorities of which at least one is required to access the annotated method/class.
      *
-     * @return the required authority
+     * @return the accepted authorities
      */
-    Authority value();
+    Authority[] value();
 }

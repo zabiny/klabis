@@ -1,6 +1,7 @@
 package com.klabis.common.security.fieldsecurity;
 
 import com.klabis.common.security.MethodSecurityAnnotations;
+import com.klabis.common.users.Authority;
 import com.klabis.common.users.HasAuthority;
 import org.jspecify.annotations.Nullable;
 import org.openapitools.jackson.nullable.JsonNullable;
@@ -21,8 +22,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
@@ -90,7 +93,7 @@ class RequestBodyFieldAuthorizationAdvice extends RequestBodyAdviceAdapter {
         if (!SecuritySpelEvaluator.isFieldAuthorized(
                 preAuthorize, hasAuthority, ownerVisible,
                 accessor, ownerIdFromPath, authentication, ownershipResolver)) {
-            String requiredAuthority = hasAuthority != null ? hasAuthority.value().getValue()
+            String requiredAuthority = hasAuthority != null ? Arrays.stream(hasAuthority.value()).map(Authority::getValue).collect(Collectors.joining(" or "))
                     : preAuthorize != null ? preAuthorize.value()
                     : "@OwnerVisible";
             throw new FieldAuthorizationException(component.getName(), requiredAuthority);

@@ -1,5 +1,6 @@
 package com.klabis.common;
 
+import com.klabis.common.authorization.AuthorizationEvaluator;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.ModuleSlicing;
@@ -17,7 +18,7 @@ import java.lang.annotation.*;
 @Documented
 @ModuleSlicing(module = "common", mode = ApplicationModuleTest.BootstrapMode.STANDALONE, verifyAutomatically = false)
 @ActiveProfiles("test")
-@Import(ClockConfiguration.class)
+@Import({ClockConfiguration.class, AuthorizationEvaluator.class, FixedAuthorizationSnapshotConfiguration.class})
 @CommonWebMvcMockitoBeans
 public @interface CommonInfrastructureWebMvcSetup {
 }
