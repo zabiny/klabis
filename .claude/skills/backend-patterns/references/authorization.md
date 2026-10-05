@@ -61,7 +61,7 @@ Every decision goes through `com.klabis.common.authorization.AuthorizationEvalua
 |---|---|
 | `canInvoke(method, targetClass, args)` | `HasAuthorityMethodInterceptor`, `HalFormsSupport` (`klabisAfford*`, `klabisLinkTo`) |
 | `canReadField(accessor, record)` | `SecuredBeanPropertyWriter` (response fields) |
-| `canReadField(recordType, property, target)` | application code that must decide before the response record exists (e.g. `MemberController` for the birth-number audit) — same rule as the serialized field; a property without security annotations is not restricted |
+| `canReadField(recordType, property, target)` | application code that must decide before the response record exists (e.g. `MemberController` for the birth-number audit) — same rule as the serialized field; an unannotated property is not restricted; an unknown property throws IllegalArgumentException |
 | `canWriteField(accessor, target)` | `RequestBodyFieldAuthorizationAdvice` |
 | `requestFieldAccess(payloadType, property, target)` → `FieldAccess` (`WRITE` / `READ` / `NONE`) | HAL-FORMS property visibility / `readOnly` (`HalFormsSupport`) |
 | `describeRequirement(method, class)` / `describeRequirement(accessor)` | the "Required: …" text of every denial — never compose it from annotations in the caller |

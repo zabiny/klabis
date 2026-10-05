@@ -4,7 +4,6 @@ import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
-import com.klabis.members.domain.Member;
 import com.klabis.members.domain.MemberRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,7 +15,6 @@ import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.klabis.members.MemberTestDataBuilder.aMemberWithId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -33,8 +31,7 @@ class SelfProfileRelationshipSourceTest {
 
     private UserId givenMemberBornOn(LocalDate dateOfBirth) {
         UUID id = UUID.randomUUID();
-        Member member = aMemberWithId(id).withDateOfBirth(dateOfBirth).build();
-        when(memberRepository.findById(new MemberId(id))).thenReturn(Optional.of(member));
+        when(memberRepository.findDateOfBirth(new MemberId(id))).thenReturn(Optional.of(dateOfBirth));
         return new UserId(id);
     }
 
@@ -76,19 +73,16 @@ class SelfProfileRelationshipSourceTest {
     @Test
     @DisplayName("grants an adult profile editing even when their membership is suspended")
     void shouldGrantSuspendedAdult() {
-        UUID id = UUID.randomUUID();
-        Member member = aMemberWithId(id).withDateOfBirth(LocalDate.now().minusYears(30))
-                .withActive(false).build();
-        when(memberRepository.findById(new MemberId(id))).thenReturn(Optional.of(member));
+        UserId userId = givenMemberBornOn(LocalDate.now().minusYears(30));
 
-        assertThat(source().grantsOf(new UserId(id))).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE);
+        assertThat(source().grantsOf(userId)).containsOnlyKeys(Authority.MEMBERS_EDIT_PROFILE);
     }
 
     @Test
     @DisplayName("grants nothing to a user who is not a member")
     void shouldGrantNothingToNonMember() {
         UUID id = UUID.randomUUID();
-        when(memberRepository.findById(new MemberId(id))).thenReturn(Optional.empty());
+        when(memberRepository.findDateOfBirth(new MemberId(id))).thenReturn(Optional.empty());
 
         assertThat(source().grantsOf(new UserId(id))).isEmpty();
     }

@@ -7,8 +7,6 @@
 - [SyncEntityType addition (spec-first)](project_sync_entity_type_addition.md) — edit sync.yaml SyncEntityTypeParam enum, regen via openapiBundle+compileJava, then add domain SyncEntityType constant by hand
 - [Member sync projection mapping quirks](project_member_sync_projection.md) — si==0→null chip, blank→null, phone needs CZ-only E.164 normalization, Member.register() never sets chipNumber
 
-- [Group delegated authorities (rebac-3)](project_group_delegated_authorities.md) — FreeGroup delegation storage/API/source wiring + test pitfalls
-
 ## Project patterns confirmed
 
 ### ResponseEntity.noContent() is a HeadersBuilder, not BodyBuilder

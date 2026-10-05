@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Set;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,7 +40,7 @@ class FreeGroupSuspensionBlockersAdapterTest {
     @Test
     @DisplayName("reports group when member is its last owner")
     void reportsGroupWhenMemberIsLast() {
-        FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Volná skupina", MEMBER));
+        FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Volná skupina", MEMBER, Set.of()));
         when(repository.findAll(any(FreeGroupFilter.class))).thenReturn(List.of(group));
 
         assertThat(adapter.findGroupsBlockingSuspension(MEMBER))
@@ -49,7 +50,7 @@ class FreeGroupSuspensionBlockersAdapterTest {
     @Test
     @DisplayName("does not report group when member is not its last owner")
     void ignoresGroupWhenMemberIsNotLast() {
-        FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Volná skupina", OTHER));
+        FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Volná skupina", OTHER, Set.of()));
         when(repository.findAll(any(FreeGroupFilter.class))).thenReturn(List.of(group));
 
         assertThat(adapter.findGroupsBlockingSuspension(MEMBER)).isEmpty();

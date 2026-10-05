@@ -70,4 +70,15 @@ class MemberRepositoryBornOnTest {
         assertThat(found).extracting(m -> m.getRegistrationNumber().getValue())
                 .containsExactlyInAnyOrder("ZBM0801", "ZBM0701");
     }
+
+    @Test
+    @DisplayName("findDateOfBirth returns the date of birth of an existing member and empty for an unknown one")
+    void shouldFindDateOfBirthWithoutLoadingTheAggregate() {
+        Member saved = memberRepository.save(aMember().withRegistrationNumber("ZBM0801")
+                .withDateOfBirth(LocalDate.of(2008, 3, 1)).build());
+
+        assertThat(memberRepository.findDateOfBirth(saved.getId())).contains(LocalDate.of(2008, 3, 1));
+        assertThat(memberRepository.findDateOfBirth(new com.klabis.members.MemberId(java.util.UUID.randomUUID())))
+                .isEmpty();
+    }
 }

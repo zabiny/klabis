@@ -58,7 +58,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should save and retrieve basic group")
         void shouldSaveAndRetrieveGroup() {
             FreeGroup group = FreeGroup.create(
-                    new FreeGroup.CreateFreeGroup("Orienteering Friends", CREATOR));
+                    new FreeGroup.CreateFreeGroup("Orienteering Friends", CREATOR, Set.of()));
 
             FreeGroup saved = freeGroupRepository.save(group);
             Optional<FreeGroup> found = freeGroupRepository.findById(saved.getId());
@@ -85,12 +85,50 @@ class FreeGroupPersistenceTest {
         @DisplayName("should persist audit metadata after save")
         void shouldPersistAuditMetadataAfterSave() {
             FreeGroup group = FreeGroup.create(
-                    new FreeGroup.CreateFreeGroup("Audit Test", CREATOR));
+                    new FreeGroup.CreateFreeGroup("Audit Test", CREATOR, Set.of()));
 
             FreeGroup saved = freeGroupRepository.save(group);
 
             assertThat(saved.getAuditMetadata()).isNotNull();
             assertThat(saved.getCreatedAt()).isNotNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("findAll() / findOne() with owner filter")
+    class OwnerFilter {
+
+        @Test
+        @DisplayName("should find only groups the member owns, not groups they merely belong to")
+        void shouldFindOnlyOwnedGroups() {
+            freeGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Owned", MEMBER_A, Set.of())));
+            FreeGroup joined = FreeGroup.create(new FreeGroup.CreateFreeGroup("Joined", CREATOR, Set.of()));
+            joined.invite(CREATOR, MEMBER_A);
+            joined.acceptInvitation(joined.getPendingInvitations().get(0).getId());
+            freeGroupRepository.save(joined);
+
+            List<FreeGroup> result = freeGroupRepository.findAll(FreeGroupFilter.all().withOwnerIs(MEMBER_A));
+
+            assertThat(result).extracting(FreeGroup::getName).containsExactly("Owned");
+        }
+
+        @Test
+        @DisplayName("should return empty when the member owns no group")
+        void shouldReturnEmptyWhenNoOwnedGroup() {
+            freeGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup("Other", CREATOR, Set.of())));
+
+            assertThat(freeGroupRepository.findAll(FreeGroupFilter.all().withOwnerIs(INVITED_MEMBER))).isEmpty();
+            assertThat(freeGroupRepository.findOne(FreeGroupFilter.all().withOwnerIs(INVITED_MEMBER))).isEmpty();
+            assertThat(freeGroupRepository.exists(FreeGroupFilter.all().withOwnerIs(CREATOR))).isTrue();
+        }
+
+        @Test
+        @DisplayName("should reject combining the owner filter with another participant filter")
+        void shouldRejectCombinedFilters() {
+            FreeGroupFilter combined = FreeGroupFilter.all().withOwnerIs(CREATOR).withOwnerOrMemberIs(CREATOR);
+
+            assertThatThrownBy(() -> freeGroupRepository.findAll(combined))
+                    .isInstanceOf(UnsupportedOperationException.class);
         }
     }
 
@@ -113,7 +151,7 @@ class FreeGroupPersistenceTest {
         @Test
         @DisplayName("should retrieve an empty set for a group that delegates nothing")
         void shouldRetrieveEmptySet() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Plain", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Plain", CREATOR, Set.of()));
 
             freeGroupRepository.save(group);
             FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
@@ -144,7 +182,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should persist and retrieve pending invitation")
         void shouldPersistAndRetrievePendingInvitation() {
             FreeGroup group = FreeGroup.create(
-                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, INVITED_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
@@ -163,7 +201,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should persist accepted invitation and new member")
         void shouldPersistAcceptedInvitationAndNewMember() {
             FreeGroup group = FreeGroup.create(
-                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, INVITED_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
             group.acceptInvitation(invitationId);
@@ -183,7 +221,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should persist rejected invitation without adding member")
         void shouldPersistRejectedInvitationWithoutAddingMember() {
             FreeGroup group = FreeGroup.create(
-                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, INVITED_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
             group.rejectInvitation(invitationId);
@@ -203,7 +241,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should persist and restore cancelled invitation with all audit fields")
         void shouldPersistAndRestoreCancelledInvitation() {
             FreeGroup group = FreeGroup.create(
-                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, INVITED_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
             group.cancelInvitation(invitationId, Optional.of(CREATOR), "No longer needed");
@@ -226,7 +264,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should persist cancelled invitation with SYSTEM actor — cancelledBy is empty")
         void shouldPersistCancelledInvitationWithSystemActor() {
             FreeGroup group = FreeGroup.create(
-                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, INVITED_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
             group.cancelInvitation(invitationId, Optional.empty(), "Member deactivated");
@@ -251,7 +289,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should persist added owner and delete their member row after save")
         void shouldPersistAddedOwner() {
             FreeGroup group = freeGroupRepository.save(
-                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR)));
+                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of())));
             group.invite(CREATOR, MEMBER_A);
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
             group.addOwner(MEMBER_A, CREATOR);
@@ -274,7 +312,7 @@ class FreeGroupPersistenceTest {
                     new FreeGroupId(UUID.randomUUID()), "Test Group",
                     Set.of(CREATOR, MEMBER_A),
                     Set.of(),
-                    Set.of(), null);
+                    Set.of(), Set.of(), null);
             group = freeGroupRepository.save(group);
             group.removeOwner(MEMBER_A, CREATOR);
             freeGroupRepository.save(group);
@@ -288,7 +326,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should persist removed member after save")
         void shouldPersistRemovedMember() {
             FreeGroup group = freeGroupRepository.save(
-                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR)));
+                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of())));
             group.invite(CREATOR, MEMBER_A);
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
             group = freeGroupRepository.save(group);
@@ -308,7 +346,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should delete group so it can no longer be found")
         void shouldDeleteGroup() {
             FreeGroup group = freeGroupRepository.save(
-                    FreeGroup.create(new FreeGroup.CreateFreeGroup("To Be Deleted", CREATOR)));
+                    FreeGroup.create(new FreeGroup.CreateFreeGroup("To Be Deleted", CREATOR, Set.of())));
             FreeGroupId id = group.getId();
 
             freeGroupRepository.delete(id);
@@ -325,7 +363,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should find groups where member is owner")
         void shouldFindGroupsWhereOwner() {
             freeGroupRepository.save(
-                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Creator's Group", CREATOR)));
+                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Creator's Group", CREATOR, Set.of())));
 
             List<FreeGroup> result = freeGroupRepository.findAll(
                     FreeGroupFilter.all().withOwnerOrMemberIs(CREATOR));
@@ -338,7 +376,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should find groups where member joined via invitation")
         void shouldFindGroupsWhereMemberJoinedViaInvitation() {
             FreeGroup group = FreeGroup.create(
-                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, MEMBER_A);
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
             freeGroupRepository.save(group);
@@ -368,7 +406,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should find groups with pending invitations for member")
         void shouldFindGroupsWithPendingInvitationsForMember() {
             FreeGroup group = FreeGroup.create(
-                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, INVITED_MEMBER);
             freeGroupRepository.save(group);
 
@@ -383,7 +421,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should not return group when invitation was accepted")
         void shouldNotReturnGroupWhenInvitationAccepted() {
             FreeGroup group = FreeGroup.create(
-                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+                    new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, INVITED_MEMBER);
             group.acceptInvitation(group.getPendingInvitations().get(0).getId());
             freeGroupRepository.save(group);
@@ -421,7 +459,7 @@ class FreeGroupPersistenceTest {
         @DisplayName("should return single group when exactly one matches filter")
         void shouldReturnGroupWhenExactlyOneMatch() {
             freeGroupRepository.save(
-                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Solo Group", CREATOR)));
+                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Solo Group", CREATOR, Set.of())));
 
             Optional<FreeGroup> result = freeGroupRepository.findOne(
                     FreeGroupFilter.all().withOwnerOrMemberIs(CREATOR));
@@ -434,9 +472,9 @@ class FreeGroupPersistenceTest {
         @DisplayName("should throw IllegalStateException when filter matches more than one group")
         void shouldThrowWhenFilterMatchesMultipleGroups() {
             freeGroupRepository.save(
-                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Group One", CREATOR)));
+                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Group One", CREATOR, Set.of())));
             freeGroupRepository.save(
-                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Group Two", CREATOR)));
+                    FreeGroup.create(new FreeGroup.CreateFreeGroup("Group Two", CREATOR, Set.of())));
 
             assertThatThrownBy(() -> freeGroupRepository.findOne(
                     FreeGroupFilter.all().withOwnerOrMemberIs(CREATOR)))

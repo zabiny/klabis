@@ -1,17 +1,14 @@
 package com.klabis.members.legalguardiangroup.infrastructure;
 
+import com.klabis.common.authorization.DelegatedGrants;
 import com.klabis.common.authorization.RelationshipSource;
 import com.klabis.common.authorization.TargetRef;
-import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
-import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupFilter;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroupRepository;
 import org.springframework.stereotype.Component;
 
-import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,24 +27,7 @@ class LegalGuardianGroupRelationshipSource implements RelationshipSource {
 
     @Override
     public Map<Authority, Set<TargetRef>> grantsOf(UserId userId) {
-        Map<Authority, Set<TargetRef>> grants = new EnumMap<>(Authority.class);
-        for (LegalGuardianGroup group : groups.findAll(LegalGuardianGroupFilter.all().withGuardianIs(userId))) {
-            Set<TargetRef> minors = minorsOf(group);
-            if (minors.isEmpty()) {
-                continue;
-            }
-            for (Authority authority : group.delegatedAuthorities()) {
-                grants.computeIfAbsent(authority, key -> new HashSet<>()).addAll(minors);
-            }
-        }
-        return grants;
-    }
-
-    private static Set<TargetRef> minorsOf(LegalGuardianGroup group) {
-        Set<TargetRef> minors = new HashSet<>();
-        for (GroupMembership<UserId> minor : group.getMembers()) {
-            minors.add(TargetRef.member(minor.memberId().uuid()));
-        }
-        return minors;
+        return DelegatedGrants.overMembersOf(groups.findAll(LegalGuardianGroupFilter.all().withGuardianIs(userId)),
+                UserId::uuid);
     }
 }

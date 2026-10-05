@@ -128,25 +128,21 @@ public class AuthorizationEvaluator {
      * target: authorities must then be held over everything and the field is also visible to any of the owners.
      */
     public boolean canReadField(Method accessor, Object record) {
-        FieldRules rules = fieldRules(accessor);
-        if (rules.isOpen()) {
-            return true;
-        }
-        return isAllowedOver(snapshots.current(), rules.authorities(), () -> recordTargets.of(record), rules.ownerVisible());
+        return isFieldAllowed(accessor, () -> recordTargets.of(record));
     }
 
     /**
      * Whether the current user may see the property {@code property} of the response record {@code recordType}
      * when the record is about {@code target}, by the same rule {@link #canReadField(Method, Object)} applies to the
      * serialized field. For callers that must decide before the response record exists. A property without
-     * security annotations is not restricted.
+     * security annotations is not restricted; a property the record does not have is a programming error and
+     * fails loudly rather than silently reporting the field as visible.
+     *
+     * @throws IllegalArgumentException when {@code recordType} has no property named {@code property}
      */
-    public boolean canReadField(@Nullable Class<?> recordType, String property, @Nullable TargetRef target) {
-        Method accessor = securedAccessorCache
-                .computeIfAbsent(new PropertyKey(recordType, property),
-                        key -> Optional.ofNullable(FieldRules.securedAccessor(recordType, property)))
-                .orElse(null);
-        return accessor == null || isFieldAllowed(accessor, target);
+    public boolean canReadField(Class<?> recordType, String property, @Nullable TargetRef target) {
+        Method accessor = FieldRules.responseAccessor(recordType, property);
+        return accessor == null || isFieldAllowed(accessor, () -> targetList(target));
     }
 
     /**
@@ -154,15 +150,15 @@ public class AuthorizationEvaluator {
      * on the record identified by {@code target}.
      */
     public boolean canWriteField(Method accessor, @Nullable TargetRef target) {
-        return isFieldAllowed(accessor, target);
+        return isFieldAllowed(accessor, () -> targetList(target));
     }
 
-    private boolean isFieldAllowed(Method accessor, @Nullable TargetRef target) {
+    private boolean isFieldAllowed(Method accessor, Supplier<List<TargetRef>> targets) {
         FieldRules rules = fieldRules(accessor);
         if (rules.isOpen()) {
             return true;
         }
-        return isAllowedOver(snapshots.current(), rules.authorities(), () -> targetList(target), rules.ownerVisible());
+        return isAllowedOver(snapshots.current(), rules.authorities(), targets, rules.ownerVisible());
     }
 
     /**
@@ -172,10 +168,7 @@ public class AuthorizationEvaluator {
      * without security annotations is not restricted.
      */
     public FieldAccess requestFieldAccess(@Nullable Class<?> payloadType, String property, @Nullable TargetRef target) {
-        Method accessor = securedAccessorCache
-                .computeIfAbsent(new PropertyKey(payloadType, property),
-                        key -> Optional.ofNullable(FieldRules.securedAccessor(payloadType, property)))
-                .orElse(null);
+        Method accessor = securedAccessor(payloadType, property);
         if (accessor == null) {
             return FieldAccess.WRITE;
         }
@@ -233,6 +226,13 @@ public class AuthorizationEvaluator {
 
     private static List<TargetRef> targetList(@Nullable TargetRef target) {
         return target != null ? List.of(target) : List.of();
+    }
+
+    private @Nullable Method securedAccessor(@Nullable Class<?> payloadType, String property) {
+        return securedAccessorCache
+                .computeIfAbsent(new PropertyKey(payloadType, property),
+                        key -> Optional.ofNullable(FieldRules.securedAccessor(payloadType, property)))
+                .orElse(null);
     }
 
     private FieldRules fieldRules(Method accessor) {

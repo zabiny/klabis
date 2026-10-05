@@ -33,18 +33,36 @@ record FieldRules(List<Authority> authorities, boolean ownerVisible, List<Author
         if (payloadType == null) {
             return null;
         }
+        Method accessor = accessorOf(payloadType, property);
+        return accessor != null && !of(accessor).isOpen() ? accessor : null;
+    }
+
+    /**
+     * Like {@link #securedAccessor}, but for a response property that the caller asserts exists: an unknown
+     * property is rejected instead of being treated as unsecured.
+     *
+     * @throws IllegalArgumentException when {@code recordType} has no property named {@code property}
+     */
+    static @Nullable Method responseAccessor(Class<?> recordType, String property) {
+        Method accessor = accessorOf(recordType, property);
+        if (accessor == null) {
+            throw new IllegalArgumentException(
+                    "%s has no property '%s'".formatted(recordType.getName(), property));
+        }
+        return of(accessor).isOpen() ? null : accessor;
+    }
+
+    private static @Nullable Method accessorOf(Class<?> payloadType, String property) {
         if (payloadType.isRecord()) {
             return Arrays.stream(payloadType.getRecordComponents())
                     .filter(component -> component.getName().equals(property))
                     .map(RecordComponent::getAccessor)
-                    .filter(accessor -> !of(accessor).isOpen())
                     .findFirst()
                     .orElse(null);
         }
         return Arrays.stream(payloadType.getInterfaces())
                 .flatMap(iface -> Arrays.stream(iface.getMethods()))
                 .filter(method -> method.getName().equals(property) && method.getParameterCount() == 0)
-                .filter(method -> !of(method).isOpen())
                 .findFirst()
                 .orElse(null);
     }

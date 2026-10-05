@@ -12,18 +12,23 @@ import org.jmolecules.ddd.annotation.ValueObject;
 @ValueObject
 public record FreeGroupFilter(
         MemberId ownerOrMemberIs,
-        MemberId pendingInvitationFor
+        MemberId pendingInvitationFor,
+        MemberId ownerIs
 ) implements GroupFilter {
 
     public static FreeGroupFilter all() {
-        return new FreeGroupFilter(null, null);
+        return new FreeGroupFilter(null, null, null);
     }
 
     public FreeGroupFilter withOwnerOrMemberIs(MemberId memberId) {
-        return new FreeGroupFilter(memberId, this.pendingInvitationFor);
+        return new FreeGroupFilter(memberId, this.pendingInvitationFor, this.ownerIs);
     }
 
     public FreeGroupFilter withPendingInvitationFor(MemberId memberId) {
-        return new FreeGroupFilter(this.ownerOrMemberIs, memberId);
+        return new FreeGroupFilter(this.ownerOrMemberIs, memberId, this.ownerIs);
+    }
+
+    public FreeGroupFilter withOwnerIs(MemberId memberId) {
+        return new FreeGroupFilter(this.ownerOrMemberIs, this.pendingInvitationFor, memberId);
     }
 }

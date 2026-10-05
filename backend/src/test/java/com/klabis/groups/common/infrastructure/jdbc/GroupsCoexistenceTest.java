@@ -120,7 +120,7 @@ class GroupsCoexistenceTest {
     }
 
     private void saveFreeGroupWithMember() {
-        FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Free Group", OWNER));
+        FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Free Group", OWNER, Set.of()));
         group.invite(OWNER, SHARED_MEMBER);
         group.acceptInvitation(group.getPendingInvitations().get(0).getId());
         freeGroupRepository.save(group);

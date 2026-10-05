@@ -13,9 +13,11 @@ import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @SecondaryAdapter
 @Repository
@@ -82,11 +84,11 @@ class FreeGroupRepositoryAdapter implements FreeGroupRepository {
     /**
      * Builds a {@link Query} using {@link Criteria} for filter fields that can be expressed
      * as simple column conditions. Returns empty when the filter requires complex EXISTS
-     * sub-queries ({@code ownerOrMemberIs} or {@code pendingInvitationFor}), in which case
+     * sub-queries ({@code ownerOrMemberIs}, {@code pendingInvitationFor} or {@code ownerIs}), in which case
      * the caller falls back to {@link GroupJdbcRepository} named queries.
      */
     private Optional<Query> buildQuery(FreeGroupFilter filter) {
-        if (filter.ownerOrMemberIs() != null || filter.pendingInvitationFor() != null) {
+        if (filter.ownerOrMemberIs() != null || filter.pendingInvitationFor() != null || filter.ownerIs() != null) {
             return Optional.empty();
         }
         return Optional.of(Query.query(Criteria.where("type").is(FreeGroup.TYPE_DISCRIMINATOR)));
@@ -104,9 +106,13 @@ class FreeGroupRepositoryAdapter implements FreeGroupRepository {
      * {@code findAll} path only.
      */
     private List<GroupMemento> findAllMementosByComplexFilter(FreeGroupFilter filter) {
-        if (filter.ownerOrMemberIs() != null && filter.pendingInvitationFor() != null) {
+        if (Stream.of(filter.ownerOrMemberIs(), filter.pendingInvitationFor(), filter.ownerIs())
+                    .filter(Objects::nonNull).count() > 1) {
             throw new UnsupportedOperationException(
-                    "Combining ownerOrMemberIs and pendingInvitationFor in a single filter is not supported");
+                    "Combining ownerOrMemberIs, pendingInvitationFor and ownerIs in a single filter is not supported");
+        }
+        if (filter.ownerIs() != null) {
+            return jdbcRepository.findByTrainerIdAndType(filter.ownerIs().value(), FreeGroup.TYPE_DISCRIMINATOR);
         }
         if (filter.ownerOrMemberIs() != null) {
             return jdbcRepository.findOwnersOrMembersByType(
@@ -124,9 +130,13 @@ class FreeGroupRepositoryAdapter implements FreeGroupRepository {
      * when a business invariant is violated and the filter unexpectedly matches multiple rows.
      */
     private List<GroupMemento> findFirst2MementosByComplexFilter(FreeGroupFilter filter) {
-        if (filter.ownerOrMemberIs() != null && filter.pendingInvitationFor() != null) {
+        if (Stream.of(filter.ownerOrMemberIs(), filter.pendingInvitationFor(), filter.ownerIs())
+                    .filter(Objects::nonNull).count() > 1) {
             throw new UnsupportedOperationException(
-                    "Combining ownerOrMemberIs and pendingInvitationFor in a single filter is not supported");
+                    "Combining ownerOrMemberIs, pendingInvitationFor and ownerIs in a single filter is not supported");
+        }
+        if (filter.ownerIs() != null) {
+            return jdbcRepository.findFirst2ByTrainerIdAndType(filter.ownerIs().value(), FreeGroup.TYPE_DISCRIMINATOR);
         }
         if (filter.ownerOrMemberIs() != null) {
             return jdbcRepository.findFirst2OwnersOrMembersByType(
