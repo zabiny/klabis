@@ -12,6 +12,8 @@ import {useQueryClient} from '@tanstack/react-query';
 import {toHref} from '../../api/hateoas.ts';
 import {Check, X} from 'lucide-react';
 import type {PendingInvitation} from './types.ts';
+import {DelegatedAuthoritiesNotice} from '../../components/groups/DelegatedAuthorities.tsx';
+import {groupFormFieldsFactory} from '../../components/groups/groupFormFieldsFactory.tsx';
 
 type GroupSummary = components['schemas']['EntityModelGroupSummaryResponse'];
 
@@ -60,8 +62,12 @@ const PendingInvitationsSection = (): ReactElement | null => {
                     {invitations.map((invitation) => (
                         <tr key={invitation.invitationId}
                             className="border-b border-border last:border-0">
-                            <td className="px-4 py-3 font-medium text-text-primary">
-                                {invitation.groupName}
+                            <td className="px-4 py-3 text-text-primary">
+                                <div className="font-medium">{invitation.groupName}</div>
+                                <DelegatedAuthoritiesNotice
+                                    authorities={invitation.delegatedAuthorities}
+                                    audience="invitee"
+                                />
                             </td>
                             <td className="px-4 py-3 text-right">
                                 <div className="flex justify-end gap-2">
@@ -116,7 +122,7 @@ export const GroupsPage = (): ReactElement => {
             <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">{labels.sections.groupsList}</h2>
-                    <HalFormButton name="createGroup" modal={true}/>
+                    <HalFormButton name="createGroup" modal={true} fieldsFactory={groupFormFieldsFactory}/>
                 </div>
                 <HalEmbeddedTable<GroupSummary>
                     collectionName="groupSummaryResponseList"

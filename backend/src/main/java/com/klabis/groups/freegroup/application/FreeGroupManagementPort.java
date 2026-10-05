@@ -1,5 +1,6 @@
 package com.klabis.groups.freegroup.application;
 
+import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.domain.InvitationId;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
@@ -7,11 +8,12 @@ import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
 import java.util.List;
+import java.util.Set;
 
 @PrimaryPort
 public interface FreeGroupManagementPort {
 
-    FreeGroup createGroup(String name, MemberId creatorMemberId);
+    FreeGroup createGroup(String name, MemberId creatorMemberId, Set<Authority> delegatedAuthorities);
 
     FreeGroup getGroup(FreeGroupId id);
 

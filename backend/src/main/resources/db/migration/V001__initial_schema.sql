@@ -594,6 +594,7 @@ CREATE SEQUENCE members.legal_guardian_login_number_seq START WITH 1 INCREMENT B
 -- Unified table for all group types (FREE = FreeGroup, TRAINING = TrainingGroup, LEGAL_GUARDIAN = LegalGuardianGroup)
 -- The type column acts as a discriminator to separate groups by their aggregate type.
 -- age_range_min/max are used only by TRAINING groups; NULL for FREE and LEGAL_GUARDIAN groups.
+-- delegated_authorities is used only by FREE groups (fixed at creation); NULL = delegates nothing.
 -- ============================================================================
 
 CREATE TABLE groups.user_groups
@@ -603,6 +604,7 @@ CREATE TABLE groups.user_groups
     name          VARCHAR(200) NOT NULL,
     age_range_min INT          NULL,
     age_range_max INT          NULL,
+    delegated_authorities VARCHAR(500) NULL,
 
     -- Audit fields
     created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -624,6 +626,7 @@ COMMENT ON TABLE groups.user_groups IS 'Unified table for all group aggregate ty
 COMMENT ON COLUMN groups.user_groups.type IS 'Discriminator: FREE = invitation-based members group, TRAINING = age-range training group, LEGAL_GUARDIAN = legal guardian group';
 COMMENT ON COLUMN groups.user_groups.age_range_min IS 'Minimum age (inclusive) — populated only for TRAINING groups';
 COMMENT ON COLUMN groups.user_groups.age_range_max IS 'Maximum age (inclusive) — populated only for TRAINING groups';
+COMMENT ON COLUMN groups.user_groups.delegated_authorities IS 'Comma-separated authority values the owners of a FREE group hold over its members — populated only for FREE groups, fixed at creation';
 
 -- ============================================================================
 -- 15. USER_GROUP_OWNERS TABLE

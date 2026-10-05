@@ -20,16 +20,16 @@ Prerequisites: `rebac-1-groups-owners-not-members` and `rebac-2-target-authoriza
 
 ## 3. Free group delegation (vertical slice)
 
-- [ ] 3.1 Write failing domain tests: `FreeGroup.create` with an empty and with `{EDIT_PROFILE}` set; `{MEMBERS_MANAGE}` rejected; set immutable; verify they fail, implement (including persistence in the group memento), verify they pass
-- [ ] 3.2 Update `groups.yaml` (D6) — `createGroup.delegatedAuthorities` with options, read-only `delegatedAuthorities` in free group detail and pending invitations; verify the bundle validates
-- [ ] 3.3 Write failing tests for `FreeGroupRelationshipSource` (owner over members, not over co-owners, member who left drops out, removed owner loses all, union with guardian grants); implement; verify they pass
-- [ ] 3.4 `@WebMvcTest`s: create with delegation, detail and invitation show the delegated set, owner gets the edit template on a member, a member does not get it on another member; verify they pass
-- [ ] 3.5 Frontend: opt-in checkbox in "Create group" dialog (unchecked by default), delegated permissions line on pending invitations and on the free group detail, read-only in the edit form; verify component tests and manually on http://localhost:3000
+- [x] 3.1 Write failing domain tests: `FreeGroup.create` with an empty and with `{EDIT_PROFILE}` set; `{MEMBERS_MANAGE}` rejected; set immutable; verify they fail, implement (including persistence in the group memento), verify they pass
+- [x] 3.2 Update `groups.yaml` (D6) — `createGroup.delegatedAuthorities` with options, read-only `delegatedAuthorities` in free group detail and pending invitations; verify the bundle validates
+- [x] 3.3 Write failing tests for `FreeGroupRelationshipSource` (owner over members, not over co-owners, member who left drops out, removed owner loses all, union with guardian grants); implement; verify they pass
+- [x] 3.4 `@WebMvcTest`s: create with delegation, detail and invitation show the delegated set, owner gets the edit template on a member, a member does not get it on another member; verify they pass
+- [x] 3.5 Frontend: opt-in checkbox in "Create group" dialog (unchecked by default), delegated permissions line on pending invitations and on the free group detail, read-only in the edit form; verify component tests and manually on http://localhost:3000
 
 ## 4. Training groups delegate nothing
 
-- [ ] 4.1 Write a test that a trainer without `MEMBERS:MANAGE` does not get the edit action on a trainee; verify it passes
-- [ ] 4.2 Verify training group create/edit forms offer no delegation (`@WebMvcTest` on templates)
+- [x] 4.1 Write a test that a trainer without `MEMBERS:MANAGE` does not get the edit action on a trainee; verify it passes
+- [x] 4.2 Verify training group create/edit forms offer no delegation (`@WebMvcTest` on templates)
 
 ## 5. Documentation and integration
 

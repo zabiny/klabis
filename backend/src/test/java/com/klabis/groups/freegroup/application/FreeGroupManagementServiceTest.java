@@ -3,6 +3,7 @@ package com.klabis.groups.freegroup.application;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.GroupNotFoundException;
+import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.*;
 import com.klabis.members.MemberId;
@@ -24,6 +25,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,12 +57,32 @@ class FreeGroupManagementServiceTest {
         void shouldCreateGroupAndSaveIt() {
             when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-            FreeGroup result = service.createGroup("Test Group", CREATOR);
+            FreeGroup result = service.createGroup("Test Group", CREATOR, Set.of());
 
             assertThat(result.getOwners()).containsExactly(CREATOR);
             assertThat(result.hasMember(CREATOR)).isFalse();
             assertThat(result.getName()).isEqualTo("Test Group");
+            assertThat(result.delegatedAuthorities()).isEmpty();
             verify(freeGroupRepository).save(any(FreeGroup.class));
+        }
+
+        @Test
+        @DisplayName("should create group delegating the chosen authorities")
+        void shouldCreateGroupWithDelegatedAuthorities() {
+            when(freeGroupRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+            FreeGroup result = service.createGroup("Test Group", CREATOR, Set.of(Authority.MEMBERS_EDIT_PROFILE));
+
+            assertThat(result.delegatedAuthorities()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
+        }
+
+        @Test
+        @DisplayName("should refuse to delegate an administrator authority and save nothing")
+        void shouldRefuseAdministratorAuthority() {
+            assertThatThrownBy(() -> service.createGroup("Test Group", CREATOR, Set.of(Authority.MEMBERS_MANAGE)))
+                    .isInstanceOf(InvalidDelegatedAuthorityException.class);
+
+            verify(freeGroupRepository, never()).save(any());
         }
     }
 

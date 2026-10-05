@@ -4,14 +4,18 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.groups.domain.MemberNotInGroupException;
+import com.klabis.common.users.Authority;
+import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.FreeGroupInvitationCancelledEvent;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,6 +70,115 @@ class FreeGroupTest {
         void shouldRejectNullCreator() {
             assertThatThrownBy(() -> new FreeGroup.CreateFreeGroup("Valid Name", null))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("should delegate nothing when created without delegated authorities")
+        void shouldDelegateNothingByDefault() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("No Delegation", CREATOR));
+
+            assertThat(group.delegatedAuthorities()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should delegate nothing when created with an empty set")
+        void shouldDelegateNothingWithEmptySet() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("No Delegation", CREATOR, Set.of()));
+
+            assertThat(group.delegatedAuthorities()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should delegate MEMBERS_EDIT_PROFILE when chosen at creation")
+        void shouldDelegateChosenAuthority() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup(
+                    "Delegating", CREATOR, Set.of(Authority.MEMBERS_EDIT_PROFILE)));
+
+            assertThat(group.delegatedAuthorities()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
+        }
+
+        @Test
+        @DisplayName("should reject an administrator authority that cannot be held over specific members")
+        void shouldRejectAdministratorAuthority() {
+            assertThatThrownBy(() -> FreeGroup.create(new FreeGroup.CreateFreeGroup(
+                    "Escalating", CREATOR, Set.of(Authority.MEMBERS_MANAGE))))
+                    .isInstanceOf(InvalidDelegatedAuthorityException.class)
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining(Authority.MEMBERS_MANAGE.getValue());
+        }
+
+        @Test
+        @DisplayName("should reject an authority mixed with a delegatable one")
+        void shouldRejectAdministratorAuthorityAmongDelegatable() {
+            Set<Authority> chosen = EnumSet.of(Authority.MEMBERS_EDIT_PROFILE, Authority.MEMBERS_PERMISSIONS);
+
+            assertThatThrownBy(() -> FreeGroup.create(new FreeGroup.CreateFreeGroup("Mixed", CREATOR, chosen)))
+                    .isInstanceOf(InvalidDelegatedAuthorityException.class);
+        }
+
+        @Test
+        @DisplayName("should reject null delegated authorities")
+        void shouldRejectNullDelegatedAuthorities() {
+            assertThatThrownBy(() -> new FreeGroup.CreateFreeGroup("Valid Name", CREATOR, null))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("delegatedAuthorities immutability")
+    class DelegatedAuthoritiesImmutability {
+
+        @Test
+        @DisplayName("should expose a read-only set")
+        void shouldExposeReadOnlySet() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup(
+                    "Delegating", CREATOR, Set.of(Authority.MEMBERS_EDIT_PROFILE)));
+
+            assertThatThrownBy(() -> group.delegatedAuthorities().clear())
+                    .isInstanceOf(UnsupportedOperationException.class);
+            assertThatThrownBy(() -> group.delegatedAuthorities().add(Authority.MEMBERS_MANAGE))
+                    .isInstanceOf(UnsupportedOperationException.class);
+        }
+
+        @Test
+        @DisplayName("should not change when the set passed at creation is modified afterwards")
+        void shouldNotShareSetWithCaller() {
+            Set<Authority> chosen = EnumSet.of(Authority.MEMBERS_EDIT_PROFILE);
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Delegating", CREATOR, chosen));
+
+            chosen.clear();
+
+            assertThat(group.delegatedAuthorities()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
+        }
+
+        @Test
+        @DisplayName("should be kept when other aspects of the group change")
+        void shouldSurviveOtherChanges() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup(
+                    "Delegating", CREATOR, Set.of(Authority.MEMBERS_EDIT_PROFILE)));
+
+            group.rename("Renamed", CREATOR);
+            group.invite(CREATOR, OTHER_MEMBER);
+            group.acceptInvitation(group.getPendingInvitations().getFirst().getId());
+
+            assertThat(group.delegatedAuthorities()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
+        }
+
+        @Test
+        @DisplayName("should be restored by reconstruct")
+        void shouldBeRestoredByReconstruct() {
+            FreeGroup group = FreeGroup.reconstruct(new FreeGroupId(UUID.randomUUID()), "Restored",
+                    Set.of(CREATOR), Set.of(), Set.of(), Set.of(Authority.MEMBERS_EDIT_PROFILE), null);
+
+            assertThat(group.delegatedAuthorities()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
+        }
+
+        @Test
+        @DisplayName("should reject an administrator authority when reconstructing")
+        void shouldRejectAdministratorAuthorityOnReconstruct() {
+            assertThatThrownBy(() -> FreeGroup.reconstruct(new FreeGroupId(UUID.randomUUID()), "Restored",
+                    Set.of(CREATOR), Set.of(), Set.of(), Set.of(Authority.MEMBERS_MANAGE), null))
+                    .isInstanceOf(InvalidDelegatedAuthorityException.class);
         }
     }
 

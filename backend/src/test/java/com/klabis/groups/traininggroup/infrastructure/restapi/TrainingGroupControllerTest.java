@@ -180,6 +180,22 @@ class TrainingGroupControllerTest {
         }
 
         @Test
+        @DisplayName("createTrainingGroup template should offer no choice of delegated permissions")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldNotOfferDelegationOnCreateTemplate() throws Exception {
+            when(trainingGroupManagementService.listTrainingGroups()).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/training-groups")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.createTrainingGroup.properties[?(@.name=='name')]").isNotEmpty())
+                    .andExpect(jsonPath("$._templates.createTrainingGroup.properties[?(@.name=='delegatedAuthorities')]")
+                            .isEmpty());
+        }
+
+        @Test
         @DisplayName("should return 401 when unauthenticated")
         void shouldReturn401WhenUnauthenticated() throws Exception {
             mockMvc.perform(
@@ -254,6 +270,24 @@ class TrainingGroupControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("training group detail and its edit template should offer no delegated permissions")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_READ, Authority.GROUPS_TRAINING})
+        void shouldNotOfferDelegationOnDetailAndEditTemplate() throws Exception {
+            TrainingGroup group = buildTrainingGroup(GROUP_UUID, "Juniors", new AgeRange(10, 18), TRAINER_ID);
+            when(trainingGroupManagementService.getTrainingGroup(any(TrainingGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/training-groups/{id}", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.delegatedAuthorities").doesNotExist())
+                    .andExpect(jsonPath("$._templates.updateTrainingGroup.properties[?(@.name=='name')]").isNotEmpty())
+                    .andExpect(jsonPath("$._templates.updateTrainingGroup.properties[?(@.name=='delegatedAuthorities')]")
+                            .isEmpty());
         }
 
         @Test

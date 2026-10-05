@@ -4,6 +4,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.GroupNotFoundException;
+import com.klabis.common.users.Authority;
 import com.klabis.groups.GroupsWebMvcTest;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
@@ -24,6 +25,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -69,7 +71,7 @@ class FreeGroupControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldCreateGroupAndReturn201() throws Exception {
             FreeGroup created = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
-            when(membersGroupManagementService.createGroup(any(String.class), any(MemberId.class)))
+            when(membersGroupManagementService.createGroup(any(String.class), any(MemberId.class), anySet()))
                     .thenReturn(created);
 
             mockMvc.perform(
@@ -82,6 +84,85 @@ class FreeGroupControllerTest {
                     )
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"));
+        }
+
+        @Test
+        @DisplayName("should pass the delegated authorities chosen by the founder to the service")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldPassDelegatedAuthorities() throws Exception {
+            FreeGroup created = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.createGroup(any(String.class), any(MemberId.class), anySet()))
+                    .thenReturn(created);
+
+            mockMvc.perform(
+                            post("/api/groups")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name": "Trail Runners", "delegatedAuthorities": ["MEMBERS:EDIT_PROFILE"]}
+                                            """)
+                    )
+                    .andExpect(status().isCreated());
+
+            verify(membersGroupManagementService).createGroup("Trail Runners",
+                    new MemberId(UUID.fromString(MEMBER_ID)), Set.of(Authority.MEMBERS_EDIT_PROFILE));
+        }
+
+        @Test
+        @DisplayName("should delegate nothing when the founder chooses no delegated authorities")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldDelegateNothingWhenOmitted() throws Exception {
+            FreeGroup created = buildGroup(GROUP_UUID, "Trail Runners", MEMBER_ID);
+            when(membersGroupManagementService.createGroup(any(String.class), any(MemberId.class), anySet()))
+                    .thenReturn(created);
+
+            mockMvc.perform(
+                            post("/api/groups")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name": "Trail Runners"}
+                                            """)
+                    )
+                    .andExpect(status().isCreated());
+
+            verify(membersGroupManagementService).createGroup("Trail Runners",
+                    new MemberId(UUID.fromString(MEMBER_ID)), Set.of());
+        }
+
+        @Test
+        @DisplayName("should return 400 when an administrator authority is requested for delegation")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReject400WhenAdministratorAuthorityRequested() throws Exception {
+            mockMvc.perform(
+                            post("/api/groups")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name": "Trail Runners", "delegatedAuthorities": ["MEMBERS:MANAGE"]}
+                                            """)
+                    )
+                    .andExpect(status().isBadRequest());
+
+            verify(membersGroupManagementService, never()).createGroup(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("should return 400 when the domain rejects the delegated authority")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldReturn400WhenDomainRejectsDelegatedAuthority() throws Exception {
+            when(membersGroupManagementService.createGroup(any(String.class), any(MemberId.class), anySet()))
+                    .thenThrow(new InvalidDelegatedAuthorityException(Authority.MEMBERS_MANAGE));
+
+            mockMvc.perform(
+                            post("/api/groups")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"name": "Trail Runners", "delegatedAuthorities": ["MEMBERS:EDIT_PROFILE"]}
+                                            """)
+                    )
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
@@ -148,6 +229,27 @@ class FreeGroupControllerTest {
         }
 
         @Test
+        @DisplayName("should offer only delegatable member permissions, unselected, in the create template")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldOfferDelegatablePermissionsInCreateTemplate() throws Exception {
+            when(membersGroupManagementService.listGroupsForMember(any(MemberId.class))).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/groups")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.createGroup.properties[?(@.name=='delegatedAuthorities')].options.inline[0]")
+                            .value("MEMBERS:EDIT_PROFILE"))
+                    .andExpect(jsonPath("$._templates.createGroup.properties[?(@.name=='delegatedAuthorities')].options.inline.length()")
+                            .value(1))
+                    .andExpect(jsonPath("$._templates.createGroup.properties[?(@.name=='delegatedAuthorities')].required")
+                            .isEmpty())
+                    .andExpect(jsonPath("$._templates.createGroup.properties[?(@.name=='delegatedAuthorities')].value")
+                            .isEmpty());
+        }
+
+        @Test
         @DisplayName("should return 200 with empty collection when member has no groups")
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnEmptyCollectionWhenNoGroups() throws Exception {
@@ -202,6 +304,81 @@ class FreeGroupControllerTest {
                     .andExpect(jsonPath("$.id").exists())
                     .andExpect(jsonPath("$.owners").isArray())
                     .andExpect(jsonPath("$.members").isArray());
+        }
+
+        @Test
+        @DisplayName("should show the permissions the owners hold over members")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldShowDelegatedAuthorities() throws Exception {
+            MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
+            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Sprint Team", Set.of(owner), Set.of(), Set.of(),
+                    Set.of(Authority.MEMBERS_EDIT_PROFILE), null);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(get("/api/groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.delegatedAuthorities.length()").value(1))
+                    .andExpect(jsonPath("$.delegatedAuthorities[0]").value("MEMBERS:EDIT_PROFILE"));
+        }
+
+        @Test
+        @DisplayName("should show the delegated permissions to a plain member too")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldShowDelegatedAuthoritiesToMember() throws Exception {
+            MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
+            MemberId member = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
+            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Sprint Team", Set.of(owner),
+                    Set.of(GroupMembership.of(member)), Set.of(), Set.of(Authority.MEMBERS_EDIT_PROFILE), null);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(get("/api/groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.delegatedAuthorities[0]").value("MEMBERS:EDIT_PROFILE"));
+        }
+
+        @Test
+        @DisplayName("should show an empty set for a group delegating nothing")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldShowNoDelegatedAuthorities() throws Exception {
+            FreeGroup group = buildGroup(GROUP_UUID, "Sprint Team", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(get("/api/groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.delegatedAuthorities").isArray())
+                    .andExpect(jsonPath("$.delegatedAuthorities.length()").value(0));
+        }
+
+        @Test
+        @DisplayName("should show the delegated permissions on the pending invitations embedded in the detail")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldShowDelegatedAuthoritiesOnEmbeddedInvitations() throws Exception {
+            MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
+            MemberId invited = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
+            FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Sprint Team", Set.of(owner), Set.of(),
+                    Set.of(Invitation.reconstruct(INVITATION_ID, invited, owner, InvitationStatus.PENDING,
+                            Instant.now(), null, null, null)),
+                    Set.of(Authority.MEMBERS_EDIT_PROFILE), null);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(get("/api/groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.pendingInvitations[0].delegatedAuthorities[0]")
+                            .value("MEMBERS:EDIT_PROFILE"));
+        }
+
+        @Test
+        @DisplayName("should not offer changing the delegated permissions in the edit form")
+        @WithKlabisMockUser(memberId = MEMBER_ID)
+        void shouldNotOfferChangingDelegatedAuthorities() throws Exception {
+            FreeGroup group = buildGroup(GROUP_UUID, "Sprint Team", MEMBER_ID);
+            when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
+
+            mockMvc.perform(get("/api/groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateGroup.properties[?(@.name=='delegatedAuthorities')]")
+                            .isEmpty())
+                    .andExpect(jsonPath("$._templates.updateGroup.properties[?(@.name=='name')]").isNotEmpty());
         }
 
         @Test
@@ -1139,7 +1316,7 @@ class FreeGroupControllerTest {
             MemberId invitedMember = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
             com.klabis.groups.freegroup.domain.Invitation invitation = com.klabis.groups.freegroup.domain.Invitation.reconstruct(
                     INVITATION_ID, invitedMember, owner, InvitationStatus.PENDING, Instant.now(), null, null, null);
-            PendingInvitationView view = new PendingInvitationView(GROUP_ID, "Trail Runners", invitation);
+            PendingInvitationView view = new PendingInvitationView(GROUP_ID, "Trail Runners", invitation, Set.of());
             when(membersGroupManagementService.getPendingInvitationsForMember(any(MemberId.class)))
                     .thenReturn(List.of(view));
 
@@ -1149,6 +1326,29 @@ class FreeGroupControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.pendingInvitationResponseList").isArray());
+        }
+
+        @Test
+        @DisplayName("should show what the owners of the group will hold over the invited member")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID)
+        void shouldShowDelegatedAuthoritiesOnInvitation() throws Exception {
+            MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
+            MemberId invitedMember = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
+            Invitation invitation = Invitation.reconstruct(
+                    INVITATION_ID, invitedMember, owner, InvitationStatus.PENDING, Instant.now(), null, null, null);
+            when(membersGroupManagementService.getPendingInvitationsForMember(any(MemberId.class)))
+                    .thenReturn(List.of(
+                            new PendingInvitationView(GROUP_ID, "Trail Runners", invitation,
+                                    Set.of(Authority.MEMBERS_EDIT_PROFILE)),
+                            new PendingInvitationView(new FreeGroupId(UUID.randomUUID()), "Plain Group", invitation,
+                                    Set.of())));
+
+            mockMvc.perform(get("/api/invitations/pending").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.pendingInvitationResponseList[0].delegatedAuthorities[0]")
+                            .value("MEMBERS:EDIT_PROFILE"))
+                    .andExpect(jsonPath("$._embedded.pendingInvitationResponseList[1].delegatedAuthorities.length()")
+                            .value(0));
         }
 
         @Test

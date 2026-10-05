@@ -224,6 +224,7 @@ export const labels = {
         minorCount: 'Počet nezletilých',
         ageRange: 'Věkové rozmezí',
         reason: 'Důvod zrušení (volitelné)',
+        delegatedAuthorities: 'Oprávnění vlastníků nad členy',
         color: 'Barva',
         sortOrder: 'Pořadí',
         eventTypeId: 'Typ závodu',
@@ -465,6 +466,15 @@ export const labels = {
         address: 'Adresa',
         eventType: 'Typ',
         sync: 'Synchronizace',
+    },
+
+    groupDelegation: {
+        ownersMayPrefix: 'Vlastníci skupiny (i budoucí) mohou:',
+        ownersGainNothing: 'Vlastníci skupiny nad členy nezískávají žádná oprávnění.',
+        invitationGrantsPrefix: 'Přijetím pozvánky získají vlastníci skupiny (současní i budoucí) nad vámi oprávnění:',
+        invitationGrantsNothing: 'Přijetím pozvánky nezískají vlastníci skupiny nad vámi žádná oprávnění.',
+        fixedAtCreation: 'Nelze měnit po vytvoření skupiny.',
+        noneDelegated: 'Žádná',
     },
 
     sections: {

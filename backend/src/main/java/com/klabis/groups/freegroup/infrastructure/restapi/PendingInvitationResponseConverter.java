@@ -7,12 +7,13 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;
 
-@Mapper(config = MapstructSpringMapperConfig.class)
+@Mapper(config = MapstructSpringMapperConfig.class, imports = DelegatedAuthorities.class)
 interface PendingInvitationResponseConverter extends Converter<PendingInvitationView, PendingInvitationResponse> {
 
     @Override
     @Mapping(target = "groupId", expression = "java(view.groupId().uuid())")
     @Mapping(target = "invitationId", expression = "java(view.invitation().getId().value())")
     @Mapping(target = "invitedBy", expression = "java(view.invitation().getInvitedBy().uuid())")
+    @Mapping(target = "delegatedAuthorities", expression = "java(DelegatedAuthorities.toWire(view.delegatedAuthorities()))")
     PendingInvitationResponse convert(PendingInvitationView view);
 }

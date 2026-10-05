@@ -1,5 +1,6 @@
 package com.klabis.groups.freegroup.domain;
 
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.groups.domain.GroupMembership;
@@ -24,40 +25,83 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
     @Identity
     private final FreeGroupId id;
     private final Set<Invitation> invitations;
+    private final Set<Authority> delegatedAuthorities;
 
     private FreeGroup(FreeGroupId id, String name, Set<MemberId> owners,
-                      Set<GroupMembership<MemberId>> members, Set<Invitation> invitations) {
+                      Set<GroupMembership<MemberId>> members, Set<Invitation> invitations,
+                      Set<Authority> delegatedAuthorities) {
         super(name, owners, members);
         Assert.notNull(id, "FreeGroupId is required");
         Assert.notNull(invitations, "Invitations set is required");
+        Assert.notNull(delegatedAuthorities, "Delegated authorities are required");
+        // Guards the aggregate itself, so a client bypassing the create form cannot delegate an administrator authority.
+        delegatedAuthorities.stream()
+                .filter(authority -> !delegatableAuthorities().contains(authority))
+                .findFirst()
+                .ifPresent(authority -> {
+                    throw new InvalidDelegatedAuthorityException(authority);
+                });
         this.id = id;
         this.invitations = new HashSet<>(invitations);
+        this.delegatedAuthorities = delegatedAuthorities.isEmpty()
+                ? Collections.emptySet()
+                : Collections.unmodifiableSet(EnumSet.copyOf(delegatedAuthorities));
+    }
+
+    /**
+     * The authorities a founder may choose to delegate: those that can be held over specific members.
+     */
+    public static Set<Authority> delegatableAuthorities() {
+        EnumSet<Authority> delegatable = EnumSet.noneOf(Authority.class);
+        for (Authority authority : Authority.delegatable()) {
+            if (authority.getTargetType() == TargetType.MEMBER) {
+                delegatable.add(authority);
+            }
+        }
+        return Collections.unmodifiableSet(delegatable);
     }
 
     @RecordBuilder
-    public record CreateFreeGroup(String name, MemberId creator) {
+    public record CreateFreeGroup(String name, MemberId creator, Set<Authority> delegatedAuthorities) {
         public CreateFreeGroup {
             Assert.hasText(name, "Group name is required");
             Assert.notNull(creator, "Creator is required");
+            Assert.notNull(delegatedAuthorities, "Delegated authorities are required");
+            delegatedAuthorities = Set.copyOf(delegatedAuthorities);
+        }
+
+        public CreateFreeGroup(String name, MemberId creator) {
+            this(name, creator, Set.of());
         }
     }
 
     public static FreeGroup create(CreateFreeGroup command) {
         FreeGroupId id = new FreeGroupId(UUID.randomUUID());
-        return new FreeGroup(id, command.name(), Set.of(command.creator()), Set.of(), Set.of());
+        return new FreeGroup(id, command.name(), Set.of(command.creator()), Set.of(), Set.of(),
+                command.delegatedAuthorities());
+    }
+
+    public static FreeGroup reconstruct(FreeGroupId id, String name, Set<MemberId> owners,
+                                        Set<GroupMembership<MemberId>> members, Set<Invitation> invitations,
+                                        Set<Authority> delegatedAuthorities, AuditMetadata auditMetadata) {
+        FreeGroup group = new FreeGroup(id, name, owners, members, invitations, delegatedAuthorities);
+        group.updateAuditMetadata(auditMetadata);
+        return group;
     }
 
     public static FreeGroup reconstruct(FreeGroupId id, String name, Set<MemberId> owners,
                                         Set<GroupMembership<MemberId>> members, Set<Invitation> invitations,
                                         AuditMetadata auditMetadata) {
-        FreeGroup group = new FreeGroup(id, name, owners, members, invitations);
-        group.updateAuditMetadata(auditMetadata);
-        return group;
+        return reconstruct(id, name, owners, members, invitations, Set.of(), auditMetadata);
     }
 
+    /**
+     * Fixed at creation: members agree to what the owners may do with their data when they join, so the set
+     * must not widen afterwards.
+     */
     @Override
     public Set<Authority> delegatedAuthorities() {
-        return Set.of();
+        return delegatedAuthorities;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.klabis.groups.freegroup.application;
 
 import com.klabis.common.groups.domain.GroupNotFoundException;
+import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.FreeGroupFilter;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 class FreeGroupManagementService implements FreeGroupManagementPort {
@@ -24,8 +26,8 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
 
     @Transactional
     @Override
-    public FreeGroup createGroup(String name, MemberId creatorMemberId) {
-        FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup(name, creatorMemberId));
+    public FreeGroup createGroup(String name, MemberId creatorMemberId, Set<Authority> delegatedAuthorities) {
+        FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup(name, creatorMemberId, delegatedAuthorities));
         return freeGroupRepository.save(group);
     }
 
@@ -130,7 +132,8 @@ class FreeGroupManagementService implements FreeGroupManagementPort {
         return freeGroupRepository.findAll(FreeGroupFilter.all().withPendingInvitationFor(memberId)).stream()
                 .flatMap(group -> group.getPendingInvitations().stream()
                         .filter(inv -> inv.isForMember(memberId))
-                        .map(inv -> new PendingInvitationView(group.getId(), group.getName(), inv)))
+                        .map(inv -> new PendingInvitationView(group.getId(), group.getName(), inv,
+                                group.delegatedAuthorities())))
                 .toList();
     }
 }

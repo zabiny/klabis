@@ -4,6 +4,7 @@ import com.klabis.common.domain.AuditMetadata;
 import com.klabis.common.domain.KlabisAggregateRoot;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.MemberGroup;
+import com.klabis.common.users.Authority;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.AfterDomainEventPublication;
 import org.springframework.data.domain.DomainEvents;
@@ -13,6 +14,8 @@ import org.springframework.data.relational.core.mapping.MappedCollection;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,6 +41,9 @@ public class GroupMemento implements Persistable<UUID> {
 
     @Column("age_range_max")
     private Integer ageRangeMax;
+
+    @Column("delegated_authorities")
+    private String delegatedAuthorities;
 
     @MappedCollection(idColumn = "user_group_id")
     private Set<GroupOwnerMemento> owners = new HashSet<>();
@@ -115,6 +121,26 @@ public class GroupMemento implements Persistable<UUID> {
     public GroupMemento withAgeRange(Integer min, Integer max) {
         this.ageRangeMin = min;
         this.ageRangeMax = max;
+        return this;
+    }
+
+    /**
+     * Stored as a comma-separated list of authority values; only free groups carry any, so the column is
+     * null for the other group types.
+     */
+    public Set<Authority> delegatedAuthorities() {
+        if (delegatedAuthorities == null || delegatedAuthorities.isBlank()) {
+            return Set.of();
+        }
+        return Arrays.stream(delegatedAuthorities.split(","))
+                .map(Authority::fromString)
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(Authority.class)));
+    }
+
+    public GroupMemento withDelegatedAuthorities(Set<Authority> authorities) {
+        this.delegatedAuthorities = authorities.isEmpty()
+                ? null
+                : authorities.stream().map(Authority::getValue).sorted().collect(Collectors.joining(","));
         return this;
     }
 

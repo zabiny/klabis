@@ -115,7 +115,9 @@ paths:
       operationId: createGroup
       tags: [Groups]
       summary: Create a members group
-      description: Creates a new free group; the authenticated member becomes its first owner.
+      description: >-
+        Creates a new free group; the authenticated member becomes its first owner. The founder may opt in to
+        delegating permissions to the owners over every member of the group; the choice cannot be changed later.
       security:
         - KlabisAuth: [MEMBERS]
       x-spring-provide-args:
@@ -953,6 +955,14 @@ components:
 
     # === Groups (FreeGroup) ======================================================================
 
+    # The permissions the owners of a free group may hold over its members: exactly the authorities
+    # that can be held over specific members (Authority.delegatable() with targetType MEMBER). Never
+    # administrator permissions — FreeGroup rejects those even when a client bypasses this enum.
+    DelegatedAuthority:
+      type: string
+      enum:
+        - MEMBERS:EDIT_PROFILE
+
     CreateGroupRequest:
       type: object
       required: [name]
@@ -961,6 +971,15 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+        delegatedAuthorities:
+          type: array
+          uniqueItems: true
+          description: >-
+            Permissions every owner of the group (current and future) holds over every member of the group.
+            Fixed at creation. Opt-in: none are delegated when omitted.
+          items:
+            $ref: '#/components/schemas/DelegatedAuthority'
+          x-hal-input-type: Authority
 
     RenameGroupRequest:
       type: object
@@ -1019,6 +1038,12 @@ components:
           format: uuid
         name:
           type: string
+        delegatedAuthorities:
+          type: array
+          uniqueItems: true
+          description: Permissions the owners of the group hold over its members. Fixed at creation.
+          items:
+            $ref: '#/components/schemas/DelegatedAuthority'
         owners:
           type: array
           x-hal-entity-items: true
@@ -1069,6 +1094,14 @@ components:
         invitedBy:
           type: string
           format: uuid
+        delegatedAuthorities:
+          type: array
+          uniqueItems: true
+          description: >-
+            Permissions the owners of the group (current and future) hold over the member once the
+            invitation is accepted.
+          items:
+            $ref: '#/components/schemas/DelegatedAuthority'
 
     # === TrainingGroups ===========================================================================
 

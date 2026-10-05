@@ -8,6 +8,8 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {GroupsPage} from './GroupsPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
+import {useHalForm} from '../../contexts/halFormContext';
+import {groupFormFieldsFactory} from '../../components/groups/groupFormFieldsFactory';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -158,6 +160,29 @@ describe('GroupsPage', () => {
         expect(screen.getByRole('button', {name: /vytvořit skupinu/i})).toBeInTheDocument();
     });
 
+    it('opens the create dialog with the field factory that renders delegated permissions as checkboxes', () => {
+        const displayHalForm = vi.fn();
+        vi.mocked(useHalForm).mockReturnValue({
+            displayHalForm,
+            currentFormRequest: null,
+            closeForm: vi.fn(),
+        } as unknown as ReturnType<typeof useHalForm>);
+        const resourceData: HalResponse = {
+            _links: {self: {href: '/api/groups'}},
+            _templates: {
+                createGroup: mockHalFormsTemplate({title: 'Vytvořit skupinu', method: 'POST'}),
+            },
+        };
+        renderPage(createMockPageData(resourceData));
+
+        fireEvent.click(screen.getByRole('button', {name: /vytvořit skupinu/i}));
+
+        expect(displayHalForm).toHaveBeenCalledWith(expect.objectContaining({
+            templateName: 'createGroup',
+            fieldsFactory: groupFormFieldsFactory,
+        }));
+    });
+
     it('does not render create button when createGroup template is absent', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/groups'}},
@@ -185,6 +210,18 @@ describe('GroupsPage', () => {
         it('shows group name for each pending invitation', () => {
             renderPageWithInvitations([buildPendingInvitation({groupName: 'Závoďáci'})]);
             expect(screen.getByText('Závoďáci')).toBeInTheDocument();
+        });
+
+        it('tells the invitee which permissions current and future owners get by accepting', () => {
+            renderPageWithInvitations([buildPendingInvitation({delegatedAuthorities: ['MEMBERS:EDIT_PROFILE']})]);
+            expect(screen.getByText(
+                'Přijetím pozvánky získají vlastníci skupiny (současní i budoucí) nad vámi oprávnění: Úprava údajů člena'
+            )).toBeInTheDocument();
+        });
+
+        it('tells the invitee that owners gain nothing when the group delegates no permission', () => {
+            renderPageWithInvitations([buildPendingInvitation({delegatedAuthorities: []})]);
+            expect(screen.getByText('Přijetím pozvánky nezískají vlastníci skupiny nad vámi žádná oprávnění.')).toBeInTheDocument();
         });
 
         it('shows "Přijmout" button for each pending invitation', () => {
