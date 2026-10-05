@@ -6,6 +6,7 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.MemberRepository;
+import com.klabis.members.domain.PersonalInformation;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -27,8 +28,8 @@ class SelfProfileRelationshipSource implements RelationshipSource {
 
     @Override
     public Map<Authority, Set<TargetRef>> grantsOf(UserId userId) {
-        return memberRepository.findById(MemberId.fromUserId(userId))
-                .filter(member -> !member.getPersonalInformation().isMinor())
+        return memberRepository.findDateOfBirth(MemberId.fromUserId(userId))
+                .filter(dateOfBirth -> !PersonalInformation.isMinor(dateOfBirth))
                 .map(member -> Map.of(Authority.MEMBERS_EDIT_PROFILE, Set.of(TargetRef.member(userId.uuid()))))
                 .orElseGet(Map::of);
     }

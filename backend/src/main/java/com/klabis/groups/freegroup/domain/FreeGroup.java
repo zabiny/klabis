@@ -16,11 +16,17 @@ import org.springframework.util.Assert;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @AggregateRoot
 public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> implements WithInvitations {
 
     public static final String TYPE_DISCRIMINATOR = "FREE";
+
+    private static final Set<Authority> DELEGATABLE_AUTHORITIES = Collections.unmodifiableSet(
+            Authority.delegatable().stream()
+                    .filter(authority -> authority.getTargetType() == TargetType.MEMBER)
+                    .collect(Collectors.toCollection(() -> EnumSet.noneOf(Authority.class))));
 
     @Identity
     private final FreeGroupId id;
@@ -36,7 +42,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         Assert.notNull(delegatedAuthorities, "Delegated authorities are required");
         // Guards the aggregate itself, so a client bypassing the create form cannot delegate an administrator authority.
         delegatedAuthorities.stream()
-                .filter(authority -> !delegatableAuthorities().contains(authority))
+                .filter(authority -> !DELEGATABLE_AUTHORITIES.contains(authority))
                 .findFirst()
                 .ifPresent(authority -> {
                     throw new InvalidDelegatedAuthorityException(authority);
@@ -52,13 +58,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
      * The authorities a founder may choose to delegate: those that can be held over specific members.
      */
     public static Set<Authority> delegatableAuthorities() {
-        EnumSet<Authority> delegatable = EnumSet.noneOf(Authority.class);
-        for (Authority authority : Authority.delegatable()) {
-            if (authority.getTargetType() == TargetType.MEMBER) {
-                delegatable.add(authority);
-            }
-        }
-        return Collections.unmodifiableSet(delegatable);
+        return DELEGATABLE_AUTHORITIES;
     }
 
     @RecordBuilder
@@ -68,10 +68,6 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
             Assert.notNull(creator, "Creator is required");
             Assert.notNull(delegatedAuthorities, "Delegated authorities are required");
             delegatedAuthorities = Set.copyOf(delegatedAuthorities);
-        }
-
-        public CreateFreeGroup(String name, MemberId creator) {
-            this(name, creator, Set.of());
         }
     }
 
@@ -87,12 +83,6 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         FreeGroup group = new FreeGroup(id, name, owners, members, invitations, delegatedAuthorities);
         group.updateAuditMetadata(auditMetadata);
         return group;
-    }
-
-    public static FreeGroup reconstruct(FreeGroupId id, String name, Set<MemberId> owners,
-                                        Set<GroupMembership<MemberId>> members, Set<Invitation> invitations,
-                                        AuditMetadata auditMetadata) {
-        return reconstruct(id, name, owners, members, invitations, Set.of(), auditMetadata);
     }
 
     /**

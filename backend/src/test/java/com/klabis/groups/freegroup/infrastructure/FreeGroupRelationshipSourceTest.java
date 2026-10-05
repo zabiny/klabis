@@ -235,6 +235,7 @@ class FreeGroupRelationshipSourceTest {
         @Override
         public List<FreeGroup> findAll(FreeGroupFilter filter) {
             return stored.stream()
+                    .filter(group -> filter.ownerIs() == null || group.isOwner(filter.ownerIs()))
                     .filter(group -> filter.ownerOrMemberIs() == null
                                      || group.isOwner(filter.ownerOrMemberIs())
                                      || group.hasMember(filter.ownerOrMemberIs()))

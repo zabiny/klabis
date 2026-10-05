@@ -7,6 +7,7 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -64,6 +65,9 @@ interface MemberJdbcRepository extends CrudRepository<MemberMemento, UUID>, Pagi
      */
     @Query("SELECT COUNT(*) FROM members.members WHERE EXTRACT(YEAR FROM date_of_birth) = :birthYear")
     int countByBirthYear(@Param("birthYear") int birthYear);
+
+    @Query("SELECT date_of_birth FROM members.members WHERE id = :id")
+    Optional<LocalDate> findDateOfBirthById(@Param("id") UUID id);
 
     List<MemberMemento> findAllByActiveTrueOrderByLastNameAscFirstNameAsc();
 

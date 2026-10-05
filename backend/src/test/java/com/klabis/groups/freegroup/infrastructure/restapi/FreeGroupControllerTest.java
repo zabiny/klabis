@@ -51,7 +51,7 @@ class FreeGroupControllerTest {
     private FreeGroup buildGroup(UUID groupUuid, String name, String ownerUuidStr) {
         MemberId owner = new MemberId(UUID.fromString(ownerUuidStr));
         return FreeGroup.reconstruct(
-                new FreeGroupId(groupUuid), name, Set.of(owner), Set.of(), Set.of(), null);
+                new FreeGroupId(groupUuid), name, Set.of(owner), Set.of(), Set.of(), Set.of(), null);
     }
 
     private FreeGroup buildGroupWithMember(UUID groupUuid, String name, String ownerUuidStr, String memberUuidStr) {
@@ -59,7 +59,7 @@ class FreeGroupControllerTest {
         MemberId member = new MemberId(UUID.fromString(memberUuidStr));
         GroupMembership membership = GroupMembership.of(member);
         return FreeGroup.reconstruct(
-                new FreeGroupId(groupUuid), name, Set.of(owner), Set.of(membership), Set.of(), null);
+                new FreeGroupId(groupUuid), name, Set.of(owner), Set.of(membership), Set.of(), Set.of(), null);
     }
 
     @Nested
@@ -406,7 +406,7 @@ class FreeGroupControllerTest {
             MemberId owner = new MemberId(UUID.fromString(MEMBER_ID));
             MemberId member = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
             FreeGroup group = FreeGroup.reconstruct(GROUP_ID, "Sprint Team", Set.of(owner),
-                    Set.of(GroupMembership.of(member)), Set.of(), null);
+                    Set.of(GroupMembership.of(member)), Set.of(), Set.of(), null);
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
 
             mockMvc.perform(
@@ -425,7 +425,7 @@ class FreeGroupControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID)
         void shouldReturnNoMembersForFreshlyCreatedGroup() throws Exception {
             MemberId creator = new MemberId(UUID.fromString(MEMBER_ID));
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Sprint Team", creator));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Sprint Team", creator, Set.of()));
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
 
             mockMvc.perform(
@@ -586,7 +586,7 @@ class FreeGroupControllerTest {
             com.klabis.groups.freegroup.domain.Invitation invitation = com.klabis.groups.freegroup.domain.Invitation.reconstruct(
                     INVITATION_ID, invitee, owner, InvitationStatus.PENDING, Instant.now(), null, null, null);
             FreeGroup group = FreeGroup.reconstruct(
-                    GROUP_ID, "Sprint Team", Set.of(owner), Set.of(), Set.of(invitation), null);
+                    GROUP_ID, "Sprint Team", Set.of(owner), Set.of(), Set.of(invitation), Set.of(), null);
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
 
             mockMvc.perform(
@@ -605,7 +605,7 @@ class FreeGroupControllerTest {
             MemberId nonOwner = new MemberId(UUID.fromString(OTHER_MEMBER_ID));
             GroupMembership membership = GroupMembership.of(nonOwner);
             FreeGroup group = FreeGroup.reconstruct(
-                    GROUP_ID, "Sprint Team", Set.of(owner), Set.of(membership), Set.of(), null);
+                    GROUP_ID, "Sprint Team", Set.of(owner), Set.of(membership), Set.of(), Set.of(), null);
             when(membersGroupManagementService.getGroup(any(FreeGroupId.class))).thenReturn(group);
 
             mockMvc.perform(

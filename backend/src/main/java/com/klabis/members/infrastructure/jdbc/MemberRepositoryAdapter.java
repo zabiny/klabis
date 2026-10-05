@@ -17,6 +17,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -51,6 +52,11 @@ class MemberRepositoryAdapter implements MemberRepository {
     @Override
     public int countByBirthYear(int birthYear) {
         return jdbcRepository.countByBirthYear(birthYear);
+    }
+
+    @Override
+    public Optional<LocalDate> findDateOfBirth(MemberId id) {
+        return jdbcRepository.findDateOfBirthById(id.uuid());
     }
 
     @Override

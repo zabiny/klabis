@@ -35,7 +35,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should create group with name and creator as its only owner")
         void shouldCreateGroupWithNameAndCreator() {
-            FreeGroup.CreateFreeGroup command = new FreeGroup.CreateFreeGroup("Orienteering Friends", CREATOR);
+            FreeGroup.CreateFreeGroup command = new FreeGroup.CreateFreeGroup("Orienteering Friends", CREATOR, Set.of());
 
             FreeGroup group = FreeGroup.create(command);
 
@@ -50,7 +50,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should generate unique IDs for different groups")
         void shouldGenerateUniqueIds() {
-            FreeGroup.CreateFreeGroup command = new FreeGroup.CreateFreeGroup("Group A", CREATOR);
+            FreeGroup.CreateFreeGroup command = new FreeGroup.CreateFreeGroup("Group A", CREATOR, Set.of());
 
             FreeGroup group1 = FreeGroup.create(command);
             FreeGroup group2 = FreeGroup.create(command);
@@ -61,21 +61,21 @@ class FreeGroupTest {
         @Test
         @DisplayName("should reject blank group name")
         void shouldRejectBlankName() {
-            assertThatThrownBy(() -> new FreeGroup.CreateFreeGroup("", CREATOR))
+            assertThatThrownBy(() -> new FreeGroup.CreateFreeGroup("", CREATOR, Set.of()))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("should reject null creator")
         void shouldRejectNullCreator() {
-            assertThatThrownBy(() -> new FreeGroup.CreateFreeGroup("Valid Name", null))
+            assertThatThrownBy(() -> new FreeGroup.CreateFreeGroup("Valid Name", null, Set.of()))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         @DisplayName("should delegate nothing when created without delegated authorities")
         void shouldDelegateNothingByDefault() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("No Delegation", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("No Delegation", CREATOR, Set.of()));
 
             assertThat(group.delegatedAuthorities()).isEmpty();
         }
@@ -189,7 +189,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should rename group")
         void shouldRenameGroup() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Old Name", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Old Name", CREATOR, Set.of()));
 
             group.rename("New Name", CREATOR);
 
@@ -199,7 +199,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should reject blank new name")
         void shouldRejectBlankName() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Old Name", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Old Name", CREATOR, Set.of()));
 
             assertThatThrownBy(() -> group.rename("", CREATOR))
                     .isInstanceOf(IllegalArgumentException.class);
@@ -208,7 +208,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw GroupOwnershipRequiredException when non-owner renames")
         void shouldThrowWhenNonOwnerRenames() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Old Name", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Old Name", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
             assertThatThrownBy(() -> group.rename("New Name", OTHER_MEMBER))
@@ -223,7 +223,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw DirectMemberAdditionNotAllowedException — FreeGroup requires invitation flow")
         void shouldThrowDirectMemberAdditionNotAllowedException() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
             assertThatThrownBy(() -> group.addMember(OTHER_MEMBER))
                     .isInstanceOf(DirectMemberAdditionNotAllowedException.class);
@@ -237,7 +237,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should remove non-owner member from group")
         void shouldRemoveNonOwnerMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
             group.removeMember(OTHER_MEMBER, CREATOR);
@@ -249,7 +249,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw when removing owner from group")
         void shouldThrowWhenRemovingOwner() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
             assertThatThrownBy(() -> group.removeMember(CREATOR, CREATOR))
                     .isInstanceOf(BusinessRuleViolationException.class);
@@ -258,7 +258,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw when removing member not in group")
         void shouldThrowWhenRemovingMemberNotInGroup() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
             assertThatThrownBy(() -> group.removeMember(OTHER_MEMBER, CREATOR))
                     .isInstanceOf(BusinessRuleViolationException.class);
@@ -267,7 +267,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw GroupOwnershipRequiredException when non-owner removes member")
         void shouldThrowWhenNonOwnerRemovesMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
             addMemberViaInvitation(group, ANOTHER_MEMBER);
 
@@ -278,7 +278,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should let a member remove themselves to leave the group")
         void shouldLetMemberLeaveThemselves() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
             addMemberViaInvitation(group, ANOTHER_MEMBER);
 
@@ -292,7 +292,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw MemberNotInGroupException when the caller was never a member")
         void shouldRejectLeavingWhenNotAMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
             assertThatThrownBy(() -> group.removeMember(ANOTHER_MEMBER, ANOTHER_MEMBER))
@@ -303,7 +303,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should not let an owner use the leave path — owners leave via removeOwner")
         void shouldNotLetOwnerUseLeavePath() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
             assertThatThrownBy(() -> group.removeMember(CREATOR, CREATOR))
@@ -314,7 +314,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should allow re-inviting a member who left the group")
         void shouldAllowReInviteAfterLeaving() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
             group.removeMember(OTHER_MEMBER, OTHER_MEMBER);
 
@@ -329,7 +329,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should allow removing one of multiple non-owner members")
         void shouldRemoveOneOfMultipleMembers() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
             addMemberViaInvitation(group, ANOTHER_MEMBER);
 
@@ -348,7 +348,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw CannotPromoteNonMemberToOwnerException when promoting a non-member to owner")
         void shouldThrowWhenPromotingNonMemberToOwner() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             int memberCountBefore = group.getMembers().size();
 
             assertThatThrownBy(() -> group.addOwner(OTHER_MEMBER, CREATOR))
@@ -359,7 +359,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw GroupOwnershipRequiredException when non-owner promotes a member")
         void shouldThrowWhenNonOwnerPromotesMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
             addMemberViaInvitation(group, ANOTHER_MEMBER);
 
@@ -370,7 +370,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should move the promoted member out of the member list")
         void shouldMovePromotedMemberOutOfMembers() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
             group.addOwner(OTHER_MEMBER, CREATOR);
@@ -383,7 +383,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should remove owner from the group entirely")
         void shouldRemoveOwner() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
             group.addOwner(OTHER_MEMBER, CREATOR);
 
@@ -396,7 +396,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw GroupOwnershipRequiredException when non-owner removes an owner")
         void shouldThrowWhenNonOwnerRemovesOwner() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
             assertThatThrownBy(() -> group.removeOwner(CREATOR, OTHER_MEMBER))
@@ -406,7 +406,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw CannotRemoveLastOwnerException when removing last owner")
         void shouldThrowWhenRemovingLastOwner() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
             assertThatThrownBy(() -> group.removeOwner(CREATOR, CREATOR))
                     .isInstanceOf(CannotRemoveLastOwnerException.class);
@@ -415,7 +415,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("isLastOwner should return true for sole owner")
         void shouldReturnTrueForLastOwner() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
             assertThat(group.isLastOwner(CREATOR)).isTrue();
         }
@@ -423,7 +423,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("isLastOwner should return false when multiple owners exist")
         void shouldReturnFalseWhenMultipleOwners() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
             group.addOwner(OTHER_MEMBER, CREATOR);
 
@@ -438,7 +438,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should create pending invitation when inviting a member")
         void shouldCreatePendingInvitationForMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
             group.invite(CREATOR, OTHER_MEMBER);
 
@@ -452,7 +452,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw when inviting an existing member")
         void shouldThrowWhenInvitingExistingMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
             assertThatThrownBy(() -> group.invite(CREATOR, OTHER_MEMBER))
@@ -463,7 +463,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw when inviting an owner")
         void shouldThrowWhenInvitingOwner() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
             assertThatThrownBy(() -> group.invite(CREATOR, CREATOR))
                     .isInstanceOf(CannotInviteExistingMemberException.class);
@@ -472,7 +472,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw when inviting a member who already has a pending invitation")
         void shouldThrowWhenDuplicatePendingInvitation() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
 
             assertThatThrownBy(() -> group.invite(CREATOR, OTHER_MEMBER))
@@ -482,7 +482,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should allow re-inviting a member whose previous invitation was rejected")
         void shouldAllowReInviteAfterRejection() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId firstInvitationId = group.getPendingInvitations().get(0).getId();
             group.rejectInvitation(firstInvitationId);
@@ -502,7 +502,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should add member to group and mark invitation as accepted")
         void shouldAcceptInvitationAndAddMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
@@ -519,7 +519,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw when accepting a non-existent invitation")
         void shouldThrowWhenInvitationNotFound() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             InvitationId unknownId = InvitationId.newId();
 
             assertThatThrownBy(() -> group.acceptInvitation(unknownId))
@@ -535,7 +535,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should add member to group when the correct invited member accepts")
         void shouldAddMemberWhenInvitedMemberAccepts() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
@@ -548,7 +548,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw NotInvitedMemberException when a different member tries to accept")
         void shouldThrowWhenNonInvitedMemberAccepts() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
@@ -564,7 +564,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should mark invitation as rejected and not add member to group")
         void shouldRejectInvitationWithoutAddingMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
@@ -581,7 +581,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw when rejecting a non-existent invitation")
         void shouldThrowWhenInvitationNotFound() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             InvitationId unknownId = InvitationId.newId();
 
             assertThatThrownBy(() -> group.rejectInvitation(unknownId))
@@ -597,7 +597,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should reject invitation when the correct invited member rejects")
         void shouldRejectInvitationWhenInvitedMemberRejects() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
@@ -610,7 +610,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw NotInvitedMemberException when a different member tries to reject")
         void shouldThrowWhenNonInvitedMemberRejects() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
@@ -626,7 +626,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should return only pending invitations, excluding accepted and rejected")
         void shouldReturnOnlyPendingInvitations() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             group.invite(CREATOR, ANOTHER_MEMBER);
             InvitationId pendingId = group.getPendingInvitations().stream()
@@ -648,7 +648,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should return true when invitation belongs to the given member")
         void shouldReturnTrueForCorrectMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
@@ -658,7 +658,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should return false when invitation belongs to a different member")
         void shouldReturnFalseForWrongMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
@@ -668,7 +668,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should return false for an unknown invitation ID")
         void shouldReturnFalseForUnknownInvitationId() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
 
             assertThat(group.isInvitedMember(OTHER_MEMBER, InvitationId.newId())).isFalse();
@@ -682,7 +682,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should return true for owner")
         void shouldReturnTrueForOwner() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
             assertThat(group.isOwner(CREATOR)).isTrue();
         }
@@ -690,7 +690,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should return false for non-owner")
         void shouldReturnFalseForNonOwner() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
             assertThat(group.isOwner(OTHER_MEMBER)).isFalse();
@@ -699,7 +699,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should return true for member added via invitation")
         void shouldReturnTrueForMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
 
             assertThat(group.hasMember(OTHER_MEMBER)).isTrue();
@@ -708,7 +708,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should return false for non-member")
         void shouldReturnFalseForNonMember() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
 
             assertThat(group.hasMember(OTHER_MEMBER)).isFalse();
         }
@@ -721,7 +721,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should cancel pending invitation with reason and populate audit fields")
         void shouldCancelPendingInvitationWithReason() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
@@ -740,7 +740,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should cancel pending invitation without reason — reason stays null")
         void shouldCancelPendingInvitationWithoutReason() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
 
@@ -758,7 +758,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw GroupOwnershipRequiredException when former owner attempts to cancel")
         void shouldThrowWhenFormerOwnerAttemptsToCancel() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
             group.addOwner(OTHER_MEMBER, CREATOR);
             group.invite(CREATOR, ANOTHER_MEMBER);
@@ -777,7 +777,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw GroupOwnershipRequiredException when non-owner member attempts to cancel")
         void shouldThrowWhenNonOwnerMemberAttemptsToCancel() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
             group.invite(CREATOR, ANOTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
@@ -789,7 +789,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw InvitationNotCancellableException when cancelling an ACCEPTED invitation")
         void shouldThrowWhenCancellingAcceptedInvitation() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
             group.acceptInvitation(invitationId);
@@ -801,7 +801,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw InvitationNotCancellableException when cancelling a REJECTED invitation")
         void shouldThrowWhenCancellingRejectedInvitation() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
             group.rejectInvitation(invitationId);
@@ -813,7 +813,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should throw InvitationNotCancellableException when cancelling an already CANCELLED invitation")
         void shouldThrowWhenCancellingAlreadyCancelledInvitation() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId invitationId = group.getPendingInvitations().get(0).getId();
             group.cancelInvitation(invitationId, Optional.of(CREATOR), null);
@@ -825,7 +825,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should allow re-inviting a member after their previous invitation was cancelled")
         void shouldAllowReInviteAfterCancellation() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             group.invite(CREATOR, OTHER_MEMBER);
             InvitationId firstId = group.getPendingInvitations().get(0).getId();
             group.cancelInvitation(firstId, Optional.of(CREATOR), null);
@@ -845,7 +845,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should emit FreeGroupInvitationCancelledEvent with recipientOwnerIds excluding the actor")
         void shouldEmitEventExcludingActor() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
             group.addOwner(OTHER_MEMBER, CREATOR);
             group.invite(CREATOR, ANOTHER_MEMBER);
@@ -868,7 +868,7 @@ class FreeGroupTest {
         @Test
         @DisplayName("should emit FreeGroupInvitationCancelledEvent with all owners as recipients for SYSTEM actor")
         void shouldEmitEventWithAllOwnersForSystemActor() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR));
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
             addMemberViaInvitation(group, OTHER_MEMBER);
             group.addOwner(OTHER_MEMBER, CREATOR);
             group.invite(CREATOR, ANOTHER_MEMBER);

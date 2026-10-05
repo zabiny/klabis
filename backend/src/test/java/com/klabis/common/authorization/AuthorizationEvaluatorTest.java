@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("AuthorizationEvaluator")
 class AuthorizationEvaluatorTest {
@@ -262,11 +263,19 @@ class AuthorizationEvaluatorTest {
     class CanReadFieldByProperty {
 
         @Test
-        void shouldBeAllowedForUnsecuredOrUnknownProperty() {
+        void shouldBeAllowedForUnsecuredProperty() {
             var evaluator = evaluatorOver(AuthorizationSnapshot.empty());
 
             assertThat(evaluator.canReadField(Payload.class, "open", child)).isTrue();
-            assertThat(evaluator.canReadField(Payload.class, "missing", child)).isTrue();
+        }
+
+        @Test
+        void shouldRejectUnknownPropertyInsteadOfReportingItVisible() {
+            var evaluator = evaluatorOver(overAll(Authority.MEMBERS_MANAGE));
+
+            assertThatThrownBy(() -> evaluator.canReadField(Payload.class, "missing", child))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("missing");
         }
 
         @Test
