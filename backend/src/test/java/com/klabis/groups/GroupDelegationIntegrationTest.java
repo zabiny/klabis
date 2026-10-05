@@ -265,7 +265,7 @@ class GroupDelegationIntegrationTest {
     @Test
     @DisplayName("a trainer without MEMBERS:MANAGE gets no edit action on a trainee and cannot change their data")
     void trainerCannotEditTrainee() throws Exception {
-        TrainingGroup group = trainingGroupPort.createTrainingGroup(
+        trainingGroupPort.createTrainingGroup(
                 new TrainingGroup.CreateTrainingGroup("Dospělí", owner.id(), new AgeRange(18, 99)));
         // Creating the group enrols every member whose age fits, so no explicit addition is needed.
         assertThat(trainingGroupPort.findTrainingGroupOfMember(member.id())).isPresent();
