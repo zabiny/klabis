@@ -91,7 +91,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
      */
     @Override
     public Set<Authority> delegatedAuthorities() {
-        return delegatedAuthorities;
+        return Set.copyOf(delegatedAuthorities);
     }
 
     @Override
