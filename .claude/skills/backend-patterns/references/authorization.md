@@ -61,6 +61,7 @@ Every decision goes through `com.klabis.common.authorization.AuthorizationEvalua
 |---|---|
 | `canInvoke(method, targetClass, args)` | `HasAuthorityMethodInterceptor`, `HalFormsSupport` (`klabisAfford*`, `klabisLinkTo`) |
 | `canReadField(accessor, record)` | `SecuredBeanPropertyWriter` (response fields) |
+| `canReadField(recordType, property, target)` | application code that must decide before the response record exists (e.g. `MemberController` for the birth-number audit) — same rule as the serialized field; a property without security annotations is not restricted |
 | `canWriteField(accessor, target)` | `RequestBodyFieldAuthorizationAdvice` |
 | `requestFieldAccess(payloadType, property, target)` → `FieldAccess` (`WRITE` / `READ` / `NONE`) | HAL-FORMS property visibility / `readOnly` (`HalFormsSupport`) |
 | `describeRequirement(method, class)` / `describeRequirement(accessor)` | the "Required: …" text of every denial — never compose it from annotations in the caller |
@@ -95,8 +96,7 @@ them by hand on generated code or on a controller override.
 
 ```java
 // generated MembersApi — not hand-written
-@HasAuthority({ Authority.MEMBERS_MANAGE })
-@OwnerVisible
+@HasAuthority({ Authority.MEMBERS_MANAGE, Authority.MEMBERS_EDIT_PROFILE })
 ResponseEntity<Void> updateMember(@TargetId(TargetType.MEMBER) @PathVariable("id") UUID id,
                                   @RequestBody UpdateMemberRequest request);
 ```
@@ -142,11 +142,11 @@ boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id));
    repository (ADR-001 — never another module's repository):
 
    ```java
-   @Component   // illustrative — no source exists yet; the first one arrives with rebac-3
-   class GuardianRelationshipSource implements RelationshipSource {
+   @Component
+   class FreeGroupRelationshipSource implements RelationshipSource {
        @Override
        public Map<Authority, Set<TargetRef>> grantsOf(UserId userId) {
-           // one query returning every grant of the user
+           // one query for "groups the user owns"; for each: group.delegatedAuthorities() -> its members
        }
    }
    ```
@@ -157,6 +157,20 @@ boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id));
    authority — `validate.mjs` requires exactly one, with the authority's `targetType`.
 4. Response/request records whose fields the authority guards need the target component marked
    `x-klabis-target-id` too.
+
+Existing sources (all grant `Authority.MEMBERS_EDIT_PROFILE`, `SPECIFIC`, target `MEMBER`; `MEMBERS_MANAGE` does
+not imply it, so rules list both):
+
+| Source | Module | Grants |
+|---|---|---|
+| `SelfProfileRelationshipSource` | `members.infrastructure` | over own `MemberId` when the member is an adult today (replaces `OwnProfileEditRule`) |
+| `LegalGuardianGroupRelationshipSource` | `members.legalguardiangroup.infrastructure` | for each group where the user is a guardian: the group's `delegatedAuthorities()` over each minor member (age not checked; the minor leaves the group in the daily run after turning 18) |
+| `FreeGroupRelationshipSource` | `groups.freegroup.infrastructure` | for each free group the user owns: its `delegatedAuthorities()` over each member (not over co-owners; follows membership) |
+
+Delegation is modelled by `MemberGroup.delegatedAuthorities()`: `LegalGuardianGroup` = `{MEMBERS_EDIT_PROFILE}`,
+`TrainingGroup` = `∅` (no source — delegating nothing is the absence of a source), `FreeGroup` = the set chosen at
+creation (immutable; the aggregate rejects authorities without `SPECIFIC` or with a non-`MEMBER` target with
+`InvalidDelegatedAuthorityException`). Grants of all sources are unioned.
 
 ## Testing
 
@@ -174,6 +188,7 @@ boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id));
 
 ## Reference implementation
 
+- Sources: `SelfProfileRelationshipSource`, `LegalGuardianGroupRelationshipSource`, `FreeGroupRelationshipSource`
 - Model: `common.authorization` — `AuthorizationSnapshot`, `AuthorizationSnapshotLoader`, `AuthorizationSnapshotProvider`,
   `AuthorizationEvaluator`, `RelationshipSource`, `TargetRef`, `TargetType`, `GrantForm`, `TargetId`
 - Authorities: `common.users.Authority`, `common.users.HasAuthority`

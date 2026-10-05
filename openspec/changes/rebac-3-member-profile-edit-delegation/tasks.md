@@ -33,6 +33,6 @@ Prerequisites: `rebac-1-groups-owners-not-members` and `rebac-2-target-authoriza
 
 ## 5. Documentation and integration
 
-- [ ] 5.1 Update `docs/openapi/spec/README.md` examples if needed and the developer manual section on relationship sources (via `developer-manual-maintainer`); verify they mention the three sources
+- [x] 5.1 Update `docs/openapi/spec/README.md` examples if needed and the developer manual section on relationship sources (via `developer-manual-maintainer`); verify they mention the three sources
 - [ ] 5.2 Run full backend and frontend test suites; verify all green
 - [ ] 5.3 E2E on http://localhost:3000: guardian edits child's phone; minor sees own data without edit; admin removes guardian → guardian loses edit after reload; founder creates a free group with delegation, invitee sees the notice, accepts, owner edits the member, member leaves, owner loses edit

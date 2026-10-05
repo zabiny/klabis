@@ -231,7 +231,8 @@ public record TargetRef(TargetType type, UUID id) { ... }</code></pre>
     <dd>Sjednocení grantů všech <code>RelationshipSource</code> beanů. Přijmou se jen autority
         s <code>SPECIFIC</code> a odpovídajícím <code>targetType</code> — zdroj nemůže rozdat
         administrátorskou autoritu. Implementace patří do <code>infrastructure</code> vlastnícího
-        modulu a čte jen jeho repository (ADR-001). Zatím žádná neexistuje.</dd>
+        modulu a čte jen jeho repository (ADR-001). Existují tři zdroje, viz
+        <a href="#relationship-sources">Relationship sources</a>.</dd>
 
     <dt>AuthorizationSnapshotLoader</dt>
     <dd>Načte snapshot uživatele (<code>PermissionService</code> + všechny <code>RelationshipSource</code>,
@@ -253,6 +254,7 @@ public record TargetRef(TargetType type, UUID id) { ... }</code></pre>
     <tbody>
         <tr><td><code>canInvoke(method, targetClass, args)</code></td><td><code>HasAuthorityMethodInterceptor</code>, <code>HalFormsSupport</code> (affordance, <code>klabisLinkTo</code>)</td></tr>
         <tr><td><code>canReadField(accessor, record)</code></td><td><code>SecuredBeanPropertyWriter</code> (pole response)</td></tr>
+        <tr><td><code>canReadField(recordType, property, target)</code></td><td>aplikační kód, který musí rozhodnout dřív, než response record vznikne — stejné pravidlo jako při serializaci pole (např. <code>MemberController</code> pro audit zobrazení <code>birthNumber</code>); pole bez anotací není omezené</td></tr>
         <tr><td><code>canWriteField(accessor, target)</code></td><td><code>RequestBodyFieldAuthorizationAdvice</code></td></tr>
         <tr><td><code>requestFieldAccess(payloadType, property, target)</code> → <code>FieldAccess</code> (<code>WRITE</code> / <code>READ</code> / <code>NONE</code>)</td><td>HAL-FORMS <code>readOnly</code> / skrytí property (<code>HalFormsSupport</code>)</td></tr>
         <tr><td><code>describeRequirement(method, class)</code>, <code>describeRequirement(accessor)</code></td><td>text „Required: …“ každého zamítnutí — volající ho neskládají z anotací sami</td></tr>
@@ -278,6 +280,45 @@ public record TargetRef(TargetType type, UUID id) { ... }</code></pre>
     <code>authorizationEvaluator.has(Authority.MEMBERS_MANAGE, TargetRef.member(id))</code>.
 </aside>
 
+<h3 id="relationship-sources">Relationship sources</h3>
+
+<p>
+    Cílové granty (<code>overTargets</code>) vznikají výhradně z <code>RelationshipSource</code> beanů.
+    Každý zdroj vrací všechny granty uživatele jedním dotazem; „kdo drží jaké oprávnění nad kým“ tak
+    vyplývá ze vztahů v doméně, ne z řádků v <code>user_permissions</code>. Dnes existují tři zdroje,
+    všechny udělují <code>Authority.MEMBERS_EDIT_PROFILE</code> (<code>SPECIFIC</code>, <code>targetType = MEMBER</code>;
+    <code>MEMBERS_MANAGE</code> ji neimplikuje, pravidla proto uvádějí obě autority):
+</p>
+
+<table class="ref-table">
+    <thead><tr><th>Zdroj</th><th>Modul</th><th>Co uděluje</th></tr></thead>
+    <tbody>
+        <tr><td><code>SelfProfileRelationshipSource</code></td><td><code>members.infrastructure</code></td><td><code>MEMBERS_EDIT_PROFILE</code> nad vlastním <code>MemberId</code>, pokud je člen k dnešnímu dni dospělý (nahrazuje dřívější <code>OwnProfileEditRule</code>)</td></tr>
+        <tr><td><code>LegalGuardianGroupRelationshipSource</code></td><td><code>members.legalguardiangroup.infrastructure</code></td><td>pro každou skupinu, kde je uživatel (<code>UserId</code>) zákonným zástupcem: <code>group.delegatedAuthorities()</code> nad každým nezletilým členem skupiny; věk se nekontroluje, skupinu opouští nezletilý denním během po 18. narozeninách</td></tr>
+        <tr><td><code>FreeGroupRelationshipSource</code></td><td><code>groups.freegroup.infrastructure</code></td><td>pro každou volnou skupinu, kterou uživatel vlastní: delegovaná oprávnění skupiny (<code>FreeGroup.delegatedAuthorities</code>, volí se při vzniku a jsou neměnná) nad každým členem; ne nad spoluvlastníky, mizí s odchodem člena i vlastníka</td></tr>
+    </tbody>
+</table>
+
+<p>
+    Delegaci modeluje <code>MemberGroup.delegatedAuthorities()</code>: <code>LegalGuardianGroup</code> vrací
+    <code>{MEMBERS_EDIT_PROFILE}</code>, <code>TrainingGroup</code> prázdnou množinu (tréninková skupina
+    nedeleguje nic, a proto pro ni zdroj neexistuje), <code>FreeGroup</code> množinu zvolenou při vzniku.
+    Agregát odmítne autoritu bez <code>SPECIFIC</code> nebo s jiným <code>targetType</code>
+    (<code>InvalidDelegatedAuthorityException</code>), takže klient nemůže delegovat <code>MEMBERS_MANAGE</code>.
+</p>
+
+<pre class="signature"><code>@Component
+class FreeGroupRelationshipSource implements RelationshipSource {
+    public Map&lt;Authority, Set&lt;TargetRef&gt;&gt; grantsOf(UserId userId);
+    // pro skupiny, kde je userId vlastníkem: group.delegatedAuthorities() -&gt; členové skupiny
+}</code></pre>
+
+<p>
+    Granty více zdrojů se sjednocují. Aplikační kód nepočítá oprávnění sám, ptá se evaluatoru — např. <code>ManagementService</code> dostává „smí vidět pozastaveného člena“
+    a „birth number je viditelné“ z <code>AuthorizationEvaluator</code> (<code>canReadField(MemberDetailsResponse.class, "birthNumber", target)</code>),
+    takže audit nikdy nerozporuje to, co se serializuje.
+</p>
+
 <h2>Method-level autorizace: @HasAuthority a @TargetId</h2>
 
 <pre class="signature"><code>@Target({ElementType.TYPE, ElementType.METHOD})
@@ -298,8 +339,7 @@ public @interface TargetId {      // com.klabis.common.authorization
 
 <pre class="signature"><code>public interface MembersApi {
 
-    @HasAuthority({ Authority.MEMBERS_MANAGE })
-    @OwnerVisible
+    @HasAuthority({ Authority.MEMBERS_MANAGE, Authority.MEMBERS_EDIT_PROFILE })
     ResponseEntity&lt;Void&gt; updateMember(
             @TargetId(TargetType.MEMBER) @PathVariable("id") UUID id,
             @RequestBody UpdateMemberRequest request);
