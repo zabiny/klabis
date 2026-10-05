@@ -141,6 +141,7 @@ class FreeGroupRepositoryAdapter implements FreeGroupRepository {
 
     private GroupMemento fromDomain(FreeGroup group) {
         return GroupMemento.from(group, group.getId().value(), FreeGroup.TYPE_DISCRIMINATOR, MemberId::value)
+                .withDelegatedAuthorities(group.delegatedAuthorities())
                 .withInvitations(group.getInvitations().stream()
                         .map(inv -> new GroupInvitationMemento(
                                 inv.getId().value(),
@@ -168,6 +169,6 @@ class FreeGroupRepositoryAdapter implements FreeGroupRepository {
                 .collect(Collectors.toSet());
         return FreeGroup.reconstruct(new FreeGroupId(memento.getId()), memento.getName(),
                 memento.ownerIds(MemberId::new), memento.memberships(MemberId::new), invitations,
-                memento.auditMetadata());
+                memento.delegatedAuthorities(), memento.auditMetadata());
     }
 }

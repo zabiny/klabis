@@ -1,6 +1,7 @@
 package com.klabis.groups.freegroup.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
+import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.*;
 import com.klabis.members.MemberId;
@@ -90,6 +91,48 @@ class FreeGroupPersistenceTest {
 
             assertThat(saved.getAuditMetadata()).isNotNull();
             assertThat(saved.getCreatedAt()).isNotNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("save() with delegated authorities — round-trip")
+    class DelegatedAuthoritiesRoundTrip {
+
+        @Test
+        @DisplayName("should persist and retrieve delegated authorities")
+        void shouldPersistDelegatedAuthorities() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup(
+                    "Delegating", CREATOR, Set.of(Authority.MEMBERS_EDIT_PROFILE)));
+
+            freeGroupRepository.save(group);
+            FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
+
+            assertThat(retrieved.delegatedAuthorities()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
+        }
+
+        @Test
+        @DisplayName("should retrieve an empty set for a group that delegates nothing")
+        void shouldRetrieveEmptySet() {
+            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Plain", CREATOR));
+
+            freeGroupRepository.save(group);
+            FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
+
+            assertThat(retrieved.delegatedAuthorities()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should keep delegated authorities when the group is saved again")
+        void shouldKeepDelegatedAuthoritiesOnResave() {
+            FreeGroup group = freeGroupRepository.save(FreeGroup.create(new FreeGroup.CreateFreeGroup(
+                    "Delegating", CREATOR, Set.of(Authority.MEMBERS_EDIT_PROFILE))));
+            group.rename("Renamed", CREATOR);
+
+            freeGroupRepository.save(group);
+            FreeGroup retrieved = freeGroupRepository.findById(group.getId()).orElseThrow();
+
+            assertThat(retrieved.getName()).isEqualTo("Renamed");
+            assertThat(retrieved.delegatedAuthorities()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
         }
     }
 

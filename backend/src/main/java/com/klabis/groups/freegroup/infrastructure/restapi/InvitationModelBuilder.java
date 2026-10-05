@@ -35,6 +35,7 @@ class InvitationModelBuilder {
                 .groupName(groupName)
                 .invitationId(invitationUuid)
                 .invitedBy(invitedByUuid)
+                .delegatedAuthorities(DelegatedAuthorities.toWire(group.delegatedAuthorities()))
                 .build();
 
         EntityModel<PendingInvitationResponse> model = EntityModel.of(response);

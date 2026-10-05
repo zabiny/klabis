@@ -4,6 +4,7 @@ import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
+import com.klabis.common.users.Authority;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
@@ -55,7 +56,8 @@ class FreeGroupController implements GroupsApi {
 
     @Override
     public ResponseEntity<Void> createGroup(CreateGroupRequest request, @ActingMember MemberId actingMember) {
-        FreeGroup group = membersGroupManagementService.createGroup(request.name(), actingMember);
+        FreeGroup group = membersGroupManagementService.createGroup(request.name(), actingMember,
+                DelegatedAuthorities.toDomain(request.delegatedAuthorities()));
 
         return ResponseEntity.created(
                 linkTo(methodOn(GroupsApi.class).getGroup(group.getId().uuid(), null)).toUri()
@@ -190,6 +192,7 @@ class FreeGroupController implements GroupsApi {
         return GroupResponseBuilder.builder()
                 .id(group.getId().uuid())
                 .name(group.getName())
+                .delegatedAuthorities(DelegatedAuthorities.toWire(group.delegatedAuthorities()))
                 .owners(ownerModels)
                 .members(memberModels)
                 .pendingInvitations(pendingInvitationModels)
@@ -323,7 +326,10 @@ class GroupListPostprocessor
     public CollectionModel<EntityModel<GroupSummaryResponse>> process(
             CollectionModel<EntityModel<GroupSummaryResponse>> model) {
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (org.springframework.hateoas.Link) selfLink
-                .andAffordances(klabisAfford(methodOn(GroupsApi.class).createGroup(null, null))));
+                .andAffordances(klabisAffordWithOptions(methodOn(GroupsApi.class).createGroup(null, null),
+                        Map.of("delegatedAuthorities", HalFormsOptionsDef.values(FreeGroup.delegatableAuthorities().stream()
+                                .map(Authority::getValue)
+                                .toList())))));
         return model;
     }
 }

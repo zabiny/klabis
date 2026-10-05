@@ -5,6 +5,7 @@ export interface PendingInvitation {
     groupName: string;
     invitationId: string;
     invitedBy: string;
+    delegatedAuthorities?: string[];
     _links: {
         self?: HalResourceLinks;
         accept?: { href: string };

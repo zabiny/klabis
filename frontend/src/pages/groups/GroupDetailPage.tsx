@@ -14,6 +14,7 @@ import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {useAuth} from '../../contexts/authContext.ts';
 import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRegNumber.tsx';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
+import {DelegatedAuthoritiesNotice, DelegatedAuthoritiesReadOnly} from '../../components/groups/DelegatedAuthorities.tsx';
 import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
 
 interface GroupOwner {
@@ -116,7 +117,10 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
             </div>
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <h1 className="text-3xl font-bold text-text-primary">{resourceData.name}</h1>
+                <div className="flex flex-col gap-2">
+                    <h1 className="text-3xl font-bold text-text-primary">{resourceData.name}</h1>
+                    <DelegatedAuthoritiesNotice authorities={resourceData.delegatedAuthorities} audience="owners"/>
+                </div>
 
                 <div className="flex flex-wrap gap-3 sm:flex-shrink-0">
                     {editTemplate && !isEditingName && (
@@ -151,6 +155,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
 
             {isEditingName && editTemplate && (
                 <Card className="p-6">
+                    <DelegatedAuthoritiesReadOnly authorities={resourceData.delegatedAuthorities}/>
                     <HalFormDisplay
                         template={editTemplate}
                         templateName="updateGroup"
