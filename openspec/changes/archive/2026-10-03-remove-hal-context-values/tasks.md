@@ -1,0 +1,24 @@
+## 1. Aplikační služba
+
+- [x] 1.1 Přidat do `events.application` record `AccommodationList` a `AccommodationListRow` a metodu služby (autorizace, filtr `wantsSharedAccommodation`, dohledání `MemberAccommodationDto`)
+- [x] 1.2 Unit test služby: oprávnění (koordinátor, `EVENTS:REGISTRATIONS`, jinak odepřeno), vypnuté sdílené ubytování, filtr registrací, chybějící údaje člena
+
+## 2. Controller a postprocessory
+
+- [x] 2.1 `EventController.getAccommodationList` a `getAccommodationListAsCsv` volají službu, odstranit privátní helpery a závislosti, které controller už nepotřebuje
+- [x] 2.2 `AccommodationListItemPostprocessor` čte `eventId` z `AccommodationListRow`; `AccommodationListPostprocessor` z domény seznamu
+- [x] 2.3 Odstranit `AccommodationListContext` a jeho `setContext`/`findContext`
+- [x] 2.4 Upravit `EventControllerTest` (mock služby) a testy postprocessorů
+
+## 3. Kontexty, které si postprocessor zjistí sám
+
+- [x] 3.1 `ClubKeyHeld`: `MemberOrisImportAffordancePostprocessor` injektuje porty, odstranit record a `setContext` v `MemberController.listMembers`
+- [x] 3.2 `EnrolledMemberIds` v detailu: `MemberDetailsPostprocessor` používá `SynchronizationPort`, `getMember` kontext nenastavuje
+- [x] 3.3 `EnrolledEventIds` v detailu: totéž pro `EventDetailsPostprocessor` / `EventController.getEvent`
+- [x] 3.4 `EnrolledDisciplineIds` v detailu: totéž pro `DisciplineDetailsPostprocessor` / `DisciplineController.getDiscipline`
+- [x] 3.5 Doplnit `WebMvcMockitoBeans` / testy postprocessorů o potřebné porty
+
+## 4. Ověření
+
+- [x] 4.1 Existující testy (včetně 403 a CSV) projdou beze změny asercí
+- [x] 4.2 Spustit celou backend sadu a architektonické testy

@@ -915,10 +915,10 @@ paths:
         representation described below.
       security:
         - KlabisAuth: [EVENTS]
-      # No x-klabis-authority / x-klabis-owner-visible: authorization is enforced imperatively
-      # (EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority — event coordinator OR
-      # EVENTS:REGISTRATIONS), for the same reason as updateEvent above: "coordinator" cannot be
-      # named as a single owner parameter.
+      # No x-klabis-authority / x-klabis-owner-visible: authorization is enforced imperatively in
+      # EventController (EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority — event
+      # coordinator OR EVENTS:REGISTRATIONS, and the event must offer shared accommodation), for the
+      # same reason as updateEvent above: "coordinator" cannot be named as a single owner parameter.
       parameters:
         - $ref: '#/components/parameters/RegEventIdParam'
       responses:
