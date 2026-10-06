@@ -3,25 +3,19 @@ package com.klabis.events.infrastructure.restapi;
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
-import com.klabis.common.ui.HalFormsInlineOption;
-import com.klabis.common.ui.HalFormsOptionsDef;
-import com.klabis.common.ui.HalResponseContext;
-import com.klabis.common.ui.ModelWithDomainPostprocessor;
-import com.klabis.common.ui.RootModel;
-import com.klabis.common.users.Authority;
+import com.klabis.common.ui.*;
 import com.klabis.common.users.ActingUser;
+import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
-import com.klabis.events.application.AccommodationList;
-import com.klabis.events.application.AccommodationListPort;
-import com.klabis.events.application.EventManagementPort;
-import com.klabis.events.application.EventRegistrationPort;
-import com.klabis.events.application.MemberRegistrationSanctionPort;
-import com.klabis.events.application.OrisEventImportPort;
+import com.klabis.events.application.*;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.events.domain.EventRegistration;
-import com.klabis.members.*;
+import com.klabis.members.CurrentUserData;
+import com.klabis.members.MemberAccommodationDto;
+import com.klabis.members.MemberId;
+import com.klabis.members.Members;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
@@ -353,10 +347,11 @@ public class EventController implements EventsApi {
     @GetMapping(value = EventsApi.PATH_GET_ACCOMMODATION_LIST, produces = {MediaTypes.HAL_FORMS_JSON_VALUE, "application/problem+json"})
     @Override
     public ResponseEntity<List<AccommodationListItemDto>> getAccommodationList(
-            @PathVariable UUID eventId,
-            @ActingUser CurrentUserData currentUser) {
+            @PathVariable UUID eventId) {
 
-        AccommodationList accommodationList = accommodationListService.getAccommodationList(new EventId(eventId), currentUser);
+        EventId id = new EventId(eventId);
+        loadAuthorizedEventForAccommodation(id);
+        AccommodationList accommodationList = accommodationListService.getAccommodationList(id);
         List<AccommodationListItemDto> items = toAccommodationListItems(accommodationList);
 
         HalResponseContext.setDomainList(accommodationList.rows());
@@ -366,10 +361,11 @@ public class EventController implements EventsApi {
 
     @GetMapping(value = "/api/events/{eventId}/accommodation-list", produces = "text/csv")
     public ResponseEntity<byte[]> getAccommodationListAsCsv(
-            @PathVariable UUID eventId,
-            @ActingUser CurrentUserData currentUser) {
+            @PathVariable UUID eventId) {
 
-        AccommodationList accommodationList = accommodationListService.getAccommodationList(new EventId(eventId), currentUser);
+        EventId id = new EventId(eventId);
+        loadAuthorizedEventForAccommodation(id);
+        AccommodationList accommodationList = accommodationListService.getAccommodationList(id);
         List<AccommodationListItemDto> items = toAccommodationListItems(accommodationList);
         byte[] csv = csvRenderer.renderToBytes(items);
 
@@ -379,6 +375,18 @@ public class EventController implements EventsApi {
                 .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
                 .header("Content-Type", "text/csv; charset=UTF-8")
                 .body(csv);
+    }
+
+    private Event loadAuthorizedEventForAccommodation(EventId eventId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Event event = eventManagementService.getEvent(eventId, false);
+        if (!EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_MANAGE, auth, event)) {
+            throw AccommodationListAccessDeniedException.callerNotPermitted();
+        }
+        if (!event.isSharedAccommodationEnabled()) {
+            throw AccommodationListAccessDeniedException.sharedAccommodationNotOffered();
+        }
+        return event;
     }
 
     private static List<AccommodationListItemDto> toAccommodationListItems(AccommodationList accommodationList) {

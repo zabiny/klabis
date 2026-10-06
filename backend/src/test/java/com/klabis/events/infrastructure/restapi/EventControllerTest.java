@@ -1,20 +1,12 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.WithKlabisMockUser;
-import com.klabis.events.EventsWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.events.EventCategory;
-import com.klabis.events.EventCategoryId;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
-import com.klabis.events.application.EventManagementPort;
-import com.klabis.events.application.EventNotFoundException;
-import com.klabis.events.application.AccommodationList;
-import com.klabis.events.application.AccommodationListAccessDeniedException;
-import com.klabis.events.application.AccommodationListPort;
-import com.klabis.events.application.EventRegistrationPort;
-import com.klabis.events.application.MemberRegistrationSanctionPort;
-
+import com.klabis.events.EventsWebMvcTest;
+import com.klabis.events.application.*;
 import com.klabis.events.domain.*;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.members.MemberAccommodationDto;
@@ -35,16 +27,11 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -79,12 +66,21 @@ class EventControllerTest {
     @Autowired
     private MemberRegistrationSanctionPort memberRegistrationSanctionPort;
 
+    private void stubEventForAccommodationAuthorization(UUID eventId, MemberId coordinatorId, boolean sharedAccommodationEnabled) {
+        Event event = EventTestDataBuilder.anEvent()
+                .withSharedAccommodationEnabled(sharedAccommodationEnabled)
+                .withCoordinator(coordinatorId)
+                .buildPublished();
+        when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
+    }
+
     private void stubAccommodationList(UUID eventId, Event event, Map<MemberId, MemberAccommodationDto> memberData) {
+        when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
         List<AccommodationList.AccommodationListRow> rows = event.getRegistrations().stream()
                 .map(registration -> new AccommodationList.AccommodationListRow(
                         eventId, registration, memberData.get(registration.memberId())))
                 .toList();
-        when(accommodationListService.getAccommodationList(eq(new EventId(eventId)), any()))
+        when(accommodationListService.getAccommodationList(new EventId(eventId)))
                 .thenReturn(new AccommodationList(eventId, event.getName(), rows));
     }
 
@@ -2793,12 +2789,11 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("service rejecting the caller yields 403")
+        @DisplayName("unauthorized member gets 403")
         @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
-        void serviceRejectingCallerGets403() throws Exception {
+        void unauthorizedMemberGets403() throws Exception {
             UUID eventId = UUID.randomUUID();
-            when(accommodationListService.getAccommodationList(eq(new EventId(eventId)), any()))
-                    .thenThrow(AccommodationListAccessDeniedException.callerNotPermitted());
+            stubEventForAccommodationAuthorization(eventId, new MemberId(UUID.fromString(COORDINATOR_ID)), true);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/accommodation-list", eventId)
@@ -2812,7 +2807,8 @@ class EventControllerTest {
         @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
         void emptyListStillCarriesEventLink() throws Exception {
             UUID eventId = UUID.randomUUID();
-            when(accommodationListService.getAccommodationList(eq(new EventId(eventId)), any()))
+            stubEventForAccommodationAuthorization(eventId, new MemberId(UUID.fromString(COORDINATOR_ID)), true);
+            when(accommodationListService.getAccommodationList(new EventId(eventId)))
                     .thenReturn(new AccommodationList(eventId, "Camp", List.of()));
 
             mockMvc.perform(
@@ -2963,12 +2959,11 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("service rejecting the caller yields 403 for text/csv request")
+        @DisplayName("unauthorized user gets 403 for text/csv request")
         @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
-        void serviceRejectingCallerGets403ForCsvRequest() throws Exception {
+        void unauthorizedUserGets403ForCsvRequest() throws Exception {
             UUID eventId = UUID.randomUUID();
-            when(accommodationListService.getAccommodationList(eq(new EventId(eventId)), any()))
-                    .thenThrow(AccommodationListAccessDeniedException.callerNotPermitted());
+            stubEventForAccommodationAuthorization(eventId, new MemberId(UUID.fromString(COORDINATOR_ID)), true);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/accommodation-list", eventId)
@@ -2981,6 +2976,21 @@ class EventControllerTest {
     @Nested
     @DisplayName("Section 5 — accommodation list filtered to wantsSharedAccommodation & gated on sharedAccommodationEnabled")
     class AccommodationListSharedAccommodationGateTests {
+
+        @Test
+        @DisplayName("authorized caller gets 403 when the event does not offer shared accommodation")
+        @WithKlabisMockUser(memberId = "cccccccc-cccc-cccc-cccc-cccccccccccc")
+        void forbiddenWhenOfferOff() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            stubEventForAccommodationAuthorization(eventId,
+                    new MemberId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc")), false);
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON)
+                    )
+                    .andExpect(status().isForbidden());
+        }
 
         @Test
         @DisplayName("5.4 accommodation-list link present on getEvent when offer on AND caller authorized")

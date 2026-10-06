@@ -1,13 +1,10 @@
 package com.klabis.events.application;
 
-import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.SiCardNumber;
-import com.klabis.common.users.UserId;
-import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberAccommodationDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
@@ -22,7 +19,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,9 +31,6 @@ import static org.mockito.Mockito.when;
 @DisplayName("AccommodationListService Unit Tests")
 class AccommodationListServiceTest {
 
-    private static final MemberId COORDINATOR = new MemberId(UUID.randomUUID());
-    private static final MemberId OTHER_MEMBER = new MemberId(UUID.randomUUID());
-
     @Mock
     private EventManagementPort eventManagement;
 
@@ -49,10 +42,6 @@ class AccommodationListServiceTest {
     @BeforeEach
     void setUp() {
         service = new AccommodationListService(eventManagement, members);
-    }
-
-    private static CurrentUserData caller(MemberId memberId, Authority... authorities) {
-        return new CurrentUserData("user", UserId.newId(), memberId, Set.of(authorities));
     }
 
     private static EventRegistration registration(MemberId memberId, boolean wantsAccommodation) {
@@ -71,14 +60,12 @@ class AccommodationListServiceTest {
     }
 
     private static EventTestDataBuilder accommodationEvent() {
-        return EventTestDataBuilder.anEvent()
-                .withSharedAccommodationEnabled(true)
-                .withCoordinator(COORDINATOR);
+        return EventTestDataBuilder.anEvent().withSharedAccommodationEnabled(true);
     }
 
     @Test
-    @DisplayName("coordinator gets rows only for registrations wanting shared accommodation, with member data")
-    void coordinatorGetsFilteredRows() {
+    @DisplayName("returns rows only for registrations wanting shared accommodation, with member data")
+    void returnsFilteredRows() {
         MemberId wantsIt = new MemberId(UUID.randomUUID());
         MemberId doesNot = new MemberId(UUID.randomUUID());
         Event event = accommodationEvent()
@@ -88,9 +75,8 @@ class AccommodationListServiceTest {
         EventId eventId = stubEvent(event);
         MemberAccommodationDto data = memberData("Wants");
         when(members.findAccommodationDataByIds(any())).thenReturn(Map.of(wantsIt, data));
-        CurrentUserData caller = caller(COORDINATOR);
 
-        AccommodationList result = service.getAccommodationList(eventId, caller);
+        AccommodationList result = service.getAccommodationList(eventId);
 
         assertThat(result.eventId()).isEqualTo(eventId.value());
         assertThat(result.eventName()).isEqualTo("Camp");
@@ -101,63 +87,14 @@ class AccommodationListServiceTest {
     }
 
     @Test
-    @DisplayName("caller with EVENTS:REGISTRATIONS who is not the coordinator is allowed")
-    void registrationsAuthorityIsAllowed() {
-        Event event = accommodationEvent().buildPublished();
-        EventId eventId = stubEvent(event);
-        when(members.findAccommodationDataByIds(any())).thenReturn(Map.of());
-        CurrentUserData caller = caller(OTHER_MEMBER, Authority.EVENTS_REGISTRATIONS);
-
-        assertThat(service.getAccommodationList(eventId, caller).rows()).isEmpty();
-    }
-
-    @Test
-    @DisplayName("caller who is neither coordinator nor holds EVENTS:REGISTRATIONS is denied")
-    void otherCallerIsDenied() {
-        Event event = accommodationEvent().buildPublished();
-        EventId eventId = stubEvent(event);
-        CurrentUserData caller = caller(OTHER_MEMBER);
-
-        assertThatThrownBy(() -> service.getAccommodationList(eventId, caller))
-                .isInstanceOf(AccommodationListAccessDeniedException.class)
-                .hasMessage(AccommodationListAccessDeniedException.callerNotPermitted().getMessage());
-        verifyNoInteractions(members);
-    }
-
-    @Test
-    @DisplayName("unauthorized caller is denied for lacking permission even when shared accommodation is not offered")
-    void permissionIsCheckedBeforeSharedAccommodationOffer() {
-        Event event = accommodationEvent().withSharedAccommodationEnabled(false).buildPublished();
-        EventId eventId = stubEvent(event);
-        CurrentUserData caller = caller(OTHER_MEMBER);
-
-        assertThatThrownBy(() -> service.getAccommodationList(eventId, caller))
-                .isInstanceOf(AccommodationListAccessDeniedException.class)
-                .hasMessage(AccommodationListAccessDeniedException.callerNotPermitted().getMessage());
-    }
-
-    @Test
-    @DisplayName("authorized caller is denied when shared accommodation is not offered")
-    void deniedWhenSharedAccommodationDisabled() {
-        Event event = accommodationEvent().withSharedAccommodationEnabled(false).buildPublished();
-        EventId eventId = stubEvent(event);
-        CurrentUserData caller = caller(COORDINATOR);
-
-        assertThatThrownBy(() -> service.getAccommodationList(eventId, caller))
-                .isInstanceOf(AccommodationListAccessDeniedException.class)
-                .hasMessage(AccommodationListAccessDeniedException.sharedAccommodationNotOffered().getMessage());
-    }
-
-    @Test
     @DisplayName("registration without member data yields a row with null member data")
     void missingMemberDataYieldsNullMemberData() {
         MemberId unknown = new MemberId(UUID.randomUUID());
         Event event = accommodationEvent().addRegistrations(List.of(registration(unknown, true))).buildPublished();
         EventId eventId = stubEvent(event);
         when(members.findAccommodationDataByIds(any())).thenReturn(Map.of());
-        CurrentUserData caller = caller(COORDINATOR);
 
-        AccommodationList result = service.getAccommodationList(eventId, caller);
+        AccommodationList result = service.getAccommodationList(eventId);
 
         assertThat(result.rows()).hasSize(1);
         assertThat(result.rows().getFirst().memberData()).isNull();
@@ -168,9 +105,8 @@ class AccommodationListServiceTest {
     void propagatesEventNotFound() {
         EventId eventId = EventId.generate();
         when(eventManagement.getEvent(eventId, false)).thenThrow(new EventNotFoundException(eventId));
-        CurrentUserData caller = caller(COORDINATOR);
 
-        assertThatThrownBy(() -> service.getAccommodationList(eventId, caller)).isInstanceOf(EventNotFoundException.class);
+        assertThatThrownBy(() -> service.getAccommodationList(eventId)).isInstanceOf(EventNotFoundException.class);
         verifyNoInteractions(members);
     }
 }

@@ -1,10 +1,8 @@
 package com.klabis.events.application;
 
-import com.klabis.common.users.Authority;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
-import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberAccommodationDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
@@ -28,9 +26,8 @@ class AccommodationListService implements AccommodationListPort {
     }
 
     @Override
-    public AccommodationList getAccommodationList(@NonNull EventId eventId, @NonNull CurrentUserData caller) {
+    public AccommodationList getAccommodationList(@NonNull EventId eventId) {
         Event event = eventManagement.getEvent(eventId, false);
-        authorize(event, caller);
 
         List<EventRegistration> registrations = event.getRegistrations().stream()
                 .filter(EventRegistration::wantsSharedAccommodation)
@@ -43,14 +40,5 @@ class AccommodationListService implements AccommodationListPort {
                         eventId.value(), registration, memberData.get(registration.memberId())))
                 .toList();
         return new AccommodationList(eventId.value(), event.getName(), rows);
-    }
-
-    private static void authorize(Event event, CurrentUserData caller) {
-        if (!caller.hasAuthority(Authority.EVENTS_REGISTRATIONS) && !caller.isMemberOf(event::isCoordinator)) {
-            throw AccommodationListAccessDeniedException.callerNotPermitted();
-        }
-        if (!event.isSharedAccommodationEnabled()) {
-            throw AccommodationListAccessDeniedException.sharedAccommodationNotOffered();
-        }
     }
 }

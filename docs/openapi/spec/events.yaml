@@ -916,10 +916,9 @@ paths:
       security:
         - KlabisAuth: [EVENTS]
       # No x-klabis-authority / x-klabis-owner-visible: authorization is enforced imperatively in
-      # AccommodationListService (event coordinator OR EVENTS:REGISTRATIONS, and the event must
-      # offer shared accommodation), since "coordinator" cannot be named as a single owner parameter.
-      x-spring-provide-args:
-        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
+      # EventController (EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority — event
+      # coordinator OR EVENTS:REGISTRATIONS, and the event must offer shared accommodation), for the
+      # same reason as updateEvent above: "coordinator" cannot be named as a single owner parameter.
       parameters:
         - $ref: '#/components/parameters/RegEventIdParam'
       responses:
