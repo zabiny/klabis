@@ -380,7 +380,7 @@ public class EventController implements EventsApi {
     private Event loadAuthorizedEventForAccommodation(EventId eventId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Event event = eventManagementService.getEvent(eventId, false);
-        if (!EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_MANAGE, auth, event)) {
+        if (!EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_REGISTRATIONS, auth, event)) {
             throw AccommodationListAccessDeniedException.callerNotPermitted();
         }
         if (!event.isSharedAccommodationEnabled()) {
