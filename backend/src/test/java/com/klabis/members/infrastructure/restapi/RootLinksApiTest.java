@@ -76,7 +76,7 @@ class RootLinksApiTest {
 
     @Nested
     @DisplayName("ORIS club-key link")
-    @ActiveProfiles("oris")
+    @ActiveProfiles("oris, test")
     class OrisClubKeyLinkTests {
 
         @Test
