@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -75,6 +76,7 @@ class RootLinksApiTest {
 
     @Nested
     @DisplayName("ORIS club-key link")
+    @ActiveProfiles("oris")
     class OrisClubKeyLinkTests {
 
         @Test
