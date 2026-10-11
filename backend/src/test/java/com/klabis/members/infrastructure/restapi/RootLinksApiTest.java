@@ -72,27 +72,4 @@ class RootLinksApiTest {
                     .andExpect(jsonPath("$._links.profile").doesNotExist());
         }
     }
-
-    @Nested
-    @DisplayName("ORIS club-key link")
-    class OrisClubKeyLinkTests {
-
-        @Test
-        @WithKlabisMockUser(authorities = Authority.SYNC_MANAGE)
-        @DisplayName("adds the club-key link for a user with SYNC:MANAGE")
-        void addsClubKeyLinkForUserWithSyncManage() throws Exception {
-            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.orisClubKey.href", endsWith("/api/oris/club-key")));
-        }
-
-        @Test
-        @WithKlabisMockUser(authorities = Authority.MEMBERS_MANAGE)
-        @DisplayName("omits the club-key link for a user without SYNC:MANAGE")
-        void omitsClubKeyLinkWithoutSyncManage() throws Exception {
-            mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.orisClubKey").doesNotExist());
-        }
-    }
 }

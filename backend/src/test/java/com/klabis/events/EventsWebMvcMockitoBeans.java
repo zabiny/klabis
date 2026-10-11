@@ -1,5 +1,6 @@
 package com.klabis.events;
 
+import com.klabis.events.application.AccommodationListPort;
 import com.klabis.events.application.CategoryPresetManagementPort;
 import com.klabis.events.application.DisciplineManagementPort;
 import com.klabis.events.application.EventManagementPort;
@@ -29,6 +30,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Documented
 @MockitoBean(types = {
+        AccommodationListPort.class,
         EventManagementPort.class,
         EventRegistrationPort.class,
         EventTypeManagementPort.class,

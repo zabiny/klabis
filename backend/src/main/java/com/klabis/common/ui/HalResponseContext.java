@@ -100,8 +100,7 @@ public final class HalResponseContext {
      * nothing matches or no request is bound.
      * <p>
      * <strong>Does not consume.</strong> Unlike {@link #takeDomain()} and friends, the value stays
-     * in the map so it can be read again — {@code AccommodationListItemPostprocessor} reads the same
-     * context once per row.
+     * in the map so it can be read again.
      *
      * @throws IllegalStateException if two stored values are both assignable to {@code type} —
      *                               picking one would depend on map iteration order
@@ -118,8 +117,7 @@ public final class HalResponseContext {
      * Same assignability lookup as {@link #findContext(Class)}, for a caller that declares the value
      * mandatory.
      * <p>
-     * <strong>Does not consume.</strong> The value stays in the map so it can be read again —
-     * {@code AccommodationListItemPostprocessor} reads the same context once per row.
+     * <strong>Does not consume.</strong> The value stays in the map so it can be read again.
      *
      * @throws IllegalStateException if nothing is stored for {@code type}, or if two stored values
      *                               are both assignable to it

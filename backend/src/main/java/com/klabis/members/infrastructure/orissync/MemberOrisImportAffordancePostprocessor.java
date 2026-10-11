@@ -1,7 +1,8 @@
 package com.klabis.members.infrastructure.orissync;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.ui.HalResponseContext;
+import com.klabis.common.settings.OrisClubKeyManagementPort;
+import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.infrastructure.restapi.MemberSummaryResponse;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import org.springframework.hateoas.EntityModel;
@@ -9,6 +10,8 @@ import org.springframework.hateoas.IanaLinkRelations;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.PagedModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
+
+import java.util.Optional;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -20,12 +23,6 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * affordance from a caller lacking SYNC:MANAGE, so this postprocessor only adds the second,
  * state-dependent condition.
  * <p>
- * Reads the key state from {@link HalResponseContext} rather than injecting
- * {@link com.klabis.common.settings.OrisClubKeyPort} directly, mirroring {@code DisciplineController}'s
- * {@code EnrolledDisciplineIds} (design.md D9 there): {@code @MvcComponent} beans are scanned into every
- * {@code @WebMvcTest} slice in the application, so a constructor dependency here would force every
- * unrelated controller test to mock the port too.
- * <p>
  * Lives in {@code orissync} rather than alongside {@code MemberListPostprocessor} in
  * {@code restapi} because the import affordance is an ORIS-integration concern, not a plain
  * member-listing one — only the profile already gated on {@code oris} changes the plain list
@@ -34,11 +31,18 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 @MvcComponent
 public class MemberOrisImportAffordancePostprocessor implements RepresentationModelProcessor<PagedModel<EntityModel<MemberSummaryResponse>>> {
 
+    private final Optional<MemberDiscoveryPort> memberDiscoveryPort;
+    private final OrisClubKeyManagementPort orisClubKeyManagementPort;
+
+    public MemberOrisImportAffordancePostprocessor(Optional<MemberDiscoveryPort> memberDiscoveryPort,
+                                                   OrisClubKeyManagementPort orisClubKeyManagementPort) {
+        this.memberDiscoveryPort = memberDiscoveryPort;
+        this.orisClubKeyManagementPort = orisClubKeyManagementPort;
+    }
+
     @Override
     public PagedModel<EntityModel<MemberSummaryResponse>> process(PagedModel<EntityModel<MemberSummaryResponse>> pagedModel) {
-        boolean clubKeyHeld = HalResponseContext.findContext(ClubKeyHeld.class)
-                .map(ClubKeyHeld::held)
-                .orElse(false);
+        boolean clubKeyHeld = memberDiscoveryPort.isPresent() && orisClubKeyManagementPort.isSet();
         if (!clubKeyHeld) {
             return pagedModel;
         }
