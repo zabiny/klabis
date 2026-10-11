@@ -1,9 +1,10 @@
 package com.klabis.oris.infrastructure.restapi;
 
-import com.klabis.common.OrisIntegrationComponent;
+import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.RootModel;
 import com.klabis.oris.OrisClubKeyApi;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.context.annotation.Profile;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
@@ -14,7 +15,8 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * any member (design.md D10) — mirrors {@code RootAdminLinkProcessor}. Only visible to a user
  * holding SYNC:MANAGE, via {@code klabisLinkTo}'s authorization check on {@code getClubKeyState}.
  */
-@OrisIntegrationComponent
+@MvcComponent
+@Profile("oris")
 public class OrisClubKeyRootLinkProcessor implements RepresentationModelProcessor<EntityModel<RootModel>> {
 
     @Override
