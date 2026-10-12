@@ -2,7 +2,6 @@ package com.klabis.groups.traininggroup.infrastructure.restapi;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.exceptions.InsufficientAuthorityException;
-import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
@@ -30,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -94,29 +92,21 @@ class TrainingGroupController implements TrainingGroupsApi {
         }
 
         TrainingGroupResponse response = hasTrainingAuthority
-                ? toTrainingGroupResponse(group, id, true)
-                : buildLimitedGroupResponse(group, id);
+                ? toTrainingGroupResponse(group)
+                : buildLimitedGroupResponse(group);
 
         HalResponseContext.setDomain(group);
+        HalResponseContext.setDeferredContext(TrainingGroupItemContext.class,
+                () -> new TrainingGroupItemContext(group, hasTrainingAuthority));
         return ResponseEntity.ok(response);
     }
 
-    private TrainingGroupResponse buildLimitedGroupResponse(TrainingGroup group, UUID groupUuid) {
-        List<EntityModel<TrainerResponse>> trainerModels = group.getTrainers().stream()
-                .map(trainerId -> {
-                    EntityModel<TrainerResponse> model = EntityModel.of(TrainerResponseBuilder.builder().memberId(trainerId.uuid()).build());
-                    klabisLinkTo(methodOn(MembersApi.class).getMember(trainerId.uuid(), null))
-                            .map(link -> link.withRel("member"))
-                            .ifPresent(model::add);
-                    return model;
-                })
-                .toList();
-
+    private TrainingGroupResponse buildLimitedGroupResponse(TrainingGroup group) {
         return TrainingGroupResponseBuilder.builder()
                 .id(group.getId().uuid())
                 .name(group.getName())
                 .ageRange(null)
-                .trainers(trainerModels)
+                .trainers(trainerModels(group))
                 .members(null)
                 .build();
     }
@@ -182,27 +172,12 @@ class TrainingGroupController implements TrainingGroupsApi {
                 .build();
     }
 
-    private TrainingGroupResponse toTrainingGroupResponse(TrainingGroup group, UUID groupUuid, boolean hasTrainingAuthority) {
-        Set<MemberId> trainerIds = group.getTrainers();
-
-        List<EntityModel<TrainerResponse>> trainerModels = trainerIds.stream()
-                .map(trainerId -> {
-                    EntityModel<TrainerResponse> model = EntityModel.of(TrainerResponseBuilder.builder().memberId(trainerId.uuid()).build());
-                    klabisLinkTo(methodOn(MembersApi.class).getMember(trainerId.uuid(), null))
-                            .map(link -> link.withRel("member"))
-                            .ifPresent(model::add);
-                    if (hasTrainingAuthority && trainerIds.size() > 1) {
-                        klabisLinkTo(methodOn(TrainingGroupsApi.class).removeTrainer(groupUuid, trainerId.uuid()))
-                                .ifPresent(link -> model.add(link.withSelfRel()
-                                        .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class)
-                                                .removeTrainer(groupUuid, trainerId.uuid())))));
-                    }
-                    return model;
-                })
-                .toList();
-
+    private TrainingGroupResponse toTrainingGroupResponse(TrainingGroup group) {
         List<EntityModel<GroupMembershipResponse>> memberModels = group.getMembers().stream()
-                .map(m -> buildMemberModel(m, groupUuid, hasTrainingAuthority))
+                .map(m -> EntityModel.of(GroupMembershipResponseBuilder.builder()
+                        .memberId(m.memberId().uuid())
+                        .joinedAt(m.joinedAt())
+                        .build()))
                 .toList();
 
         return TrainingGroupResponseBuilder.builder()
@@ -212,32 +187,70 @@ class TrainingGroupController implements TrainingGroupsApi {
                         .minAge(group.getAgeRange().minAge())
                         .maxAge(group.getAgeRange().maxAge())
                         .build())
-                .trainers(trainerModels)
+                .trainers(trainerModels(group))
                 .members(memberModels)
                 .build();
     }
 
-    private EntityModel<GroupMembershipResponse> buildMemberModel(
-            GroupMembership<MemberId> membership, UUID groupUuid, boolean hasTrainingAuthority) {
+    private List<EntityModel<TrainerResponse>> trainerModels(TrainingGroup group) {
+        return group.getTrainers().stream()
+                .map(trainerId -> EntityModel.of(TrainerResponseBuilder.builder().memberId(trainerId.uuid()).build()))
+                .toList();
+    }
+}
 
-        MemberId memberId = membership.memberId();
-        GroupMembershipResponse response = GroupMembershipResponseBuilder.builder()
-                .memberId(memberId.uuid())
-                .joinedAt(membership.joinedAt())
-                .build();
-        EntityModel<GroupMembershipResponse> model = EntityModel.of(response);
-        klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
+/**
+ * The group a nested trainer or member item belongs to, published once per {@code getTrainingGroup}
+ * request so the stateless item postprocessors can read it. Item remove affordances are offered only
+ * to callers holding GROUPS:TRAINING; plain members get just the member link.
+ */
+record TrainingGroupItemContext(TrainingGroup group, boolean hasTrainingAuthority) {
+
+    static TrainingGroupItemContext current() {
+        return HalResponseContext.getContext(TrainingGroupItemContext.class);
+    }
+}
+
+@MvcComponent
+class TrainerItemPostprocessor implements RepresentationModelProcessor<EntityModel<TrainerResponse>> {
+
+    @Override
+    public EntityModel<TrainerResponse> process(EntityModel<TrainerResponse> model) {
+        TrainingGroupItemContext context = TrainingGroupItemContext.current();
+        UUID groupUuid = context.group().getId().uuid();
+        UUID trainerUuid = model.getContent().memberId();
+
+        klabisLinkTo(methodOn(MembersApi.class).getMember(trainerUuid, null))
                 .map(link -> link.withRel("member"))
                 .ifPresent(model::add);
-
-        if (hasTrainingAuthority) {
-            klabisLinkTo(methodOn(TrainingGroupsApi.class)
-                    .removeTrainingGroupMember(groupUuid, memberId.uuid()))
+        if (context.hasTrainingAuthority() && context.group().getTrainers().size() > 1) {
+            klabisLinkTo(methodOn(TrainingGroupsApi.class).removeTrainer(groupUuid, trainerUuid))
                     .ifPresent(link -> model.add(link.withSelfRel()
                             .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class)
-                                    .removeTrainingGroupMember(groupUuid, memberId.uuid())))));
+                                    .removeTrainer(groupUuid, trainerUuid)))));
         }
+        return model;
+    }
+}
 
+@MvcComponent
+class TrainingGroupMembershipItemPostprocessor implements RepresentationModelProcessor<EntityModel<GroupMembershipResponse>> {
+
+    @Override
+    public EntityModel<GroupMembershipResponse> process(EntityModel<GroupMembershipResponse> model) {
+        TrainingGroupItemContext context = TrainingGroupItemContext.current();
+        UUID groupUuid = context.group().getId().uuid();
+        UUID memberUuid = model.getContent().memberId();
+
+        klabisLinkTo(methodOn(MembersApi.class).getMember(memberUuid, null))
+                .map(link -> link.withRel("member"))
+                .ifPresent(model::add);
+        if (context.hasTrainingAuthority()) {
+            klabisLinkTo(methodOn(TrainingGroupsApi.class).removeTrainingGroupMember(groupUuid, memberUuid))
+                    .ifPresent(link -> model.add(link.withSelfRel()
+                            .andAffordances(klabisAfford(methodOn(TrainingGroupsApi.class)
+                                    .removeTrainingGroupMember(groupUuid, memberUuid)))));
+        }
         return model;
     }
 }

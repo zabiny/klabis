@@ -63,7 +63,7 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
         // port, and MembershipFeeGroupDetailsPostprocessor is shared with
         // FeeSelectionCampaignController.listGroupsForYear, whose items carry no such collection.
         HalResponseContext.setDomain(group);
-        HalResponseContext.embed(buildGroupMembers(group), MemberInGroupResponse.class);
+        HalResponseContext.embedDeferred(() -> buildGroupMembers(group), MemberInGroupResponse.class);
         return ResponseEntity.ok(conversionService.convert(group, MembershipFeeGroupResponse.class));
     }
 

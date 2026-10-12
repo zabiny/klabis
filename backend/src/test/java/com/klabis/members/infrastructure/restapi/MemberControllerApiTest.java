@@ -842,6 +842,9 @@ class MemberControllerApiTest {
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.sync.href").exists());
+
+            org.mockito.Mockito.verify(synchronizationPort, org.mockito.Mockito.times(1))
+                    .findByTarget(targetFor(new MemberId(memberId)));
         }
 
         @Test
@@ -1863,6 +1866,9 @@ class MemberControllerApiTest {
             mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(link("sync")).exists());
+
+            org.mockito.Mockito.verify(synchronizationPort, org.mockito.Mockito.times(1))
+                    .findActiveByTargets(eq(SyncEntityType.MEMBER), any());
         }
 
         @Test

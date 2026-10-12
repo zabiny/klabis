@@ -46,7 +46,6 @@ import org.springframework.web.ErrorResponseException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -186,12 +185,12 @@ public class MemberController implements MembersApi {
 
         // One batch lookup per page, read by MemberSummaryPostprocessor.
         List<String> pageMemberIds = memberPage.getContent().stream().map(m -> m.getId().uuid().toString()).toList();
-        Set<String> enrolledMemberIds = pageMemberIds.isEmpty()
-                ? Set.of()
-                : synchronizationPort.findActiveByTargets(SyncEntityType.MEMBER, pageMemberIds).stream()
-                        .map(reference -> reference.target().entityId())
-                        .collect(Collectors.toSet());
-        HalResponseContext.setContext(new EnrolledMemberIds(enrolledMemberIds));
+        HalResponseContext.setDeferredContext(EnrolledMemberIds.class, () -> new EnrolledMemberIds(
+                pageMemberIds.isEmpty()
+                        ? Set.of()
+                        : synchronizationPort.findActiveByTargets(SyncEntityType.MEMBER, pageMemberIds).stream()
+                                .map(reference -> reference.target().entityId())
+                                .collect(Collectors.toSet())));
 
         HalResponseContext.setDomainList(memberPage.getContent());
 

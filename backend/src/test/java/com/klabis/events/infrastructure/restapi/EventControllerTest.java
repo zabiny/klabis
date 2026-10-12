@@ -969,6 +969,8 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.sync.href").exists());
+
+            verify(synchronizationPort, times(1)).findByTarget(any());
         }
 
         @Test
@@ -2540,6 +2542,9 @@ class EventControllerTest {
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(link("sync")).exists());
+
+            verify(synchronizationPort, times(1))
+                    .findActiveByTargets(eq(com.klabis.sync.domain.SyncEntityType.EVENT), any());
         }
 
         @Test

@@ -7,7 +7,6 @@ import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.ui.RootModel;
-import com.klabis.common.users.UserId;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
@@ -66,9 +65,7 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
                 .toList());
     }
 
-    // The LegalGuardianGroupResponse record is generated, but its minors array is
-    // List<EntityModel<X>> and each item carries its own _links at runtime
-    // which the generator cannot express on the payload. The controller assembles them.
+    // The generated minors array is List<EntityModel<X>>; item links are added by LegalGuardianGroupMinorPostprocessor.
     @Override
     public ResponseEntity<LegalGuardianGroupResponse> getLegalGuardianGroup(UUID id) {
         LegalGuardianGroup group = legalGuardianGroupService.getGroup(new LegalGuardianGroupId(id));
@@ -131,7 +128,7 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
                 .toList());
         List<EntityModel<LegalGuardianGroupMinorResponse>> minorModels = group.getMinors().stream()
                 .sorted(Comparator.comparing(GroupMembership::joinedAt))
-                .map(membership -> toMinorModel(membership, minorDetails.get(membership.memberId())))
+                .map(membership -> toMinorItem(membership, minorDetails.get(membership.memberId())))
                 .toList();
 
         return LegalGuardianGroupResponseBuilder.builder()
@@ -141,10 +138,10 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
                 .build();
     }
 
-    private EntityModel<LegalGuardianGroupMinorResponse> toMinorModel(GroupMembership<MemberId> membership,
+    private EntityModel<LegalGuardianGroupMinorResponse> toMinorItem(GroupMembership<MemberId> membership,
                                                                       @Nullable MemberDto details) {
         MemberId memberId = membership.memberId();
-        EntityModel<LegalGuardianGroupMinorResponse> model = EntityModel.of(
+        return EntityModel.of(
                 LegalGuardianGroupMinorResponseBuilder.builder()
                         .memberId(memberId.uuid())
                         .firstName(details != null ? details.firstName() : null)
@@ -152,7 +149,15 @@ class LegalGuardianGroupController implements LegalGuardianGroupsApi {
                         .registrationNumber(details != null ? details.registrationNumber() : null)
                         .joinedAt(membership.joinedAt())
                         .build());
-        klabisLinkTo(methodOn(MembersApi.class).getMember(memberId.uuid(), null))
+    }
+}
+
+@MvcComponent
+class LegalGuardianGroupMinorPostprocessor implements RepresentationModelProcessor<EntityModel<LegalGuardianGroupMinorResponse>> {
+
+    @Override
+    public EntityModel<LegalGuardianGroupMinorResponse> process(EntityModel<LegalGuardianGroupMinorResponse> model) {
+        klabisLinkTo(methodOn(MembersApi.class).getMember(model.getContent().memberId(), null))
                 .map(link -> link.withRel("member"))
                 .ifPresent(model::add);
         return model;

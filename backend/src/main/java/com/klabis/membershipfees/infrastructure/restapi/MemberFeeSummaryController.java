@@ -32,12 +32,9 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class MemberFeeSummaryController implements MemberFeeSummaryApi {
 
     private final MemberFeeHistoryPort memberFeeHistoryPort;
-    private final FeeSelectionCampaignManagementPort publicationManagementPort;
 
-    MemberFeeSummaryController(MemberFeeHistoryPort memberFeeHistoryPort,
-                                FeeSelectionCampaignManagementPort publicationManagementPort) {
+    MemberFeeSummaryController(MemberFeeHistoryPort memberFeeHistoryPort) {
         this.memberFeeHistoryPort = memberFeeHistoryPort;
-        this.publicationManagementPort = publicationManagementPort;
     }
 
     @Override
@@ -50,21 +47,11 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
                 new MemberId(memberId), year);
         MemberFeeSummaryResponse response = MembershipFeesResponseMapper.toResponse(info);
 
-        List<HalFormsInlineOption> groupOptions = publicationManagementPort.listGroupsForYear(year).stream()
-                .map(group -> new HalFormsInlineOption(group.getId().value().toString(), group.getName()))
-                .toList();
-
-        HalResponseContext.setDomain(new FeeSummaryView(memberId, year, info, groupOptions));
+        HalResponseContext.setDomain(new FeeSummaryView(memberId, year, info));
         return ResponseEntity.ok(response);
     }
 
-    // groupOptions is computed here (the controller already holds publicationManagementPort)
-    // rather than in the postprocessor — @MvcComponent beans are discovered by @WebMvcTest's
-    // global component scan regardless of the controllers under test (see backend-patterns
-    // skill), so injecting the port there would break every unrelated @WebMvcTest slice in the
-    // app unless each one also mocked it.
-    record FeeSummaryView(UUID memberId, int year, MemberFeeHistoryPort.CurrentLevelInfo info,
-                          List<HalFormsInlineOption> groupOptions) {
+    record FeeSummaryView(UUID memberId, int year, MemberFeeHistoryPort.CurrentLevelInfo info) {
     }
 
     @Override
@@ -94,17 +81,25 @@ class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<
 class MemberFeeSummaryDetailsPostprocessor
         extends ModelWithDomainPostprocessor<MemberFeeSummaryResponse, MemberFeeSummaryController.FeeSummaryView> {
 
+    private final FeeSelectionCampaignManagementPort publicationManagementPort;
+
+    MemberFeeSummaryDetailsPostprocessor(FeeSelectionCampaignManagementPort publicationManagementPort) {
+        this.publicationManagementPort = publicationManagementPort;
+    }
+
     @Override
     public void process(EntityModel<MemberFeeSummaryResponse> dtoModel, MemberFeeSummaryController.FeeSummaryView view) {
         UUID memberId = view.memberId();
         int year = view.year();
         MemberFeeHistoryPort.CurrentLevelInfo info = view.info();
-        List<HalFormsInlineOption> groupOptions = view.groupOptions();
 
         klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeSummary(memberId, year, null))
                 .ifPresent(link -> {
                     var self = link.withSelfRel();
                     if (info.votingOpen()) {
+                        List<HalFormsInlineOption> groupOptions = publicationManagementPort.listGroupsForYear(year).stream()
+                                .map(group -> new HalFormsInlineOption(group.getId().value().toString(), group.getName()))
+                                .toList();
                         self = self.andAffordances(klabisAffordWithOptions(
                                 methodOn(MemberFeeChoiceApi.class).chooseTier(memberId, year, null, null),
                                 Map.of("membershipFeeGroupId", new HalFormsOptionsDef.Inline(groupOptions))));
