@@ -5,12 +5,10 @@ import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.groups.freegroup.application.FreeGroupManagementPort;
 import com.klabis.groups.freegroup.application.PendingInvitationView;
-import com.klabis.groups.infrastructure.restapi.GroupsApi;
 import com.klabis.groups.infrastructure.restapi.InvitationsApi;
 import com.klabis.groups.infrastructure.restapi.PendingInvitationResponse;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberId;
-import com.klabis.members.infrastructure.restapi.MembersApi;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.hateoas.EntityModel;
@@ -20,10 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-
-import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
-import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
-import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 // PendingInvitationResponse items here never carry the owner-only "self"+cancelInvitation
 // affordance that the same DTO carries when embedded inside GroupResponse — see
@@ -62,25 +56,6 @@ class PendingInvitationPostprocessor
 
     @Override
     public void process(EntityModel<PendingInvitationResponse> dtoModel, PendingInvitationView view) {
-        var invitation = view.invitation();
-        java.util.UUID groupUuid = view.groupId().uuid();
-        java.util.UUID invitationUuid = invitation.getId().value();
-        java.util.UUID invitedMemberUuid = invitation.getInvitedMember().uuid();
-
-        klabisLinkTo(methodOn(MembersApi.class).getMember(invitedMemberUuid, null))
-                .map(link -> link.withRel("invitedMember"))
-                .ifPresent(dtoModel::add);
-        // TODO: "accept" and "reject" rels point to POST endpoints and should be pure affordances
-        //   per backend-patterns skill. Kept as links because the frontend (GroupsPage.tsx) reads
-        //   _links.accept / _links.reject directly to render action buttons — same as
-        //   InvitationModelBuilder.build, which this postprocessor mirrors for this collection.
-        klabisLinkTo(methodOn(GroupsApi.class).acceptInvitation(groupUuid, invitationUuid, null))
-                .ifPresent(link -> dtoModel.add(link.withRel("accept")
-                        .andAffordances(klabisAfford(methodOn(GroupsApi.class)
-                                .acceptInvitation(groupUuid, invitationUuid, null)))));
-        klabisLinkTo(methodOn(GroupsApi.class).rejectInvitation(groupUuid, invitationUuid, null))
-                .ifPresent(link -> dtoModel.add(link.withRel("reject")
-                        .andAffordances(klabisAfford(methodOn(GroupsApi.class)
-                                .rejectInvitation(groupUuid, invitationUuid, null)))));
+        InvitationLinks.addRecipientLinks(dtoModel, view.groupId().uuid(), view.invitation());
     }
 }

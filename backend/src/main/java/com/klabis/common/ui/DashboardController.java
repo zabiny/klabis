@@ -18,15 +18,9 @@ class DashboardController implements DashboardApi {
 
     @Override
     public ResponseEntity<DashboardModel> dashboard() {
-        // DashboardModel is an empty marker with no domain object of its own, but
-        // HalResponseBodyAdvice only wraps a plain payload when the context holds a non-null domain
-        // — so a placeholder stands in for one. It is never serialized
-        // (EntityModelWithDomain.domainItem is @JsonIgnore).
-        HalResponseContext.setDomain(DASHBOARD_DOMAIN_PLACEHOLDER);
+        HalResponseContext.markHalResource();
         return ResponseEntity.ok(new DashboardModel());
     }
-
-    private static final String DASHBOARD_DOMAIN_PLACEHOLDER = "dashboard";
 
 }
 

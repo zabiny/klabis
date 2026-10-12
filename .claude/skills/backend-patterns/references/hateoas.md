@@ -38,11 +38,11 @@ public ResponseEntity<Page<MemberSummaryResponse>> listMembers(..., @ParameterOb
 }
 ```
 
-**A second, independently-shaped collection alongside a single-item payload** goes through `HalResponseContext.embed(collection, ItemType.class)`, which renders it under `_embedded` next to the item's `_links`/`_templates`. It lives on the controller rather than in a postprocessor because the data usually needs a port the controller already holds, and because the payload's postprocessor is often shared with a *list* endpoint that has no such collection. One collection per response — a second call replaces the first. Current callers: `EventController` (registrations on an event) and `MembershipFeeGroupController` (members in a group).
+**A second, independently-shaped collection alongside a single-item payload** goes through `HalResponseContext.embedDeferred(() -> collection, ItemType.class)`, which renders it under `_embedded` next to the item's `_links`/`_templates`. The supplier is resolved lazily, only when the advice wraps a HAL response, so a plain-JSON request never runs the lookup. It lives on the controller rather than in a postprocessor because the payload's postprocessor is often shared with a *list* endpoint that has no such collection. One collection per response — a second call replaces the first. Current callers: `EventController` (registrations on an event) and `MembershipFeeGroupController` (members in a group).
 
 ```java
 HalResponseContext.setDomain(group);
-HalResponseContext.embed(buildGroupMembers(group), MemberInGroupResponse.class);
+HalResponseContext.embedDeferred(() -> buildGroupMembers(group), MemberInGroupResponse.class);
 return ResponseEntity.ok(conversionService.convert(group, MembershipFeeGroupResponse.class));
 ```
 
@@ -52,7 +52,7 @@ return ResponseEntity.ok(conversionService.convert(group, MembershipFeeGroupResp
 - Single DTO → wraps it in `EntityModelWithDomain<T, D>` and runs it through every `RepresentationModelProcessor` bean — including `ModelWithDomainPostprocessor<Dto, Aggregate>` postprocessors.
 - `Page<Dto>` → runs it through `PagedResourcesAssembler`, pairing each DTO with its domain object via `HalResponseContext`'s stashed list, then derives the **self link directly from the current request's path and query parameters** (no `klabisLinkTo` call needed for the self link — the controller method already ran and passed authorization for exactly this request).
 - `Collection<Dto>` (a plain `List`, no paging) → same pairing, wrapped into a `CollectionModel` with a self link built the same way.
-- Anything a postprocessor registered via `HalResponseContext.embed` is rendered into `_embedded` **after** the processors run, so it lands beside the links and templates they added.
+- Anything a postprocessor registered via `HalResponseContext.embedDeferred` is rendered into `_embedded` **after** the processors run, so it lands beside the links and templates they added.
 - Non-HAL content types (e.g. `MemberOptionResponse` served as plain `application/json`) are left untouched — the advice checks `selectedContentType` and only wraps `HAL_JSON`/`HAL_FORMS_JSON` responses.
 - A `ProblemDetail` error body is never wrapped, and the context is cleared so nothing leaks into a later request on the same thread pool.
 - A body that is already a `RepresentationModel` is passed through untouched: without a `HalResponseContext` entry the advice does nothing.

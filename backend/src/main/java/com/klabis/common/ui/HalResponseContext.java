@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Carries the domain object(s) behind a plain payload DTO returned by a controller method,
@@ -23,6 +24,7 @@ public final class HalResponseContext {
     private static final String SINGLE_DOMAIN_ATTR = HalResponseContext.class.getName() + ".singleDomain";
     private static final String DOMAIN_LIST_ATTR = HalResponseContext.class.getName() + ".domainList";
     private static final String EMBEDDED_ATTR = HalResponseContext.class.getName() + ".embedded";
+    private static final String MARK_HAL_RESOURCE_ATTR = HalResponseContext.class.getName() + ".markHalResource";
     private static final String CONTEXT_MAP_ATTR = HalResponseContext.class.getName() + ".contextMap";
 
     private HalResponseContext() {
@@ -36,6 +38,19 @@ public final class HalResponseContext {
     }
 
     /**
+     * Requests HAL wrapping for a single-item payload that has no domain object behind it (e.g. the
+     * empty {@code RootModel} / {@code DashboardModel} markers), so postprocessors on
+     * {@code EntityModel<X>} still run. Honoured only when a HAL media type is selected.
+     */
+    public static void markHalResource() {
+        setAttribute(MARK_HAL_RESOURCE_ATTR, Boolean.TRUE);
+    }
+
+    static boolean takeHalResourceMark() {
+        return takeAttribute(MARK_HAL_RESOURCE_ATTR) != null;
+    }
+
+    /**
      * Registers the domain objects backing a collection response, in the same order as the
      * DTO list returned by the controller — the advice pairs them 1:1 by index.
      */
@@ -45,13 +60,15 @@ public final class HalResponseContext {
 
     /**
      * Registers a collection to be rendered under {@code _embedded} next to a single-item payload,
-     * for endpoints whose response carries a second, independently-shaped collection.
+     * for endpoints whose response carries a second, independently-shaped collection. The collection
+     * is only built when the advice actually renders a HAL envelope; a pass-through (non-HAL) response
+     * never invokes the supplier.
      * <p>
-     * Declared here rather than in a postprocessor because the data usually needs a port the
-     * controller already holds, and because the postprocessor for a given payload type may be shared
-     * with a *list* endpoint that has no such collection (as {@code MembershipFeeGroupResponse} is).
-     * The {@code _embedded} block itself is assembled by {@link HalResponseBodyAdvice} after the
-     * postprocessors have run, so it lands alongside {@code _links} and {@code _templates}.
+     * Declared here rather than in a postprocessor because the postprocessor for a given payload type
+     * may be shared with a *list* endpoint that has no such collection (as
+     * {@code MembershipFeeGroupResponse} is). The {@code _embedded} block itself is assembled by
+     * {@link HalResponseBodyAdvice} after the postprocessors have run, so it lands alongside
+     * {@code _links} and {@code _templates}.
      * <p>
      * One collection per response: a second call replaces the first. Both current callers embed
      * exactly one, and supporting several would mean deciding how their relations compose inside the
@@ -60,15 +77,37 @@ public final class HalResponseContext {
      * @param itemType fallback element type, so an empty collection still renders under the correct
      *                 relation instead of being dropped
      */
-    public static void embed(Collection<?> collection, Class<?> itemType) {
-        setAttribute(EMBEDDED_ATTR, new Embedded(collection, itemType));
+    public static void embedDeferred(Supplier<Collection<?>> collectionSupplier, Class<?> itemType) {
+        setAttribute(EMBEDDED_ATTR, new DeferredEmbedded(collectionSupplier, itemType));
     }
 
     static Embedded takeEmbedded() {
-        return (Embedded) takeAttribute(EMBEDDED_ATTR);
+        DeferredEmbedded deferred = (DeferredEmbedded) takeAttribute(EMBEDDED_ATTR);
+        return deferred == null ? null : new Embedded(deferred.supplier().get(), deferred.itemType());
     }
 
     record Embedded(Collection<?> collection, Class<?> itemType) {
+    }
+
+    private record DeferredEmbedded(Supplier<Collection<?>> supplier, Class<?> itemType) {
+    }
+
+    private static final class Deferred {
+        private final Supplier<?> supplier;
+        private boolean resolved;
+        private Object value;
+
+        Deferred(Supplier<?> supplier) {
+            this.supplier = supplier;
+        }
+
+        Object get() {
+            if (!resolved) {
+                value = supplier.get();
+                resolved = true;
+            }
+            return value;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -91,6 +130,20 @@ public final class HalResponseContext {
         Map<Class<?>, Object> map = contextMap(true);
         if (map != null) {
             map.put(value.getClass(), value);
+        }
+    }
+
+    /**
+     * Publishes a value that is computed only when first read, keyed by {@code type} (the declared
+     * class, so lookups and ambiguity checks work without invoking the supplier). The supplier runs
+     * at most once per request; its result is memoized, including a {@code null} result. If nothing
+     * ever reads it (e.g. a non-HAL response), it never runs. A later registration for the same
+     * {@code type} replaces this one. No-op when no request attributes are bound.
+     */
+    public static <T> void setDeferredContext(Class<T> type, Supplier<? extends T> supplier) {
+        Map<Class<?>, Object> map = contextMap(true);
+        if (map != null) {
+            map.put(type, new Deferred(supplier));
         }
     }
 
@@ -143,7 +196,11 @@ public final class HalResponseContext {
                 match = storedType;
             }
         }
-        return match == null ? null : type.cast(map.get(match));
+        if (match == null) {
+            return null;
+        }
+        Object stored = map.get(match);
+        return type.cast(stored instanceof Deferred deferred ? deferred.get() : stored);
     }
 
     @SuppressWarnings("unchecked")
@@ -165,6 +222,7 @@ public final class HalResponseContext {
         takeAttribute(SINGLE_DOMAIN_ATTR);
         takeAttribute(DOMAIN_LIST_ATTR);
         takeAttribute(EMBEDDED_ATTR);
+        takeAttribute(MARK_HAL_RESOURCE_ATTR);
         takeAttribute(CONTEXT_MAP_ATTR);
     }
 

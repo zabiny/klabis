@@ -67,12 +67,12 @@ public class DisciplineController implements DisciplinesApi {
         List<String> pageDisciplineIds = page.getContent().stream()
                 .map(discipline -> discipline.getId().value().toString())
                 .toList();
-        Set<String> enrolledDisciplineIds = pageDisciplineIds.isEmpty()
-                ? Set.of()
-                : synchronizationPort.findActiveByTargets(SyncEntityType.DISCIPLINE, pageDisciplineIds).stream()
-                        .map(reference -> reference.target().entityId())
-                        .collect(Collectors.toSet());
-        HalResponseContext.setContext(new EnrolledDisciplineIds(enrolledDisciplineIds));
+        HalResponseContext.setDeferredContext(EnrolledDisciplineIds.class, () -> new EnrolledDisciplineIds(
+                pageDisciplineIds.isEmpty()
+                        ? Set.of()
+                        : synchronizationPort.findActiveByTargets(SyncEntityType.DISCIPLINE, pageDisciplineIds).stream()
+                                .map(reference -> reference.target().entityId())
+                                .collect(Collectors.toSet())));
 
         HalResponseContext.setDomainList(page.getContent());
         return ResponseEntity.ok(page.map(discipline -> conversionService.convert(discipline, DisciplineDto.class)));

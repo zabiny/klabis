@@ -25,14 +25,9 @@ class RootController implements RootApi {
     // Links are added in postprocessors from respective modules, bound on EntityModel<RootModel>.
     @Override
     public ResponseEntity<RootModel> rootNavigation() {
-        // RootModel is an empty marker with no domain object of its own, but HalResponseBodyAdvice
-        // only wraps a plain payload when the context holds a non-null domain — so a placeholder
-        // stands in for one. It is never serialized (EntityModelWithDomain.domainItem is @JsonIgnore).
-        HalResponseContext.setDomain(ROOT_DOMAIN_PLACEHOLDER);
+        HalResponseContext.markHalResource();
         return ResponseEntity.ok(new RootModel());
     }
-
-    private static final String ROOT_DOMAIN_PLACEHOLDER = "root";
 
 }
 

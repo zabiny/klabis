@@ -24,7 +24,6 @@ import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
-import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
@@ -53,16 +52,14 @@ class EventRegistrationController implements EventRegistrationsApi {
     private final EventManagementPort eventManagementService;
     private final EventRegistrationPort registrationService;
     private final Members members;
-    private final EntityLinks entityLinks;
     private final AuthorizationEvaluator authorizationEvaluator;
 
-    public EventRegistrationController(EventManagementPort eventManagementService, EventRegistrationPort registrationService, Members members, EntityLinks entityLinks,
+    public EventRegistrationController(EventManagementPort eventManagementService, EventRegistrationPort registrationService, Members members,
                                        AuthorizationEvaluator authorizationEvaluator) {
         this.authorizationEvaluator = authorizationEvaluator;
         this.eventManagementService = eventManagementService;
         this.registrationService = registrationService;
         this.members = members;
-        this.entityLinks = entityLinks;
     }
 
     @Override
@@ -139,7 +136,7 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .toList();
 
         HalResponseContext.setDomainList(domainList);
-        HalResponseContext.setContext(new RegistrationsCollectionContext(eventId));
+        HalResponseContext.setDeferredContext(RegistrationsCollectionContext.class, () -> new RegistrationsCollectionContext(eventId));
         return ResponseEntity.ok(payload);
     }
 

@@ -110,19 +110,24 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
 
     private Object wrapSingle(Object body) {
         Object domain = HalResponseContext.takeDomain();
-        if (domain == null || body instanceof RepresentationModel<?>) {
+        boolean marked = HalResponseContext.takeHalResourceMark();
+        if ((domain == null && !marked) || body instanceof RepresentationModel<?>) {
             return body;
         }
 
         HalResponseContext.Embedded embedded = HalResponseContext.takeEmbedded();
-        EntityModel<Object> model = HalFormsSupport.entityModelWithDomain(body, domain);
-        Object processed = new RepresentationModelProcessorInvoker(processors).invokeProcessorsFor(model);
+        EntityModel<Object> model = domain == null
+                ? EntityModel.of(body)
+                : HalFormsSupport.entityModelWithDomain(body, domain);
+        RepresentationModelProcessorInvoker invoker = new RepresentationModelProcessorInvoker(processors);
+        Object processed = invoker.invokeProcessorsFor(model);
+        new NestedModelProcessing(invoker).process(body);
         return applyEmbeddeds(processed, embedded);
     }
 
     /**
-     * Renders any {@code _embedded} collections a postprocessor declared via
-     * {@link EntityModelWithDomain#embed}. Deferred to here because {@code HalModelBuilder} returns a
+     * Renders the {@code _embedded} collection a controller declared via
+     * {@link HalResponseContext#embedDeferred}. Deferred to here because {@code HalModelBuilder} returns a
      * wrapper around the model rather than the model itself, which a
      * {@link RepresentationModelProcessor} cannot return in place of its own input type.
      * <p>
@@ -176,8 +181,10 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
             pagedModel.mapLink(IanaLinkRelations.SELF, oldLink -> selfLink);
         });
 
-        return new RepresentationModelProcessorInvoker(processors)
-                .invokeProcessorsFor(pagedModel, collectionModelType(PagedModel.class, dtoElementType));
+        RepresentationModelProcessorInvoker invoker = new RepresentationModelProcessorInvoker(processors);
+        Object processed = invoker.invokeProcessorsFor(pagedModel, collectionModelType(PagedModel.class, dtoElementType));
+        new NestedModelProcessing(invoker).process(dtoContent);
+        return processed;
     }
 
     private Object wrapCollection(Collection<?> dtoCollection, ResolvableType dtoElementType) {
@@ -211,8 +218,11 @@ public class HalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
         currentServletRequest().ifPresent(servletRequest ->
                 collectionModel.add(Link.of(buildSelfLinkUri(servletRequest), IanaLinkRelations.SELF)));
 
-        return new RepresentationModelProcessorInvoker(processors)
-                .invokeProcessorsFor(collectionModel, collectionModelType(CollectionModel.class, dtoElementType));
+        RepresentationModelProcessorInvoker invoker = new RepresentationModelProcessorInvoker(processors);
+        Object processed = invoker.invokeProcessorsFor(collectionModel,
+                collectionModelType(CollectionModel.class, dtoElementType));
+        new NestedModelProcessing(invoker).process(dtoCollection);
+        return processed;
     }
 
     /**

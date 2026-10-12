@@ -27,7 +27,6 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -41,16 +40,13 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
 
     private final FeeSelectionCampaignManagementPort managementPort;
-    private final MembershipFeeTierManagementPort levelManagementPort;
     private final ManualCampaignClosePort manualCampaignClosePort;
     private final ConversionService conversionService;
 
     FeeSelectionCampaignController(FeeSelectionCampaignManagementPort managementPort,
-                                   MembershipFeeTierManagementPort levelManagementPort,
                                    ManualCampaignClosePort manualCampaignClosePort,
                                    ConversionService conversionService) {
         this.managementPort = managementPort;
-        this.levelManagementPort = levelManagementPort;
         this.manualCampaignClosePort = manualCampaignClosePort;
         this.conversionService = conversionService;
     }
@@ -71,11 +67,6 @@ class FeeSelectionCampaignController implements FeeSelectionCampaignsApi {
         List<FeeSelectionCampaignResponse> items = publications.stream()
                 .map(publication -> conversionService.convert(publication, FeeSelectionCampaignResponse.class))
                 .toList();
-
-        List<HalFormsInlineOption> levelOptions = levelManagementPort.listTiers().stream()
-                .map(level -> new HalFormsInlineOption(level.getId().value().toString(), level.getName()))
-                .toList();
-        FeeSelectionCampaignListPostprocessor.setLevelOptions(levelOptions);
 
         HalResponseContext.setDomainList(publications);
         return ResponseEntity.ok(items);
@@ -152,52 +143,26 @@ class FeeSelectionCampaignDetailsPostprocessor
     }
 }
 
-// The level inline options are computed by the controller (which already holds
-// MembershipFeeTierManagementPort) and handed over via a request attribute — @MvcComponent beans
-// are discovered by @WebMvcTest's global component scan regardless of the controllers under test
-// (see backend-patterns skill), so injecting the port here would break every unrelated
-// @WebMvcTest slice in the app unless each one also mocked it.
 @MvcComponent
 class FeeSelectionCampaignListPostprocessor
         implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<FeeSelectionCampaignResponse>>> {
 
-    private static final String LEVEL_OPTIONS_ATTR = FeeSelectionCampaignListPostprocessor.class.getName() + ".levelOptions";
+    private final MembershipFeeTierManagementPort levelManagementPort;
 
-    static void setLevelOptions(List<HalFormsInlineOption> levelOptions) {
-        org.springframework.web.context.request.RequestAttributes attrs =
-                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
-        if (attrs != null) {
-            attrs.setAttribute(LEVEL_OPTIONS_ATTR, levelOptions,
-                    org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
-        }
+    FeeSelectionCampaignListPostprocessor(MembershipFeeTierManagementPort levelManagementPort) {
+        this.levelManagementPort = levelManagementPort;
     }
 
     @Override
     public org.springframework.hateoas.CollectionModel<EntityModel<FeeSelectionCampaignResponse>> process(
             org.springframework.hateoas.CollectionModel<EntityModel<FeeSelectionCampaignResponse>> model) {
-        // Spring HATEOAS's RepresentationModelProcessorInvoker matches CollectionModel processors
-        // by the outer CollectionModel type only, not by the EntityModel<T> content type, so every
-        // registered CollectionModel processor in the app runs against every CollectionModel
-        // response. The level-options attribute is set only by listPublications(), so its absence
-        // here means this fired for some other endpoint and ifPresent is a no-op — this is a
-        // deliberate guard, not an optional nicety.
-        currentLevelOptions().ifPresent(levelOptions ->
-                model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                        .andAffordances(klabisAffordWithOptions(
-                                methodOn(FeeSelectionCampaignsApi.class).publishYear(null),
-                                Map.of("levelIds", new HalFormsOptionsDef.Inline(levelOptions))))));
+        List<HalFormsInlineOption> levelOptions = levelManagementPort.listTiers().stream()
+                .map(level -> new HalFormsInlineOption(level.getId().value().toString(), level.getName()))
+                .toList();
+        model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
+                .andAffordances(klabisAffordWithOptions(
+                        methodOn(FeeSelectionCampaignsApi.class).publishYear(null),
+                        Map.of("levelIds", new HalFormsOptionsDef.Inline(levelOptions)))));
         return model;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Optional<List<HalFormsInlineOption>> currentLevelOptions() {
-        org.springframework.web.context.request.RequestAttributes attrs =
-                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
-        if (attrs == null) {
-            return Optional.empty();
-        }
-        Object value = attrs.getAttribute(LEVEL_OPTIONS_ATTR,
-                org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
-        return value instanceof List<?> list ? Optional.of((List<HalFormsInlineOption>) list) : Optional.empty();
     }
 }

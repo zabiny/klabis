@@ -137,11 +137,10 @@ public class EventController implements EventsApi {
                 .sharedServicesSummary(sharedServicesSummary(event, auth))
                 .build();
 
-        // The registrations are declared here rather than in the postprocessor because building them
-        // needs the registration port and Members, which @MvcComponent beans should not inject —
-        // they are scanned by every @WebMvcTest, so unrelated slice tests would have to mock them.
+        // Deferred: building the registrations needs the registration port and Members, which
+        // @MvcComponent beans should not inject, and must not run for a non-HAL response.
         HalResponseContext.setDomain(event);
-        HalResponseContext.embed(buildRegistrationDtos(event), RegistrationSummaryDto.class);
+        HalResponseContext.embedDeferred(() -> buildRegistrationDtos(event), RegistrationSummaryDto.class);
 
         return ResponseEntity.ok(dto);
     }
@@ -206,12 +205,12 @@ public class EventController implements EventsApi {
                 authorizationEvaluator.has(Authority.EVENTS_MANAGE), currentUser.memberId());
 
         List<String> pageEventIds = page.getContent().stream().map(e -> e.getId().value().toString()).toList();
-        Set<String> enrolledEventIds = pageEventIds.isEmpty()
-                ? Set.of()
-                : synchronizationPort.findActiveByTargets(SyncEntityType.EVENT, pageEventIds).stream()
-                        .map(reference -> reference.target().entityId())
-                        .collect(Collectors.toSet());
-        HalResponseContext.setContext(new EnrolledEventIds(enrolledEventIds));
+        HalResponseContext.setDeferredContext(EnrolledEventIds.class, () -> new EnrolledEventIds(
+                pageEventIds.isEmpty()
+                        ? Set.of()
+                        : synchronizationPort.findActiveByTargets(SyncEntityType.EVENT, pageEventIds).stream()
+                                .map(reference -> reference.target().entityId())
+                                .collect(Collectors.toSet())));
 
         HalResponseContext.setDomainList(page.getContent());
         return ResponseEntity.ok(page.map(e -> conversionService.convert(e, EventSummaryDto.class)));

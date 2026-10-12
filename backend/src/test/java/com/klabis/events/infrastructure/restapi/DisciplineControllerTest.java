@@ -160,6 +160,9 @@ class DisciplineControllerTest {
             mockMvc.perform(get("/api/disciplines").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.disciplineDtoList[0]._links.sync.href").exists());
+
+            verify(synchronizationPort, org.mockito.Mockito.times(1))
+                    .findActiveByTargets(any(), any());
         }
 
         @Test
