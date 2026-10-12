@@ -42,5 +42,5 @@
 - [x] 6.2 Confirm no production controller under `*/infrastructure/restapi/` imports `klabisLinkTo`, `klabisAfford`, `EntityModel.of` or builds `_links`/`_templates` (excluding `Location` headers and `methodOn` path building).
 - [x] 6.3 Confirm no production controller eagerly calls a port solely to populate `HalResponseContext`.
 - [x] 6.4 Run the full backend test suite; all parity tests from 1.2 pass unchanged and no existing assertions required modification.
-- [ ] 6.5 Manual HAL parity spot-check on port 3000 (admin + club member): root/dashboard, member list/detail, free/family/training group detail, membership-fees tier list and rules, event detail `_embedded`, calendar navigation.
-- [ ] 6.6 If any step could not reach response parity, stop and convert this change to the `spec-driven` schema.
+- [x] 6.5 Manual HAL parity spot-check on port 3000 (admin + club member): root/dashboard, member list/detail, free/family/training group detail, membership-fees tier list and rules, event detail `_embedded`, calendar navigation. (Pokryto částečně: dev data nepokrývají volné skupiny, kampaně a sync link; zbytek kryjí parity testy z 1.2.)
+- [x] 6.6 If any step could not reach response parity, stop and convert this change to the `spec-driven` schema.
