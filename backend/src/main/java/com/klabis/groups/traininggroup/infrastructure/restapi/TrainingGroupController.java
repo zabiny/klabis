@@ -19,6 +19,7 @@ import com.klabis.members.MemberId;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
+import org.jspecify.annotations.Nullable;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -206,8 +207,10 @@ class TrainingGroupController implements TrainingGroupsApi {
  */
 record TrainingGroupItemContext(TrainingGroup group, boolean hasTrainingAuthority) {
 
-    static TrainingGroupItemContext current() {
-        return HalResponseContext.getContext(TrainingGroupItemContext.class);
+    // Null outside the group-detail request: item postprocessors are global per item DTO type, so the
+    // same DTO rendered elsewhere must pass through unchanged.
+    static @Nullable TrainingGroupItemContext current() {
+        return HalResponseContext.findContext(TrainingGroupItemContext.class).orElse(null);
     }
 }
 
@@ -217,6 +220,9 @@ class TrainerItemPostprocessor implements RepresentationModelProcessor<EntityMod
     @Override
     public EntityModel<TrainerResponse> process(EntityModel<TrainerResponse> model) {
         TrainingGroupItemContext context = TrainingGroupItemContext.current();
+        if (context == null) {
+            return model;
+        }
         UUID groupUuid = context.group().getId().uuid();
         UUID trainerUuid = model.getContent().memberId();
 
@@ -239,6 +245,9 @@ class TrainingGroupMembershipItemPostprocessor implements RepresentationModelPro
     @Override
     public EntityModel<GroupMembershipResponse> process(EntityModel<GroupMembershipResponse> model) {
         TrainingGroupItemContext context = TrainingGroupItemContext.current();
+        if (context == null) {
+            return model;
+        }
         UUID groupUuid = context.group().getId().uuid();
         UUID memberUuid = model.getContent().memberId();
 

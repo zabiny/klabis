@@ -10,6 +10,7 @@ import com.klabis.groups.infrastructure.restapi.GroupsApi;
 import com.klabis.groups.infrastructure.restapi.OwnerResponse;
 import com.klabis.groups.infrastructure.restapi.PendingInvitationResponse;
 import com.klabis.members.infrastructure.restapi.MembersApi;
+import org.jspecify.annotations.Nullable;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 
@@ -25,8 +26,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  */
 record FreeGroupItemContext(FreeGroup group, boolean requestingUserIsOwner) {
 
-    static FreeGroupItemContext current() {
-        return HalResponseContext.getContext(FreeGroupItemContext.class);
+    // Null outside the group-detail request: item postprocessors are global per item DTO type, so the
+    // same DTO rendered elsewhere must pass through unchanged.
+    static @Nullable FreeGroupItemContext current() {
+        return HalResponseContext.findContext(FreeGroupItemContext.class).orElse(null);
     }
 }
 
@@ -36,6 +39,9 @@ class OwnerItemPostprocessor implements RepresentationModelProcessor<EntityModel
     @Override
     public EntityModel<OwnerResponse> process(EntityModel<OwnerResponse> model) {
         FreeGroupItemContext context = FreeGroupItemContext.current();
+        if (context == null) {
+            return model;
+        }
         UUID groupUuid = context.group().getId().uuid();
         UUID ownerUuid = model.getContent().memberId();
 
@@ -58,6 +64,9 @@ class FreeGroupMembershipItemPostprocessor implements RepresentationModelProcess
     @Override
     public EntityModel<FreeGroupMembershipResponse> process(EntityModel<FreeGroupMembershipResponse> model) {
         FreeGroupItemContext context = FreeGroupItemContext.current();
+        if (context == null) {
+            return model;
+        }
         UUID groupUuid = context.group().getId().uuid();
         UUID memberUuid = model.getContent().memberId();
 
@@ -86,6 +95,9 @@ class GroupDetailPendingInvitationPostprocessor implements RepresentationModelPr
             return model;
         }
         FreeGroupItemContext context = FreeGroupItemContext.current();
+        if (context == null) {
+            return model;
+        }
         UUID groupUuid = context.group().getId().uuid();
         UUID invitationUuid = model.getContent().invitationId();
         Invitation invitation = context.group().getPendingInvitations().stream()

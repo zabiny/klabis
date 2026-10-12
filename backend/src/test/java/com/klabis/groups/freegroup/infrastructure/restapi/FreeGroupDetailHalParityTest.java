@@ -62,7 +62,11 @@ class FreeGroupDetailHalParityTest {
     }
 
     private String getGroupBody() throws Exception {
-        when(groupManagement.getGroup(any(FreeGroupId.class))).thenReturn(groupWithTwoOwnersMemberAndInvitation());
+        return getGroupBody(groupWithTwoOwnersMemberAndInvitation());
+    }
+
+    private String getGroupBody(FreeGroup group) throws Exception {
+        when(groupManagement.getGroup(any(FreeGroupId.class))).thenReturn(group);
         return mockMvc.perform(get("/api/groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -75,6 +79,18 @@ class FreeGroupDetailHalParityTest {
         String body = getGroupBody();
 
         assertThat(itemsByMember(body, "owners", SECOND_OWNER_ID)).isEqualTo(List.of("link member -> /api/members/" + SECOND_OWNER_ID, "link self -> " + GROUP + "/owners/" + SECOND_OWNER_ID, "template removeGroupOwner DELETE []"));
+    }
+
+    @Test
+    @DisplayName("owner sees no removal affordance on the only owner")
+    @WithKlabisMockUser(memberId = OWNER_ID, authorities = Authority.MEMBERS_READ)
+    void singleOwnerHasNoRemoval() throws Exception {
+        FreeGroup group = FreeGroup.reconstruct(new FreeGroupId(GROUP_UUID), "Sprint Team",
+                Set.of(member(OWNER_ID)), Set.of(GroupMembership.of(member(MEMBER_ID))), Set.of(), Set.of(), null);
+
+        String body = getGroupBody(group);
+
+        assertThat(itemsByMember(body, "owners", OWNER_ID)).isEqualTo(List.of("link member -> /api/members/" + OWNER_ID));
     }
 
     @Test

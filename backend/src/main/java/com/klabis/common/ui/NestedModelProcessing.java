@@ -7,10 +7,13 @@ import org.springframework.hateoas.server.mvc.RepresentationModelProcessorInvoke
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Runs postprocessors on {@link RepresentationModel} values nested inside a payload record
@@ -27,6 +30,8 @@ import java.util.Set;
  */
 final class NestedModelProcessing {
 
+    private static final Map<Class<?>, Method[]> ACCESSORS = new ConcurrentHashMap<>();
+
     private final RepresentationModelProcessorInvoker invoker;
 
     NestedModelProcessing(RepresentationModelProcessorInvoker invoker) {
@@ -38,7 +43,7 @@ final class NestedModelProcessing {
     }
 
     private void walk(Object node, Set<Object> visited) {
-        if (node == null || !visited.add(node)) {
+        if (!isContainer(node) || !visited.add(node)) {
             return;
         }
         if (node instanceof RepresentationModel<?> model) {
@@ -46,11 +51,32 @@ final class NestedModelProcessing {
             walkModelContent(model, visited);
         } else if (node instanceof Collection<?> collection) {
             collection.forEach(element -> walk(element, visited));
-        } else if (node.getClass().isRecord()) {
-            for (RecordComponent component : node.getClass().getRecordComponents()) {
-                walk(read(component, node), visited);
+        } else {
+            for (Method accessor : accessorsOf(node.getClass())) {
+                walk(read(accessor, node), visited);
             }
         }
+    }
+
+    private static boolean isContainer(Object node) {
+        if (node == null) {
+            return false;
+        }
+        return node instanceof RepresentationModel<?>
+               || node instanceof Collection<?>
+               || (node.getClass().isRecord() && !node.getClass().getName().startsWith("java."));
+    }
+
+    private static Method[] accessorsOf(Class<?> recordType) {
+        return ACCESSORS.computeIfAbsent(recordType, type -> {
+            Method[] accessors = Arrays.stream(type.getRecordComponents())
+                    .map(RecordComponent::getAccessor)
+                    .toArray(Method[]::new);
+            for (Method accessor : accessors) {
+                accessor.setAccessible(true);
+            }
+            return accessors;
+        });
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -64,15 +90,13 @@ final class NestedModelProcessing {
         }
     }
 
-    private static Object read(RecordComponent component, Object record) {
-        Method accessor = component.getAccessor();
+    private static Object read(Method accessor, Object record) {
         try {
-            accessor.setAccessible(true);
             return accessor.invoke(record);
         } catch (IllegalAccessException e) {
-            throw new IllegalStateException("Cannot read record component " + component, e);
+            throw new IllegalStateException("Cannot read record component " + accessor, e);
         } catch (InvocationTargetException e) {
-            throw new IllegalStateException("Record component accessor failed: " + component, e.getCause());
+            throw new IllegalStateException("Record component accessor failed: " + accessor, e.getCause());
         }
     }
 }
