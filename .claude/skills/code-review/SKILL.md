@@ -6,12 +6,17 @@ user-invocable: false
 
 # Code review areas
 
+## If reviewed code implemented openspec change: 
+- alignment with the design decisions from implemented openspec change. Report any deviations or gaps.  
+
+## Every source code review
 - project best practises
   - load `backend-patterns` skill when reviewing backend code
 - testing best practises
 - test coverage of new features, review of tests for changed or removed parts for changes / unnecessary tests
 - remove dead or unused code
 - KISS
+
 
 # Additional criteria for HATEOAS API
 
