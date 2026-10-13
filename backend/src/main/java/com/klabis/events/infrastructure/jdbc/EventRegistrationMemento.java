@@ -2,6 +2,7 @@ package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.events.EventCategoryId;
 import com.klabis.events.domain.EventRegistration;
+import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
 import com.klabis.events.domain.RegistrationNote;
 import com.klabis.members.MemberId;
 import com.klabis.events.domain.SiCardNumber;
@@ -87,17 +88,16 @@ class EventRegistrationMemento {
      * @return a reconstituted EventRegistration entity
      */
     EventRegistration toEventRegistration() {
-        return EventRegistration.reconstruct(
-                this.id,
-                new MemberId(this.memberId),
-                new SiCardNumber(this.siCardNumber),
-                this.categoryId != null ? new EventCategoryId(this.categoryId) : null,
-                this.registeredAt,
-                this.wantsSharedTransport,
-                this.wantsSharedAccommodation,
-                RegistrationNote.ofNullable(this.internalNote),
-                RegistrationNote.ofNullable(this.orisNote)
-        );
+        return EventRegistration.reconstruct(this.id, this.registeredAt,
+                EventRegistrationCreateEventRegistrationBuilder.builder()
+                        .memberId(new MemberId(this.memberId))
+                        .siCardNumber(new SiCardNumber(this.siCardNumber))
+                        .categoryId(this.categoryId != null ? new EventCategoryId(this.categoryId) : null)
+                        .wantsSharedTransport(this.wantsSharedTransport)
+                        .wantsSharedAccommodation(this.wantsSharedAccommodation)
+                        .internalNote(RegistrationNote.ofNullable(this.internalNote))
+                        .orisNote(RegistrationNote.ofNullable(this.orisNote))
+                        .build());
     }
 
     // Package-private getters for Spring Data JDBC

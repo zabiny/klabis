@@ -23,6 +23,16 @@ export interface RegistrationDialogData {
     error: unknown;
 }
 
+const resolveMode = (
+    registerForEvent: HalFormsTemplate | undefined,
+    editRegistration: HalFormsTemplate | undefined,
+    isExistingRegistration: boolean,
+): RegistrationDialogMode | undefined => {
+    if (registerForEvent) return 'new';
+    if (editRegistration) return 'edit';
+    return isExistingRegistration ? 'view' : undefined;
+};
+
 export const useRegistrationDialogData = (registration: Link | null): RegistrationDialogData => {
     const registrationQuery = useAuthorizedQuery<GetRegistrationResource>(registration?.href ?? '', {
         enabled: !!registration,
@@ -40,12 +50,7 @@ export const useRegistrationDialogData = (registration: Link | null): Registrati
     const registerForEvent = registrationData?._templates?.registerForEvent;
     const editRegistration = registrationData?._templates?.editRegistration;
     const template = registerForEvent ?? editRegistration;
-    const isExistingRegistration = registrationData?.registeredAt != null;
-    const mode: RegistrationDialogMode | undefined = registerForEvent
-        ? 'new'
-        : editRegistration
-            ? 'edit'
-            : isExistingRegistration ? 'view' : undefined;
+    const mode = resolveMode(registerForEvent, editRegistration, registrationData?.registeredAt != null);
 
     const event = eventQuery.data;
     const eventContext: RegistrationDialogEventContext | undefined = event

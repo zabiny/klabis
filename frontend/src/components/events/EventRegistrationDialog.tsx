@@ -1,8 +1,9 @@
 import {type ReactElement, useEffect, useMemo, useState} from 'react';
-import {Calendar, Check, FileText, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
-import {labels} from '../../localization';
+import {type LucideIcon, Calendar, Check, FileText, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
+import {getFieldLabel, labels} from '../../localization';
+import {renderYesNo} from '../../utils/formatters';
 import {Alert, Button, DetailRow, Modal, Skeleton} from '../UI';
-import {type RegistrationDialogData, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
+import {type RegistrationDialogData, type RegistrationDialogMode, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas';
 import type {Link} from '../../api/types';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils';
@@ -16,6 +17,12 @@ export interface EventRegistrationDialogProps {
     onClose: () => void;
     onRegistered?: () => void;
 }
+
+const MODE_PRESENTATION: Record<RegistrationDialogMode, {title: string; Icon: LucideIcon}> = {
+    new: {title: labels.dialogTitles.registerForEvent, Icon: UserPlus},
+    view: {title: labels.dialogTitles.registrationDetail, Icon: FileText},
+    edit: {title: labels.dialogTitles.editRegistration, Icon: Pencil},
+};
 
 export const EventRegistrationDialog = ({
     registration,
@@ -51,11 +58,7 @@ export const EventRegistrationDialog = ({
         : undefined;
 
     const missingAffordance = !isLoading && !error && mode === undefined;
-    const baseTitle = mode === 'new'
-        ? labels.dialogTitles.registerForEvent
-        : mode === 'view'
-            ? labels.dialogTitles.registrationDetail
-            : labels.dialogTitles.editRegistration;
+    const {title: baseTitle, Icon: HeaderIcon} = MODE_PRESENTATION[mode ?? 'edit'];
     const dialogTitle = memberName ? `${baseTitle} - ${memberName}` : baseTitle;
     const confirmLabel = mode === 'new'
         ? labels.events.registrationModal.confirmNew
@@ -117,11 +120,7 @@ export const EventRegistrationDialog = ({
             closeOnBackdropClick={true}
             size="lg"
             title={dialogTitle}
-            headerIcon={mode === 'new'
-                ? <UserPlus className="h-5 w-5 text-primary"/>
-                : mode === 'view'
-                    ? <FileText className="h-5 w-5 text-primary"/>
-                    : <Pencil className="h-5 w-5 text-primary"/>}
+            headerIcon={<HeaderIcon className="h-5 w-5 text-primary"/>}
             context={!isLoading && eventContext
                 ? <RegistrationContext event={eventContext}/>
                 : undefined}
@@ -133,6 +132,7 @@ export const EventRegistrationDialog = ({
             ) : mode === 'view' && prefillData ? (
                 <ReadOnlyRegistration
                     registration={resolvedResource}
+                    memberName={memberName}
                     eventContext={eventContext}
                     onClose={handleClose}
                 />
@@ -164,20 +164,19 @@ export const EventRegistrationDialog = ({
 
 const hasText = (value: unknown): boolean => typeof value === 'string' && value.trim() !== '';
 
-function ReadOnlyRegistration({registration, eventContext, onClose}: {
+function ReadOnlyRegistration({registration, memberName, eventContext, onClose}: {
     registration: Record<string, unknown>;
+    memberName: string;
     eventContext: RegistrationDialogData['eventContext'];
     onClose: () => void;
 }) {
-    const memberName = [registration.firstName, registration.lastName].filter(Boolean).join(' ');
     const category = (registration.category as {name?: string} | null | undefined)?.name;
     const registeredAt = registration.registeredAt as string | undefined;
-    const yesNo = (value: unknown) => value ? labels.ui.yes : labels.ui.no;
 
     return (
         <div data-testid="event-registration-detail" className="flex flex-col gap-4">
             <dl className="flex flex-col">
-                {memberName && <DetailRow label={labels.fields.member}>{memberName}</DetailRow>}
+                {memberName && <DetailRow label={labels.fields.memberId}>{memberName}</DetailRow>}
                 {category && <DetailRow label={labels.events.registrationModal.category}>{category}</DetailRow>}
                 {registration.siCardNumber != null && (
                     <DetailRow label={labels.events.registrationModal.siChip}>{String(registration.siCardNumber)}</DetailRow>
@@ -186,16 +185,16 @@ function ReadOnlyRegistration({registration, eventContext, onClose}: {
                     <DetailRow label={labels.tables.registeredAt}>{formatDateTime(registeredAt)}</DetailRow>
                 )}
                 {eventContext?.sharedTransportEnabled && registration.wantsSharedTransport != null && (
-                    <DetailRow label={labels.fields.sharedTransportEnabled}>{yesNo(registration.wantsSharedTransport)}</DetailRow>
+                    <DetailRow label={getFieldLabel('wantsSharedTransport')}>{renderYesNo(registration.wantsSharedTransport)}</DetailRow>
                 )}
                 {eventContext?.sharedAccommodationEnabled && registration.wantsSharedAccommodation != null && (
-                    <DetailRow label={labels.fields.sharedAccommodationEnabled}>{yesNo(registration.wantsSharedAccommodation)}</DetailRow>
+                    <DetailRow label={getFieldLabel('wantsSharedAccommodation')}>{renderYesNo(registration.wantsSharedAccommodation)}</DetailRow>
                 )}
                 {hasText(registration.internalNote) && (
-                    <DetailRow label={labels.fields.internalNote}>{String(registration.internalNote)}</DetailRow>
+                    <DetailRow label={getFieldLabel('internalNote')}>{String(registration.internalNote)}</DetailRow>
                 )}
                 {hasText(registration.orisNote) && (
-                    <DetailRow label={labels.fields.orisNote}>{String(registration.orisNote)}</DetailRow>
+                    <DetailRow label={getFieldLabel('orisNote')}>{String(registration.orisNote)}</DetailRow>
                 )}
             </dl>
             <div className="mt-2 flex items-center justify-end border-t border-border pt-4">

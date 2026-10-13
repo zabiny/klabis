@@ -190,7 +190,6 @@ export const labels = {
         guardians: 'Zástupci',
         legalGuardianUserId: 'Zákonný zástupce',
         coordinators: 'Vedoucí',
-        member: 'Člen',
         eventDate: 'Datum konání',
         registrationDeadline: 'Uzávěrka',
         deadlines: 'Uzávěrky přihlášek',

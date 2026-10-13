@@ -35,6 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.klabis.events.EventTestDataBuilder.register;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -235,8 +236,8 @@ class EventJdbcRepositoryTest {
             SiCardNumber siCard1 = new SiCardNumber("123456");
             SiCardNumber siCard2 = new SiCardNumber("789012");
 
-            event.registerMember(member1Id, siCard1, null, false, false, null, null);
-            event.registerMember(member2Id, siCard2, null, false, false, null, null);
+            register(event, member1Id, siCard1, null);
+            register(event, member2Id, siCard2, null);
 
             // When
             Event savedEvent = eventRepository.save(event);
@@ -271,9 +272,8 @@ class EventJdbcRepositoryTest {
             event.publish();
             MemberId withNotes = new MemberId(TEST_MEMBER_1_ID);
             MemberId withoutNotes = new MemberId(TEST_MEMBER_2_ID);
-            event.registerMember(withNotes, new SiCardNumber("123456"), null, false, false,
-                    RegistrationNote.ofNullable("internal"), RegistrationNote.ofNullable("oris"));
-            event.registerMember(withoutNotes, new SiCardNumber("789012"), null, false, false, null, null);
+            event.registerMember(withNotes, EventRegisterCommandBuilder.builder().siCardNumber("123456").internalNote(RegistrationNote.ofNullable("internal")).orisNote(RegistrationNote.ofNullable("oris")).build());
+            register(event, withoutNotes, new SiCardNumber("789012"), null);
 
             Event saved = eventRepository.save(event);
             Event retrieved = eventRepository.findById(saved.getId()).orElseThrow();
@@ -575,7 +575,7 @@ class EventJdbcRepositoryTest {
             MemberId memberId = new MemberId(TEST_MEMBER_1_ID);
             SiCardNumber siCard = new SiCardNumber("123456");
 
-            event.registerMember(memberId, siCard, null, false, false, null, null);
+            register(event, memberId, siCard, null);
             eventRepository.save(event);
 
             // When - try to register same member again (domain should prevent this)
@@ -899,7 +899,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             eventWithRegistration.publish();
-            eventWithRegistration.registerMember(registeredMember, new SiCardNumber("111111"), null, false, false, null, null);
+            register(eventWithRegistration, registeredMember, new SiCardNumber("111111"), null);
             eventRepository.save(eventWithRegistration);
 
             Event eventWithoutRegistration = Event.create(EventCreateEventBuilder.builder()
@@ -909,7 +909,7 @@ class EventJdbcRepositoryTest {
                     .organizer("PRG")
                     .build());
             eventWithoutRegistration.publish();
-            eventWithoutRegistration.registerMember(otherMember, new SiCardNumber("222222"), null, false, false, null, null);
+            register(eventWithoutRegistration, otherMember, new SiCardNumber("222222"), null);
             eventRepository.save(eventWithoutRegistration);
 
             Page<Event> result = eventRepository.findAll(
@@ -933,7 +933,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             event.publish();
-            event.registerMember(new MemberId(TEST_MEMBER_1_ID), new SiCardNumber("111111"), null, false, false, null, null);
+            register(event, new MemberId(TEST_MEMBER_1_ID), new SiCardNumber("111111"), null);
             eventRepository.save(event);
 
             Page<Event> result = eventRepository.findAll(
@@ -956,7 +956,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             cancelledEvent.publish();
-            cancelledEvent.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(cancelledEvent, member, new SiCardNumber("111111"), null);
             cancelledEvent.cancel();
             eventRepository.save(cancelledEvent);
 
@@ -991,7 +991,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             finishedEvent.publish();
-            finishedEvent.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(finishedEvent, member, new SiCardNumber("111111"), null);
             eventRepository.save(finishedEvent);
             // Reload, finish, and re-save
             Event reload = eventRepository.findById(finishedEvent.getId()).orElseThrow();
@@ -1027,7 +1027,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             matchingEvent.publish();
-            matchingEvent.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(matchingEvent, member, new SiCardNumber("111111"), null);
             eventRepository.save(matchingEvent);
 
             Event registeredButNoMatch = Event.create(EventCreateEventBuilder.builder()
@@ -1037,7 +1037,7 @@ class EventJdbcRepositoryTest {
                     .organizer("PRG")
                     .build());
             registeredButNoMatch.publish();
-            registeredButNoMatch.registerMember(member, new SiCardNumber("222222"), null, false, false, null, null);
+            register(registeredButNoMatch, member, new SiCardNumber("222222"), null);
             eventRepository.save(registeredButNoMatch);
 
             Page<Event> result = eventRepository.findAll(
@@ -1065,7 +1065,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             ownCancelled.publish();
-            ownCancelled.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(ownCancelled, member, new SiCardNumber("111111"), null);
             ownCancelled.cancel();
             eventRepository.save(ownCancelled);
 
@@ -1075,7 +1075,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             someoneElsesCancelled.publish();
-            someoneElsesCancelled.registerMember(new MemberId(TEST_MEMBER_2_ID), new SiCardNumber("222222"), null, false, false, null, null);
+            register(someoneElsesCancelled, new MemberId(TEST_MEMBER_2_ID), new SiCardNumber("222222"), null);
             someoneElsesCancelled.cancel();
             eventRepository.save(someoneElsesCancelled);
 
@@ -1108,7 +1108,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             ownCancelled.publish();
-            ownCancelled.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(ownCancelled, member, new SiCardNumber("111111"), null);
             ownCancelled.cancel();
             eventRepository.save(ownCancelled);
 
@@ -1118,7 +1118,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             someoneElsesCancelled.publish();
-            someoneElsesCancelled.registerMember(new MemberId(TEST_MEMBER_2_ID), new SiCardNumber("222222"), null, false, false, null, null);
+            register(someoneElsesCancelled, new MemberId(TEST_MEMBER_2_ID), new SiCardNumber("222222"), null);
             someoneElsesCancelled.cancel();
             eventRepository.save(someoneElsesCancelled);
 
@@ -1142,7 +1142,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             cancelledEvent.publish();
-            cancelledEvent.registerMember(new MemberId(TEST_MEMBER_1_ID), new SiCardNumber("111111"), null, false, false, null, null);
+            register(cancelledEvent, new MemberId(TEST_MEMBER_1_ID), new SiCardNumber("111111"), null);
             cancelledEvent.cancel();
             eventRepository.save(cancelledEvent);
 
@@ -1173,7 +1173,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             ownCancelledMatching.publish();
-            ownCancelledMatching.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(ownCancelledMatching, member, new SiCardNumber("111111"), null);
             ownCancelledMatching.cancel();
             eventRepository.save(ownCancelledMatching);
 
@@ -1183,7 +1183,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             ownCancelledNotMatching.publish();
-            ownCancelledNotMatching.registerMember(member, new SiCardNumber("222222"), null, false, false, null, null);
+            register(ownCancelledNotMatching, member, new SiCardNumber("222222"), null);
             ownCancelledNotMatching.cancel();
             eventRepository.save(ownCancelledNotMatching);
 
@@ -1206,7 +1206,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OrgA")
                     .build());
             orgACancelled.publish();
-            orgACancelled.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(orgACancelled, member, new SiCardNumber("111111"), null);
             orgACancelled.cancel();
             eventRepository.save(orgACancelled);
 
@@ -1216,7 +1216,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OrgB")
                     .build());
             orgBCancelled.publish();
-            orgBCancelled.registerMember(member, new SiCardNumber("222222"), null, false, false, null, null);
+            register(orgBCancelled, member, new SiCardNumber("222222"), null);
             orgBCancelled.cancel();
             eventRepository.save(orgBCancelled);
 
@@ -1241,7 +1241,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             inWindowCancelled.publish();
-            inWindowCancelled.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(inWindowCancelled, member, new SiCardNumber("111111"), null);
             inWindowCancelled.cancel();
             eventRepository.save(inWindowCancelled);
 
@@ -1251,7 +1251,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             outOfWindowCancelled.publish();
-            outOfWindowCancelled.registerMember(member, new SiCardNumber("222222"), null, false, false, null, null);
+            register(outOfWindowCancelled, member, new SiCardNumber("222222"), null);
             outOfWindowCancelled.cancel();
             eventRepository.save(outOfWindowCancelled);
 
@@ -1277,7 +1277,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             cancelledEvent.publish();
-            cancelledEvent.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(cancelledEvent, member, new SiCardNumber("111111"), null);
             cancelledEvent.cancel();
             eventRepository.save(cancelledEvent);
 
@@ -1435,7 +1435,7 @@ class EventJdbcRepositoryTest {
                     .organizer("OOB")
                     .build());
             registeredEvent.publish();
-            registeredEvent.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(registeredEvent, member, new SiCardNumber("111111"), null);
             eventRepository.save(registeredEvent);
 
             Event notRegisteredEvent = Event.create(EventCreateEventBuilder.builder()
@@ -1481,13 +1481,13 @@ class EventJdbcRepositoryTest {
             Event event1 = Event.create(EventCreateEventBuilder.builder()
                     .name("Event 1").eventDate(LocalDate.now().plusDays(30)).organizer("OOB").build());
             event1.publish();
-            event1.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(event1, member, new SiCardNumber("111111"), null);
             eventRepository.save(event1);
 
             Event event2 = Event.create(EventCreateEventBuilder.builder()
                     .name("Event 2").eventDate(LocalDate.now().plusDays(31)).organizer("OOB").build());
             event2.publish();
-            event2.registerMember(member, new SiCardNumber("222222"), null, false, false, null, null);
+            register(event2, member, new SiCardNumber("222222"), null);
             eventRepository.save(event2);
 
             Page<Event> result = eventRepository.findAll(
@@ -1527,7 +1527,7 @@ class EventJdbcRepositoryTest {
                     .registrationDeadlines(RegistrationDeadlines.single(today.plusDays(6)))
                     .build());
             alreadyRegistered.publish();
-            alreadyRegistered.registerMember(member, new SiCardNumber("111111"), null, false, false, null, null);
+            register(alreadyRegistered, member, new SiCardNumber("111111"), null);
             eventRepository.save(alreadyRegistered);
 
             // Event C: ACTIVE, deadline outside window → excluded by deadlineWithin
@@ -1787,7 +1787,7 @@ class EventJdbcRepositoryTest {
                     .build());
             event.publish();
             MemberId memberId = new MemberId(TEST_MEMBER_1_ID);
-            event.registerMember(memberId, new SiCardNumber("123456"), null, false, true, null, null);
+            event.registerMember(memberId, EventRegisterCommandBuilder.builder().siCardNumber("123456").wantsSharedAccommodation(true).build());
 
             Event saved = eventRepository.save(event);
             Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();

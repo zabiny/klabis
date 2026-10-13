@@ -4,9 +4,14 @@ import com.klabis.common.authorization.AuthorizationEvaluator;
 import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.users.Authority;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+
+import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * Single rule for reading a registration detail: the registered member, or a holder of
@@ -27,7 +32,17 @@ class RegistrationReadAccess {
     }
 
     boolean canRead(UUID eventId, UUID memberId) {
-        return authorizationEvaluator.isSelf(TargetRef.member(memberId))
-                || authorizationEvaluator.isAllowed(READ_AUTHORITIES, TargetRef.event(eventId), false);
+        return authorizationEvaluator.isSelf(TargetRef.member(memberId)) || canReadRegistrations(eventId);
+    }
+
+    boolean canReadRegistrations(UUID eventId) {
+        return authorizationEvaluator.isAllowed(READ_AUTHORITIES, TargetRef.event(eventId), false);
+    }
+
+    Optional<WebMvcLinkBuilder> linkTo(UUID eventId, UUID memberId) {
+        if (!canRead(eventId, memberId)) {
+            return Optional.empty();
+        }
+        return klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(memberId, eventId, false));
     }
 }

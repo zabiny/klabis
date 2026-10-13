@@ -1,6 +1,7 @@
 import {forwardRef} from 'react'
 import clsx from 'clsx'
 import {FieldWrapper} from './FieldWrapper.tsx'
+import {useFieldId} from './useFieldId.ts'
 import type {CheckboxFieldProps, CheckboxGroupProps} from './types.ts'
 
 /**
@@ -22,6 +23,7 @@ export const CheckboxField = forwardRef<HTMLInputElement, CheckboxFieldProps>(
         },
         ref
     ) => {
+        const inputId = useFieldId(inputProps.id)
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             onChange?.(e.target.checked)
         }
@@ -33,6 +35,7 @@ export const CheckboxField = forwardRef<HTMLInputElement, CheckboxFieldProps>(
                 required={required}
                 helpText={helpText}
                 className={className}
+                id={inputId}
             >
                 <label className="flex items-center cursor-pointer group">
                     <input
@@ -51,6 +54,7 @@ export const CheckboxField = forwardRef<HTMLInputElement, CheckboxFieldProps>(
                             'transition-colors duration-200'
                         )}
                         {...inputProps}
+                        id={inputId}
                     />
                 </label>
             </FieldWrapper>

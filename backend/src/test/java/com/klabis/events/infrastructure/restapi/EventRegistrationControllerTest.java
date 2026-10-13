@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.klabis.events.EventTestDataBuilder.aRegistration;
+import static com.klabis.events.EventTestDataBuilder.aRegistrationWithSharedServices;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -331,8 +333,8 @@ class EventRegistrationControllerTest {
             MemberId member1Id = new MemberId(UUID.randomUUID());
             MemberId member2Id = new MemberId(UUID.randomUUID());
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now(), false, false, null, null)
+                    aRegistration(member1Id, SiCardNumber.of("1234")),
+                    aRegistration(member2Id, SiCardNumber.of("5678"))
             );
             Event closedEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().minusDays(5))
@@ -366,7 +368,7 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.randomUUID());
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null)
+                    aRegistration(memberId, SiCardNumber.of("1234"))
             );
             Event closedEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().minusDays(5))
@@ -397,7 +399,7 @@ class EventRegistrationControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             EventCategory m21 = EventCategory.create("M21");
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), m21.id(), Instant.now(), false, false, null, null)
+                    aRegistration(memberId, SiCardNumber.of("1234"), m21.id())
             );
             Event closedEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().minusDays(5))
@@ -428,7 +430,7 @@ class EventRegistrationControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             EventCategoryId removedCategoryId = EventCategoryId.generate();
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), removedCategoryId, Instant.now(), false, false, null, null)
+                    aRegistration(memberId, SiCardNumber.of("1234"), removedCategoryId)
             );
             Event closedEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().minusDays(5))
@@ -468,8 +470,8 @@ class EventRegistrationControllerTest {
             Event event = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .addRegistrations(List.of(
-                            EventRegistration.reconstruct(UUID.randomUUID(), ownId, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null),
-                            EventRegistration.reconstruct(UUID.randomUUID(), otherId, SiCardNumber.of("5678"), null, Instant.now(), false, false, null, null)))
+                            aRegistration(ownId, SiCardNumber.of("1234")),
+                            aRegistration(otherId, SiCardNumber.of("5678"))))
                     .build();
             event.publish();
 
@@ -498,7 +500,7 @@ class EventRegistrationControllerTest {
             Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
                     .withDate(LocalDate.now().plusDays(30))
                     .addRegistrations(List.of(
-                            EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null)))
+                            aRegistration(memberId, SiCardNumber.of("1234"))))
                     .build();
             event.publish();
 
@@ -526,7 +528,7 @@ class EventRegistrationControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null)
+                    aRegistration(memberId, SiCardNumber.of("1234"))
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
@@ -556,7 +558,7 @@ class EventRegistrationControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null)
+                    aRegistration(memberId, SiCardNumber.of("1234"))
             );
             Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
                     .withDate(LocalDate.now().plusDays(30))
@@ -586,7 +588,7 @@ class EventRegistrationControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null)
+                    aRegistration(memberId, SiCardNumber.of("1234"))
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
@@ -958,8 +960,8 @@ class EventRegistrationControllerTest {
             Instant later = Instant.now();
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, later, false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, earlier, false, false, null, null)
+                    aRegistration(member2Id, SiCardNumber.of("5678"), later),
+                    aRegistration(member1Id, SiCardNumber.of("1234"), earlier)
             );
             Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
 
@@ -987,8 +989,8 @@ class EventRegistrationControllerTest {
             MemberId member2Id = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now().minus(5, ChronoUnit.MINUTES), false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now(), false, false, null, null)
+                    aRegistration(member1Id, SiCardNumber.of("1234"), Instant.now().minus(5, ChronoUnit.MINUTES)),
+                    aRegistration(member2Id, SiCardNumber.of("5678"))
             );
             Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
 
@@ -1017,8 +1019,8 @@ class EventRegistrationControllerTest {
             MemberId member2Id = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now().minus(5, ChronoUnit.MINUTES), false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now(), false, false, null, null)
+                    aRegistration(member1Id, SiCardNumber.of("1234"), Instant.now().minus(5, ChronoUnit.MINUTES)),
+                    aRegistration(member2Id, SiCardNumber.of("5678"))
             );
             Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
 
@@ -1049,8 +1051,8 @@ class EventRegistrationControllerTest {
             EventCategory m21 = EventCategory.create("M21");
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), w21.id(), Instant.now().minus(5, ChronoUnit.MINUTES), false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), m21.id(), Instant.now(), false, false, null, null)
+                    aRegistration(member1Id, SiCardNumber.of("1234"), w21.id(), Instant.now().minus(5, ChronoUnit.MINUTES)),
+                    aRegistration(member2Id, SiCardNumber.of("5678"), m21.id())
             );
             Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations, List.of(w21, m21));
 
@@ -1081,8 +1083,8 @@ class EventRegistrationControllerTest {
             Instant later = Instant.now();
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, later, false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, earlier, false, false, null, null)
+                    aRegistration(member2Id, SiCardNumber.of("5678"), later),
+                    aRegistration(member1Id, SiCardNumber.of("1234"), earlier)
             );
             Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
 
@@ -1113,8 +1115,8 @@ class EventRegistrationControllerTest {
             Instant later = Instant.now();
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, later, false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, earlier, false, false, null, null)
+                    aRegistration(member2Id, SiCardNumber.of("5678"), later),
+                    aRegistration(member1Id, SiCardNumber.of("1234"), earlier)
             );
             Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
 
@@ -1146,8 +1148,8 @@ class EventRegistrationControllerTest {
             Instant later = Instant.now();
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, later, false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, earlier, false, false, null, null)
+                    aRegistration(member2Id, SiCardNumber.of("5678"), later),
+                    aRegistration(member1Id, SiCardNumber.of("1234"), earlier)
             );
             Event event = buildEventWithRegistrations(new MemberId(UUID.fromString(COORDINATOR_ID)), registrations);
 
@@ -1181,8 +1183,8 @@ class EventRegistrationControllerTest {
             MemberId member2Id = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now(), false, false, null, null)
+                    aRegistration(member1Id, SiCardNumber.of("1234")),
+                    aRegistration(member2Id, SiCardNumber.of("5678"))
             );
 
             Event activeEvent = EventTestDataBuilder.anEvent()
@@ -1215,7 +1217,7 @@ class EventRegistrationControllerTest {
             MemberId member1Id = new MemberId(UUID.fromString(MEMBER_1_ID));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null)
+                    aRegistration(member1Id, SiCardNumber.of("1234"))
             );
 
             Event finishedEvent = EventTestDataBuilder.anEvent()
@@ -1247,8 +1249,8 @@ class EventRegistrationControllerTest {
             MemberId member2Id = new MemberId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now(), false, false, null, null)
+                    aRegistration(member1Id, SiCardNumber.of("1234")),
+                    aRegistration(member2Id, SiCardNumber.of("5678"))
             );
 
             Event activeEvent = EventTestDataBuilder.anEvent()
@@ -1283,8 +1285,8 @@ class EventRegistrationControllerTest {
             MemberId member2Id = new MemberId(UUID.fromString("33333333-3333-3333-3333-333333333333"));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now(), false, false, null, null)
+                    aRegistration(member1Id, SiCardNumber.of("1234")),
+                    aRegistration(member2Id, SiCardNumber.of("5678"))
             );
 
             Event finishedEvent = EventTestDataBuilder.anEvent()
@@ -1321,8 +1323,7 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
-            EventRegistration registration = EventRegistration.reconstruct(
-                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now(), false, false, null, null);
+            EventRegistration registration = aRegistration(memberId, SiCardNumber.of("123456"));
             Event activeEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .addRegistration(registration)
@@ -1355,8 +1356,7 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.randomUUID();
             MemberId targetMemberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
-            EventRegistration registration = EventRegistration.reconstruct(
-                    UUID.randomUUID(), targetMemberId, SiCardNumber.of("654321"), null, Instant.now(), false, false, null, null);
+            EventRegistration registration = aRegistration(targetMemberId, SiCardNumber.of("654321"));
             Event activeEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .addRegistration(registration)
@@ -1396,8 +1396,7 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId targetMemberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
-            EventRegistration registration = EventRegistration.reconstruct(
-                    UUID.randomUUID(), targetMemberId, SiCardNumber.of("654321"), null, Instant.now(), false, false, null, null);
+            EventRegistration registration = aRegistration(targetMemberId, SiCardNumber.of("654321"));
             Event activeEvent = EventTestDataBuilder.anEventWithId(new EventId(eventId))
                     .withDate(LocalDate.now().plusDays(30))
                     .addRegistration(registration)
@@ -1480,9 +1479,7 @@ class EventRegistrationControllerTest {
         }
 
         private Event eventWithNotedRegistration(EventId eventId, MemberId memberId) {
-            EventRegistration registration = EventRegistration.reconstruct(
-                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now(), false, false,
-                    RegistrationNote.ofNullable("club note"), RegistrationNote.ofNullable("oris note"));
+            EventRegistration registration = EventRegistration.reconstruct(UUID.randomUUID(), Instant.now(), EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(SiCardNumber.of("123456")).internalNote(RegistrationNote.ofNullable("club note")).orisNote(RegistrationNote.ofNullable("oris note")).build());
             var builder = eventId != null ? EventTestDataBuilder.anEventWithId(eventId) : EventTestDataBuilder.anEvent();
             Event event = builder.withDate(LocalDate.now().plusDays(30)).addRegistration(registration).build();
             event.publish();
@@ -1520,8 +1517,7 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
-            EventRegistration registration = EventRegistration.reconstruct(
-                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now(), true, false, null, null);
+            EventRegistration registration = aRegistrationWithSharedServices(memberId, SiCardNumber.of("123456"), true, false);
             Event activeEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .withSharedTransportEnabled(true)
@@ -1550,8 +1546,7 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.randomUUID();
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
-            EventRegistration registration = EventRegistration.reconstruct(
-                    UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now(), true, true, null, null);
+            EventRegistration registration = aRegistrationWithSharedServices(memberId, SiCardNumber.of("123456"), true, true);
             Event activeEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .withSharedTransportEnabled(true)
@@ -1793,8 +1788,8 @@ class EventRegistrationControllerTest {
             MemberId member2Id = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null),
-                    EventRegistration.reconstruct(UUID.randomUUID(), member2Id, SiCardNumber.of("5678"), null, Instant.now(), false, false, null, null)
+                    aRegistration(member1Id, SiCardNumber.of("1234")),
+                    aRegistration(member2Id, SiCardNumber.of("5678"))
             );
             Event publishedEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
@@ -1827,7 +1822,7 @@ class EventRegistrationControllerTest {
             MemberId member1Id = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), member1Id, SiCardNumber.of("1234"), null, Instant.now(), false, false, null, null)
+                    aRegistration(member1Id, SiCardNumber.of("1234"))
             );
             Event publishedEvent = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))

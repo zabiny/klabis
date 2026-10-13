@@ -105,25 +105,16 @@ public class EventRegistration {
      * Factory method for reconstructing EventRegistration from persistence layer.
      * <p>
      * This bypasses validation since the data was already validated when originally stored.
-     *
-     * @param id           registration's unique identifier
-     * @param memberId     member's user ID
-     * @param siCardNumber SI card number
-     * @param registeredAt registration timestamp
-     * @return reconstructed EventRegistration instance
      */
-    public static EventRegistration reconstruct(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId,
-                                               Instant registeredAt, boolean wantsSharedTransport, boolean wantsSharedAccommodation,
-                                               RegistrationNote internalNote, RegistrationNote orisNote) {
-        return new EventRegistration(id, memberId, siCardNumber, categoryId, registeredAt,
-                wantsSharedTransport, wantsSharedAccommodation, internalNote, orisNote);
+    public static EventRegistration reconstruct(UUID id, Instant registeredAt, CreateEventRegistration data) {
+        return new EventRegistration(id, data.memberId(), data.siCardNumber(), data.categoryId(), registeredAt,
+                data.wantsSharedTransport(), data.wantsSharedAccommodation(), data.internalNote(), data.orisNote());
     }
 
-    public EventRegistration withChanges(SiCardNumber newSiCard, EventCategoryId newCategoryId,
-                                         boolean newWantsSharedTransport, boolean newWantsSharedAccommodation,
-                                         RegistrationNote newInternalNote, RegistrationNote newOrisNote) {
-        return new EventRegistration(this.id, this.memberId, newSiCard, newCategoryId, this.registeredAt,
-                newWantsSharedTransport, newWantsSharedAccommodation, newInternalNote, newOrisNote);
+    public EventRegistration withChanges(Event.EditRegistrationCommand changes) {
+        return new EventRegistration(this.id, this.memberId, changes.siCardNumber(), changes.categoryId(),
+                this.registeredAt, changes.wantsSharedTransport(), changes.wantsSharedAccommodation(),
+                changes.internalNote(), changes.orisNote());
     }
 
     // ========== Getters ==========

@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.klabis.events.EventTestDataBuilder.register;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -409,7 +410,7 @@ class OrisEventSyncAdapterTest {
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, new SiCardNumber("12345"), m21.id(), false, false, null, null);
+            register(event, memberId, new SiCardNumber("12345"), m21.id());
 
             when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
                     "Race Updated", eventDate.plusDays(14), "Forest", "OOB", null,

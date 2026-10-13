@@ -198,9 +198,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             RegistrationNote internalNote,
             RegistrationNote orisNote
     ) {
-        public static RegisterCommand from(Event event) {
-            return new RegisterCommand(null, null, false, false, null, null);
-        }
     }
 
     @RecordBuilder
@@ -806,25 +803,22 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * - When event has no categories, category is ignored
      *
      * @param memberId     member's user ID (required)
-     * @param siCardNumber SI card number (required)
-     * @param categoryId   selected race category id (required when event has categories, ignored otherwise)
+     * @param command      registration data; category is required when event has categories, ignored otherwise
      * @throws BusinessRuleViolationException    if registrations are not open or category validation fails
      * @throws DuplicateRegistrationException    if member is already registered
      */
-    public void registerMember(MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId,
-                               boolean wantsSharedTransport, boolean wantsSharedAccommodation,
-                               RegistrationNote internalNote, RegistrationNote orisNote) {
+    public void registerMember(MemberId memberId, RegisterCommand command) {
         assertRegistrationsOpen();
 
         if (findRegistration(memberId).isPresent()) {
             throw new DuplicateRegistrationException(memberId, this.id);
         }
 
-        EventCategoryId resolvedCategoryId = resolveCategoryId(categoryId);
-
         EventRegistration registration = EventRegistration.create(
-                new EventRegistration.CreateEventRegistration(memberId, siCardNumber, resolvedCategoryId,
-                        wantsSharedTransport, wantsSharedAccommodation, internalNote, orisNote));
+                new EventRegistration.CreateEventRegistration(memberId, SiCardNumber.of(command.siCardNumber()),
+                        resolveCategoryId(command.categoryId()),
+                        command.wantsSharedTransport(), command.wantsSharedAccommodation(),
+                        command.internalNote(), command.orisNote()));
         registrations.add(registration);
 
         registerEvent(MemberRegisteredForEventEvent.fromAggregate(this, memberId));
@@ -876,8 +870,11 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 : current.wantsSharedTransport();
         boolean wantsSharedAccommodation = sharedAccommodationEnabled ? command.wantsSharedAccommodation()
                 : current.wantsSharedAccommodation();
-        EventRegistration updated = current.withChanges(command.siCardNumber(), resolvedCategoryId,
-                wantsSharedTransport, wantsSharedAccommodation, command.internalNote(), command.orisNote());
+        EventRegistration updated = current.withChanges(EventEditRegistrationCommandBuilder.builder(command)
+                .categoryId(resolvedCategoryId)
+                .wantsSharedTransport(wantsSharedTransport)
+                .wantsSharedAccommodation(wantsSharedAccommodation)
+                .build());
 
         registrations.remove(current);
         registrations.add(updated);

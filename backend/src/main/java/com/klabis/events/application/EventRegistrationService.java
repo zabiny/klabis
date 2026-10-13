@@ -4,7 +4,6 @@ import com.klabis.events.EventId;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventRepository;
-import com.klabis.events.domain.SiCardNumber;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;
 import org.jspecify.annotations.NonNull;
@@ -33,9 +32,7 @@ public class EventRegistrationService implements EventRegistrationPort {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
-        event.registerMember(memberId, SiCardNumber.of(command.siCardNumber()), command.categoryId(),
-                command.wantsSharedTransport(), command.wantsSharedAccommodation(),
-                command.internalNote(), command.orisNote());
+        event.registerMember(memberId, command);
         eventRepository.save(event);
     }
 

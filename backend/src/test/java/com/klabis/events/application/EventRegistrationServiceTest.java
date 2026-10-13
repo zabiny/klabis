@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.klabis.events.EventTestDataBuilder.register;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -97,7 +98,7 @@ class EventRegistrationServiceTest {
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
 
             // Register member first time
-            activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"), null, false, false, null, null);
+            register(activeEvent, TEST_MEMBER_ID, SiCardNumber.of("123456"), null);
 
             // When/Then - second registration should fail
             assertThatThrownBy(() -> service.registerMember(eventId, TEST_MEMBER_ID, command))
@@ -248,7 +249,7 @@ class EventRegistrationServiceTest {
                     .name("Test Event").eventDate(LocalDate.now().plusDays(5))
                     .location("Test Location").organizer("OOB").build());
             activeEvent.publish();
-            activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"), null, false, false, null, null);
+            register(activeEvent, TEST_MEMBER_ID, SiCardNumber.of("123456"), null);
         }
 
         @Test
@@ -356,7 +357,7 @@ class EventRegistrationServiceTest {
                     .location("Test Location").organizer("OOB")
                     .registrationDeadlines(RegistrationDeadlines.single(LocalDate.now().plusDays(30))).build());
             eventWithFutureDeadline.publish();
-            eventWithFutureDeadline.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"), null, false, false, null, null);
+            register(eventWithFutureDeadline, TEST_MEMBER_ID, SiCardNumber.of("123456"), null);
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(eventWithFutureDeadline));
             when(eventRepository.save(any(Event.class))).thenReturn(eventWithFutureDeadline);
@@ -385,7 +386,7 @@ class EventRegistrationServiceTest {
                     .name("Test Event").eventDate(LocalDate.now().plusDays(10))
                     .location("Test Location").organizer("OOB").build());
             activeEvent.publish();
-            activeEvent.registerMember(TEST_MEMBER_ID, SiCardNumber.of("123456"), null, false, false, null, null);
+            register(activeEvent, TEST_MEMBER_ID, SiCardNumber.of("123456"), null);
         }
 
         @Test
@@ -452,8 +453,8 @@ class EventRegistrationServiceTest {
                     .name("Test Event").eventDate(LocalDate.now().plusDays(30))
                     .location("Test Location").organizer("OOB").build());
             event.publish();
-            event.registerMember(new MemberId(member1Id), SiCardNumber.of("111111"), null, false, false, null, null);
-            event.registerMember(new MemberId(member2Id), SiCardNumber.of("222222"), null, false, false, null, null);
+            register(event, new MemberId(member1Id), SiCardNumber.of("111111"), null);
+            register(event, new MemberId(member2Id), SiCardNumber.of("222222"), null);
 
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 

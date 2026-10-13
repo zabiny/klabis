@@ -1,7 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
-import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.ui.*;
@@ -72,6 +71,7 @@ public class EventController implements EventsApi {
     private final ConversionService conversionService;
     private final SynchronizationPort synchronizationPort;
     private final AuthorizationEvaluator authorizationEvaluator;
+    private final RegistrationReadAccess readAccess;
 
     public EventController(
             EventManagementPort eventManagementService,
@@ -82,8 +82,10 @@ public class EventController implements EventsApi {
             AccommodationListCsvRenderer csvRenderer,
             ConversionService conversionService,
             SynchronizationPort synchronizationPort,
-            AuthorizationEvaluator authorizationEvaluator) {
+            AuthorizationEvaluator authorizationEvaluator,
+            RegistrationReadAccess readAccess) {
         this.authorizationEvaluator = authorizationEvaluator;
+        this.readAccess = readAccess;
         this.eventManagementService = eventManagementService;
         this.eventRegistrationService = eventRegistrationService;
         this.members = members;
@@ -151,7 +153,7 @@ public class EventController implements EventsApi {
         boolean anyOfferEnabled = event.isSharedTransportEnabled() || event.isSharedAccommodationEnabled();
         if (event.getStatus() != com.klabis.events.domain.EventStatus.ACTIVE
                 || !anyOfferEnabled
-                || !EventAffordanceSupport.canReadRegistrations(authorizationEvaluator, event)) {
+                || !readAccess.canReadRegistrations(event.getId().value())) {
             return null;
         }
 
@@ -372,7 +374,7 @@ public class EventController implements EventsApi {
 
     private Event loadAuthorizedEventForAccommodation(EventId eventId) {
         Event event = eventManagementService.getEvent(eventId, false);
-        if (!EventAffordanceSupport.canReadRegistrations(authorizationEvaluator, event)) {
+        if (!readAccess.canReadRegistrations(event.getId().value())) {
             throw AccommodationListAccessDeniedException.callerNotPermitted();
         }
         if (!event.isSharedAccommodationEnabled()) {
@@ -420,24 +422,8 @@ record EnrolledEventIds(Set<String> eventIds) {
 
 class EventAffordanceSupport {
 
-    private static final List<Authority> EDIT_AUTHORITIES = List.of(Authority.EVENTS_MANAGE, Authority.EVENTS_EDIT);
-    private static final List<Authority> READ_REGISTRATIONS_AUTHORITIES =
-            List.of(Authority.EVENTS_REGISTRATIONS, Authority.EVENTS_REGISTRATIONS_READ);
-
-    static boolean canEdit(AuthorizationEvaluator authorizationEvaluator, Event event) {
-        return authorizationEvaluator.isAllowed(EDIT_AUTHORITIES, TargetRef.event(event.getId().value()), false);
-    }
-
-    static boolean canReadRegistrations(AuthorizationEvaluator authorizationEvaluator, Event event) {
-        return authorizationEvaluator.isAllowed(READ_REGISTRATIONS_AUTHORITIES, TargetRef.event(event.getId().value()), false);
-    }
-
-    static Link addManagementAffordances(Link selfLink, Event event, AuthorizationEvaluator authorizationEvaluator) {
+    static Link addManagementAffordances(Link selfLink, Event event) {
         UUID eventId = event.getId().value();
-
-        if (!canEdit(authorizationEvaluator, event)) {
-            return selfLink;
-        }
 
         Map<String, HalFormsOptionsDef> coordinatorsOptions = Map.of("coordinators",
                 HalFormsOptionsDef.remote(methodOn(MembersApi.class).listMemberOptions()));
@@ -496,12 +482,12 @@ class EventAffordanceSupport {
 class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, Event> {
 
     private final MemberRegistrationSanctionPort sanctionPort;
-    private final AuthorizationEvaluator authorizationEvaluator;
+    private final RegistrationReadAccess readAccess;
     private final SynchronizationPort synchronizationPort;
 
-    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, SynchronizationPort synchronizationPort, AuthorizationEvaluator authorizationEvaluator) {
+    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, SynchronizationPort synchronizationPort, RegistrationReadAccess readAccess) {
         this.sanctionPort = sanctionPort;
-        this.authorizationEvaluator = authorizationEvaluator;
+        this.readAccess = readAccess;
         this.synchronizationPort = synchronizationPort;
     }
 
@@ -513,7 +499,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, authorizationEvaluator);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
@@ -556,7 +542,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
 
         if (event.isSharedAccommodationEnabled()
-                && EventAffordanceSupport.canReadRegistrations(authorizationEvaluator, event)) {
+                && readAccess.canReadRegistrations(event.getId().value())) {
             klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
@@ -571,11 +557,9 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
 class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummaryDto, Event> {
 
     private final MemberRegistrationSanctionPort sanctionPort;
-    private final AuthorizationEvaluator authorizationEvaluator;
 
-    EventSummaryPostprocessor(MemberRegistrationSanctionPort sanctionPort, AuthorizationEvaluator authorizationEvaluator) {
+    EventSummaryPostprocessor(MemberRegistrationSanctionPort sanctionPort) {
         this.sanctionPort = sanctionPort;
-        this.authorizationEvaluator = authorizationEvaluator;
     }
 
     @Override
@@ -586,7 +570,7 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, authorizationEvaluator);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
@@ -697,11 +681,7 @@ class AccommodationListItemPostprocessor
 
     @Override
     public void process(EntityModel<AccommodationListItemDto> dtoModel, AccommodationList.AccommodationListRow row) {
-        if (!readAccess.canRead(row.eventId(), row.registration().memberId().value())) {
-            return;
-        }
-        klabisLinkTo(methodOn(EventRegistrationsApi.class)
-                .getRegistration(row.registration().memberId().value(), row.eventId(), false))
+        readAccess.linkTo(row.eventId(), row.registration().memberId().value())
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()));
     }
 }

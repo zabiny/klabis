@@ -1,5 +1,6 @@
 package com.klabis.events;
 
+import com.klabis.events.domain.EventEditRegistrationCommandBuilder;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
 import com.klabis.events.domain.SiCardNumber;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.klabis.events.EventTestDataBuilder.aRegistration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -114,11 +116,11 @@ class EventRegistrationTest {
             SiCardNumber originalSiCard = SiCardNumber.of("123456");
             Instant originalRegisteredAt = Instant.now().minusSeconds(60);
             EventCategoryId originalCategoryId = EventCategoryId.generate();
-            EventRegistration original = EventRegistration.reconstruct(originalId, memberId, originalSiCard, originalCategoryId, originalRegisteredAt, false, false, null, null);
+            EventRegistration original = EventRegistration.reconstruct(originalId, originalRegisteredAt, EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(originalSiCard).categoryId(originalCategoryId).build());
 
             SiCardNumber newSiCard = SiCardNumber.of("654321");
             EventCategoryId newCategoryId = EventCategoryId.generate();
-            EventRegistration updated = original.withChanges(newSiCard, newCategoryId, false, false, null, null);
+            EventRegistration updated = original.withChanges(EventEditRegistrationCommandBuilder.builder().siCardNumber(newSiCard).categoryId(newCategoryId).build());
 
             assertThat(updated.id()).isEqualTo(originalId);
             assertThat(updated.registeredAt()).isEqualTo(originalRegisteredAt);
@@ -131,9 +133,9 @@ class EventRegistrationTest {
         @DisplayName("should return a different instance (not the same reference)")
         void shouldReturnDifferentInstance() {
             MemberId memberId = new MemberId(UUID.randomUUID());
-            EventRegistration original = EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("123456"), null, Instant.now(), false, false, null, null);
+            EventRegistration original = aRegistration(memberId, SiCardNumber.of("123456"));
 
-            EventRegistration updated = original.withChanges(SiCardNumber.of("654321"), null, false, false, null, null);
+            EventRegistration updated = original.withChanges(EventEditRegistrationCommandBuilder.builder().siCardNumber(SiCardNumber.of("654321")).build());
 
             assertThat(updated).isNotSameAs(original);
         }
@@ -152,8 +154,8 @@ class EventRegistrationTest {
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             Instant registeredAt = Instant.now();
 
-            EventRegistration registration1 = EventRegistration.reconstruct(id, memberId, siCardNumber, null, registeredAt, false, false, null, null);
-            EventRegistration registration2 = EventRegistration.reconstruct(id, memberId, siCardNumber, null, registeredAt, false, false, null, null);
+            EventRegistration registration1 = EventRegistration.reconstruct(id, registeredAt, EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(siCardNumber).build());
+            EventRegistration registration2 = EventRegistration.reconstruct(id, registeredAt, EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(siCardNumber).build());
 
             // Assert
             assertThat(registration1)
@@ -169,16 +171,8 @@ class EventRegistrationTest {
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             Instant registeredAt = Instant.now();
 
-            EventRegistration registration1 = EventRegistration.reconstruct(UUID.randomUUID(),
-                    memberId,
-                    siCardNumber,
-                    null,
-                    registeredAt, false, false, null, null);
-            EventRegistration registration2 = EventRegistration.reconstruct(UUID.randomUUID(),
-                    memberId,
-                    siCardNumber,
-                    null,
-                    registeredAt, false, false, null, null);
+            EventRegistration registration1 = aRegistration(memberId, siCardNumber, registeredAt);
+            EventRegistration registration2 = aRegistration(memberId, siCardNumber, registeredAt);
 
             // Assert
             assertThat(registration1).isNotEqualTo(registration2);

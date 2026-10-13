@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.klabis.events.EventTestDataBuilder.aRegistrationWithSharedServices;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,8 +46,7 @@ class AccommodationListServiceTest {
     }
 
     private static EventRegistration registration(MemberId memberId, boolean wantsAccommodation) {
-        return EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"),
-                null, Instant.now(), false, wantsAccommodation, null, null);
+        return aRegistrationWithSharedServices(memberId, SiCardNumber.of("1234"), false, wantsAccommodation);
     }
 
     private static MemberAccommodationDto memberData(String firstName) {

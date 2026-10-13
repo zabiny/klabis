@@ -126,7 +126,7 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .map(EventRegistration::memberId)
                 .toList());
 
-        boolean callerCanSortByRegistrationTime = EventAffordanceSupport.canReadRegistrations(authorizationEvaluator, event);
+        boolean callerCanSortByRegistrationTime = readAccess.canReadRegistrations(event.getId().value());
         List<EventRegistration> sorted = RegistrationSortApplier.sort(registrations,
                 memberIndex,
                 event,
@@ -235,11 +235,7 @@ class RegistrationSummaryPostprocessor
         UUID eventId = event.getId().value();
         UUID rowMemberId = view.memberId().value();
 
-        if (!readAccess.canRead(eventId, rowMemberId)) {
-            return;
-        }
-
-        klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(rowMemberId, eventId, false))
+        readAccess.linkTo(eventId, rowMemberId)
                 .ifPresent(selfLinkBuilder -> {
                     if (event.areRegistrationsOpen()) {
                         dtoModel.add(selfLinkBuilder.withSelfRel()

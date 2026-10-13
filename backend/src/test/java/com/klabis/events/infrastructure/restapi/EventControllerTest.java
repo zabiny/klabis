@@ -4,6 +4,7 @@ import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.users.Authority;
+import com.klabis.events.AsEventCoordinator;
 import com.klabis.events.EventCategory;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
@@ -31,6 +32,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 
+import static com.klabis.events.EventTestDataBuilder.aRegistrationWithSharedServices;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,7 +45,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class EventControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";
-    private static final String COORDINATED_EVENT_ID = "00000000-0000-0000-0000-0000000000e1";
+    private static final String COORDINATED_EVENT_ID = AsEventCoordinator.EVENT_ID;
+
+    private static EventTestDataBuilder aCoordinatedEvent() {
+        return EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)));
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -529,9 +535,9 @@ class EventControllerTest {
 
         @Test
         @DisplayName("coordinator of the event can update it without EVENTS:MANAGE — returns 204")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @AsEventCoordinator
         void coordinatorCanUpdateEventWithoutEventsManage() throws Exception {
-            Event coordinatorEvent = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
+            Event coordinatorEvent = aCoordinatedEvent()
                     .build();
             when(eventManagementService.getEvent(any(), eq(true))).thenReturn(coordinatorEvent);
 
@@ -546,7 +552,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("coordinator of event A cannot update event B — returns 403")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @AsEventCoordinator
         void coordinatorOfOtherEventIsRejected() throws Exception {
             Event eventWithDifferentCoordinator = EventTestDataBuilder.anEvent().build();
             when(eventManagementService.getEvent(any(), eq(true))).thenReturn(eventWithDifferentCoordinator);
@@ -578,9 +584,9 @@ class EventControllerTest {
 
         @Test
         @DisplayName("coordinator changing the coordinators is refused — returns 403 and nothing is saved")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @AsEventCoordinator
         void coordinatorCannotChangeCoordinators() throws Exception {
-            Event event = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID))).build();
+            Event event = aCoordinatedEvent().build();
             when(eventManagementService.getEvent(any(), eq(true))).thenReturn(event);
 
             mockMvc.perform(
@@ -1354,10 +1360,10 @@ class EventControllerTest {
 
         @Test
         @DisplayName("accommodation-list link present for event coordinator")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @AsEventCoordinator
         void accommodationListLinkPresentForEventCoordinator() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
-            Event event = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
+            Event event = aCoordinatedEvent()
                     .withSharedAccommodationEnabled(true)
                     .buildPublished();
 
@@ -1612,11 +1618,11 @@ class EventControllerTest {
 
         @Test
         @DisplayName("update affordance present in DRAFT event detail for event coordinator without EVENTS:MANAGE")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @AsEventCoordinator
         void updateAffordancePresentForCoordinator() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
-            Event draftEvent = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
+            Event draftEvent = aCoordinatedEvent()
                     .build();
 
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
@@ -1632,9 +1638,9 @@ class EventControllerTest {
 
         @Test
         @DisplayName("updateEvent template marks coordinators read-only for the event coordinator")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @AsEventCoordinator
         void updateTemplateMarksCoordinatorsReadOnlyForCoordinator() throws Exception {
-            Event draftEvent = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID))).build();
+            Event draftEvent = aCoordinatedEvent().build();
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
 
@@ -1649,9 +1655,9 @@ class EventControllerTest {
 
         @Test
         @DisplayName("coordinator is not offered publish and cancel")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @AsEventCoordinator
         void publishAndCancelAbsentForCoordinator() throws Exception {
-            Event draftEvent = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID))).build();
+            Event draftEvent = aCoordinatedEvent().build();
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
 
@@ -1685,11 +1691,11 @@ class EventControllerTest {
 
         @Test
         @DisplayName("registrationTime visible for the event coordinator")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @AsEventCoordinator
         void registrationTimeVisibleForCoordinator() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId registeredMember = new MemberId(UUID.randomUUID());
-            Event activeEvent = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
+            Event activeEvent = aCoordinatedEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .buildPublished();
 
@@ -1719,12 +1725,11 @@ class EventControllerTest {
         private static final String COORDINATOR_ID = "00000000-0000-0000-0000-0000000000c0";
 
         private EventRegistration registration(boolean wantsTransport, boolean wantsAccommodation) {
-            return EventRegistration.reconstruct(UUID.randomUUID(), new MemberId(UUID.randomUUID()),
-                    SiCardNumber.of("123456"), null, Instant.now(), wantsTransport, wantsAccommodation, null, null);
+            return aRegistrationWithSharedServices(new MemberId(UUID.randomUUID()), SiCardNumber.of("123456"), wantsTransport, wantsAccommodation);
         }
 
         private EventTestDataBuilder activeEventWithBothOffers() {
-            return EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
+            return aCoordinatedEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .withSharedTransportEnabled(true)
                     .withSharedAccommodationEnabled(true);
@@ -1817,7 +1822,7 @@ class EventControllerTest {
         @DisplayName("(e) only sharedTransportEnabled → sharedTransport present, sharedAccommodation absent")
         @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void onlyTransportEnabledShowsOnlyTransport() throws Exception {
-            Event event = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
+            Event event = aCoordinatedEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .withSharedTransportEnabled(true)
                     .withSharedAccommodationEnabled(false)
@@ -1860,9 +1865,7 @@ class EventControllerTest {
         private static final String REGISTERED_MEMBER_ID = "00000000-0000-0000-0000-0000000000d2";
 
         private EventRegistration registration(boolean wantsTransport, boolean wantsAccommodation) {
-            return EventRegistration.reconstruct(UUID.randomUUID(),
-                    new MemberId(UUID.fromString(REGISTERED_MEMBER_ID)),
-                    SiCardNumber.of("123456"), null, Instant.now(), wantsTransport, wantsAccommodation, null, null);
+            return aRegistrationWithSharedServices(new MemberId(UUID.fromString(REGISTERED_MEMBER_ID)), SiCardNumber.of("123456"), wantsTransport, wantsAccommodation);
         }
 
         private void mockRegisteredMember() {
@@ -1975,7 +1978,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("coordinator cannot publish the event — returns 403")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @AsEventCoordinator
         void coordinatorCannotPublish() throws Exception {
             mockMvc.perform(
                             post("/api/events/{id}/publish", COORDINATED_EVENT_ID)
@@ -2004,7 +2007,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("coordinator cannot cancel the event — returns 403")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        @AsEventCoordinator
         void coordinatorCannotCancel() throws Exception {
             mockMvc.perform(
                             post("/api/events/{id}/cancel", COORDINATED_EVENT_ID)
@@ -2649,9 +2652,9 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("1234"), false, true)
             );
-            Event event = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
+            Event event = aCoordinatedEvent()
                     .withSharedAccommodationEnabled(true)
                     .addRegistrations(registrations)
                     .build();
@@ -2691,8 +2694,7 @@ class EventControllerTest {
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
                     .withCoordinator(coordinatorId)
-                    .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)))
+                    .addRegistrations(List.of(aRegistrationWithSharedServices(rowMemberId, SiCardNumber.of("1234"), false, true)))
                     .build();
             event.publish();
 
@@ -2722,10 +2724,9 @@ class EventControllerTest {
             // only be offered through the owner-visible branch of that endpoint's gate.
             MemberId callerId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
-            Event event = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
+            Event event = aCoordinatedEvent()
                     .withSharedAccommodationEnabled(true)
-                    .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), callerId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)))
+                    .addRegistrations(List.of(aRegistrationWithSharedServices(callerId, SiCardNumber.of("1234"), false, true)))
                     .build();
             event.publish();
 
@@ -2753,10 +2754,9 @@ class EventControllerTest {
             MemberId rowMemberId = new MemberId(UUID.randomUUID());
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
-            Event event = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
+            Event event = aCoordinatedEvent()
                     .withSharedAccommodationEnabled(true)
-                    .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)))
+                    .addRegistrations(List.of(aRegistrationWithSharedServices(rowMemberId, SiCardNumber.of("1234"), false, true)))
                     .build();
             event.publish();
 
@@ -2814,8 +2814,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
                     .withSharedAccommodationEnabled(true)
-                    .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)))
+                    .addRegistrations(List.of(aRegistrationWithSharedServices(memberId, SiCardNumber.of("1234"), false, true)))
                     .build();
             event.publish();
 
@@ -2836,7 +2835,7 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("1234"), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -2899,7 +2898,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("1234"), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -2931,7 +2930,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("1234"), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -2970,7 +2969,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("9876"), null, Instant.now(), false, true, null, null)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("9876"), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -3004,7 +3003,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("5555"), null, Instant.now(), false, true, null, null)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("5555"), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -3334,7 +3333,7 @@ class EventControllerTest {
         private static final String OTHER_EVENT_ID = "00000000-0000-0000-0000-0000000000e2";
 
         private Event eventCoordinatedInDomain() {
-            return EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
+            return aCoordinatedEvent()
                     .withCoordinator(new MemberId(UUID.fromString(DOMAIN_COORDINATOR_ID)))
                     .withDate(LocalDate.now().plusDays(30))
                     .withSharedAccommodationEnabled(true)

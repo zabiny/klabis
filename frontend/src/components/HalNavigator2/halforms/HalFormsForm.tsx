@@ -8,6 +8,7 @@ import {isMultipleProperty, sanitizeFormValues} from "./utils.ts";
 import {Alert, Button, Spinner} from "../../UI";
 import {Box} from "../../UI/layout";
 import {FieldWrapper} from "../../UI/forms";
+import {getFieldLabel} from "../../../localization";
 import {UI_MESSAGES, VALIDATION_MESSAGES} from "../../../constants/messages.ts";
 
 type FormData = Record<string, unknown>;
@@ -141,7 +142,7 @@ export const ReadOnlyDisplay: React.FC<{ label?: string, value: ReactNode, rende
 const ReadOnlyField: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
     const {values} = useFormikContext<Record<string, unknown>>();
     const rawValue = getIn(values, prop.name);
-    return <ReadOnlyDisplay label={prop.prompt || prop.name} value={formatReadOnlyValue(rawValue)} renderMode="field" />;
+    return <ReadOnlyDisplay label={prop.prompt || getFieldLabel(prop.name)} value={formatReadOnlyValue(rawValue)} renderMode="field" />;
 };
 
 const ReadOnlyValue: React.FC<{ prop: HalFormsProperty }> = ({prop}) => {
