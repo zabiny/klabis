@@ -2013,6 +2013,30 @@ class EventJdbcRepositoryTest {
     }
 
     @Nested
+    @DisplayName("Coordinated event ids")
+    class CoordinatedEventIds {
+
+        @Test
+        @DisplayName("returns ids of all events the member coordinates and no others")
+        void shouldReturnOnlyCoordinatedEventIds() {
+            MemberId coordA = new MemberId(TEST_MEMBER_1_ID);
+            MemberId coordB = new MemberId(TEST_MEMBER_2_ID);
+
+            Event coordinatedByBoth = eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Both").eventDate(LocalDate.of(2026, 9, 1)).organizer("OOB")
+                    .coordinators(new LinkedHashSet<>(List.of(coordA, coordB))).build()));
+            Event coordinatedByB = eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("B only").eventDate(LocalDate.of(2026, 9, 2)).organizer("OOB")
+                    .coordinators(new LinkedHashSet<>(List.of(coordB))).build()));
+
+            assertThat(eventRepository.findIdsCoordinatedBy(coordA)).containsExactly(coordinatedByBoth.getId());
+            assertThat(eventRepository.findIdsCoordinatedBy(coordB))
+                    .containsExactlyInAnyOrder(coordinatedByBoth.getId(), coordinatedByB.getId());
+            assertThat(eventRepository.findIdsCoordinatedBy(new MemberId(TEST_MEMBER_3_ID))).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("Categories persistence — round-trip including orisId and fee")
     class CategoriesPersistence {
 

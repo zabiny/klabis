@@ -166,7 +166,9 @@
     MEMBERS_PERMISSIONS("MEMBERS:PERMISSIONS", TargetType.MEMBER, GrantForm.ALL),
     EVENTS_READ("EVENTS:READ", TargetType.EVENT, GrantForm.ALL),
     EVENTS_MANAGE("EVENTS:MANAGE", TargetType.EVENT, GrantForm.ALL),
-    EVENTS_REGISTRATIONS("EVENTS:REGISTRATIONS", TargetType.MEMBER, GrantForm.ALL),
+    EVENTS_REGISTRATIONS("EVENTS:REGISTRATIONS", TargetType.EVENT, GrantForm.ALL),
+    EVENTS_EDIT("EVENTS:EDIT", TargetType.EVENT, GrantForm.SPECIFIC),
+    EVENTS_REGISTRATIONS_READ("EVENTS:REGISTRATIONS_READ", TargetType.EVENT, GrantForm.SPECIFIC),
     GROUPS_TRAINING("GROUPS:TRAINING", TargetType.NONE, GrantForm.ALL),
     FINANCE_MANAGE("FINANCE:MANAGE", TargetType.NONE, GrantForm.ALL),
     SYNC_MANAGE("SYNC:MANAGE", TargetType.NONE, GrantForm.ALL),
@@ -177,7 +179,7 @@
     public Set&lt;GrantForm&gt; getGrantForms();
     public static Set&lt;Authority&gt; grantableOverAll();
     public static Set&lt;Authority&gt; assignableAuthorities();
-    public static Set&lt;Authority&gt; delegatable();
+    public static Set&lt;Authority&gt; holdableOverTargets();
     public static boolean isKnownAuthority(String value);
 }</code></pre>
 
@@ -193,8 +195,8 @@
         <code>assignableAuthorities()</code> — totéž bez standardních autorit a <code>DEVELOPER</code>.</dd>
 
     <dt>GrantForm.SPECIFIC</dt>
-    <dd>Autoritu lze držet <em>nad konkrétními cíli</em>, odvozenými ze vztahu (<code>delegatable()</code>).
-        Autorita jen s <code>{ALL}</code> je administrátorská a delegovat ji nelze. Zatím ji nemá žádná autorita.</dd>
+    <dd>Autoritu lze držet <em>nad konkrétními cíli</em>, odvozenými ze vztahu (<code>holdableOverTargets()</code>).
+        Autorita jen s <code>{ALL}</code> je administrátorská a delegovat ji nelze. Mají ji <code>MEMBERS_EDIT_PROFILE</code> a autority koordinátora akce (<code>EVENTS_EDIT</code>, <code>EVENTS_REGISTRATIONS_READ</code>).</dd>
 
     <dt>isKnownAuthority(value)</dt>
     <dd>Použije se k filtrování — Spring <code>DaoAuthenticationProvider</code> přidává

@@ -1,5 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.TargetGrant;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.events.EventsWebMvcTest;
 import com.klabis.common.users.Authority;
@@ -396,6 +398,7 @@ class EventRegistrationControllerTest {
     class RegistrationTimePrivacyTests {
 
         private static final String COORDINATOR_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+        private static final String COORDINATED_EVENT_ID = "00000000-0000-0000-0000-0000000000e1";
         private static final String REGULAR_MEMBER_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
 
         @Test
@@ -431,18 +434,16 @@ class EventRegistrationControllerTest {
 
         @Test
         @DisplayName("event coordinator sees registrationTime in registration list")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
         void eventCoordinatorSeesRegistrationTime() throws Exception {
-            UUID eventId = UUID.randomUUID();
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId memberId = new MemberId(UUID.randomUUID());
-            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             List<EventRegistration> registrations = List.of(
                     EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())
             );
-            Event event = EventTestDataBuilder.anEvent()
+            Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
                     .withDate(LocalDate.now().plusDays(30))
-                    .withCoordinator(coordinatorId)
                     .addRegistrations(registrations)
                     .build();
             event.publish();

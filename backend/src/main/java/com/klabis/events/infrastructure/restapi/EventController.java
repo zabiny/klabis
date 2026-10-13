@@ -1,6 +1,7 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.authorization.AuthorizationEvaluator;
+import com.klabis.common.authorization.TargetRef;
 import com.klabis.common.mvc.MvcComponent;
 import com.klabis.common.security.KlabisJwtAuthenticationToken;
 import com.klabis.common.ui.*;
@@ -35,7 +36,6 @@ import org.springframework.hateoas.*;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -110,13 +110,8 @@ public class EventController implements EventsApi {
             @PathVariable UUID id,
             UpdateEventRequest request) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         EventId eventId = new EventId(id);
         Event existingEvent = eventManagementService.getEvent(eventId, true);
-
-        if (!EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_MANAGE, auth, existingEvent)) {
-            throw new AccessDeniedException("Access to event update requires EVENTS:MANAGE authority or being the event coordinator");
-        }
 
         Event.UpdateEvent prefilled = Event.UpdateEvent.from(existingEvent);
         Event.UpdateEvent command = UpdateEventRequestMapper.toCommand(request, prefilled);
@@ -129,12 +124,11 @@ public class EventController implements EventsApi {
             @PathVariable UUID id,
             @ActingUser CurrentUserData currentUser) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Event event = eventManagementService.getEvent(new EventId(id), authorizationEvaluator.has(Authority.EVENTS_MANAGE));
 
         EventDto dto = conversionService.convert(event, EventDto.class);
         dto = EventDtoBuilder.builder(dto)
-                .sharedServicesSummary(sharedServicesSummary(event, auth))
+                .sharedServicesSummary(sharedServicesSummary(event))
                 .build();
 
         // Deferred: building the registrations needs the registration port and Members, which
@@ -146,18 +140,18 @@ public class EventController implements EventsApi {
     }
 
     /**
-     * The per-offer count summary shown on the event detail page. Returned only for the event
-     * coordinator or callers with EVENTS:REGISTRATIONS, only on ACTIVE events, and only while at
+     * The per-offer count summary shown on the event detail page. Returned only to callers who may read
+     * the event's registrations, only on ACTIVE events, and only while at
      * least one offer is enabled; {@code null} otherwise, which {@code @JsonInclude(NON_NULL)} on
      * {@link EventDto} drops from the response. Each sub-object is present only when its offer is
      * enabled — the count itself is a plain tally regardless of the flag.
      */
     @Nullable
-    private SharedServicesSummaryDto sharedServicesSummary(Event event, Authentication auth) {
+    private SharedServicesSummaryDto sharedServicesSummary(Event event) {
         boolean anyOfferEnabled = event.isSharedTransportEnabled() || event.isSharedAccommodationEnabled();
         if (event.getStatus() != com.klabis.events.domain.EventStatus.ACTIVE
                 || !anyOfferEnabled
-                || !EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_REGISTRATIONS, auth, event)) {
+                || !EventAffordanceSupport.canReadRegistrations(authorizationEvaluator, event)) {
             return null;
         }
 
@@ -377,9 +371,8 @@ public class EventController implements EventsApi {
     }
 
     private Event loadAuthorizedEventForAccommodation(EventId eventId) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Event event = eventManagementService.getEvent(eventId, false);
-        if (!EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_REGISTRATIONS, auth, event)) {
+        if (!EventAffordanceSupport.canReadRegistrations(authorizationEvaluator, event)) {
             throw AccommodationListAccessDeniedException.callerNotPermitted();
         }
         if (!event.isSharedAccommodationEnabled()) {
@@ -427,11 +420,22 @@ record EnrolledEventIds(Set<String> eventIds) {
 
 class EventAffordanceSupport {
 
-    static Link addManagementAffordances(Link selfLink, Event event, Authentication auth,
-                                         AuthorizationEvaluator authorizationEvaluator) {
+    private static final List<Authority> EDIT_AUTHORITIES = List.of(Authority.EVENTS_MANAGE, Authority.EVENTS_EDIT);
+    private static final List<Authority> READ_REGISTRATIONS_AUTHORITIES =
+            List.of(Authority.EVENTS_REGISTRATIONS, Authority.EVENTS_REGISTRATIONS_READ);
+
+    static boolean canEdit(AuthorizationEvaluator authorizationEvaluator, Event event) {
+        return authorizationEvaluator.isAllowed(EDIT_AUTHORITIES, TargetRef.event(event.getId().value()), false);
+    }
+
+    static boolean canReadRegistrations(AuthorizationEvaluator authorizationEvaluator, Event event) {
+        return authorizationEvaluator.isAllowed(READ_REGISTRATIONS_AUTHORITIES, TargetRef.event(event.getId().value()), false);
+    }
+
+    static Link addManagementAffordances(Link selfLink, Event event, AuthorizationEvaluator authorizationEvaluator) {
         UUID eventId = event.getId().value();
 
-        if (!isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_MANAGE, auth, event)) {
+        if (!canEdit(authorizationEvaluator, event)) {
             return selfLink;
         }
 
@@ -474,15 +478,6 @@ class EventAffordanceSupport {
         return event.getStatus() == com.klabis.events.domain.EventStatus.ACTIVE && event.areRegistrationsOpen();
     }
 
-    static boolean isCoordinatorOrHas(AuthorizationEvaluator authorizationEvaluator, Authority authority,
-                                      Authentication auth, Event event) {
-        if (authorizationEvaluator.has(authority)) {
-            return true;
-        }
-        MemberId memberId = resolveMemberId(auth);
-        return memberId != null && event.isCoordinator(memberId);
-    }
-
     static List<HalFormsInlineOption> categoryInlineOptions(Event event) {
         return event.getCategories().stream()
                 .map(category -> new HalFormsInlineOption(category.id().toString(), category.name()))
@@ -518,7 +513,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, auth, authorizationEvaluator);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, authorizationEvaluator);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null
@@ -561,7 +556,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                         .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
 
         if (event.isSharedAccommodationEnabled()
-                && EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_REGISTRATIONS, auth, event)) {
+                && EventAffordanceSupport.canReadRegistrations(authorizationEvaluator, event)) {
             klabisLinkTo(methodOn(EventsApi.class).getAccommodationList(eventId))
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
@@ -591,7 +586,7 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
-            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, auth, authorizationEvaluator);
+            var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event, authorizationEvaluator);
 
             if (EventAffordanceSupport.shouldOfferRegistration(event)) {
                 boolean isRegistered = currentMemberId != null

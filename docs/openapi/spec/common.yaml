@@ -512,6 +512,8 @@ components:
 
     # Mapped onto com.klabis.common.users.Authority via schemaMappings. The enum values are the
     # colon-separated wire format produced by Authority's @JsonValue, not the Java constant names.
+    # EVENTS:EDIT and EVENTS:REGISTRATIONS_READ (the event coordinator grants) are deliberately absent:
+    # they are held only over specific events, derived from relationships, and never on the wire.
     Authority:
       type: string
       enum:

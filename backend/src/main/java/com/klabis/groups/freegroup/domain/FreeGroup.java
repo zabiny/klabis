@@ -24,7 +24,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
     public static final String TYPE_DISCRIMINATOR = "FREE";
 
     private static final Set<Authority> DELEGATABLE_AUTHORITIES = Collections.unmodifiableSet(
-            Authority.delegatable().stream()
+            Authority.holdableOverTargets().stream()
                     .filter(authority -> authority.getTargetType() == TargetType.MEMBER)
                     .collect(Collectors.toCollection(() -> EnumSet.noneOf(Authority.class))));
 

@@ -63,7 +63,7 @@ public final class AuthorizationSnapshot {
 
     public static AuthorizationSnapshot fromSources(Set<Authority> overAll,
                                                     Collection<Map<Authority, Set<TargetRef>>> sourceGrants) {
-        return fromSources(overAll, sourceGrants, Authority.delegatable()::contains);
+        return fromSources(overAll, sourceGrants, Authority.holdableOverTargets()::contains);
     }
 
     static AuthorizationSnapshot fromSources(Set<Authority> overAll,

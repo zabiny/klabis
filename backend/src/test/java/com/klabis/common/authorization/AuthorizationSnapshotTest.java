@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("AuthorizationSnapshot")
 class AuthorizationSnapshotTest {
 
-    private static final Authority DELEGATABLE = Authority.EVENTS_REGISTRATIONS;
+    private static final Authority DELEGATABLE = Authority.MEMBERS_EDIT_PROFILE;
 
     private final TargetRef child = TargetRef.member(UUID.randomUUID());
     private final TargetRef otherMember = TargetRef.member(UUID.randomUUID());

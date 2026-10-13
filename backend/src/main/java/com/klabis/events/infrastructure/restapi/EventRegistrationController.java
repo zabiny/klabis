@@ -113,15 +113,13 @@ class EventRegistrationController implements EventRegistrationsApi {
             @PathVariable UUID eventId,
             @RequestParam(required = false) String sort) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Event event = eventManagementService.getEvent(new EventId(eventId), false);
         List<EventRegistration> registrations = event.getRegistrations();
         Map<MemberId, MemberDto> memberIndex = members.findByIds(registrations.stream()
                 .map(EventRegistration::memberId)
                 .toList());
 
-        boolean callerCanSortByRegistrationTime = EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_REGISTRATIONS, auth,
-                event);
+        boolean callerCanSortByRegistrationTime = EventAffordanceSupport.canReadRegistrations(authorizationEvaluator, event);
         List<EventRegistration> sorted = RegistrationSortApplier.sort(registrations,
                 memberIndex,
                 event,

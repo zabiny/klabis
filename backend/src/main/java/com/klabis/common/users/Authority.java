@@ -36,7 +36,9 @@ public enum Authority {
     MEMBERS_EDIT_PROFILE("MEMBERS:EDIT_PROFILE", TargetType.MEMBER, GrantForm.SPECIFIC),
     EVENTS_READ("EVENTS:READ", TargetType.EVENT, GrantForm.ALL),
     EVENTS_MANAGE("EVENTS:MANAGE", TargetType.EVENT, GrantForm.ALL),
-    EVENTS_REGISTRATIONS("EVENTS:REGISTRATIONS", TargetType.MEMBER, GrantForm.ALL),
+    EVENTS_REGISTRATIONS("EVENTS:REGISTRATIONS", TargetType.EVENT, GrantForm.ALL),
+    EVENTS_EDIT("EVENTS:EDIT", TargetType.EVENT, GrantForm.SPECIFIC),
+    EVENTS_REGISTRATIONS_READ("EVENTS:REGISTRATIONS_READ", TargetType.EVENT, GrantForm.SPECIFIC),
     GROUPS_TRAINING("GROUPS:TRAINING", TargetType.NONE, GrantForm.ALL),
     FINANCE_MANAGE("FINANCE:MANAGE", TargetType.NONE, GrantForm.ALL),
     SYNC_MANAGE("SYNC:MANAGE", TargetType.NONE, GrantForm.ALL),
@@ -148,16 +150,17 @@ public enum Authority {
 
     /**
      * Authorities that may be held over specific targets, i.e. derived from relationships. Administrator
-     * authorities are {@link GrantForm#ALL}-only and therefore never delegatable.
+     * authorities are {@link GrantForm#ALL}-only and therefore never held over targets only. Not every one of
+     * them is delegatable to others (e.g. the event coordinator authorities).
      */
-    public static Set<Authority> delegatable() {
-        EnumSet<Authority> delegatable = EnumSet.noneOf(Authority.class);
+    public static Set<Authority> holdableOverTargets() {
+        EnumSet<Authority> holdable = EnumSet.noneOf(Authority.class);
         for (Authority authority : values()) {
             if (authority.grantForms.contains(GrantForm.SPECIFIC)) {
-                delegatable.add(authority);
+                holdable.add(authority);
             }
         }
-        return delegatable;
+        return holdable;
     }
 
     public static boolean isKnownAuthority(String value) {

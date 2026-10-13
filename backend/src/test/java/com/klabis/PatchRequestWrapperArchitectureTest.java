@@ -87,7 +87,7 @@ class PatchRequestWrapperArchitectureTest {
             com.klabis.groups.infrastructure.restapi.UpdateTrainingGroupRequest.class,
             List.of(),
             com.klabis.events.infrastructure.restapi.UpdateEventRequest.class,
-            List.of());
+            List.of("coordinators"));
 
     @Test
     @DisplayName("privileged components still declare the authority the spec assigns them")

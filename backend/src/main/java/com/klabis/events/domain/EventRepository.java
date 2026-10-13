@@ -1,5 +1,7 @@
 package com.klabis.events.domain;
 
+import com.klabis.events.EventId;
+import com.klabis.members.MemberId;
 import java.util.List;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
@@ -24,6 +26,12 @@ public interface EventRepository extends Events {
      * @return the saved event with generated ID
      */
     Event save(Event event);
+
+    /**
+     * Ids of all events (regardless of status) the member is listed as a coordinator of. Loads no aggregates,
+     * so it is cheap enough to run for every authenticated request.
+     */
+    List<EventId> findIdsCoordinatedBy(MemberId memberId);
 
     // Read methods inherited from Events public API:
     // - Optional<Event> findById(EventId id)

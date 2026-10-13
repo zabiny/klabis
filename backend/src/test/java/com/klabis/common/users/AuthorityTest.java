@@ -22,7 +22,9 @@ class AuthorityTest {
                 Arguments.of(Authority.MEMBERS_READ, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.MEMBERS_PERMISSIONS, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.MEMBERS_EDIT_PROFILE, TargetType.MEMBER, EnumSet.of(GrantForm.SPECIFIC)),
-                Arguments.of(Authority.EVENTS_REGISTRATIONS, TargetType.MEMBER, EnumSet.of(GrantForm.ALL)),
+                Arguments.of(Authority.EVENTS_REGISTRATIONS, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
+                Arguments.of(Authority.EVENTS_EDIT, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
+                Arguments.of(Authority.EVENTS_REGISTRATIONS_READ, TargetType.EVENT, EnumSet.of(GrantForm.SPECIFIC)),
                 Arguments.of(Authority.EVENTS_READ, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.EVENTS_MANAGE, TargetType.EVENT, EnumSet.of(GrantForm.ALL)),
                 Arguments.of(Authority.CALENDAR_MANAGE, TargetType.NONE, EnumSet.of(GrantForm.ALL)),
@@ -75,9 +77,19 @@ class AuthorityTest {
     }
 
     @Test
-    @DisplayName("profile editing is the only delegatable authority")
-    void shouldHaveProfileEditingAsOnlyDelegatableAuthority() {
-        assertThat(Authority.delegatable()).containsExactly(Authority.MEMBERS_EDIT_PROFILE);
+    @DisplayName("authorities holdable over specific targets are profile editing and the coordinator authorities")
+    void shouldHaveExpectedAuthoritiesHoldableOverTargets() {
+        assertThat(Authority.holdableOverTargets()).containsExactlyInAnyOrder(
+                Authority.MEMBERS_EDIT_PROFILE, Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
+    }
+
+    @Test
+    @DisplayName("coordinator authorities are neither assignable nor grantable over everything")
+    void shouldNotOfferCoordinatorAuthoritiesForDirectGrant() {
+        assertThat(Authority.assignableAuthorities())
+                .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
+        assertThat(Authority.grantableOverAll())
+                .doesNotContain(Authority.EVENTS_EDIT, Authority.EVENTS_REGISTRATIONS_READ);
     }
 
     @Test
@@ -95,9 +107,9 @@ class AuthorityTest {
     }
 
     @Test
-    @DisplayName("delegatable authorities are those holdable over specific targets")
-    void shouldDeriveDelegatableFromGrantForms() {
-        for (Authority authority : Authority.delegatable()) {
+    @DisplayName("authorities holdable over targets are those with the specific grant form")
+    void shouldDeriveHoldableOverTargetsFromGrantForms() {
+        for (Authority authority : Authority.holdableOverTargets()) {
             assertThat(authority.getGrantForms()).contains(GrantForm.SPECIFIC);
         }
     }
