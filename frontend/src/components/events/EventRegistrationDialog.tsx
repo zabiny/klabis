@@ -1,11 +1,11 @@
 import {type ReactElement, useEffect, useMemo, useState} from 'react';
-import {Calendar, Check, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
+import {Calendar, Check, FileText, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
 import {labels} from '../../localization';
-import {Alert, Modal, Skeleton} from '../UI';
+import {Alert, Button, DetailRow, Modal, Skeleton} from '../UI';
 import {type RegistrationDialogData, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas';
 import type {Link} from '../../api/types';
-import {formatDate, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils';
+import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils';
 import {normalizeKlabisApiPath} from '../../utils/halFormsUtils';
 import {HalFormDisplay} from '../HalNavigator2/HalFormDisplay';
 import type {FormRenderHelpers, RenderFormCallback} from '../HalNavigator2/halforms';
@@ -36,7 +36,7 @@ export const EventRegistrationDialog = ({
     const showAccommodationCheckbox = accommodationProp !== undefined && eventContext?.sharedAccommodationEnabled === true;
 
     const fieldsFactory = useMemo(
-        () => createRegistrationFieldsFactory({mode: mode ?? 'new', serverFieldErrors}),
+        () => createRegistrationFieldsFactory({mode: mode === 'edit' ? 'edit' : 'new', serverFieldErrors}),
         [mode, serverFieldErrors],
     );
 
@@ -51,7 +51,9 @@ export const EventRegistrationDialog = ({
     const missingAffordance = !isLoading && !error && mode === undefined;
     const baseTitle = mode === 'new'
         ? labels.dialogTitles.registerForEvent
-        : labels.dialogTitles.editRegistration;
+        : mode === 'view'
+            ? labels.dialogTitles.registrationDetail
+            : labels.dialogTitles.editRegistration;
     const dialogTitle = memberName ? `${baseTitle} - ${memberName}` : baseTitle;
     const confirmLabel = mode === 'new'
         ? labels.events.registrationModal.confirmNew
@@ -113,7 +115,9 @@ export const EventRegistrationDialog = ({
             title={dialogTitle}
             headerIcon={mode === 'new'
                 ? <UserPlus className="h-5 w-5 text-primary"/>
-                : <Pencil className="h-5 w-5 text-primary"/>}
+                : mode === 'view'
+                    ? <FileText className="h-5 w-5 text-primary"/>
+                    : <Pencil className="h-5 w-5 text-primary"/>}
             context={!isLoading && eventContext
                 ? <RegistrationContext event={eventContext}/>
                 : undefined}
@@ -122,6 +126,12 @@ export const EventRegistrationDialog = ({
                 <DialogSkeleton/>
             ) : error ? (
                 <Alert severity="error">{labels.events.registrationModal.prefillLoadError}</Alert>
+            ) : mode === 'view' && prefillData ? (
+                <ReadOnlyRegistration
+                    registration={resolvedResource}
+                    eventContext={eventContext}
+                    onClose={handleClose}
+                />
             ) : missingAffordance || !normalizedTemplate ? (
                 <Alert severity="error">{labels.events.registrationModal.noRegistrationAffordance}</Alert>
             ) : (
@@ -147,6 +157,41 @@ export const EventRegistrationDialog = ({
         </Modal>
     );
 };
+
+function ReadOnlyRegistration({registration, eventContext, onClose}: {
+    registration: Record<string, unknown>;
+    eventContext: RegistrationDialogData['eventContext'];
+    onClose: () => void;
+}) {
+    const memberName = [registration.firstName, registration.lastName].filter(Boolean).join(' ');
+    const category = (registration.category as {name?: string} | null | undefined)?.name;
+    const registeredAt = registration.registeredAt as string | undefined;
+    const yesNo = (value: unknown) => value ? labels.ui.yes : labels.ui.no;
+
+    return (
+        <div data-testid="event-registration-detail" className="flex flex-col gap-4">
+            <dl className="flex flex-col">
+                {memberName && <DetailRow label={labels.fields.member}>{memberName}</DetailRow>}
+                {category && <DetailRow label={labels.events.registrationModal.category}>{category}</DetailRow>}
+                {registration.siCardNumber != null && (
+                    <DetailRow label={labels.events.registrationModal.siChip}>{String(registration.siCardNumber)}</DetailRow>
+                )}
+                {registeredAt && (
+                    <DetailRow label={labels.tables.registeredAt}>{formatDateTime(registeredAt)}</DetailRow>
+                )}
+                {eventContext?.sharedTransportEnabled && registration.wantsSharedTransport != null && (
+                    <DetailRow label={labels.fields.sharedTransportEnabled}>{yesNo(registration.wantsSharedTransport)}</DetailRow>
+                )}
+                {eventContext?.sharedAccommodationEnabled && registration.wantsSharedAccommodation != null && (
+                    <DetailRow label={labels.fields.sharedAccommodationEnabled}>{yesNo(registration.wantsSharedAccommodation)}</DetailRow>
+                )}
+            </dl>
+            <div className="mt-2 flex items-center justify-end border-t border-border pt-4">
+                <Button variant="secondary" onClick={onClose}>{labels.buttons.close}</Button>
+            </div>
+        </div>
+    );
+}
 
 function DialogSkeleton() {
     return (

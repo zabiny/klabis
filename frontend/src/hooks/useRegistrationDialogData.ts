@@ -2,7 +2,7 @@ import {asLinkArray} from '../api/hateoas';
 import type {GetEventResource, GetRegistrationResource, HalFormsTemplate, Link} from '../api';
 import {useAuthorizedQuery} from './useAuthorizedFetch';
 
-export type RegistrationDialogMode = 'new' | 'edit';
+export type RegistrationDialogMode = 'new' | 'edit' | 'view';
 
 export interface RegistrationDialogEventContext {
     name?: string;
@@ -40,7 +40,12 @@ export const useRegistrationDialogData = (registration: Link | null): Registrati
     const registerForEvent = registrationData?._templates?.registerForEvent;
     const editRegistration = registrationData?._templates?.editRegistration;
     const template = registerForEvent ?? editRegistration;
-    const mode = registerForEvent ? 'new' : editRegistration ? 'edit' : undefined;
+    const isExistingRegistration = registrationData?.registeredAt != null;
+    const mode: RegistrationDialogMode | undefined = registerForEvent
+        ? 'new'
+        : editRegistration
+            ? 'edit'
+            : isExistingRegistration ? 'view' : undefined;
 
     const event = eventQuery.data;
     const eventContext: RegistrationDialogEventContext | undefined = event

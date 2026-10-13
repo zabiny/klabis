@@ -2672,6 +2672,9 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._embedded.accommodationList[0].lastName").value("Doe"))
                     .andExpect(jsonPath("$._embedded.accommodationList[0].identityCardNumber").value("AB123456"))
                     .andExpect(jsonPath("$._embedded.accommodationList[0].dateOfBirth").value("1985-05-15"))
+                    .andExpect(jsonPath("$._embedded.accommodationList[0]._links.self.href")
+                            .value(org.hamcrest.Matchers.containsString(
+                                    "/api/events/" + eventId + "/registrations/" + memberId.value())))
                     .andExpect(jsonPath("$._links.self.href")
                             .value(org.hamcrest.Matchers.containsString(
                                     "/api/events/" + eventId + "/accommodation-list")));
@@ -2743,9 +2746,9 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("item self link is withheld from a coordinator who lacks EVENTS:REGISTRATIONS and is not the row member")
+        @DisplayName("item self link is offered to a coordinator who is not the row member")
         @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
-        void itemSelfLinkAbsentWhenCallerMayNotReadTheRegistration() throws Exception {
+        void itemSelfLinkPresentForCoordinatorWhoIsNotTheRowMember() throws Exception {
             UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId rowMemberId = new MemberId(UUID.randomUUID());
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
@@ -2763,17 +2766,15 @@ class EventControllerTest {
 
             stubAccommodationList(eventId, event, Map.of(rowMemberId, accommodationDto));
 
-            // getRegistration is gated by EVENTS:REGISTRATIONS OR being the target member. The caller
-            // is the coordinator — which opens the accommodation list but NOT getRegistration — holds
-            // no EVENTS:REGISTRATIONS, and is not the row member. Neither half of the gate applies, so
-            // the item self link is not offered.
             mockMvc.perform(
                             get("/api/events/{eventId}/accommodation-list", eventId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.accommodationList[0].firstName").value("John"))
-                    .andExpect(jsonPath("$._embedded.accommodationList[0]._links.self").doesNotExist());
+                    .andExpect(jsonPath("$._embedded.accommodationList[0]._links.self.href")
+                            .value(org.hamcrest.Matchers.containsString(
+                                    "/api/events/" + eventId + "/registrations/" + rowMemberId.value())));
         }
 
         @Test

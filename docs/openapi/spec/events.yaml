@@ -1265,13 +1265,16 @@ paths:
       summary: Get registration by member ID
       description: |
         Get a member's event registration including SI card number. Accessible by the member
-        themselves or a user with EVENTS:REGISTRATIONS authority. When new=true, returns prefilled
+        themselves, a user with EVENTS:REGISTRATIONS authority, or the event coordinators
+        (EVENTS:REGISTRATIONS_READ over the event). When new=true, returns prefilled
         defaults (siCardNumber from profile) for a not-yet-existing registration — this still
         requires the caller to be the target member themselves regardless of authority.
+      # No x-klabis-authority / x-klabis-owner-visible: the rule is "owner of the member OR a grant
+      # over the event", and one target cannot express both. It is checked imperatively by
+      # RegistrationReadAccess.canRead in EventRegistrationController, and every producer of a link
+      # to this operation checks it too (design.md D3).
       security:
         - KlabisAuth: [EVENTS]
-      x-klabis-authority: EVENTS_REGISTRATIONS
-      x-klabis-owner-visible: true
       parameters:
         - $ref: '#/components/parameters/RegMemberIdParam'
         - $ref: '#/components/parameters/RegEventIdParam'
@@ -1322,8 +1325,8 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
           description: |
-            Forbidden - must be the member or have EVENTS:REGISTRATIONS; or new=true with
-            mismatched memberId
+            Forbidden - must be the member, have EVENTS:REGISTRATIONS or be a coordinator of the
+            event; or new=true with mismatched memberId
           content:
             application/problem+json:
               schema:

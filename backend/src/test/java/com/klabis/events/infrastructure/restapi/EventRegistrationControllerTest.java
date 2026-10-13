@@ -49,6 +49,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class EventRegistrationControllerTest {
 
     private static final String MEMBER_1_ID = "11111111-1111-1111-1111-111111111111";
+    private static final String COORDINATOR_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
+    private static final String COORDINATED_EVENT_ID = "00000000-0000-0000-0000-0000000000e1";
 
     @Autowired
     private MockMvc mockMvc;
@@ -397,9 +399,67 @@ class EventRegistrationControllerTest {
     @DisplayName("GET /api/events/{id}/registrations — registrationTime privacy (N9)")
     class RegistrationTimePrivacyTests {
 
-        private static final String COORDINATOR_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-        private static final String COORDINATED_EVENT_ID = "00000000-0000-0000-0000-0000000000e1";
         private static final String REGULAR_MEMBER_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+
+        @Test
+        @DisplayName("coordinator rows carry the registration link, other members' rows of a regular member do not")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
+        void regularMemberRowsOfOthersCarryNoRegistrationLink() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId ownId = new MemberId(UUID.fromString(REGULAR_MEMBER_ID));
+            MemberId otherId = new MemberId(UUID.randomUUID());
+
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistrations(List.of(
+                            EventRegistration.reconstruct(UUID.randomUUID(), ownId, SiCardNumber.of("1234"), null, Instant.now()),
+                            EventRegistration.reconstruct(UUID.randomUUID(), otherId, SiCardNumber.of("5678"), null, Instant.now())))
+                    .build();
+            event.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    ownId, new MemberDto(ownId.value(), "John", "Doe", "john@example.com"),
+                    otherId, new MemberDto(otherId.value(), "Jane", "Smith", "jane@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0]._links.self.href").exists())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[1]._links.self").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("event coordinator rows carry the registration link")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        void coordinatorRowsCarryRegistrationLink() throws Exception {
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistrations(List.of(
+                            EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now())))
+                    .build();
+            event.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+            ));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0]._links.self.href",
+                            containsString("/registrations/" + memberId.value())))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0]._templates").doesNotExist());
+        }
 
         @Test
         @DisplayName("regular member does not see registrationTime in registration list")
@@ -1168,6 +1228,47 @@ class EventRegistrationControllerTest {
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("event coordinator gets 200 with SI card number and neither edit nor unregister template")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        void shouldReturn200ForCoordinatorWithoutEditTemplates() throws Exception {
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
+            MemberId targetMemberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            EventRegistration registration = EventRegistration.reconstruct(
+                    UUID.randomUUID(), targetMemberId, SiCardNumber.of("654321"), null, Instant.now());
+            Event activeEvent = EventTestDataBuilder.anEventWithId(new EventId(eventId))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(registration)
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
+            when(membersMock.findById(targetMemberId)).thenReturn(Optional.of(
+                    new MemberDto(targetMemberId.value(), "Jane", "Smith", "jane@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.siCardNumber").value("654321"))
+                    .andExpect(jsonPath("$._links.self.href").exists())
+                    .andExpect(jsonPath("$._templates.editRegistration").doesNotExist())
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("coordinator of another event gets 403")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        void shouldReturn403ForCoordinatorOfAnotherEvent() throws Exception {
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", UUID.randomUUID(), MEMBER_1_ID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isForbidden());

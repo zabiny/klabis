@@ -495,6 +495,61 @@ describe('EventRegistrationDialog', () => {
         expect(screen.queryByRole('button', {name: labels.events.registrationModal.confirmEdit})).not.toBeInTheDocument();
     });
 
+    describe('read-only detail', () => {
+        const readOnlyData = (overrides: Record<string, unknown> = {}) => editInitialData({
+            registeredAt: '2026-03-10T10:00:00',
+            _templates: undefined,
+            ...overrides,
+        });
+
+        const expectReadOnlyDetail = async () => {
+            expect(await screen.findByTestId('event-registration-detail')).toBeInTheDocument();
+            expect(screen.getByText('7654321')).toBeInTheDocument();
+            expect(screen.getByText('D21')).toBeInTheDocument();
+            expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: labels.events.registrationModal.confirmEdit})).not.toBeInTheDocument();
+            expect(screen.queryByText(labels.events.registrationModal.noRegistrationAffordance)).not.toBeInTheDocument();
+        };
+
+        it('shows the registration without inputs for an event coordinator (no register / edit template)', async () => {
+            mockRoutes((url) => url === EDIT_URL ? jsonOk(readOnlyData()) : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+            expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
+        });
+
+        it('shows the registration read-only for a member after the edit window has closed', async () => {
+            mockRoutes((url) => url === EDIT_URL
+                ? jsonOk(readOnlyData({_templates: {unregisterFromEvent: {method: 'DELETE', target: EDIT_URL, properties: []}}}))
+                : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+        });
+
+        it.each([undefined, null])('shows the no-affordance error, not an empty detail, when registeredAt is %s', async (registeredAt) => {
+            const data = editInitialData({registeredAt, _templates: undefined});
+            mockRoutes((url) => url === EDIT_URL ? jsonOk(data) : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            expect(await screen.findByText(labels.events.registrationModal.noRegistrationAffordance)).toBeInTheDocument();
+            expect(screen.queryByTestId('event-registration-detail')).not.toBeInTheDocument();
+        });
+
+        it('closes via the close button', async () => {
+            const user = userEvent.setup();
+            const onClose = vi.fn();
+            mockRoutes((url) => url === EDIT_URL ? jsonOk(readOnlyData()) : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}, onClose});
+
+            await screen.findByTestId('event-registration-detail');
+            await user.click(screen.getAllByRole('button', {name: labels.buttons.close})[0]);
+
+            expect(onClose).toHaveBeenCalled();
+        });
+    });
+
     it('cancel button invokes onClose', async () => {
         const user = userEvent.setup();
         const onClose = vi.fn();

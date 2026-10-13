@@ -925,6 +925,19 @@ describe('EventDetailPage', () => {
                 expect(screen.queryByRole('button', {name: /upravit přihlášku/i})).not.toBeInTheDocument();
             });
 
+            it('shows Detail action instead of edit on a row with registration link and no edit template', () => {
+                renderPageWithRegistrationRows([buildRegistrationRow()]);
+                expect(screen.getByRole('button', {name: labels.templates.showRegistrationDetail})).toBeInTheDocument();
+            });
+
+            it('does not show Detail action on a row with an edit template', () => {
+                const row = buildRegistrationRow('member-1', {
+                    _templates: {editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'})},
+                });
+                renderPageWithRegistrationRows([row]);
+                expect(screen.queryByRole('button', {name: labels.templates.showRegistrationDetail})).not.toBeInTheDocument();
+            });
+
             it('opens EventRegistrationDialog with prefilled values when row edit button is clicked', async () => {
                 const row = buildRegistrationRow('member-1', {
                     _templates: {editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'})},

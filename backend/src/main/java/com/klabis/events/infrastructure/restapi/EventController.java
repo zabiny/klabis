@@ -689,8 +689,17 @@ class AccommodationListPostprocessor
 class AccommodationListItemPostprocessor
         extends ModelWithDomainPostprocessor<AccommodationListItemDto, AccommodationList.AccommodationListRow> {
 
+    private final RegistrationReadAccess readAccess;
+
+    AccommodationListItemPostprocessor(RegistrationReadAccess readAccess) {
+        this.readAccess = readAccess;
+    }
+
     @Override
     public void process(EntityModel<AccommodationListItemDto> dtoModel, AccommodationList.AccommodationListRow row) {
+        if (!readAccess.canRead(row.eventId(), row.registration().memberId().value())) {
+            return;
+        }
         klabisLinkTo(methodOn(EventRegistrationsApi.class)
                 .getRegistration(row.registration().memberId().value(), row.eventId(), false))
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()));

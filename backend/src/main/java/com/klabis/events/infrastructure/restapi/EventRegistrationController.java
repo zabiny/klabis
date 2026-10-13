@@ -53,13 +53,15 @@ class EventRegistrationController implements EventRegistrationsApi {
     private final EventRegistrationPort registrationService;
     private final Members members;
     private final AuthorizationEvaluator authorizationEvaluator;
+    private final RegistrationReadAccess readAccess;
 
     public EventRegistrationController(EventManagementPort eventManagementService, EventRegistrationPort registrationService, Members members,
-                                       AuthorizationEvaluator authorizationEvaluator) {
+                                       AuthorizationEvaluator authorizationEvaluator, RegistrationReadAccess readAccess) {
         this.authorizationEvaluator = authorizationEvaluator;
         this.eventManagementService = eventManagementService;
         this.registrationService = registrationService;
         this.members = members;
+        this.readAccess = readAccess;
     }
 
     @Override
@@ -167,6 +169,10 @@ class EventRegistrationController implements EventRegistrationsApi {
             return ResponseEntity.ok(defaults);
         }
 
+        if (!readAccess.canRead(eventId, memberId)) {
+            throw new AccessDeniedException("Not authorized to read registration of member " + memberId);
+        }
+
         Event event = eventManagementService.getEvent(new EventId(eventId),
                 authorizationEvaluator.has(Authority.EVENTS_REGISTRATIONS));
         EventRegistration registration = event.findRegistration(targetMember)
@@ -210,11 +216,21 @@ record RegistrationsCollectionContext(UUID eventId) {
 class RegistrationSummaryPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationSummaryDto, EventRegistrationController.RegistrationView> {
 
+    private final RegistrationReadAccess readAccess;
+
+    RegistrationSummaryPostprocessor(RegistrationReadAccess readAccess) {
+        this.readAccess = readAccess;
+    }
+
     @Override
     public void process(EntityModel<RegistrationSummaryDto> dtoModel, EventRegistrationController.RegistrationView view) {
         Event event = view.event();
         UUID eventId = event.getId().value();
         UUID rowMemberId = view.memberId().value();
+
+        if (!readAccess.canRead(eventId, rowMemberId)) {
+            return;
+        }
 
         klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(rowMemberId, eventId, false))
                 .ifPresent(selfLinkBuilder -> {

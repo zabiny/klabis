@@ -13,10 +13,10 @@
 
 ## 2. Registration detail access and read-only dialog
 
-- [ ] 2.1 Remove `x-klabis-authority` / `x-klabis-owner-visible` from `getRegistration` (spec comment pointing to design D3); add `RegistrationReadAccess.canRead` (owner, EVENTS:REGISTRATIONS, or `EVENTS_REGISTRATIONS_READ` over the event) and enforce it in `getRegistration`; verify `@WebMvcTest`: owner, EVENTS:REGISTRATIONS and coordinator grant get the detail (coordinator incl. SI number, without `editRegistration` / `unregisterFromEvent` templates), any other member is refused
-- [ ] 2.2 Guard every link to `getRegistration` with `canRead` — registrations-list rows, accommodation list items, the event's registration links; verify `@WebMvcTest` that coordinator rows carry the link and other members' rows do not, and that no producer offers it to an unauthorised caller
-- [ ] 2.3 Add the read-only mode to `EventRegistrationDialog` (existing registration without register / edit template → data without inputs or submit; new registration without register template → error as today) and a "Detail" row action for rows with the registration link but no edit template; verify component tests for coordinator, member after deadline, and the closed-registrations error
-- [ ] 2.4 QA in the browser: coordinator and member-after-deadline open the read-only detail; verify both pass
+- [x] 2.1 Remove `x-klabis-authority` / `x-klabis-owner-visible` from `getRegistration` (spec comment pointing to design D3); add `RegistrationReadAccess.canRead` (owner, EVENTS:REGISTRATIONS, or `EVENTS_REGISTRATIONS_READ` over the event) and enforce it in `getRegistration`; verify `@WebMvcTest`: owner, EVENTS:REGISTRATIONS and coordinator grant get the detail (coordinator incl. SI number, without `editRegistration` / `unregisterFromEvent` templates), any other member is refused
+- [x] 2.2 Guard every link to `getRegistration` with `canRead` — registrations-list rows, accommodation list items, the event's registration links; verify `@WebMvcTest` that coordinator rows carry the link and other members' rows do not, and that no producer offers it to an unauthorised caller
+- [x] 2.3 Add the read-only mode to `EventRegistrationDialog` (existing registration without register / edit template → data without inputs or submit; new registration without register template → error as today) and a "Detail" row action for rows with the registration link but no edit template; verify component tests for coordinator, member after deadline, and the closed-registrations error
+- [x] 2.4 QA in the browser: coordinator and member-after-deadline open the read-only detail; verify both pass
 
 ## 3. Member fills in notes when registering and sees them on the registration
 
