@@ -29,6 +29,12 @@ For every ACTIVE event kept in step with ORIS, the system SHALL regularly bring 
 - **WHEN** a club member is entered into the event in ORIS without an SI card number
 - **THEN** the registration appears in Klabis without an SI card number
 
+#### Scenario: Entry of a sanctioned member is brought in
+
+- **GIVEN** a club member who is blocked from registering in Klabis by a sanction
+- **WHEN** the member is entered into an ACTIVE ORIS event in ORIS
+- **THEN** the registration appears in Klabis like any other
+
 #### Scenario: Entries of people unknown to Klabis are ignored
 
 - **WHEN** ORIS lists an entry of a club member who does not exist in Klabis or is not linked to their ORIS club membership
@@ -86,7 +92,7 @@ When the ORIS entry matched with a registration disappears from ORIS, the system
 - **WHEN** the registrar deletes the entry in ORIS
 - **THEN** after the next synchronisation run the registration is still listed in Klabis
 - **AND** the coordinator and users with EVENTS:REGISTRATIONS see it marked "V ORISu nenalezena"
-- **AND** the member sees the mark on "Moje přihláška"
+- **AND** the member sees the mark on the detail of their registration
 
 #### Scenario: Other members do not see the mark in the list
 
@@ -141,6 +147,19 @@ ORIS does not yet accept registration changes from Klabis. A change made in Klab
 - **THEN** the changes are kept
 - **AND** no decision is asked of anyone
 
+#### Scenario: A kept difference asks again when ORIS changes
+
+- **GIVEN** a user with SYNC:MANAGE decided to keep the difference between a registration and ORIS
+- **WHEN** the registrar later changes the entry in ORIS
+- **THEN** after the next synchronisation run a new decision is requested
+
+#### Scenario: Taking the ORIS values after an unregistration restores the registration
+
+- **GIVEN** a member unregistered in Klabis while still entered in ORIS and a decision is requested
+- **WHEN** a user with SYNC:MANAGE takes the ORIS values
+- **THEN** the member is registered again with the category, SI card, SI rental, ORIS note and registration time from ORIS
+- **AND** without shared transport and accommodation choices and without an internal note
+
 #### Scenario: Sending Klabis values to ORIS is not offered
 
 - **WHEN** a user with SYNC:MANAGE resolves a difference on a registration
@@ -149,13 +168,13 @@ ORIS does not yet accept registration changes from Klabis. A change made in Klab
 
 ### Requirement: Registrations Can Be Loaded From ORIS On Demand
 
-A user with SYNC:MANAGE SHALL be able to bring in the ORIS entries of an ACTIVE ORIS-synchronised event immediately from the event detail page, using the action "Načíst přihlášky z ORIS", instead of waiting for the scheduled run. The action SHALL NOT be offered to other users or for events that are not ACTIVE or not kept in step with ORIS.
+A user with SYNC:MANAGE SHALL be able to bring in the ORIS entries of an ACTIVE ORIS-synchronised event immediately from the event detail page, using the action "Načíst přihlášky z ORIS", instead of waiting for the scheduled run. The action brings in entries not yet in Klabis; registrations already matched with ORIS are kept in step by the regular synchronisation. The action SHALL NOT be offered to other users or for events that are not ACTIVE or not kept in step with ORIS.
 
 #### Scenario: Synchronisation manager loads registrations from ORIS
 
 - **GIVEN** an ACTIVE event kept in step with ORIS
 - **WHEN** a user with SYNC:MANAGE clicks "Načíst přihlášky z ORIS" on the event detail page
-- **THEN** the club members' ORIS entries are brought in immediately
+- **THEN** the club members' ORIS entries not yet in Klabis are brought in immediately
 - **AND** the registrations list shows them
 
 #### Scenario: Action is not offered without the permission
@@ -170,7 +189,7 @@ A user with SYNC:MANAGE SHALL be able to bring in the ORIS entries of an ACTIVE 
 
 ### Requirement: Synchronisation State Is Reachable From A Registration
 
-For a registration matched with ORIS, the registration detail SHALL offer users with SYNC:MANAGE a way to open its synchronisation state, where they can see how it stands and take the actions available for any synchronised record. Other users SHALL NOT be offered this.
+For a registration matched with ORIS, the registration detail SHALL offer a way to open its synchronisation state, as for any synchronised entity: anyone who can see the registration detail sees whether it is kept in step with ORIS, how it stands and when it was last synchronised; only users with SYNC:MANAGE see the details and the actions available for any synchronised record. The registrations list SHALL NOT show the synchronisation state.
 
 #### Scenario: Synchronisation manager opens a registration's synchronisation state
 
@@ -179,7 +198,14 @@ For a registration matched with ORIS, the registration detail SHALL offer users 
 - **THEN** they see the values held in Klabis and in ORIS and which side changed
 - **AND** they can confirm the difference and resolve it
 
+#### Scenario: Member sees the headline synchronisation state of their registration
+
+- **GIVEN** a member's registration matched with an ORIS entry
+- **WHEN** the member opens the detail of their registration and follows the synchronisation state link
+- **THEN** they see that it is kept in step with ORIS, its current state and when it was last synchronised
+- **AND** they are not shown the data held on either side nor any synchronisation action
+
 #### Scenario: Registration created in Klabis only has no synchronisation state
 
-- **WHEN** a user with SYNC:MANAGE opens the detail of a registration for an event that is not kept in step with ORIS
+- **WHEN** a user opens the detail of a registration for an event that is not kept in step with ORIS
 - **THEN** no synchronisation state link is offered

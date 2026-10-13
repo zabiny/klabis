@@ -10,6 +10,8 @@ Constraints from the engine that shape this design:
 - `uq_sync_record_target (entity_type, entity_id, external_system)` and `uq_sync_record_external (external_system, external_id, entity_type)` hold for RETIRED records too — a pairing is for life.
 - `findByExternalReferences` returns RETIRED pairings as well.
 - An adapter exception that is neither I/O nor `RetryableSyncFailureException` fails the record terminally on the spot.
+- `SynchronizationPort` is implemented by the engine, which depends on every adapter through `SynchronizationAdapterRegistry`; an adapter injecting `SynchronizationPort` forms a bean cycle (`OrisEventFieldsReader` works around it with `@Lazy`).
+- The ORIS club id is already configured as `oris.client.my-club-id` (`application-oris.yml`, `OrisClientProperties.myClubId`).
 
 ## Goals / Non-Goals
 
@@ -20,7 +22,9 @@ Constraints from the engine that shape this design:
 **Non-Goals:**
 - Klabis → ORIS (`createEntry` / `updateEntry` / `deleteEntry`) — issue #370.
 - Entries of people not paired as MEMBER/ORIS (guests, unknown people).
-- A dedicated UI listing all registration conflicts; the existing per-record sync screens are used.
+- A dedicated UI listing all registration conflicts; the existing per-record sync screens are used, and a sync admin page listing all attempts is future work.
+- A synchronisation badge in the registrations list.
+- Special handling of sanctioned members: their ORIS entries are brought in like any other.
 
 ## Decisions
 
@@ -34,7 +38,7 @@ Constraints from the engine that shape this design:
 
 *Alternatives:* `eventId:registrationId` — rejected: unregister + re-register creates a new identity that can never be paired again, because the old pairing (RETIRED or not) still holds the external id. ORIS entry id as external id — rejected: a re-created entry gets a new id, and the registration's pairing is for life.
 
-The colon needs no encoding in the path segment (`pchar` allows `:`); a `@WebMvcTest` on `/api/event-registrations/{uuid}:{uuid}/sync` guards it.
+The colon needs no encoding in the path segment (`pchar` allows `:`); a `@WebMvcTest` on `/api/event-registrations/{uuid}:{uuid}/sync` guards it. `event-registrations` is the first sync path segment that is not a resource root of its own (registrations live under `/api/events/{eventId}/registrations/{memberId}`); the `SyncEntityTypeParam` description says so.
 
 ### D2 — Presence is part of the projection (tombstones on both sides)
 
@@ -54,7 +58,20 @@ OrisEventRegistrationProjection {
 | local | the member has no registration for the event, **or** the registration is marked "missing in ORIS" |
 | external | ORIS lists no entry for the person on the event |
 
-An absent side is `{present=false}` with every other field null, so two absent sides are equal. Consequences, all from the unchanged engine rules:
+An absent side is `{present=false}` with every other field null, so two absent sides are equal. The projection carries SI card numbers and notes, so the adapter declares `containsSensitiveData` (the sync state shows side data only to SYNC:MANAGE).
+
+**Normalisation.** Both sides are normalised to the same shape before hashing, so that a value Klabis cannot hold does not raise a difference on every pass:
+
+| ORIS value | projected as |
+|---|---|
+| `SI` 0, empty, or not 4–8 digits | no SI card number |
+| `RentSI` null | `false` |
+| `Note` blank | no note |
+| `Note` longer than 255 characters | truncated to 255 (the value Klabis stores) |
+
+An adapter test runs a second pass after the first and expects NOTHING_TO_DO.
+
+Consequences, all from the unchanged engine rules:
 
 | change | engine sees | result |
 |---|---|---|
@@ -64,6 +81,8 @@ An absent side is `{present=false}` with every other field null, so two absent s
 | …registrar then deletes the entry in ORIS | both absent → equal | conflict resolves itself |
 | category / SI / rent / ORIS note edited in Klabis | local changed | CONFLICT |
 | internal note / shared-service choices edited | not in projection | nothing |
+| conflict resolved ACCEPT_DIVERGENCE, then ORIS changes again | external changed against the accepted pair | new CONFLICT (a fresh difference) |
+| unregistration conflict resolved INWARD | pull of a present entry | registration re-created from ORIS: ORIS registration time, no shared-service choices, no internal note |
 
 The local mark maps to `present=false` so that a kept-but-missing registration and an absent ORIS entry compare equal; otherwise the pair could never be in step again.
 
@@ -71,19 +90,23 @@ The local mark maps to `present=false` so that a kept-but-missing registration a
 
 ### D3 — Adapter operations go through the aggregate
 
-`OrisEventRegistrationSyncAdapter` (`events.infrastructure.orissync`, `@Application`, capabilities `pullOnlyCreating`):
+`OrisEventRegistrationSyncAdapter` (`events.infrastructure.orissync`, `@Application`, capabilities `pullOnlyCreating` plus `containsSensitiveData` — constructed explicitly as `MemberSyncAdapter` does):
 
 - `readLocal(entityId)` → `eventRepository.findById(eventId)` → `event.findRegistration(memberId)` → projection (absent if none or marked).
-- `readExternal(externalId)` → `OrisEventEntries.entriesOf(orisEventId)` (filter `ClubUserID`) → projection; resolves Klabis `eventId` (EVENT pairing of `orisEventId`) and `memberId` (MEMBER pairing of `clubUserId`) onto the ignored fields.
+- `readExternal(externalId)` → `OrisEventEntries.entriesOf(orisEventId)` (filter `ClubUserID`) → normalised projection; resolves Klabis `eventId` (EVENT pairing of `orisEventId`) and `memberId` (MEMBER pairing of `clubUserId`) onto the ignored fields. `CreatedDateTime` (ORIS local time) is converted with `OrisClientProperties.timezone`, as event dates are.
 - `applyToLocal(entityId, p)` → `event.syncRegistrationFromOris(memberId, SyncRegistrationFromOris)`: present → create-or-update the registration from ORIS values (clearing the mark); absent → mark the existing registration missing (no-op if none).
 - `createLocal(p)` → same `syncRegistrationFromOris` call, returns `"eventId:memberId"`. Covers both a brand-new registration and **adoption** of an existing Klabis registration (D5).
 - `applyToExternal` → unsupported.
 
-`Event.syncRegistrationFromOris` skips `assertRegistrationsOpen()` and the SI policy check (ORIS is fact, validation belongs to Klabis input), resolves the category by ORIS class id, and publishes the registration domain events with origin `SYNCHRONISATION`.
+`Event.syncRegistrationFromOris` skips `assertRegistrationsOpen()`, the SI policy check and the sanction check (ORIS is fact, validation belongs to Klabis input), resolves the category by ORIS class id, and publishes the registration domain events with origin `SYNCHRONISATION`.
+
+**Pairing lookups without a bean cycle.** The adapter needs the EVENT and MEMBER pairings (`findByExternalReferences`, `findByTarget`). Instead of injecting `SynchronizationPort` with `@Lazy`, the `sync` module exposes the read-only lookups as their own primary port `SyncPairingLookup` (`findByExternalReferences`, `findActiveByTargets`, `findActiveByEntityType`), implemented on `SyncRecordRepository` without the adapter registry; `SynchronizationPort` keeps delegating to it. `OrisEventFieldsReader` may move to it later; not part of this change.
+
+**Failures.** `OrisResponse.payload`'s `IllegalStateException` for a non-OK ORIS status and `OptimisticLockingFailureException` on saving the event are wrapped in `RetryableSyncFailureException`, so a transient ORIS answer or a concurrent registration edit does not fail the record terminally.
 
 ### D4 — Category not yet known is retryable
 
-If `categoryOrisId` matches no category of the event, `syncRegistrationFromOris` throws `OrisCategoryNotYetSynchronisedException extends RetryableSyncFailureException`; the event's own synchronisation will normally add the category, and the engine's backoff retries the registration.
+If `categoryOrisId` matches no category of the event, `syncRegistrationFromOris` throws `OrisCategoryNotYetSynchronisedException extends RetryableSyncFailureException`, and the adapter marks the event's EVENT record dirty so its synchronisation brings the category soon. For a paired registration the engine's backoff retries it. During discovery the failure happens inside `createLocal`, before a record exists, so there is no backoff: the entry stays unpaired and the next discovery run tries again.
 
 ### D5 — Adoption takes ORIS values
 
@@ -94,18 +117,18 @@ When discovery finds an unpaired entry for a member who already has a registrati
 `OrisEventRegistrationDiscoveryJob` (own cron `klabis.events.oris-entries-discovery-cron`, plus `@Scheduled(initialDelay)` like `MemberDiscoveryJob`):
 
 1. Active EVENT/ORIS pairings → load events, keep `ACTIVE` ones.
-2. Per event: `getEventEntries(orisEventId, klabis.oris.clubid)`.
-3. Keep entries whose `ClubUserID` has a MEMBER/ORIS pairing (`findByExternalReferences(MEMBER, …)`).
+2. Per event: `getEventEntries(orisEventId, oris.client.my-club-id)`.
+3. Skip entries without a `ClubUserID`; keep entries whose `ClubUserID` has a MEMBER/ORIS pairing (`findByExternalReferences(MEMBER, …)`). Sanctioned members are not treated specially.
 4. Subtract `findByExternalReferences(EVENT_REGISTRATION, …)` (any status, incl. RETIRED).
-5. `pullAndEnroll` each remaining id; per-entry and per-event try/catch so one failure cannot stop the run.
+5. `pullAndEnroll` each remaining id (acting user `null`); per-entry and per-event try/catch so one failure cannot stop the run.
 
-The on-demand action runs steps 2–5 for one event (`discoverForEvent(eventId)`), exposed as an affordance on `getEvent` for SYNC:MANAGE when the event is ACTIVE and has an active EVENT/ORIS pairing.
+The on-demand action runs steps 2–5 for one event (`discoverForEvent(eventId, actingUser)`), passing the acting user to `pullAndEnroll`, after evicting the event from the D7 cache. It only brings in **new** entries; already-paired registrations are not refreshed by it. It is exposed as an affordance on `getEvent` for SYNC:MANAGE when the event is ACTIVE and has an active EVENT/ORIS pairing.
 
-Already-paired registrations are kept in step by the engine's own scans (`scan-cron`, `due-scan-interval`), not by discovery.
+Already-paired registrations are kept in step by the engine's own scans (`scan-cron`, `due-scan-interval`), not by discovery: discovery does not mark paired registrations dirty when their ORIS entry changed — the full pass picks the change up.
 
 ### D7 — ORIS read cost
 
-`getEventEntries` is not cached by `oris-client`. `OrisEventEntries` (adapter-side facade) caches per `(orisEventId, clubId)` for a short TTL (configurable, default 5 min) so a scan over N registrations of one event costs one ORIS call. A missing `klabis.oris.clubid` makes the facade throw at startup when the `oris` profile is active (fail fast, unlike the club key which is runtime data).
+`getEventEntries` is not cached by `oris-client`. `OrisEventEntries` (adapter-side facade) caches per `orisEventId` for a short TTL (configurable, default 5 min) so a scan over N registrations of one event, and a discovery run followed by the passes it triggers, cost one ORIS call. A TTL, not a per-run cache, because engine scans are not runs the facade can see begin and end. The on-demand action evicts its event first. The club id comes from the existing `oris.client.my-club-id`.
 
 ### D8 — Lifecycle listeners
 
@@ -115,7 +138,7 @@ Already-paired registrations are kept in step by the engine's own scans (`scan-c
 |---|---|
 | `MemberRegisteredForEventEvent`, `RegistrationEditedEvent`, `MemberUnregisteredFromEventEvent` with origin `MANUAL` | `markDirty(EVENT_REGISTRATION, eventId:memberId)` (no-op if not enrolled) |
 | same, origin `SYNCHRONISATION` | ignored (engine's own write) |
-| `EventFinishedEvent`, `EventCancelledEvent` | retire every EVENT_REGISTRATION record of the event (`findActiveByTargets` over its registrations' ids) |
+| `EventFinishedEvent`, `EventCancelledEvent` | retire every EVENT_REGISTRATION record of the event: `findActiveByEntityType(EVENT_REGISTRATION)` filtered by the `"<eventId>:"` prefix — the registrations' own ids would miss participations whose member has unregistered |
 
 The three registration events gain an `origin` (`UpdateOrigin`), as `EventUpdatedEvent` has.
 
@@ -151,26 +174,27 @@ classDiagram
 
 | Element | Change |
 |---|---|
-| `Event.syncRegistrationFromOris`, `SyncRegistrationFromOris` | **Added** — create / update / mark-missing from ORIS, no window or SI-policy check |
+| `Event.syncRegistrationFromOris`, `SyncRegistrationFromOris` | **Added** — create / update / mark-missing from ORIS, no window, SI-policy or sanction check |
 | `EventRegistration.missingInOris` | **Added** — `events.event_registrations.missing_in_oris BOOLEAN NOT NULL DEFAULT FALSE` (V001) |
 | `MemberRegisteredForEventEvent`, `RegistrationEditedEvent`, `MemberUnregisteredFromEventEvent` | **Changed** — carry `UpdateOrigin` |
 | `SyncEntityType.EVENT_REGISTRATION` | **Added** (`sync` module) |
+| `SyncPairingLookup` | **Added** (`sync` module) — read-only pairing lookups, D3 |
 
 ## API
 
 | Item | Change |
 |---|---|
-| `sync.yaml` `SyncEntityTypeParam` | + `event-registrations`; all five sync operations work for `/api/event-registrations/{eventId}:{memberId}/sync…` |
+| `sync.yaml` `SyncEntityTypeParam` | + `event-registrations` (documented as not a resource root); all five sync operations work for `/api/event-registrations/{eventId}:{memberId}/sync…` |
 | `RegistrationDto` | + `missingInOris` (boolean, read-only) |
-| `RegistrationSummaryDto` | + `missingInOris` — field security `EVENTS_REGISTRATIONS` + owner-visible + coordinator target id (same as `registrationTime`) |
-| `getRegistration` response links | + `syncState` → `getSyncState` for SYNC:MANAGE when the registration is enrolled |
+| `RegistrationSummaryDto` | + `missingInOris` — same field security as `registrationTime` after gh-331 D0: `EVENTS_REGISTRATIONS`, `EVENTS_REGISTRATIONS_READ` over the hidden `eventId` |
+| `getRegistration` response links | + `sync` → `getSyncState` when the registration is enrolled, ungated like the `sync` link of events, members and disciplines (`data-synchronization`: the headline state is shown to any signed-in user, details only to SYNC:MANAGE) |
 | `getEvent` templates | + `discoverOrisRegistrations` → new `POST /api/events/{eventId}/oris-registrations/discovery` (SYNC:MANAGE, 204), offered per D6 |
 
 ## Configuration
 
 | property | default | meaning |
 |---|---|---|
-| `klabis.oris.clubid` | none (required with `oris` profile) | ORIS numeric club id for `getEventEntries` |
+| `oris.client.my-club-id` | existing (`205`) | ORIS numeric club id for `getEventEntries` — reused, no new property |
 | `klabis.events.oris-entries-discovery-cron` | `0 30 * * * *` | discovery schedule |
 | `klabis.events.oris-entries-cache-ttl` | `5m` | D7 cache |
 
@@ -194,4 +218,4 @@ classDiagram
 
 ## Migration Plan
 
-No data migration. Enabling the `oris` profile with `klabis.oris.clubid` set starts discovery; existing registrations on ORIS events are adopted on the first run (ORIS values win, D5).
+No data migration. Enabling the `oris` profile starts discovery; existing registrations on ORIS events are adopted on the first run (ORIS values win, D5).

@@ -1,37 +1,39 @@
 # Tasks
 
-## 1. Coordinator privileges as grants over the event (refactoring, no user-visible change)
+## 1. Coordinator privileges as grants over the event (refactoring + coordinators rule)
 
-- [ ] 1.1 Add `EVENTS_EDIT` and `EVENTS_REGISTRATIONS_READ` (EVENT, SPECIFIC) and re-type `EVENTS_REGISTRATIONS` to EVENT in `Authority` test-first; verify `AuthorityTest`, that neither is in `assignableAuthorities()` nor in `FreeGroup`'s delegatable set
-- [ ] 1.2 Add `EventCoordinatorRelationshipSource` (both authorities over every event the user coordinates, via `EventFilter.withCoordinator`) test-first; verify unit test and an integration test that a coordinator's snapshot holds both grants over their event and none over another event
+- [ ] 1.1 Add `EVENTS_EDIT` and `EVENTS_REGISTRATIONS_READ` (EVENT, SPECIFIC), re-type `EVENTS_REGISTRATIONS` to EVENT and rename `delegatable()` to `holdableOverTargets()` in `Authority` test-first; verify `AuthorityTest` (updated expectations), that neither new authority is in `assignableAuthorities()` nor in `FreeGroup`'s delegatable set
+- [ ] 1.2 Add an id-only "events coordinated by member" method to `EventRepository` (backed by `findIdsByCoordinator`) and `EventCoordinatorRelationshipSource` test-first; verify unit test and an integration test that a coordinator's snapshot holds both grants over their event and none over another event
 - [ ] 1.3 Make `updateEvent` declarative (`x-klabis-authority: [EVENTS_MANAGE, EVENTS_EDIT]`, `x-klabis-target-id: EVENT` on the shared `EventIdParam`), drop the imperative check; regenerate; verify `openapiBundle -PopenapiCheck`, `@WebMvcTest` for EVENTS:MANAGE, coordinator grant and refused other member, and that `publishEvent` / `cancelEvent` still refuse a coordinator
-- [ ] 1.4 Replace `isCoordinatorOrHas` in management affordances, shared-services summary, accommodation list and registrations sort with `isAllowed(…, TargetRef.event(id))`; delete `isCoordinatorOrHas`; verify the existing coordinator `@WebMvcTest`s pass unchanged (rewired to `@WithKlabisMockUser(targetGrants = …)`)
-- [ ] 1.5 Re-target `RegistrationSummaryDto.registrationTime` to a hidden `eventId` (`x-klabis-target-id: EVENT`, authorities `EVENTS_REGISTRATIONS`, `EVENTS_REGISTRATIONS_READ`) and remove the hidden `coordinators`; regenerate; verify `@WebMvcTest` that coordinator and EVENTS:REGISTRATIONS see registration time and other members do not
-- [ ] 1.6 Update `backend-patterns` `references/authorization.md`, ADR-010 in `docs/design-decisions.md`, `backend/CLAUDE.md` and the `updateEvent` comment in `events.yaml` to describe event-targeted grants instead of the coordinator special case; verify no remaining reference to `isCoordinatorOrHas`
-- [ ] 1.7 Run the events module test suite and a browser smoke test as coordinator (edit event, accommodation list, registration-time sort); verify all pass and behaviour is unchanged
+- [ ] 1.4 Replace `isCoordinatorOrHas` in management affordances, shared-services summary, accommodation list access, the `accommodation-list` link and the registrations sort with `isAllowed(…, TargetRef.event(id), false)`; delete `isCoordinatorOrHas`; verify the coordinator tests in `EventControllerTest` / `EventRegistrationControllerTest` keep their expectations after rewiring their fixtures from `withCoordinator` to `@WithKlabisMockUser(targetGrants = …)`
+- [ ] 1.5 Re-target `RegistrationSummaryDto.registrationTime` to a hidden `eventId` (`x-klabis-target-id: EVENT`, authorities `EVENTS_REGISTRATIONS`, `EVENTS_REGISTRATIONS_READ`, owner-visible dropped) and remove the hidden `coordinators`; regenerate bundle and frontend types (`npm run openapi`); verify a positive `@WebMvcTest` that coordinator and EVENTS:REGISTRATIONS see registration time and other members do not
+- [ ] 1.6 Add `x-klabis-authority: EVENTS_MANAGE` + `x-klabis-read-authority: [EVENTS_READ]` to `UpdateEventRequest.coordinators`; verify `@WebMvcTest` that the coordinator's update template marks coordinators read-only, a coordinator's change of coordinators is refused while other fields save, and EVENTS:MANAGE changes them; verify the frontend edit form renders the field read-only
+- [ ] 1.7 Update docs and stale texts: `backend-patterns` `references/authorization.md`, ADR-010 in `docs/design-decisions.md`, `backend/CLAUDE.md`, `events.yaml` comments (`updateEvent`, `getAccommodationList`, `RegistrationSummaryDto` / `registrationTime` descriptions), a comment on the `Authority` enum in `common.yaml`; verify no remaining reference to `isCoordinatorOrHas` / `isCoordinatorOrHasRegistrationsAuthority`
+- [ ] 1.8 Run the events module test suite and a browser smoke test as coordinator (edit event with read-only coordinators, accommodation list, registration-time sort); verify all pass
 
-## 2. Member fills in notes when registering and sees them on "Moje přihláška"
+## 2. Registration detail access and read-only dialog
 
-- [ ] 2.1 Add `RegistrationNote` value object (trim, blank → none, max 255) test-first; verify unit tests for trimming, blank and over-length input pass
-- [ ] 2.2 Extend `EventRegistration`, `CreateEventRegistration` and `Event.registerMember` with `internalNote` / `orisNote` test-first; verify `Event` domain tests cover registering with and without notes
-- [ ] 2.3 Add `internal_note` / `oris_note` columns to `events.event_registrations` in V001 and map them in `EventRegistrationMemento`; verify repository round-trip test persists and reloads both notes
-- [ ] 2.4 Add `internalNote` / `orisNote` to `RegisterEventRequest` and `RegistrationDto` in `docs/openapi/spec/events.yaml`, regenerate bundle and frontend types; verify `./gradlew openapiBundle -PopenapiCheck` and `npm run openapi` succeed
-- [ ] 2.5 Map the notes in the register and get-registration path; verify `@WebMvcTest` registers with notes and reads them back for the owner, and a >255 note is rejected with a validation error
-- [ ] 2.6 Render both notes in the registration form and registration detail (textarea, Czech labels in `labels.ts`); verify component tests show the fields and submit their values, and `npm run build` passes
+- [ ] 2.1 Remove `x-klabis-authority` / `x-klabis-owner-visible` from `getRegistration` (spec comment pointing to design D3); add `RegistrationReadAccess.canRead` (owner, EVENTS:REGISTRATIONS, or `EVENTS_REGISTRATIONS_READ` over the event) and enforce it in `getRegistration`; verify `@WebMvcTest`: owner, EVENTS:REGISTRATIONS and coordinator grant get the detail (coordinator incl. SI number, without `editRegistration` / `unregisterFromEvent` templates), any other member is refused
+- [ ] 2.2 Guard every link to `getRegistration` with `canRead` — registrations-list rows, accommodation list items, the event's registration links; verify `@WebMvcTest` that coordinator rows carry the link and other members' rows do not, and that no producer offers it to an unauthorised caller
+- [ ] 2.3 Add the read-only mode to `EventRegistrationDialog` (existing registration without register / edit template → data without inputs or submit; new registration without register template → error as today) and a "Detail" row action for rows with the registration link but no edit template; verify component tests for coordinator, member after deadline, and the closed-registrations error
+- [ ] 2.4 QA in the browser: coordinator and member-after-deadline open the read-only detail; verify both pass
 
-## 3. Member and EVENTS:REGISTRATIONS edit notes
+## 3. Member fills in notes when registering and sees them on the registration
 
-- [ ] 3.1 Extend `EditRegistrationCommand` / `Event.editRegistration` with both notes test-first; verify domain tests: change, clear, unchanged registration time, refused after deadline
-- [ ] 3.2 Add both notes to `EditRegistrationRequest`, regenerate; map in the edit path; verify `@WebMvcTest` for owner and for an EVENTS:REGISTRATIONS user editing another member's notes
-- [ ] 3.3 Verify in the frontend edit form (component test) that the notes are prefilled and saved, and that no edit action is offered after the deadline
+- [ ] 3.1 Add `RegistrationNote` value object (trim, blank → none, max 255) test-first; verify unit tests for trimming, blank and over-length input pass
+- [ ] 3.2 Extend `EventRegistration`, `CreateEventRegistration`, `Event.RegisterCommand`, `Event.registerMember` and `EventRegistrationService` with `internalNote` / `orisNote` test-first, keeping notes out of `toString()` and domain event payloads; verify `Event` domain tests cover registering with and without notes
+- [ ] 3.3 Add `internal_note` / `oris_note` columns to `events.event_registrations` in V001 and map them in `EventRegistrationMemento`; verify repository round-trip test persists and reloads both notes
+- [ ] 3.4 Add `internalNote` / `orisNote` (maxLength 255, `x-hal-input-type: textarea`) to `RegisterEventRequest` and `RegistrationDto` in `docs/openapi/spec/events.yaml`, regenerate bundle and frontend types; verify `./gradlew openapiBundle -PopenapiCheck` and `npm run openapi` succeed
+- [ ] 3.5 Map the notes in the register and get-registration path; verify `@WebMvcTest` registers with notes and reads them back for the owner, and a >255 note is rejected with a validation error
+- [ ] 3.6 Add `renderField` calls for both notes to the dialog's `customLayout` (form and read-only view) with Czech labels in `labels.ts`; verify component tests show the fields, submit their values and show them read-only, and `npm run build` passes
 
-## 4. Coordinator reads a registration read-only
+## 4. Member and EVENTS:REGISTRATIONS edit notes
 
-- [ ] 4.1 Allow `EVENTS_REGISTRATIONS_READ` over the event on `getRegistration` (imperative `isAllowed` before the declarative owner/EVENTS:REGISTRATIONS check); verify `@WebMvcTest`: coordinator grant gets the SI card number and notes but no `editRegistration` / `unregisterFromEvent` template, a member without the grant is refused
-- [ ] 4.2 Expose the registration link on registrations-list rows for holders of `EVENTS_REGISTRATIONS_READ` over the event; verify `@WebMvcTest` that coordinator rows carry it and other members' rows do not
-- [ ] 4.3 Add a read-only "detail" row action in the registrations list for the coordinator opening the registration dialog without a submit action; verify component test and that the list itself shows no notes
+- [ ] 4.1 Extend `EditRegistrationCommand` / `Event.editRegistration` with both notes test-first; verify domain tests: change, clear, unchanged registration time, refused after deadline
+- [ ] 4.2 Add both notes to `EditRegistrationRequest`, regenerate; map in the edit path; verify `@WebMvcTest` for owner and for an EVENTS:REGISTRATIONS user editing another member's notes
+- [ ] 4.3 Verify in the frontend edit form (component test) that the notes are prefilled and saved, and that after the deadline the registration opens read-only with the notes
 
 ## 5. Integration
 
-- [ ] 5.1 QA the flows in the browser (member registers with notes, edits them, EVENTS:REGISTRATIONS edits, coordinator reads read-only, list shows no notes); verify all pass
+- [ ] 5.1 QA the flows in the browser (member registers with notes, edits them, EVENTS:REGISTRATIONS edits, coordinator reads read-only, member reads after deadline, list shows no notes); verify all pass
 - [ ] 5.2 Add label `BackendCompleted` to GitHub issue #331 once backend tasks are merged; verify the label is present on the issue

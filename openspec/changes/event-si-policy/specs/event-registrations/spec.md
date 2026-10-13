@@ -53,6 +53,26 @@ The registration form and the edit form SHALL follow the event's SI policy. When
 - **WHEN** the member edits the registration, unticks "Chci si půjčit čip", enters their SI card number and saves
 - **THEN** the registration records the SI card number and no rental request
 
+#### Scenario: Editing other details of a registration that does not fit the SI policy
+
+- **GIVEN** a member is registered without an SI card number for an event that has since been changed to require SI cards without rental
+- **WHEN** the member edits the registration, changes only the category and saves
+- **THEN** the registration is updated with the new category
+- **AND** no error about the SI card number is shown
+
+#### Scenario: Changing the SI values of a registration must fit the policy
+
+- **GIVEN** a member is registered with an SI card number for an event that requires SI cards without rental
+- **WHEN** the member edits the registration, clears the SI card field and saves
+- **THEN** the form shows an error that the SI card number is required
+- **AND** the registration keeps its SI card number
+
+#### Scenario: Values the event does not offer are kept on edit
+
+- **GIVEN** a member registered with an SI card number and a rental request, and the event has since been changed to not use SI cards
+- **WHEN** the member edits the registration and saves
+- **THEN** the SI card number and the rental request recorded on the registration are kept
+
 #### Scenario: Registration detail shows the rental request
 
 - **GIVEN** a member's registration records a rental request
@@ -285,4 +305,56 @@ The system SHALL validate SI card numbers whenever one is entered. A valid SI ca
 #### Scenario: Blank SI card number accepted where not required
 
 - **WHEN** member submits registration without entering an SI card number for an event where SI is optional or not used
+- **THEN** the registration is created without an SI card number
+
+### Requirement: Registration form driven by the registration representation
+
+The registration form (new registration and registration edit) SHALL be built from the affordances and data carried by the registration representation addressed by the link the member follows — the `newRegistration` link of an event for a new registration, the registration's own link for editing. The form SHALL work identically from every place that offers such a link (dashboard, events list, event detail). When a new-registration representation carries no register affordance, the form SHALL show an error and MUST NOT offer a submit action. When the representation of an existing registration carries no edit affordance — the window for editing has closed, or the user may only read it — the registration SHALL be shown read-only as the registration detail, without inputs or a submit action.
+
+#### Scenario: Member opens a new registration form from any entry point
+
+- **WHEN** a member follows the new-registration link of an event with open registrations — from the dashboard widget, the events list, or the event detail page
+- **THEN** the same registration form opens with the member's name context, the event context, and — where the event uses SI cards — an SI card number prefilled from their profile
+- **AND** the form submits as a new registration
+
+#### Scenario: New registration representation does not offer editing
+
+- **WHEN** a member opens the new registration form via the event's new-registration link
+- **THEN** the form is driven by the register affordance of the returned registration defaults
+- **AND** no edit or unregister affordance is offered by that response
+
+#### Scenario: Registration form without an available register action shows an error
+
+- **WHEN** a member opens the registration form for an event whose registrations are closed
+- **THEN** the form shows an error instead of the submit action
+
+#### Scenario: Blocked member does not receive the register action
+
+- **GIVEN** a member is blocked from registering by a sanction
+- **WHEN** the member opens the new registration form via the event's new-registration link
+- **THEN** the form shows an error instead of the submit action
+
+#### Scenario: Member edits their registration from the registration link
+
+- **WHEN** a member follows the link of their existing registration to edit it
+- **THEN** the form opens in edit mode showing the member chip with their name, the category and the current SI card number and rental request as the event's SI policy offers them
+- **AND** the form submits as an update of the existing registration
+
+#### Scenario: Registration that can no longer be edited opens as a read-only detail
+
+- **GIVEN** a member is registered for an event whose registration deadline has passed
+- **WHEN** the member clicks "Detail" on their row in the registrations list
+- **THEN** the registration is shown with its category, SI card number, rental request and notes
+- **AND** no input and no submit action is offered
+
+#### Scenario: Event coordinator opens a registration as a read-only detail
+
+- **WHEN** the coordinator of an event clicks "Detail" on a member's row in the registrations list
+- **THEN** the member's registration is shown read-only
+- **AND** no edit or unregister action is offered
+
+#### Scenario: Registration form for an event without SI does not send the profile SI card number
+
+- **GIVEN** a member has an SI card number in their profile
+- **WHEN** the member registers for an event that does not use SI cards
 - **THEN** the registration is created without an SI card number

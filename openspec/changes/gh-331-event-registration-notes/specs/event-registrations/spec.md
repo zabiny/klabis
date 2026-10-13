@@ -14,7 +14,7 @@ When registering for an event and when editing a registration, a member SHALL be
 
 - **WHEN** the member fills in "Interní poznámka" and "Poznámka do ORIS" on the registration form and submits it
 - **THEN** the registration is created with both notes
-- **AND** the member sees both notes when they open "Moje přihláška"
+- **AND** the member sees both notes when they open their registration
 
 #### Scenario: Member changes a note on their registration
 
@@ -32,8 +32,8 @@ When registering for an event and when editing a registration, a member SHALL be
 #### Scenario: Notes cannot be changed after the registration deadline
 
 - **GIVEN** a member is registered for an event whose registration deadline has passed
-- **WHEN** the member opens "Moje přihláška"
-- **THEN** both notes are shown
+- **WHEN** the member opens the detail of their registration from the registrations list
+- **THEN** both notes are shown read-only
 - **AND** no edit action is available to change them
 
 #### Scenario: User with EVENTS:REGISTRATIONS edits another member's notes
@@ -41,7 +41,7 @@ When registering for an event and when editing a registration, a member SHALL be
 - **GIVEN** a user with EVENTS:REGISTRATIONS and an ACTIVE event with an open registration window
 - **WHEN** the user opens another member's registration, clicks "Upravit", changes both notes and saves
 - **THEN** the other member's registration shows the new notes
-- **AND** the member sees the new notes when they next open "Moje přihláška"
+- **AND** the member sees the new notes when they next open their registration
 
 ### Requirement: Registration Notes Are Shown Only On The Registration Detail
 
@@ -120,3 +120,50 @@ The system SHALL allow members to view their own registration details including 
 
 - **WHEN** user with EVENTS:REGISTRATIONS navigates to a registration for a member who is not registered for the event
 - **THEN** the system shows a not-found message
+
+### Requirement: Registration form driven by the registration representation
+
+The registration form (new registration and registration edit) SHALL be built from the affordances and data carried by the registration representation addressed by the link the member follows — the `newRegistration` link of an event for a new registration, the registration's own link for editing. The form SHALL work identically from every place that offers such a link (dashboard, events list, event detail). When a new-registration representation carries no register affordance, the form SHALL show an error and MUST NOT offer a submit action. When the representation of an existing registration carries no edit affordance — the window for editing has closed, or the user may only read it — the registration SHALL be shown read-only as the registration detail, without inputs or a submit action.
+
+#### Scenario: Member opens a new registration form from any entry point
+
+- **WHEN** a member follows the new-registration link of an event with open registrations — from the dashboard widget, the events list, or the event detail page
+- **THEN** the same registration form opens with the member's name context, the event context, and an SI card number prefilled from their profile
+- **AND** the form submits as a new registration
+
+#### Scenario: New registration representation does not offer editing
+
+- **WHEN** a member opens the new registration form via the event's new-registration link
+- **THEN** the form is driven by the register affordance of the returned registration defaults
+- **AND** no edit or unregister affordance is offered by that response
+
+#### Scenario: Registration form without an available register action shows an error
+
+- **WHEN** a member opens the registration form for an event whose registrations are closed
+- **THEN** the form shows an error instead of the submit action
+
+#### Scenario: Blocked member does not receive the register action
+
+- **GIVEN** a member is blocked from registering by a sanction
+- **WHEN** the member opens the new registration form via the event's new-registration link
+- **THEN** the form shows an error instead of the submit action
+
+#### Scenario: Member edits their registration from the registration link
+
+- **WHEN** a member follows the link of their existing registration to edit it
+- **THEN** the form opens in edit mode showing the member chip with their name, the current SI card number and category
+- **AND** the form submits as an update of the existing registration
+
+#### Scenario: Registration that can no longer be edited opens as a read-only detail
+
+- **GIVEN** a member is registered for an event whose registration deadline has passed
+- **WHEN** the member clicks "Detail" on their row in the registrations list
+- **THEN** the registration is shown with its category, SI card number and notes
+- **AND** no input and no submit action is offered
+
+#### Scenario: Event coordinator opens a registration as a read-only detail
+
+- **WHEN** the coordinator of an event clicks "Detail" on a member's row in the registrations list
+- **THEN** the member's registration is shown read-only
+- **AND** no edit or unregister action is offered
+
