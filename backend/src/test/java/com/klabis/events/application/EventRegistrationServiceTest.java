@@ -392,7 +392,7 @@ class EventRegistrationServiceTest {
         @DisplayName("should load event, delegate to aggregate, and save")
         void shouldLoadEventDelegateAndSave() {
             // Given
-            Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(SiCardNumber.of("654321"), null);
+            Event.EditRegistrationCommand command = EventEditRegistrationCommandBuilder.builder().siCardNumber(SiCardNumber.of("654321")).build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
             when(eventRepository.save(any(Event.class))).thenReturn(activeEvent);
 
@@ -410,7 +410,7 @@ class EventRegistrationServiceTest {
         @DisplayName("should propagate EventNotFoundException when event does not exist")
         void shouldPropagateEventNotFoundExceptionWhenEventNotFound() {
             // Given
-            Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(SiCardNumber.of("654321"), null);
+            Event.EditRegistrationCommand command = EventEditRegistrationCommandBuilder.builder().siCardNumber(SiCardNumber.of("654321")).build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.empty());
 
             // When/Then
@@ -425,7 +425,7 @@ class EventRegistrationServiceTest {
         void shouldPropagateRegistrationNotFoundExceptionWhenMemberNotRegistered() {
             // Given
             MemberId unregisteredMember = MemberId.fromUserId(UserId.newId());
-            Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(SiCardNumber.of("654321"), null);
+            Event.EditRegistrationCommand command = EventEditRegistrationCommandBuilder.builder().siCardNumber(SiCardNumber.of("654321")).build();
             when(eventRepository.findById(eventId)).thenReturn(Optional.of(activeEvent));
 
             // When/Then

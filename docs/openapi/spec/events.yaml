@@ -2148,6 +2148,16 @@ components:
           description: |
             Member's shared-accommodation choice. Meaningful only when the event offers it; the
             edit form omits this property otherwise. Defaults to false.
+        internalNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
+          description: Free-text remark for the club only. Blank or absent means no note.
+        orisNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
+          description: Free-text remark for the organiser's ORIS entry. Blank or absent means no note.
 
     # A named schema, not an inline array: the item payload needs a stable wire-contract name. Two
     # operations derive from it — getEvent's x-hal-embedded builds the

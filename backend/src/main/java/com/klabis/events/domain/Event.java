@@ -271,11 +271,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             SiCardNumber siCardNumber,
             EventCategoryId categoryId,
             boolean wantsSharedTransport,
-            boolean wantsSharedAccommodation
+            boolean wantsSharedAccommodation,
+            RegistrationNote internalNote,
+            RegistrationNote orisNote
     ) {
-        public EditRegistrationCommand(SiCardNumber siCardNumber, EventCategoryId categoryId) {
-            this(siCardNumber, categoryId, false, false);
-        }
     }
 
     /**
@@ -878,7 +877,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         boolean wantsSharedAccommodation = sharedAccommodationEnabled ? command.wantsSharedAccommodation()
                 : current.wantsSharedAccommodation();
         EventRegistration updated = current.withChanges(command.siCardNumber(), resolvedCategoryId,
-                wantsSharedTransport, wantsSharedAccommodation, current.internalNote(), current.orisNote());
+                wantsSharedTransport, wantsSharedAccommodation, command.internalNote(), command.orisNote());
 
         registrations.remove(current);
         registrations.add(updated);

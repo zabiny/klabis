@@ -1,5 +1,6 @@
 package com.klabis.events.domain;
 
+import com.klabis.events.EventTestDataBuilder;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.*;
 import com.klabis.members.MemberId;
@@ -11,6 +12,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -928,6 +930,65 @@ class EventTest {
                     .build()))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("on or after event date");
+        }
+
+        @Test
+        @DisplayName("editRegistration() changes both notes and keeps registration time")
+        void editRegistrationChangesNotes() {
+            Event event = activeEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false,
+                    RegistrationNote.ofNullable("old internal"), RegistrationNote.ofNullable("old oris"));
+            Instant registeredAt = event.findRegistration(memberId).orElseThrow().registeredAt();
+
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .internalNote(RegistrationNote.ofNullable("new internal"))
+                    .orisNote(RegistrationNote.ofNullable("new oris"))
+                    .build());
+
+            EventRegistration updated = event.findRegistration(memberId).orElseThrow();
+            assertThat(RegistrationNote.textOrNull(updated.internalNote())).isEqualTo("new internal");
+            assertThat(RegistrationNote.textOrNull(updated.orisNote())).isEqualTo("new oris");
+            assertThat(updated.registeredAt()).isEqualTo(registeredAt);
+        }
+
+        @Test
+        @DisplayName("editRegistration() clears notes when the command carries none")
+        void editRegistrationClearsNotes() {
+            Event event = activeEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false,
+                    RegistrationNote.ofNullable("internal"), RegistrationNote.ofNullable("oris"));
+
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .build());
+
+            EventRegistration updated = event.findRegistration(memberId).orElseThrow();
+            assertThat(updated.internalNote()).isNull();
+            assertThat(updated.orisNote()).isNull();
+        }
+
+        @Test
+        @DisplayName("editRegistration() does not change notes after the registration deadline")
+        void editRegistrationWithNotesRefusedAfterDeadline() {
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            EventRegistration registration = EventRegistration.create(EventRegistrationCreateEventRegistrationBuilder.builder()
+                    .memberId(memberId).siCardNumber(SiCardNumber.of("123456"))
+                    .internalNote(RegistrationNote.ofNullable("keep")).build());
+            Event event = EventTestDataBuilder.anEvent()
+                    .withRegistrationDeadline(LocalDate.now().minusDays(1))
+                    .addRegistration(registration)
+                    .buildPublished();
+
+            assertThatThrownBy(() -> event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .internalNote(RegistrationNote.ofNullable("changed"))
+                    .build()))
+                    .isInstanceOf(BusinessRuleViolationException.class);
+            assertThat(RegistrationNote.textOrNull(event.findRegistration(memberId).orElseThrow().internalNote()))
+                    .isEqualTo("keep");
         }
     }
 

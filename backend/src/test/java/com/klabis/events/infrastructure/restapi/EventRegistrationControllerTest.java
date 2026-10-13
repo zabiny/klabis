@@ -242,9 +242,25 @@ class EventRegistrationControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content(body)
                     )
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fieldErrors.orisNote").exists());
 
             verifyNoInteractions(registrationServiceMock);
+        }
+
+        @Test
+        @DisplayName("accepts a note of exactly 255 characters")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void acceptsNoteAtMaxLength() throws Exception {
+            String body = "{\"siCardNumber\":\"123456\",\"orisNote\":\"" + "a".repeat(255) + "\"}";
+
+            mockMvc.perform(
+                            post("/api/events/{eventId}/registrations", UUID.randomUUID())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content(body)
+                    )
+                    .andExpect(status().isCreated());
         }
     }
 
@@ -806,6 +822,106 @@ class EventRegistrationControllerTest {
             assertThat(captor.getValue().wantsSharedTransport()).isTrue();
             assertThat(captor.getValue().wantsSharedAccommodation()).isFalse();
         }
+
+        @Test
+        @DisplayName("passes trimmed notes from the request into the edit command")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void passesNotesIntoEditCommand() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String body = """
+                    {"siCardNumber":"123456","internalNote":"  club note ","orisNote":"oris note"}
+                    """;
+
+            mockMvc.perform(put("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .contentType("application/json")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content(body))
+                    .andExpect(status().isNoContent());
+
+            ArgumentCaptor<Event.EditRegistrationCommand> captor =
+                    ArgumentCaptor.forClass(Event.EditRegistrationCommand.class);
+            verify(registrationServiceMock).editRegistration(eq(new EventId(eventId)),
+                    eq(new MemberId(UUID.fromString(MEMBER_1_ID))), captor.capture());
+            assertThat(captor.getValue().internalNote().text()).isEqualTo("club note");
+            assertThat(captor.getValue().orisNote().text()).isEqualTo("oris note");
+        }
+
+        @Test
+        @DisplayName("absent and blank notes reach the command as no note")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void absentAndBlankNotesMeanNoNote() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String body = """
+                    {"siCardNumber":"123456","orisNote":"   "}
+                    """;
+
+            mockMvc.perform(put("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .contentType("application/json")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content(body))
+                    .andExpect(status().isNoContent());
+
+            ArgumentCaptor<Event.EditRegistrationCommand> captor =
+                    ArgumentCaptor.forClass(Event.EditRegistrationCommand.class);
+            verify(registrationServiceMock).editRegistration(eq(new EventId(eventId)),
+                    eq(new MemberId(UUID.fromString(MEMBER_1_ID))), captor.capture());
+            assertThat(captor.getValue().internalNote()).isNull();
+            assertThat(captor.getValue().orisNote()).isNull();
+        }
+
+        @Test
+        @DisplayName("user with EVENTS:REGISTRATIONS edits another member's notes")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.EVENTS_REGISTRATIONS})
+        void registrationsManagerEditsNotesOfAnotherMember() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            String body = """
+                    {"siCardNumber":"123456","internalNote":"by manager"}
+                    """;
+
+            mockMvc.perform(put("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .contentType("application/json")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content(body))
+                    .andExpect(status().isNoContent());
+
+            ArgumentCaptor<Event.EditRegistrationCommand> captor =
+                    ArgumentCaptor.forClass(Event.EditRegistrationCommand.class);
+            verify(registrationServiceMock).editRegistration(eq(new EventId(eventId)),
+                    eq(new MemberId(UUID.fromString(MEMBER_1_ID))), captor.capture());
+            assertThat(captor.getValue().internalNote().text()).isEqualTo("by manager");
+        }
+
+        @Test
+        @DisplayName("rejects a note longer than 255 characters on edit with 400")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void rejectsTooLongNoteOnEdit() throws Exception {
+            String body = """
+                    {"siCardNumber":"123456","internalNote":"%s"}
+                    """.formatted("x".repeat(256));
+
+            mockMvc.perform(put("/api/events/{eventId}/registrations/{memberId}", UUID.randomUUID(), MEMBER_1_ID)
+                            .contentType("application/json")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content(body))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.fieldErrors.internalNote").exists());
+            verifyNoInteractions(registrationServiceMock);
+        }
+
+        @Test
+        @DisplayName("accepts a note of exactly 255 characters on edit")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void acceptsNoteAtMaxLengthOnEdit() throws Exception {
+            String body = """
+                    {"siCardNumber":"123456","internalNote":"%s"}
+                    """.formatted("x".repeat(255));
+
+            mockMvc.perform(put("/api/events/{eventId}/registrations/{memberId}", UUID.randomUUID(), MEMBER_1_ID)
+                            .contentType("application/json")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content(body))
+                    .andExpect(status().isNoContent());
+        }
     }
 
     @Nested
@@ -1321,6 +1437,26 @@ class EventRegistrationControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.internalNote").value("club note"))
                     .andExpect(jsonPath("$.orisNote").value("oris note"));
+        }
+
+        @Test
+        @DisplayName("editRegistration template offers both note inputs limited to 255 characters")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void editTemplateOffersLimitedNoteInputs() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+            Event event = eventWithNotedRegistration(null, memberId);
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.editRegistration.properties[?(@.name=='internalNote')].max").value(255))
+                    .andExpect(jsonPath("$._templates.editRegistration.properties[?(@.name=='orisNote')].max").value(255));
         }
 
         @Test

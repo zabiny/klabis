@@ -106,7 +106,9 @@ class EventRegistrationController implements EventRegistrationsApi {
                 SiCardNumber.of(request.siCardNumber()),
                 request.categoryId() != null ? new EventCategoryId(request.categoryId()) : null,
                 Boolean.TRUE.equals(request.wantsSharedTransport()),
-                Boolean.TRUE.equals(request.wantsSharedAccommodation())
+                Boolean.TRUE.equals(request.wantsSharedAccommodation()),
+                RegistrationNote.ofNullable(request.internalNote()),
+                RegistrationNote.ofNullable(request.orisNote())
         );
         registrationService.editRegistration(new EventId(eventId), new MemberId(memberId), command);
 

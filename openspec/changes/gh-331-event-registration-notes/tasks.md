@@ -29,9 +29,9 @@
 
 ## 4. Member and EVENTS:REGISTRATIONS edit notes
 
-- [ ] 4.1 Extend `EditRegistrationCommand` / `Event.editRegistration` with both notes test-first; verify domain tests: change, clear, unchanged registration time, refused after deadline
-- [ ] 4.2 Add both notes to `EditRegistrationRequest`, regenerate; map in the edit path; verify `@WebMvcTest` for owner and for an EVENTS:REGISTRATIONS user editing another member's notes
-- [ ] 4.3 Verify in the frontend edit form (component test) that the notes are prefilled and saved, and that after the deadline the registration opens read-only with the notes
+- [x] 4.1 Extend `EditRegistrationCommand` / `Event.editRegistration` with both notes test-first; verify domain tests: change, clear, unchanged registration time, refused after deadline
+- [x] 4.2 Add both notes to `EditRegistrationRequest`, regenerate; map in the edit path; verify `@WebMvcTest` for owner and for an EVENTS:REGISTRATIONS user editing another member's notes
+- [x] 4.3 Verify in the frontend edit form (component test) that the notes are prefilled and saved, and that after the deadline the registration opens read-only with the notes
 
 ## 5. Integration
 

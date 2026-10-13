@@ -428,6 +428,66 @@ describe('EventRegistrationDialog', () => {
             expect(screen.queryByLabelText(labels.fields.internalNote)).not.toBeInTheDocument();
             expect(screen.queryByLabelText(labels.fields.orisNote)).not.toBeInTheDocument();
         });
+
+        describe('edit mode', () => {
+            const editWithNotes = () => ({
+                ...editRegistrationTemplate(),
+                properties: [...editRegistrationTemplate().properties, ...noteProps],
+            });
+
+            const mockEdit = () => mockRoutes((url, options) => {
+                if (options?.method) return writeOk();
+                if (url === EVENT_URL) return jsonOk(eventData());
+                if (url === EDIT_URL) {
+                    return jsonOk(editInitialData({
+                        internalNote: 'stará interní',
+                        orisNote: 'stará oris',
+                        _templates: {editRegistration: editWithNotes()},
+                    }));
+                }
+                return jsonOk({});
+            });
+
+            const putBody = () => {
+                const putCall = vi.mocked(authorizedFetch).mock.calls.find(([, o]) =>
+                    (o as RequestInit | undefined)?.method === 'PUT');
+                return JSON.parse((putCall?.[1] as RequestInit).body as string);
+            };
+
+            it('prefills current notes and saves a changed note', async () => {
+                const user = userEvent.setup();
+                const onClose = vi.fn();
+                mockEdit();
+                renderDialog({registration: {href: EDIT_URL}, onClose});
+
+                const internal = await screen.findByLabelText(labels.fields.internalNote);
+                expect(internal).toHaveValue('stará interní');
+                expect(screen.getByLabelText(labels.fields.orisNote)).toHaveValue('stará oris');
+
+                await user.clear(internal);
+                await user.type(internal, 'nová interní');
+                await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit}));
+
+                await waitFor(() => expect(onClose).toHaveBeenCalled());
+                expect(putBody()).toMatchObject({internalNote: 'nová interní', orisNote: 'stará oris'});
+            });
+
+            it('clearing a note does not resend the old value', async () => {
+                const user = userEvent.setup();
+                const onClose = vi.fn();
+                mockEdit();
+                renderDialog({registration: {href: EDIT_URL}, onClose});
+
+                await user.clear(await screen.findByLabelText(labels.fields.orisNote));
+                await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit}));
+
+                await waitFor(() => expect(onClose).toHaveBeenCalled());
+                const body = putBody();
+                expect(body.orisNote).not.toBe('stará oris');
+                expect(body.orisNote ?? '').toBe('');
+                expect(body.internalNote).toBe('stará interní');
+            });
+        });
     });
 
     it('edit mode submits PUT with values from fetched registration', async () => {
@@ -588,6 +648,21 @@ describe('EventRegistrationDialog', () => {
             renderDialog({registration: {href: EDIT_URL}});
 
             await expectReadOnlyDetail();
+        });
+
+        it('shows the notes read-only for a member after the edit window has closed', async () => {
+            mockRoutes((url) => url === EDIT_URL
+                ? jsonOk(readOnlyData({
+                    internalNote: 'moje interní',
+                    orisNote: 'moje oris',
+                    _templates: {unregisterFromEvent: {method: 'DELETE', target: EDIT_URL, properties: []}},
+                }))
+                : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+            expect(screen.getByText('moje interní')).toBeInTheDocument();
+            expect(screen.getByText('moje oris')).toBeInTheDocument();
         });
 
         it.each([undefined, null])('shows the no-affordance error, not an empty detail, when registeredAt is %s', async (registeredAt) => {
