@@ -14,6 +14,7 @@ import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.RegistrationNotFoundException;
+import com.klabis.events.domain.RegistrationNote;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
@@ -74,7 +75,9 @@ class EventRegistrationController implements EventRegistrationsApi {
                 request.siCardNumber(),
                 request.categoryId() != null ? new EventCategoryId(request.categoryId()) : null,
                 Boolean.TRUE.equals(request.wantsSharedTransport()),
-                Boolean.TRUE.equals(request.wantsSharedAccommodation()));
+                Boolean.TRUE.equals(request.wantsSharedAccommodation()),
+                RegistrationNote.ofNullable(request.internalNote()),
+                RegistrationNote.ofNullable(request.orisNote()));
         registrationService.registerMember(new EventId(eventId), actingMember, command);
 
         return ResponseEntity.created(
@@ -194,6 +197,8 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .registeredAt(registration.registeredAt())
                 .wantsSharedTransport(RegistrationDtoMapper.wantsSharedTransport(registration, event))
                 .wantsSharedAccommodation(RegistrationDtoMapper.wantsSharedAccommodation(registration, event))
+                .internalNote(RegistrationNote.textOrNull(registration.internalNote()))
+                .orisNote(RegistrationNote.textOrNull(registration.orisNote()))
                 .build();
     }
 

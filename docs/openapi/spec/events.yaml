@@ -2115,6 +2115,16 @@ components:
           description: |
             Member opts into the event's shared accommodation. Meaningful only when the event
             offers it; the registration form omits this property otherwise. Defaults to false.
+        internalNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
+          description: Free-text remark for the club only. Blank means no note.
+        orisNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
+          description: Free-text remark for the organiser's ORIS entry. Blank means no note.
 
     EditRegistrationRequest:
       type: object
@@ -2187,6 +2197,14 @@ components:
     RegistrationDto:
       type: object
       properties:
+        internalNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
+        orisNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
         firstName:
           type: string
           x-klabis-halforms-access: READ_ONLY

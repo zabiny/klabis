@@ -682,7 +682,7 @@ class EventTest {
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, true);
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, true, null, null);
             assertThat(event.findRegistration(memberId).orElseThrow().wantsSharedAccommodation()).isTrue();
 
             event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
@@ -698,6 +698,58 @@ class EventTest {
 
             assertThat(event.isSharedAccommodationEnabled()).isTrue();
             assertThat(event.findRegistration(memberId).orElseThrow().wantsSharedAccommodation()).isTrue();
+        }
+    }
+
+    @Nested
+    @DisplayName("Registration notes")
+    class RegistrationNotes {
+
+        private Event openEvent() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).location("Forest").organizer("Club")
+                    .build());
+            event.publish();
+            return event;
+        }
+
+        @Test
+        @DisplayName("registerMember() records both notes")
+        void registersWithNotes() {
+            Event event = openEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false,
+                    RegistrationNote.ofNullable("for club"), RegistrationNote.ofNullable("for ORIS"));
+
+            EventRegistration registration = event.findRegistration(memberId).orElseThrow();
+            assertThat(registration.internalNote().text()).isEqualTo("for club");
+            assertThat(registration.orisNote().text()).isEqualTo("for ORIS");
+        }
+
+        @Test
+        @DisplayName("registerMember() without notes leaves both notes empty")
+        void registersWithoutNotes() {
+            Event event = openEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false, null, null);
+
+            EventRegistration registration = event.findRegistration(memberId).orElseThrow();
+            assertThat(registration.internalNote()).isNull();
+            assertThat(registration.orisNote()).isNull();
+        }
+
+        @Test
+        @DisplayName("notes are not part of the registration toString()")
+        void notesStayOutOfToString() {
+            Event event = openEvent();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false,
+                    RegistrationNote.ofNullable("secret-internal"), RegistrationNote.ofNullable("secret-oris"));
+
+            assertThat(event.findRegistration(memberId).orElseThrow().toString())
+                    .doesNotContain("secret-internal", "secret-oris");
         }
     }
 
@@ -721,7 +773,7 @@ class EventTest {
             Event event = activeEvent();
             MemberId memberId = new MemberId(UUID.randomUUID());
 
-            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true);
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true, null, null);
 
             EventRegistration registration = event.findRegistration(memberId).orElseThrow();
             assertThat(registration.wantsSharedTransport()).isTrue();
@@ -734,7 +786,7 @@ class EventTest {
             Event event = activeEvent();
             MemberId memberId = new MemberId(UUID.randomUUID());
 
-            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, false);
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, false, null, null);
 
             EventRegistration registration = event.findRegistration(memberId).orElseThrow();
             assertThat(registration.wantsSharedTransport()).isTrue();
@@ -747,7 +799,7 @@ class EventTest {
             Event event = activeEvent();
             MemberId memberId = new MemberId(UUID.randomUUID());
 
-            event.registerMember(memberId, SiCardNumber.of("123456"), null);
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false, null, null);
 
             EventRegistration registration = event.findRegistration(memberId).orElseThrow();
             assertThat(registration.wantsSharedTransport()).isFalse();
@@ -759,7 +811,7 @@ class EventTest {
         void editRegistrationUpdatesBothChoiceFlags() {
             Event event = activeEvent();
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false);
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false, null, null);
 
             event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
                     .siCardNumber(SiCardNumber.of("123456"))
@@ -777,7 +829,7 @@ class EventTest {
         void editRegistrationTurnsChoiceOff() {
             Event event = activeEvent();
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true);
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true, null, null);
 
             event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
                     .siCardNumber(SiCardNumber.of("123456"))
@@ -795,7 +847,7 @@ class EventTest {
         void editRegistrationRetainsStoredChoicesWhenOffersDisabled() {
             Event event = activeEvent();
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true);
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true, null, null);
             event.update(EventUpdateEventBuilder.builder()
                     .name("Race").eventDate(LocalDate.now().plusDays(30)).organizer("Club")
                     .build());
@@ -814,7 +866,7 @@ class EventTest {
         void editRegistrationRetainsChoiceOnlyForDisabledOffer() {
             Event event = activeEvent();
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true);
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, true, true, null, null);
             event.update(EventUpdateEventBuilder.builder()
                     .name("Race").eventDate(LocalDate.now().plusDays(30)).organizer("Club")
                     .sharedAccommodationEnabled(true)
@@ -895,7 +947,7 @@ class EventTest {
 
         private void register(Event event, boolean wantsTransport, boolean wantsAccommodation) {
             event.registerMember(new MemberId(UUID.randomUUID()), SiCardNumber.of("123456"), null,
-                    wantsTransport, wantsAccommodation);
+                    wantsTransport, wantsAccommodation, null, null);
         }
 
         @Test
@@ -960,7 +1012,7 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            event.registerMember(memberId, siCardNumber, null);
+            event.registerMember(memberId, siCardNumber, null, false, false, null, null);
 
             assertThat(event.getRegistrations()).hasSize(1);
             assertThat(event.findRegistration(memberId)).isPresent();
@@ -975,7 +1027,7 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber, null))
+            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber, null, false, false, null, null))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
         }
@@ -991,7 +1043,7 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber, null))
+            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber, null, false, false, null, null))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
         }
@@ -1006,7 +1058,7 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
-            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber, null))
+            assertThatThrownBy(() -> event.registerMember(memberId, siCardNumber, null, false, false, null, null))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
         }
@@ -1019,9 +1071,9 @@ class EventTest {
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
-            event.registerMember(memberId, siCardNumber, null);
+            event.registerMember(memberId, siCardNumber, null, false, false, null, null);
 
-            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("654321"), null))
+            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("654321"), null, false, false, null, null))
                     .isInstanceOf(DuplicateRegistrationException.class)
                     .hasMessageContaining("already registered");
         }
@@ -1039,7 +1091,7 @@ class EventTest {
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
-            event.registerMember(memberId, siCardNumber, null);
+            event.registerMember(memberId, siCardNumber, null, false, false, null, null);
             assertThat(event.getRegistrations()).hasSize(1);
 
             event.unregisterMember(EventUnregisterMemberBuilder.builder().memberId(memberId).build());
@@ -1114,7 +1166,7 @@ class EventTest {
 
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
-            event.registerMember(memberId, siCardNumber, null);
+            event.registerMember(memberId, siCardNumber, null, false, false, null, null);
 
             var foundRegistration = event.findRegistration(memberId);
 
@@ -1147,8 +1199,8 @@ class EventTest {
             SiCardNumber siCardNumber1 = SiCardNumber.of("123456");
             SiCardNumber siCardNumber2 = SiCardNumber.of("654321");
 
-            event.registerMember(memberId1, siCardNumber1, null);
-            event.registerMember(memberId2, siCardNumber2, null);
+            event.registerMember(memberId1, siCardNumber1, null, false, false, null, null);
+            event.registerMember(memberId2, siCardNumber2, null, false, false, null, null);
 
             var registrations = event.getRegistrations();
 
@@ -1173,7 +1225,7 @@ class EventTest {
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
 
-            event.registerMember(memberId, SiCardNumber.of("123456"), m21.id());
+            event.registerMember(memberId, SiCardNumber.of("123456"), m21.id(), false, false, null, null);
 
             assertThat(event.findRegistration(memberId)).isPresent();
             assertThat(event.findRegistration(memberId).get().categoryId()).isEqualTo(m21.id());
@@ -1189,7 +1241,7 @@ class EventTest {
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
 
-            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("123456"), null))
+            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false, null, null))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("Category is required");
         }
@@ -1205,7 +1257,7 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             EventCategoryId unknownCategoryId = EventCategoryId.generate();
 
-            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("123456"), unknownCategoryId))
+            assertThatThrownBy(() -> event.registerMember(memberId, SiCardNumber.of("123456"), unknownCategoryId, false, false, null, null))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("not available");
         }
@@ -1219,7 +1271,7 @@ class EventTest {
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
 
-            event.registerMember(memberId, SiCardNumber.of("123456"), null);
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false, null, null);
 
             assertThat(event.findRegistration(memberId)).isPresent();
             assertThat(event.findRegistration(memberId).get().categoryId()).isNull();
@@ -1234,7 +1286,7 @@ class EventTest {
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
 
-            event.registerMember(memberId, SiCardNumber.of("123456"), EventCategoryId.generate());
+            event.registerMember(memberId, SiCardNumber.of("123456"), EventCategoryId.generate(), false, false, null, null);
 
             assertThat(event.findRegistration(memberId)).isPresent();
             assertThat(event.findRegistration(memberId).get().categoryId()).isNull();
@@ -1832,7 +1884,7 @@ class EventTest {
         private Event activeEventWithRegisteredMember(MemberId memberId, SiCardNumber siCard) {
             Event event = activeEventWithFutureDate();
             event.clearDomainEvents();
-            event.registerMember(memberId, siCard, null);
+            event.registerMember(memberId, siCard, null, false, false, null, null);
             event.clearDomainEvents();
             return event;
         }
@@ -2157,7 +2209,7 @@ class EventTest {
         private Event activeEventWithCategoryAndRegisteredMember(MemberId memberId, EventCategoryId categoryId) {
             Event event = activeEventWithCategories();
             event.clearDomainEvents();
-            event.registerMember(memberId, SiCardNumber.of("123456"), categoryId);
+            event.registerMember(memberId, SiCardNumber.of("123456"), categoryId, false, false, null, null);
             event.clearDomainEvents();
             return event;
         }
@@ -2212,7 +2264,7 @@ class EventTest {
                     .withDate(LocalDate.now().plusDays(10))
                     .buildPublished();
             event.clearDomainEvents();
-            event.registerMember(memberId, SiCardNumber.of("123456"), null);
+            event.registerMember(memberId, SiCardNumber.of("123456"), null, false, false, null, null);
             event.clearDomainEvents();
 
             event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
@@ -2478,7 +2530,7 @@ class EventTest {
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, SiCardNumber.of("12345"), m21.id());
+            event.registerMember(memberId, SiCardNumber.of("12345"), m21.id(), false, false, null, null);
 
             EventCategory renamed = new EventCategory(EventCategoryId.generate(), "42", "M21 Elite", null);
             event.syncFromOris(EventSyncFromOrisBuilder.builder()
@@ -2538,7 +2590,7 @@ class EventTest {
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, SiCardNumber.of("12345"), m21.id());
+            event.registerMember(memberId, SiCardNumber.of("12345"), m21.id(), false, false, null, null);
 
             event.syncFromOris(EventSyncFromOrisBuilder.builder()
                     .name("Race")

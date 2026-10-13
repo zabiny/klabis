@@ -31,6 +31,8 @@ export const EventRegistrationDialog = ({
 
     const transportProp = template?.properties.find(prop => prop.name === 'wantsSharedTransport');
     const accommodationProp = template?.properties.find(prop => prop.name === 'wantsSharedAccommodation');
+    const hasInternalNote = template?.properties.some(prop => prop.name === 'internalNote');
+    const hasOrisNote = template?.properties.some(prop => prop.name === 'orisNote');
     const categoryProp = template?.properties.find(prop => prop.name === 'categoryId');
     const showTransportCheckbox = transportProp !== undefined && eventContext?.sharedTransportEnabled === true;
     const showAccommodationCheckbox = accommodationProp !== undefined && eventContext?.sharedAccommodationEnabled === true;
@@ -99,6 +101,8 @@ export const EventRegistrationDialog = ({
                     {showAccommodationCheckbox && helpers.renderField('wantsSharedAccommodation')}
                 </div>
             )}
+            {hasInternalNote && helpers.renderField('internalNote')}
+            {hasOrisNote && helpers.renderField('orisNote')}
             <div className="mt-2 flex items-center justify-end gap-3 border-t border-border pt-4">
                 {helpers.renderField('cancel')}
                 {helpers.renderField('submit')}
@@ -158,6 +162,8 @@ export const EventRegistrationDialog = ({
     );
 };
 
+const hasText = (value: unknown): boolean => typeof value === 'string' && value.trim() !== '';
+
 function ReadOnlyRegistration({registration, eventContext, onClose}: {
     registration: Record<string, unknown>;
     eventContext: RegistrationDialogData['eventContext'];
@@ -184,6 +190,12 @@ function ReadOnlyRegistration({registration, eventContext, onClose}: {
                 )}
                 {eventContext?.sharedAccommodationEnabled && registration.wantsSharedAccommodation != null && (
                     <DetailRow label={labels.fields.sharedAccommodationEnabled}>{yesNo(registration.wantsSharedAccommodation)}</DetailRow>
+                )}
+                {hasText(registration.internalNote) && (
+                    <DetailRow label={labels.fields.internalNote}>{String(registration.internalNote)}</DetailRow>
+                )}
+                {hasText(registration.orisNote) && (
+                    <DetailRow label={labels.fields.orisNote}>{String(registration.orisNote)}</DetailRow>
                 )}
             </dl>
             <div className="mt-2 flex items-center justify-end border-t border-border pt-4">

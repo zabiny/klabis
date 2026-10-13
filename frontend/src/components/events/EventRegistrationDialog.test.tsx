@@ -380,6 +380,56 @@ describe('EventRegistrationDialog', () => {
         });
     });
 
+    describe('notes', () => {
+        const noteProps = [
+            {name: 'internalNote', prompt: 'Interní poznámka', type: 'textarea', maxLength: 255},
+            {name: 'orisNote', prompt: 'Poznámka do ORIS', type: 'textarea', maxLength: 255},
+        ];
+        const withNotes = () => ({
+            ...newRegistrationTemplate(),
+            properties: [...newRegistrationTemplate().properties, ...noteProps],
+        });
+
+        it('shows both note fields, caps length at the template maxLength and submits their values', async () => {
+            const user = userEvent.setup();
+            mockRoutes((url, options) => {
+                if (options?.method) return writeOk();
+                if (url === EVENT_URL) return jsonOk(eventData());
+                if (url === PREFILL_URL) return jsonOk(prefillData({_templates: {registerForEvent: withNotes()}}));
+                return jsonOk({});
+            });
+            renderDialog();
+
+            const internal = await screen.findByLabelText(labels.fields.internalNote);
+            const oris = screen.getByLabelText(labels.fields.orisNote);
+            expect(internal).toHaveAttribute('maxlength', '255');
+            await user.type(internal, 'moje poznámka');
+            await user.type(oris, 'pro ORIS');
+            expect(screen.getByText('13 / 255')).toBeInTheDocument();
+            expect(screen.getByText('8 / 255')).toBeInTheDocument();
+            await user.selectOptions(screen.getByLabelText(/Kategorie/), 'cat-1');
+            await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmNew}));
+
+            await waitFor(() => {
+                expect(vi.mocked(authorizedFetch).mock.calls.some(([, o]) => (o as RequestInit | undefined)?.method === 'POST')).toBe(true);
+            });
+            const postCall = vi.mocked(authorizedFetch).mock.calls.find(([, o]) => (o as RequestInit | undefined)?.method === 'POST');
+            expect(JSON.parse((postCall?.[1] as RequestInit).body as string)).toMatchObject({
+                internalNote: 'moje poznámka',
+                orisNote: 'pro ORIS',
+            });
+        });
+
+        it('does not render note fields when the template does not offer them', async () => {
+            mockRoutes((url) => url === EVENT_URL ? jsonOk(eventData()) : jsonOk(prefillData()));
+            renderDialog();
+
+            await screen.findByLabelText(/SI čip/);
+            expect(screen.queryByLabelText(labels.fields.internalNote)).not.toBeInTheDocument();
+            expect(screen.queryByLabelText(labels.fields.orisNote)).not.toBeInTheDocument();
+        });
+    });
+
     it('edit mode submits PUT with values from fetched registration', async () => {
         const user = userEvent.setup();
         const onClose = vi.fn();
@@ -517,6 +567,18 @@ describe('EventRegistrationDialog', () => {
 
             await expectReadOnlyDetail();
             expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
+        });
+
+        it('shows notes read-only only when present', async () => {
+            mockRoutes((url) => url === EDIT_URL
+                ? jsonOk(readOnlyData({internalNote: 'tajná', orisNote: ''}))
+                : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+            expect(screen.getByText(labels.fields.internalNote)).toBeInTheDocument();
+            expect(screen.getByText('tajná')).toBeInTheDocument();
+            expect(screen.queryByText(labels.fields.orisNote)).not.toBeInTheDocument();
         });
 
         it('shows the registration read-only for a member after the edit window has closed', async () => {

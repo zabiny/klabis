@@ -20,12 +20,12 @@
 
 ## 3. Member fills in notes when registering and sees them on the registration
 
-- [ ] 3.1 Add `RegistrationNote` value object (trim, blank → none, max 255) test-first; verify unit tests for trimming, blank and over-length input pass
-- [ ] 3.2 Extend `EventRegistration`, `CreateEventRegistration`, `Event.RegisterCommand`, `Event.registerMember` and `EventRegistrationService` with `internalNote` / `orisNote` test-first, keeping notes out of `toString()` and domain event payloads; verify `Event` domain tests cover registering with and without notes
-- [ ] 3.3 Add `internal_note` / `oris_note` columns to `events.event_registrations` in V001 and map them in `EventRegistrationMemento`; verify repository round-trip test persists and reloads both notes
-- [ ] 3.4 Add `internalNote` / `orisNote` (maxLength 255, `x-hal-input-type: textarea`) to `RegisterEventRequest` and `RegistrationDto` in `docs/openapi/spec/events.yaml`, regenerate bundle and frontend types; verify `./gradlew openapiBundle -PopenapiCheck` and `npm run openapi` succeed
-- [ ] 3.5 Map the notes in the register and get-registration path; verify `@WebMvcTest` registers with notes and reads them back for the owner, and a >255 note is rejected with a validation error
-- [ ] 3.6 Add `renderField` calls for both notes to the dialog's `customLayout` (form and read-only view) with Czech labels in `labels.ts`; verify component tests show the fields, submit their values and show them read-only, and `npm run build` passes
+- [x] 3.1 Add `RegistrationNote` value object (trim, blank → none, max 255) test-first; verify unit tests for trimming, blank and over-length input pass
+- [x] 3.2 Extend `EventRegistration`, `CreateEventRegistration`, `Event.RegisterCommand`, `Event.registerMember` and `EventRegistrationService` with `internalNote` / `orisNote` test-first, keeping notes out of `toString()` and domain event payloads; verify `Event` domain tests cover registering with and without notes
+- [x] 3.3 Add `internal_note` / `oris_note` columns to `events.event_registrations` in V001 and map them in `EventRegistrationMemento`; verify repository round-trip test persists and reloads both notes
+- [x] 3.4 Add `internalNote` / `orisNote` (maxLength 255, `x-hal-input-type: textarea`) to `RegisterEventRequest` and `RegistrationDto` in `docs/openapi/spec/events.yaml`, regenerate bundle and frontend types; verify `./gradlew openapiBundle -PopenapiCheck` and `npm run openapi` succeed
+- [x] 3.5 Map the notes in the register and get-registration path; verify `@WebMvcTest` registers with notes and reads them back for the owner, and a >255 note is rejected with a validation error
+- [x] 3.6 Add `renderField` calls for both notes to the dialog's `customLayout` (form and read-only view) with Czech labels in `labels.ts`; verify component tests show the fields, submit their values and show them read-only, and `npm run build` passes
 
 ## 4. Member and EVENTS:REGISTRATIONS edit notes
 

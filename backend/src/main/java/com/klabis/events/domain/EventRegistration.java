@@ -31,7 +31,9 @@ public class EventRegistration {
             SiCardNumber siCardNumber,
             EventCategoryId categoryId,
             boolean wantsSharedTransport,
-            boolean wantsSharedAccommodation
+            boolean wantsSharedAccommodation,
+            RegistrationNote internalNote,
+            RegistrationNote orisNote
     ) {}
 
     private final UUID id;
@@ -42,6 +44,8 @@ public class EventRegistration {
     private final Instant registeredAt;
     private final boolean wantsSharedTransport;
     private final boolean wantsSharedAccommodation;
+    private final RegistrationNote internalNote;
+    private final RegistrationNote orisNote;
 
     /**
      * Private constructor for creating EventRegistration instances.
@@ -54,7 +58,8 @@ public class EventRegistration {
      * @param registeredAt timestamp when registration was created
      */
     private EventRegistration(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId,
-                              Instant registeredAt, boolean wantsSharedTransport, boolean wantsSharedAccommodation) {
+                              Instant registeredAt, boolean wantsSharedTransport, boolean wantsSharedAccommodation,
+                              RegistrationNote internalNote, RegistrationNote orisNote) {
         this.id = id;
         this.memberId = memberId;
         this.siCardNumber = siCardNumber;
@@ -62,6 +67,8 @@ public class EventRegistration {
         this.registeredAt = registeredAt;
         this.wantsSharedTransport = wantsSharedTransport;
         this.wantsSharedAccommodation = wantsSharedAccommodation;
+        this.internalNote = internalNote;
+        this.orisNote = orisNote;
     }
 
     /**
@@ -88,7 +95,9 @@ public class EventRegistration {
                 command.categoryId(),
                 Instant.now(),
                 command.wantsSharedTransport(),
-                command.wantsSharedAccommodation()
+                command.wantsSharedAccommodation(),
+                command.internalNote(),
+                command.orisNote()
         );
     }
 
@@ -104,24 +113,17 @@ public class EventRegistration {
      * @return reconstructed EventRegistration instance
      */
     public static EventRegistration reconstruct(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId,
-                                               Instant registeredAt) {
-        return reconstruct(id, memberId, siCardNumber, categoryId, registeredAt, false, false);
-    }
-
-    public static EventRegistration reconstruct(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId,
-                                               Instant registeredAt, boolean wantsSharedTransport, boolean wantsSharedAccommodation) {
+                                               Instant registeredAt, boolean wantsSharedTransport, boolean wantsSharedAccommodation,
+                                               RegistrationNote internalNote, RegistrationNote orisNote) {
         return new EventRegistration(id, memberId, siCardNumber, categoryId, registeredAt,
-                wantsSharedTransport, wantsSharedAccommodation);
-    }
-
-    public EventRegistration withChanges(SiCardNumber newSiCard, EventCategoryId newCategoryId) {
-        return withChanges(newSiCard, newCategoryId, this.wantsSharedTransport, this.wantsSharedAccommodation);
+                wantsSharedTransport, wantsSharedAccommodation, internalNote, orisNote);
     }
 
     public EventRegistration withChanges(SiCardNumber newSiCard, EventCategoryId newCategoryId,
-                                         boolean newWantsSharedTransport, boolean newWantsSharedAccommodation) {
+                                         boolean newWantsSharedTransport, boolean newWantsSharedAccommodation,
+                                         RegistrationNote newInternalNote, RegistrationNote newOrisNote) {
         return new EventRegistration(this.id, this.memberId, newSiCard, newCategoryId, this.registeredAt,
-                newWantsSharedTransport, newWantsSharedAccommodation);
+                newWantsSharedTransport, newWantsSharedAccommodation, newInternalNote, newOrisNote);
     }
 
     // ========== Getters ==========
@@ -152,6 +154,14 @@ public class EventRegistration {
 
     public boolean wantsSharedAccommodation() {
         return wantsSharedAccommodation;
+    }
+
+    public RegistrationNote internalNote() {
+        return internalNote;
+    }
+
+    public RegistrationNote orisNote() {
+        return orisNote;
     }
 
     // ========== Object Methods ==========

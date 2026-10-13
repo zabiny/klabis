@@ -34,7 +34,8 @@ public class EventRegistrationService implements EventRegistrationPort {
                 .orElseThrow(() -> new EventNotFoundException(eventId));
 
         event.registerMember(memberId, SiCardNumber.of(command.siCardNumber()), command.categoryId(),
-                command.wantsSharedTransport(), command.wantsSharedAccommodation());
+                command.wantsSharedTransport(), command.wantsSharedAccommodation(),
+                command.internalNote(), command.orisNote());
         eventRepository.save(event);
     }
 

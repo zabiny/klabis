@@ -70,7 +70,7 @@ class MemberRegistrationSanctionServiceTest {
                     .withRegistrationDeadline(LocalDate.now().plusDays(7))
                     .build();
             activeEvent.publish();
-            activeEvent.registerMember(SANCTIONED_MEMBER, SiCardNumber.of("1234567"), null);
+            activeEvent.registerMember(SANCTIONED_MEMBER, SiCardNumber.of("1234567"), null, false, false, null, null);
 
             when(eventRepository.findAll(any(), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(activeEvent)));
@@ -92,7 +92,7 @@ class MemberRegistrationSanctionServiceTest {
                     .withRegistrationDeadline(LocalDate.now().plusDays(7))
                     .build();
             activeEvent.publish();
-            activeEvent.registerMember(OTHER_MEMBER, SiCardNumber.of("1234567"), null);
+            activeEvent.registerMember(OTHER_MEMBER, SiCardNumber.of("1234567"), null, false, false, null, null);
 
             when(eventRepository.findAll(any(), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(activeEvent)));

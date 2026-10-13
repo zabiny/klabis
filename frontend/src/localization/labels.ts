@@ -240,6 +240,8 @@ export const labels = {
         sharedAccommodationEnabled: 'Nabídnout společné ubytování',
         wantsSharedTransport: 'Chci využít společnou dopravu',
         wantsSharedAccommodation: 'Chci využít společné ubytování',
+        internalNote: 'Interní poznámka',
+        orisNote: 'Poznámka do ORIS',
         yearlyFeeAmount: 'Roční poplatek',
         yearlyFeeCurrency: 'Měna',
         tierIds: 'Tiery',

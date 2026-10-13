@@ -74,7 +74,7 @@ Both notes are attributes of `EventRegistration` and flow through the existing `
 
 ### D2 — `RegistrationNote` value object
 
-A small value object holding trimmed text of 1–255 characters; blank input maps to "no note". Used for both notes so the rule lives in one place. 255 is the club's own limit; the ORIS note limit is not documented (see Open Questions). The request schemas declare `maxLength: 255`, so the form shows the length error in the browser; that limit applies to the raw input, before trimming — a note padded with spaces past 255 characters is rejected, which is accepted.
+A small value object holding trimmed text of 1–255 characters; blank input maps to "no note". Used for both notes so the rule lives in one place. 255 is the club's own limit; the ORIS note limit is not documented (see Open Questions). The request schemas declare `maxLength: 255`, so the form limits each note input to 255 characters (with a character counter) and the backend rejects longer input with a validation error; that limit applies to the raw input, before trimming — a note padded with spaces past 255 characters is rejected, which is accepted.
 
 ### D3 — Who reads a registration detail, and how it is checked
 

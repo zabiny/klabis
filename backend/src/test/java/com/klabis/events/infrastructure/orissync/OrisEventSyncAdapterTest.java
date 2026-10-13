@@ -409,7 +409,7 @@ class OrisEventSyncAdapterTest {
                     .build());
             event.publish();
             MemberId memberId = new MemberId(UUID.randomUUID());
-            event.registerMember(memberId, new SiCardNumber("12345"), m21.id());
+            event.registerMember(memberId, new SiCardNumber("12345"), m21.id(), false, false, null, null);
 
             when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
                     "Race Updated", eventDate.plusDays(14), "Forest", "OOB", null,

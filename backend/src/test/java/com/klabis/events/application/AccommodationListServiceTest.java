@@ -46,7 +46,7 @@ class AccommodationListServiceTest {
 
     private static EventRegistration registration(MemberId memberId, boolean wantsAccommodation) {
         return EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"),
-                null, Instant.now(), false, wantsAccommodation);
+                null, Instant.now(), false, wantsAccommodation, null, null);
     }
 
     private static MemberAccommodationDto memberData(String firstName) {

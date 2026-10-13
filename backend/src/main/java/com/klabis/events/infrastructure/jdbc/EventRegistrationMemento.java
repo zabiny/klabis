@@ -2,6 +2,7 @@ package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.events.EventCategoryId;
 import com.klabis.events.domain.EventRegistration;
+import com.klabis.events.domain.RegistrationNote;
 import com.klabis.members.MemberId;
 import com.klabis.events.domain.SiCardNumber;
 import org.springframework.data.relational.core.mapping.Column;
@@ -45,6 +46,12 @@ class EventRegistrationMemento {
     @Column("wants_shared_accommodation")
     private boolean wantsSharedAccommodation;
 
+    @Column("internal_note")
+    private String internalNote;
+
+    @Column("oris_note")
+    private String orisNote;
+
     /**
      * Default constructor required by Spring Data JDBC.
      */
@@ -68,6 +75,8 @@ class EventRegistrationMemento {
         memento.registeredAt = registration.registeredAt();
         memento.wantsSharedTransport = registration.wantsSharedTransport();
         memento.wantsSharedAccommodation = registration.wantsSharedAccommodation();
+        memento.internalNote = RegistrationNote.textOrNull(registration.internalNote());
+        memento.orisNote = RegistrationNote.textOrNull(registration.orisNote());
 
         return memento;
     }
@@ -85,7 +94,9 @@ class EventRegistrationMemento {
                 this.categoryId != null ? new EventCategoryId(this.categoryId) : null,
                 this.registeredAt,
                 this.wantsSharedTransport,
-                this.wantsSharedAccommodation
+                this.wantsSharedAccommodation,
+                RegistrationNote.ofNullable(this.internalNote),
+                RegistrationNote.ofNullable(this.orisNote)
         );
     }
 

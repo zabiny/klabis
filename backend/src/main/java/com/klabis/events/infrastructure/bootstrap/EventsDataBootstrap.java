@@ -400,7 +400,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
         if (regularMember != null) {
             for (int i = 0; i < Math.min(5, openEvents.size()); i++) {
                 Event event = openEvents.get(i);
-                event.registerMember(regularMember, new SiCardNumber("123456"), resolveFirstCategory(event));
+                event.registerMember(regularMember, new SiCardNumber("123456"), resolveFirstCategory(event), false, false, null, null);
                 eventRepository.save(event);
             }
         }
@@ -409,7 +409,7 @@ class EventsDataBootstrap implements BootstrapDataInitializer {
             for (int i = 0; i < Math.min(2, openEvents.size()); i++) {
                 Event event = openEvents.get(i);
                 if (event.findRegistration(adminMember).isEmpty()) {
-                    event.registerMember(adminMember, new SiCardNumber("999001"), resolveFirstCategory(event));
+                    event.registerMember(adminMember, new SiCardNumber("999001"), resolveFirstCategory(event), false, false, null, null);
                     eventRepository.save(event);
                 }
             }

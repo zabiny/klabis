@@ -407,6 +407,9 @@ CREATE TABLE events.event_registrations
     wants_shared_transport     BOOLEAN NOT NULL DEFAULT FALSE,
     wants_shared_accommodation BOOLEAN NOT NULL DEFAULT FALSE,
 
+    internal_note  VARCHAR(255) NULL,
+    oris_note      VARCHAR(255) NULL,
+
     -- Unique constraint: one registration per member per event
     CONSTRAINT uk_event_registrations_event_member UNIQUE (event_id, member_id)
 );
@@ -424,6 +427,8 @@ COMMENT ON COLUMN events.event_registrations.category_id IS 'Reference to events
 COMMENT ON COLUMN events.event_registrations.registered_at IS 'Timestamp when member registered for the event';
 COMMENT ON COLUMN events.event_registrations.wants_shared_transport IS 'Member asked to use the event''s shared transport offer; retained but not shown when the offer is off';
 COMMENT ON COLUMN events.event_registrations.wants_shared_accommodation IS 'Member asked to use the event''s shared accommodation offer; retained but not shown when the offer is off';
+COMMENT ON COLUMN events.event_registrations.internal_note IS 'Free-text remark for the club only (nullable)';
+COMMENT ON COLUMN events.event_registrations.oris_note IS 'Free-text remark for the organiser''s ORIS entry (nullable)';
 
 -- ============================================================================
 -- 6b. EVENT_COORDINATORS TABLE

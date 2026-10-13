@@ -1720,7 +1720,7 @@ class EventControllerTest {
 
         private EventRegistration registration(boolean wantsTransport, boolean wantsAccommodation) {
             return EventRegistration.reconstruct(UUID.randomUUID(), new MemberId(UUID.randomUUID()),
-                    SiCardNumber.of("123456"), null, Instant.now(), wantsTransport, wantsAccommodation);
+                    SiCardNumber.of("123456"), null, Instant.now(), wantsTransport, wantsAccommodation, null, null);
         }
 
         private EventTestDataBuilder activeEventWithBothOffers() {
@@ -1862,7 +1862,7 @@ class EventControllerTest {
         private EventRegistration registration(boolean wantsTransport, boolean wantsAccommodation) {
             return EventRegistration.reconstruct(UUID.randomUUID(),
                     new MemberId(UUID.fromString(REGISTERED_MEMBER_ID)),
-                    SiCardNumber.of("123456"), null, Instant.now(), wantsTransport, wantsAccommodation);
+                    SiCardNumber.of("123456"), null, Instant.now(), wantsTransport, wantsAccommodation, null, null);
         }
 
         private void mockRegisteredMember() {
@@ -2649,7 +2649,7 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)
             );
             Event event = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
                     .withSharedAccommodationEnabled(true)
@@ -2692,7 +2692,7 @@ class EventControllerTest {
                     .withSharedAccommodationEnabled(true)
                     .withCoordinator(coordinatorId)
                     .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
+                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)))
                     .build();
             event.publish();
 
@@ -2725,7 +2725,7 @@ class EventControllerTest {
             Event event = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
                     .withSharedAccommodationEnabled(true)
                     .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), callerId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
+                            UUID.randomUUID(), callerId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)))
                     .build();
             event.publish();
 
@@ -2756,7 +2756,7 @@ class EventControllerTest {
             Event event = EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)))
                     .withSharedAccommodationEnabled(true)
                     .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
+                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)))
                     .build();
             event.publish();
 
@@ -2815,7 +2815,7 @@ class EventControllerTest {
             Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
                     .withSharedAccommodationEnabled(true)
                     .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
+                            UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)))
                     .build();
             event.publish();
 
@@ -2836,7 +2836,7 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -2899,7 +2899,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -2931,7 +2931,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true, null, null)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -2970,7 +2970,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("9876"), null, Instant.now(), false, true)
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("9876"), null, Instant.now(), false, true, null, null)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -3004,7 +3004,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("5555"), null, Instant.now(), false, true)
+                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("5555"), null, Instant.now(), false, true, null, null)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)

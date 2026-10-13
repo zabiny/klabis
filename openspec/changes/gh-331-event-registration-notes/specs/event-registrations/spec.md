@@ -70,11 +70,15 @@ Both notes SHALL be shown only on the registration detail and in the registratio
 
 Each note SHALL be plain text of at most 255 characters. A note containing only whitespace SHALL be treated as no note.
 
+#### Scenario: Note input is limited to 255 characters
+
+- **WHEN** a member types or pastes a note into the registration form or the edit form
+- **THEN** the form accepts at most 255 characters in each note and shows how many characters are used out of 255
+
 #### Scenario: Note that is too long is rejected
 
-- **WHEN** a member submits the registration form or the edit form with a note longer than 255 characters
-- **THEN** the form shows an error that the note can have at most 255 characters
-- **AND** the registration is not created or changed
+- **WHEN** a registration or registration change with a note longer than 255 characters is submitted
+- **THEN** the registration is not created or changed
 
 #### Scenario: Note with only whitespace is stored as no note
 
