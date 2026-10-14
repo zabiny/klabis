@@ -21,7 +21,8 @@ public record RegistrationEditedEvent(
         EventCategoryId oldCategoryId,
         SiCardNumber newSiCardNumber,
         EventCategoryId newCategoryId,
-        Instant occurredAt
+        Instant occurredAt,
+        UpdateOrigin origin
 ) {
 
     public RegistrationEditedEvent {
@@ -29,11 +30,13 @@ public record RegistrationEditedEvent(
         Objects.requireNonNull(eventId, "Event ID is required");
         Objects.requireNonNull(memberId, "Member ID is required");
         Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
+        Objects.requireNonNull(origin, "Update origin is required");
     }
 
     public static RegistrationEditedEvent fromAggregate(Event event, MemberId memberId,
                                                          EventRegistration oldRegistration,
-                                                         EventRegistration newRegistration) {
+                                                         EventRegistration newRegistration,
+                                                         UpdateOrigin origin) {
         return new RegistrationEditedEvent(
                 UUID.randomUUID(),
                 event.getId(),
@@ -42,7 +45,8 @@ public record RegistrationEditedEvent(
                 oldRegistration.categoryId(),
                 newRegistration.siCardNumber(),
                 newRegistration.categoryId(),
-                Instant.now()
+                Instant.now(),
+                origin
         );
     }
 }

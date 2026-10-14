@@ -85,6 +85,13 @@ public class EventRegistration {
      * @throws IllegalArgumentException if validation fails
      */
     public static EventRegistration create(CreateEventRegistration command) {
+        return create(command, null);
+    }
+
+    /**
+     * @param registeredAt registration time to keep (e.g. taken over from ORIS); {@code null} means now
+     */
+    public static EventRegistration create(CreateEventRegistration command, Instant registeredAt) {
         if (command.memberId() == null) {
             throw new IllegalArgumentException("memberId is required");
         }
@@ -94,7 +101,7 @@ public class EventRegistration {
                 command.memberId(),
                 command.siCardNumber(),
                 command.categoryId(),
-                Instant.now(),
+                registeredAt != null ? registeredAt : Instant.now(),
                 command.wantsSharedTransport(),
                 command.wantsSharedAccommodation(),
                 command.internalNote(),

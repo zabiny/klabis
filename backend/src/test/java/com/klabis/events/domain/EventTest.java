@@ -3115,4 +3115,207 @@ class EventTest {
             assertThat(event.getCategories()).extracting(EventCategory::name).containsExactly("M21", "W21");
         }
     }
+
+    @Nested
+    @DisplayName("Registration domain events carry the update origin")
+    class RegistrationEventOrigin {
+
+        @Test
+        @DisplayName("should mark register, edit and unregister as MANUAL")
+        void shouldMarkManualOperationsAsManual() {
+            Event event = EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(10)).buildPublished();
+            event.clearDomainEvents();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+
+            register(event, memberId, SiCardNumber.of("123456"), null);
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("654321")).build());
+            event.unregisterMember(new Event.UnregisterMember(memberId));
+
+            assertThat(event.getDomainEvents()).hasSize(3);
+            assertThat(((MemberRegisteredForEventEvent) event.getDomainEvents().get(0)).origin())
+                    .isEqualTo(UpdateOrigin.MANUAL);
+            assertThat(((RegistrationEditedEvent) event.getDomainEvents().get(1)).origin())
+                    .isEqualTo(UpdateOrigin.MANUAL);
+            assertThat(((MemberUnregisteredFromEventEvent) event.getDomainEvents().get(2)).origin())
+                    .isEqualTo(UpdateOrigin.MANUAL);
+        }
+    }
+
+    @Nested
+    @DisplayName("syncRegistrationFromOris()")
+    class SyncRegistrationFromOrisMethod {
+
+        private final MemberId memberId = new MemberId(UUID.randomUUID());
+        private final Instant orisTime = Instant.parse("2026-03-01T10:15:30Z");
+
+        private Event.SyncRegistrationFromOris orisEntry(String categoryOrisId) {
+            return EventSyncRegistrationFromOrisBuilder.builder()
+                    .categoryOrisId(categoryOrisId)
+                    .siCardNumber(SiCardNumber.of("123456"))
+                    .wantsToRentSi(true)
+                    .orisNote(RegistrationNote.ofNullable("from ORIS"))
+                    .registeredAt(orisTime)
+                    .build();
+        }
+
+        private Event eventWithOrisCategories() {
+            return EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withCategories(List.of(EventCategory.createFromOris("101", "M21"),
+                            EventCategory.createFromOris("102", "W21")))
+                    .buildPublished();
+        }
+
+        @Test
+        @DisplayName("should create the registration from ORIS values with the ORIS registration time")
+        void shouldCreateRegistrationFromOrisValues() {
+            Event event = eventWithOrisCategories();
+            event.clearDomainEvents();
+
+            event.syncRegistrationFromOris(memberId, orisEntry("102"));
+
+            EventRegistration registration = event.findRegistration(memberId).orElseThrow();
+            assertThat(registration.categoryId()).isEqualTo(event.getCategories().get(1).id());
+            assertThat(registration.siCardNumber()).isEqualTo(SiCardNumber.of("123456"));
+            assertThat(registration.wantsToRentSi()).isTrue();
+            assertThat(RegistrationNote.textOrNull(registration.orisNote())).isEqualTo("from ORIS");
+            assertThat(registration.registeredAt()).isEqualTo(orisTime);
+            assertThat(registration.internalNote()).isNull();
+            assertThat(registration.wantsSharedTransport()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should publish MemberRegisteredForEventEvent with SYNCHRONISATION origin")
+        void shouldPublishEventWithSynchronisationOrigin() {
+            Event event = eventWithOrisCategories();
+            event.clearDomainEvents();
+
+            event.syncRegistrationFromOris(memberId, orisEntry("101"));
+
+            assertThat(event.getDomainEvents()).singleElement().isInstanceOfSatisfying(
+                    MemberRegisteredForEventEvent.class, emitted -> {
+                        assertThat(emitted.memberId()).isEqualTo(memberId);
+                        assertThat(emitted.origin()).isEqualTo(UpdateOrigin.SYNCHRONISATION);
+                    });
+        }
+
+        @Test
+        @DisplayName("should ignore the registration deadline and event date")
+        void shouldIgnoreRegistrationWindow() {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(2))
+                    .withRegistrationDeadline(LocalDate.now().minusDays(1))
+                    .withCategories(List.of(EventCategory.createFromOris("101", "M21")))
+                    .buildPublished();
+
+            event.syncRegistrationFromOris(memberId, orisEntry("101"));
+
+            assertThat(event.findRegistration(memberId)).isPresent();
+        }
+
+        @Test
+        @DisplayName("should ignore the SI policy")
+        void shouldIgnoreSiPolicy() {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withSiPolicy(new SiPolicy(SiUsage.REQUIRED, false))
+                    .withCategories(List.of(EventCategory.createFromOris("101", "M21")))
+                    .buildPublished();
+
+            event.syncRegistrationFromOris(memberId, EventSyncRegistrationFromOrisBuilder.builder()
+                    .categoryOrisId("101").wantsToRentSi(true).registeredAt(orisTime).build());
+
+            EventRegistration registration = event.findRegistration(memberId).orElseThrow();
+            assertThat(registration.siCardNumber()).isNull();
+            assertThat(registration.wantsToRentSi()).isTrue();
+        }
+
+        @Test
+        @DisplayName("should register a member who is blocked from registering in Klabis (the block is not a domain concern)")
+        void shouldRegisterSanctionedMember() {
+            Event event = eventWithOrisCategories();
+
+            event.syncRegistrationFromOris(memberId, orisEntry("101"));
+
+            assertThat(event.getRegistrations()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("should fall back to now when ORIS gave no creation time")
+        void shouldFallBackToNowWithoutOrisTime() {
+            Event event = eventWithOrisCategories();
+
+            event.syncRegistrationFromOris(memberId, EventSyncRegistrationFromOrisBuilder.builder()
+                    .categoryOrisId("101").build());
+
+            assertThat(event.findRegistration(memberId).orElseThrow().registeredAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("should take ORIS values over an existing registration and keep Klabis time, internal note and shared choices")
+        void shouldAdoptExistingRegistration() {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withSharedTransportEnabled(true)
+                    .withCategories(List.of(EventCategory.createFromOris("101", "M21"),
+                            EventCategory.createFromOris("102", "W21")))
+                    .buildPublished();
+            event.registerMember(memberId, EventRegisterCommandBuilder.builder()
+                    .siCardNumber("654321")
+                    .categoryId(event.getCategories().get(0).id())
+                    .wantsSharedTransport(true)
+                    .internalNote(RegistrationNote.ofNullable("internal"))
+                    .orisNote(RegistrationNote.ofNullable("klabis note"))
+                    .build());
+            EventRegistration before = event.findRegistration(memberId).orElseThrow();
+            event.clearDomainEvents();
+
+            event.syncRegistrationFromOris(memberId, orisEntry("102"));
+
+            assertThat(event.getRegistrations()).hasSize(1);
+            EventRegistration after = event.findRegistration(memberId).orElseThrow();
+            assertThat(after.id()).isEqualTo(before.id());
+            assertThat(after.registeredAt()).isEqualTo(before.registeredAt());
+            assertThat(after.categoryId()).isEqualTo(event.getCategories().get(1).id());
+            assertThat(after.siCardNumber()).isEqualTo(SiCardNumber.of("123456"));
+            assertThat(after.wantsToRentSi()).isTrue();
+            assertThat(RegistrationNote.textOrNull(after.orisNote())).isEqualTo("from ORIS");
+            assertThat(RegistrationNote.textOrNull(after.internalNote())).isEqualTo("internal");
+            assertThat(after.wantsSharedTransport()).isTrue();
+            assertThat(event.getDomainEvents()).singleElement().isInstanceOfSatisfying(
+                    RegistrationEditedEvent.class,
+                    emitted -> assertThat(emitted.origin()).isEqualTo(UpdateOrigin.SYNCHRONISATION));
+        }
+
+        @Test
+        @DisplayName("should throw a retryable exception when the category is not synchronised yet")
+        void shouldThrowRetryableWhenCategoryUnknown() {
+            Event event = eventWithOrisCategories();
+
+            assertThatThrownBy(() -> event.syncRegistrationFromOris(memberId, orisEntry("999")))
+                    .isInstanceOf(OrisCategoryNotYetSynchronisedException.class)
+                    .isInstanceOf(com.klabis.sync.domain.RetryableSyncFailureException.class);
+            assertThat(event.getRegistrations()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should leave the category empty when neither the event nor the entry has one")
+        void shouldLeaveCategoryEmptyWhenNeitherHasOne() {
+            Event event = EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(30)).buildPublished();
+
+            event.syncRegistrationFromOris(memberId, orisEntry(null));
+
+            assertThat(event.findRegistration(memberId).orElseThrow().categoryId()).isNull();
+        }
+
+        @Test
+        @DisplayName("should throw retryable when the entry has a class but the event has no categories yet")
+        void shouldThrowRetryableWhenEventHasNoCategoriesYet() {
+            Event event = EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(30)).buildPublished();
+
+            assertThatThrownBy(() -> event.syncRegistrationFromOris(memberId, orisEntry("101")))
+                    .isInstanceOf(OrisCategoryNotYetSynchronisedException.class);
+        }
+    }
 }

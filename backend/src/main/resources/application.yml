@@ -175,6 +175,8 @@ klabis:
   events:
     logging:
       enabled: ${KLABIS_EVENT_LOGGING_ENABLED:true}
+    oris-entries-discovery-cron: ${KLABIS_EVENTS_ORIS_ENTRIES_DISCOVERY_CRON:0 30 * * * *}
+    oris-entries-cache-ttl: ${KLABIS_EVENTS_ORIS_ENTRIES_CACHE_TTL:5m}
 
   disciplines:
     discovery-cron: ${KLABIS_DISCIPLINES_DISCOVERY_CRON:0 0 3 * * *}

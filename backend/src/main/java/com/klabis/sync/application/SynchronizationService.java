@@ -45,6 +45,7 @@ class SynchronizationService implements SynchronizationPort {
     private final SyncRecordClaimer claimer;
     private final SyncOutcomeWriter outcomeWriter;
     private final SyncRecordCreator recordCreator;
+    private final SyncPairingLookup pairingLookup;
     private final Clock clock;
 
     SynchronizationService(
@@ -58,6 +59,7 @@ class SynchronizationService implements SynchronizationPort {
             SyncRecordClaimer claimer,
             SyncOutcomeWriter outcomeWriter,
             SyncRecordCreator recordCreator,
+            SyncPairingLookup pairingLookup,
             Clock clock
     ) {
         this.syncRecordRepository = syncRecordRepository;
@@ -70,6 +72,7 @@ class SynchronizationService implements SynchronizationPort {
         this.claimer = claimer;
         this.outcomeWriter = outcomeWriter;
         this.recordCreator = recordCreator;
+        this.pairingLookup = pairingLookup;
         this.clock = clock;
     }
 
@@ -169,24 +172,19 @@ class SynchronizationService implements SynchronizationPort {
                 .flatMap(system -> syncRecordRepository.findByTargetAndSystem(target, system));
     }
 
-    @Transactional(readOnly = true)
     @Override
     public List<SyncRecord> findActiveByEntityType(SyncEntityType entityType) {
-        return syncRecordRepository.findAllNonRetired().stream()
-                .filter(record -> record.getTarget().entityType() == entityType)
-                .toList();
+        return pairingLookup.findActiveByEntityType(entityType);
     }
 
-    @Transactional(readOnly = true)
     @Override
     public List<SyncedEntityReference> findByExternalReferences(SyncEntityType entityType, ExternalSystem system, Collection<String> externalIds) {
-        return syncRecordRepository.findByExternalReferences(entityType, system, externalIds);
+        return pairingLookup.findByExternalReferences(entityType, system, externalIds);
     }
 
-    @Transactional(readOnly = true)
     @Override
     public List<SyncedEntityReference> findActiveByTargets(SyncEntityType entityType, Collection<String> entityIds) {
-        return syncRecordRepository.findActiveByTargets(entityType, entityIds);
+        return pairingLookup.findActiveByTargets(entityType, entityIds);
     }
 
     @Transactional
