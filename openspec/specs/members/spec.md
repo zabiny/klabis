@@ -434,7 +434,7 @@ The system SHALL display a paginated, sortable and filterable list of members. U
 
 ### Requirement: Member Detail
 
-The system SHALL display complete member details. Inactive members are not accessible to users without MEMBERS:MANAGE authority. The active/inactive status indicator on the detail page is only shown to users with MEMBERS:MANAGE authority.
+The system SHALL display complete member details. Inactive members are not accessible to users without MEMBERS:MANAGE authority, except to users holding "Úprava údajů člena" over that member. The active/inactive status indicator on the detail page is only shown to users with MEMBERS:MANAGE authority.
 
 #### Scenario: Authorized user views active member detail
 
@@ -447,19 +447,26 @@ The system SHALL display complete member details. Inactive members are not acces
 - **WHEN** user with MEMBERS:MANAGE authority navigates to an inactive member's detail page
 - **THEN** the member detail is displayed including suspension reason, date, and note
 
+#### Scenario: Holder of profile editing views suspended member detail
+
+- **GIVEN** a user holds "Úprava údajů člena" over a member whose membership is suspended
+- **WHEN** the user navigates to that member's detail page
+- **THEN** the member detail is displayed
+- **AND** the "Upravit profil" action is available
+
 #### Scenario: Regular user cannot access inactive member detail
 
-- **WHEN** user without MEMBERS:MANAGE authority navigates to an inactive member's detail page
+- **WHEN** user without MEMBERS:MANAGE authority and without "Úprava údajů člena" over the member navigates to an inactive member's detail page
 - **THEN** the page shows a not-found error
 
 #### Scenario: Edit button shown to authorized user
 
-- **WHEN** user with MEMBERS:UPDATE permission views a member detail page
+- **WHEN** user with MEMBERS:UPDATE permission, or a user holding "Úprava údajů člena" over the member, views a member detail page
 - **THEN** an "Upravit profil" button is displayed
 
 #### Scenario: Edit button not shown without permission
 
-- **WHEN** user without MEMBERS:UPDATE permission views a member detail page
+- **WHEN** user without MEMBERS:UPDATE permission and without "Úprava údajů člena" over the member views a member detail page
 - **THEN** no edit button is shown for modifying the member's data
 
 #### Scenario: Permissions button shown to authorized user
@@ -503,6 +510,12 @@ The member detail page SHALL use a two-column layout driven by the available PAT
 - **THEN** only contact section and address section are displayed
 - **AND** no action buttons are shown
 
+#### Scenario: Minor views own detail without edit action
+
+- **WHEN** a minor views their own detail page
+- **THEN** the page shows all of the minor's data in the two-column layout
+- **AND** no "Upravit profil" button is shown
+
 #### Scenario: Admin detail shows action buttons with icons
 
 - **WHEN** member detail response includes a full PATCH template (admin view)
@@ -514,11 +527,17 @@ The member detail page SHALL use a two-column layout driven by the available PAT
 - **THEN** the page header shows: "Členské příspěvky" button and "Upravit profil" button
 - **AND** "Oprávnění" and "Ukončit členství" buttons are NOT shown
 
+#### Scenario: Holder of profile editing sees edit button only
+
+- **WHEN** a user holding "Úprava údajů člena" over another member, without MEMBERS:MANAGE, views that member's detail page
+- **THEN** the page header shows the "Upravit profil" button
+- **AND** "Členské příspěvky", "Oprávnění" and "Ukončit členství" buttons are NOT shown
+
 #### Scenario: Legal guardians section on a minor's detail
 
-- **WHEN** an admin or the minor themself views a minor's detail page
+- **WHEN** an admin, the minor themself, or a user holding "Úprava údajů člena" over the minor views a minor's detail page
 - **THEN** a "Zákonní zástupci" section lists each guardian of the minor's legal guardian group with name, e-mail and telephone
-- **AND** an admin sees the "Upravit zástupce" action in that section
+- **AND** only an admin sees the "Upravit zástupce" action in that section
 
 #### Scenario: Legal guardians section of a minor without guardians
 
@@ -528,7 +547,7 @@ The member detail page SHALL use a two-column layout driven by the available PAT
 
 #### Scenario: Other members do not see a minor's guardians
 
-- **WHEN** a member without MEMBERS:MANAGE permission views another member's detail page
+- **WHEN** a member without MEMBERS:MANAGE permission and without "Úprava údajů člena" over the minor views another member's detail page
 - **THEN** no "Zákonní zástupci" section is shown
 
 #### Scenario: Group navigation buttons shown when member belongs to a group
@@ -554,6 +573,13 @@ Edit forms SHALL place action buttons at the bottom of the form.
 - **AND** admin edit shows a badge "Admin — editace všech polí" in the page header
 - **AND** in self-edit mode, fields not present in the template are displayed as read-only
 
+#### Scenario: Reserved fields are read-only for a holder of profile editing
+
+- **WHEN** a user holding "Úprava údajů člena" over a member, without MEMBERS:MANAGE, opens that member's edit form
+- **THEN** the form is pre-filled with the member's current data
+- **AND** first name, last name, date of birth, gender and birth number are shown with their values as read-only
+- **AND** saving the form does not attempt to change those fields
+
 ### Requirement: Member Registration Page Layout
 
 The member registration page SHALL use a two-column layout.
@@ -573,7 +599,7 @@ The member registration page SHALL use a two-column layout.
 
 ### Requirement: Member Update
 
-The system SHALL allow adult members to update their own profile data, and admins to update any member's data. A minor member (under 18 years) cannot update their own profile; only admins can change a minor's data. Field access is role-based. Legal guardians are not part of the member edit form; they are managed separately on the minor's detail page.
+The system SHALL allow a member's data to be updated by a member administrator or by a user holding "Úprava údajů člena" over that member. Every adult member holds that permission over themself; a minor (under 18 years) does not, so a minor cannot update their own profile. Field access is role-based: the administrator-reserved fields can be changed only by a member administrator. Legal guardians are not part of the member edit form; they are managed separately on the minor's detail page.
 
 #### Scenario: Member updates their own information
 
@@ -593,6 +619,13 @@ The system SHALL allow adult members to update their own profile data, and admin
 - **WHEN** user with MEMBERS:UPDATE permission edits a minor member's profile and saves the changes
 - **THEN** the updated information is saved
 
+#### Scenario: Holder of profile editing updates another member's information
+
+- **GIVEN** a user holds "Úprava údajů člena" over a member
+- **WHEN** the user edits that member's profile and saves the changes
+- **THEN** the updated information is saved
+- **AND** the change history records the user as the author of the change
+
 #### Scenario: Member can edit own profile after turning 18
 
 - **GIVEN** a member who was a minor and has turned 18
@@ -606,7 +639,7 @@ The system SHALL allow adult members to update their own profile data, and admin
 
 #### Scenario: Member cannot edit another member's profile
 
-- **WHEN** authenticated member attempts to edit a different member's profile without admin permission
+- **WHEN** authenticated member attempts to edit a different member's profile without admin permission and without "Úprava údajů člena" over that member
 - **THEN** the system shows a permission denied error
 - **AND** no changes are saved
 
@@ -618,7 +651,7 @@ The system SHALL allow adult members to update their own profile data, and admin
 
 #### Scenario: Member-editable fields
 
-- **WHEN** an adult member (without admin permission) opens their own edit form
+- **WHEN** an adult member (without admin permission) opens their own edit form, or a holder of "Úprava údajů člena" opens the edit form of a member they hold it over
 - **THEN** the form shows fields: email, phone, address, chip number, nationality, bank account, identity card, driving license, medical course, trainer license, dietary restrictions
 
 #### Scenario: Admin-only fields
@@ -910,3 +943,44 @@ A minor SHALL NOT be able to activate their user account by themself. A user wit
 - **WHEN** a user without MEMBERS:MANAGE permission opens a minor's detail page
 - **THEN** no "Založit účet" action is shown
 
+### Requirement: Member Profile Editing Permission
+
+The system SHALL provide the permission "Úprava údajů člena", which is held over individual members and arises only from relationships: every adult member holds it over themself, and groups may delegate it to their owners. It SHALL NOT be grantable in the permissions dialog. Holding MEMBERS:MANAGE does not imply it.
+
+#### Scenario: Adult member holds the permission over themself
+
+- **WHEN** an adult member opens their own detail page
+- **THEN** the "Upravit profil" action is available
+
+#### Scenario: Minor does not hold the permission over themself
+
+- **WHEN** a minor opens their own detail page
+- **THEN** all of their own data is shown
+- **AND** the "Upravit profil" action is not available
+
+#### Scenario: Permission is not offered in the permissions dialog
+
+- **WHEN** an administrator opens the permissions dialog of a member
+- **THEN** "Úprava údajů člena" is not among the offered permissions
+
+#### Scenario: Holder over one member cannot edit another
+
+- **GIVEN** a user holds "Úprava údajů člena" over member A only
+- **WHEN** the user opens the detail page of member B
+- **THEN** the "Upravit profil" action is not available for member B
+
+### Requirement: Holder Of Profile Editing Sees All Member Data
+
+The system SHALL show a user holding "Úprava údajů člena" over a member all of that member's data, including the administrator-reserved data (first name, last name, date of birth, gender, birth number), health-related data such as dietary restrictions, and the minor's legal guardians. Viewing a birth number SHALL be audited for such a user in the same way as for an administrator.
+
+#### Scenario: Holder sees reserved and sensitive data
+
+- **GIVEN** a user holds "Úprava údajů člena" over a member
+- **WHEN** the user opens that member's detail page
+- **THEN** the birth number, date of birth, gender and dietary restrictions of the member are displayed
+
+#### Scenario: Holder's view of a birth number is audited
+
+- **GIVEN** a user holds "Úprava údajů člena" over a member with a birth number
+- **WHEN** the user opens that member's detail page
+- **THEN** the system records an audit log entry that the user accessed the member's birth number
