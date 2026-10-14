@@ -16,6 +16,7 @@ import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.RegistrationNotFoundException;
 import com.klabis.events.domain.RegistrationNote;
 import com.klabis.events.domain.SiCardNumber;
+import org.springframework.util.StringUtils;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
@@ -77,7 +78,8 @@ class EventRegistrationController implements EventRegistrationsApi {
                 Boolean.TRUE.equals(request.wantsSharedTransport()),
                 Boolean.TRUE.equals(request.wantsSharedAccommodation()),
                 RegistrationNote.ofNullable(request.internalNote()),
-                RegistrationNote.ofNullable(request.orisNote()));
+                RegistrationNote.ofNullable(request.orisNote()),
+                Boolean.TRUE.equals(request.wantsToRentSi()));
         registrationService.registerMember(new EventId(eventId), actingMember, command);
 
         return ResponseEntity.created(
@@ -103,12 +105,13 @@ class EventRegistrationController implements EventRegistrationsApi {
             EditRegistrationRequest request) {
 
         Event.EditRegistrationCommand command = new Event.EditRegistrationCommand(
-                SiCardNumber.of(request.siCardNumber()),
+                StringUtils.hasText(request.siCardNumber()) ? SiCardNumber.of(request.siCardNumber()) : null,
                 request.categoryId() != null ? new EventCategoryId(request.categoryId()) : null,
                 Boolean.TRUE.equals(request.wantsSharedTransport()),
                 Boolean.TRUE.equals(request.wantsSharedAccommodation()),
                 RegistrationNote.ofNullable(request.internalNote()),
-                RegistrationNote.ofNullable(request.orisNote())
+                RegistrationNote.ofNullable(request.orisNote()),
+                Boolean.TRUE.equals(request.wantsToRentSi())
         );
         registrationService.editRegistration(new EventId(eventId), new MemberId(memberId), command);
 
@@ -194,7 +197,8 @@ class EventRegistrationController implements EventRegistrationsApi {
         return RegistrationDtoBuilder.builder()
                 .firstName(member.firstName())
                 .lastName(member.lastName())
-                .siCardNumber(registration.siCardNumber().value())
+                .siCardNumber(registration.siCardNumber() != null ? registration.siCardNumber().value() : null)
+                .wantsToRentSi(registration.wantsToRentSi())
                 .category(RegistrationDtoMapper.toCategoryDto(registration, event))
                 .registeredAt(registration.registeredAt())
                 .wantsSharedTransport(RegistrationDtoMapper.wantsSharedTransport(registration, event))

@@ -20,6 +20,7 @@ import {renderYesNo} from '../../utils/formatters.ts';
 import {getActionVariant} from '../../utils/actionVariants.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
+import {EventSiPolicyFields} from '../../components/events/EventSiPolicyFields.tsx';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
 import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
@@ -340,6 +341,22 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                         {!isEditing && event.sharedAccommodationEnabled != null && (
                             <DetailRow label={labels.fields.sharedAccommodationEnabled}>
                                 {renderYesNo(event.sharedAccommodationEnabled)}
+                            </DetailRow>
+                        )}
+                        {isEditing && helpers && (
+                            <EventSiPolicyFields
+                                renderInput={helpers.renderInput}
+                                hasField={(name) => enrichedFieldNames.has(name)}
+                            />
+                        )}
+                        {!isEditing && event.siUsage && (
+                            <DetailRow label={labels.fields.siUsage}>
+                                {getEnumLabel('siUsage', event.siUsage)}
+                            </DetailRow>
+                        )}
+                        {!isEditing && event.siUsage && event.siUsage !== 'NOT_USED' && (
+                            <DetailRow label={labels.fields.siRentalAllowed}>
+                                {renderYesNo(event.siRentalAllowed ?? false)}
                             </DetailRow>
                         )}
                         {(isEditing || (event.categories && event.categories.length > 0)) && (

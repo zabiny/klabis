@@ -47,6 +47,9 @@ class EventRegistrationMemento {
     @Column("wants_shared_accommodation")
     private boolean wantsSharedAccommodation;
 
+    @Column("wants_to_rent_si")
+    private boolean wantsToRentSi;
+
     @Column("internal_note")
     private String internalNote;
 
@@ -71,7 +74,8 @@ class EventRegistrationMemento {
         EventRegistrationMemento memento = new EventRegistrationMemento();
         memento.id = registration.id();
         memento.memberId = registration.memberId().uuid();
-        memento.siCardNumber = registration.siCardNumber().value();
+        memento.siCardNumber = registration.siCardNumber() != null ? registration.siCardNumber().value() : null;
+        memento.wantsToRentSi = registration.wantsToRentSi();
         memento.categoryId = registration.categoryId() != null ? registration.categoryId().value() : null;
         memento.registeredAt = registration.registeredAt();
         memento.wantsSharedTransport = registration.wantsSharedTransport();
@@ -91,7 +95,8 @@ class EventRegistrationMemento {
         return EventRegistration.reconstruct(this.id, this.registeredAt,
                 EventRegistrationCreateEventRegistrationBuilder.builder()
                         .memberId(new MemberId(this.memberId))
-                        .siCardNumber(new SiCardNumber(this.siCardNumber))
+                        .siCardNumber(this.siCardNumber != null ? new SiCardNumber(this.siCardNumber) : null)
+                        .wantsToRentSi(this.wantsToRentSi)
                         .categoryId(this.categoryId != null ? new EventCategoryId(this.categoryId) : null)
                         .wantsSharedTransport(this.wantsSharedTransport)
                         .wantsSharedAccommodation(this.wantsSharedAccommodation)
@@ -127,5 +132,9 @@ class EventRegistrationMemento {
 
     boolean isWantsSharedAccommodation() {
         return wantsSharedAccommodation;
+    }
+
+    boolean isWantsToRentSi() {
+        return wantsToRentSi;
     }
 }

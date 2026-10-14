@@ -40,6 +40,8 @@ const eventData = (overrides: Record<string, unknown> = {}) => ({
     deadlines: ['2026-01-15', '2026-03-15'],
     sharedTransportEnabled: true,
     sharedAccommodationEnabled: true,
+    siUsage: 'REQUIRED',
+    siRentalAllowed: false,
     _links: {self: {href: EVENT_URL}},
     ...overrides,
 });
@@ -49,7 +51,8 @@ const newRegistrationTemplate = (): HalFormsTemplate => mockHalFormsTemplate({
     target: '/api/events/evt-1/registrations',
     title: 'Přihlásit se',
     properties: [
-        {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{6,7}'},
+        {name: 'siCardNumber', prompt: 'SI čip', type: 'text', regex: '\\d{6,7}'},
+        {name: 'wantsToRentSi', prompt: 'Chci si půjčit čip', type: 'Boolean'},
         {name: 'categoryId', prompt: 'Kategorie', type: 'text', required: true, options: CATEGORY_OPTIONS},
         {name: 'wantsSharedTransport', prompt: 'Společná doprava', type: 'Boolean'},
         {name: 'wantsSharedAccommodation', prompt: 'Společné ubytování', type: 'Boolean'},
@@ -61,7 +64,8 @@ const editRegistrationTemplate = (): HalFormsTemplate => mockHalFormsTemplate({
     target: EDIT_URL,
     title: 'Upravit přihlášku',
     properties: [
-        {name: 'siCardNumber', prompt: 'SI čip', type: 'text', required: true, regex: '\\d{6,7}'},
+        {name: 'siCardNumber', prompt: 'SI čip', type: 'text', regex: '\\d{6,7}'},
+        {name: 'wantsToRentSi', prompt: 'Chci si půjčit čip', type: 'Boolean'},
         {name: 'categoryId', prompt: 'Kategorie', type: 'text', options: CATEGORY_OPTIONS},
         {name: 'wantsSharedTransport', prompt: 'Společná doprava', type: 'Boolean'},
         {name: 'wantsSharedAccommodation', prompt: 'Společné ubytování', type: 'Boolean'},
@@ -603,6 +607,179 @@ describe('EventRegistrationDialog', () => {
         expect(await screen.findByText(labels.events.registrationModal.noRegistrationAffordance)).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: labels.events.registrationModal.confirmNew})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: labels.events.registrationModal.confirmEdit})).not.toBeInTheDocument();
+    });
+
+    describe('SI policy', () => {
+        const RENT_LABEL = labels.events.registrationModal.rentSi;
+        const submit = async (user: ReturnType<typeof userEvent.setup>) =>
+            user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmNew}));
+        const postBody = () => {
+            const call = vi.mocked(authorizedFetch).mock.calls.find(([, o]) => (o as RequestInit | undefined)?.method === 'POST');
+            return call ? JSON.parse((call[1] as RequestInit).body as string) : undefined;
+        };
+        const openNew = async (event: Record<string, unknown>, registration: Record<string, unknown> = {}) => {
+            mockRoutes((url, options) => {
+                if (options?.method === 'POST') return writeOk();
+                return url === PREFILL_URL ? jsonOk(prefillData(registration)) : jsonOk(eventData(event));
+            });
+            renderDialog();
+            await screen.findByTestId('event-registration-form');
+        };
+
+        it('NOT_USED hides SI field and rental, and does not send the prefilled profile number', async () => {
+            const user = userEvent.setup();
+            await openNew({siUsage: 'NOT_USED', siRentalAllowed: true}, {categoryId: undefined, category: {id: 'cat-1'}});
+            expect(screen.queryByLabelText(/SI čip/)).not.toBeInTheDocument();
+            expect(screen.queryByLabelText(RENT_LABEL)).not.toBeInTheDocument();
+            await submit(user);
+            await waitFor(() => expect(postBody()).toBeDefined());
+            expect(postBody()).not.toHaveProperty('siCardNumber');
+            expect(postBody()).not.toHaveProperty('wantsToRentSi');
+        });
+
+        it('OPTIONAL shows SI field without required marker, allows empty, rental only when allowed', async () => {
+            const user = userEvent.setup();
+            await openNew({siUsage: 'OPTIONAL', siRentalAllowed: false}, {siCardNumber: '', category: {id: 'cat-1'}});
+            const input = screen.getByLabelText(/SI čip/);
+            expect(input.closest('div')!.parentElement!.querySelector('label span.text-red-600')).toBeNull();
+            expect(screen.queryByLabelText(RENT_LABEL)).not.toBeInTheDocument();
+            await user.selectOptions(screen.getByLabelText(/Kategorie/), 'cat-1');
+            await submit(user);
+            await waitFor(() => expect(postBody()).toBeDefined());
+        });
+
+        it('OPTIONAL with rental allowed shows the rental tick box', async () => {
+            await openNew({siUsage: 'OPTIONAL', siRentalAllowed: true});
+            expect(screen.getByLabelText(RENT_LABEL)).toBeInTheDocument();
+        });
+
+        it('REQUIRED without rental shows SI as required and hides rental', async () => {
+            const user = userEvent.setup();
+            await openNew({siUsage: 'REQUIRED', siRentalAllowed: false}, {siCardNumber: ''});
+            expect(screen.queryByLabelText(RENT_LABEL)).not.toBeInTheDocument();
+            await submit(user);
+            expect(await screen.findByText(labels.events.registrationModal.siChipRequired)).toBeInTheDocument();
+        });
+
+        it('REQUIRED with rental requires SI unless the rental box is ticked', async () => {
+            const user = userEvent.setup();
+            await openNew({siUsage: 'REQUIRED', siRentalAllowed: true}, {siCardNumber: ''});
+            await submit(user);
+            expect(await screen.findByText(labels.events.registrationModal.siChipRequiredUnlessRenting)).toBeInTheDocument();
+            expect(postBody()).toBeUndefined();
+
+            await user.click(screen.getByLabelText(RENT_LABEL));
+            await user.selectOptions(screen.getByLabelText(/Kategorie/), 'cat-1');
+            await submit(user);
+            await waitFor(() => expect(postBody()).toBeDefined());
+            expect(postBody().wantsToRentSi).toBe(true);
+        });
+
+        it('submits wantsToRentSi as a boolean when the defaults carry no value for it', async () => {
+            const user = userEvent.setup();
+            await openNew({siUsage: 'REQUIRED', siRentalAllowed: true}, {siCardNumber: '', wantsToRentSi: undefined});
+            await user.click(screen.getByLabelText(RENT_LABEL));
+            await user.selectOptions(screen.getByLabelText(/Kategorie/), 'cat-1');
+            await submit(user);
+            await waitFor(() => expect(postBody()).toBeDefined());
+            expect(postBody().wantsToRentSi).toBe(true);
+        });
+
+        it('never submits wantsToRentSi as an array when ticked and unticked again', async () => {
+            const user = userEvent.setup();
+            await openNew({siUsage: 'OPTIONAL', siRentalAllowed: true}, {wantsToRentSi: undefined});
+            await user.click(screen.getByLabelText(RENT_LABEL));
+            await user.click(screen.getByLabelText(RENT_LABEL));
+            await user.selectOptions(screen.getByLabelText(/Kategorie/), 'cat-1');
+            await submit(user);
+            await waitFor(() => expect(postBody()).toBeDefined());
+            expect(postBody().wantsToRentSi).toBe(false);
+        });
+
+        it('submits an unticked rental box as boolean false', async () => {
+            const user = userEvent.setup();
+            await openNew({siUsage: 'OPTIONAL', siRentalAllowed: true}, {wantsToRentSi: undefined});
+            await user.selectOptions(screen.getByLabelText(/Kategorie/), 'cat-1');
+            await submit(user);
+            await waitFor(() => expect(postBody()).toBeDefined());
+            expect(postBody().wantsToRentSi).toBe(false);
+        });
+
+        it('still validates the format when a value is entered while renting', async () => {
+            const user = userEvent.setup();
+            await openNew({siUsage: 'REQUIRED', siRentalAllowed: true}, {siCardNumber: ''});
+            await user.click(screen.getByLabelText(RENT_LABEL));
+            await user.type(screen.getByLabelText(/SI čip/), 'abc');
+            await submit(user);
+            expect(await screen.findByText(labels.events.registrationModal.siChipInvalidFormat)).toBeInTheDocument();
+        });
+
+        it('edit mode applies the same rules and prefills the rental request', async () => {
+            mockRoutes((url) => url === EDIT_URL
+                ? jsonOk(editInitialData({siCardNumber: undefined, wantsToRentSi: true}))
+                : jsonOk(eventData({siUsage: 'REQUIRED', siRentalAllowed: true})));
+            renderDialog({registration: {href: EDIT_URL}});
+            expect(await screen.findByLabelText(RENT_LABEL)).toBeChecked();
+        });
+
+        describe('edit mode of a registration that does not fit the policy', () => {
+            const confirmEdit = (user: ReturnType<typeof userEvent.setup>) =>
+                user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit}));
+            const putCalls = () => vi.mocked(authorizedFetch).mock.calls
+                .filter(([, o]) => (o as RequestInit | undefined)?.method === 'PUT');
+            const openEdit = async (event: Record<string, unknown>, registration: Record<string, unknown>) => {
+                mockRoutes((url, options) => {
+                    if (options?.method === 'PUT') return writeOk();
+                    return url === EDIT_URL ? jsonOk(editInitialData(registration)) : jsonOk(eventData(event));
+                });
+                renderDialog({registration: {href: EDIT_URL}});
+                await screen.findByLabelText(/SI čip/);
+            };
+
+            it('REQUIRED without rental: no SI number and no rental shows the required error and blocks submit until a number is entered', async () => {
+                const user = userEvent.setup();
+                await openEdit({siUsage: 'REQUIRED', siRentalAllowed: false}, {siCardNumber: undefined});
+                await confirmEdit(user);
+                expect(await screen.findByText(labels.events.registrationModal.siChipRequired)).toBeInTheDocument();
+                expect(putCalls()).toHaveLength(0);
+
+                await user.type(screen.getByLabelText(/SI čip/), '1234567');
+                await confirmEdit(user);
+                await waitFor(() => expect(putCalls()).toHaveLength(1));
+            });
+
+            it('REQUIRED with rental allowed: neither number nor tick shows the error', async () => {
+                const user = userEvent.setup();
+                await openEdit({siUsage: 'REQUIRED', siRentalAllowed: true}, {siCardNumber: undefined, wantsToRentSi: false});
+                await confirmEdit(user);
+                expect(await screen.findByText(labels.events.registrationModal.siChipRequiredUnlessRenting)).toBeInTheDocument();
+                expect(putCalls()).toHaveLength(0);
+            });
+
+            it('NOT_USED never shows an SI error', async () => {
+                const user = userEvent.setup();
+                mockRoutes((url, options) => {
+                    if (options?.method === 'PUT') return writeOk();
+                    return url === EDIT_URL
+                        ? jsonOk(editInitialData({siCardNumber: undefined}))
+                        : jsonOk(eventData({siUsage: 'NOT_USED'}));
+                });
+                renderDialog({registration: {href: EDIT_URL}});
+                await screen.findByLabelText(/Kategorie/);
+                await confirmEdit(user);
+                await waitFor(() => expect(putCalls()).toHaveLength(1));
+                expect(screen.queryByText(labels.events.registrationModal.siChipRequired)).not.toBeInTheDocument();
+            });
+        });
+
+        it('read-only detail shows the rental request', async () => {
+            mockRoutes((url) => url === EDIT_URL
+                ? jsonOk(editInitialData({registeredAt: '2026-03-10T10:00:00', _templates: undefined, wantsToRentSi: true}))
+                : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+            const detail = await screen.findByTestId('event-registration-detail');
+            expect(detail).toHaveTextContent(RENT_LABEL);
+        });
     });
 
     describe('read-only detail', () => {

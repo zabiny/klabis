@@ -1,14 +1,17 @@
 /* eslint-disable react-refresh/only-export-components -- module exports a field-factory function alongside its private field components, mirroring eventFormFieldsFactory.tsx */
 import {type ReactElement} from 'react';
-import {useField} from 'formik';
+import {useField, useFormikContext} from 'formik';
 import {BedDouble, Bus, Check, ChevronDown, CreditCard} from 'lucide-react';
 import type {HalFormFieldFactory, HalFormsInputProps} from '../HalNavigator2/halforms';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormOptions} from '../../hooks/useHalFormOptions';
 import {labels} from '../../localization';
 
+export type SiRequirement = 'none' | 'required' | 'unlessRenting';
+
 interface RegistrationFactoryOptions {
     mode: 'new' | 'edit';
+    siRequirement: SiRequirement;
     serverFieldErrors: Record<string, string>;
 }
 
@@ -17,9 +20,15 @@ interface RegistrationFactoryOptions {
  * (built from `required` + `regex`) still gates submission with generic messages;
  * this only chooses which localized string the dialog shows on the field.
  */
-const siCardDisplayError = (prop: HalFormsInputProps['prop'], raw: unknown): string | undefined => {
+const siCardDisplayError = (
+    prop: HalFormsInputProps['prop'],
+    raw: unknown,
+    requirement: SiRequirement,
+    renting: boolean,
+): string | undefined => {
     const value = typeof raw === 'string' ? raw.trim() : '';
-    if (prop.required && !value) return labels.events.registrationModal.siChipRequired;
+    if (!value && requirement === 'required') return labels.events.registrationModal.siChipRequired;
+    if (!value && requirement === 'unlessRenting' && !renting) return labels.events.registrationModal.siChipRequiredUnlessRenting;
     if (value && prop.regex) {
         let regex: RegExp | null = null;
         try {
@@ -32,13 +41,17 @@ const siCardDisplayError = (prop: HalFormsInputProps['prop'], raw: unknown): str
     return undefined;
 };
 
-const SiCardNumberField = ({prop, mode, serverError}: {
+const SiCardNumberField = ({prop, mode, requirement, serverError}: {
     prop: HalFormsInputProps['prop'];
     mode: 'new' | 'edit';
+    requirement: SiRequirement;
     serverError?: string;
 }): ReactElement => {
     const [field, meta] = useField<string>(prop.name);
-    const error = serverError ?? (meta.touched ? siCardDisplayError(prop, field.value) : undefined);
+    const {values} = useFormikContext<{ wantsToRentSi?: boolean }>();
+    const renting = Boolean(values.wantsToRentSi);
+    const error = serverError ?? (meta.touched ? siCardDisplayError(prop, field.value, requirement, renting) : undefined);
+    const showRequiredMarker = requirement === 'required' || (requirement === 'unlessRenting' && !renting);
     const helperText = mode === 'new'
         ? labels.events.registrationModal.siChipHelperPrefilled
         : labels.events.registrationModal.siChipHelper;
@@ -50,7 +63,7 @@ const SiCardNumberField = ({prop, mode, serverError}: {
                 className="flex items-center gap-1 text-sm font-semibold text-gray-700 dark:text-gray-300"
             >
                 {labels.events.registrationModal.siChip}
-                <span className="text-sm font-bold text-red-600">*</span>
+                {showRequiredMarker && <span className="text-sm font-bold text-red-600">*</span>}
             </label>
             <div className="relative">
                 <CreditCard className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"/>
@@ -110,13 +123,39 @@ const CategoryField = ({prop, serverError}: {
     );
 };
 
+const RentSiCheckbox = ({prop}: {prop: HalFormsInputProps['prop']}): ReactElement => {
+    const [field, , helpers] = useField({name: prop.name});
+    const checked = Boolean(field.value);
+
+    return (
+        <label htmlFor={`event-registration-${prop.name}`} className="flex cursor-pointer items-center gap-2.5">
+            <input
+                id={`event-registration-${prop.name}`}
+                type="checkbox"
+                className="peer sr-only"
+                name={field.name}
+                checked={checked}
+                onChange={event => helpers.setValue(event.target.checked)}
+                onBlur={field.onBlur}
+                aria-label={labels.events.registrationModal.rentSi}
+            />
+            <span
+                className={`flex h-[18px] w-[18px] flex-shrink-0 items-center justify-center rounded border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-0 ${checked ? 'border-primary bg-primary' : 'border-border bg-surface'}`}
+            >
+                {checked && <Check className="h-3 w-3 text-white"/>}
+            </span>
+            <span className="text-sm text-text-primary">{labels.events.registrationModal.rentSi}</span>
+        </label>
+    );
+};
+
 const SHARED_SERVICE_META: Record<string, {label: string; icon: ReactElement}> = {
     wantsSharedTransport: {label: labels.fields.wantsSharedTransport, icon: <Bus className="h-[18px] w-[18px]"/>},
     wantsSharedAccommodation: {label: labels.fields.wantsSharedAccommodation, icon: <BedDouble className="h-[18px] w-[18px]"/>},
 };
 
 const SharedServiceCheckbox = ({prop}: {prop: HalFormsInputProps['prop']}): ReactElement => {
-    const [field] = useField({name: prop.name, type: 'checkbox'});
+    const [field, , helpers] = useField({name: prop.name});
     const meta = SHARED_SERVICE_META[prop.name];
     const checked = Boolean(field.value);
 
@@ -126,8 +165,10 @@ const SharedServiceCheckbox = ({prop}: {prop: HalFormsInputProps['prop']}): Reac
                 id={`event-registration-${prop.name}`}
                 type="checkbox"
                 className="peer sr-only"
-                {...field}
+                name={field.name}
                 checked={checked}
+                onChange={event => helpers.setValue(event.target.checked)}
+                onBlur={field.onBlur}
                 aria-label={meta.label}
             />
             <span
@@ -151,13 +192,15 @@ const SharedServiceCheckbox = ({prop}: {prop: HalFormsInputProps['prop']}): Reac
  * stays gated by the engine's Yup schema (built from the template's required/regex).
  */
 export const createRegistrationFieldsFactory = (
-    {mode, serverFieldErrors}: RegistrationFactoryOptions
+    {mode, siRequirement, serverFieldErrors}: RegistrationFactoryOptions
 ): HalFormFieldFactory => (fieldType, conf) => {
     switch (conf.prop.name) {
         case 'siCardNumber':
-            return <SiCardNumberField prop={conf.prop} mode={mode} serverError={serverFieldErrors[conf.prop.name]}/>;
+            return <SiCardNumberField prop={conf.prop} mode={mode} requirement={siRequirement} serverError={serverFieldErrors[conf.prop.name]}/>;
         case 'categoryId':
             return <CategoryField prop={conf.prop} serverError={serverFieldErrors[conf.prop.name]}/>;
+        case 'wantsToRentSi':
+            return <RentSiCheckbox prop={conf.prop}/>;
         case 'wantsSharedTransport':
         case 'wantsSharedAccommodation':
             return <SharedServiceCheckbox prop={conf.prop}/>;

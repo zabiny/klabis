@@ -90,17 +90,16 @@ class EventRegistrationTest {
         }
 
         @Test
-        @DisplayName("should fail when siCardNumber is null")
-        void shouldFailWhenSiCardNumberIsNull() {
-            // Arrange
+        @DisplayName("should allow absent siCardNumber and record the rental request")
+        void shouldAllowAbsentSiCardNumber() {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
-            // Act & Assert
-            assertThatThrownBy(() -> EventRegistration.create(
+            EventRegistration registration = EventRegistration.create(
                     EventRegistrationCreateEventRegistrationBuilder.builder()
-                            .memberId(memberId).build()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("siCardNumber");
+                            .memberId(memberId).wantsToRentSi(true).build());
+
+            assertThat(registration.siCardNumber()).isNull();
+            assertThat(registration.wantsToRentSi()).isTrue();
         }
     }
 

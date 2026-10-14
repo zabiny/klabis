@@ -285,6 +285,32 @@ class EventJdbcRepositoryTest {
             assertThat(plain.internalNote()).isNull();
             assertThat(plain.orisNote()).isNull();
         }
+
+        @Test
+        @DisplayName("should persist and reload a registration without SI number and the rental request")
+        void shouldRoundTripAbsentSiNumberAndRental() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Rental Event")
+                    .eventDate(LocalDate.now().plusDays(60))
+                    .location("Test Location")
+                    .organizer("Test OC")
+                    .build());
+            event.publish();
+            MemberId renting = new MemberId(TEST_MEMBER_1_ID);
+            MemberId owning = new MemberId(TEST_MEMBER_2_ID);
+            event.registerMember(renting, EventRegisterCommandBuilder.builder().wantsToRentSi(true).build());
+            register(event, owning, new SiCardNumber("789012"), null);
+
+            Event saved = eventRepository.save(event);
+            Event retrieved = eventRepository.findById(saved.getId()).orElseThrow();
+
+            EventRegistration rented = retrieved.findRegistration(renting).orElseThrow();
+            assertThat(rented.siCardNumber()).isNull();
+            assertThat(rented.wantsToRentSi()).isTrue();
+            EventRegistration own = retrieved.findRegistration(owning).orElseThrow();
+            assertThat(own.siCardNumber()).isEqualTo(new SiCardNumber("789012"));
+            assertThat(own.wantsToRentSi()).isFalse();
+        }
     }
 
     @Nested
@@ -1735,6 +1761,60 @@ class EventJdbcRepositoryTest {
             Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
 
             assertThat(reloaded.getBaseEntryFee().amount()).isEqualByComparingTo(new BigDecimal("199.50"));
+        }
+    }
+
+    @Nested
+    @DisplayName("SI policy persistence — round-trip")
+    class SiPolicyPersistence {
+
+        @Test
+        @DisplayName("should persist and reload an explicit SI policy")
+        void shouldPersistAndReloadPolicy() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("SI Event")
+                    .eventDate(LocalDate.now().plusDays(60))
+                    .organizer("OOB")
+                    .siPolicy(SiPolicy.of(SiUsage.OPTIONAL, true))
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getSiPolicy()).isEqualTo(SiPolicy.of(SiUsage.OPTIONAL, true));
+        }
+
+        @Test
+        @DisplayName("should reload the default policy of an event created without one")
+        void shouldReloadDefaultPolicy() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Plain Event")
+                    .eventDate(LocalDate.now().plusDays(60))
+                    .organizer("OOB")
+                    .build());
+
+            Event saved = eventRepository.save(event);
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getSiPolicy()).isEqualTo(SiPolicy.defaultPolicy());
+        }
+
+        @Test
+        @DisplayName("should persist a changed policy")
+        void shouldPersistChangedPolicy() {
+            Event saved = eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Changing Event")
+                    .eventDate(LocalDate.now().plusDays(60))
+                    .organizer("OOB")
+                    .build()));
+            saved.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(saved))
+                    .siPolicy(SiPolicy.of(SiUsage.NOT_USED, false))
+                    .build());
+            eventRepository.save(saved);
+
+            Event reloaded = eventRepository.findById(saved.getId()).orElseThrow();
+
+            assertThat(reloaded.getSiPolicy()).isEqualTo(SiPolicy.of(SiUsage.NOT_USED, false));
         }
     }
 

@@ -57,9 +57,14 @@ Rent requested on an event without rental → rejected. `EventRegistration` itse
 
 **On edit** (`Event.editRegistration`) — mirroring the shared-service offers:
 - a value the policy does not offer keeps its current value (NOT_USED → SI number kept; no rental → `wantsToRentSi` kept);
-- the policy is validated **only when the SI number or `wantsToRentSi` changes** against the current registration. Editing the category, notes or shared-service choices never fails on SI.
+- the policy is validated on **every** edit, against the effective values (after "not offered means kept"). An edit of the category, notes or shared-service choices is refused with the SI error while the registration does not fit the policy;
+- when the policy does not offer rental, a kept `wantsToRentSi = true` is validated as `false` (and stays stored as it is). Otherwise a registration whose rental request outlived the rental option could not be edited at all, because the form cannot clear a value it does not offer; such a registration needs only an SI number (under REQUIRED).
 
-So a registration that does not fit the policy — one brought in from ORIS, or one recorded before the policy changed — stays as it is until someone changes its SI values; then the change has to fit the policy. This also keeps an edit of a non-SI field from touching the values `oris-event-registration-sync` compares, which would otherwise raise a conflict.
+So a registration that does not fit the policy — one brought in from ORIS, or one recorded before the policy changed — has to be brought in line (SI number filled in, or rental request fixed) with its next edit, whatever the user was changing. The edit form is the same as the registration form and enforces the same rules; a separate "only when SI changed" path would be a second rule in the domain and the dialog for little benefit.
+
+*Trade-off:* a user with EVENTS:REGISTRATIONS cannot change, for example, the category of such a registration until its SI values fit the policy.
+
+*Alternative:* validate only when the SI number or `wantsToRentSi` changes — rejected: manual testing showed the stricter rule is the expected behaviour of the shared form.
 
 Changing the policy (D1) never touches existing registrations: recorded numbers and rental requests are kept and simply not shown / not required while the policy says so.
 
@@ -149,4 +154,4 @@ No new endpoints, link names or template names.
 
 - [An absent SI number reaches a reader that assumes one] → all readers are inside the events module (memento, controller, service); each handles absence explicitly with a test. `RegistrationEditedEvent` already tolerates null and has no consumers; no other module reads the number.
 - [Browser rule and domain rule drift apart] → the domain stays authoritative; a scenario test covers the "required unless renting" error from the server too (shown as a generic form error).
-- [A registration that does not fit the policy stays as it is] → intended (D2): validation applies to what a user enters or changes; such registrations are visible on the registration detail.
+- [A registration that does not fit the policy cannot be edited until it does] → intended (D2): every edit is validated against the current policy; such registrations stay visible on the registration detail, and the SI error tells the editor what to fix.

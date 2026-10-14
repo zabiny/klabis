@@ -570,6 +570,7 @@ class EventRegistrationE2ETest {
         event.put("eventDate", eventDate.toString());
         event.put("location", "Test Location");
         event.put("organizer", "TEST");
+        event.put("siUsage", "REQUIRED");
         event.put("websiteUrl", null);
         event.put("coordinators", null);
         event.putAll(extraProperties);

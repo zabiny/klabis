@@ -53,12 +53,23 @@ The registration form and the edit form SHALL follow the event's SI policy. When
 - **WHEN** the member edits the registration, unticks "Chci si půjčit čip", enters their SI card number and saves
 - **THEN** the registration records the SI card number and no rental request
 
-#### Scenario: Editing other details of a registration that does not fit the SI policy
+#### Scenario: Editing a registration that does not fit the SI policy requires fixing the SI values
 
 - **GIVEN** a member is registered without an SI card number for an event that has since been changed to require SI cards without rental
 - **WHEN** the member edits the registration, changes only the category and saves
-- **THEN** the registration is updated with the new category
-- **AND** no error about the SI card number is shown
+- **THEN** the form shows an error that the SI card number is required
+- **AND** the registration is not changed
+- **WHEN** the member enters a valid SI card number and saves
+- **THEN** the registration is updated with the new category and the SI card number
+
+#### Scenario: Registration with a rental request after rental was disallowed
+
+- **GIVEN** a member is registered without an SI card number and with a rental request, and the event has since been changed to require SI cards without rental
+- **WHEN** the member edits the registration, changes only the category and saves
+- **THEN** the form shows an error that the SI card number is required
+- **WHEN** the member enters a valid SI card number and saves
+- **THEN** the registration is updated with the new category and the SI card number
+- **AND** the recorded rental request is kept
 
 #### Scenario: Changing the SI values of a registration must fit the policy
 

@@ -209,7 +209,8 @@ interface HalFormsFormProps {
     fieldsFactory?: HalFormFieldFactory,
     isSubmitting?: boolean,
     renderForm?: RenderFormCallback,
-    serverValidationErrors?: Record<string, string>
+    serverValidationErrors?: Record<string, string>,
+    refineValidationSchema?: (schema: Yup.ObjectSchema<Record<string, unknown>>) => Yup.ObjectSchema<Record<string, unknown>>
 }
 
 // TODO: upravit HAL+FORMS: zobrazit "item" vzdy jako read only. Pokud je defalt template pro aktivni metodu, tak zobrazit tlacitko EDIT ktere prepne do editacniho rezimu. Pokud je default template pro GET metodu, tak jen pouzit policka s readonly pro lepsi zobrazeni. Na backendu pridat "default" affordanci pokud pro selflink zadna neexistuje (pouze pro ITEM).
@@ -356,7 +357,8 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                                                                                 isSubmitting: externalIsSubmitting = false,
                                                                                 renderForm,
                                                                                 children,
-                                                                                serverValidationErrors
+                                                                                serverValidationErrors,
+                                                                                refineValidationSchema
                                                                             }) => {
 
     const initialValues = useMemo(
@@ -364,8 +366,11 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
         [template, data]
     );
     const validationSchema = useMemo(
-        () => createValidationSchema(template),
-        [template]
+        () => {
+            const schema = createValidationSchema(template);
+            return refineValidationSchema ? refineValidationSchema(schema) : schema;
+        },
+        [template, refineValidationSchema]
     );
 
     return (

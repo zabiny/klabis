@@ -16,7 +16,7 @@ Every registration today requires an SI card number. That does not fit every eve
   - required → SI card field required, unless the member ticks "Chci si půjčit čip" where rental is allowed.
 - A registration records whether the member wants to rent an SI card ("půjčení čipu"); it is shown on the registration detail.
 - Changing the policy on an event with existing registrations is always allowed; SI card numbers and rental requests already recorded are kept.
-- The policy applies to what a member enters or changes: editing other details of a registration that does not fit the policy (e.g. one synchronised from ORIS) is not refused.
+- Every edit of a registration must fit the event's current SI policy: editing any detail of a registration that does not fit the policy (e.g. one synchronised from ORIS) is refused until its SI values are fixed. Values the policy does not offer are kept as they are.
 - Where rental requests are shown beyond the registration detail is an open question (issue #371).
 
 ```mermaid

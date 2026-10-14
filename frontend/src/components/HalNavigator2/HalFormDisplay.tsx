@@ -1,4 +1,5 @@
 import {type ReactElement, type ReactNode, useMemo} from 'react';
+import type * as Yup from 'yup';
 import type {HalFormsTemplate} from '../../api';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {ErrorDisplay, Spinner} from '../UI';
@@ -63,6 +64,8 @@ export interface HalFormDisplayProps {
      * Defaults to true for backward compatibility.
      */
     navigateOnSuccess?: boolean;
+    /** Adds rules the HAL-FORMS template cannot express (e.g. cross-field requirements). Must be referentially stable. */
+    refineValidationSchema?: (schema: Yup.ObjectSchema<Record<string, unknown>>) => Yup.ObjectSchema<Record<string, unknown>>;
 }
 
 
@@ -87,6 +90,7 @@ export const HalFormDisplay = ({
                                    includeOnlyMemberIds,
                                    resourceUrl,
                                    navigateOnSuccess = true,
+                                   refineValidationSchema,
                                }: HalFormDisplayProps): ReactElement => {
     const {route} = useHalPageData();
 
@@ -185,6 +189,7 @@ export const HalFormDisplay = ({
                     serverValidationErrors={submitError && isFormValidationError(submitError) ? submitError.validationErrors : undefined}
                     submitButtonLabel={submitButtonLabel}
                     submitIcon={submitIcon}
+                    refineValidationSchema={refineValidationSchema}
                     {...(customLayout
                         ? (typeof customLayout === 'function'
                             ? {renderForm: customLayout as RenderFormCallback}

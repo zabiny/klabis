@@ -19,6 +19,7 @@ const ENUM_GROUP_BY_TYPE: Record<string, string> = {
     Gender: 'gender',
     DeactivationReason: 'deactivationReason',
     SyncResolution: 'resolution',
+    SiUsage: 'siUsage',
     Authority: AUTHORITY_GROUP,
 };
 

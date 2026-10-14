@@ -11,6 +11,8 @@ import com.klabis.events.domain.EventRanking;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.domain.Money;
 import com.klabis.events.domain.RegistrationDeadlines;
+import com.klabis.events.domain.SiPolicy;
+import com.klabis.events.domain.SiUsage;
 import org.springframework.data.annotation.*;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
@@ -115,6 +117,12 @@ class EventMemento implements Persistable<UUID> {
     @Column("shared_accommodation_enabled")
     private boolean sharedAccommodationEnabled;
 
+    @Column("si_usage")
+    private String siUsage;
+
+    @Column("si_rental_allowed")
+    private boolean siRentalAllowed;
+
     // Registrations are part of the aggregate
     // Using Set instead of List to avoid needing a position/key column
     @MappedCollection(idColumn = "event_id")
@@ -218,6 +226,8 @@ class EventMemento implements Persistable<UUID> {
 
         memento.sharedTransportEnabled = event.isSharedTransportEnabled();
         memento.sharedAccommodationEnabled = event.isSharedAccommodationEnabled();
+        memento.siUsage = event.getSiPolicy().usage().name();
+        memento.siRentalAllowed = event.getSiPolicy().rentalAllowed();
     }
 
     /**
@@ -290,6 +300,7 @@ class EventMemento implements Persistable<UUID> {
                 baseEntryFee,
                 this.sharedTransportEnabled,
                 this.sharedAccommodationEnabled,
+                SiPolicy.of(SiUsage.valueOf(this.siUsage), this.siRentalAllowed),
                 registrations.stream().map(EventRegistrationMemento::toEventRegistration).toList(),
                 new AuditMetadata(
                         this.createdAt,

@@ -11,6 +11,8 @@ export interface RegistrationDialogEventContext {
     deadlines?: string[];
     sharedTransportEnabled?: boolean;
     sharedAccommodationEnabled?: boolean;
+    siUsage?: 'NOT_USED' | 'OPTIONAL' | 'REQUIRED';
+    siRentalAllowed?: boolean;
 }
 
 export interface RegistrationDialogData {
@@ -61,6 +63,8 @@ export const useRegistrationDialogData = (registration: Link | null): Registrati
             deadlines: event.deadlines,
             sharedTransportEnabled: event.sharedTransportEnabled,
             sharedAccommodationEnabled: event.sharedAccommodationEnabled,
+            siUsage: event.siUsage,
+            siRentalAllowed: event.siRentalAllowed,
         }
         : undefined;
 
