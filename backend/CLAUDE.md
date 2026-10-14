@@ -80,7 +80,7 @@ See root `CLAUDE.md` Quick Start section (`./runLocalEnvironment.sh`). Additiona
 
 Spring Modulith application modules under `com.klabis.*`: `members`, `events`, `calendar`, `finance`, `oris` (ORIS integration), `authorizationserver`, `common` (shared kernel), and:
 
-- **`sync`** — generic bidirectional synchronisation engine (`com.klabis.sync`). Owns change detection, conflict handling, retry and audit for any entity paired against any external system; entirely unaware of ORIS or any other integration. The only adapter today is `OrisEventSyncAdapter` (`com.klabis.events.infrastructure.orissync`), which moves the existing ORIS event synchronisation behind the engine. It lives in the module that owns the entity, not in `com.klabis.oris` — see ADR-005 and openspec `relocate-oris-event-sync-adapter` for why. See `docs/design-decisions.md` ADR-005 and the `backend-patterns` skill (`references/synchronization-adapter.md`) for how to add another one.
+- **`sync`** — generic bidirectional synchronisation engine (`com.klabis.sync`). Owns change detection, conflict handling, retry and audit for any entity paired against any external system; entirely unaware of ORIS or any other integration. Adapters today (both in `com.klabis.events.infrastructure.orissync`): `OrisEventSyncAdapter` (moves the existing ORIS event synchronisation behind the engine) and `OrisEventRegistrationSyncAdapter` (pairs one event participation with the member's ORIS entry, ORIS to Klabis only). It lives in the module that owns the entity, not in `com.klabis.oris` — see ADR-005 and openspec `relocate-oris-event-sync-adapter` for why. See `docs/design-decisions.md` ADR-005 and the `backend-patterns` skill (`references/synchronization-adapter.md`) for how to add another one.
 
 ## Documentation Index
 
@@ -137,6 +137,13 @@ These are the Klabis-specific hooks on top of Spring Security / Spring Authoriza
 
 - `max-attempts` (default `5`), `claim-lease` (`5m`), `history-retention` (`30d`), `retry-delay.initial`/`multiplier`/`max` (`15m` / `2` / `24h`) — configurable but not wired to env vars in `application.yml`; override via `klabis.sync.*` properties directly if needed.
 - `scan-cron` (nightly full pass, default `0 0 2 * * *`) and `due-scan-interval` (frequent due scan, default `15m`) — externalized via `KLABIS_SYNC_SCAN_CRON` / `KLABIS_SYNC_DUE_SCAN_INTERVAL` env vars in `application.yml`.
+
+### ORIS Event Registration Sync Configuration (`events` module)
+
+Both under `klabis.events.*` in `application.yml`:
+
+- `oris-entries-discovery-cron` (env `KLABIS_EVENTS_ORIS_ENTRIES_DISCOVERY_CRON`, default `0 30 * * * *` = hourly at :30) — schedule of `OrisEventRegistrationDiscoveryJob`, which pulls in ORIS entries of paired club members for every ACTIVE ORIS-synced event (also runs once 30 s after startup). Already-paired registrations are kept in step by the engine's own scans, not by this job.
+- `oris-entries-cache-ttl` (env `KLABIS_EVENTS_ORIS_ENTRIES_CACHE_TTL`, default `5m`) — TTL of the per-event ORIS entries cache (`OrisEventEntries`) shared by the discovery job and the adapter, so one ORIS read serves a whole pass and on-demand registration loads.
 
 ## Application Profiles
 

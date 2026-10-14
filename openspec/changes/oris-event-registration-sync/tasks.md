@@ -32,5 +32,5 @@
 
 ## 5. Integration
 
-- [ ] 5.1 Document the discovery cron and cache TTL in `backend/CLAUDE.md` (sync section) and add the adapter to the `backend-patterns` synchronisation-adapter reference; verify the docs name the new properties
+- [x] 5.1 Document the discovery cron and cache TTL in `backend/CLAUDE.md` (sync section) and add the adapter to the `backend-patterns` synchronisation-adapter reference; verify the docs name the new properties
 - [ ] 5.2 QA against ORIS test data in the browser: load registrations on demand, adoption, ORIS deletion mark, Klabis edit conflict and its resolution; verify all pass
