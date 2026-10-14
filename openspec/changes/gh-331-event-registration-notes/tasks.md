@@ -35,5 +35,5 @@
 
 ## 5. Integration
 
-- [ ] 5.1 QA the flows in the browser (member registers with notes, edits them, EVENTS:REGISTRATIONS edits, coordinator reads read-only, member reads after deadline, list shows no notes); verify all pass
-- [ ] 5.2 Add label `BackendCompleted` to GitHub issue #331 once backend tasks are merged; verify the label is present on the issue
+- [x] 5.1 QA the flows in the browser (member registers with notes, edits them, EVENTS:REGISTRATIONS edits, coordinator reads read-only, member reads after deadline, list shows no notes); verify all pass
+- [x] 5.2 Add label `BackendCompleted` to GitHub issue #331 once backend tasks are merged; verify the label is present on the issue
