@@ -1480,7 +1480,7 @@ class EventRegistrationControllerTest {
         }
 
         private Event eventWithNotedRegistration(EventId eventId, MemberId memberId) {
-            EventRegistration registration = EventRegistration.reconstruct(UUID.randomUUID(), Instant.now(), EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(SiCardNumber.of("123456")).internalNote(RegistrationNote.ofNullable("club note")).orisNote(RegistrationNote.ofNullable("oris note")).build());
+            EventRegistration registration = EventRegistration.reconstruct(UUID.randomUUID(), Instant.now(), EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(SiCardNumber.of("123456")).internalNote(RegistrationNote.ofNullable("club note")).orisNote(RegistrationNote.ofNullable("oris note")).build(), false);
             var builder = eventId != null ? EventTestDataBuilder.anEventWithId(eventId) : EventTestDataBuilder.anEvent();
             Event event = builder.withDate(LocalDate.now().plusDays(30)).addRegistration(registration).build();
             event.publish();
@@ -1937,7 +1937,7 @@ class EventRegistrationControllerTest {
             MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
             EventRegistration registration = EventRegistration.reconstruct(UUID.randomUUID(), Instant.now(),
                     EventRegistrationCreateEventRegistrationBuilder.builder()
-                            .memberId(memberId).wantsToRentSi(true).build());
+                            .memberId(memberId).wantsToRentSi(true).build(), false);
             Event event = EventTestDataBuilder.anEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .addRegistration(registration)

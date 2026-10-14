@@ -175,7 +175,7 @@ public class EventTestDataBuilder {
                         .memberId(memberId)
                         .siCardNumber(siCardNumber)
                         .categoryId(categoryId)
-                        .build());
+                        .build(), false);
     }
 
     public static EventRegistration aRegistrationWithSharedServices(MemberId memberId, SiCardNumber siCardNumber,
@@ -187,7 +187,7 @@ public class EventTestDataBuilder {
                         .siCardNumber(siCardNumber)
                         .wantsSharedTransport(wantsSharedTransport)
                         .wantsSharedAccommodation(wantsSharedAccommodation)
-                        .build());
+                        .build(), false);
     }
 
     public static void register(Event event, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId) {

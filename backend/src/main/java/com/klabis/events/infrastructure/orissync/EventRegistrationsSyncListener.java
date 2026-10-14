@@ -8,7 +8,9 @@ import com.klabis.events.MemberRegisteredForEventEvent;
 import com.klabis.events.MemberUnregisteredFromEventEvent;
 import com.klabis.events.RegistrationEditedEvent;
 import com.klabis.events.UpdateOrigin;
+import com.klabis.events.domain.RegistrationSyncId;
 import com.klabis.members.MemberId;
+import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
@@ -25,12 +27,12 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 @PrimaryAdapter
 class EventRegistrationsSyncListener {
 
-    private static final String ID_SEPARATOR = ":";
-
     private final SynchronizationPort synchronizationPort;
+    private final SyncPairingLookup pairingLookup;
 
-    EventRegistrationsSyncListener(SynchronizationPort synchronizationPort) {
+    EventRegistrationsSyncListener(SynchronizationPort synchronizationPort, SyncPairingLookup pairingLookup) {
         this.synchronizationPort = synchronizationPort;
+        this.pairingLookup = pairingLookup;
     }
 
     @ApplicationModuleListener
@@ -63,15 +65,14 @@ class EventRegistrationsSyncListener {
             return;
         }
         synchronizationPort.markDirty(new SyncTarget(SyncEntityType.EVENT_REGISTRATION,
-                eventId.value() + ID_SEPARATOR + memberId.value()));
+                new RegistrationSyncId(eventId, memberId).format()));
     }
 
     // Looked up by the id prefix, not by the event's current registrations: a member who has unregistered still
     // has a record.
     private void retireAllOf(EventId eventId) {
-        String prefix = eventId.value() + ID_SEPARATOR;
-        synchronizationPort.findActiveByEntityType(SyncEntityType.EVENT_REGISTRATION).stream()
-                .filter(record -> record.getTarget().entityId().startsWith(prefix))
+        pairingLookup.findActiveByEntityTypeAndEntityIdPrefix(
+                        SyncEntityType.EVENT_REGISTRATION, RegistrationSyncId.prefixOf(eventId)).stream()
                 .map(SyncRecord::getId)
                 .forEach(synchronizationPort::retire);
     }

@@ -54,6 +54,16 @@ public interface SyncRecordRepository {
     List<SyncRecord> findAllNonRetired();
 
     /**
+     * Every non-retired record of the entity type, {@code FAILED} included.
+     */
+    List<SyncRecord> findNonRetiredByEntityType(SyncEntityType entityType);
+
+    /**
+     * Every non-retired record of the entity type whose entity id starts with the prefix.
+     */
+    List<SyncRecord> findNonRetiredByEntityTypeAndEntityIdPrefix(SyncEntityType entityType, String entityIdPrefix);
+
+    /**
      * Records due for the frequent due scan (design.md D10): dirty (a local change
      * was observed) or whose {@code nextAttemptDueAt} has passed. One indexed query;
      * costs nothing when no record is due.

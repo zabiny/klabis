@@ -7,7 +7,6 @@ import com.klabis.common.OrisIntegrationComponent;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -60,7 +59,7 @@ public class OrisEventEntries {
             throw new IllegalStateException("oris.client.my-club-id is required to read ORIS event entries");
         }
         return orisApiClient.getEventEntries(orisEventId, clubId).payload()
-                .map(byId -> List.copyOf(new ArrayList<>(byId.values())))
+                .map(byId -> List.copyOf(byId.values()))
                 .orElseGet(List::of);
     }
 }

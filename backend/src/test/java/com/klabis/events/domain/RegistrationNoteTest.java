@@ -58,4 +58,16 @@ class RegistrationNoteTest {
 
         assertThat(command.toString()).doesNotContain("secret-internal", "secret-oris");
     }
+
+    @Test
+    @DisplayName("truncatingOf trims, turns blank into no note and cuts to the maximum length in code points")
+    void truncatingOf() {
+        assertThat(RegistrationNote.truncatingOf(null)).isNull();
+        assertThat(RegistrationNote.truncatingOf("   ")).isNull();
+        assertThat(RegistrationNote.truncatingOf("  x  ").text()).isEqualTo("x");
+        assertThat(RegistrationNote.truncatingOf("a".repeat(300)).text()).hasSize(RegistrationNote.MAX_LENGTH);
+        assertThat(RegistrationNote.truncatingOf("\uD83D\uDE00".repeat(300)).text().codePointCount(0,
+                RegistrationNote.truncatingOf("\uD83D\uDE00".repeat(300)).text().length())).isEqualTo(255);
+        assertThat(RegistrationNote.truncatingOf("a".repeat(254) + " bbb").text()).isEqualTo("a".repeat(254));
+    }
 }

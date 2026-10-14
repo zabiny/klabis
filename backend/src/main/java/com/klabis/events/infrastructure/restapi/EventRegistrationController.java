@@ -15,6 +15,7 @@ import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.RegistrationNotFoundException;
 import com.klabis.events.domain.RegistrationNote;
+import com.klabis.events.domain.RegistrationSyncId;
 import com.klabis.events.domain.SiCardNumber;
 import org.springframework.util.StringUtils;
 import com.klabis.members.ActingMember;
@@ -314,7 +315,7 @@ class RegistrationDetailsPostprocessor
                 .ifPresent(dtoModel::add);
 
         if (!view.prefill()) {
-            String entityId = eventId + ":" + memberId.value();
+            String entityId = new RegistrationSyncId(event.getId(), memberId).format();
             boolean enrolled = synchronizationPort.findByTarget(
                     new SyncTarget(SyncEntityType.EVENT_REGISTRATION, entityId)).isPresent();
             if (enrolled) {

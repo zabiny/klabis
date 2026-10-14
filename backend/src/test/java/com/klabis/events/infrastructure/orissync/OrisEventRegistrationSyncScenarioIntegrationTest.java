@@ -92,7 +92,6 @@ class OrisEventRegistrationSyncScenarioIntegrationTest {
         orisEventId = ORIS_ID_SEQUENCE.incrementAndGet();
         clubUserId = ORIS_ID_SEQUENCE.incrementAndGet();
         orisEventEntries.evict(orisEventId);
-        circuitBreakerRegistry.circuitBreaker("sync-adapter").reset();
 
         UUID memberUuid = UUID.randomUUID();
         jdbcTemplate.update("""
@@ -234,11 +233,25 @@ class OrisEventRegistrationSyncScenarioIntegrationTest {
                 .build());
         eventRepository.save(event);
         orisEventEntries.evict(orisEventId);
-        circuitBreakerRegistry.circuitBreaker("sync-adapter").reset();
 
         discoveryJob.discover();
 
         assertThat(eventRegistrationPort.listRegistrations(eventId)).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("an unknown ORIS category is a data state and never opens the sync-adapter circuit breaker")
+    void unknownCategoryDoesNotOpenCircuitBreaker() {
+        circuitBreakerRegistry.circuitBreaker("sync-adapter").reset();
+        stubEntries(entry(clubUserId).classId(999).build());
+
+        for (int i = 0; i < 4; i++) {
+            discoveryJob.discover();
+        }
+
+        assertThat(circuitBreakerRegistry.circuitBreaker("sync-adapter").getState())
+                .isEqualTo(io.github.resilience4j.circuitbreaker.CircuitBreaker.State.CLOSED);
+        assertThat(circuitBreakerRegistry.circuitBreaker("sync-adapter").getMetrics().getNumberOfFailedCalls()).isZero();
     }
 
     @Test

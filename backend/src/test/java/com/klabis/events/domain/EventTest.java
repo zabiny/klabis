@@ -3316,7 +3316,7 @@ class EventTest {
             event.syncRegistrationFromOris(memberId, orisEntry("102"));
             event.clearDomainEvents();
 
-            event.syncRegistrationFromOris(memberId, Event.SyncRegistrationFromOris.entryAbsent());
+            event.markRegistrationMissingInOris(memberId);
 
             EventRegistration registration = event.findRegistration(memberId).orElseThrow();
             assertThat(registration.missingInOris()).isTrue();
@@ -3331,7 +3331,7 @@ class EventTest {
             Event event = eventWithOrisCategories();
             event.clearDomainEvents();
 
-            event.syncRegistrationFromOris(memberId, Event.SyncRegistrationFromOris.entryAbsent());
+            event.markRegistrationMissingInOris(memberId);
 
             assertThat(event.getRegistrations()).isEmpty();
             assertThat(event.getDomainEvents()).isEmpty();
@@ -3342,7 +3342,7 @@ class EventTest {
         void shouldClearMarkWhenEntryReturns() {
             Event event = eventWithOrisCategories();
             event.syncRegistrationFromOris(memberId, orisEntry("101"));
-            event.syncRegistrationFromOris(memberId, Event.SyncRegistrationFromOris.entryAbsent());
+            event.markRegistrationMissingInOris(memberId);
 
             event.syncRegistrationFromOris(memberId, orisEntry("102"));
 
@@ -3356,7 +3356,7 @@ class EventTest {
         void shouldKeepMarkOnManualEdit() {
             Event event = eventWithOrisCategories();
             event.syncRegistrationFromOris(memberId, orisEntry("101"));
-            event.syncRegistrationFromOris(memberId, Event.SyncRegistrationFromOris.entryAbsent());
+            event.markRegistrationMissingInOris(memberId);
 
             event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
                     .siCardNumber(SiCardNumber.of("654321"))

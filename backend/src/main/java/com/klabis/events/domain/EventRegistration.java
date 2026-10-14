@@ -118,10 +118,6 @@ public class EventRegistration {
      * <p>
      * This bypasses validation since the data was already validated when originally stored.
      */
-    public static EventRegistration reconstruct(UUID id, Instant registeredAt, CreateEventRegistration data) {
-        return reconstruct(id, registeredAt, data, false);
-    }
-
     public static EventRegistration reconstruct(UUID id, Instant registeredAt, CreateEventRegistration data,
                                                 boolean missingInOris) {
         return new EventRegistration(id, data.memberId(), data.siCardNumber(), data.categoryId(), registeredAt,
@@ -130,23 +126,32 @@ public class EventRegistration {
     }
 
     public EventRegistration withChanges(Event.EditRegistrationCommand changes) {
-        return new EventRegistration(this.id, this.memberId, changes.siCardNumber(), changes.categoryId(),
-                this.registeredAt, changes.wantsSharedTransport(), changes.wantsSharedAccommodation(),
-                changes.internalNote(), changes.orisNote(), changes.wantsToRentSi(), this.missingInOris);
-    }
-
-    EventRegistration markedMissingInOris() {
-        return new EventRegistration(id, memberId, siCardNumber, categoryId, registeredAt, wantsSharedTransport,
-                wantsSharedAccommodation, internalNote, orisNote, wantsToRentSi, true);
+        return copy(changes.siCardNumber(), changes.categoryId(), changes.wantsSharedTransport(),
+                changes.wantsSharedAccommodation(), changes.internalNote(), changes.orisNote(),
+                changes.wantsToRentSi(), this.missingInOris);
     }
 
     /**
      * Takes values over from ORIS: clears the "missing in ORIS" mark, which {@link #withChanges} would keep.
      */
     EventRegistration withOrisValues(Event.EditRegistrationCommand changes) {
-        return new EventRegistration(this.id, this.memberId, changes.siCardNumber(), changes.categoryId(),
-                this.registeredAt, changes.wantsSharedTransport(), changes.wantsSharedAccommodation(),
-                changes.internalNote(), changes.orisNote(), changes.wantsToRentSi(), false);
+        return withChanges(changes).withMissingInOris(false);
+    }
+
+    EventRegistration markedMissingInOris() {
+        return withMissingInOris(true);
+    }
+
+    private EventRegistration withMissingInOris(boolean missingInOris) {
+        return copy(siCardNumber, categoryId, wantsSharedTransport, wantsSharedAccommodation, internalNote, orisNote,
+                wantsToRentSi, missingInOris);
+    }
+
+    private EventRegistration copy(SiCardNumber siCardNumber, EventCategoryId categoryId, boolean wantsSharedTransport,
+                                   boolean wantsSharedAccommodation, RegistrationNote internalNote,
+                                   RegistrationNote orisNote, boolean wantsToRentSi, boolean missingInOris) {
+        return new EventRegistration(id, memberId, siCardNumber, categoryId, registeredAt, wantsSharedTransport,
+                wantsSharedAccommodation, internalNote, orisNote, wantsToRentSi, missingInOris);
     }
 
     // ========== Getters ==========

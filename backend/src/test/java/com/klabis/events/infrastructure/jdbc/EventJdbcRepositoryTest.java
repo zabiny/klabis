@@ -300,7 +300,7 @@ class EventJdbcRepositoryTest {
             MemberId plain = new MemberId(TEST_MEMBER_2_ID);
             register(event, marked, new SiCardNumber("123456"), null);
             register(event, plain, new SiCardNumber("789012"), null);
-            event.syncRegistrationFromOris(marked, Event.SyncRegistrationFromOris.entryAbsent());
+            event.markRegistrationMissingInOris(marked);
 
             Event retrieved = eventRepository.findById(eventRepository.save(event).getId()).orElseThrow();
 
@@ -2167,6 +2167,26 @@ class EventJdbcRepositoryTest {
             assertThat(eventRepository.findIdsCoordinatedBy(coordB))
                     .containsExactlyInAnyOrder(coordinatedByBoth.getId(), coordinatedByB.getId());
             assertThat(eventRepository.findIdsCoordinatedBy(new MemberId(TEST_MEMBER_3_ID))).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("Active event ids")
+    class ActiveEventIds {
+
+        @Test
+        @DisplayName("returns only the ids of ACTIVE events among the given ones")
+        void shouldReturnOnlyActiveIds() {
+            Event draft = eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Draft").eventDate(LocalDate.of(2026, 9, 1)).organizer("OOB").build()));
+            Event active = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active").eventDate(LocalDate.of(2026, 9, 2)).organizer("OOB").build());
+            active.publish();
+            active = eventRepository.save(active);
+
+            assertThat(eventRepository.findActiveIds(List.of(draft.getId(), active.getId(), EventId.generate())))
+                    .containsExactly(active.getId());
+            assertThat(eventRepository.findActiveIds(List.of())).isEmpty();
         }
     }
 

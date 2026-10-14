@@ -3,6 +3,7 @@ package com.klabis.events.infrastructure.orissync;
 import com.dpolach.api.orisclient.autoconfigure.OrisClientProperties;
 import com.dpolach.api.orisclient.dto.EventEntry;
 import com.klabis.common.OrisIntegrationComponent;
+import com.klabis.events.EventCategory;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.domain.Event;
@@ -10,12 +11,15 @@ import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventSyncRegistrationFromOrisBuilder;
 import com.klabis.events.domain.OrisCategoryNotYetSynchronisedException;
+import com.klabis.events.domain.OrisRegistrationId;
 import com.klabis.events.domain.RegistrationNote;
+import com.klabis.events.domain.RegistrationSyncId;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.members.MemberId;
 import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.ExternalSystem;
+import com.klabis.sync.domain.ExternalVersionToken;
 import com.klabis.sync.domain.RetryableSyncFailureException;
 import com.klabis.sync.domain.SyncCapabilities;
 import com.klabis.sync.domain.SyncEntityType;
@@ -50,8 +54,6 @@ import java.util.UUID;
 @OrisIntegrationComponent
 @Application
 class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
-
-    private static final String ID_SEPARATOR = ":";
 
     private static final SyncCapabilities CAPABILITIES =
             new SyncCapabilities(true, true, true, false, true, false, true);
@@ -97,7 +99,7 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
     @Override
     @Transactional(readOnly = true)
     public SyncProjection readLocal(String entityId) {
-        Participation participation = Participation.parse(entityId);
+        RegistrationSyncId participation = RegistrationSyncId.parse(entityId);
         Event event = loadEvent(participation.eventId());
         return event.findRegistration(participation.memberId())
                 .filter(registration -> !registration.missingInOris())
@@ -107,7 +109,7 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
 
     private static OrisEventRegistrationProjection localProjection(Event event, EventRegistration registration) {
         String categoryOrisId = event.findCategory(registration.categoryId())
-                .map(category -> category.orisId())
+                .map(EventCategory::orisId)
                 .orElse(null);
         return new OrisEventRegistrationProjection(
                 true,
@@ -115,14 +117,14 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
                 registration.siCardNumber() != null ? registration.siCardNumber().value() : null,
                 registration.wantsToRentSi(),
                 RegistrationNote.textOrNull(registration.orisNote()),
-                null, null, null);
+                null, null);
     }
 
     @Override
     public SyncProjection readExternal(String externalId) {
-        int separator = externalId.indexOf(ID_SEPARATOR);
-        int orisEventId = Integer.parseInt(externalId.substring(0, separator));
-        int clubUserId = Integer.parseInt(externalId.substring(separator + 1));
+        OrisRegistrationId orisId = OrisRegistrationId.parse(externalId);
+        int orisEventId = orisId.orisEventId();
+        int clubUserId = orisId.clubUserId();
 
         List<EventEntry> entries;
         try {
@@ -134,21 +136,20 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
         return entries.stream()
                 .filter(entry -> entry.clubUserId() != null && entry.clubUserId() == clubUserId)
                 .findFirst()
-                .map(entry -> externalProjection(entry, orisEventId, clubUserId))
+                .map(entry -> externalProjection(entry, orisId))
                 .orElseGet(OrisEventRegistrationProjection::absent);
     }
 
-    private OrisEventRegistrationProjection externalProjection(EventEntry entry, int orisEventId, int clubUserId) {
+    private OrisEventRegistrationProjection externalProjection(EventEntry entry, OrisRegistrationId orisId) {
         return new OrisEventRegistrationProjection(
                 true,
                 entry.classId() != null ? String.valueOf(entry.classId()) : null,
                 normalisedSiCard(entry.si()),
                 Boolean.TRUE.equals(entry.rentSi()),
-                normalisedNote(entry.note()),
+                RegistrationNote.textOrNull(RegistrationNote.truncatingOf(entry.note())),
                 entry.createdDateTime() != null
                         ? entry.createdDateTime().atZone(orisClientProperties.timezone()).toInstant() : null,
-                new EventId(resolveEntityId(SyncEntityType.EVENT, orisEventId)),
-                new MemberId(resolveEntityId(SyncEntityType.MEMBER, clubUserId)));
+                orisId);
     }
 
     private UUID resolveEntityId(SyncEntityType entityType, int externalId) {
@@ -171,26 +172,15 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
         }
     }
 
-    private static String normalisedNote(String note) {
-        if (note == null) {
-            return null;
-        }
-        String trimmed = note.trim();
-        if (trimmed.codePointCount(0, trimmed.length()) > RegistrationNote.MAX_LENGTH) {
-            trimmed = trimmed.substring(0, trimmed.offsetByCodePoints(0, RegistrationNote.MAX_LENGTH)).trim();
-        }
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
     @Override
-    public Optional<com.klabis.sync.domain.ExternalVersionToken> externalVersion(String externalId) {
+    public Optional<ExternalVersionToken> externalVersion(String externalId) {
         return Optional.empty();
     }
 
     @Override
     @Transactional
     public void applyToLocal(String entityId, SyncProjection projection) {
-        Participation participation = Participation.parse(entityId);
+        RegistrationSyncId participation = RegistrationSyncId.parse(entityId);
         OrisEventRegistrationProjection orisProjection = (OrisEventRegistrationProjection) projection;
         syncRegistration(participation.eventId(), participation.memberId(), orisProjection);
     }
@@ -199,14 +189,21 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
     @Transactional
     public String createLocal(SyncProjection projection) {
         OrisEventRegistrationProjection orisProjection = (OrisEventRegistrationProjection) projection;
-        syncRegistration(orisProjection.eventId(), orisProjection.memberId(), orisProjection);
-        return new Participation(orisProjection.eventId(), orisProjection.memberId()).entityId();
+        RegistrationSyncId id = new RegistrationSyncId(
+                new EventId(resolveEntityId(SyncEntityType.EVENT, orisProjection.orisId().orisEventId())),
+                new MemberId(resolveEntityId(SyncEntityType.MEMBER, orisProjection.orisId().clubUserId())));
+        syncRegistration(id.eventId(), id.memberId(), orisProjection);
+        return id.format();
     }
 
     private void syncRegistration(EventId eventId, MemberId memberId, OrisEventRegistrationProjection projection) {
         Event event = loadEvent(eventId);
         try {
-            event.syncRegistrationFromOris(memberId, command(projection));
+            if (projection.present()) {
+                event.syncRegistrationFromOris(memberId, command(projection));
+            } else {
+                event.markRegistrationMissingInOris(memberId);
+            }
         } catch (OrisCategoryNotYetSynchronisedException e) {
             synchronizationPort.markDirty(new SyncTarget(SyncEntityType.EVENT, eventId.value().toString()));
             throw e;
@@ -219,9 +216,6 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
     }
 
     private static Event.SyncRegistrationFromOris command(OrisEventRegistrationProjection projection) {
-        if (!projection.present()) {
-            return Event.SyncRegistrationFromOris.entryAbsent();
-        }
         return EventSyncRegistrationFromOrisBuilder.builder()
                 .categoryOrisId(projection.categoryOrisId())
                 .siCardNumber(projection.siCardNumber() != null ? SiCardNumber.of(projection.siCardNumber()) : null)
@@ -239,19 +233,5 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
 
     private Event loadEvent(EventId eventId) {
         return eventRepository.findById(eventId).orElseThrow(() -> new EventNotFoundException(eventId));
-    }
-
-    private record Participation(EventId eventId, MemberId memberId) {
-
-        static Participation parse(String entityId) {
-            int separator = entityId.indexOf(ID_SEPARATOR);
-            return new Participation(
-                    new EventId(UUID.fromString(entityId.substring(0, separator))),
-                    new MemberId(UUID.fromString(entityId.substring(separator + 1))));
-        }
-
-        String entityId() {
-            return eventId.value() + ID_SEPARATOR + memberId.value();
-        }
     }
 }

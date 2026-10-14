@@ -94,6 +94,9 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: 30s
         permitted-number-of-calls-in-half-open-state: 3
+        # A data state (e.g. a referenced entity not synchronised yet), not an outage of the external system
+        ignore-exceptions:
+          - com.klabis.sync.domain.DependencyNotReadyException
 
 springdoc:
   swagger-ui:

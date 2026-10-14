@@ -3,12 +3,14 @@ package com.klabis.events.infrastructure.orissync;
 import com.klabis.events.EventCancelledEvent;
 import com.klabis.events.EventFinishedEvent;
 import com.klabis.events.EventId;
+import com.klabis.events.domain.RegistrationSyncId;
 import com.klabis.events.MemberRegisteredForEventEvent;
 import com.klabis.events.MemberUnregisteredFromEventEvent;
 import com.klabis.events.RegistrationEditedEvent;
 import com.klabis.events.UpdateOrigin;
 import com.klabis.members.MemberId;
 import com.klabis.sync.SyncRecordId;
+import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
@@ -38,6 +40,9 @@ class EventRegistrationsSyncListenerTest {
     @Mock
     private SynchronizationPort synchronizationPort;
 
+    @Mock
+    private SyncPairingLookup pairingLookup;
+
     private EventRegistrationsSyncListener listener;
 
     private EventId eventId;
@@ -46,7 +51,7 @@ class EventRegistrationsSyncListenerTest {
 
     @BeforeEach
     void setUp() {
-        listener = new EventRegistrationsSyncListener(synchronizationPort);
+        listener = new EventRegistrationsSyncListener(synchronizationPort, pairingLookup);
         eventId = new EventId(UUID.randomUUID());
         memberId = new MemberId(UUID.randomUUID());
         participation = new SyncTarget(SyncEntityType.EVENT_REGISTRATION, eventId.value() + ":" + memberId.value());
@@ -96,13 +101,11 @@ class EventRegistrationsSyncListenerTest {
     void retiresAllRecordsOfFinishedEvent() {
         SyncRecord mine = recordOf(eventId, memberId);
         SyncRecord unregisteredMember = recordOf(eventId, new MemberId(UUID.randomUUID()));
-        SyncRecord otherEvent = recordOf(new EventId(UUID.randomUUID()), memberId);
-        when(synchronizationPort.findActiveByEntityType(SyncEntityType.EVENT_REGISTRATION))
-                .thenReturn(List.of(mine, unregisteredMember, otherEvent));
+        when(pairingLookup.findActiveByEntityTypeAndEntityIdPrefix(SyncEntityType.EVENT_REGISTRATION,
+                RegistrationSyncId.prefixOf(eventId))).thenReturn(List.of(mine, unregisteredMember));
 
         listener.handle(new EventFinishedEvent(UUID.randomUUID(), eventId, Instant.now()));
 
-        verify(synchronizationPort).findActiveByEntityType(SyncEntityType.EVENT_REGISTRATION);
         verify(synchronizationPort).retire(mine.getId());
         verify(synchronizationPort).retire(unregisteredMember.getId());
         verifyNoMoreInteractions(synchronizationPort);
@@ -112,8 +115,8 @@ class EventRegistrationsSyncListenerTest {
     @DisplayName("retires the participation records of a cancelled event")
     void retiresOnCancelled() {
         SyncRecord mine = recordOf(eventId, memberId);
-        when(synchronizationPort.findActiveByEntityType(SyncEntityType.EVENT_REGISTRATION))
-                .thenReturn(List.of(mine));
+        when(pairingLookup.findActiveByEntityTypeAndEntityIdPrefix(SyncEntityType.EVENT_REGISTRATION,
+                RegistrationSyncId.prefixOf(eventId))).thenReturn(List.of(mine));
 
         listener.handle(new EventCancelledEvent(UUID.randomUUID(), eventId, Instant.now()));
 

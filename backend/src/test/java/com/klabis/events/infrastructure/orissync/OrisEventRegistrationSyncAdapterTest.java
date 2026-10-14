@@ -9,6 +9,7 @@ import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegisterCommandBuilder;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventRepository;
+import com.klabis.events.domain.OrisRegistrationId;
 import com.klabis.events.domain.OrisCategoryNotYetSynchronisedException;
 import com.klabis.events.domain.RegistrationNote;
 import com.klabis.events.domain.SiCardNumber;
@@ -45,6 +46,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -96,11 +99,11 @@ class OrisEventRegistrationSyncAdapterTest {
     }
 
     private void pairingsResolve() {
-        when(pairingLookup.findByExternalReferences(eq(SyncEntityType.EVENT), eq(ExternalSystem.ORIS), anyList()))
+        lenient().when(pairingLookup.findByExternalReferences(eq(SyncEntityType.EVENT), eq(ExternalSystem.ORIS), anyList()))
                 .thenReturn(List.of(new SyncedEntityReference(
                         new SyncTarget(SyncEntityType.EVENT, event.getId().value().toString()),
                         new ExternalReference(ExternalSystem.ORIS, String.valueOf(ORIS_EVENT_ID)))));
-        when(pairingLookup.findByExternalReferences(eq(SyncEntityType.MEMBER), eq(ExternalSystem.ORIS), anyList()))
+        lenient().when(pairingLookup.findByExternalReferences(eq(SyncEntityType.MEMBER), eq(ExternalSystem.ORIS), anyList()))
                 .thenReturn(List.of(new SyncedEntityReference(
                         new SyncTarget(SyncEntityType.MEMBER, memberId.value().toString()),
                         new ExternalReference(ExternalSystem.ORIS, String.valueOf(CLUB_USER_ID)))));
@@ -143,7 +146,7 @@ class OrisEventRegistrationSyncAdapterTest {
         @DisplayName("projects category by ORIS id, SI card, rental and ORIS note, not the internal note")
         void projectsRegistration() {
             event.syncRegistrationFromOris(memberId, new Event.SyncRegistrationFromOris("102",
-                    SiCardNumber.of("123456"), true, RegistrationNote.ofNullable("hello"), Instant.now(), false));
+                    SiCardNumber.of("123456"), true, RegistrationNote.ofNullable("hello"), Instant.now()));
             when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
 
             OrisEventRegistrationProjection projection = (OrisEventRegistrationProjection) adapter.readLocal(entityId());
@@ -170,8 +173,8 @@ class OrisEventRegistrationSyncAdapterTest {
             assertThat(projection.siCardNumber()).isEqualTo("123456");
             assertThat(projection.wantsToRentSi()).isTrue();
             assertThat(projection.orisNote()).isEqualTo("hello");
-            assertThat(projection.eventId()).isEqualTo(event.getId());
-            assertThat(projection.memberId()).isEqualTo(memberId);
+            assertThat(projection.orisId()).isEqualTo(new OrisRegistrationId(ORIS_EVENT_ID, CLUB_USER_ID));
+            verify(pairingLookup, never()).findByExternalReferences(any(), any(), any());
         }
 
         @Test
@@ -341,7 +344,7 @@ class OrisEventRegistrationSyncAdapterTest {
     @DisplayName("applyToLocal for an absent projection marks the registration missing in ORIS and keeps it")
     void applyToLocalAbsentMarksMissing() {
         event.syncRegistrationFromOris(memberId, new Event.SyncRegistrationFromOris("102",
-                SiCardNumber.of("123456"), true, RegistrationNote.ofNullable("hello"), Instant.now(), false));
+                SiCardNumber.of("123456"), true, RegistrationNote.ofNullable("hello"), Instant.now()));
         when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
 
         adapter.applyToLocal(entityId(), OrisEventRegistrationProjection.absent());
@@ -354,8 +357,8 @@ class OrisEventRegistrationSyncAdapterTest {
     @DisplayName("a registration marked missing in ORIS reads as absent locally, equal to an absent ORIS entry")
     void markedRegistrationReadsAbsent() {
         event.syncRegistrationFromOris(memberId, new Event.SyncRegistrationFromOris("102",
-                SiCardNumber.of("123456"), true, RegistrationNote.ofNullable("hello"), Instant.now(), false));
-        event.syncRegistrationFromOris(memberId, Event.SyncRegistrationFromOris.entryAbsent());
+                SiCardNumber.of("123456"), true, RegistrationNote.ofNullable("hello"), Instant.now()));
+        event.markRegistrationMissingInOris(memberId);
         when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
         when(orisEventEntries.entriesOf(ORIS_EVENT_ID)).thenReturn(List.of());
 

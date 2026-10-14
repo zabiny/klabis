@@ -36,8 +36,12 @@ class SyncPairingLookupService implements SyncPairingLookup {
     @Transactional(readOnly = true)
     @Override
     public List<SyncRecord> findActiveByEntityType(SyncEntityType entityType) {
-        return syncRecordRepository.findAllNonRetired().stream()
-                .filter(record -> record.getTarget().entityType() == entityType)
-                .toList();
+        return syncRecordRepository.findNonRetiredByEntityType(entityType);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<SyncRecord> findActiveByEntityTypeAndEntityIdPrefix(SyncEntityType entityType, String entityIdPrefix) {
+        return syncRecordRepository.findNonRetiredByEntityTypeAndEntityIdPrefix(entityType, entityIdPrefix);
     }
 }

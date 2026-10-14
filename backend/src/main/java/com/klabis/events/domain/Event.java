@@ -263,13 +263,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             SiCardNumber siCardNumber,
             boolean wantsToRentSi,
             RegistrationNote orisNote,
-            Instant registeredAt,
-            boolean absent
-    ) {
-        public static SyncRegistrationFromOris entryAbsent() {
-            return new SyncRegistrationFromOris(null, null, false, null, null, true);
-        }
-    }
+            Instant registeredAt
+    ) {}
 
     @RecordBuilder
     public record CancelEvent(
@@ -909,10 +904,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @throws OrisCategoryNotYetSynchronisedException if the entry's class is not among the event's categories yet
      */
     public void syncRegistrationFromOris(MemberId memberId, SyncRegistrationFromOris command) {
-        if (command.absent()) {
-            markRegistrationMissingInOris(memberId);
-            return;
-        }
         EventCategoryId categoryId = resolveCategoryIdByOrisId(command.categoryOrisId());
 
         Optional<EventRegistration> existing = findRegistration(memberId);
@@ -941,7 +932,11 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 UpdateOrigin.SYNCHRONISATION));
     }
 
-    private void markRegistrationMissingInOris(MemberId memberId) {
+    /**
+     * ORIS no longer lists the member's entry: the registration is kept and only marked, so nothing the member or the
+     * club recorded is lost. A no-op for a member without a registration or one already marked.
+     */
+    public void markRegistrationMissingInOris(MemberId memberId) {
         findRegistration(memberId).filter(registration -> !registration.missingInOris()).ifPresent(current -> {
             registrations.remove(current);
             registrations.add(current.markedMissingInOris());

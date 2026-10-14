@@ -22,12 +22,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import com.klabis.events.EventId;
+import com.klabis.events.domain.EventStatus;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -53,6 +60,16 @@ class OrisEventRegistrationDiscoveryJobTest {
     void setUp() {
         job = new OrisEventRegistrationDiscoveryJob(eventRepository, orisEventEntries, pairingLookup,
                 synchronizationPort);
+        lenient().when(eventRepository.findActiveIds(anyCollection())).thenAnswer(invocation ->
+                ((Collection<EventId>) invocation.getArgument(0)).stream().filter(activeIds::contains).toList());
+    }
+
+    private final Set<EventId> activeIds = new HashSet<>();
+
+    private void markActive(Event event) {
+        if (event.getStatus() == EventStatus.ACTIVE) {
+            activeIds.add(event.getId());
+        }
     }
 
     private Event activeEvent() {
@@ -64,7 +81,7 @@ class OrisEventRegistrationDiscoveryJobTest {
                 new SyncTarget(SyncEntityType.EVENT, event.getId().value().toString()),
                 new ExternalReference(ExternalSystem.ORIS, String.valueOf(orisEventId)));
         when(pairingLookup.findActiveByEntityType(SyncEntityType.EVENT)).thenReturn(List.of(record));
-        when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
+        markActive(event);
     }
 
     private static EventEntry entry(Integer clubUserId) {
@@ -72,7 +89,7 @@ class OrisEventRegistrationDiscoveryJobTest {
     }
 
     private void givenMemberPairings(int... clubUserIds) {
-        List<SyncedEntityReference> references = java.util.Arrays.stream(clubUserIds)
+        List<SyncedEntityReference> references = Arrays.stream(clubUserIds)
                 .mapToObj(id -> new SyncedEntityReference(
                         new SyncTarget(SyncEntityType.MEMBER, "member-" + id),
                         new ExternalReference(ExternalSystem.ORIS, String.valueOf(id))))
@@ -82,7 +99,7 @@ class OrisEventRegistrationDiscoveryJobTest {
     }
 
     private void givenAlreadyPairedRegistrations(String... externalIds) {
-        List<SyncedEntityReference> references = java.util.Arrays.stream(externalIds)
+        List<SyncedEntityReference> references = Arrays.stream(externalIds)
                 .map(id -> new SyncedEntityReference(
                         new SyncTarget(SyncEntityType.EVENT_REGISTRATION, "e:m"),
                         new ExternalReference(ExternalSystem.ORIS, id)))
@@ -192,8 +209,8 @@ class OrisEventRegistrationDiscoveryJobTest {
                 new ExternalReference(ExternalSystem.ORIS, String.valueOf(ORIS_EVENT_ID)));
         when(pairingLookup.findActiveByEntityType(SyncEntityType.EVENT))
                 .thenReturn(List.of(failingRecord, healthyRecord));
-        when(eventRepository.findById(failing.getId())).thenReturn(Optional.of(failing));
-        when(eventRepository.findById(healthy.getId())).thenReturn(Optional.of(healthy));
+        markActive(failing);
+        markActive(healthy);
         when(orisEventEntries.entriesOf(1)).thenThrow(new IllegalStateException("ORIS down"));
         when(orisEventEntries.entriesOf(ORIS_EVENT_ID)).thenReturn(List.of(entry(11)));
         givenMemberPairings(11);
@@ -213,7 +230,7 @@ class OrisEventRegistrationDiscoveryJobTest {
                 new ExternalReference(ExternalSystem.ORIS, String.valueOf(ORIS_EVENT_ID)));
         when(pairingLookup.findActiveByTargets(SyncEntityType.EVENT, List.of(event.getId().value().toString())))
                 .thenReturn(List.of(new SyncedEntityReference(record.getTarget(), record.getExternalReference())));
-        when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
+        markActive(event);
         when(orisEventEntries.entriesOf(ORIS_EVENT_ID)).thenReturn(List.of(entry(11)));
         givenMemberPairings(11);
         givenAlreadyPairedRegistrations();
@@ -232,7 +249,7 @@ class OrisEventRegistrationDiscoveryJobTest {
                 .thenReturn(List.of(new SyncedEntityReference(
                         new SyncTarget(SyncEntityType.EVENT, event.getId().value().toString()),
                         new ExternalReference(ExternalSystem.ORIS, String.valueOf(ORIS_EVENT_ID)))));
-        when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
+        markActive(event);
         when(orisEventEntries.entriesOf(ORIS_EVENT_ID)).thenReturn(List.of(entry(11), entry(12)));
         givenMemberPairings(11, 12);
         givenAlreadyPairedRegistrations(registrationRef(11).externalId());

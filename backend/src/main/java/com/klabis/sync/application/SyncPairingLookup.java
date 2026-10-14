@@ -32,4 +32,9 @@ public interface SyncPairingLookup {
      * Every non-retired record of the entity type, {@code FAILED} included.
      */
     List<SyncRecord> findActiveByEntityType(SyncEntityType entityType);
+
+    /**
+     * Every non-retired record of the entity type whose entity id starts with the prefix.
+     */
+    List<SyncRecord> findActiveByEntityTypeAndEntityIdPrefix(SyncEntityType entityType, String entityIdPrefix);
 }

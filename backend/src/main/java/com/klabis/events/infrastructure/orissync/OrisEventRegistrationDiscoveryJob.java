@@ -4,9 +4,8 @@ import com.dpolach.api.orisclient.dto.EventEntry;
 import com.klabis.common.OrisIntegrationComponent;
 import com.klabis.events.EventId;
 import com.klabis.events.application.OrisEventRegistrationDiscoveryPort;
-import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
-import com.klabis.events.domain.EventStatus;
+import com.klabis.events.domain.OrisRegistrationId;
 import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.ExternalReference;
@@ -20,7 +19,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -59,13 +60,20 @@ class OrisEventRegistrationDiscoveryJob implements OrisEventRegistrationDiscover
     void discover() {
         log.info("Starting ORIS event registration discovery");
 
+        List<SyncRecord> orisEvents = pairingLookup.findActiveByEntityType(SyncEntityType.EVENT).stream()
+                .filter(record -> record.getExternalReference().system() == ExternalSystem.ORIS)
+                .toList();
+        Set<EventId> activeEvents = Set.copyOf(eventRepository.findActiveIds(orisEvents.stream()
+                .map(record -> new EventId(UUID.fromString(record.getTarget().entityId())))
+                .toList()));
+
         int discovered = 0;
-        for (SyncRecord record : pairingLookup.findActiveByEntityType(SyncEntityType.EVENT)) {
-            if (record.getExternalReference().system() != ExternalSystem.ORIS) {
+        for (SyncRecord record : orisEvents) {
+            if (!activeEvents.contains(new EventId(UUID.fromString(record.getTarget().entityId())))) {
                 continue;
             }
             try {
-                discovered += discoverFor(record.getTarget().entityId(), record.getExternalReference().externalId(), null);
+                discovered += discoverFor(record.getExternalReference().externalId(), null);
             } catch (RuntimeException e) {
                 log.error("Failed to discover ORIS registrations of event {}: {}",
                         record.getTarget().entityId(), e.getMessage(), e);
@@ -83,26 +91,24 @@ class OrisEventRegistrationDiscoveryJob implements OrisEventRegistrationDiscover
      */
     @Override
     public int discoverForEvent(EventId eventId, String actingUser) {
+        if (eventRepository.findActiveIds(List.of(eventId)).isEmpty()) {
+            return 0;
+        }
         String entityId = eventId.value().toString();
         return pairingLookup.findActiveByTargets(SyncEntityType.EVENT, List.of(entityId)).stream()
                 .filter(reference -> reference.externalReference().system() == ExternalSystem.ORIS)
                 .findFirst()
                 .map(reference -> {
                     orisEventEntries.evict(Integer.parseInt(reference.externalReference().externalId()));
-                    return discoverFor(entityId, reference.externalReference().externalId(), actingUser);
+                    return discoverFor(reference.externalReference().externalId(), actingUser);
                 })
                 .orElse(0);
     }
 
-    private int discoverFor(String eventEntityId, String orisEventId, String actingUser) {
-        Event event = eventRepository.findById(new EventId(java.util.UUID.fromString(eventEntityId))).orElse(null);
-        if (event == null || event.getStatus() != EventStatus.ACTIVE) {
-            return 0;
-        }
-
+    private int discoverFor(String orisEventId, String actingUser) {
         List<String> clubUserIds = orisEventEntries.entriesOf(Integer.parseInt(orisEventId)).stream()
                 .map(EventEntry::clubUserId)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .map(String::valueOf)
                 .distinct()
                 .toList();
@@ -114,7 +120,7 @@ class OrisEventRegistrationDiscoveryJob implements OrisEventRegistrationDiscover
                 pairingLookup.findByExternalReferences(SyncEntityType.MEMBER, ExternalSystem.ORIS, clubUserIds));
         List<String> candidates = clubUserIds.stream()
                 .filter(knownMembers::contains)
-                .map(clubUserId -> orisEventId + ":" + clubUserId)
+                .map(clubUserId -> new OrisRegistrationId(Integer.parseInt(orisEventId), Integer.parseInt(clubUserId)).format())
                 .toList();
         if (candidates.isEmpty()) {
             return 0;
