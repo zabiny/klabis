@@ -13,6 +13,7 @@ import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
 import com.klabis.events.domain.EventRegistration;
+import com.klabis.events.domain.EventRegisterCommandBuilder;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.RegistrationNote;
 import com.klabis.members.MemberId;
@@ -175,6 +176,35 @@ class OrisEventRegistrationSyncScenarioIntegrationTest {
         assertThat(registration.siCardNumber()).isNull();
         assertThat(registration.wantsToRentSi()).isFalse();
         assertThat(registration.orisNote().text()).hasSize(255);
+    }
+
+    @Test
+    @DisplayName("a member registered in Klabis and entered in ORIS ends with one registration showing the ORIS category")
+    void klabisRegistrationIsAdopted() {
+        Event event = eventRepository.findById(eventId).orElseThrow();
+        event.registerMember(memberId, EventRegisterCommandBuilder.builder()
+                .siCardNumber("654321")
+                .categoryId(event.getCategories().get(0).id())
+                .internalNote(RegistrationNote.ofNullable("internal"))
+                .wantsSharedTransport(true)
+                .build());
+        eventRepository.save(event);
+        Instant klabisTime = eventRepository.findById(eventId).orElseThrow()
+                .findRegistration(memberId).orElseThrow().registeredAt();
+        stubEntries(entry(clubUserId).classId(102).build());
+
+        discoveryJob.discover();
+
+        Event reloaded = eventRepository.findById(eventId).orElseThrow();
+        assertThat(reloaded.getRegistrations()).hasSize(1);
+        EventRegistration registration = reloaded.findRegistration(memberId).orElseThrow();
+        assertThat(reloaded.findCategory(registration.categoryId()).orElseThrow().name()).isEqualTo("W21");
+        assertThat(registration.siCardNumber().value()).isEqualTo("123456");
+        assertThat(RegistrationNote.textOrNull(registration.orisNote())).isEqualTo("ORIS note");
+        assertThat(registration.registeredAt()).isEqualTo(klabisTime);
+        assertThat(RegistrationNote.textOrNull(registration.internalNote())).isEqualTo("internal");
+        assertThat(registration.wantsSharedTransport()).isTrue();
+        assertThat(registrationRecord().getStatus()).isEqualTo(SyncStatus.IN_SYNC);
     }
 
     @Test

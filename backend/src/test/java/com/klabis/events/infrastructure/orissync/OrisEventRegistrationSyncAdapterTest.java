@@ -6,6 +6,7 @@ import com.dpolach.api.orisclient.dto.EventEntryBuilder;
 import com.klabis.events.EventCategory;
 import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.EventRegisterCommandBuilder;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.OrisCategoryNotYetSynchronisedException;
@@ -257,6 +258,33 @@ class OrisEventRegistrationSyncAdapterTest {
             EventRegistration registration = event.findRegistration(memberId).orElseThrow();
             assertThat(registration.categoryId()).isEqualTo(event.getCategories().get(0).id());
             assertThat(registration.registeredAt()).isEqualTo(Instant.parse("2026-03-01T11:00:00Z"));
+        }
+
+        @Test
+        @DisplayName("adopts an existing Klabis registration: ORIS values win, time, internal note and shared choices stay")
+        void adoptsExistingRegistration() {
+            event.registerMember(memberId, EventRegisterCommandBuilder.builder()
+                    .categoryId(event.getCategories().get(1).id())
+                    .internalNote(RegistrationNote.ofNullable("internal"))
+                    .wantsSharedTransport(true)
+                    .build());
+            EventRegistration before = event.findRegistration(memberId).orElseThrow();
+            OrisEventRegistrationProjection projection = readExternalOf(entry().build());
+            when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
+
+            String id = adapter.createLocal(projection);
+
+            assertThat(id).isEqualTo(entityId());
+            assertThat(event.getRegistrations()).hasSize(1);
+            EventRegistration after = event.findRegistration(memberId).orElseThrow();
+            assertThat(after.categoryId()).isEqualTo(event.getCategories().get(0).id());
+            assertThat(after.siCardNumber()).isEqualTo(SiCardNumber.of("123456"));
+            assertThat(after.wantsToRentSi()).isTrue();
+            assertThat(RegistrationNote.textOrNull(after.orisNote())).isEqualTo("hello");
+            assertThat(after.registeredAt()).isEqualTo(before.registeredAt());
+            assertThat(RegistrationNote.textOrNull(after.internalNote())).isEqualTo("internal");
+            assertThat(after.wantsSharedTransport()).isTrue();
+            verify(eventRepository).save(event);
         }
 
         @Test

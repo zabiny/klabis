@@ -12,8 +12,8 @@
 
 ## 2. Matching an existing Klabis registration
 
-- [ ] 2.1 Extend `syncRegistrationFromOris` / `createLocal` to adopt an existing registration (ORIS values win, registration time, internal note and shared-service choices kept) test-first; verify domain and adapter tests
-- [ ] 2.2 Verify with an integration test that a member registered in Klabis and entered in ORIS ends with one registration showing the ORIS category
+- [x] 2.1 Extend `syncRegistrationFromOris` / `createLocal` to adopt an existing registration (ORIS values win, registration time, internal note and shared-service choices kept) test-first; verify domain and adapter tests
+- [x] 2.2 Verify with an integration test that a member registered in Klabis and entered in ORIS ends with one registration showing the ORIS category
 
 ## 3. Kept in step, removal marked, Klabis edits ask for a decision
 
