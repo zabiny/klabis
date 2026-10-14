@@ -10,6 +10,7 @@ import com.klabis.members.MemberId;
 import com.klabis.events.EventCategoryId;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.SiCardNumber;
+import com.klabis.events.domain.SiPolicy;
 import com.klabis.events.domain.EventStatus;
 import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.events.EventTypeId;
@@ -39,6 +40,7 @@ public class EventTestDataBuilder {
     private Money baseEntryFee = null;
     private boolean sharedTransportEnabled = false;
     private boolean sharedAccommodationEnabled = false;
+    private SiPolicy siPolicy = SiPolicy.defaultPolicy();
 
     private EventTestDataBuilder() {
     }
@@ -143,6 +145,11 @@ public class EventTestDataBuilder {
         return this;
     }
 
+    public EventTestDataBuilder withSiPolicy(SiPolicy siPolicy) {
+        this.siPolicy = siPolicy;
+        return this;
+    }
+
     public EventTestDataBuilder withSharedAccommodationEnabled(boolean enabled) {
         this.sharedAccommodationEnabled = enabled;
         return this;
@@ -207,6 +214,7 @@ public class EventTestDataBuilder {
                 baseEntryFee,
                 sharedTransportEnabled,
                 sharedAccommodationEnabled,
+                siPolicy,
                 registrations,
                 auditMetadata);
     }

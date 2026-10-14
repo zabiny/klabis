@@ -123,6 +123,15 @@ describe('useHalFormOptions', () => {
             ]);
         });
 
+        it('should localise SiUsage values via labels.enums.siUsage', () => {
+            const {result} = renderHook(
+                () => useHalFormOptions({inline: ['NOT_USED', 'OPTIONAL', 'REQUIRED']}, {type: 'SiUsage'}),
+                {wrapper: createWrapper()},
+            );
+
+            expect(result.current.options.map(o => o.label)).toEqual(['Nepoužívá se', 'Volitelný', 'Povinný']);
+        });
+
         it('should localise DeactivationReason via the property type', () => {
             const {result} = renderHook(
                 () => useHalFormOptions({inline: ['ODHLASKA', 'PRESTUP', 'OTHER']}, {type: 'DeactivationReason'}),

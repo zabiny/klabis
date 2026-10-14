@@ -569,6 +569,107 @@ class EventTest {
     }
 
     @Nested
+    @DisplayName("SI policy")
+    class SiPolicyOfEvent {
+
+        @Test
+        @DisplayName("create() defaults to SI required with rental when the command carries no policy")
+        void createDefaultsPolicy() {
+            Event event = Event.create(defaultCreateEvent());
+
+            assertThat(event.getSiPolicy()).isEqualTo(SiPolicy.defaultPolicy());
+        }
+
+        @Test
+        @DisplayName("create() stores the policy of the command")
+        void createStoresPolicy() {
+            Event event = Event.create(EventCreateEventBuilder.builder(defaultCreateEvent())
+                    .siPolicy(SiPolicy.of(SiUsage.OPTIONAL, false))
+                    .build());
+
+            assertThat(event.getSiPolicy()).isEqualTo(SiPolicy.of(SiUsage.OPTIONAL, false));
+        }
+
+        @Test
+        @DisplayName("createFromOris() applies the default policy")
+        void createFromOrisAppliesDefaultPolicy() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .name("Oris Race").eventDate(DEFAULT_DATE).location("Forest").organizer("OOB")
+                    .build());
+
+            assertThat(event.getSiPolicy()).isEqualTo(SiPolicy.defaultPolicy());
+        }
+
+        @Test
+        @DisplayName("update() changes the policy on DRAFT and ACTIVE events")
+        void updateChangesPolicy() {
+            Event event = Event.create(defaultCreateEvent());
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .siPolicy(SiPolicy.of(SiUsage.NOT_USED, false)).build());
+            assertThat(event.getSiPolicy()).isEqualTo(SiPolicy.of(SiUsage.NOT_USED, false));
+
+            event.publish();
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .siPolicy(SiPolicy.of(SiUsage.OPTIONAL, true)).build());
+            assertThat(event.getSiPolicy()).isEqualTo(SiPolicy.of(SiUsage.OPTIONAL, true));
+        }
+
+        @Test
+        @DisplayName("update() without a policy keeps the current one")
+        void updateWithoutPolicyKeepsCurrent() {
+            Event event = Event.create(EventCreateEventBuilder.builder(defaultCreateEvent())
+                    .siPolicy(SiPolicy.of(SiUsage.OPTIONAL, false)).build());
+
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event)).siPolicy(null).build());
+
+            assertThat(event.getSiPolicy()).isEqualTo(SiPolicy.of(SiUsage.OPTIONAL, false));
+        }
+
+        @Test
+        @DisplayName("UpdateEvent.from() carries the current policy")
+        void updateFromCarriesPolicy() {
+            Event event = Event.create(defaultCreateEvent());
+
+            assertThat(Event.UpdateEvent.from(event).siPolicy()).isEqualTo(SiPolicy.defaultPolicy());
+        }
+
+        @Test
+        @DisplayName("update() of the policy is refused on FINISHED and CANCELLED events")
+        void updateRefusedOnEndedEvents() {
+            Event finished = Event.create(defaultCreateEvent());
+            finished.publish();
+            finished.finish();
+            Event cancelled = Event.create(defaultCreateEvent());
+            cancelled.cancel();
+
+            for (Event event : List.of(finished, cancelled)) {
+                assertThatThrownBy(() -> event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                        .siPolicy(SiPolicy.of(SiUsage.NOT_USED, false)).build()))
+                        .isInstanceOf(BusinessRuleViolationException.class);
+                assertThat(event.getSiPolicy()).isEqualTo(SiPolicy.defaultPolicy());
+            }
+        }
+
+        @Test
+        @DisplayName("syncFromOris() leaves the policy untouched")
+        void syncFromOrisKeepsPolicy() {
+            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
+                    .name("Oris Race").eventDate(DEFAULT_DATE).location("Forest").organizer("OOB")
+                    .build());
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .siPolicy(SiPolicy.of(SiUsage.OPTIONAL, false)).build());
+
+            event.syncFromOris(EventSyncFromOrisBuilder.builder()
+                    .name("Renamed").eventDate(DEFAULT_DATE).location("Forest").organizer("OOB")
+                    .categories(List.of())
+                    .build());
+
+            assertThat(event.getSiPolicy()).isEqualTo(SiPolicy.of(SiUsage.OPTIONAL, false));
+        }
+    }
+
+    @Nested
     @DisplayName("Shared transport / accommodation offer flags")
     class SharedServiceOfferFlags {
 
@@ -751,6 +852,257 @@ class EventTest {
 
             assertThat(event.findRegistration(memberId).orElseThrow().toString())
                     .doesNotContain("secret-internal", "secret-oris");
+        }
+    }
+
+    @Nested
+    @DisplayName("Registration follows the SI policy")
+    class RegistrationSiPolicy {
+
+        private Event activeEvent(SiPolicy policy) {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).location("Forest").organizer("Club")
+                    .siPolicy(policy)
+                    .build());
+            event.publish();
+            return event;
+        }
+
+        private MemberId member() {
+            return new MemberId(UUID.randomUUID());
+        }
+
+        private Event.RegisterCommand cmd(String si, boolean rent) {
+            return EventRegisterCommandBuilder.builder().siCardNumber(si).wantsToRentSi(rent).build();
+        }
+
+        @Test
+        @DisplayName("NOT_USED: registers without number and drops a supplied number and rental")
+        void notUsedDropsValues() {
+            Event event = activeEvent(SiPolicy.of(SiUsage.NOT_USED, false));
+            MemberId m = member();
+
+            event.registerMember(m, cmd("123456", true));
+
+            EventRegistration r = event.findRegistration(m).orElseThrow();
+            assertThat(r.siCardNumber()).isNull();
+            assertThat(r.wantsToRentSi()).isFalse();
+        }
+
+        @Test
+        @DisplayName("OPTIONAL: registers with an empty or blank number")
+        void optionalAllowsEmpty() {
+            Event event = activeEvent(SiPolicy.of(SiUsage.OPTIONAL, false));
+            MemberId a = member();
+            MemberId b = member();
+
+            event.registerMember(a, cmd(null, false));
+            event.registerMember(b, cmd("  ", false));
+
+            assertThat(event.findRegistration(a).orElseThrow().siCardNumber()).isNull();
+            assertThat(event.findRegistration(b).orElseThrow().siCardNumber()).isNull();
+        }
+
+        @Test
+        @DisplayName("OPTIONAL with rental: records number and rental request")
+        void optionalWithRental() {
+            Event event = activeEvent(SiPolicy.of(SiUsage.OPTIONAL, true));
+            MemberId m = member();
+
+            event.registerMember(m, cmd("123456", true));
+
+            EventRegistration r = event.findRegistration(m).orElseThrow();
+            assertThat(r.siCardNumber()).isEqualTo(SiCardNumber.of("123456"));
+            assertThat(r.wantsToRentSi()).isTrue();
+        }
+
+        @Test
+        @DisplayName("REQUIRED: rejects missing number without rental")
+        void requiredRejectsMissing() {
+            Event event = activeEvent(SiPolicy.of(SiUsage.REQUIRED, true));
+
+            assertThatThrownBy(() -> event.registerMember(member(), cmd(null, false)))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("SI card number is required");
+            assertThat(event.getRegistrations()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("REQUIRED with rental allowed: accepts rental instead of a number")
+        void requiredAcceptsRental() {
+            Event event = activeEvent(SiPolicy.of(SiUsage.REQUIRED, true));
+            MemberId m = member();
+
+            event.registerMember(m, cmd(null, true));
+
+            EventRegistration r = event.findRegistration(m).orElseThrow();
+            assertThat(r.siCardNumber()).isNull();
+            assertThat(r.wantsToRentSi()).isTrue();
+        }
+
+        @Test
+        @DisplayName("rejects rental when the event does not allow it")
+        void rejectsRentalWhenNotAllowed() {
+            Event event = activeEvent(SiPolicy.of(SiUsage.REQUIRED, false));
+
+            assertThatThrownBy(() -> event.registerMember(member(), cmd("123456", true)))
+                    .isInstanceOf(BusinessRuleViolationException.class);
+        }
+
+        private Event.EditRegistrationCommand edit(String si, EventCategoryId category, boolean rent) {
+            return EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(si == null ? null : SiCardNumber.of(si))
+                    .categoryId(category)
+                    .wantsToRentSi(rent)
+                    .build();
+        }
+
+        private Event eventWithRegistrationOutsidePolicy(MemberId m, SiPolicy later, boolean rent) {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Race").eventDate(LocalDate.now().plusDays(30)).location("Forest").organizer("Club")
+                    .categories(List.of(EventCategory.create("M21"), EventCategory.create("M35")))
+                    .siPolicy(SiPolicy.of(SiUsage.OPTIONAL, true))
+                    .build());
+            event.publish();
+            event.registerMember(m, EventRegisterCommandBuilder.builder()
+                    .categoryId(event.getCategories().get(0).id()).wantsToRentSi(rent).build());
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event)).siPolicy(later).build());
+            return event;
+        }
+
+        @Test
+        @DisplayName("editing only the category of a registration that does not fit the policy is refused and changes nothing")
+        void categoryOnlyEditOnNonFittingRegistrationRefused() {
+            MemberId m = member();
+            Event event = eventWithRegistrationOutsidePolicy(m, SiPolicy.of(SiUsage.REQUIRED, false), false);
+            EventRegistration before = event.findRegistration(m).orElseThrow();
+            EventCategoryId other = event.getCategories().get(1).id();
+
+            assertThatThrownBy(() -> event.editRegistration(m, edit(null, other, false)))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("SI card number is required");
+
+            assertThat(event.findRegistration(m).orElseThrow()).isEqualTo(before);
+        }
+
+        @Test
+        @DisplayName("the same category edit with a valid SI number succeeds")
+        void categoryEditWithValidNumberSucceeds() {
+            MemberId m = member();
+            Event event = eventWithRegistrationOutsidePolicy(m, SiPolicy.of(SiUsage.REQUIRED, false), false);
+            EventCategoryId other = event.getCategories().get(1).id();
+
+            event.editRegistration(m, edit("123456", other, false));
+
+            EventRegistration r = event.findRegistration(m).orElseThrow();
+            assertThat(r.categoryId()).isEqualTo(other);
+            assertThat(r.siCardNumber()).isEqualTo(SiCardNumber.of("123456"));
+        }
+
+        @Test
+        @DisplayName("REQUIRED without rental: kept rental flag, no number is refused only for the missing number")
+        void keptRentalWithoutNumberRefused() {
+            MemberId m = member();
+            Event event = eventWithRegistrationOutsidePolicy(m, SiPolicy.of(SiUsage.REQUIRED, false), true);
+
+            assertThatThrownBy(() -> event.editRegistration(m, edit(null, event.getCategories().get(0).id(), false)))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("SI card number is required");
+            assertThat(event.findRegistration(m).orElseThrow().wantsToRentSi()).isTrue();
+        }
+
+        @Test
+        @DisplayName("REQUIRED without rental: kept rental flag with a number succeeds and the flag stays")
+        void keptRentalWithNumberSucceeds() {
+            MemberId m = member();
+            Event event = eventWithRegistrationOutsidePolicy(m, SiPolicy.of(SiUsage.REQUIRED, false), true);
+
+            event.editRegistration(m, edit("123456", event.getCategories().get(0).id(), false));
+
+            EventRegistration r = event.findRegistration(m).orElseThrow();
+            assertThat(r.siCardNumber()).isEqualTo(SiCardNumber.of("123456"));
+            assertThat(r.wantsToRentSi()).isTrue();
+        }
+
+        @Test
+        @DisplayName("OPTIONAL without rental: kept rental flag stays editable")
+        void keptRentalOptionalSucceeds() {
+            MemberId m = member();
+            Event event = eventWithRegistrationOutsidePolicy(m, SiPolicy.of(SiUsage.OPTIONAL, false), true);
+            EventCategoryId other = event.getCategories().get(1).id();
+
+            event.editRegistration(m, edit(null, other, false));
+
+            EventRegistration r = event.findRegistration(m).orElseThrow();
+            assertThat(r.categoryId()).isEqualTo(other);
+            assertThat(r.wantsToRentSi()).isTrue();
+        }
+
+        @Test
+        @DisplayName("NOT_USED: a registration without SI values stays editable")
+        void notUsedNeverFails() {
+            MemberId m = member();
+            Event event = eventWithRegistrationOutsidePolicy(m, SiPolicy.of(SiUsage.NOT_USED, false), false);
+            EventCategoryId other = event.getCategories().get(1).id();
+
+            event.editRegistration(m, edit(null, other, false));
+
+            assertThat(event.findRegistration(m).orElseThrow().categoryId()).isEqualTo(other);
+        }
+
+        @Test
+        @DisplayName("changing SI values must fit the policy")
+        void changedSiValuesValidated() {
+            Event event = activeEvent(SiPolicy.of(SiUsage.REQUIRED, false));
+            MemberId m = member();
+            event.registerMember(m, cmd("123456", false));
+
+            assertThatThrownBy(() -> event.editRegistration(m, edit(null, null, false)))
+                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .hasMessageContaining("SI card number is required");
+            assertThat(event.findRegistration(m).orElseThrow().siCardNumber()).isEqualTo(SiCardNumber.of("123456"));
+        }
+
+        @Test
+        @DisplayName("rental can be switched off in favour of a number")
+        void rentalSwitchedOff() {
+            Event event = activeEvent(SiPolicy.of(SiUsage.REQUIRED, true));
+            MemberId m = member();
+            event.registerMember(m, cmd(null, true));
+
+            event.editRegistration(m, edit("123456", null, false));
+
+            EventRegistration r = event.findRegistration(m).orElseThrow();
+            assertThat(r.siCardNumber()).isEqualTo(SiCardNumber.of("123456"));
+            assertThat(r.wantsToRentSi()).isFalse();
+        }
+
+        @Test
+        @DisplayName("NOT_USED: number and rental are kept on edit")
+        void notUsedKeepsValues() {
+            MemberId m = member();
+            Event event = activeEvent(SiPolicy.of(SiUsage.REQUIRED, true));
+            event.registerMember(m, cmd("123456", true));
+            event.update(EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                    .siPolicy(SiPolicy.of(SiUsage.NOT_USED, false)).build());
+
+            event.editRegistration(m, edit(null, null, false));
+
+            EventRegistration r = event.findRegistration(m).orElseThrow();
+            assertThat(r.siCardNumber()).isEqualTo(SiCardNumber.of("123456"));
+            assertThat(r.wantsToRentSi()).isTrue();
+        }
+
+        @Test
+        @DisplayName("edit rejects a new rental request when the event does not allow rental")
+        void editRejectsRentalWhenNotAllowed() {
+            Event event = activeEvent(SiPolicy.of(SiUsage.OPTIONAL, false));
+            MemberId m = member();
+            event.registerMember(m, cmd("123456", false));
+
+            event.editRegistration(m, edit("123456", null, true));
+
+            assertThat(event.findRegistration(m).orElseThrow().wantsToRentSi()).isFalse();
         }
     }
 

@@ -355,6 +355,10 @@ CREATE TABLE events.events
     shared_transport_enabled     BOOLEAN NOT NULL DEFAULT FALSE,
     shared_accommodation_enabled BOOLEAN NOT NULL DEFAULT FALSE,
 
+    -- SI card policy: how the event uses SI cards and whether the organiser rents them out
+    si_usage                     VARCHAR(20) NOT NULL DEFAULT 'REQUIRED',
+    si_rental_allowed            BOOLEAN NOT NULL DEFAULT TRUE,
+
     -- Audit fields
     created_at           TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by           VARCHAR(100) NOT NULL,
@@ -382,6 +386,8 @@ COMMENT ON COLUMN events.events.registration_deadline_3 IS 'Third (latest) regis
 COMMENT ON COLUMN events.events.status IS 'Event status (e.g., DRAFT, PUBLISHED, CANCELLED, COMPLETED)';
 COMMENT ON COLUMN events.events.shared_transport_enabled IS 'Whether the event offers shared transport for members to opt into; off by default';
 COMMENT ON COLUMN events.events.shared_accommodation_enabled IS 'Whether the event offers shared accommodation for members to opt into; off by default';
+COMMENT ON COLUMN events.events.si_usage IS 'How the event uses SI cards: NOT_USED, OPTIONAL or REQUIRED';
+COMMENT ON COLUMN events.events.si_rental_allowed IS 'Whether participants may rent an SI card from the organiser; always false when si_usage is NOT_USED';
 COMMENT ON COLUMN events.events.created_at IS 'Timestamp when event was created';
 COMMENT ON COLUMN events.events.created_by IS 'User who created the event';
 COMMENT ON COLUMN events.events.modified_at IS 'Timestamp when event was last modified';
@@ -398,7 +404,7 @@ CREATE TABLE events.event_registrations
     id             UUID PRIMARY KEY,
     event_id       UUID       NOT NULL REFERENCES events.events (id) ON DELETE CASCADE,
     member_id      UUID       NOT NULL REFERENCES members.members (id) ON DELETE CASCADE,
-    si_card_number VARCHAR(8) NOT NULL,
+    si_card_number VARCHAR(8) NULL,
     category_id    UUID NULL,
     registered_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -406,6 +412,9 @@ CREATE TABLE events.event_registrations
     -- while the matching offer is enabled on the event, retained but ignored when it is turned off)
     wants_shared_transport     BOOLEAN NOT NULL DEFAULT FALSE,
     wants_shared_accommodation BOOLEAN NOT NULL DEFAULT FALSE,
+
+    -- Member asked to borrow an SI card from the organiser; may stand in for a missing si_card_number
+    wants_to_rent_si BOOLEAN NOT NULL DEFAULT FALSE,
 
     internal_note  VARCHAR(255) NULL,
     oris_note      VARCHAR(255) NULL,
@@ -422,11 +431,12 @@ COMMENT ON TABLE events.event_registrations IS 'Stores member registrations for 
 COMMENT ON COLUMN events.event_registrations.id IS 'Unique registration identifier (UUID)';
 COMMENT ON COLUMN events.event_registrations.event_id IS 'Reference to the event';
 COMMENT ON COLUMN events.event_registrations.member_id IS 'Reference to the registered member';
-COMMENT ON COLUMN events.event_registrations.si_card_number IS 'SI (SportIdent) card number used for the event';
+COMMENT ON COLUMN events.event_registrations.si_card_number IS 'SI (SportIdent) card number used for the event (nullable: SI may be unused or optional for the event, or the member rents a card)';
 COMMENT ON COLUMN events.event_registrations.category_id IS 'Reference to events.event_categories.id (nullable: null when event has no categories, or orphaned when the category was later removed from the event — no FK constraint so the row is preserved either way)';
 COMMENT ON COLUMN events.event_registrations.registered_at IS 'Timestamp when member registered for the event';
 COMMENT ON COLUMN events.event_registrations.wants_shared_transport IS 'Member asked to use the event''s shared transport offer; retained but not shown when the offer is off';
 COMMENT ON COLUMN events.event_registrations.wants_shared_accommodation IS 'Member asked to use the event''s shared accommodation offer; retained but not shown when the offer is off';
+COMMENT ON COLUMN events.event_registrations.wants_to_rent_si IS 'Member asked to rent an SI card for the event; retained but not shown when the event does not allow rental';
 COMMENT ON COLUMN events.event_registrations.internal_note IS 'Free-text remark for the club only (nullable)';
 COMMENT ON COLUMN events.event_registrations.oris_note IS 'Free-text remark for the organiser''s ORIS entry (nullable)';
 

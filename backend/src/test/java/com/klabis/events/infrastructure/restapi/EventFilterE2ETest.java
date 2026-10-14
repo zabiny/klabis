@@ -383,7 +383,8 @@ class EventFilterE2ETest {
                 "name", name,
                 "eventDate", date.toString(),
                 "location", location,
-                "organizer", "TEST"
+                "organizer", "TEST",
+                "siUsage", "REQUIRED"
         );
 
         MvcResult createResult = mockMvc.perform(

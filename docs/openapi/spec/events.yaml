@@ -1746,6 +1746,13 @@ components:
         sharedAccommodationEnabled:
           type: boolean
           description: Whether the event offers shared accommodation members can opt into at registration.
+        siUsage:
+          type: string
+          enum: [NOT_USED, OPTIONAL, REQUIRED]
+          description: How the event uses SI cards - not at all, optionally or as a requirement for registration.
+        siRentalAllowed:
+          type: boolean
+          description: Whether participants may rent an SI card from the organiser. Always false when SI is not used.
         sharedServicesSummary:
           allOf:
             - $ref: '#/components/schemas/SharedServicesSummaryDto'
@@ -1792,7 +1799,7 @@ components:
         `categories`, which the hand-written predecessor lacked. A blank category name used to reach
         the domain and fail its `Assert.hasText` as a 500; a negative fee amount was not checked
         anywhere at all. Both are now a 400 with field errors.
-      required: [name, eventDate, organizer]
+      required: [name, eventDate, organizer, siUsage]
       properties:
         name:
           type: string
@@ -1843,6 +1850,15 @@ components:
           type: boolean
           default: false
           description: Offer shared accommodation for this event. Defaults to false when omitted.
+        siUsage:
+          type: string
+          enum: [NOT_USED, OPTIONAL, REQUIRED]
+          description: How the event uses SI cards. Required; no default, the manager must choose.
+          x-hal-input-type: SiUsage
+        siRentalAllowed:
+          type: boolean
+          default: false
+          description: Whether participants may rent an SI card from the organiser. Defaults to false when omitted; ignored when SI is not used.
 
     CreateEventCategoryRequest:
       type: object
@@ -1945,6 +1961,17 @@ components:
           description: |
             Offer shared accommodation. Absent leaves the current setting; a value replaces it.
             Turning it off is always allowed and retains any member choices already made.
+        siUsage:
+          type: [string, 'null']
+          enum: [NOT_USED, OPTIONAL, REQUIRED, null]
+          description: |
+            How the event uses SI cards. Absent or null leaves the current setting; a value replaces it.
+          x-hal-input-type: SiUsage
+        siRentalAllowed:
+          type: [boolean, 'null']
+          description: |
+            Whether participants may rent an SI card. Absent leaves the current setting; a value replaces it.
+            Ignored (stored as false) when SI is not used.
 
     UpdateEventCategoryRequest:
       type: object
@@ -2095,11 +2122,19 @@ components:
     RegisterEventRequest:
       type: object
       description: Registration data submitted by the acting member.
-      required: [siCardNumber]
       properties:
         siCardNumber:
           type: string
-          pattern: '\d{6,7}'
+          pattern: '^\d{4,8}$'
+          description: |
+            SI card number. Whether it is needed follows the event's SI policy; leave empty to rent a
+            card where the event allows it. Ignored when the event does not use SI cards.
+        wantsToRentSi:
+          type: boolean
+          default: false
+          description: |
+            Member asks the organiser to rent them an SI card. Meaningful only when the event allows
+            rental. Defaults to false.
         categoryId:
           type: string
           format: uuid
@@ -2107,14 +2142,14 @@ components:
           type: boolean
           default: false
           description: |
-            Member opts into the event's shared transport. Meaningful only when the event offers
-            it; the registration form omits this property otherwise. Defaults to false.
+            Member opts into the event's shared transport. Always part of the template; the
+            registration dialog hides it when the event does not offer it. Defaults to false.
         wantsSharedAccommodation:
           type: boolean
           default: false
           description: |
-            Member opts into the event's shared accommodation. Meaningful only when the event
-            offers it; the registration form omits this property otherwise. Defaults to false.
+            Member opts into the event's shared accommodation. Always part of the template; the
+            registration dialog hides it when the event does not offer it. Defaults to false.
         internalNote:
           type: string
           maxLength: 255
@@ -2128,11 +2163,20 @@ components:
 
     EditRegistrationRequest:
       type: object
-      required: [siCardNumber]
       properties:
         siCardNumber:
           type: string
-          pattern: '\d{6,7}'
+          pattern: '^\d{4,8}$'
+          description: |
+            SI card number. Whether it is needed follows the event's SI policy; a registration that
+            already does not fit the policy keeps its SI values unless these are changed. Ignored
+            when the event does not use SI cards.
+        wantsToRentSi:
+          type: boolean
+          default: false
+          description: |
+            Member asks the organiser to rent them an SI card. Meaningful only when the event allows
+            rental; otherwise the recorded value is kept. Defaults to false.
         categoryId:
           type: string
           format: uuid
@@ -2140,14 +2184,14 @@ components:
           type: boolean
           default: false
           description: |
-            Member's shared-transport choice. Meaningful only when the event offers it; the edit
-            form omits this property otherwise. Defaults to false.
+            Member's shared-transport choice. Always part of the template; the edit dialog hides it
+            when the event does not offer it, and the recorded choice is then kept. Defaults to false.
         wantsSharedAccommodation:
           type: boolean
           default: false
           description: |
-            Member's shared-accommodation choice. Meaningful only when the event offers it; the
-            edit form omits this property otherwise. Defaults to false.
+            Member's shared-accommodation choice. Always part of the template; the edit dialog hides
+            it when the event does not offer it, and the recorded choice is then kept. Defaults to false.
         internalNote:
           type: string
           maxLength: 255
@@ -2223,6 +2267,10 @@ components:
           x-klabis-halforms-access: READ_ONLY
         siCardNumber:
           type: string
+          description: Absent when the member gave no SI card number.
+        wantsToRentSi:
+          type: boolean
+          description: Member asked to rent an SI card.
         category:
           allOf:
             - $ref: '#/components/schemas/EventCategoryDto'

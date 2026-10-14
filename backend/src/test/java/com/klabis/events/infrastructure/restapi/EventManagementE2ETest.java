@@ -68,6 +68,14 @@ class EventManagementE2ETest extends SecurityTestBase {
     @Autowired
     private EventTypeManagementPort eventTypeManagementPort;
 
+    private String createRequestJson(Event.CreateEvent command) {
+        var node = (tools.jackson.databind.node.ObjectNode) objectMapper.valueToTree(command);
+        node.remove("siPolicy");
+        node.put("siUsage", command.siPolicy() != null ? command.siPolicy().usage().name() : "REQUIRED");
+        node.put("siRentalAllowed", command.siPolicy() != null && command.siPolicy().rentalAllowed());
+        return node.toString();
+    }
+
     @Test
     @DisplayName("Complete event lifecycle: create → publish → finish (via scheduler)")
     void shouldCompleteEventLifecycleFromCreateToFinish() throws Exception {
@@ -84,7 +92,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                         post("/api/events")
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(createCommand))
+                                .content(createRequestJson(createCommand))
                 )
                 .andDo(print())
                 .andExpect(status().isCreated())
@@ -141,7 +149,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                         post("/api/events")
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(createCommand))
+                                .content(createRequestJson(createCommand))
                 )
                 .andDo(print())
                 .andExpect(status().isCreated())
@@ -182,7 +190,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                         post("/api/events")
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(createCommand))
+                                .content(createRequestJson(createCommand))
                 )
                 .andDo(print())
                 .andExpect(status().isCreated())
@@ -248,13 +256,13 @@ class EventManagementE2ETest extends SecurityTestBase {
         mockMvc.perform(
                 post("/api/events")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(draftEvent))
+                        .content(createRequestJson(draftEvent))
         ).andExpect(status().isCreated());
 
         MvcResult activeResult = mockMvc.perform(
                 post("/api/events")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(activeEvent))
+                        .content(createRequestJson(activeEvent))
         ).andExpect(status().isCreated()).andReturn();
 
         String activeEventId = extractEventIdFromLocation(activeResult);
@@ -308,13 +316,13 @@ class EventManagementE2ETest extends SecurityTestBase {
         mockMvc.perform(
                 post("/api/events")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(oobEvent))
+                        .content(createRequestJson(oobEvent))
         ).andExpect(status().isCreated());
 
         mockMvc.perform(
                 post("/api/events")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(prgEvent))
+                        .content(createRequestJson(prgEvent))
         ).andExpect(status().isCreated());
 
         // When: Filter by organizer
@@ -352,7 +360,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                         post("/api/events")
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(createCommand))
+                                .content(createRequestJson(createCommand))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -424,7 +432,7 @@ class EventManagementE2ETest extends SecurityTestBase {
         MvcResult createResult = mockMvc.perform(
                         post("/api/events")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(createCommand))
+                                .content(createRequestJson(createCommand))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -470,7 +478,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                         post("/api/events")
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(createCommand))
+                                .content(createRequestJson(createCommand))
                 )
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
@@ -507,7 +515,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                         post("/api/events")
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(createCommand))
+                                .content(createRequestJson(createCommand))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -536,7 +544,7 @@ class EventManagementE2ETest extends SecurityTestBase {
         MvcResult createResult = mockMvc.perform(
                         post("/api/events")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(createCommand))
+                                .content(createRequestJson(createCommand))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -571,7 +579,7 @@ class EventManagementE2ETest extends SecurityTestBase {
         MvcResult createResult = mockMvc.perform(
                         post("/api/events")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(createCommand))
+                                .content(createRequestJson(createCommand))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -619,7 +627,7 @@ class EventManagementE2ETest extends SecurityTestBase {
         MvcResult createResult = mockMvc.perform(
                         post("/api/events")
                                 .contentType("application/json")
-                                .content(objectMapper.writeValueAsString(createCommand))
+                                .content(createRequestJson(createCommand))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();
@@ -666,7 +674,7 @@ class EventManagementE2ETest extends SecurityTestBase {
                         post("/api/events")
                                 .contentType("application/json")
                                 .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(createCommand))
+                                .content(createRequestJson(createCommand))
                 )
                 .andExpect(status().isCreated())
                 .andReturn();

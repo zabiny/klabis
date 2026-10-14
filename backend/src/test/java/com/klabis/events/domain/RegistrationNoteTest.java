@@ -54,7 +54,7 @@ class RegistrationNoteTest {
     @DisplayName("RegisterCommand toString does not reveal the notes")
     void registerCommandToStringIsMasked() {
         Event.RegisterCommand command = new Event.RegisterCommand("123456", null, false, false,
-                RegistrationNote.ofNullable("secret-internal"), RegistrationNote.ofNullable("secret-oris"));
+                RegistrationNote.ofNullable("secret-internal"), RegistrationNote.ofNullable("secret-oris"), false);
 
         assertThat(command.toString()).doesNotContain("secret-internal", "secret-oris");
     }

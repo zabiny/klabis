@@ -1844,4 +1844,138 @@ class EventRegistrationControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("SI card number and rental request")
+    class SiPolicyTests {
+
+        @Test
+        @DisplayName("POST without siCardNumber and with wantsToRentSi passes both to the service")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void registerPassesRentalWithoutSiNumber() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(post("/api/events/{eventId}/registrations", eventId)
+                            .contentType("application/json")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content("{\"wantsToRentSi\":true}"))
+                    .andExpect(status().isCreated());
+
+            ArgumentCaptor<Event.RegisterCommand> captor = ArgumentCaptor.forClass(Event.RegisterCommand.class);
+            verify(registrationServiceMock).registerMember(eq(new EventId(eventId)), any(MemberId.class), captor.capture());
+            assertThat(captor.getValue().siCardNumber()).isNull();
+            assertThat(captor.getValue().wantsToRentSi()).isTrue();
+        }
+
+        @Test
+        @DisplayName("POST returns the domain's 'required' error for REQUIRED without number or rental")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void registerReturnsRequiredError() throws Exception {
+            doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("SI card number is required") {})
+                    .when(registrationServiceMock)
+                    .registerMember(any(), any(), any());
+
+            mockMvc.perform(post("/api/events/{eventId}/registrations", UUID.randomUUID())
+                            .contentType("application/json")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content("{}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail", containsString("SI card number is required")));
+        }
+
+        @Test
+        @DisplayName("POST rejects an SI card number outside 4-8 digits")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void registerRejectsMalformedSiNumber() throws Exception {
+            mockMvc.perform(post("/api/events/{eventId}/registrations", UUID.randomUUID())
+                            .contentType("application/json")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content("{\"siCardNumber\":\"123\"}"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("PUT without siCardNumber and with wantsToRentSi passes both to the service")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void editPassesRentalWithoutSiNumber() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(put("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .contentType("application/json")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content("{\"wantsToRentSi\":true}"))
+                    .andExpect(status().isNoContent());
+
+            ArgumentCaptor<Event.EditRegistrationCommand> captor = ArgumentCaptor.forClass(Event.EditRegistrationCommand.class);
+            verify(registrationServiceMock).editRegistration(eq(new EventId(eventId)),
+                    eq(new MemberId(UUID.fromString(MEMBER_1_ID))), captor.capture());
+            assertThat(captor.getValue().siCardNumber()).isNull();
+            assertThat(captor.getValue().wantsToRentSi()).isTrue();
+        }
+
+        @Test
+        @DisplayName("PUT returns the domain's 'required' error when SI values are cleared")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void editReturnsRequiredError() throws Exception {
+            doThrow(new com.klabis.common.exceptions.BusinessRuleViolationException("SI card number is required") {})
+                    .when(registrationServiceMock)
+                    .editRegistration(any(), any(), any());
+
+            mockMvc.perform(put("/api/events/{eventId}/registrations/{memberId}", UUID.randomUUID(), MEMBER_1_ID)
+                            .contentType("application/json")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content("{}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.detail", containsString("SI card number is required")));
+        }
+
+        @Test
+        @DisplayName("GET registration without SI number shows the rental request and both templates carry optional SI properties")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void getRegistrationWithoutSiNumber() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+            EventRegistration registration = EventRegistration.reconstruct(UUID.randomUUID(), Instant.now(),
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(memberId).wantsToRentSi(true).build());
+            Event event = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(registration)
+                    .build();
+            event.publish();
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.siCardNumber").doesNotExist())
+                    .andExpect(jsonPath("$.wantsToRentSi").value(true))
+                    .andExpect(jsonPath("$._templates.editRegistration.properties[?(@.name=='siCardNumber')]").exists())
+                    .andExpect(jsonPath("$._templates.editRegistration.properties[?(@.name=='siCardNumber')].required").isEmpty())
+                    .andExpect(jsonPath("$._templates.editRegistration.properties[?(@.name=='wantsToRentSi')]").exists());
+        }
+
+        @Test
+        @DisplayName("registration defaults template carries both SI properties with siCardNumber not required")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID, authorities = {Authority.EVENTS_READ})
+        void registerTemplateCarriesSiProperties() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+            Event event = EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(30)).build();
+            event.publish();
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, null, "123456")));
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .param("newRegistration", "true")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='siCardNumber')]").exists())
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='siCardNumber')].required").isEmpty())
+                    .andExpect(jsonPath("$._templates.registerForEvent.properties[?(@.name=='wantsToRentSi')]").exists());
+        }
+    }
+
 }

@@ -1173,6 +1173,53 @@ describe('EventDetailPage', () => {
         });
     });
 
+    describe('SI policy', () => {
+        it.each([
+            ['REQUIRED', 'Povinný'],
+            ['OPTIONAL', 'Volitelný'],
+            ['NOT_USED', 'Nepoužívá se'],
+        ])('shows SI usage %s as "%s"', (siUsage, label) => {
+            renderPage(createMockPageData(mockEventDetailData({siUsage, siRentalAllowed: false})));
+
+            expect(screen.getByText('Použití SI čipu')).toBeInTheDocument();
+            expect(screen.getByText(label)).toBeInTheDocument();
+        });
+
+        it('shows whether rental is available when SI is used', () => {
+            renderPage(createMockPageData(mockEventDetailData({siUsage: 'OPTIONAL', siRentalAllowed: true})));
+
+            expect(screen.getByText('Půjčení čipu povoleno')).toBeInTheDocument();
+        });
+
+        it('does not show rental when SI is not used', () => {
+            renderPage(createMockPageData(mockEventDetailData({siUsage: 'NOT_USED', siRentalAllowed: false})));
+
+            expect(screen.queryByText('Půjčení čipu povoleno')).not.toBeInTheDocument();
+        });
+
+        it('offers SI usage select and rental tick box in edit mode reflecting current values', () => {
+            const template = mockHalFormsTemplate({
+                method: 'PUT',
+                target: '/api/events/1',
+                title: 'Upravit závod',
+                properties: [
+                    {name: 'name', prompt: 'Název', type: 'text', required: true, value: 'Jarní závod 2025'},
+                    {name: 'siUsage', type: 'SiUsage', options: {inline: ['NOT_USED', 'OPTIONAL', 'REQUIRED']}, value: 'REQUIRED'},
+                    {name: 'siRentalAllowed', type: 'Boolean', value: 'true'},
+                ],
+            });
+            renderPage(createMockPageData(mockEventDetailData({
+                siUsage: 'REQUIRED', siRentalAllowed: true, _templates: {updateEvent: template},
+            })));
+
+            fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
+
+            expect(screen.getByText('Použití SI čipu')).toBeInTheDocument();
+            expect(screen.getByText('Půjčení čipu povoleno')).toBeInTheDocument();
+            expect(screen.getByRole('checkbox')).toBeChecked();
+        });
+    });
+
     describe('shared services — count summary section (6.4)', () => {
         it('renders both summary lines when sharedServicesSummary has both sub-objects', () => {
             renderPage(createMockPageData(mockEventDetailData({

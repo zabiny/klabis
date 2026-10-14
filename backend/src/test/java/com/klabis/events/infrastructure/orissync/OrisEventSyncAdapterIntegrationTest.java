@@ -12,6 +12,8 @@ import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventUpdateEventBuilder;
+import com.klabis.events.domain.SiPolicy;
+import com.klabis.events.domain.SiUsage;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncStatus;
@@ -94,6 +96,26 @@ class OrisEventSyncAdapterIntegrationTest {
         assertThat(afterPass.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
         Event updated = eventManagementPort.getEvent(eventId, true);
         assertThat(updated.getName()).isEqualTo("Spring Sprint Renamed");
+    }
+
+    @Test
+    @DisplayName("a locally changed SI policy survives synchronisation and raises no conflict")
+    void changedSiPolicySurvivesSynchronisation() {
+        synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+        assertThat(eventManagementPort.getEvent(eventId, true).getSiPolicy()).isEqualTo(SiPolicy.defaultPolicy());
+
+        Event event = eventManagementPort.getEvent(eventId, true);
+        eventManagementPort.updateEvent(eventId, EventUpdateEventBuilder.builder(Event.UpdateEvent.from(event))
+                .siPolicy(SiPolicy.of(SiUsage.OPTIONAL, false))
+                .build());
+
+        stubOrisEventDetails("Spring Sprint Renamed");
+        SyncRecord afterPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
+
+        assertThat(afterPass.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+        Event synced = eventManagementPort.getEvent(eventId, true);
+        assertThat(synced.getName()).isEqualTo("Spring Sprint Renamed");
+        assertThat(synced.getSiPolicy()).isEqualTo(SiPolicy.of(SiUsage.OPTIONAL, false));
     }
 
     @Test

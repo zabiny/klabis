@@ -114,7 +114,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{\"name\":\"Spring Cup 2026\",\"eventDate\":\"2026-03-15\",\"location\":\"Forest Park\",\"organizer\":\"OOB\"}")
+                                    .content("{\"name\":\"Spring Cup 2026\",\"eventDate\":\"2026-03-15\",\"location\":\"Forest Park\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\"}")
                     )
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"));
@@ -130,7 +130,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{\"name\":\"Test Event\",\"eventDate\":\"2026-05-01\",\"location\":\"Location\",\"organizer\":\"OOB\"}")
+                                    .content("{\"name\":\"Test Event\",\"eventDate\":\"2026-05-01\",\"location\":\"Location\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\"}")
                     )
                     .andExpect(status().isForbidden());
         }
@@ -143,7 +143,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{\"name\":\"\",\"eventDate\":\"2026-05-01\",\"location\":\"Location\",\"organizer\":\"OOB\"}")
+                                    .content("{\"name\":\"\",\"eventDate\":\"2026-05-01\",\"location\":\"Location\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\"}")
                     )
                     .andExpect(status().isBadRequest());
         }
@@ -162,7 +162,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{\"name\":\"Test Event\",\"eventDate\":\"2026-05-01\",\"organizer\":\"OOB\","
+                                    .content("{\"name\":\"Test Event\",\"eventDate\":\"2026-05-01\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\","
                                              + "\"categories\":[{\"name\":\"  \"}]}")
                     )
                     .andExpect(status().isBadRequest());
@@ -176,7 +176,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{\"name\":\"Test Event\",\"eventDate\":\"2026-05-01\",\"organizer\":\"OOB\","
+                                    .content("{\"name\":\"Test Event\",\"eventDate\":\"2026-05-01\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\","
                                              + "\"categories\":[{\"name\":\"H21\",\"fee\":{\"amount\":-1,\"currency\":\"CZK\"}}]}")
                     )
                     .andExpect(status().isBadRequest());
@@ -197,7 +197,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{\"name\":\"Spring Cup 2026\",\"eventDate\":\"2026-03-15\",\"organizer\":\"OOB\","
+                                    .content("{\"name\":\"Spring Cup 2026\",\"eventDate\":\"2026-03-15\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\","
                                              + "\"sharedTransportEnabled\":true,\"sharedAccommodationEnabled\":true}")
                     )
                     .andExpect(status().isCreated());
@@ -205,6 +205,72 @@ class EventControllerTest {
             verify(eventManagementService).createEvent(argThat((Event.CreateEvent cmd) ->
                     Boolean.TRUE.equals(cmd.sharedTransportEnabled())
                     && Boolean.TRUE.equals(cmd.sharedAccommodationEnabled())));
+        }
+
+        @Test
+        @DisplayName("should return 400 when siUsage is missing")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn400WhenSiUsageMissing() throws Exception {
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Spring Cup 2026\",\"eventDate\":\"2026-03-15\",\"organizer\":\"OOB\"}")
+                    )
+                    .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(eventManagementService);
+        }
+
+        @Test
+        @DisplayName("should pass the SI policy to the service on create, with rental off by default")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldPassSiPolicyOnCreate() throws Exception {
+            when(eventManagementService.createEvent(any(Event.CreateEvent.class)))
+                    .thenReturn(EventTestDataBuilder.anEvent().build());
+
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Spring Cup 2026\",\"eventDate\":\"2026-03-15\",\"organizer\":\"OOB\",\"siUsage\":\"OPTIONAL\"}")
+                    )
+                    .andExpect(status().isCreated());
+
+            verify(eventManagementService).createEvent(argThat((Event.CreateEvent cmd) ->
+                    SiPolicy.of(SiUsage.OPTIONAL, false).equals(cmd.siPolicy())));
+        }
+
+        @Test
+        @DisplayName("should pass rental allowed to the service on create")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldPassSiRentalAllowedOnCreate() throws Exception {
+            when(eventManagementService.createEvent(any(Event.CreateEvent.class)))
+                    .thenReturn(EventTestDataBuilder.anEvent().build());
+
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Spring Cup 2026\",\"eventDate\":\"2026-03-15\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\",\"siRentalAllowed\":true}")
+                    )
+                    .andExpect(status().isCreated());
+
+            verify(eventManagementService).createEvent(argThat((Event.CreateEvent cmd) ->
+                    SiPolicy.of(SiUsage.REQUIRED, true).equals(cmd.siPolicy())));
+        }
+
+        @Test
+        @DisplayName("should return 400 for an unknown siUsage")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn400ForUnknownSiUsage() throws Exception {
+            mockMvc.perform(
+                            post("/api/events")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Spring Cup 2026\",\"eventDate\":\"2026-03-15\",\"organizer\":\"OOB\",\"siUsage\":\"SOMETIMES\"}")
+                    )
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
@@ -218,7 +284,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{\"name\":\"Event No Location\",\"eventDate\":\"2026-08-20\",\"organizer\":\"OOB\"}")
+                                    .content("{\"name\":\"Event No Location\",\"eventDate\":\"2026-08-20\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\"}")
                     )
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"));
@@ -235,7 +301,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{\"name\":\"Deadline Event 2026\",\"eventDate\":\"2026-08-20\",\"location\":\"Forest Park\",\"organizer\":\"OOB\",\"deadlines\":[\"2026-08-10\"]}")
+                                    .content("{\"name\":\"Deadline Event 2026\",\"eventDate\":\"2026-08-20\",\"location\":\"Forest Park\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\",\"deadlines\":[\"2026-08-10\"]}")
                     )
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"));
@@ -257,7 +323,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{\"name\":\"Multi-Deadline Event\",\"eventDate\":\"2026-09-20\",\"organizer\":\"OOB\",\"deadlines\":[\"2026-08-01\",\"2026-08-15\",\"2026-09-01\"]}")
+                                    .content("{\"name\":\"Multi-Deadline Event\",\"eventDate\":\"2026-09-20\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\",\"deadlines\":[\"2026-08-01\",\"2026-08-15\",\"2026-09-01\"]}")
                     )
                     .andExpect(status().isCreated());
 
@@ -276,7 +342,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{\"name\":\"Bad Deadlines\",\"eventDate\":\"2026-09-20\",\"organizer\":\"OOB\",\"deadlines\":[\"2026-08-15\",\"2026-08-01\"]}")
+                                    .content("{\"name\":\"Bad Deadlines\",\"eventDate\":\"2026-09-20\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\",\"deadlines\":[\"2026-08-15\",\"2026-08-01\"]}")
                     )
                     .andExpect(status().isBadRequest());
         }
@@ -289,7 +355,7 @@ class EventControllerTest {
                             post("/api/events")
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
-                                    .content("{\"name\":\"Too Many Deadlines\",\"eventDate\":\"2026-10-20\",\"organizer\":\"OOB\",\"deadlines\":[\"2026-08-01\",\"2026-08-15\",\"2026-09-01\",\"2026-09-15\"]}")
+                                    .content("{\"name\":\"Too Many Deadlines\",\"eventDate\":\"2026-10-20\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\",\"deadlines\":[\"2026-08-01\",\"2026-08-15\",\"2026-09-01\",\"2026-09-15\"]}")
                     )
                     .andExpect(status().isBadRequest());
         }
@@ -306,7 +372,7 @@ class EventControllerTest {
                                     .contentType("application/json")
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                                     .content("""
-                                            {"name":"Category Event","eventDate":"2026-08-20","organizer":"OOB",
+                                            {"name":"Category Event","eventDate":"2026-08-20","organizer":"OOB","siUsage":"REQUIRED",
                                              "categories":[
                                                {"name":"M21","fee":{"amount":200,"currency":"CZK"}},
                                                {"name":"W21"}
@@ -367,7 +433,7 @@ class EventControllerTest {
             mockMvc.perform(
                             patch("/api/events/{id}", eventId)
                                     .contentType("application/json")
-                                    .content("{\"name\":\"Updated Event\",\"eventDate\":\"2026-05-01\",\"location\":\"Location\",\"organizer\":\"OOB\"}")
+                                    .content("{\"name\":\"Updated Event\",\"eventDate\":\"2026-05-01\",\"location\":\"Location\",\"organizer\":\"OOB\",\"siUsage\":\"REQUIRED\"}")
                     )
                     .andExpect(status().isForbidden());
         }
@@ -432,6 +498,104 @@ class EventControllerTest {
             verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
                     Boolean.TRUE.equals(cmd.sharedAccommodationEnabled())
                     && Boolean.TRUE.equals(cmd.sharedTransportEnabled())));
+        }
+
+        @Test
+        @DisplayName("should apply a present siUsage and siRentalAllowed to the command")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldOverlaySiPolicyOnUpdate() throws Exception {
+            mockMvc.perform(
+                            patch("/api/events/{id}", UUID.randomUUID())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"siUsage\":\"OPTIONAL\",\"siRentalAllowed\":false}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    SiPolicy.of(SiUsage.OPTIONAL, false).equals(cmd.siPolicy())));
+        }
+
+        @Test
+        @DisplayName("should keep the current SI policy when siUsage is absent")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldKeepSiPolicyWhenSiUsageAbsent() throws Exception {
+            defaultExistingEvent = EventTestDataBuilder.anEvent()
+                    .withSiPolicy(SiPolicy.of(SiUsage.OPTIONAL, true))
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", UUID.randomUUID())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Renamed\"}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    SiPolicy.of(SiUsage.OPTIONAL, true).equals(cmd.siPolicy())));
+        }
+
+        @Test
+        @DisplayName("should keep the current usage when siUsage is explicitly null")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldKeepSiUsageWhenExplicitNull() throws Exception {
+            defaultExistingEvent = EventTestDataBuilder.anEvent()
+                    .withSiPolicy(SiPolicy.of(SiUsage.OPTIONAL, true))
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", UUID.randomUUID())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"siUsage\":null,\"siRentalAllowed\":false}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    SiPolicy.of(SiUsage.OPTIONAL, false).equals(cmd.siPolicy())));
+        }
+
+        @Test
+        @DisplayName("should keep the current rental setting when only siUsage is sent")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldKeepRentalWhenOnlySiUsageSent() throws Exception {
+            defaultExistingEvent = EventTestDataBuilder.anEvent()
+                    .withSiPolicy(SiPolicy.of(SiUsage.REQUIRED, true))
+                    .build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(defaultExistingEvent);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", UUID.randomUUID())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"siUsage\":\"OPTIONAL\"}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    SiPolicy.of(SiUsage.OPTIONAL, true).equals(cmd.siPolicy())));
+        }
+
+        @Test
+        @DisplayName("coordinator can change the SI policy without EVENTS:MANAGE")
+        @AsEventCoordinator
+        void coordinatorCanChangeSiPolicy() throws Exception {
+            Event coordinatorEvent = aCoordinatedEvent().build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(coordinatorEvent);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", coordinatorEvent.getId().value())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"siUsage\":\"NOT_USED\"}")
+                    )
+                    .andExpect(status().isNoContent());
+
+            verify(eventManagementService).updateEvent(any(), argThat((Event.UpdateEvent cmd) ->
+                    SiPolicy.of(SiUsage.NOT_USED, false).equals(cmd.siPolicy())));
         }
 
         @Test
@@ -753,6 +917,25 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("createEvent template exposes siUsage as a required SiUsage select and siRentalAllowed")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void createTemplateExposesSiPolicy() throws Exception {
+            when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
+                    .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+            mockMvc.perform(
+                            get("/api/events")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.createEvent.properties[?(@.name=='siUsage')].type").value("SiUsage"))
+                    .andExpect(jsonPath("$._templates.createEvent.properties[?(@.name=='siUsage')].required").value(true))
+                    .andExpect(jsonPath("$._templates.createEvent.properties[?(@.name=='siUsage')].options.inline")
+                            .value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.contains("NOT_USED", "OPTIONAL", "REQUIRED"))))
+                    .andExpect(jsonPath("$._templates.createEvent.properties[?(@.name=='siRentalAllowed')]").exists());
+        }
+
+        @Test
         @DisplayName("regular user with EVENTS:READ only should not see DRAFT events — calls listEvents with none() and canManageEvents=false")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldExcludeDraftEventsForRegularUser() throws Exception {
@@ -922,6 +1105,59 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.sharedTransportEnabled").value(true))
                     .andExpect(jsonPath("$.sharedAccommodationEnabled").value(false));
+        }
+
+        @Test
+        @DisplayName("event detail echoes the SI policy")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldEchoSiPolicyOnEventDetail() throws Exception {
+            Event event = EventTestDataBuilder.anEvent()
+                    .withSiPolicy(SiPolicy.of(SiUsage.OPTIONAL, true))
+                    .build();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+
+            mockMvc.perform(
+                            get("/api/events/{id}", UUID.randomUUID())
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.siUsage").value("OPTIONAL"))
+                    .andExpect(jsonPath("$.siRentalAllowed").value(true));
+        }
+
+        @Test
+        @DisplayName("updateEvent template exposes the SI policy properties for the manager")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void updateTemplateExposesSiPolicyForManager() throws Exception {
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(EventTestDataBuilder.anEvent().build());
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", UUID.randomUUID())
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='siUsage')]").exists())
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='siUsage')].type").value("SiUsage"))
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='siUsage')].options.inline")
+                            .value(org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.contains("NOT_USED", "OPTIONAL", "REQUIRED"))))
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='siRentalAllowed')]").exists());
+        }
+
+        @Test
+        @DisplayName("updateEvent template exposes the SI policy properties for the coordinator")
+        @AsEventCoordinator
+        void updateTemplateExposesSiPolicyForCoordinator() throws Exception {
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(aCoordinatedEvent().build());
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", COORDINATED_EVENT_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='siUsage')]").exists())
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='siRentalAllowed')]").exists());
         }
 
         @Test

@@ -24,6 +24,7 @@ import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/Hal
 import {MemberName} from "../../components/members/MemberName.tsx";
 import {ExternalLink, Globe, Pencil, UserMinus, UserPlus, XCircle} from "lucide-react";
 import {EventsFilterBar} from "../../components/events/EventsFilterBar.tsx";
+import {EventSiPolicyFields} from "../../components/events/EventSiPolicyFields.tsx";
 import {EventTypeBadge} from "../../components/events/EventTypeBadge.tsx";
 import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
 import {useAuth} from "../../contexts/authContext";
@@ -94,6 +95,7 @@ const CoordinatorName = ({onNavigate}: { onNavigate: () => void }): ReactElement
 
 const CREATE_FORM_BASIC_FIELDS = ['name', 'eventDate', 'location', 'organizer', 'websiteUrl'];
 const CREATE_FORM_COORDINATION_FIELDS = ['coordinators', 'eventTypeId'];
+const CREATE_FORM_SI_POLICY_FIELDS = ['siUsage', 'siRentalAllowed'];
 const CREATE_FORM_SHARED_SERVICE_FIELDS = ['sharedTransportEnabled', 'sharedAccommodationEnabled'];
 
 export const EventsPage = (): ReactElement => {
@@ -219,6 +221,11 @@ export const EventsPage = (): ReactElement => {
                                     {hasField('categories') && (
                                         <Section title={labels.sections.eventCategories}>
                                             {renderInput('categories')}
+                                        </Section>
+                                    )}
+                                    {hasFields(CREATE_FORM_SI_POLICY_FIELDS) && (
+                                        <Section title={labels.sections.siPolicy}>
+                                            <EventSiPolicyFields renderInput={renderInput} hasField={hasField}/>
                                         </Section>
                                     )}
                                     {hasFields(CREATE_FORM_SHARED_SERVICE_FIELDS) && (

@@ -1,4 +1,4 @@
-import {type ReactElement, useEffect, useMemo, useState} from 'react';
+import {type ReactElement, useCallback, useEffect, useMemo, useState} from 'react';
 import {type LucideIcon, Calendar, Check, FileText, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
 import {getFieldLabel, labels} from '../../localization';
 import {renderYesNo} from '../../utils/formatters';
@@ -10,7 +10,8 @@ import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from 
 import {normalizeKlabisApiPath} from '../../utils/halFormsUtils';
 import {HalFormDisplay} from '../HalNavigator2/HalFormDisplay';
 import type {FormRenderHelpers, RenderFormCallback} from '../HalNavigator2/halforms';
-import {createRegistrationFieldsFactory} from './registrationFieldsFactory.tsx';
+import * as Yup from 'yup';
+import {createRegistrationFieldsFactory, type SiRequirement} from './registrationFieldsFactory.tsx';
 
 export interface EventRegistrationDialogProps {
     registration: Link | null;
@@ -44,9 +45,31 @@ export const EventRegistrationDialog = ({
     const showTransportCheckbox = transportProp !== undefined && eventContext?.sharedTransportEnabled === true;
     const showAccommodationCheckbox = accommodationProp !== undefined && eventContext?.sharedAccommodationEnabled === true;
 
+    const siUsage = eventContext?.siUsage ?? 'OPTIONAL';
+    const showSiField = siUsage !== 'NOT_USED';
+    const hasRentProp = template?.properties.some(prop => prop.name === 'wantsToRentSi') ?? false;
+    const showRentCheckbox = hasRentProp && showSiField && eventContext?.siRentalAllowed === true;
+    const siRequirement: SiRequirement = siUsage !== 'REQUIRED'
+        ? 'none'
+        : showRentCheckbox ? 'unlessRenting' : 'required';
+
     const fieldsFactory = useMemo(
-        () => createRegistrationFieldsFactory({mode: mode === 'edit' ? 'edit' : 'new', serverFieldErrors}),
-        [mode, serverFieldErrors],
+        () => createRegistrationFieldsFactory({mode: mode === 'edit' ? 'edit' : 'new', siRequirement, serverFieldErrors}),
+        [mode, siRequirement, serverFieldErrors],
+    );
+
+    const refineValidationSchema = useCallback(
+        (schema: Yup.ObjectSchema<Record<string, unknown>>) => siRequirement !== 'unlessRenting'
+            ? schema
+            : schema.test('si-required-unless-renting', function (values) {
+                const siNumber = typeof values?.siCardNumber === 'string' ? values.siCardNumber.trim() : '';
+                if (siNumber || values?.wantsToRentSi) return true;
+                return this.createError({
+                    path: 'siCardNumber',
+                    message: labels.events.registrationModal.siChipRequiredUnlessRenting,
+                });
+            }),
+        [siRequirement],
     );
 
     if (!registration) {
@@ -54,7 +77,16 @@ export const EventRegistrationDialog = ({
     }
 
     const normalizedTemplate = template
-        ? {...template, target: normalizeKlabisApiPath(template.target ?? '')}
+        ? {
+            ...template,
+            target: normalizeKlabisApiPath(template.target ?? ''),
+            properties: template.properties
+                .filter(prop => !(prop.name === 'siCardNumber' && !showSiField)
+                    && !(prop.name === 'wantsToRentSi' && !showRentCheckbox))
+                .map(prop => prop.name === 'siCardNumber'
+                    ? {...prop, required: siRequirement === 'required'}
+                    : prop),
+        }
         : undefined;
 
     const missingAffordance = !isLoading && !error && mode === undefined;
@@ -73,13 +105,16 @@ export const EventRegistrationDialog = ({
         if (!prefillData) return {};
         const base = prefillData as unknown as Record<string, unknown>;
         const categoryId = (prefillData as {category?: {id?: string}}).category?.id;
-        return categoryId !== undefined ? {...base, categoryId} : {...base};
+        const withDefaults = {...base, wantsToRentSi: base.wantsToRentSi === true};
+        return categoryId !== undefined ? {...withDefaults, categoryId} : withDefaults;
     })();
 
     const stripHiddenSharedServices = (payload: Record<string, unknown>): Record<string, unknown> => {
         const next = {...payload};
         if (!showTransportCheckbox) delete next.wantsSharedTransport;
         if (!showAccommodationCheckbox) delete next.wantsSharedAccommodation;
+        if (!showSiField) delete next.siCardNumber;
+        if (!showRentCheckbox) delete next.wantsToRentSi;
         return next;
     };
 
@@ -96,7 +131,8 @@ export const EventRegistrationDialog = ({
             data-testid="event-registration-form"
             className="flex flex-col gap-4"
         >
-            {helpers.renderField('siCardNumber')}
+            {showSiField && helpers.renderField('siCardNumber')}
+            {showRentCheckbox && helpers.renderField('wantsToRentSi')}
             {categoryProp && helpers.renderField('categoryId')}
             {(showTransportCheckbox || showAccommodationCheckbox) && (
                 <div className="flex flex-col gap-3">
@@ -148,6 +184,7 @@ export const EventRegistrationDialog = ({
                     onSubmitSuccess={() => onRegistered?.()}
                     onSubmitError={handleSubmitError}
                     postprocessPayload={stripHiddenSharedServices}
+                    refineValidationSchema={refineValidationSchema}
                     navigateOnSuccess={false}
                     successMessage={normalizedTemplate.title
                         ? labels.events.registrationModal.savedWithTemplate(normalizedTemplate.title)
@@ -180,6 +217,9 @@ function ReadOnlyRegistration({registration, memberName, eventContext, onClose}:
                 {category && <DetailRow label={labels.events.registrationModal.category}>{category}</DetailRow>}
                 {registration.siCardNumber != null && (
                     <DetailRow label={labels.events.registrationModal.siChip}>{String(registration.siCardNumber)}</DetailRow>
+                )}
+                {registration.wantsToRentSi === true && (
+                    <DetailRow label={labels.events.registrationModal.rentSi}>{renderYesNo(true)}</DetailRow>
                 )}
                 {registeredAt && (
                     <DetailRow label={labels.tables.registeredAt}>{formatDateTime(registeredAt)}</DetailRow>

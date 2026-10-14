@@ -4,6 +4,7 @@ import com.klabis.common.mapping.MapstructSpringMapperConfig;
 import com.klabis.events.EventCategory;
 import com.klabis.events.EventCategoryId;
 import com.klabis.events.domain.Event;
+import com.klabis.events.domain.SiPolicy;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;
@@ -24,6 +25,7 @@ interface CreateEventConverter extends Converter<CreateEventRequest, Event.Creat
     @Mapping(target = "eventTypeId", expression = "java(EventRequestConversions.toEventTypeId(request.eventTypeId()))")
     @Mapping(target = "registrationDeadlines", expression = "java(EventRequestConversions.toRegistrationDeadlines(request.deadlines()))")
     @Mapping(target = "categories", source = "categories")
+    @Mapping(target = "siPolicy", expression = "java(SiPolicy.of(com.klabis.events.domain.SiUsage.valueOf(request.siUsage().name()), Boolean.TRUE.equals(request.siRentalAllowed())))")
     Event.CreateEvent convert(CreateEventRequest request);
 
     /**
