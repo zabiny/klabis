@@ -14,6 +14,7 @@ import com.klabis.events.application.EventRegistrationPort;
 import com.klabis.events.application.OrisBulkSyncPort;
 import com.klabis.events.application.OrisEventBulkImportPort;
 import com.klabis.events.application.OrisEventImportPort;
+import com.klabis.events.application.OrisEventRegistrationDiscoveryPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.members.Members;
@@ -33,9 +34,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -51,7 +56,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @EventsWebMvcTest
 @ActiveProfiles({"test", "oris"})
-@MockitoBean(types = {OrisEventImportPort.class, OrisEventBulkImportPort.class, OrisBulkSyncPort.class})
+@MockitoBean(types = {OrisEventImportPort.class, OrisEventBulkImportPort.class, OrisBulkSyncPort.class, OrisEventRegistrationDiscoveryPort.class})
 class OrisEventControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";
@@ -76,6 +81,9 @@ class OrisEventControllerTest {
 
     @Autowired
     private OrisBulkSyncPort orisBulkSyncPort;
+
+    @Autowired
+    private OrisEventRegistrationDiscoveryPort registrationDiscoveryPort;
 
     @Autowired
     private SynchronizationPort synchronizationPort;
@@ -461,6 +469,109 @@ class OrisEventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.importEvent.target").exists())
                     .andExpect(jsonPath("$._templates.importEventsBatch.target").exists());
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/events/{eventId}/oris-registrations/discovery")
+    class DiscoverOrisRegistrationsTests {
+
+        @Test
+        @DisplayName("should return 204 and run discovery of the event for the acting user")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.SYNC_MANAGE})
+        void shouldRunDiscovery() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(post("/api/events/{eventId}/oris-registrations/discovery", eventId)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isNoContent());
+
+            verify(registrationDiscoveryPort).discoverForEvent(eq(new EventId(eventId)), any());
+        }
+
+        @Test
+        @DisplayName("should return 403 without SYNC:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void shouldReturn403WithoutSyncManage() throws Exception {
+            mockMvc.perform(post("/api/events/{eventId}/oris-registrations/discovery", UUID.randomUUID())
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+
+            verifyNoInteractions(registrationDiscoveryPort);
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/events/{id} - discoverOrisRegistrations template")
+    class DiscoverTemplateTests {
+
+        private Event activeEvent() {
+            return EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(30)).buildPublished();
+        }
+
+        private Event draftEvent() {
+            return EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(30)).build();
+        }
+
+        private void pairedWith(Event event, com.klabis.sync.domain.ExternalSystem system) {
+            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.of(
+                    com.klabis.sync.domain.SyncRecord.enroll(com.klabis.sync.SyncRecordId.newId(),
+                            new com.klabis.sync.domain.SyncTarget(com.klabis.sync.domain.SyncEntityType.EVENT,
+                                    event.getId().value().toString()),
+                            new com.klabis.sync.domain.ExternalReference(system, "101"))));
+        }
+
+        private org.springframework.test.web.servlet.ResultActions getEvent(Event event) throws Exception {
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            return mockMvc.perform(get("/api/events/{id}", event.getId().value())
+                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE));
+        }
+
+        @Test
+        @DisplayName("is offered for an ACTIVE ORIS-paired event to SYNC:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.SYNC_MANAGE})
+        void offeredToSyncManage() throws Exception {
+            Event event = activeEvent();
+            pairedWith(event, com.klabis.sync.domain.ExternalSystem.ORIS);
+
+            getEvent(event)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.discoverOrisRegistrations.method").value("POST"));
+        }
+
+        @Test
+        @DisplayName("is not offered without SYNC:MANAGE")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void notOfferedWithoutSyncManage() throws Exception {
+            Event event = activeEvent();
+            pairedWith(event, com.klabis.sync.domain.ExternalSystem.ORIS);
+
+            getEvent(event)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.discoverOrisRegistrations").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("is not offered for a DRAFT event")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.SYNC_MANAGE})
+        void notOfferedForDraft() throws Exception {
+            Event event = draftEvent();
+            pairedWith(event, com.klabis.sync.domain.ExternalSystem.ORIS);
+
+            getEvent(event)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.discoverOrisRegistrations").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("is not offered for an event not paired with ORIS")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.SYNC_MANAGE})
+        void notOfferedWhenNotPaired() throws Exception {
+            Event event = activeEvent();
+
+            getEvent(event)
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.discoverOrisRegistrations").doesNotExist());
         }
     }
 }

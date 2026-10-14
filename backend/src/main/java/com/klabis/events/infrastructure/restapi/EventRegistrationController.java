@@ -21,6 +21,11 @@ import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
+import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncTarget;
+import com.klabis.sync.infrastructure.restapi.SyncApi;
+import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -281,9 +286,11 @@ class RegistrationDetailsPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationDto, EventRegistrationController.RegistrationView> {
 
     private final MemberRegistrationSanctionPort sanctionPort;
+    private final SynchronizationPort synchronizationPort;
 
-    RegistrationDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort) {
+    RegistrationDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, SynchronizationPort synchronizationPort) {
         this.sanctionPort = sanctionPort;
+        this.synchronizationPort = synchronizationPort;
     }
 
     @Override
@@ -305,6 +312,16 @@ class RegistrationDetailsPostprocessor
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
                 .map(l -> l.withRel("event"))
                 .ifPresent(dtoModel::add);
+
+        if (!view.prefill()) {
+            String entityId = eventId + ":" + memberId.value();
+            boolean enrolled = synchronizationPort.findByTarget(
+                    new SyncTarget(SyncEntityType.EVENT_REGISTRATION, entityId)).isPresent();
+            if (enrolled) {
+                klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENT_REGISTRATIONS, entityId))
+                        .ifPresent(link -> dtoModel.add(link.withRel("sync")));
+            }
+        }
     }
 
     /**

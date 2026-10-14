@@ -51,6 +51,7 @@ export const labels = {
     templates: {
         cancelEvent: 'Zrušit akci',
         unregisterFromEvent: 'Odhlásit se z akce',
+        discoverOrisRegistrations: 'Načíst přihlášky z ORIS',
         editRegistration: 'Upravit přihlášku',
         showRegistrationDetail: 'Detail',
         updateEvent: 'Upravit',
@@ -125,6 +126,7 @@ export const labels = {
         cancelEvent: 'Zrušení akce',
         registerForEvent: 'Přihlásit se na akci',
         unregisterFromEvent: 'Odhlásit se z akce',
+        discoverOrisRegistrations: 'Načtení přihlášek z ORIS',
         editRegistration: 'Upravit přihlášku',
         registrationDetail: 'Detail přihlášky',
         suspendMember: 'Ukončení členství',

@@ -830,6 +830,28 @@ describe('EventRegistrationDialog', () => {
             expect(screen.getByText(labels.events.missingInOris)).toBeInTheDocument();
         });
 
+        it('shows the sync state indicator in the read-only detail when the sync link is present', async () => {
+            const syncHref = '/api/EVENT_REGISTRATIONS/evt-1%3Amember-1/sync';
+            mockRoutes((url) => {
+                if (url === EDIT_URL) return jsonOk(readOnlyData({_links: {self: {href: EDIT_URL}, event: {href: EVENT_URL}, sync: {href: syncHref}}}));
+                if (String(url).includes('/sync')) return jsonOk({status: 'IN_SYNC', _links: {self: {href: syncHref}}});
+                return jsonOk(eventData());
+            });
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+            expect(await screen.findByTestId('sync-status-IN_SYNC')).toBeInTheDocument();
+        });
+
+        it('shows no sync indicator when the sync link is absent', async () => {
+            mockRoutes((url) => url === EDIT_URL ? jsonOk(readOnlyData()) : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+            expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
+            expect(screen.queryByTestId(/^sync-status-/)).not.toBeInTheDocument();
+        });
+
         it('shows notes read-only only when present', async () => {
             mockRoutes((url) => url === EDIT_URL
                 ? jsonOk(readOnlyData({internalNote: 'tajná', orisNote: ''}))

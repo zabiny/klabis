@@ -6,11 +6,13 @@ import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from '../UI';
 import {type RegistrationDialogData, type RegistrationDialogMode, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas';
 import type {Link} from '../../api/types';
+import type {HalResourceLinks} from '../../api';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils';
 import {normalizeKlabisApiPath} from '../../utils/halFormsUtils';
 import {HalFormDisplay} from '../HalNavigator2/HalFormDisplay';
 import type {FormRenderHelpers, RenderFormCallback} from '../HalNavigator2/halforms';
 import * as Yup from 'yup';
+import {SyncStatusIndicator} from '../sync/SyncStatusIndicator.tsx';
 import {createRegistrationFieldsFactory, type SiRequirement} from './registrationFieldsFactory.tsx';
 
 export interface EventRegistrationDialogProps {
@@ -132,6 +134,7 @@ export const EventRegistrationDialog = ({
             className="flex flex-col gap-4"
         >
             {resolvedResource.missingInOris === true && <MissingInOrisNotice/>}
+            {mode === 'edit' && <SyncStatusIndicator syncLink={prefillData?._links?.sync} mode="icon+date"/>}
             {showSiField && helpers.renderField('siCardNumber')}
             {showRentCheckbox && helpers.renderField('wantsToRentSi')}
             {categoryProp && helpers.renderField('categoryId')}
@@ -172,6 +175,7 @@ export const EventRegistrationDialog = ({
                     memberName={memberName}
                     eventContext={eventContext}
                     onClose={handleClose}
+                    syncLink={prefillData._links?.sync}
                 />
             ) : missingAffordance || !normalizedTemplate ? (
                 <Alert severity="error">{labels.events.registrationModal.noRegistrationAffordance}</Alert>
@@ -202,7 +206,8 @@ export const EventRegistrationDialog = ({
 
 const hasText = (value: unknown): boolean => typeof value === 'string' && value.trim() !== '';
 
-function ReadOnlyRegistration({registration, memberName, eventContext, onClose}: {
+function ReadOnlyRegistration({registration, memberName, eventContext, onClose, syncLink}: {
+    syncLink?: HalResourceLinks;
     registration: Record<string, unknown>;
     memberName: string;
     eventContext: RegistrationDialogData['eventContext'];
@@ -214,6 +219,7 @@ function ReadOnlyRegistration({registration, memberName, eventContext, onClose}:
     return (
         <div data-testid="event-registration-detail" className="flex flex-col gap-4">
             {registration.missingInOris === true && <MissingInOrisNotice/>}
+            <SyncStatusIndicator syncLink={syncLink} mode="icon+date"/>
             <dl className="flex flex-col">
                 {memberName && <DetailRow label={labels.fields.memberId}>{memberName}</DetailRow>}
                 {category && <DetailRow label={labels.events.registrationModal.category}>{category}</DetailRow>}

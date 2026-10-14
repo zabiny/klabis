@@ -26,9 +26,9 @@
 
 ## 4. On-demand load and sync state from the registration
 
-- [ ] 4.1 Add `POST /api/events/{eventId}/oris-registrations/discovery` (SYNC:MANAGE) running discovery for one event with the acting user and a cache eviction first, and the `discoverOrisRegistrations` template on `getEvent` only for ACTIVE ORIS-paired events; verify `@WebMvcTest` for permission and event-state gating, and a test that already-paired registrations are not passed
-- [ ] 4.2 Add the ungated `sync` link to `getRegistration` when the registration is enrolled (as on events / members); verify `@WebMvcTest` that owner and coordinator get the link and the headline state only, SYNC:MANAGE the details, and a registration that is not enrolled has no link
-- [ ] 4.3 Add the "Načíst přihlášky z ORIS" action on the event detail and the sync-state link on the registration detail (reusing the existing sync state screen); verify component tests and `npm run build`
+- [x] 4.1 Add `POST /api/events/{eventId}/oris-registrations/discovery` (SYNC:MANAGE) running discovery for one event with the acting user and a cache eviction first, and the `discoverOrisRegistrations` template on `getEvent` only for ACTIVE ORIS-paired events; verify `@WebMvcTest` for permission and event-state gating, and a test that already-paired registrations are not passed
+- [x] 4.2 Add the ungated `sync` link to `getRegistration` when the registration is enrolled (as on events / members); verify `@WebMvcTest` that owner and coordinator get the link and the headline state only, SYNC:MANAGE the details, and a registration that is not enrolled has no link
+- [x] 4.3 Add the "Načíst přihlášky z ORIS" action on the event detail and the sync-state link on the registration detail (reusing the existing sync state screen); verify component tests and `npm run build`
 
 ## 5. Integration
 

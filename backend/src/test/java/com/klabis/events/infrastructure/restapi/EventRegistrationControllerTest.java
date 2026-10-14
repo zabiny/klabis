@@ -38,6 +38,7 @@ import static com.klabis.events.EventTestDataBuilder.aRegistration;
 import static com.klabis.events.EventTestDataBuilder.aRegistrationWithSharedServices;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
@@ -2078,6 +2079,108 @@ class EventRegistrationControllerTest {
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.missingInOris").value(false));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET registration - sync link")
+    class SyncLinkTests {
+
+        @Autowired
+        private com.klabis.sync.application.SynchronizationPort synchronizationPort;
+
+        private Event eventWithRegistration(UUID eventId, MemberId memberId) {
+            Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(aRegistration(memberId, SiCardNumber.of("123456")))
+                    .build();
+            event.publish();
+            return event;
+        }
+
+        private void enroll(UUID eventId, MemberId memberId) {
+            var record = com.klabis.sync.domain.SyncRecord.enroll(
+                    com.klabis.sync.SyncRecordId.newId(),
+                    new com.klabis.sync.domain.SyncTarget(com.klabis.sync.domain.SyncEntityType.EVENT_REGISTRATION,
+                            eventId + ":" + memberId.value()),
+                    new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, "101:7"));
+            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.of(record));
+        }
+
+        @Test
+        @DisplayName("owner gets the sync link for an enrolled registration without SYNC:MANAGE")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void ownerGetsSyncLink() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false))
+                    .thenReturn(eventWithRegistration(eventId, memberId));
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+            enroll(eventId, memberId);
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.sync.href",
+                            matchesPattern("(?i).*/api/event[-_]registrations/.+/sync")));
+        }
+
+        @Test
+        @DisplayName("coordinator gets the sync link for an enrolled registration")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        void coordinatorGetsSyncLink() throws Exception {
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false))
+                    .thenReturn(eventWithRegistration(eventId, memberId));
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "Jane", "Smith", "jane@example.com")));
+            enroll(eventId, memberId);
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.sync.href").exists());
+        }
+
+        @Test
+        @DisplayName("registration that is not enrolled has no sync link")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void notEnrolledHasNoSyncLink() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false))
+                    .thenReturn(eventWithRegistration(eventId, memberId));
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.sync").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("prefill response for a not-yet-existing registration has no sync link")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void prefillHasNoSyncLink() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+            Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
+                    .withDate(LocalDate.now().plusDays(30)).build();
+            event.publish();
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+            enroll(eventId, memberId);
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .param("newRegistration", "true")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.sync").doesNotExist());
         }
     }
 }

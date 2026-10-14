@@ -773,6 +773,10 @@ paths:
             unregisterFromEvent:
               operation: unregisterFromEvent
               description: Present when registrations are open and the caller is registered
+            discoverOrisRegistrations:
+              operation: discoverOrisRegistrations
+              description: |
+                Present for callers with SYNC:MANAGE when the event is ACTIVE and kept in step with ORIS
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -1037,6 +1041,35 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
+  /api/events/{eventId}/oris-registrations/discovery:
+    post:
+      operationId: discoverOrisRegistrations
+      tags: [OrisEvents]
+      summary: Load registrations of club members from ORIS
+      description: |
+        Reads the club's ORIS entries of the event afresh and brings in each entry of a member who
+        exists in Klabis and is paired with their ORIS club membership. Only new entries are brought
+        in; registrations already paired with an ORIS entry are left to the regular synchronisation.
+        Does nothing for an event that is not ACTIVE or is not kept in step with ORIS.
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/RegEventIdParam'
+      responses:
+        '204':
+          description: Discovery finished
+          content:
+            application/prs.hal-forms+json: {}
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+
   /api/events/import-batch:
     post:
       operationId: importEventsBatch
@@ -1300,6 +1333,12 @@ paths:
             event:
               operation: getEvent
               description: The event this registration belongs to
+            sync:
+              operation: getSyncState
+              description: |
+                Present when the registration is enrolled in synchronisation. The link and the
+                headline state are visible to any signed-in user; the detail fields and action
+                templates of the sync sub-resource are gated on SYNC:MANAGE.
           x-hal-templates:
             registerForEvent:
               operation: registerForEvent

@@ -1,7 +1,10 @@
 package com.klabis.events.infrastructure.restapi;
 
 import com.klabis.common.users.HasAuthority;
+import com.klabis.events.EventId;
 import com.klabis.events.application.OrisBulkSyncPort;
+import com.klabis.events.application.OrisEventRegistrationDiscoveryPort;
+import com.klabis.members.CurrentUserData;
 import com.klabis.events.application.OrisEventBulkImportPort;
 import com.klabis.events.application.OrisEventImportPort;
 import com.klabis.events.domain.Event;
@@ -12,6 +15,8 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -25,16 +30,25 @@ class OrisEventController implements OrisEventsApi {
     private final OrisEventImportPort orisEventImportPort;
     private final OrisEventBulkImportPort orisEventBulkImportPort;
     private final OrisBulkSyncPort orisBulkSyncPort;
+    private final OrisEventRegistrationDiscoveryPort registrationDiscoveryPort;
     private final ConversionService conversionService;
 
     OrisEventController(OrisEventImportPort orisEventImportPort,
                         OrisEventBulkImportPort orisEventBulkImportPort,
                         OrisBulkSyncPort orisBulkSyncPort,
+                        OrisEventRegistrationDiscoveryPort registrationDiscoveryPort,
                         ConversionService conversionService) {
         this.orisEventImportPort = orisEventImportPort;
         this.orisEventBulkImportPort = orisEventBulkImportPort;
         this.orisBulkSyncPort = orisBulkSyncPort;
+        this.registrationDiscoveryPort = registrationDiscoveryPort;
         this.conversionService = conversionService;
+    }
+
+    @Override
+    public ResponseEntity<Void> discoverOrisRegistrations(UUID eventId, CurrentUserData currentUser) {
+        registrationDiscoveryPort.discoverForEvent(new EventId(eventId), currentUser.userId().uuid().toString());
+        return ResponseEntity.noContent().build();
     }
 
     @Override

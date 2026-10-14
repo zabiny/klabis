@@ -223,4 +223,24 @@ class OrisEventRegistrationDiscoveryJobTest {
         verify(orisEventEntries).evict(ORIS_EVENT_ID);
         verify(synchronizationPort).pullAndEnroll(SyncEntityType.EVENT_REGISTRATION, registrationRef(11), "admin");
     }
+
+    @Test
+    @DisplayName("on-demand discovery does not pass registrations that are already paired")
+    void discoverForEventSkipsPairedRegistrations() {
+        Event event = activeEvent();
+        when(pairingLookup.findActiveByTargets(SyncEntityType.EVENT, List.of(event.getId().value().toString())))
+                .thenReturn(List.of(new SyncedEntityReference(
+                        new SyncTarget(SyncEntityType.EVENT, event.getId().value().toString()),
+                        new ExternalReference(ExternalSystem.ORIS, String.valueOf(ORIS_EVENT_ID)))));
+        when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
+        when(orisEventEntries.entriesOf(ORIS_EVENT_ID)).thenReturn(List.of(entry(11), entry(12)));
+        givenMemberPairings(11, 12);
+        givenAlreadyPairedRegistrations(registrationRef(11).externalId());
+
+        int discovered = job.discoverForEvent(event.getId(), "admin");
+
+        org.assertj.core.api.Assertions.assertThat(discovered).isEqualTo(1);
+        verify(synchronizationPort, never()).pullAndEnroll(SyncEntityType.EVENT_REGISTRATION, registrationRef(11), "admin");
+        verify(synchronizationPort).pullAndEnroll(SyncEntityType.EVENT_REGISTRATION, registrationRef(12), "admin");
+    }
 }

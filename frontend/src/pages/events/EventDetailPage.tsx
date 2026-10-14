@@ -24,7 +24,7 @@ import {EventSiPolicyFields} from '../../components/events/EventSiPolicyFields.t
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
 import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
-import {Banknote, Check, ExternalLink, Eye, Globe, List, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {Banknote, Check, Download, ExternalLink, Eye, Globe, List, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
 import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
@@ -267,6 +267,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 </Button>
                             )}
                             <HalFormButton name="unregisterFromEvent" modal={true} icon={<UserMinus className="w-4 h-4"/>}/>
+                            <HalFormButton name="discoverOrisRegistrations" modal={true} variant="secondary" icon={<Download className="w-4 h-4"/>}/>
                             {resourceData._links?.['accommodation-list'] && (
                                 <Link
                                     to={`${route.pathname}/accommodation-list`}

@@ -442,6 +442,21 @@ describe('EventDetailPage', () => {
             expect(screen.getByRole('button', {name: /přihlásit se/i})).toBeInTheDocument();
         });
 
+        it('shows discoverOrisRegistrations button when template exists', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                _templates: {
+                    default: mockHalFormsTemplate({method: 'POST'}),
+                    discoverOrisRegistrations: mockHalFormsTemplate({method: 'POST', title: 'Načíst přihlášky z ORIS'}),
+                },
+            })));
+            expect(screen.getByRole('button', {name: /Načíst přihlášky z ORIS/})).toBeInTheDocument();
+        });
+
+        it('hides discoverOrisRegistrations button when template is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData()));
+            expect(screen.queryByRole('button', {name: /Načíst přihlášky z ORIS/})).not.toBeInTheDocument();
+        });
+
         it('shows unregisterFromEvent button when template exists', () => {
             const data = mockEventDetailData({
                 _templates: {

@@ -3,6 +3,7 @@ package com.klabis.events.infrastructure.orissync;
 import com.dpolach.api.orisclient.dto.EventEntry;
 import com.klabis.common.OrisIntegrationComponent;
 import com.klabis.events.EventId;
+import com.klabis.events.application.OrisEventRegistrationDiscoveryPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.EventStatus;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
  */
 @OrisIntegrationComponent
 @Application
-class OrisEventRegistrationDiscoveryJob {
+class OrisEventRegistrationDiscoveryJob implements OrisEventRegistrationDiscoveryPort {
 
     private static final Logger log = LoggerFactory.getLogger(OrisEventRegistrationDiscoveryJob.class);
 
@@ -80,7 +81,8 @@ class OrisEventRegistrationDiscoveryJob {
      *
      * @return the number of registrations brought in
      */
-    int discoverForEvent(EventId eventId, String actingUser) {
+    @Override
+    public int discoverForEvent(EventId eventId, String actingUser) {
         String entityId = eventId.value().toString();
         return pairingLookup.findActiveByTargets(SyncEntityType.EVENT, List.of(entityId)).stream()
                 .filter(reference -> reference.externalReference().system() == ExternalSystem.ORIS)
