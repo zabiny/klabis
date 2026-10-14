@@ -17,12 +17,12 @@
 
 ## 3. Kept in step, removal marked, Klabis edits ask for a decision
 
-- [ ] 3.1 Add `EventRegistration.missingInOris` (`missing_in_oris` column in V001, memento) and absent handling in `syncRegistrationFromOris` (mark, never delete; clear on return) test-first; verify domain and repository tests
-- [ ] 3.2 Map tombstones in the adapter (local absent when no registration or marked; external absent when no entry) test-first; verify adapter tests that two absent sides compare equal
-- [ ] 3.3 Add `EventRegistrationsSyncListener` (markDirty on MANUAL-origin registration events, ignore SYNCHRONISATION, retire on finish / cancel via `findActiveByEntityType` filtered by the `eventId:` prefix) test-first; verify listener tests incl. retiring the record of a member who had unregistered
-- [ ] 3.4 Verify with engine integration tests every row of design D2: ORIS change pulled, ORIS deletion marks, re-creation clears, Klabis category / ORIS note edit and Klabis unregistration conflict, conflict self-resolves after ORIS deletion, internal note edit causes nothing, OUTWARD resolution not offered, ACCEPT_DIVERGENCE followed by an ORIS change raises a new conflict, INWARD on an unregistration conflict re-creates the registration
-- [ ] 3.5 Add `missingInOris` to `RegistrationDto` and `RegistrationSummaryDto` (field security as `registrationTime` after gh-331: `EVENTS_REGISTRATIONS`, `EVENTS_REGISTRATIONS_READ` over the hidden `eventId`); regenerate; verify `@WebMvcTest` visibility for coordinator, EVENTS:REGISTRATIONS and other members, and on the detail for the owner
-- [ ] 3.6 Show "V ORISu nenalezena" on the registration detail and in the list for coordinator / EVENTS:REGISTRATIONS; verify component tests and `npm run build`
+- [x] 3.1 Add `EventRegistration.missingInOris` (`missing_in_oris` column in V001, memento) and absent handling in `syncRegistrationFromOris` (mark, never delete; clear on return) test-first; verify domain and repository tests
+- [x] 3.2 Map tombstones in the adapter (local absent when no registration or marked; external absent when no entry) test-first; verify adapter tests that two absent sides compare equal
+- [x] 3.3 Add `EventRegistrationsSyncListener` (markDirty on MANUAL-origin registration events, ignore SYNCHRONISATION, retire on finish / cancel via `findActiveByEntityType` filtered by the `eventId:` prefix) test-first; verify listener tests incl. retiring the record of a member who had unregistered
+- [x] 3.4 Verify with engine integration tests every row of design D2: ORIS change pulled, ORIS deletion marks, re-creation clears, Klabis category / ORIS note edit and Klabis unregistration conflict, conflict self-resolves after ORIS deletion, internal note edit causes nothing, OUTWARD resolution not offered, ACCEPT_DIVERGENCE followed by an ORIS change raises a new conflict, INWARD on an unregistration conflict re-creates the registration
+- [x] 3.5 Add `missingInOris` to `RegistrationDto` and `RegistrationSummaryDto` (field security as `registrationTime` after gh-331: `EVENTS_REGISTRATIONS`, `EVENTS_REGISTRATIONS_READ` over the hidden `eventId`); regenerate; verify `@WebMvcTest` visibility for coordinator, EVENTS:REGISTRATIONS and other members, and on the detail for the owner
+- [x] 3.6 Show "V ORISu nenalezena" on the registration detail and in the list for coordinator / EVENTS:REGISTRATIONS; verify component tests and `npm run build`
 
 ## 4. On-demand load and sync state from the registration
 

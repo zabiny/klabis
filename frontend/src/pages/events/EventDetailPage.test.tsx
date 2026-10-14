@@ -883,6 +883,21 @@ describe('EventDetailPage', () => {
             ...overrides,
         });
 
+        it('marks a registration missing in ORIS in the list only when the flag is true', () => {
+            renderPageWithRegistrationRows([
+                buildRegistrationRow('member-1', {missingInOris: true}),
+                buildRegistrationRow('member-2', {lastName: 'Jiná'}),
+            ]);
+
+            expect(screen.getAllByText('V ORISu nenalezena')).toHaveLength(1);
+        });
+
+        it('shows no ORIS mark when the flag is absent', () => {
+            renderPageWithRegistrationRows([buildRegistrationRow()]);
+
+            expect(screen.queryByText('V ORISu nenalezena')).not.toBeInTheDocument();
+        });
+
         const buildRegistrationRowWithoutTimestamp = (memberId = 'member-1') => ({
             firstName: 'Jana',
             lastName: 'Nováková',

@@ -1978,4 +1978,106 @@ class EventRegistrationControllerTest {
         }
     }
 
+
+    @Nested
+    @DisplayName("missingInOris visibility")
+    class MissingInOrisVisibility {
+
+        private static final String REGULAR_MEMBER_ID = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee";
+
+        private Event eventWithMissingRegistration(EventId eventId, MemberId memberId) {
+            EventRegistration registration = EventRegistration.reconstruct(UUID.randomUUID(), Instant.now(),
+                    EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId)
+                            .siCardNumber(SiCardNumber.of("123456")).build(), true);
+            Event event = EventTestDataBuilder.anEventWithId(eventId)
+                    .withDate(LocalDate.now().plusDays(30)).addRegistration(registration).build();
+            event.publish();
+            return event;
+        }
+
+        private void stubListing(Event event, MemberId memberId) {
+            when(eventManagementServiceMock.getEvent(event.getId(), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+        }
+
+        @Test
+        @DisplayName("event coordinator sees the mark in the registration list")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID))
+        void coordinatorSeesMarkInList() throws Exception {
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            stubListing(eventWithMissingRegistration(new EventId(eventId), memberId), memberId);
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations", eventId)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].missingInOris").value(true));
+        }
+
+        @Test
+        @DisplayName("user with EVENTS:REGISTRATIONS sees the mark in the registration list")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID, authorities = {Authority.EVENTS_REGISTRATIONS})
+        void registrationsAuthoritySeesMarkInList() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            stubListing(eventWithMissingRegistration(new EventId(eventId), memberId), memberId);
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations", eventId)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].missingInOris").value(true));
+        }
+
+        @Test
+        @DisplayName("other members do not see the mark in the registration list")
+        @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
+        void otherMemberDoesNotSeeMarkInList() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.randomUUID());
+            stubListing(eventWithMissingRegistration(new EventId(eventId), memberId), memberId);
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations", eventId)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].missingInOris").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("the registered member sees the mark on the detail of their registration")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void ownerSeesMarkOnDetail() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+            Event event = eventWithMissingRegistration(new EventId(eventId), memberId);
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "Jane", "Smith", "jane@example.com")));
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.missingInOris").value(true));
+        }
+
+        @Test
+        @DisplayName("an ordinary registration reads as not missing on the detail")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void ordinaryRegistrationIsNotMissing() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+            Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(aRegistration(memberId, SiCardNumber.of("123456"))).build();
+            event.publish();
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findById(memberId)).thenReturn(Optional.of(
+                    new MemberDto(memberId.value(), "Jane", "Smith", "jane@example.com")));
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.missingInOris").value(false));
+        }
+    }
 }

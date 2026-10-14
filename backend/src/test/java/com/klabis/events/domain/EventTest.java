@@ -3310,6 +3310,63 @@ class EventTest {
         }
 
         @Test
+        @DisplayName("should mark an existing registration missing in ORIS when the entry is absent, keeping it and its values")
+        void shouldMarkRegistrationMissingWhenAbsent() {
+            Event event = eventWithOrisCategories();
+            event.syncRegistrationFromOris(memberId, orisEntry("102"));
+            event.clearDomainEvents();
+
+            event.syncRegistrationFromOris(memberId, Event.SyncRegistrationFromOris.entryAbsent());
+
+            EventRegistration registration = event.findRegistration(memberId).orElseThrow();
+            assertThat(registration.missingInOris()).isTrue();
+            assertThat(registration.siCardNumber()).isEqualTo(SiCardNumber.of("123456"));
+            assertThat(registration.categoryId()).isEqualTo(event.getCategories().get(1).id());
+            assertThat(event.getRegistrations()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("should do nothing when the entry is absent and there is no registration")
+        void shouldDoNothingWhenAbsentAndNoRegistration() {
+            Event event = eventWithOrisCategories();
+            event.clearDomainEvents();
+
+            event.syncRegistrationFromOris(memberId, Event.SyncRegistrationFromOris.entryAbsent());
+
+            assertThat(event.getRegistrations()).isEmpty();
+            assertThat(event.getDomainEvents()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should clear the mark and take the ORIS values when the entry returns")
+        void shouldClearMarkWhenEntryReturns() {
+            Event event = eventWithOrisCategories();
+            event.syncRegistrationFromOris(memberId, orisEntry("101"));
+            event.syncRegistrationFromOris(memberId, Event.SyncRegistrationFromOris.entryAbsent());
+
+            event.syncRegistrationFromOris(memberId, orisEntry("102"));
+
+            EventRegistration registration = event.findRegistration(memberId).orElseThrow();
+            assertThat(registration.missingInOris()).isFalse();
+            assertThat(registration.categoryId()).isEqualTo(event.getCategories().get(1).id());
+        }
+
+        @Test
+        @DisplayName("should keep the mark when the registration is edited in Klabis")
+        void shouldKeepMarkOnManualEdit() {
+            Event event = eventWithOrisCategories();
+            event.syncRegistrationFromOris(memberId, orisEntry("101"));
+            event.syncRegistrationFromOris(memberId, Event.SyncRegistrationFromOris.entryAbsent());
+
+            event.editRegistration(memberId, EventEditRegistrationCommandBuilder.builder()
+                    .siCardNumber(SiCardNumber.of("654321"))
+                    .categoryId(event.getCategories().get(0).id())
+                    .build());
+
+            assertThat(event.findRegistration(memberId).orElseThrow().missingInOris()).isTrue();
+        }
+
+        @Test
         @DisplayName("should throw retryable when the entry has a class but the event has no categories yet")
         void shouldThrowRetryableWhenEventHasNoCategoriesYet() {
             Event event = EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(30)).buildPublished();

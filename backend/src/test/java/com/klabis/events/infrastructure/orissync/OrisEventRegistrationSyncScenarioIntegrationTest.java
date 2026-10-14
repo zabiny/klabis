@@ -23,6 +23,7 @@ import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
+import com.klabis.sync.domain.SyncResolution;
 import com.klabis.sync.domain.SyncStatus;
 import com.klabis.sync.domain.SyncTarget;
 import org.junit.jupiter.api.BeforeEach;
@@ -184,7 +185,7 @@ class OrisEventRegistrationSyncScenarioIntegrationTest {
         Event event = eventRepository.findById(eventId).orElseThrow();
         event.registerMember(memberId, EventRegisterCommandBuilder.builder()
                 .siCardNumber("654321")
-                .categoryId(event.getCategories().get(0).id())
+                .categoryId(categoryIdOf(event, "M21"))
                 .internalNote(RegistrationNote.ofNullable("internal"))
                 .wantsSharedTransport(true)
                 .build());
@@ -256,5 +257,174 @@ class OrisEventRegistrationSyncScenarioIntegrationTest {
         assertThat(event.findCategory(registration.categoryId()).orElseThrow().name()).isEqualTo("M21");
         assertThat(registration.siCardNumber().value()).isEqualTo("654321");
         assertThat(registration.registeredAt()).isBefore(Instant.now());
+    }
+
+    private EventRegistration currentRegistration() {
+        return eventRepository.findById(eventId).orElseThrow().findRegistration(memberId).orElseThrow();
+    }
+
+    private void editInKlabis(java.util.function.UnaryOperator<Event.EditRegistrationCommand> change) {
+        Event event = eventRepository.findById(eventId).orElseThrow();
+        EventRegistration registration = event.findRegistration(memberId).orElseThrow();
+        Event.EditRegistrationCommand current = new Event.EditRegistrationCommand(registration.siCardNumber(),
+                registration.categoryId(), registration.wantsSharedTransport(), registration.wantsSharedAccommodation(),
+                registration.internalNote(), registration.orisNote(), registration.wantsToRentSi());
+        eventRegistrationPort.editRegistration(eventId, memberId, change.apply(current));
+    }
+
+    private static com.klabis.events.EventCategoryId categoryIdOf(Event event, String name) {
+        return event.getCategories().stream().filter(c -> c.name().equals(name)).findFirst().orElseThrow().id();
+    }
+
+    private SyncRecord scheduledPass(SyncRecord record) {
+        Object service = org.springframework.test.util.AopTestUtils.getUltimateTargetObject(synchronizationPort);
+        return org.springframework.test.util.ReflectionTestUtils.invokeMethod(service, "runScheduledPass", record.getId());
+    }
+
+    private SyncRecord broughtIn() {
+        stubEntries(entry(clubUserId).build());
+        discoveryJob.discover();
+        return registrationRecord();
+    }
+
+    @Test
+    @DisplayName("an entry deleted in ORIS leaves the registration in place, marked missing in ORIS, and the record in step")
+    void orisDeletionMarksRegistration() {
+        SyncRecord record = broughtIn();
+
+        stubEntries();
+        SyncRecord after = synchronizationPort.synchronizeNow(record.getId(), "test-user");
+
+        assertThat(after.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+        assertThat(eventRegistrationPort.listRegistrations(eventId)).singleElement()
+                .satisfies(registration -> assertThat(registration.missingInOris()).isTrue());
+        assertThat(synchronizeAgain(record).getLocal().hash()).isEqualTo(after.getLocal().hash());
+    }
+
+    private SyncRecord synchronizeAgain(SyncRecord record) {
+        return synchronizationPort.synchronizeNow(record.getId(), "test-user");
+    }
+
+    @Test
+    @DisplayName("an entry re-created in ORIS clears the mark and the registration takes the ORIS values")
+    void orisRecreationClearsMark() {
+        SyncRecord record = broughtIn();
+        stubEntries();
+        synchronizationPort.synchronizeNow(record.getId(), "test-user");
+
+        stubEntries(entry(clubUserId).classId(101).si(654321).build());
+        SyncRecord after = synchronizationPort.synchronizeNow(record.getId(), "test-user");
+
+        assertThat(after.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+        EventRegistration registration = currentRegistration();
+        assertThat(registration.missingInOris()).isFalse();
+        assertThat(registration.siCardNumber().value()).isEqualTo("654321");
+    }
+
+    @Test
+    @DisplayName("a category edited in Klabis raises a conflict and the Klabis value is kept")
+    void klabisCategoryEditConflicts() {
+        SyncRecord record = broughtIn();
+        Event event = eventRepository.findById(eventId).orElseThrow();
+
+        editInKlabis(c -> new Event.EditRegistrationCommand(c.siCardNumber(), categoryIdOf(event, "M21"),
+                c.wantsSharedTransport(), c.wantsSharedAccommodation(), c.internalNote(), c.orisNote(), c.wantsToRentSi()));
+        SyncRecord after = synchronizationPort.synchronizeNow(record.getId(), "test-user");
+
+        assertThat(after.getStatus()).isEqualTo(SyncStatus.CONFLICT);
+        assertThat(currentRegistration().categoryId()).isEqualTo(categoryIdOf(event, "M21"));
+    }
+
+    @Test
+    @DisplayName("an ORIS note edited in Klabis raises a conflict")
+    void klabisOrisNoteEditConflicts() {
+        SyncRecord record = broughtIn();
+
+        editInKlabis(c -> new Event.EditRegistrationCommand(c.siCardNumber(), c.categoryId(),
+                c.wantsSharedTransport(), c.wantsSharedAccommodation(), c.internalNote(),
+                RegistrationNote.ofNullable("changed in Klabis"), c.wantsToRentSi()));
+        SyncRecord after = synchronizationPort.synchronizeNow(record.getId(), "test-user");
+
+        assertThat(after.getStatus()).isEqualTo(SyncStatus.CONFLICT);
+    }
+
+    @Test
+    @DisplayName("the internal note and shared-service choices never cause a conflict")
+    void internalNoteAndSharedChoicesCauseNothing() {
+        SyncRecord record = broughtIn();
+
+        editInKlabis(c -> new Event.EditRegistrationCommand(c.siCardNumber(), c.categoryId(), true, true,
+                RegistrationNote.ofNullable("internal"), c.orisNote(), c.wantsToRentSi()));
+        SyncRecord after = synchronizationPort.synchronizeNow(record.getId(), "test-user");
+
+        assertThat(after.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+        assertThat(RegistrationNote.textOrNull(currentRegistration().internalNote())).isEqualTo("internal");
+    }
+
+    @Test
+    @DisplayName("unregistering in Klabis while the ORIS entry exists raises a conflict, and the conflict resolves itself once ORIS deletes the entry")
+    void unregistrationConflictSelfResolves() {
+        SyncRecord record = broughtIn();
+
+        eventRegistrationPort.unregisterMember(eventId, memberId);
+        SyncRecord conflicted = synchronizationPort.synchronizeNow(record.getId(), "test-user");
+        assertThat(conflicted.getStatus()).isEqualTo(SyncStatus.CONFLICT);
+
+        stubEntries();
+        SyncRecord after = scheduledPass(record);
+
+        assertThat(after.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+        assertThat(eventRegistrationPort.listRegistrations(eventId)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("INWARD on an unregistration conflict re-creates the registration from ORIS")
+    void inwardRecreatesUnregisteredRegistration() {
+        SyncRecord record = broughtIn();
+        eventRegistrationPort.unregisterMember(eventId, memberId);
+        assertThat(synchronizationPort.synchronizeNow(record.getId(), "test-user").getStatus())
+                .isEqualTo(SyncStatus.CONFLICT);
+
+        synchronizationPort.acknowledgeConflict(record.getId(), "test-user");
+        SyncRecord resolved = synchronizationPort.resolveConflict(record.getId(), SyncResolution.INWARD, "test-user");
+
+        assertThat(resolved.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+        EventRegistration registration = currentRegistration();
+        assertThat(registration.siCardNumber().value()).isEqualTo("123456");
+        assertThat(RegistrationNote.textOrNull(registration.orisNote())).isEqualTo("ORIS note");
+        assertThat(registration.internalNote()).isNull();
+        assertThat(registration.wantsSharedTransport()).isFalse();
+    }
+
+    @Test
+    @DisplayName("OUTWARD is not offered for a registration conflict")
+    void outwardNotOffered() {
+        SyncRecord record = broughtIn();
+        eventRegistrationPort.unregisterMember(eventId, memberId);
+        SyncRecord conflicted = synchronizationPort.synchronizeNow(record.getId(), "test-user");
+
+        assertThat(synchronizationPort.supportedResolutions(conflicted))
+                .doesNotContain(SyncResolution.OUTWARD)
+                .contains(SyncResolution.INWARD, SyncResolution.ACCEPT_DIVERGENCE);
+    }
+
+    @Test
+    @DisplayName("a difference kept with ACCEPT_DIVERGENCE raises a new conflict when ORIS changes again")
+    void acceptedDivergenceAsksAgainOnOrisChange() {
+        SyncRecord record = broughtIn();
+        Event event = eventRepository.findById(eventId).orElseThrow();
+        editInKlabis(c -> new Event.EditRegistrationCommand(c.siCardNumber(), categoryIdOf(event, "M21"),
+                c.wantsSharedTransport(), c.wantsSharedAccommodation(), c.internalNote(), c.orisNote(), c.wantsToRentSi()));
+        assertThat(synchronizationPort.synchronizeNow(record.getId(), "test-user").getStatus())
+                .isEqualTo(SyncStatus.CONFLICT);
+
+        synchronizationPort.acknowledgeConflict(record.getId(), "test-user");
+        SyncRecord accepted = synchronizationPort.resolveConflict(record.getId(), SyncResolution.ACCEPT_DIVERGENCE, "test-user");
+        assertThat(accepted.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
+
+        stubEntries(entry(clubUserId).si(654321).build());
+        SyncRecord after = synchronizationPort.synchronizeNow(record.getId(), "test-user");
+
+        assertThat(after.getStatus()).isEqualTo(SyncStatus.CONFLICT);
     }
 }

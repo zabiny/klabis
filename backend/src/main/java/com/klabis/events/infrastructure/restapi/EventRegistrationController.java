@@ -201,6 +201,7 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .wantsToRentSi(registration.wantsToRentSi())
                 .category(RegistrationDtoMapper.toCategoryDto(registration, event))
                 .registeredAt(registration.registeredAt())
+                .missingInOris(registration.missingInOris())
                 .wantsSharedTransport(RegistrationDtoMapper.wantsSharedTransport(registration, event))
                 .wantsSharedAccommodation(RegistrationDtoMapper.wantsSharedAccommodation(registration, event))
                 .internalNote(RegistrationNote.textOrNull(registration.internalNote()))

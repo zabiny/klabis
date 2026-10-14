@@ -2226,6 +2226,12 @@ components:
           type: string
           format: date-time
           x-klabis-authority: [EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_READ]
+        missingInOris:
+          type: boolean
+          description: |
+            The registration's ORIS entry has disappeared; the registration is kept. Visible to callers
+            with EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ over the event (the event coordinators).
+          x-klabis-authority: [EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_READ]
         wantsSharedTransport:
           type: boolean
           description: |
@@ -2278,6 +2284,10 @@ components:
         registeredAt:
           type: string
           format: date-time
+          x-klabis-halforms-access: READ_ONLY
+        missingInOris:
+          type: boolean
+          description: The registration's ORIS entry has disappeared; the registration is kept.
           x-klabis-halforms-access: READ_ONLY
         wantsSharedTransport:
           type: boolean

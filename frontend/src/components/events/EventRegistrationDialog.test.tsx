@@ -806,6 +806,30 @@ describe('EventRegistrationDialog', () => {
             expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
         });
 
+        it('shows the "V ORISu nenalezena" mark in the read-only detail', async () => {
+            mockRoutes((url) => url === EDIT_URL ? jsonOk(readOnlyData({missingInOris: true})) : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+            expect(screen.getByText(labels.events.missingInOris)).toBeInTheDocument();
+        });
+
+        it('shows no ORIS mark when missingInOris is absent', async () => {
+            mockRoutes((url) => url === EDIT_URL ? jsonOk(readOnlyData()) : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+            expect(screen.queryByText(labels.events.missingInOris)).not.toBeInTheDocument();
+        });
+
+        it('shows the mark also above the edit form', async () => {
+            mockRoutes((url) => url === EDIT_URL ? jsonOk(editInitialData({missingInOris: true})) : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            expect(await screen.findByTestId('event-registration-form')).toBeInTheDocument();
+            expect(screen.getByText(labels.events.missingInOris)).toBeInTheDocument();
+        });
+
         it('shows notes read-only only when present', async () => {
             mockRoutes((url) => url === EDIT_URL
                 ? jsonOk(readOnlyData({internalNote: 'tajná', orisNote: ''}))

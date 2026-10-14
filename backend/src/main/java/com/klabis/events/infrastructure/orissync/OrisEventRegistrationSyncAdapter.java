@@ -23,8 +23,6 @@ import com.klabis.sync.domain.SyncProjection;
 import com.klabis.sync.domain.SyncTarget;
 import com.klabis.sync.domain.SynchronizationAdapter;
 import org.jmolecules.architecture.hexagonal.Application;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,8 +50,6 @@ import java.util.UUID;
 @OrisIntegrationComponent
 @Application
 class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
-
-    private static final Logger log = LoggerFactory.getLogger(OrisEventRegistrationSyncAdapter.class);
 
     private static final String ID_SEPARATOR = ":";
 
@@ -104,6 +100,7 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
         Participation participation = Participation.parse(entityId);
         Event event = loadEvent(participation.eventId());
         return event.findRegistration(participation.memberId())
+                .filter(registration -> !registration.missingInOris())
                 .map(registration -> localProjection(event, registration))
                 .orElseGet(OrisEventRegistrationProjection::absent);
     }
@@ -195,10 +192,6 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
     public void applyToLocal(String entityId, SyncProjection projection) {
         Participation participation = Participation.parse(entityId);
         OrisEventRegistrationProjection orisProjection = (OrisEventRegistrationProjection) projection;
-        if (!orisProjection.present()) {
-            log.debug("Entry of {} vanished from ORIS; no removal handling yet", entityId);
-            return;
-        }
         syncRegistration(participation.eventId(), participation.memberId(), orisProjection);
     }
 
@@ -213,13 +206,7 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
     private void syncRegistration(EventId eventId, MemberId memberId, OrisEventRegistrationProjection projection) {
         Event event = loadEvent(eventId);
         try {
-            event.syncRegistrationFromOris(memberId, EventSyncRegistrationFromOrisBuilder.builder()
-                    .categoryOrisId(projection.categoryOrisId())
-                    .siCardNumber(projection.siCardNumber() != null ? SiCardNumber.of(projection.siCardNumber()) : null)
-                    .wantsToRentSi(projection.wantsToRentSi())
-                    .orisNote(RegistrationNote.ofNullable(projection.orisNote()))
-                    .registeredAt(projection.registeredAt())
-                    .build());
+            event.syncRegistrationFromOris(memberId, command(projection));
         } catch (OrisCategoryNotYetSynchronisedException e) {
             synchronizationPort.markDirty(new SyncTarget(SyncEntityType.EVENT, eventId.value().toString()));
             throw e;
@@ -229,6 +216,19 @@ class OrisEventRegistrationSyncAdapter implements SynchronizationAdapter {
         } catch (OptimisticLockingFailureException e) {
             throw new RetryableSyncFailureException("Event " + eventId + " was changed concurrently", e);
         }
+    }
+
+    private static Event.SyncRegistrationFromOris command(OrisEventRegistrationProjection projection) {
+        if (!projection.present()) {
+            return Event.SyncRegistrationFromOris.entryAbsent();
+        }
+        return EventSyncRegistrationFromOrisBuilder.builder()
+                .categoryOrisId(projection.categoryOrisId())
+                .siCardNumber(projection.siCardNumber() != null ? SiCardNumber.of(projection.siCardNumber()) : null)
+                .wantsToRentSi(projection.wantsToRentSi())
+                .orisNote(RegistrationNote.ofNullable(projection.orisNote()))
+                .registeredAt(projection.registeredAt())
+                .build();
     }
 
     @Override

@@ -143,7 +143,7 @@ class OrisEventRegistrationSyncAdapterTest {
         @DisplayName("projects category by ORIS id, SI card, rental and ORIS note, not the internal note")
         void projectsRegistration() {
             event.syncRegistrationFromOris(memberId, new Event.SyncRegistrationFromOris("102",
-                    SiCardNumber.of("123456"), true, RegistrationNote.ofNullable("hello"), Instant.now()));
+                    SiCardNumber.of("123456"), true, RegistrationNote.ofNullable("hello"), Instant.now(), false));
             when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
 
             OrisEventRegistrationProjection projection = (OrisEventRegistrationProjection) adapter.readLocal(entityId());
@@ -264,6 +264,7 @@ class OrisEventRegistrationSyncAdapterTest {
         @DisplayName("adopts an existing Klabis registration: ORIS values win, time, internal note and shared choices stay")
         void adoptsExistingRegistration() {
             event.registerMember(memberId, EventRegisterCommandBuilder.builder()
+                    .siCardNumber("654321")
                     .categoryId(event.getCategories().get(1).id())
                     .internalNote(RegistrationNote.ofNullable("internal"))
                     .wantsSharedTransport(true)
@@ -334,6 +335,32 @@ class OrisEventRegistrationSyncAdapterTest {
 
         assertThat(event.findRegistration(memberId)).isPresent();
         verify(eventRepository).save(event);
+    }
+
+    @Test
+    @DisplayName("applyToLocal for an absent projection marks the registration missing in ORIS and keeps it")
+    void applyToLocalAbsentMarksMissing() {
+        event.syncRegistrationFromOris(memberId, new Event.SyncRegistrationFromOris("102",
+                SiCardNumber.of("123456"), true, RegistrationNote.ofNullable("hello"), Instant.now(), false));
+        when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
+
+        adapter.applyToLocal(entityId(), OrisEventRegistrationProjection.absent());
+
+        assertThat(event.findRegistration(memberId)).get().extracting(EventRegistration::missingInOris).isEqualTo(true);
+        verify(eventRepository).save(event);
+    }
+
+    @Test
+    @DisplayName("a registration marked missing in ORIS reads as absent locally, equal to an absent ORIS entry")
+    void markedRegistrationReadsAbsent() {
+        event.syncRegistrationFromOris(memberId, new Event.SyncRegistrationFromOris("102",
+                SiCardNumber.of("123456"), true, RegistrationNote.ofNullable("hello"), Instant.now(), false));
+        event.syncRegistrationFromOris(memberId, Event.SyncRegistrationFromOris.entryAbsent());
+        when(eventRepository.findById(event.getId())).thenReturn(Optional.of(event));
+        when(orisEventEntries.entriesOf(ORIS_EVENT_ID)).thenReturn(List.of());
+
+        assertThat(adapter.readLocal(entityId())).isEqualTo(OrisEventRegistrationProjection.absent());
+        assertThat(adapter.readExternal(externalId())).isEqualTo(adapter.readLocal(entityId()));
     }
 
     @Test

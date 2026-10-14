@@ -287,6 +287,28 @@ class EventJdbcRepositoryTest {
         }
 
         @Test
+        @DisplayName("should persist and reload the missing-in-ORIS mark")
+        void shouldRoundTripMissingInOrisMark() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Mark Event")
+                    .eventDate(LocalDate.now().plusDays(60))
+                    .location("Test Location")
+                    .organizer("Test OC")
+                    .build());
+            event.publish();
+            MemberId marked = new MemberId(TEST_MEMBER_1_ID);
+            MemberId plain = new MemberId(TEST_MEMBER_2_ID);
+            register(event, marked, new SiCardNumber("123456"), null);
+            register(event, plain, new SiCardNumber("789012"), null);
+            event.syncRegistrationFromOris(marked, Event.SyncRegistrationFromOris.entryAbsent());
+
+            Event retrieved = eventRepository.findById(eventRepository.save(event).getId()).orElseThrow();
+
+            assertThat(retrieved.findRegistration(marked).orElseThrow().missingInOris()).isTrue();
+            assertThat(retrieved.findRegistration(plain).orElseThrow().missingInOris()).isFalse();
+        }
+
+        @Test
         @DisplayName("should persist and reload a registration without SI number and the rental request")
         void shouldRoundTripAbsentSiNumberAndRental() {
             Event event = Event.create(EventCreateEventBuilder.builder()

@@ -576,6 +576,7 @@ export const labels = {
     },
 
     events: {
+        missingInOris: 'V ORISu nenalezena',
         registrationModal: {
             siChip: 'SI čip',
             siChipHelperPrefilled: 'Předvyplněno z vašeho profilu · 4–8 číslic',

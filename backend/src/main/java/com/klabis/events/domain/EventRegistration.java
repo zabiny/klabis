@@ -48,6 +48,7 @@ public class EventRegistration {
     private final RegistrationNote internalNote;
     private final RegistrationNote orisNote;
     private final boolean wantsToRentSi;
+    private final boolean missingInOris;
 
     /**
      * Private constructor for creating EventRegistration instances.
@@ -62,7 +63,7 @@ public class EventRegistration {
     private EventRegistration(UUID id, MemberId memberId, SiCardNumber siCardNumber, EventCategoryId categoryId,
                               Instant registeredAt, boolean wantsSharedTransport, boolean wantsSharedAccommodation,
                               RegistrationNote internalNote, RegistrationNote orisNote,
-                              boolean wantsToRentSi) {
+                              boolean wantsToRentSi, boolean missingInOris) {
         this.id = id;
         this.memberId = memberId;
         this.siCardNumber = siCardNumber;
@@ -73,6 +74,7 @@ public class EventRegistration {
         this.internalNote = internalNote;
         this.orisNote = orisNote;
         this.wantsToRentSi = wantsToRentSi;
+        this.missingInOris = missingInOris;
     }
 
     /**
@@ -106,7 +108,8 @@ public class EventRegistration {
                 command.wantsSharedAccommodation(),
                 command.internalNote(),
                 command.orisNote(),
-                command.wantsToRentSi()
+                command.wantsToRentSi(),
+                false
         );
     }
 
@@ -116,15 +119,34 @@ public class EventRegistration {
      * This bypasses validation since the data was already validated when originally stored.
      */
     public static EventRegistration reconstruct(UUID id, Instant registeredAt, CreateEventRegistration data) {
+        return reconstruct(id, registeredAt, data, false);
+    }
+
+    public static EventRegistration reconstruct(UUID id, Instant registeredAt, CreateEventRegistration data,
+                                                boolean missingInOris) {
         return new EventRegistration(id, data.memberId(), data.siCardNumber(), data.categoryId(), registeredAt,
                 data.wantsSharedTransport(), data.wantsSharedAccommodation(), data.internalNote(), data.orisNote(),
-                data.wantsToRentSi());
+                data.wantsToRentSi(), missingInOris);
     }
 
     public EventRegistration withChanges(Event.EditRegistrationCommand changes) {
         return new EventRegistration(this.id, this.memberId, changes.siCardNumber(), changes.categoryId(),
                 this.registeredAt, changes.wantsSharedTransport(), changes.wantsSharedAccommodation(),
-                changes.internalNote(), changes.orisNote(), changes.wantsToRentSi());
+                changes.internalNote(), changes.orisNote(), changes.wantsToRentSi(), this.missingInOris);
+    }
+
+    EventRegistration markedMissingInOris() {
+        return new EventRegistration(id, memberId, siCardNumber, categoryId, registeredAt, wantsSharedTransport,
+                wantsSharedAccommodation, internalNote, orisNote, wantsToRentSi, true);
+    }
+
+    /**
+     * Takes values over from ORIS: clears the "missing in ORIS" mark, which {@link #withChanges} would keep.
+     */
+    EventRegistration withOrisValues(Event.EditRegistrationCommand changes) {
+        return new EventRegistration(this.id, this.memberId, changes.siCardNumber(), changes.categoryId(),
+                this.registeredAt, changes.wantsSharedTransport(), changes.wantsSharedAccommodation(),
+                changes.internalNote(), changes.orisNote(), changes.wantsToRentSi(), false);
     }
 
     // ========== Getters ==========
@@ -167,6 +189,10 @@ public class EventRegistration {
 
     public boolean wantsToRentSi() {
         return wantsToRentSi;
+    }
+
+    public boolean missingInOris() {
+        return missingInOris;
     }
 
     // ========== Object Methods ==========

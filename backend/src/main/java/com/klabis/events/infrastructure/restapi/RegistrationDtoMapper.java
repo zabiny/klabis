@@ -22,6 +22,7 @@ class RegistrationDtoMapper {
                 .lastName(member.lastName())
                 .category(toCategoryDto(registration, event))
                 .registrationTime(registration.registeredAt())
+                .missingInOris(registration.missingInOris())
                 .wantsSharedTransport(wantsSharedTransport(registration, event))
                 .wantsSharedAccommodation(wantsSharedAccommodation(registration, event))
                 .eventId(event.getId().value())

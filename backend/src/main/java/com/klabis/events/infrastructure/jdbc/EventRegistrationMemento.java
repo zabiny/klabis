@@ -56,6 +56,9 @@ class EventRegistrationMemento {
     @Column("oris_note")
     private String orisNote;
 
+    @Column("missing_in_oris")
+    private boolean missingInOris;
+
     /**
      * Default constructor required by Spring Data JDBC.
      */
@@ -82,6 +85,7 @@ class EventRegistrationMemento {
         memento.wantsSharedAccommodation = registration.wantsSharedAccommodation();
         memento.internalNote = RegistrationNote.textOrNull(registration.internalNote());
         memento.orisNote = RegistrationNote.textOrNull(registration.orisNote());
+        memento.missingInOris = registration.missingInOris();
 
         return memento;
     }
@@ -102,7 +106,8 @@ class EventRegistrationMemento {
                         .wantsSharedAccommodation(this.wantsSharedAccommodation)
                         .internalNote(RegistrationNote.ofNullable(this.internalNote))
                         .orisNote(RegistrationNote.ofNullable(this.orisNote))
-                        .build());
+                        .build(),
+                this.missingInOris);
     }
 
     // Package-private getters for Spring Data JDBC
@@ -136,5 +141,9 @@ class EventRegistrationMemento {
 
     boolean isWantsToRentSi() {
         return wantsToRentSi;
+    }
+
+    boolean isMissingInOris() {
+        return missingInOris;
     }
 }

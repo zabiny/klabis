@@ -419,6 +419,9 @@ CREATE TABLE events.event_registrations
     internal_note  VARCHAR(255) NULL,
     oris_note      VARCHAR(255) NULL,
 
+    -- The ORIS entry this registration was matched with has disappeared; the registration is kept
+    missing_in_oris BOOLEAN NOT NULL DEFAULT FALSE,
+
     -- Unique constraint: one registration per member per event
     CONSTRAINT uk_event_registrations_event_member UNIQUE (event_id, member_id)
 );

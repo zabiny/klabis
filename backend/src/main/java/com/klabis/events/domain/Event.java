@@ -263,8 +263,12 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             SiCardNumber siCardNumber,
             boolean wantsToRentSi,
             RegistrationNote orisNote,
-            Instant registeredAt
+            Instant registeredAt,
+            boolean absent
     ) {
+        public static SyncRegistrationFromOris entryAbsent() {
+            return new SyncRegistrationFromOris(null, null, false, null, null, true);
+        }
     }
 
     @RecordBuilder
@@ -905,6 +909,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @throws OrisCategoryNotYetSynchronisedException if the entry's class is not among the event's categories yet
      */
     public void syncRegistrationFromOris(MemberId memberId, SyncRegistrationFromOris command) {
+        if (command.absent()) {
+            markRegistrationMissingInOris(memberId);
+            return;
+        }
         EventCategoryId categoryId = resolveCategoryIdByOrisId(command.categoryOrisId());
 
         Optional<EventRegistration> existing = findRegistration(memberId);
@@ -918,7 +926,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         }
 
         EventRegistration current = existing.get();
-        EventRegistration updated = current.withChanges(EventEditRegistrationCommandBuilder.builder()
+        EventRegistration updated = current.withOrisValues(EventEditRegistrationCommandBuilder.builder()
                 .siCardNumber(command.siCardNumber())
                 .categoryId(categoryId)
                 .wantsSharedTransport(current.wantsSharedTransport())
@@ -931,6 +939,13 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         registrations.add(updated);
         registerEvent(RegistrationEditedEvent.fromAggregate(this, memberId, current, updated,
                 UpdateOrigin.SYNCHRONISATION));
+    }
+
+    private void markRegistrationMissingInOris(MemberId memberId) {
+        findRegistration(memberId).filter(registration -> !registration.missingInOris()).ifPresent(current -> {
+            registrations.remove(current);
+            registrations.add(current.markedMissingInOris());
+        });
     }
 
     private EventCategoryId resolveCategoryIdByOrisId(String categoryOrisId) {

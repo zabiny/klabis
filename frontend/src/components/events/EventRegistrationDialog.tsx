@@ -2,7 +2,7 @@ import {type ReactElement, useCallback, useEffect, useMemo, useState} from 'reac
 import {type LucideIcon, Calendar, Check, FileText, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
 import {getFieldLabel, labels} from '../../localization';
 import {renderYesNo} from '../../utils/formatters';
-import {Alert, Button, DetailRow, Modal, Skeleton} from '../UI';
+import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from '../UI';
 import {type RegistrationDialogData, type RegistrationDialogMode, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas';
 import type {Link} from '../../api/types';
@@ -131,6 +131,7 @@ export const EventRegistrationDialog = ({
             data-testid="event-registration-form"
             className="flex flex-col gap-4"
         >
+            {resolvedResource.missingInOris === true && <MissingInOrisNotice/>}
             {showSiField && helpers.renderField('siCardNumber')}
             {showRentCheckbox && helpers.renderField('wantsToRentSi')}
             {categoryProp && helpers.renderField('categoryId')}
@@ -212,6 +213,7 @@ function ReadOnlyRegistration({registration, memberName, eventContext, onClose}:
 
     return (
         <div data-testid="event-registration-detail" className="flex flex-col gap-4">
+            {registration.missingInOris === true && <MissingInOrisNotice/>}
             <dl className="flex flex-col">
                 {memberName && <DetailRow label={labels.fields.memberId}>{memberName}</DetailRow>}
                 {category && <DetailRow label={labels.events.registrationModal.category}>{category}</DetailRow>}
@@ -240,6 +242,14 @@ function ReadOnlyRegistration({registration, memberName, eventContext, onClose}:
             <div className="mt-2 flex items-center justify-end border-t border-border pt-4">
                 <Button variant="secondary" onClick={onClose}>{labels.buttons.close}</Button>
             </div>
+        </div>
+    );
+}
+
+function MissingInOrisNotice() {
+    return (
+        <div data-testid="missing-in-oris-notice">
+            <Badge variant="warning">{labels.events.missingInOris}</Badge>
         </div>
     );
 }

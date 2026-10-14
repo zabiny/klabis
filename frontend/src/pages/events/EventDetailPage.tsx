@@ -143,7 +143,18 @@ const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionD
     return (
         <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList" hideEmptyColumns defaultOrderBy="registrationTime">
             <TableCell column="firstName" sortable>{labels.fields.firstName}</TableCell>
-            <TableCell column="lastName" sortable>{labels.fields.lastName}</TableCell>
+            <TableCell
+                column="lastName"
+                sortable
+                dataRender={({value, item}) => (
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                        {value as string}
+                        {(item as RegistrationData).missingInOris === true && (
+                            <Badge variant="warning">{labels.events.missingInOris}</Badge>
+                        )}
+                    </span>
+                )}
+            >{labels.fields.lastName}</TableCell>
             {event.categories && event.categories.length > 0 && (
                 <TableCell
                     column="category"
