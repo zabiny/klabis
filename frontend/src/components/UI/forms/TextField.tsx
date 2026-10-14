@@ -1,6 +1,7 @@
 import {forwardRef} from 'react'
 import clsx from 'clsx'
 import {FieldWrapper} from './FieldWrapper.tsx'
+import {useFieldId} from './useFieldId.ts'
 import type {TextAreaFieldProps, TextFieldProps} from './types.ts'
 
 const baseInputClasses = clsx(
@@ -37,6 +38,7 @@ export const TextField = forwardRef<
         },
         ref
     ) => {
+        const inputId = useFieldId(inputProps.id)
         const inputClasses = clsx(
             baseInputClasses,
             error && errorInputClasses,
@@ -49,6 +51,7 @@ export const TextField = forwardRef<
                 error={error}
                 required={required}
                 helpText={helpText}
+                id={inputId}
             >
                 <input
                     ref={ref}
@@ -57,6 +60,7 @@ export const TextField = forwardRef<
                     required={required}
                     className={inputClasses}
                     {...inputProps}
+                    id={inputId}
                 />
             </FieldWrapper>
         )
@@ -85,6 +89,7 @@ export const TextAreaField = forwardRef<
         },
         ref
     ) => {
+        const textareaId = useFieldId(textareaProps.id)
         const textareaClasses = clsx(baseInputClasses, error && errorInputClasses, className)
 
         return (
@@ -93,6 +98,7 @@ export const TextAreaField = forwardRef<
                 error={error}
                 required={required}
                 helpText={helpText}
+                id={textareaId}
             >
         <textarea
             ref={ref}
@@ -101,6 +107,7 @@ export const TextAreaField = forwardRef<
             rows={rows}
             className={textareaClasses}
             {...textareaProps}
+            id={textareaId}
         />
             </FieldWrapper>
         )

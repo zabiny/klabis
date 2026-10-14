@@ -1,11 +1,12 @@
 import {type ReactElement, useEffect, useMemo, useState} from 'react';
-import {Calendar, Check, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
-import {labels} from '../../localization';
-import {Alert, Modal, Skeleton} from '../UI';
-import {type RegistrationDialogData, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
+import {type LucideIcon, Calendar, Check, FileText, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
+import {getFieldLabel, labels} from '../../localization';
+import {renderYesNo} from '../../utils/formatters';
+import {Alert, Button, DetailRow, Modal, Skeleton} from '../UI';
+import {type RegistrationDialogData, type RegistrationDialogMode, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas';
 import type {Link} from '../../api/types';
-import {formatDate, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils';
+import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils';
 import {normalizeKlabisApiPath} from '../../utils/halFormsUtils';
 import {HalFormDisplay} from '../HalNavigator2/HalFormDisplay';
 import type {FormRenderHelpers, RenderFormCallback} from '../HalNavigator2/halforms';
@@ -16,6 +17,12 @@ export interface EventRegistrationDialogProps {
     onClose: () => void;
     onRegistered?: () => void;
 }
+
+const MODE_PRESENTATION: Record<RegistrationDialogMode, {title: string; Icon: LucideIcon}> = {
+    new: {title: labels.dialogTitles.registerForEvent, Icon: UserPlus},
+    view: {title: labels.dialogTitles.registrationDetail, Icon: FileText},
+    edit: {title: labels.dialogTitles.editRegistration, Icon: Pencil},
+};
 
 export const EventRegistrationDialog = ({
     registration,
@@ -31,12 +38,14 @@ export const EventRegistrationDialog = ({
 
     const transportProp = template?.properties.find(prop => prop.name === 'wantsSharedTransport');
     const accommodationProp = template?.properties.find(prop => prop.name === 'wantsSharedAccommodation');
+    const hasInternalNote = template?.properties.some(prop => prop.name === 'internalNote');
+    const hasOrisNote = template?.properties.some(prop => prop.name === 'orisNote');
     const categoryProp = template?.properties.find(prop => prop.name === 'categoryId');
     const showTransportCheckbox = transportProp !== undefined && eventContext?.sharedTransportEnabled === true;
     const showAccommodationCheckbox = accommodationProp !== undefined && eventContext?.sharedAccommodationEnabled === true;
 
     const fieldsFactory = useMemo(
-        () => createRegistrationFieldsFactory({mode: mode ?? 'new', serverFieldErrors}),
+        () => createRegistrationFieldsFactory({mode: mode === 'edit' ? 'edit' : 'new', serverFieldErrors}),
         [mode, serverFieldErrors],
     );
 
@@ -49,9 +58,7 @@ export const EventRegistrationDialog = ({
         : undefined;
 
     const missingAffordance = !isLoading && !error && mode === undefined;
-    const baseTitle = mode === 'new'
-        ? labels.dialogTitles.registerForEvent
-        : labels.dialogTitles.editRegistration;
+    const {title: baseTitle, Icon: HeaderIcon} = MODE_PRESENTATION[mode ?? 'edit'];
     const dialogTitle = memberName ? `${baseTitle} - ${memberName}` : baseTitle;
     const confirmLabel = mode === 'new'
         ? labels.events.registrationModal.confirmNew
@@ -97,6 +104,8 @@ export const EventRegistrationDialog = ({
                     {showAccommodationCheckbox && helpers.renderField('wantsSharedAccommodation')}
                 </div>
             )}
+            {hasInternalNote && helpers.renderField('internalNote')}
+            {hasOrisNote && helpers.renderField('orisNote')}
             <div className="mt-2 flex items-center justify-end gap-3 border-t border-border pt-4">
                 {helpers.renderField('cancel')}
                 {helpers.renderField('submit')}
@@ -111,9 +120,7 @@ export const EventRegistrationDialog = ({
             closeOnBackdropClick={true}
             size="lg"
             title={dialogTitle}
-            headerIcon={mode === 'new'
-                ? <UserPlus className="h-5 w-5 text-primary"/>
-                : <Pencil className="h-5 w-5 text-primary"/>}
+            headerIcon={<HeaderIcon className="h-5 w-5 text-primary"/>}
             context={!isLoading && eventContext
                 ? <RegistrationContext event={eventContext}/>
                 : undefined}
@@ -122,6 +129,13 @@ export const EventRegistrationDialog = ({
                 <DialogSkeleton/>
             ) : error ? (
                 <Alert severity="error">{labels.events.registrationModal.prefillLoadError}</Alert>
+            ) : mode === 'view' && prefillData ? (
+                <ReadOnlyRegistration
+                    registration={resolvedResource}
+                    memberName={memberName}
+                    eventContext={eventContext}
+                    onClose={handleClose}
+                />
             ) : missingAffordance || !normalizedTemplate ? (
                 <Alert severity="error">{labels.events.registrationModal.noRegistrationAffordance}</Alert>
             ) : (
@@ -147,6 +161,48 @@ export const EventRegistrationDialog = ({
         </Modal>
     );
 };
+
+const hasText = (value: unknown): boolean => typeof value === 'string' && value.trim() !== '';
+
+function ReadOnlyRegistration({registration, memberName, eventContext, onClose}: {
+    registration: Record<string, unknown>;
+    memberName: string;
+    eventContext: RegistrationDialogData['eventContext'];
+    onClose: () => void;
+}) {
+    const category = (registration.category as {name?: string} | null | undefined)?.name;
+    const registeredAt = registration.registeredAt as string | undefined;
+
+    return (
+        <div data-testid="event-registration-detail" className="flex flex-col gap-4">
+            <dl className="flex flex-col">
+                {memberName && <DetailRow label={labels.fields.memberId}>{memberName}</DetailRow>}
+                {category && <DetailRow label={labels.events.registrationModal.category}>{category}</DetailRow>}
+                {registration.siCardNumber != null && (
+                    <DetailRow label={labels.events.registrationModal.siChip}>{String(registration.siCardNumber)}</DetailRow>
+                )}
+                {registeredAt && (
+                    <DetailRow label={labels.tables.registeredAt}>{formatDateTime(registeredAt)}</DetailRow>
+                )}
+                {eventContext?.sharedTransportEnabled && registration.wantsSharedTransport != null && (
+                    <DetailRow label={getFieldLabel('wantsSharedTransport')}>{renderYesNo(registration.wantsSharedTransport)}</DetailRow>
+                )}
+                {eventContext?.sharedAccommodationEnabled && registration.wantsSharedAccommodation != null && (
+                    <DetailRow label={getFieldLabel('wantsSharedAccommodation')}>{renderYesNo(registration.wantsSharedAccommodation)}</DetailRow>
+                )}
+                {hasText(registration.internalNote) && (
+                    <DetailRow label={getFieldLabel('internalNote')}>{String(registration.internalNote)}</DetailRow>
+                )}
+                {hasText(registration.orisNote) && (
+                    <DetailRow label={getFieldLabel('orisNote')}>{String(registration.orisNote)}</DetailRow>
+                )}
+            </dl>
+            <div className="mt-2 flex items-center justify-end border-t border-border pt-4">
+                <Button variant="secondary" onClick={onClose}>{labels.buttons.close}</Button>
+            </div>
+        </div>
+    );
+}
 
 function DialogSkeleton() {
     return (

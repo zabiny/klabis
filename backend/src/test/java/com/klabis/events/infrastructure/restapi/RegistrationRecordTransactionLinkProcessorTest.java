@@ -57,7 +57,7 @@ class RegistrationRecordTransactionLinkProcessorTest {
                 .firstName("John")
                 .lastName("Doe")
                 .registrationTime(Instant.now())
-                .coordinators(List.of())
+                .eventId(UUID.randomUUID())
                 .build();
         EntityModel<RegistrationSummaryDto> model = EntityModel.of(dto);
 
@@ -74,7 +74,7 @@ class RegistrationRecordTransactionLinkProcessorTest {
                 .lastName("Novák")
                 .category(EventCategoryDtoBuilder.builder().name("M21").build())
                 .registrationTime(Instant.now())
-                .coordinators(List.of())
+                .eventId(UUID.randomUUID())
                 .registeredMemberId(memberUuid)
                 .build();
         return EntityModel.of(dto);

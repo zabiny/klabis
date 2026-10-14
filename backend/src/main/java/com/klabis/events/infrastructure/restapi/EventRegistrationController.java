@@ -14,6 +14,7 @@ import com.klabis.events.application.MemberRegistrationSanctionPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.RegistrationNotFoundException;
+import com.klabis.events.domain.RegistrationNote;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
@@ -53,13 +54,15 @@ class EventRegistrationController implements EventRegistrationsApi {
     private final EventRegistrationPort registrationService;
     private final Members members;
     private final AuthorizationEvaluator authorizationEvaluator;
+    private final RegistrationReadAccess readAccess;
 
     public EventRegistrationController(EventManagementPort eventManagementService, EventRegistrationPort registrationService, Members members,
-                                       AuthorizationEvaluator authorizationEvaluator) {
+                                       AuthorizationEvaluator authorizationEvaluator, RegistrationReadAccess readAccess) {
         this.authorizationEvaluator = authorizationEvaluator;
         this.eventManagementService = eventManagementService;
         this.registrationService = registrationService;
         this.members = members;
+        this.readAccess = readAccess;
     }
 
     @Override
@@ -72,7 +75,9 @@ class EventRegistrationController implements EventRegistrationsApi {
                 request.siCardNumber(),
                 request.categoryId() != null ? new EventCategoryId(request.categoryId()) : null,
                 Boolean.TRUE.equals(request.wantsSharedTransport()),
-                Boolean.TRUE.equals(request.wantsSharedAccommodation()));
+                Boolean.TRUE.equals(request.wantsSharedAccommodation()),
+                RegistrationNote.ofNullable(request.internalNote()),
+                RegistrationNote.ofNullable(request.orisNote()));
         registrationService.registerMember(new EventId(eventId), actingMember, command);
 
         return ResponseEntity.created(
@@ -101,7 +106,9 @@ class EventRegistrationController implements EventRegistrationsApi {
                 SiCardNumber.of(request.siCardNumber()),
                 request.categoryId() != null ? new EventCategoryId(request.categoryId()) : null,
                 Boolean.TRUE.equals(request.wantsSharedTransport()),
-                Boolean.TRUE.equals(request.wantsSharedAccommodation())
+                Boolean.TRUE.equals(request.wantsSharedAccommodation()),
+                RegistrationNote.ofNullable(request.internalNote()),
+                RegistrationNote.ofNullable(request.orisNote())
         );
         registrationService.editRegistration(new EventId(eventId), new MemberId(memberId), command);
 
@@ -113,15 +120,13 @@ class EventRegistrationController implements EventRegistrationsApi {
             @PathVariable UUID eventId,
             @RequestParam(required = false) String sort) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Event event = eventManagementService.getEvent(new EventId(eventId), false);
         List<EventRegistration> registrations = event.getRegistrations();
         Map<MemberId, MemberDto> memberIndex = members.findByIds(registrations.stream()
                 .map(EventRegistration::memberId)
                 .toList());
 
-        boolean callerCanSortByRegistrationTime = EventAffordanceSupport.isCoordinatorOrHas(authorizationEvaluator, Authority.EVENTS_REGISTRATIONS, auth,
-                event);
+        boolean callerCanSortByRegistrationTime = readAccess.canReadRegistrations(event.getId().value());
         List<EventRegistration> sorted = RegistrationSortApplier.sort(registrations,
                 memberIndex,
                 event,
@@ -169,6 +174,10 @@ class EventRegistrationController implements EventRegistrationsApi {
             return ResponseEntity.ok(defaults);
         }
 
+        if (!readAccess.canRead(eventId, memberId)) {
+            throw new AccessDeniedException("Not authorized to read registration of member " + memberId);
+        }
+
         Event event = eventManagementService.getEvent(new EventId(eventId),
                 authorizationEvaluator.has(Authority.EVENTS_REGISTRATIONS));
         EventRegistration registration = event.findRegistration(targetMember)
@@ -190,6 +199,8 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .registeredAt(registration.registeredAt())
                 .wantsSharedTransport(RegistrationDtoMapper.wantsSharedTransport(registration, event))
                 .wantsSharedAccommodation(RegistrationDtoMapper.wantsSharedAccommodation(registration, event))
+                .internalNote(RegistrationNote.textOrNull(registration.internalNote()))
+                .orisNote(RegistrationNote.textOrNull(registration.orisNote()))
                 .build();
     }
 
@@ -212,13 +223,19 @@ record RegistrationsCollectionContext(UUID eventId) {
 class RegistrationSummaryPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationSummaryDto, EventRegistrationController.RegistrationView> {
 
+    private final RegistrationReadAccess readAccess;
+
+    RegistrationSummaryPostprocessor(RegistrationReadAccess readAccess) {
+        this.readAccess = readAccess;
+    }
+
     @Override
     public void process(EntityModel<RegistrationSummaryDto> dtoModel, EventRegistrationController.RegistrationView view) {
         Event event = view.event();
         UUID eventId = event.getId().value();
         UUID rowMemberId = view.memberId().value();
 
-        klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(rowMemberId, eventId, false))
+        readAccess.linkTo(eventId, rowMemberId)
                 .ifPresent(selfLinkBuilder -> {
                     if (event.areRegistrationsOpen()) {
                         dtoModel.add(selfLinkBuilder.withSelfRel()

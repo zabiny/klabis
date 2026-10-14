@@ -227,7 +227,7 @@ void adminCanReadMembers() { }
 void memberCanUpdateOwnProfile() { }
 
 @Test
-@WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+@WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE,
         type = TargetType.MEMBER, ids = {"<member uuid>"}))
 void delegateCanActForThatMemberOnly() { }
 ```

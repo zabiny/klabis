@@ -1,7 +1,10 @@
 package com.klabis.events.infrastructure.restapi;
 
+import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.users.Authority;
+import com.klabis.events.AsEventCoordinator;
 import com.klabis.events.EventCategory;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTestDataBuilder;
@@ -29,6 +32,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 
+import static com.klabis.events.EventTestDataBuilder.aRegistrationWithSharedServices;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -41,6 +45,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class EventControllerTest {
 
     private static final String ADMIN_USERNAME = "admin";
+    private static final String COORDINATED_EVENT_ID = AsEventCoordinator.EVENT_ID;
+
+    private static EventTestDataBuilder aCoordinatedEvent() {
+        return EventTestDataBuilder.anEventWithId(new EventId(UUID.fromString(COORDINATED_EVENT_ID)));
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -66,10 +75,9 @@ class EventControllerTest {
     @Autowired
     private MemberRegistrationSanctionPort memberRegistrationSanctionPort;
 
-    private void stubEventForAccommodationAuthorization(UUID eventId, MemberId coordinatorId, boolean sharedAccommodationEnabled) {
-        Event event = EventTestDataBuilder.anEvent()
+    private void stubEventForAccommodationAuthorization(UUID eventId, boolean sharedAccommodationEnabled) {
+        Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
                 .withSharedAccommodationEnabled(sharedAccommodationEnabled)
-                .withCoordinator(coordinatorId)
                 .buildPublished();
         when(eventManagementService.getEvent(new EventId(eventId), false)).thenReturn(event);
     }
@@ -527,11 +535,9 @@ class EventControllerTest {
 
         @Test
         @DisplayName("coordinator of the event can update it without EVENTS:MANAGE — returns 204")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ})
+        @AsEventCoordinator
         void coordinatorCanUpdateEventWithoutEventsManage() throws Exception {
-            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
-            Event coordinatorEvent = EventTestDataBuilder.anEvent()
-                    .withCoordinator(coordinatorId)
+            Event coordinatorEvent = aCoordinatedEvent()
                     .build();
             when(eventManagementService.getEvent(any(), eq(true))).thenReturn(coordinatorEvent);
 
@@ -546,12 +552,9 @@ class EventControllerTest {
 
         @Test
         @DisplayName("coordinator of event A cannot update event B — returns 403")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ})
+        @AsEventCoordinator
         void coordinatorOfOtherEventIsRejected() throws Exception {
-            MemberId otherCoordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000099"));
-            Event eventWithDifferentCoordinator = EventTestDataBuilder.anEvent()
-                    .withCoordinator(otherCoordinatorId)
-                    .build();
+            Event eventWithDifferentCoordinator = EventTestDataBuilder.anEvent().build();
             when(eventManagementService.getEvent(any(), eq(true))).thenReturn(eventWithDifferentCoordinator);
 
             mockMvc.perform(
@@ -567,10 +570,7 @@ class EventControllerTest {
         @DisplayName("member without EVENTS:MANAGE who is not a coordinator is rejected — returns 403")
         @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
         void nonCoordinatorMemberWithoutManageIsRejected() throws Exception {
-            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
-            Event eventWithDifferentCoordinator = EventTestDataBuilder.anEvent()
-                    .withCoordinator(coordinatorId)
-                    .build();
+            Event eventWithDifferentCoordinator = EventTestDataBuilder.anEvent().build();
             when(eventManagementService.getEvent(any(), eq(true))).thenReturn(eventWithDifferentCoordinator);
 
             mockMvc.perform(
@@ -580,6 +580,40 @@ class EventControllerTest {
                                     .content("{\"name\":\"Should Be Rejected\"}")
                     )
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("coordinator changing the coordinators is refused — returns 403 and nothing is saved")
+        @AsEventCoordinator
+        void coordinatorCannotChangeCoordinators() throws Exception {
+            Event event = aCoordinatedEvent().build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(event);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", COORDINATED_EVENT_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"coordinators\":[\"" + UUID.randomUUID() + "\"]}")
+                    )
+                    .andExpect(status().isForbidden());
+
+            verify(eventManagementService, never()).updateEvent(any(), any());
+        }
+
+        @Test
+        @DisplayName("user with EVENTS:MANAGE can change the coordinators — returns 204")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
+        void managerCanChangeCoordinators() throws Exception {
+            Event event = EventTestDataBuilder.anEvent().build();
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(event);
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", event.getId().value())
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"coordinators\":[\"" + UUID.randomUUID() + "\"]}")
+                    )
+                    .andExpect(status().isNoContent());
         }
 
         @Test
@@ -1326,12 +1360,10 @@ class EventControllerTest {
 
         @Test
         @DisplayName("accommodation-list link present for event coordinator")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ})
+        @AsEventCoordinator
         void accommodationListLinkPresentForEventCoordinator() throws Exception {
-            UUID eventId = UUID.randomUUID();
-            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
-            Event event = EventTestDataBuilder.anEvent()
-                    .withCoordinator(coordinatorId)
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
+            Event event = aCoordinatedEvent()
                     .withSharedAccommodationEnabled(true)
                     .buildPublished();
 
@@ -1351,9 +1383,7 @@ class EventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
         void accommodationListLinkAbsentForRegularMember() throws Exception {
             UUID eventId = UUID.randomUUID();
-            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
             Event event = EventTestDataBuilder.anEvent()
-                    .withCoordinator(coordinatorId)
                     .withSharedAccommodationEnabled(true)
                     .buildPublished();
 
@@ -1588,12 +1618,11 @@ class EventControllerTest {
 
         @Test
         @DisplayName("update affordance present in DRAFT event detail for event coordinator without EVENTS:MANAGE")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000042", authorities = {Authority.EVENTS_READ})
+        @AsEventCoordinator
         void updateAffordancePresentForCoordinator() throws Exception {
-            UUID eventId = UUID.randomUUID();
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
-            Event draftEvent = EventTestDataBuilder.anEvent()
-                    .withCoordinator(coordinatorId)
+            Event draftEvent = aCoordinatedEvent()
                     .build();
 
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
@@ -1608,14 +1637,46 @@ class EventControllerTest {
         }
 
         @Test
+        @DisplayName("updateEvent template marks coordinators read-only for the event coordinator")
+        @AsEventCoordinator
+        void updateTemplateMarksCoordinatorsReadOnlyForCoordinator() throws Exception {
+            Event draftEvent = aCoordinatedEvent().build();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", COORDINATED_EVENT_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='coordinators')].readOnly").value(true))
+                    .andExpect(jsonPath("$._templates.updateEvent.properties[?(@.name=='name')].readOnly").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("coordinator is not offered publish and cancel")
+        @AsEventCoordinator
+        void publishAndCancelAbsentForCoordinator() throws Exception {
+            Event draftEvent = aCoordinatedEvent().build();
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
+
+            mockMvc.perform(
+                            get("/api/events/{id}", COORDINATED_EVENT_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateEvent").exists())
+                    .andExpect(jsonPath("$._templates.publishEvent").doesNotExist())
+                    .andExpect(jsonPath("$._templates.cancelEvent").doesNotExist());
+        }
+
+        @Test
         @DisplayName("update affordance absent in DRAFT event detail for unrelated member without EVENTS:MANAGE")
         @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000099", authorities = {Authority.EVENTS_READ})
         void updateAffordanceAbsentForNonCoordinator() throws Exception {
             UUID eventId = UUID.randomUUID();
-            MemberId coordinatorId = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000042"));
-            Event draftEvent = EventTestDataBuilder.anEvent()
-                    .withCoordinator(coordinatorId)
-                    .build();
+            Event draftEvent = EventTestDataBuilder.anEvent().build();
 
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(draftEvent);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
@@ -1629,16 +1690,12 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("registrationTime visible for the second coordinator in the coordinators collection")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = "00000000-0000-0000-0000-000000000002", authorities = {Authority.EVENTS_READ})
-        void registrationTimeVisibleForSecondCoordinator() throws Exception {
-            UUID eventId = UUID.randomUUID();
-            MemberId firstCoordinator = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000001"));
-            MemberId secondCoordinator = new MemberId(UUID.fromString("00000000-0000-0000-0000-000000000002"));
+        @DisplayName("registrationTime visible for the event coordinator")
+        @AsEventCoordinator
+        void registrationTimeVisibleForCoordinator() throws Exception {
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId registeredMember = new MemberId(UUID.randomUUID());
-            LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>(List.of(firstCoordinator, secondCoordinator));
-            Event activeEvent = EventTestDataBuilder.anEvent()
-                    .withCoordinators(coordinators)
+            Event activeEvent = aCoordinatedEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .buildPublished();
 
@@ -1668,13 +1725,11 @@ class EventControllerTest {
         private static final String COORDINATOR_ID = "00000000-0000-0000-0000-0000000000c0";
 
         private EventRegistration registration(boolean wantsTransport, boolean wantsAccommodation) {
-            return EventRegistration.reconstruct(UUID.randomUUID(), new MemberId(UUID.randomUUID()),
-                    SiCardNumber.of("123456"), null, Instant.now(), wantsTransport, wantsAccommodation);
+            return aRegistrationWithSharedServices(new MemberId(UUID.randomUUID()), SiCardNumber.of("123456"), wantsTransport, wantsAccommodation);
         }
 
         private EventTestDataBuilder activeEventWithBothOffers() {
-            return EventTestDataBuilder.anEvent()
-                    .withCoordinator(new MemberId(UUID.fromString(COORDINATOR_ID)))
+            return aCoordinatedEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .withSharedTransportEnabled(true)
                     .withSharedAccommodationEnabled(true);
@@ -1682,7 +1737,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("(a) coordinator on ACTIVE event with both offers sees both counts")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void coordinatorSeesBothCounts() throws Exception {
             Event event = activeEventWithBothOffers()
                     .addRegistrations(List.of(
@@ -1694,7 +1749,7 @@ class EventControllerTest {
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
 
-            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+            mockMvc.perform(get("/api/events/{id}", UUID.fromString(COORDINATED_EVENT_ID)).accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.sharedServicesSummary.sharedTransport.count").value(2))
                     .andExpect(jsonPath("$.sharedServicesSummary.sharedAccommodation.count").value(2));
@@ -1702,7 +1757,7 @@ class EventControllerTest {
 
         @Test
         @DisplayName("(a) an enabled offer nobody chose still yields a sub-object with count 0")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void enabledOfferWithNoTakersHasCountZero() throws Exception {
             Event event = activeEventWithBothOffers()
                     .addRegistrations(List.of(registration(true, false)))
@@ -1710,7 +1765,7 @@ class EventControllerTest {
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
 
-            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+            mockMvc.perform(get("/api/events/{id}", UUID.fromString(COORDINATED_EVENT_ID)).accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.sharedServicesSummary.sharedTransport.count").value(1))
                     .andExpect(jsonPath("$.sharedServicesSummary.sharedAccommodation.count").value(0));
@@ -1765,10 +1820,9 @@ class EventControllerTest {
 
         @Test
         @DisplayName("(e) only sharedTransportEnabled → sharedTransport present, sharedAccommodation absent")
-        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void onlyTransportEnabledShowsOnlyTransport() throws Exception {
-            Event event = EventTestDataBuilder.anEvent()
-                    .withCoordinator(new MemberId(UUID.fromString(COORDINATOR_ID)))
+            Event event = aCoordinatedEvent()
                     .withDate(LocalDate.now().plusDays(30))
                     .withSharedTransportEnabled(true)
                     .withSharedAccommodationEnabled(false)
@@ -1777,7 +1831,7 @@ class EventControllerTest {
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of());
 
-            mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON))
+            mockMvc.perform(get("/api/events/{id}", UUID.fromString(COORDINATED_EVENT_ID)).accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.sharedServicesSummary.sharedTransport.count").value(2))
                     .andExpect(jsonPath("$.sharedServicesSummary.sharedAccommodation").doesNotExist());
@@ -1811,9 +1865,7 @@ class EventControllerTest {
         private static final String REGISTERED_MEMBER_ID = "00000000-0000-0000-0000-0000000000d2";
 
         private EventRegistration registration(boolean wantsTransport, boolean wantsAccommodation) {
-            return EventRegistration.reconstruct(UUID.randomUUID(),
-                    new MemberId(UUID.fromString(REGISTERED_MEMBER_ID)),
-                    SiCardNumber.of("123456"), null, Instant.now(), wantsTransport, wantsAccommodation);
+            return aRegistrationWithSharedServices(new MemberId(UUID.fromString(REGISTERED_MEMBER_ID)), SiCardNumber.of("123456"), wantsTransport, wantsAccommodation);
         }
 
         private void mockRegisteredMember() {
@@ -1923,6 +1975,17 @@ class EventControllerTest {
                     )
                     .andExpect(status().isNoContent());
         }
+
+        @Test
+        @DisplayName("coordinator cannot publish the event — returns 403")
+        @AsEventCoordinator
+        void coordinatorCannotPublish() throws Exception {
+            mockMvc.perform(
+                            post("/api/events/{id}/publish", COORDINATED_EVENT_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
+        }
     }
 
     @Nested
@@ -1940,6 +2003,17 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("coordinator cannot cancel the event — returns 403")
+        @AsEventCoordinator
+        void coordinatorCannotCancel() throws Exception {
+            mockMvc.perform(
+                            post("/api/events/{id}/cancel", COORDINATED_EVENT_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isForbidden());
         }
 
         @Test
@@ -2571,18 +2645,17 @@ class EventControllerTest {
 
         @Test
         @DisplayName("event coordinator gets 200 with accommodation items")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void coordinatorGets200WithAccommodationItems() throws Exception {
-            UUID eventId = UUID.randomUUID();
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId memberId = new MemberId(UUID.randomUUID());
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("1234"), false, true)
             );
-            Event event = EventTestDataBuilder.anEvent()
+            Event event = aCoordinatedEvent()
                     .withSharedAccommodationEnabled(true)
-                    .withCoordinator(coordinatorId)
                     .addRegistrations(registrations)
                     .build();
             event.publish();
@@ -2602,6 +2675,9 @@ class EventControllerTest {
                     .andExpect(jsonPath("$._embedded.accommodationList[0].lastName").value("Doe"))
                     .andExpect(jsonPath("$._embedded.accommodationList[0].identityCardNumber").value("AB123456"))
                     .andExpect(jsonPath("$._embedded.accommodationList[0].dateOfBirth").value("1985-05-15"))
+                    .andExpect(jsonPath("$._embedded.accommodationList[0]._links.self.href")
+                            .value(org.hamcrest.Matchers.containsString(
+                                    "/api/events/" + eventId + "/registrations/" + memberId.value())))
                     .andExpect(jsonPath("$._links.self.href")
                             .value(org.hamcrest.Matchers.containsString(
                                     "/api/events/" + eventId + "/accommodation-list")));
@@ -2618,8 +2694,7 @@ class EventControllerTest {
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
                     .withCoordinator(coordinatorId)
-                    .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
+                    .addRegistrations(List.of(aRegistrationWithSharedServices(rowMemberId, SiCardNumber.of("1234"), false, true)))
                     .build();
             event.publish();
 
@@ -2641,19 +2716,17 @@ class EventControllerTest {
 
         @Test
         @DisplayName("item self link is present for a caller who is the row's own member, with no authorities")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void itemSelfLinkPresentWhenCallerIsTheRowMember() throws Exception {
-            UUID eventId = UUID.randomUUID();
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             // The caller is the coordinator (so it may reach the accommodation list) AND is the row's
             // own member. It holds no EVENTS:REGISTRATIONS authority, so the getRegistration link can
             // only be offered through the owner-visible branch of that endpoint's gate.
             MemberId callerId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
-            Event event = EventTestDataBuilder.anEvent()
+            Event event = aCoordinatedEvent()
                     .withSharedAccommodationEnabled(true)
-                    .withCoordinator(callerId)
-                    .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), callerId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
+                    .addRegistrations(List.of(aRegistrationWithSharedServices(callerId, SiCardNumber.of("1234"), false, true)))
                     .build();
             event.publish();
 
@@ -2674,18 +2747,16 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("item self link is withheld from a coordinator who lacks EVENTS:REGISTRATIONS and is not the row member")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID)
-        void itemSelfLinkAbsentWhenCallerMayNotReadTheRegistration() throws Exception {
-            UUID eventId = UUID.randomUUID();
+        @DisplayName("item self link is offered to a coordinator who is not the row member")
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
+        void itemSelfLinkPresentForCoordinatorWhoIsNotTheRowMember() throws Exception {
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
             MemberId rowMemberId = new MemberId(UUID.randomUUID());
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
-            Event event = EventTestDataBuilder.anEvent()
+            Event event = aCoordinatedEvent()
                     .withSharedAccommodationEnabled(true)
-                    .withCoordinator(coordinatorId)
-                    .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), rowMemberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
+                    .addRegistrations(List.of(aRegistrationWithSharedServices(rowMemberId, SiCardNumber.of("1234"), false, true)))
                     .build();
             event.publish();
 
@@ -2695,24 +2766,22 @@ class EventControllerTest {
 
             stubAccommodationList(eventId, event, Map.of(rowMemberId, accommodationDto));
 
-            // getRegistration is gated by EVENTS:REGISTRATIONS OR being the target member. The caller
-            // is the coordinator — which opens the accommodation list but NOT getRegistration — holds
-            // no EVENTS:REGISTRATIONS, and is not the row member. Neither half of the gate applies, so
-            // the item self link is not offered.
             mockMvc.perform(
                             get("/api/events/{eventId}/accommodation-list", eventId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.accommodationList[0].firstName").value("John"))
-                    .andExpect(jsonPath("$._embedded.accommodationList[0]._links.self").doesNotExist());
+                    .andExpect(jsonPath("$._embedded.accommodationList[0]._links.self.href")
+                            .value(org.hamcrest.Matchers.containsString(
+                                    "/api/events/" + eventId + "/registrations/" + rowMemberId.value())));
         }
 
         @Test
         @DisplayName("event link is offered to a caller who may read the event")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void eventLinkPresentWhenCallerMayReadTheEvent() throws Exception {
-            UUID eventId = accommodationListFor(UUID.randomUUID());
+            UUID eventId = accommodationListFor(UUID.fromString(COORDINATED_EVENT_ID));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/accommodation-list", eventId)
@@ -2725,9 +2794,9 @@ class EventControllerTest {
 
         @Test
         @DisplayName("event link is withheld from a coordinator who lacks EVENTS:READ")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID)
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void eventLinkAbsentWhenCallerMayNotReadTheEvent() throws Exception {
-            UUID eventId = accommodationListFor(UUID.randomUUID());
+            UUID eventId = accommodationListFor(UUID.fromString(COORDINATED_EVENT_ID));
 
             // Reaching this list needs EVENTS:REGISTRATIONS or being the coordinator; reading the
             // event itself needs EVENTS:READ. The two do not imply each other, so a coordinator
@@ -2743,13 +2812,9 @@ class EventControllerTest {
 
         private UUID accommodationListFor(UUID eventId) {
             MemberId memberId = new MemberId(UUID.randomUUID());
-            MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
-
-            Event event = EventTestDataBuilder.anEvent()
+            Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
                     .withSharedAccommodationEnabled(true)
-                    .withCoordinator(coordinatorId)
-                    .addRegistrations(List.of(EventRegistration.reconstruct(
-                            UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)))
+                    .addRegistrations(List.of(aRegistrationWithSharedServices(memberId, SiCardNumber.of("1234"), false, true)))
                     .build();
             event.publish();
 
@@ -2770,7 +2835,7 @@ class EventControllerTest {
             MemberId coordinatorId = new MemberId(UUID.fromString(COORDINATOR_ID));
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("1234"), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -2798,7 +2863,7 @@ class EventControllerTest {
         @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
         void unauthorizedMemberGets403() throws Exception {
             UUID eventId = UUID.randomUUID();
-            stubEventForAccommodationAuthorization(eventId, new MemberId(UUID.fromString(COORDINATOR_ID)), true);
+            stubEventForAccommodationAuthorization(eventId, true);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/accommodation-list", eventId)
@@ -2809,10 +2874,10 @@ class EventControllerTest {
 
         @Test
         @DisplayName("empty accommodation list still carries the event link")
-        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        @WithKlabisMockUser(memberId = COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = COORDINATED_EVENT_ID)})
         void emptyListStillCarriesEventLink() throws Exception {
-            UUID eventId = UUID.randomUUID();
-            stubEventForAccommodationAuthorization(eventId, new MemberId(UUID.fromString(COORDINATOR_ID)), true);
+            UUID eventId = UUID.fromString(COORDINATED_EVENT_ID);
+            stubEventForAccommodationAuthorization(eventId, true);
             when(accommodationListService.getAccommodationList(new EventId(eventId)))
                     .thenReturn(new AccommodationList(eventId, "Camp", List.of()));
 
@@ -2833,7 +2898,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("1234"), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -2865,7 +2930,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("1234"), null, Instant.now(), false, true)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("1234"), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -2904,7 +2969,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("9876"), null, Instant.now(), false, true)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("9876"), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -2938,7 +3003,7 @@ class EventControllerTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             List<EventRegistration> registrations = List.of(
-                    EventRegistration.reconstruct(UUID.randomUUID(), memberId, SiCardNumber.of("5555"), null, Instant.now(), false, true)
+                    aRegistrationWithSharedServices(memberId, SiCardNumber.of("5555"), false, true)
             );
             Event event = EventTestDataBuilder.anEvent()
                     .withSharedAccommodationEnabled(true)
@@ -2968,7 +3033,7 @@ class EventControllerTest {
         @WithKlabisMockUser(memberId = REGULAR_MEMBER_ID)
         void unauthorizedUserGets403ForCsvRequest() throws Exception {
             UUID eventId = UUID.randomUUID();
-            stubEventForAccommodationAuthorization(eventId, new MemberId(UUID.fromString(COORDINATOR_ID)), true);
+            stubEventForAccommodationAuthorization(eventId, true);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/accommodation-list", eventId)
@@ -2987,8 +3052,7 @@ class EventControllerTest {
         @WithKlabisMockUser(memberId = "cccccccc-cccc-cccc-cccc-cccccccccccc")
         void forbiddenWhenOfferOff() throws Exception {
             UUID eventId = UUID.randomUUID();
-            stubEventForAccommodationAuthorization(eventId,
-                    new MemberId(UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc")), false);
+            stubEventForAccommodationAuthorization(eventId, false);
 
             mockMvc.perform(
                             get("/api/events/{eventId}/accommodation-list", eventId)
@@ -3258,6 +3322,115 @@ class EventControllerTest {
                     .andExpect(status().is4xxClientError());
             mockMvc.perform(post("/api/events/sync-from-oris/all-upcoming"))
                     .andExpect(status().is4xxClientError());
+        }
+    }
+
+    @Nested
+    @DisplayName("Listed as coordinator in the domain, but without the grant — nothing is allowed")
+    class DomainCoordinatorWithoutGrantTests {
+
+        private static final String DOMAIN_COORDINATOR_ID = "00000000-0000-0000-0000-000000000042";
+        private static final String OTHER_EVENT_ID = "00000000-0000-0000-0000-0000000000e2";
+
+        private Event eventCoordinatedInDomain() {
+            return aCoordinatedEvent()
+                    .withCoordinator(new MemberId(UUID.fromString(DOMAIN_COORDINATOR_ID)))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .withSharedAccommodationEnabled(true)
+                    .buildPublished();
+        }
+
+        private void stubEventAndRegistration(Event event) {
+            MemberId registeredMember = new MemberId(UUID.randomUUID());
+            EventRegistration registration = EventRegistration.create(
+                    EventRegistrationCreateEventRegistrationBuilder.builder()
+                            .memberId(registeredMember)
+                            .siCardNumber(new SiCardNumber("99001"))
+                            .build());
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
+            when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of(registration));
+            when(members.findByIds(any())).thenReturn(
+                    Map.of(registeredMember, new MemberDto(registeredMember.value(), "Jan", "Novak", null)));
+        }
+
+        private void assertNothingOfferedOnDetail() throws Exception {
+            mockMvc.perform(get("/api/events/{id}", COORDINATED_EVENT_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateEvent").doesNotExist())
+                    .andExpect(jsonPath("$._links['accommodation-list']").doesNotExist())
+                    .andExpect(jsonPath("$.sharedServicesSummary").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].firstName").value("Jan"))
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[0].registrationTime").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("update is refused — returns 403")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        void updateRefused() throws Exception {
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(eventCoordinatedInDomain());
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", COORDINATED_EVENT_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Nope\"}")
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("detail offers no update, no accommodation list, no summary and no registrationTime")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        void detailOffersNothing() throws Exception {
+            stubEventAndRegistration(eventCoordinatedInDomain());
+
+            assertNothingOfferedOnDetail();
+        }
+
+        @Test
+        @DisplayName("accommodation list is refused — returns 403")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ})
+        void accommodationListRefused() throws Exception {
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(eventCoordinatedInDomain());
+
+            mockMvc.perform(get("/api/events/{eventId}/accommodation-list", COORDINATED_EVENT_ID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("a grant over another event does not help — update refused with 403")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = OTHER_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = OTHER_EVENT_ID)})
+        void grantOverOtherEventDoesNotAllowUpdate() throws Exception {
+            when(eventManagementService.getEvent(any(), eq(true))).thenReturn(eventCoordinatedInDomain());
+
+            mockMvc.perform(
+                            patch("/api/events/{id}", COORDINATED_EVENT_ID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("{\"name\":\"Nope\"}")
+                    )
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("a grant over another event does not help — detail offers nothing")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = OTHER_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = OTHER_EVENT_ID)})
+        void grantOverOtherEventDoesNotOfferAnything() throws Exception {
+            stubEventAndRegistration(eventCoordinatedInDomain());
+
+            assertNothingOfferedOnDetail();
+        }
+
+        @Test
+        @DisplayName("a grant over another event does not help — accommodation list refused with 403")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, memberId = DOMAIN_COORDINATOR_ID, authorities = {Authority.EVENTS_READ}, targetGrants = {@TargetGrant(authority = Authority.EVENTS_EDIT, type = TargetType.EVENT, ids = OTHER_EVENT_ID), @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS_READ, type = TargetType.EVENT, ids = OTHER_EVENT_ID)})
+        void grantOverOtherEventDoesNotOpenAccommodationList() throws Exception {
+            when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(eventCoordinatedInDomain());
+
+            mockMvc.perform(get("/api/events/{eventId}/accommodation-list", COORDINATED_EVENT_ID)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
         }
     }
 }

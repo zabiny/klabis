@@ -2,7 +2,7 @@ import {asLinkArray} from '../api/hateoas';
 import type {GetEventResource, GetRegistrationResource, HalFormsTemplate, Link} from '../api';
 import {useAuthorizedQuery} from './useAuthorizedFetch';
 
-export type RegistrationDialogMode = 'new' | 'edit';
+export type RegistrationDialogMode = 'new' | 'edit' | 'view';
 
 export interface RegistrationDialogEventContext {
     name?: string;
@@ -23,6 +23,16 @@ export interface RegistrationDialogData {
     error: unknown;
 }
 
+const resolveMode = (
+    registerForEvent: HalFormsTemplate | undefined,
+    editRegistration: HalFormsTemplate | undefined,
+    isExistingRegistration: boolean,
+): RegistrationDialogMode | undefined => {
+    if (registerForEvent) return 'new';
+    if (editRegistration) return 'edit';
+    return isExistingRegistration ? 'view' : undefined;
+};
+
 export const useRegistrationDialogData = (registration: Link | null): RegistrationDialogData => {
     const registrationQuery = useAuthorizedQuery<GetRegistrationResource>(registration?.href ?? '', {
         enabled: !!registration,
@@ -40,7 +50,7 @@ export const useRegistrationDialogData = (registration: Link | null): Registrati
     const registerForEvent = registrationData?._templates?.registerForEvent;
     const editRegistration = registrationData?._templates?.editRegistration;
     const template = registerForEvent ?? editRegistration;
-    const mode = registerForEvent ? 'new' : editRegistration ? 'edit' : undefined;
+    const mode = resolveMode(registerForEvent, editRegistration, registrationData?.registeredAt != null);
 
     const event = eventQuery.data;
     const eventContext: RegistrationDialogEventContext | undefined = event

@@ -82,7 +82,7 @@ void admin_can_update_any_member() { ... }
 void owner_can_see_own_birth_number() { ... }
 
 @Test
-@WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.EVENTS_REGISTRATIONS,
+@WithKlabisMockUser(targetGrants = @TargetGrant(authority = Authority.MEMBERS_EDIT_PROFILE,
         type = TargetType.MEMBER, ids = {CHILD_ID_STRING}))
 void delegate_acts_only_for_that_member() { ... }</code></pre>
 

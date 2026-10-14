@@ -956,7 +956,7 @@ components:
     # === Groups (FreeGroup) ======================================================================
 
     # The permissions the owners of a free group may hold over its members: exactly the authorities
-    # that can be held over specific members (Authority.delegatable() with targetType MEMBER). Never
+    # that can be held over specific members (Authority.holdableOverTargets() with targetType MEMBER). Never
     # administrator permissions — FreeGroup rejects those even when a client bypasses this enum.
     DelegatedAuthority:
       type: string

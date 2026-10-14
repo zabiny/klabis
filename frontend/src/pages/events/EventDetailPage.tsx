@@ -16,13 +16,14 @@ import type {EntityModel, GetEventResource, Link as HalLink} from '../../api';
 import type {components} from '../../api/klabisApi';
 import type {HalFormsTemplate} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
+import {renderYesNo} from '../../utils/formatters.ts';
 import {getActionVariant} from '../../utils/actionVariants.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
 import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
-import {Banknote, Check, ExternalLink, Globe, List, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {Banknote, Check, ExternalLink, Eye, Globe, List, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
 import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
@@ -81,15 +82,13 @@ export const EventDetailPage = (): ReactElement => {
     return <EventDetailContent resourceData={resourceData}/>;
 };
 
-const renderYesNo = (value: unknown): string => (value ? labels.ui.yes : labels.ui.no);
-
 interface RegistrationsTableProps {
     event: EventDetail;
-    onOpenEditModal: (registrationLink: HalLink | null) => void;
+    onOpenRegistrationDialog: (registrationLink: HalLink | null) => void;
     onOpenTransactionDialog: (accountLink: HalLink) => void;
 }
 
-const RegistrationsTable = ({event, onOpenEditModal, onOpenTransactionDialog}: RegistrationsTableProps): ReactElement => {
+const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionDialog}: RegistrationsTableProps): ReactElement => {
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const registration = item as unknown as RegistrationData;
         const editTemplate = registration._templates?.editRegistration;
@@ -98,7 +97,12 @@ const RegistrationsTable = ({event, onOpenEditModal, onOpenTransactionDialog}: R
             ? recordTransactionLink as HalLink
             : Array.isArray(recordTransactionLink) ? recordTransactionLink[0] as HalLink : null;
 
-        const hasAnyAction = editTemplate || accountLink;
+        const registrationLink = asLinkArray(registration._links?.self)[0] ?? null;
+        const rowAction = editTemplate
+            ? {label: labels.templates.editRegistration, Icon: Pencil}
+            : {label: labels.templates.showRegistrationDetail, Icon: Eye};
+
+        const hasAnyAction = registrationLink || accountLink;
         if (!hasAnyAction) return null;
 
         return (
@@ -117,17 +121,18 @@ const RegistrationsTable = ({event, onOpenEditModal, onOpenTransactionDialog}: R
                         <Banknote className="w-4 h-4"/>
                     </Button>
                 )}
-                {editTemplate && (
+                {registrationLink && (
                     <Button
                         variant="ghost"
                         size="sm"
-                        aria-label={labels.templates.editRegistration}
+                        aria-label={rowAction.label}
+                        title={rowAction.label}
                         onClick={(e) => {
                             e.stopPropagation();
-                            onOpenEditModal(asLinkArray(registration._links?.self)[0] ?? null);
+                            onOpenRegistrationDialog(registrationLink);
                         }}
                     >
-                        <Pencil className="w-4 h-4"/>
+                        <rowAction.Icon className="w-4 h-4"/>
                     </Button>
                 )}
             </div>
@@ -175,7 +180,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     const {getById: getEventTypeById} = useEventTypes();
     const location = useLocation();
     const initialEditing = !!(location.state as { editing?: boolean })?.editing;
-    const [registrationEditTarget, setRegistrationEditTarget] = useState<HalLink | null>(null);
+    const [registrationDialogTarget, setRegistrationDialogTarget] = useState<HalLink | null>(null);
     const [transactionDialogAccount, setTransactionDialogAccount] = useState<HalLink | null>(null);
     const [newRegistrationTarget, setNewRegistrationTarget] = useState<HalLink | null>(null);
 
@@ -428,7 +433,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                         <HalSubresourceProvider subresourceLinkName="registrations">
                             <RegistrationsTable
                                 event={event}
-                                onOpenEditModal={setRegistrationEditTarget}
+                                onOpenRegistrationDialog={setRegistrationDialogTarget}
                                 onOpenTransactionDialog={setTransactionDialogAccount}
                             />
                         </HalSubresourceProvider>
@@ -438,7 +443,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
         );
     };
 
-    const handleRegistrationEditClose = () => setRegistrationEditTarget(null);
+    const handleRegistrationDialogClose = () => setRegistrationDialogTarget(null);
 
     const financeTransactionDialogJsx = transactionDialogAccount && (
         <FinanceTransactionDialog
@@ -451,8 +456,8 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
 
     const registrationEditDialogJsx = (
         <EventRegistrationDialog
-            registration={registrationEditTarget}
-            onClose={handleRegistrationEditClose}
+            registration={registrationDialogTarget}
+            onClose={handleRegistrationDialogClose}
         />
     );
 

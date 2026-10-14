@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import static com.klabis.events.EventTestDataBuilder.register;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -70,7 +71,7 @@ class MemberRegistrationSanctionServiceTest {
                     .withRegistrationDeadline(LocalDate.now().plusDays(7))
                     .build();
             activeEvent.publish();
-            activeEvent.registerMember(SANCTIONED_MEMBER, SiCardNumber.of("1234567"), null);
+            register(activeEvent, SANCTIONED_MEMBER, SiCardNumber.of("1234567"), null);
 
             when(eventRepository.findAll(any(), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(activeEvent)));
@@ -92,7 +93,7 @@ class MemberRegistrationSanctionServiceTest {
                     .withRegistrationDeadline(LocalDate.now().plusDays(7))
                     .build();
             activeEvent.publish();
-            activeEvent.registerMember(OTHER_MEMBER, SiCardNumber.of("1234567"), null);
+            register(activeEvent, OTHER_MEMBER, SiCardNumber.of("1234567"), null);
 
             when(eventRepository.findAll(any(), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(activeEvent)));

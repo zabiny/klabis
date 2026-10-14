@@ -28,7 +28,8 @@ SYNC_MANAGE("SYNC:MANAGE", TargetType.NONE, GrantForm.ALL),
 - `targetType` (`common.authorization.TargetType`): `MEMBER`, `EVENT`, or `NONE` (not about a target).
 - `grantForms` (`GrantForm`): `ALL` = may be held over everything, i.e. be a user's direct authority
   (`Authority.grantableOverAll()`; the permissions dialog offers `Authority.assignableAuthorities()`, which drops
-  the standard authorities and `DEVELOPER`); `SPECIFIC` = may come from a relationship (`Authority.delegatable()`).
+  the standard authorities and `DEVELOPER`); `SPECIFIC` = may come from a relationship (`Authority.holdableOverTargets()`; the free-group delegation filters it
+  further to MEMBER-typed ones).
   An `{ALL}`-only authority is an administrator authority and can never be delegated. `UserPermissions` rejects
   a direct authority without `ALL` (`AuthorityNotGrantableOverAllException`, HTTP 400), so a `{SPECIFIC}`-only
   authority can never be held over everything; bootstrap code grants `Authority.grantableOverAll()`, never
@@ -158,14 +159,24 @@ boolean self      = authorizationEvaluator.isSelf(TargetRef.member(id));
 4. Response/request records whose fields the authority guards need the target component marked
    `x-klabis-target-id` too.
 
-Existing sources (all grant `Authority.MEMBERS_EDIT_PROFILE`, `SPECIFIC`, target `MEMBER`; `MEMBERS_MANAGE` does
-not imply it, so rules list both):
+Existing sources (the first three grant `Authority.MEMBERS_EDIT_PROFILE`, `SPECIFIC`, target `MEMBER`; `MEMBERS_MANAGE`
+does not imply it, so rules list both):
 
 | Source | Module | Grants |
 |---|---|---|
 | `SelfProfileRelationshipSource` | `members.infrastructure` | over own `MemberId` when the member is an adult today (replaces `OwnProfileEditRule`) |
 | `LegalGuardianGroupRelationshipSource` | `members.legalguardiangroup.infrastructure` | for each group where the user is a guardian: the group's `delegatedAuthorities()` over each minor member (age not checked; the minor leaves the group in the daily run after turning 18) |
 | `FreeGroupRelationshipSource` | `groups.freegroup.infrastructure` | for each free group the user owns: its `delegatedAuthorities()` over each member (not over co-owners; follows membership) |
+| `EventCoordinatorRelationshipSource` | `events.infrastructure` | `EVENTS_EDIT` and `EVENTS_REGISTRATIONS_READ` (`SPECIFIC`, target `EVENT`) over every event the user coordinates, read through `EventRepository.findIdsCoordinatedBy` (ids only, no aggregates) |
+
+Not every `SPECIFIC` authority is delegatable to others: the event coordinator authorities come from the coordinator
+relationship only. They are not in `FreeGroup`'s delegatable set (MEMBER-typed only), not assignable in the permissions
+dialog, and not in the `Authority` enum of `common.yaml` (never on the wire). They sit beside the ALL-only
+`EVENTS_MANAGE` / `EVENTS_REGISTRATIONS` on the same operations (`x-klabis-authority: [EVENTS_MANAGE, EVENTS_EDIT]`,
+`x-klabis-target-id: EVENT` on the path parameter), so `isAllowed(List.of(EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_READ),
+TargetRef.event(id), false)` answers "may this caller read the event's registrations" for both holders. Publishing and
+cancelling stay `EVENTS_MANAGE`-only, which is why the coordinator holds narrower authorities rather than `EVENTS_MANAGE`
+over specific events.
 
 Delegation is modelled by `MemberGroup.delegatedAuthorities()`: `LegalGuardianGroup` = `{MEMBERS_EDIT_PROFILE}`,
 `TrainingGroup` = `∅` (no source — delegating nothing is the absence of a source), `FreeGroup` = the set chosen at

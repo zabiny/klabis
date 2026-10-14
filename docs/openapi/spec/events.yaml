@@ -795,12 +795,10 @@ paths:
         may be provided; absent fields are left unchanged.
       security:
         - KlabisAuth: [EVENTS]
-      # No x-klabis-authority / x-klabis-owner-visible: authorization is enforced imperatively in
-      # the controller (EventAffordanceSupport.isCoordinatorOrHasManageAuthority — event coordinator
-      # OR EVENTS:MANAGE), but "coordinator" is a set of member IDs stored on the event itself, not
-      # a single path/query parameter this spec extension can name. Modeling it here would require
-      # inventing a new x-klabis-* extension (see klabis-api-spec skill's anti-patterns), so the
-      # check stays in the controller and is only documented in prose.
+      # EVENTS_EDIT is held over specific events by their coordinators (EventCoordinatorRelationshipSource);
+      # EVENTS_MANAGE over all events. Changing the coordinators themselves is EVENTS_MANAGE only
+      # (see UpdateEventRequest.coordinators).
+      x-klabis-authority: [EVENTS_MANAGE, EVENTS_EDIT]
       parameters:
         - $ref: '#/components/parameters/EventIdParam'
       requestBody:
@@ -907,18 +905,18 @@ paths:
       summary: Get accommodation list for an event
       description: |
         Returns the accommodation list for an event with personal details for each registered
-        member. Accessible only to the event coordinator or users with EVENTS:REGISTRATIONS
-        authority. Fields that are not recorded for a member are returned as null.
+        member. Accessible only to users holding EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ
+        over the event (the event coordinators). Fields that are not recorded for a member are returned as null.
 
         This operation also supports `Accept: text/csv`, returning a UTF-8 BOM, semicolon-delimited
         CSV file with Czech headers (Content-Disposition: attachment) instead of the JSON
         representation described below.
       security:
         - KlabisAuth: [EVENTS]
-      # No x-klabis-authority / x-klabis-owner-visible: authorization is enforced imperatively in
-      # EventController (EventAffordanceSupport.isCoordinatorOrHasRegistrationsAuthority — event
-      # coordinator OR EVENTS:REGISTRATIONS, and the event must offer shared accommodation), for the
-      # same reason as updateEvent above: "coordinator" cannot be named as a single owner parameter.
+      # No x-klabis-authority: the caller needs EVENTS_REGISTRATIONS or EVENTS_REGISTRATIONS_READ over
+      # the event (the coordinator grant), and the event must offer shared accommodation. Both are
+      # checked in EventController through AuthorizationEvaluator.isAllowed over TargetRef.event,
+      # because the event offering the service is a domain rule the spec cannot express.
       parameters:
         - $ref: '#/components/parameters/RegEventIdParam'
       responses:
@@ -1173,8 +1171,8 @@ paths:
         List all registrations for an event. SI card numbers are not included for privacy
         protection. Supported sort fields: firstName, lastName, category, registrationTime.
         Default sort: registrationTime ASC. sort=registrationTime is silently ignored for members
-        without EVENTS:REGISTRATIONS authority who are not the event coordinator. Unknown sort
-        fields also fall back to default.
+        without EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ (the event coordinators) over the
+        event. Unknown sort fields also fall back to default.
       security:
         - KlabisAuth: [EVENTS]
       # No x-klabis-authority / x-klabis-owner-visible: this endpoint acts on the CALLER's own
@@ -1267,13 +1265,16 @@ paths:
       summary: Get registration by member ID
       description: |
         Get a member's event registration including SI card number. Accessible by the member
-        themselves or a user with EVENTS:REGISTRATIONS authority. When new=true, returns prefilled
+        themselves, a user with EVENTS:REGISTRATIONS authority, or the event coordinators
+        (EVENTS:REGISTRATIONS_READ over the event). When new=true, returns prefilled
         defaults (siCardNumber from profile) for a not-yet-existing registration — this still
         requires the caller to be the target member themselves regardless of authority.
+      # No x-klabis-authority / x-klabis-owner-visible: the rule is "owner of the member OR a grant
+      # over the event", and one target cannot express both. It is checked imperatively by
+      # RegistrationReadAccess.canRead in EventRegistrationController, and every producer of a link
+      # to this operation checks it too (design.md D3).
       security:
         - KlabisAuth: [EVENTS]
-      x-klabis-authority: EVENTS_REGISTRATIONS
-      x-klabis-owner-visible: true
       parameters:
         - $ref: '#/components/parameters/RegMemberIdParam'
         - $ref: '#/components/parameters/RegEventIdParam'
@@ -1324,8 +1325,8 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
           description: |
-            Forbidden - must be the member or have EVENTS:REGISTRATIONS; or new=true with
-            mismatched memberId
+            Forbidden - must be the member, have EVENTS:REGISTRATIONS or be a coordinator of the
+            event; or new=true with mismatched memberId
           content:
             application/problem+json:
               schema:
@@ -1547,6 +1548,7 @@ components:
       in: path
       description: Event UUID
       required: true
+      x-klabis-target-id: EVENT
       schema:
         type: string
         format: uuid
@@ -1899,6 +1901,9 @@ components:
         websiteUrl:
           type: [string, 'null']
           x-klabis-url: true
+        # Only EVENTS_MANAGE changes coordinators: the coordinator role unlocks registrants' SI card
+        # numbers and notes, so it must not propagate itself. EVENTS_READ is held by every user, so the
+        # coordinator sees the field read-only.
         coordinators:
           type: [array, 'null']
           uniqueItems: true
@@ -1906,6 +1911,8 @@ components:
             type: string
             format: uuid
           x-hal-input-type: MemberId
+          x-klabis-authority: EVENTS_MANAGE
+          x-klabis-read-authority: [EVENTS_READ]
         eventTypeId:
           type: [string, 'null']
           format: uuid
@@ -2108,6 +2115,16 @@ components:
           description: |
             Member opts into the event's shared accommodation. Meaningful only when the event
             offers it; the registration form omits this property otherwise. Defaults to false.
+        internalNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
+          description: Free-text remark for the club only. Blank means no note.
+        orisNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
+          description: Free-text remark for the organiser's ORIS entry. Blank means no note.
 
     EditRegistrationRequest:
       type: object
@@ -2131,6 +2148,16 @@ components:
           description: |
             Member's shared-accommodation choice. Meaningful only when the event offers it; the
             edit form omits this property otherwise. Defaults to false.
+        internalNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
+          description: Free-text remark for the club only. Blank or absent means no note.
+        orisNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
+          description: Free-text remark for the organiser's ORIS entry. Blank or absent means no note.
 
     # A named schema, not an inline array: the item payload needs a stable wire-contract name. Two
     # operations derive from it — getEvent's x-hal-embedded builds the
@@ -2139,7 +2166,8 @@ components:
       type: object
       description: |
         Registration summary for list views. SI card numbers are not included. registrationTime is
-        visible to the registered member OR callers with EVENTS:REGISTRATIONS.
+        visible to callers with EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ over the event
+        (the event coordinators).
       x-klabis-relation:
         collectionRelation: registrationDtoList
       properties:
@@ -2153,8 +2181,7 @@ components:
         registrationTime:
           type: string
           format: date-time
-          x-klabis-authority: EVENTS_REGISTRATIONS
-          x-klabis-owner-visible: true
+          x-klabis-authority: [EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_READ]
         wantsSharedTransport:
           type: boolean
           description: |
@@ -2164,19 +2191,14 @@ components:
           description: |
             Member's shared-accommodation choice. Present only when the event offers shared
             accommodation.
-        # Kept off the wire (@JsonIgnore) but present in the generated Java: coordinators doubles
-        # as the @TargetId source the authorization evaluator needs to evaluate registrationTime's
-        # @OwnerVisible. See design.md Decision 0 / x-field-extra-annotation for why plain omission
-        # from this schema (the approach used elsewhere for @JsonIgnore) does not work here.
-        coordinators:
-          type: array
-          items:
-            type: string
-            format: uuid
-          x-klabis-target-id: MEMBER
+        # Kept off the wire (@JsonIgnore) but present in the generated Java: the @TargetId source the
+        # authorization evaluator needs to evaluate registrationTime over the event.
+        eventId:
+          type: string
+          format: uuid
+          x-klabis-target-id: EVENT
           x-field-extra-annotation: com.fasterxml.jackson.annotation.JsonIgnore
-        # Needed only by RegistrationRecordTransactionLinkProcessor at runtime (never on the wire);
-        # no ownership role, unlike coordinators above.
+        # Needed only by RegistrationRecordTransactionLinkProcessor at runtime (never on the wire).
         registeredMemberId:
           type: string
           format: uuid
@@ -2185,6 +2207,14 @@ components:
     RegistrationDto:
       type: object
       properties:
+        internalNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
+        orisNote:
+          type: string
+          maxLength: 255
+          x-hal-input-type: textarea
         firstName:
           type: string
           x-klabis-halforms-access: READ_ONLY

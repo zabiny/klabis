@@ -128,6 +128,7 @@ These are the Klabis-specific hooks on top of Spring Security / Spring Authoriza
 - **Field-level authorization** — `@HasAuthority`, `@OwnerVisible`, `@TargetId`, `@ReadAuthority`, `JsonNullable<T>` on record components. See `backend-patterns` skill.
 - **`KlabisUserDetailsService`** (`com.klabis.authorizationserver`) — bridges `users` aggregate + `Authority` enum into Spring Security `UserDetails`.
 - **Custom `AuthenticationEntryPoint`** — validates the OAuth2 `redirect_uri` against `RegisteredClientRepository` before redirecting (prevents open-redirector).
+- **Event coordinator grants** — `EventCoordinatorRelationshipSource` (`events.infrastructure`) grants `EVENTS_EDIT` and `EVENTS_REGISTRATIONS_READ` (SPECIFIC, EVENT) over every event the user coordinates; operations list them beside `EVENTS_MANAGE` / `EVENTS_REGISTRATIONS`, and application code asks `AuthorizationEvaluator.isAllowed(…, TargetRef.event(id), false)`. Never on the wire, never assignable. Changing an event's coordinators is `EVENTS_MANAGE` only. See ADR-010.
 - **`Authority.SYNC_MANAGE`** (`SYNC:MANAGE`, held over everything only) — gates every `sync` module operation (`/api/{entityType}/{id}/sync…`): reading state, triggering a pass, acknowledging/resolving a conflict, resetting a terminally failed record.
 
 ### Synchronisation Engine Configuration (`sync` module)

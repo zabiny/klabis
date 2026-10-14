@@ -2,6 +2,8 @@ package com.klabis.events.infrastructure.jdbc;
 
 import com.klabis.events.EventCategoryId;
 import com.klabis.events.domain.EventRegistration;
+import com.klabis.events.domain.EventRegistrationCreateEventRegistrationBuilder;
+import com.klabis.events.domain.RegistrationNote;
 import com.klabis.members.MemberId;
 import com.klabis.events.domain.SiCardNumber;
 import org.springframework.data.relational.core.mapping.Column;
@@ -45,6 +47,12 @@ class EventRegistrationMemento {
     @Column("wants_shared_accommodation")
     private boolean wantsSharedAccommodation;
 
+    @Column("internal_note")
+    private String internalNote;
+
+    @Column("oris_note")
+    private String orisNote;
+
     /**
      * Default constructor required by Spring Data JDBC.
      */
@@ -68,6 +76,8 @@ class EventRegistrationMemento {
         memento.registeredAt = registration.registeredAt();
         memento.wantsSharedTransport = registration.wantsSharedTransport();
         memento.wantsSharedAccommodation = registration.wantsSharedAccommodation();
+        memento.internalNote = RegistrationNote.textOrNull(registration.internalNote());
+        memento.orisNote = RegistrationNote.textOrNull(registration.orisNote());
 
         return memento;
     }
@@ -78,15 +88,16 @@ class EventRegistrationMemento {
      * @return a reconstituted EventRegistration entity
      */
     EventRegistration toEventRegistration() {
-        return EventRegistration.reconstruct(
-                this.id,
-                new MemberId(this.memberId),
-                new SiCardNumber(this.siCardNumber),
-                this.categoryId != null ? new EventCategoryId(this.categoryId) : null,
-                this.registeredAt,
-                this.wantsSharedTransport,
-                this.wantsSharedAccommodation
-        );
+        return EventRegistration.reconstruct(this.id, this.registeredAt,
+                EventRegistrationCreateEventRegistrationBuilder.builder()
+                        .memberId(new MemberId(this.memberId))
+                        .siCardNumber(new SiCardNumber(this.siCardNumber))
+                        .categoryId(this.categoryId != null ? new EventCategoryId(this.categoryId) : null)
+                        .wantsSharedTransport(this.wantsSharedTransport)
+                        .wantsSharedAccommodation(this.wantsSharedAccommodation)
+                        .internalNote(RegistrationNote.ofNullable(this.internalNote))
+                        .orisNote(RegistrationNote.ofNullable(this.orisNote))
+                        .build());
     }
 
     // Package-private getters for Spring Data JDBC

@@ -380,6 +380,116 @@ describe('EventRegistrationDialog', () => {
         });
     });
 
+    describe('notes', () => {
+        const noteProps = [
+            {name: 'internalNote', prompt: 'Interní poznámka', type: 'textarea', maxLength: 255},
+            {name: 'orisNote', prompt: 'Poznámka do ORIS', type: 'textarea', maxLength: 255},
+        ];
+        const withNotes = () => ({
+            ...newRegistrationTemplate(),
+            properties: [...newRegistrationTemplate().properties, ...noteProps],
+        });
+
+        it('shows both note fields, caps length at the template maxLength and submits their values', async () => {
+            const user = userEvent.setup();
+            mockRoutes((url, options) => {
+                if (options?.method) return writeOk();
+                if (url === EVENT_URL) return jsonOk(eventData());
+                if (url === PREFILL_URL) return jsonOk(prefillData({_templates: {registerForEvent: withNotes()}}));
+                return jsonOk({});
+            });
+            renderDialog();
+
+            const internal = await screen.findByLabelText(labels.fields.internalNote);
+            const oris = screen.getByLabelText(labels.fields.orisNote);
+            expect(internal).toHaveAttribute('maxlength', '255');
+            await user.type(internal, 'moje poznámka');
+            await user.type(oris, 'pro ORIS');
+            expect(screen.getByText('13 / 255')).toBeInTheDocument();
+            expect(screen.getByText('8 / 255')).toBeInTheDocument();
+            await user.selectOptions(screen.getByLabelText(/Kategorie/), 'cat-1');
+            await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmNew}));
+
+            await waitFor(() => {
+                expect(vi.mocked(authorizedFetch).mock.calls.some(([, o]) => (o as RequestInit | undefined)?.method === 'POST')).toBe(true);
+            });
+            const postCall = vi.mocked(authorizedFetch).mock.calls.find(([, o]) => (o as RequestInit | undefined)?.method === 'POST');
+            expect(JSON.parse((postCall?.[1] as RequestInit).body as string)).toMatchObject({
+                internalNote: 'moje poznámka',
+                orisNote: 'pro ORIS',
+            });
+        });
+
+        it('does not render note fields when the template does not offer them', async () => {
+            mockRoutes((url) => url === EVENT_URL ? jsonOk(eventData()) : jsonOk(prefillData()));
+            renderDialog();
+
+            await screen.findByLabelText(/SI čip/);
+            expect(screen.queryByLabelText(labels.fields.internalNote)).not.toBeInTheDocument();
+            expect(screen.queryByLabelText(labels.fields.orisNote)).not.toBeInTheDocument();
+        });
+
+        describe('edit mode', () => {
+            const editWithNotes = () => ({
+                ...editRegistrationTemplate(),
+                properties: [...editRegistrationTemplate().properties, ...noteProps],
+            });
+
+            const mockEdit = () => mockRoutes((url, options) => {
+                if (options?.method) return writeOk();
+                if (url === EVENT_URL) return jsonOk(eventData());
+                if (url === EDIT_URL) {
+                    return jsonOk(editInitialData({
+                        internalNote: 'stará interní',
+                        orisNote: 'stará oris',
+                        _templates: {editRegistration: editWithNotes()},
+                    }));
+                }
+                return jsonOk({});
+            });
+
+            const putBody = () => {
+                const putCall = vi.mocked(authorizedFetch).mock.calls.find(([, o]) =>
+                    (o as RequestInit | undefined)?.method === 'PUT');
+                return JSON.parse((putCall?.[1] as RequestInit).body as string);
+            };
+
+            it('prefills current notes and saves a changed note', async () => {
+                const user = userEvent.setup();
+                const onClose = vi.fn();
+                mockEdit();
+                renderDialog({registration: {href: EDIT_URL}, onClose});
+
+                const internal = await screen.findByLabelText(labels.fields.internalNote);
+                expect(internal).toHaveValue('stará interní');
+                expect(screen.getByLabelText(labels.fields.orisNote)).toHaveValue('stará oris');
+
+                await user.clear(internal);
+                await user.type(internal, 'nová interní');
+                await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit}));
+
+                await waitFor(() => expect(onClose).toHaveBeenCalled());
+                expect(putBody()).toMatchObject({internalNote: 'nová interní', orisNote: 'stará oris'});
+            });
+
+            it('clearing a note does not resend the old value', async () => {
+                const user = userEvent.setup();
+                const onClose = vi.fn();
+                mockEdit();
+                renderDialog({registration: {href: EDIT_URL}, onClose});
+
+                await user.clear(await screen.findByLabelText(labels.fields.orisNote));
+                await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit}));
+
+                await waitFor(() => expect(onClose).toHaveBeenCalled());
+                const body = putBody();
+                expect(body.orisNote).not.toBe('stará oris');
+                expect(body.orisNote ?? '').toBe('');
+                expect(body.internalNote).toBe('stará interní');
+            });
+        });
+    });
+
     it('edit mode submits PUT with values from fetched registration', async () => {
         const user = userEvent.setup();
         const onClose = vi.fn();
@@ -493,6 +603,88 @@ describe('EventRegistrationDialog', () => {
         expect(await screen.findByText(labels.events.registrationModal.noRegistrationAffordance)).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: labels.events.registrationModal.confirmNew})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: labels.events.registrationModal.confirmEdit})).not.toBeInTheDocument();
+    });
+
+    describe('read-only detail', () => {
+        const readOnlyData = (overrides: Record<string, unknown> = {}) => editInitialData({
+            registeredAt: '2026-03-10T10:00:00',
+            _templates: undefined,
+            ...overrides,
+        });
+
+        const expectReadOnlyDetail = async () => {
+            expect(await screen.findByTestId('event-registration-detail')).toBeInTheDocument();
+            expect(screen.getByText('7654321')).toBeInTheDocument();
+            expect(screen.getByText('D21')).toBeInTheDocument();
+            expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: labels.events.registrationModal.confirmEdit})).not.toBeInTheDocument();
+            expect(screen.queryByText(labels.events.registrationModal.noRegistrationAffordance)).not.toBeInTheDocument();
+        };
+
+        it('shows the registration without inputs for an event coordinator (no register / edit template)', async () => {
+            mockRoutes((url) => url === EDIT_URL ? jsonOk(readOnlyData()) : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+            expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
+        });
+
+        it('shows notes read-only only when present', async () => {
+            mockRoutes((url) => url === EDIT_URL
+                ? jsonOk(readOnlyData({internalNote: 'tajná', orisNote: ''}))
+                : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+            expect(screen.getByText(labels.fields.internalNote)).toBeInTheDocument();
+            expect(screen.getByText('tajná')).toBeInTheDocument();
+            expect(screen.queryByText(labels.fields.orisNote)).not.toBeInTheDocument();
+        });
+
+        it('shows the registration read-only for a member after the edit window has closed', async () => {
+            mockRoutes((url) => url === EDIT_URL
+                ? jsonOk(readOnlyData({_templates: {unregisterFromEvent: {method: 'DELETE', target: EDIT_URL, properties: []}}}))
+                : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+        });
+
+        it('shows the notes read-only for a member after the edit window has closed', async () => {
+            mockRoutes((url) => url === EDIT_URL
+                ? jsonOk(readOnlyData({
+                    internalNote: 'moje interní',
+                    orisNote: 'moje oris',
+                    _templates: {unregisterFromEvent: {method: 'DELETE', target: EDIT_URL, properties: []}},
+                }))
+                : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await expectReadOnlyDetail();
+            expect(screen.getByText('moje interní')).toBeInTheDocument();
+            expect(screen.getByText('moje oris')).toBeInTheDocument();
+        });
+
+        it.each([undefined, null])('shows the no-affordance error, not an empty detail, when registeredAt is %s', async (registeredAt) => {
+            const data = editInitialData({registeredAt, _templates: undefined});
+            mockRoutes((url) => url === EDIT_URL ? jsonOk(data) : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}});
+
+            expect(await screen.findByText(labels.events.registrationModal.noRegistrationAffordance)).toBeInTheDocument();
+            expect(screen.queryByTestId('event-registration-detail')).not.toBeInTheDocument();
+        });
+
+        it('closes via the close button', async () => {
+            const user = userEvent.setup();
+            const onClose = vi.fn();
+            mockRoutes((url) => url === EDIT_URL ? jsonOk(readOnlyData()) : jsonOk(eventData()));
+            renderDialog({registration: {href: EDIT_URL}, onClose});
+
+            await screen.findByTestId('event-registration-detail');
+            await user.click(screen.getAllByRole('button', {name: labels.buttons.close})[0]);
+
+            expect(onClose).toHaveBeenCalled();
+        });
     });
 
     it('cancel button invokes onClose', async () => {
