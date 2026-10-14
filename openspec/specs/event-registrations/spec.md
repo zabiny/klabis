@@ -3,17 +3,19 @@
 ## Purpose
 
 Covers how members register for and unregister from club events. Defines the registration workflow with SI card numbers, viewing registration lists, and the rules for when registrations are open or closed.
+
 ## Requirements
+
 ### Requirement: Register for Event
 
 The system SHALL allow authenticated members to register themselves for ACTIVE events with open registrations (future event date AND registration deadline not passed). Only users with an associated member profile can register. When the event has categories defined, the member MUST select a category. After a successful registration the member remains on the event detail page and the registration list refreshes to include their new registration.
 
-When the registration form opens, the SI card number field SHALL be prefilled with the member's SI card number from their profile if one is set. The prefilled value MAY be overwritten by the member for this registration without affecting the profile.
+When the registration form opens for an event that uses SI cards, the SI card number field SHALL be prefilled with the member's SI card number from their profile if one is set. The prefilled value MAY be overwritten by the member for this registration without affecting the profile. Whether the SI card number is required follows the event's SI policy.
 
 #### Scenario: Member registers for an open event
 
 - **WHEN** authenticated member clicks the register button for an active event with open registrations
-- **AND** provides their SI card number
+- **AND** provides their SI card number where the event requires one
 - **THEN** the registration is created
 - **AND** the member stays on the event detail page
 - **AND** the registration list refreshes and shows the new registration
@@ -22,7 +24,7 @@ When the registration form opens, the SI card number field SHALL be prefilled wi
 #### Scenario: Registration form prefills SI card number from profile
 
 - **GIVEN** an authenticated member has an SI card number recorded in their profile
-- **WHEN** the member opens the registration form for an active event
+- **WHEN** the member opens the registration form for an active event that uses SI cards
 - **THEN** the SI card number field is prefilled with the value from the profile
 - **AND** the member can submit the form immediately without retyping the SI card number
 
@@ -36,9 +38,9 @@ When the registration form opens, the SI card number field SHALL be prefilled wi
 #### Scenario: Registration form has empty SI card number when not in profile
 
 - **GIVEN** an authenticated member has no SI card number recorded in their profile
-- **WHEN** the member opens the registration form for an active event
+- **WHEN** the member opens the registration form for an active event that requires SI cards
 - **THEN** the SI card number field is empty
-- **AND** the member must enter the SI card number manually before submitting
+- **AND** the member must enter the SI card number manually, or ask to rent one where rental is allowed, before submitting
 
 #### Scenario: Member registers for an event with categories
 
@@ -369,8 +371,8 @@ Members SHALL be able to change their existing event registration (SI card numbe
 #### Scenario: Edit form for an event without categories hides the category field
 
 - **WHEN** the member opens the edit form for an event that defines no categories
-- **THEN** the form shows only the SI card number field
-- **AND** no category selection is offered
+- **THEN** no category selection is offered
+- **AND** the SI card field is shown according to the event's SI policy
 
 #### Scenario: Edit form for an event with categories requires a category
 
@@ -385,7 +387,7 @@ Members SHALL be able to change their existing event registration (SI card numbe
 
 #### Scenario: Submitting an invalid SI card number is rejected
 
-- **WHEN** the member submits the edit form with an SI card number containing non-digits, or shorter than 4 digits, or longer than 8 digits, or blank
+- **WHEN** the member submits the edit form with an SI card number containing non-digits, or shorter than 4 digits, or longer than 8 digits, or blank where the event's SI policy requires one
 - **THEN** the form shows the same validation feedback shown on the registration form (digits only, 4–8 characters, required)
 
 #### Scenario: Editing another member's registration without EVENTS:REGISTRATIONS is not possible
@@ -438,7 +440,7 @@ The system SHALL NOT provide access to the registrations list for events in DRAF
 
 ### Requirement: SI Card Number Validation
 
-The system SHALL validate SI card numbers. A valid SI card number contains only digits and is 4-8 characters long.
+The system SHALL validate SI card numbers whenever one is entered. A valid SI card number contains only digits and is 4-8 characters long. A blank SI card number is rejected only when the event's SI policy requires one and the member does not ask to rent a card.
 
 #### Scenario: Valid SI card number accepted
 
@@ -462,8 +464,13 @@ The system SHALL validate SI card numbers. A valid SI card number contains only 
 
 #### Scenario: Blank SI card number rejected
 
-- **WHEN** member submits registration without entering an SI card number
+- **WHEN** member submits registration without entering an SI card number for an event that requires one, without asking to rent a card
 - **THEN** the form shows an error that the SI card number is required
+
+#### Scenario: Blank SI card number accepted where not required
+
+- **WHEN** member submits registration without entering an SI card number for an event where SI is optional or not used
+- **THEN** the registration is created without an SI card number
 
 ### Requirement: Finance Manager Records Transaction From Registrations List
 
@@ -641,7 +648,7 @@ The registration form (new registration and registration edit) SHALL be built fr
 #### Scenario: Member opens a new registration form from any entry point
 
 - **WHEN** a member follows the new-registration link of an event with open registrations — from the dashboard widget, the events list, or the event detail page
-- **THEN** the same registration form opens with the member's name context, the event context, and an SI card number prefilled from their profile
+- **THEN** the same registration form opens with the member's name context, the event context, and — where the event uses SI cards — an SI card number prefilled from their profile
 - **AND** the form submits as a new registration
 
 #### Scenario: New registration representation does not offer editing
@@ -664,14 +671,14 @@ The registration form (new registration and registration edit) SHALL be built fr
 #### Scenario: Member edits their registration from the registration link
 
 - **WHEN** a member follows the link of their existing registration to edit it
-- **THEN** the form opens in edit mode showing the member chip with their name, the current SI card number and category
+- **THEN** the form opens in edit mode showing the member chip with their name, the category and the current SI card number and rental request as the event's SI policy offers them
 - **AND** the form submits as an update of the existing registration
 
 #### Scenario: Registration that can no longer be edited opens as a read-only detail
 
 - **GIVEN** a member is registered for an event whose registration deadline has passed
 - **WHEN** the member clicks "Detail" on their row in the registrations list
-- **THEN** the registration is shown with its category, SI card number and notes
+- **THEN** the registration is shown with its category, SI card number, rental request and notes
 - **AND** no input and no submit action is offered
 
 #### Scenario: Event coordinator opens a registration as a read-only detail
@@ -679,6 +686,12 @@ The registration form (new registration and registration edit) SHALL be built fr
 - **WHEN** the coordinator of an event clicks "Detail" on a member's row in the registrations list
 - **THEN** the member's registration is shown read-only
 - **AND** no edit or unregister action is offered
+
+#### Scenario: Registration form for an event without SI does not send the profile SI card number
+
+- **GIVEN** a member has an SI card number in their profile
+- **WHEN** the member registers for an event that does not use SI cards
+- **THEN** the registration is created without an SI card number
 
 ### Requirement: Member Adds Notes To Their Registration
 
@@ -765,3 +778,92 @@ Each note SHALL be plain text of at most 255 characters. A note containing only 
 - **WHEN** a member submits the registration form with "Interní poznámka" containing only spaces
 - **THEN** the registration is created without an internal note
 
+### Requirement: Registration Follows The Event's SI Policy
+
+The registration form and the edit form SHALL follow the event's SI policy. When the event does not use SI cards, no SI card field is shown. When SI is optional, the SI card field is shown but may be left empty. When SI is required, the member MUST enter an SI card number, unless the event allows rental and the member asks to rent one. Where rental is allowed, the form offers a "Chci si půjčit čip" tick box, unticked by default.
+
+#### Scenario: Registration form for an event that does not use SI
+
+- **GIVEN** an ACTIVE event with open registrations that does not use SI cards
+- **WHEN** a member opens the registration form
+- **THEN** no SI card field and no rental tick box is shown
+- **AND** the member can register without an SI card number
+
+#### Scenario: Member registers without an SI card for an event where SI is optional
+
+- **GIVEN** an ACTIVE event where SI cards are optional
+- **WHEN** the member leaves the SI card field empty and submits the registration form
+- **THEN** the registration is created without an SI card number
+
+#### Scenario: Member rents an SI card instead of entering a number
+
+- **GIVEN** an ACTIVE event that requires SI cards and allows rental
+- **WHEN** the member ticks "Chci si půjčit čip", leaves the SI card field empty and submits
+- **THEN** the registration is created recording that the member wants to rent an SI card
+
+#### Scenario: Member enters an SI card number and asks for rental
+
+- **GIVEN** an ACTIVE event that allows SI card rental
+- **WHEN** the member enters an SI card number and also ticks "Chci si půjčit čip"
+- **THEN** the registration is created with the SI card number and the rental request
+
+#### Scenario: Required SI card without rental cannot be skipped
+
+- **GIVEN** an ACTIVE event that requires SI cards and does not allow rental
+- **WHEN** the member submits the registration form with an empty SI card field
+- **THEN** the form shows an error that the SI card number is required
+
+#### Scenario: Required SI card with rental allowed but not asked for
+
+- **GIVEN** an ACTIVE event that requires SI cards and allows rental
+- **WHEN** the member submits the registration form with an empty SI card field and without ticking "Chci si půjčit čip"
+- **THEN** the form shows an error that an SI card number is required unless the member rents one
+
+#### Scenario: Rental tick box is absent when rental is not allowed
+
+- **GIVEN** an ACTIVE event that uses SI cards and does not allow rental
+- **WHEN** a member opens the registration form or the edit form
+- **THEN** no "Chci si půjčit čip" tick box is shown
+
+#### Scenario: Member changes their rental request
+
+- **GIVEN** a member is registered with a rental request for an event that allows rental, with an open registration window
+- **WHEN** the member edits the registration, unticks "Chci si půjčit čip", enters their SI card number and saves
+- **THEN** the registration records the SI card number and no rental request
+
+#### Scenario: Editing a registration that does not fit the SI policy requires fixing the SI values
+
+- **GIVEN** a member is registered without an SI card number for an event that has since been changed to require SI cards without rental
+- **WHEN** the member edits the registration, changes only the category and saves
+- **THEN** the form shows an error that the SI card number is required
+- **AND** the registration is not changed
+- **WHEN** the member enters a valid SI card number and saves
+- **THEN** the registration is updated with the new category and the SI card number
+
+#### Scenario: Registration with a rental request after rental was disallowed
+
+- **GIVEN** a member is registered without an SI card number and with a rental request, and the event has since been changed to require SI cards without rental
+- **WHEN** the member edits the registration, changes only the category and saves
+- **THEN** the form shows an error that the SI card number is required
+- **WHEN** the member enters a valid SI card number and saves
+- **THEN** the registration is updated with the new category and the SI card number
+- **AND** the recorded rental request is kept
+
+#### Scenario: Changing the SI values of a registration must fit the policy
+
+- **GIVEN** a member is registered with an SI card number for an event that requires SI cards without rental
+- **WHEN** the member edits the registration, clears the SI card field and saves
+- **THEN** the form shows an error that the SI card number is required
+- **AND** the registration keeps its SI card number
+
+#### Scenario: Values the event does not offer are kept on edit
+
+- **GIVEN** a member registered with an SI card number and a rental request, and the event has since been changed to not use SI cards
+- **WHEN** the member edits the registration and saves
+- **THEN** the SI card number and the rental request recorded on the registration are kept
+
+#### Scenario: Registration detail shows the rental request
+
+- **GIVEN** a member's registration records a rental request
+- **WHEN** the member, or a user with EVENTS:REGISTRATIONS, opens the registration detail
+- **THEN** the detail shows that the member wants to rent an SI card
