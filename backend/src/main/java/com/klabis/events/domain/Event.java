@@ -867,12 +867,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             throw new DuplicateRegistrationException(memberId, this.id);
         }
 
-        SiCardNumber enteredSiCard = StringUtils.hasText(command.siCardNumber())
+        // Values the policy does not offer are not taken, so they are not even parsed.
+        SiCardNumber siCardNumber = siPolicy.usage() != SiUsage.NOT_USED && StringUtils.hasText(command.siCardNumber())
                 ? SiCardNumber.of(command.siCardNumber()) : null;
-        siPolicy.validate(enteredSiCard, command.wantsToRentSi());
-
-        // Values the policy does not offer are not taken.
-        SiCardNumber siCardNumber = siPolicy.usage() == SiUsage.NOT_USED ? null : enteredSiCard;
+        siPolicy.validate(siCardNumber, command.wantsToRentSi());
         boolean wantsToRentSi = siPolicy.rentalAllowed() && command.wantsToRentSi();
 
         EventRegistration registration = EventRegistration.create(

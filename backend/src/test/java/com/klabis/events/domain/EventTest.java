@@ -890,6 +890,17 @@ class EventTest {
         }
 
         @Test
+        @DisplayName("NOT_USED: ignores a malformed number instead of rejecting it")
+        void notUsedIgnoresMalformedNumber() {
+            Event event = activeEvent(SiPolicy.of(SiUsage.NOT_USED, false));
+            MemberId m = member();
+
+            event.registerMember(m, cmd("abc", false));
+
+            assertThat(event.findRegistration(m).orElseThrow().siCardNumber()).isNull();
+        }
+
+        @Test
         @DisplayName("OPTIONAL: registers with an empty or blank number")
         void optionalAllowsEmpty() {
             Event event = activeEvent(SiPolicy.of(SiUsage.OPTIONAL, false));
