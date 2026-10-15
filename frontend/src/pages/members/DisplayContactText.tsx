@@ -1,4 +1,5 @@
 import {labels} from "../../localization";
+import {InfoHint} from "../../components/UI/InfoHint";
 import type {components} from "../../api/klabisApi";
 
 export type DisplayContactValue = components['schemas']['DisplayContactValue'];
@@ -10,7 +11,7 @@ export const DisplayContactText = ({contact}: { contact?: DisplayContactValue })
         <>
             {contact.value}
             {contact.fromGuardian && (
-                <span className="ml-2 text-xs text-text-tertiary">{labels.ui.guardianContact(contact.guardianName)}</span>
+                <InfoHint className="ml-1.5" text={labels.ui.guardianContact(contact.guardianName)}/>
             )}
         </>
     );

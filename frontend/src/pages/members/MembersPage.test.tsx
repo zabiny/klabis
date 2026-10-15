@@ -263,7 +263,8 @@ describe('MembersPage — row data rendering', () => {
             },
         })]);
         expect(screen.getByText('rodic@example.com')).toBeInTheDocument();
-        expect(screen.getAllByText(labels.ui.guardianContact('Jana Nováková'))).toHaveLength(1);
+        expect(screen.getAllByRole('button', {name: labels.ui.guardianContact('Jana Nováková')})).toHaveLength(1);
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     });
 
     it('does not render contact column when displayContact is absent', () => {

@@ -272,7 +272,7 @@ describe('MemberDetailPage', () => {
         it('adult shows own contact without guardian marker', () => {
             renderPage(createMockPageData(mockMemberDetailData()));
             expect(screen.getByText('jan.novak@email.cz')).toBeInTheDocument();
-            expect(screen.queryByText(/kontakt zákonného zástupce/i)).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /kontakt zákonného zástupce/i})).not.toBeInTheDocument();
         });
 
         it('minor with own contact shows it without marker', () => {
@@ -284,15 +284,16 @@ describe('MemberDetailPage', () => {
             })));
             expect(screen.getByText('maly@email.cz')).toBeInTheDocument();
             expect(screen.getByText('+420999888777')).toBeInTheDocument();
-            expect(screen.queryByText(/kontakt zákonného zástupce/i)).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /kontakt zákonného zástupce/i})).not.toBeInTheDocument();
         });
 
         it('minor via guardian as admin shows marker with guardian name per field', () => {
             renderPage(createMockPageData(mockMemberDetailData(minorViaGuardian)));
             expect(screen.getByText('jan.zastupce@email.cz')).toBeInTheDocument();
             expect(screen.getByText('+420111222333')).toBeInTheDocument();
-            expect(screen.getByText('kontakt zákonného zástupce (Jan Novák)')).toBeInTheDocument();
-            expect(screen.getByText('kontakt zákonného zástupce (Eva Svobodová)')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'kontakt zákonného zástupce (Jan Novák)'})).toBeInTheDocument();
+            expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: 'kontakt zákonného zástupce (Eva Svobodová)'})).toBeInTheDocument();
             expect(screen.queryByText('raw-should-not-show@email.cz')).not.toBeInTheDocument();
         });
 
@@ -306,7 +307,7 @@ describe('MemberDetailPage', () => {
             })));
             expect(screen.getByText('jan.zastupce@email.cz')).toBeInTheDocument();
             expect(screen.getByText('+420111222333')).toBeInTheDocument();
-            expect(screen.queryByText(/kontakt zákonného zástupce/i)).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /kontakt zákonného zástupce/i})).not.toBeInTheDocument();
         });
 
         it('shows dash when no contact value exists', () => {
