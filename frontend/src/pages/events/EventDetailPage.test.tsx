@@ -982,6 +982,28 @@ describe('EventDetailPage', () => {
             });
         });
 
+        describe('sync status indicator in registrations list row', () => {
+            it('renders the indicator only on rows with _links.sync', () => {
+                const syncRow = buildRegistrationRow('member-1', {
+                    _links: {
+                        self: {href: 'http://localhost:8443/api/events/1/registrations/member-1'},
+                        sync: {href: 'http://localhost:8443/api/events/1/registrations/member-1/sync'},
+                    },
+                });
+                const plainRow = buildRegistrationRow('member-2');
+                renderPageWithRegistrationRows([syncRow, plainRow]);
+
+                expect(screen.getAllByTestId('sync-error')).toHaveLength(1);
+            });
+
+            it('renders no indicator when no row has _links.sync', () => {
+                renderPageWithRegistrationRows([buildRegistrationRow()]);
+
+                expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
+                expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
+            });
+        });
+
         describe('edit button for EVENTS:REGISTRATIONS holder (Group 9)', () => {
             it('shows edit button on every row when all rows have _templates.editRegistration (EVENTS:REGISTRATIONS holder)', () => {
                 const editTemplate = mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'});

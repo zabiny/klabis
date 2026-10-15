@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -235,9 +236,11 @@ class RegistrationSummaryPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationSummaryDto, EventRegistrationController.RegistrationView> {
 
     private final RegistrationReadAccess readAccess;
+    private final RegistrationSyncLinks syncLinks;
 
-    RegistrationSummaryPostprocessor(RegistrationReadAccess readAccess) {
+    RegistrationSummaryPostprocessor(RegistrationReadAccess readAccess, RegistrationSyncLinks syncLinks) {
         this.readAccess = readAccess;
+        this.syncLinks = syncLinks;
     }
 
     @Override
@@ -257,6 +260,29 @@ class RegistrationSummaryPostprocessor
                         dtoModel.add(selfLinkBuilder.withSelfRel());
                     }
                 });
+
+        syncLinks.linkFor(event.getId(), view.memberId()).ifPresent(dtoModel::add);
+    }
+}
+
+@MvcComponent
+class RegistrationSyncLinks {
+
+    private final SynchronizationPort synchronizationPort;
+
+    RegistrationSyncLinks(SynchronizationPort synchronizationPort) {
+        this.synchronizationPort = synchronizationPort;
+    }
+
+    Optional<Link> linkFor(EventId eventId, MemberId memberId) {
+        String entityId = new RegistrationSyncId(eventId, memberId).format();
+        boolean enrolled = synchronizationPort.findByTarget(
+                new SyncTarget(SyncEntityType.EVENT_REGISTRATION, entityId)).isPresent();
+        if (!enrolled) {
+            return Optional.empty();
+        }
+        return klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENT_REGISTRATIONS, entityId))
+                .map(link -> link.withRel("sync"));
     }
 }
 
@@ -287,11 +313,11 @@ class RegistrationDetailsPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationDto, EventRegistrationController.RegistrationView> {
 
     private final MemberRegistrationSanctionPort sanctionPort;
-    private final SynchronizationPort synchronizationPort;
+    private final RegistrationSyncLinks syncLinks;
 
-    RegistrationDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, SynchronizationPort synchronizationPort) {
+    RegistrationDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, RegistrationSyncLinks syncLinks) {
         this.sanctionPort = sanctionPort;
-        this.synchronizationPort = synchronizationPort;
+        this.syncLinks = syncLinks;
     }
 
     @Override
@@ -315,13 +341,7 @@ class RegistrationDetailsPostprocessor
                 .ifPresent(dtoModel::add);
 
         if (!view.prefill()) {
-            String entityId = new RegistrationSyncId(event.getId(), memberId).format();
-            boolean enrolled = synchronizationPort.findByTarget(
-                    new SyncTarget(SyncEntityType.EVENT_REGISTRATION, entityId)).isPresent();
-            if (enrolled) {
-                klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENT_REGISTRATIONS, entityId))
-                        .ifPresent(link -> dtoModel.add(link.withRel("sync")));
-            }
+            syncLinks.linkFor(event.getId(), memberId).ifPresent(dtoModel::add);
         }
     }
 

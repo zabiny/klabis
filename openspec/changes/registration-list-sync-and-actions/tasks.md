@@ -2,9 +2,9 @@
 
 ## 1. Synchronisation state in the registrations list
 
-- [ ] 1.1 Backend: add `_links.sync` to enrolled rows in `RegistrationSummaryPostprocessor`, sharing the lookup/link logic with `RegistrationDetailsPostprocessor`; verify with WebMvcTest: enrolled row has `sync` link, non-enrolled row has none
-- [ ] 1.2 Frontend: render `SyncStatusIndicator mode="icon"` in the actions cell of `RegistrationsTable` (`EventDetailPage.tsx`) for rows with `_links.sync`; verify with vitest (indicator present only on rows with the link) and `npm run build`
-- [ ] 1.3 Update `event-registrations` main-spec-facing docs/tests that asserted "no sync state in the list" (grep for it) and verify the suite is green
+- [x] 1.1 Backend: add `_links.sync` to enrolled rows in `RegistrationSummaryPostprocessor`, sharing the lookup/link logic with `RegistrationDetailsPostprocessor`; verify with WebMvcTest: enrolled row has `sync` link, non-enrolled row has none
+- [x] 1.2 Frontend: render `SyncStatusIndicator mode="icon"` in the actions cell of `RegistrationsTable` (`EventDetailPage.tsx`) for rows with `_links.sync`; verify with vitest (indicator present only on rows with the link) and `npm run build`
+- [x] 1.3 Update `event-registrations` main-spec-facing docs/tests that asserted "no sync state in the list" (grep for it) and verify the suite is green
 
 ## 2. Edit own registration from the events list
 

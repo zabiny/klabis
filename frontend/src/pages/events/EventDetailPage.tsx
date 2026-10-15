@@ -103,7 +103,9 @@ const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionD
             ? {label: labels.templates.editRegistration, Icon: Pencil}
             : {label: labels.templates.showRegistrationDetail, Icon: Eye};
 
-        const hasAnyAction = registrationLink || accountLink;
+        const syncLink = registration._links?.sync;
+
+        const hasAnyAction = registrationLink || accountLink || syncLink;
         if (!hasAnyAction) return null;
 
         return (
@@ -136,6 +138,7 @@ const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionD
                         <rowAction.Icon className="w-4 h-4"/>
                     </Button>
                 )}
+                {syncLink && <SyncStatusIndicator syncLink={syncLink} mode="icon"/>}
             </div>
         );
     };

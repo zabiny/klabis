@@ -2182,5 +2182,41 @@ class EventRegistrationControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.sync").doesNotExist());
         }
+
+        @Test
+        @DisplayName("list row gets the sync link only when that registration is enrolled")
+        @WithKlabisMockUser(memberId = MEMBER_1_ID)
+        void listRowSyncLinkOnlyForEnrolledRows() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId enrolledMember = new MemberId(UUID.fromString(MEMBER_1_ID));
+            MemberId otherMember = new MemberId(UUID.randomUUID());
+            Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistrations(List.of(
+                            aRegistration(enrolledMember, SiCardNumber.of("1234")),
+                            aRegistration(otherMember, SiCardNumber.of("5678"))))
+                    .build();
+            event.publish();
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
+            when(membersMock.findByIds(any())).thenReturn(Map.of(
+                    enrolledMember, new MemberDto(enrolledMember.value(), "John", "Doe", "john@example.com"),
+                    otherMember, new MemberDto(otherMember.value(), "Jane", "Smith", "jane@example.com")));
+            var record = com.klabis.sync.domain.SyncRecord.enroll(
+                    com.klabis.sync.SyncRecordId.newId(),
+                    new com.klabis.sync.domain.SyncTarget(com.klabis.sync.domain.SyncEntityType.EVENT_REGISTRATION,
+                            eventId + ":" + enrolledMember.value()),
+                    new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, "101:7"));
+            when(synchronizationPort.findByTarget(any())).thenAnswer(inv -> {
+                com.klabis.sync.domain.SyncTarget target = inv.getArgument(0);
+                return target.entityId().contains(enrolledMember.value().toString())
+                        ? Optional.of(record) : Optional.empty();
+            });
+
+            mockMvc.perform(get("/api/events/{eventId}/registrations", eventId)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[?(@.firstName=='John')]._links.sync.href").exists())
+                    .andExpect(jsonPath("$._embedded.registrationDtoList[?(@.firstName=='Jane')]._links.sync").doesNotExist());
+        }
     }
 }
