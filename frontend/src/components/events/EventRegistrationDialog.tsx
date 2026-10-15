@@ -176,7 +176,7 @@ export const EventRegistrationDialog = ({
             closeOnBackdropClick={true}
             size="lg"
             title={showUnregisterConfirmation
-                ? (getDialogTitleLabel('unregisterFromEvent') ?? labels.templates.unregisterFromEvent)
+                ? getDialogTitleLabel('unregisterFromEvent')
                 : dialogTitle}
             headerIcon={<HeaderIcon className="h-5 w-5 text-primary"/>}
             context={!isLoading && eventContext

@@ -276,12 +276,9 @@ class RegistrationSyncLinks {
 
     Optional<Link> linkFor(EventId eventId, MemberId memberId) {
         String entityId = new RegistrationSyncId(eventId, memberId).format();
-        boolean enrolled = synchronizationPort.findByTarget(
-                new SyncTarget(SyncEntityType.EVENT_REGISTRATION, entityId)).isPresent();
-        if (!enrolled) {
-            return Optional.empty();
-        }
-        return klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENT_REGISTRATIONS, entityId))
+        return synchronizationPort.findByTarget(new SyncTarget(SyncEntityType.EVENT_REGISTRATION, entityId))
+                .flatMap(record -> klabisLinkTo(
+                        methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENT_REGISTRATIONS, entityId)))
                 .map(link -> link.withRel("sync"));
     }
 }

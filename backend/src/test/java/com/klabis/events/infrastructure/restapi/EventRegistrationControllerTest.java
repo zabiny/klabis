@@ -29,6 +29,14 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import com.klabis.sync.SyncRecordId;
+import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.domain.ExternalReference;
+import com.klabis.sync.domain.ExternalSystem;
+import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncRecord;
+import com.klabis.sync.domain.SyncTarget;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -2087,7 +2095,7 @@ class EventRegistrationControllerTest {
     class SyncLinkTests {
 
         @Autowired
-        private com.klabis.sync.application.SynchronizationPort synchronizationPort;
+        private SynchronizationPort synchronizationPort;
 
         private Event eventWithRegistration(UUID eventId, MemberId memberId) {
             Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
@@ -2098,13 +2106,15 @@ class EventRegistrationControllerTest {
             return event;
         }
 
+        private SyncRecord newSyncRecord(UUID eventId, MemberId memberId) {
+            return SyncRecord.enroll(
+                    SyncRecordId.newId(),
+                    new SyncTarget(SyncEntityType.EVENT_REGISTRATION, eventId + ":" + memberId.value()),
+                    new ExternalReference(ExternalSystem.ORIS, "101:7"));
+        }
+
         private void enroll(UUID eventId, MemberId memberId) {
-            var record = com.klabis.sync.domain.SyncRecord.enroll(
-                    com.klabis.sync.SyncRecordId.newId(),
-                    new com.klabis.sync.domain.SyncTarget(com.klabis.sync.domain.SyncEntityType.EVENT_REGISTRATION,
-                            eventId + ":" + memberId.value()),
-                    new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, "101:7"));
-            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.of(record));
+            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.of(newSyncRecord(eventId, memberId)));
         }
 
         @Test
@@ -2201,13 +2211,9 @@ class EventRegistrationControllerTest {
             when(membersMock.findByIds(any())).thenReturn(Map.of(
                     enrolledMember, new MemberDto(enrolledMember.value(), "John", "Doe", "john@example.com"),
                     otherMember, new MemberDto(otherMember.value(), "Jane", "Smith", "jane@example.com")));
-            var record = com.klabis.sync.domain.SyncRecord.enroll(
-                    com.klabis.sync.SyncRecordId.newId(),
-                    new com.klabis.sync.domain.SyncTarget(com.klabis.sync.domain.SyncEntityType.EVENT_REGISTRATION,
-                            eventId + ":" + enrolledMember.value()),
-                    new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, "101:7"));
+            var record = newSyncRecord(eventId, enrolledMember);
             when(synchronizationPort.findByTarget(any())).thenAnswer(inv -> {
-                com.klabis.sync.domain.SyncTarget target = inv.getArgument(0);
+                SyncTarget target = inv.getArgument(0);
                 return target.entityId().contains(enrolledMember.value().toString())
                         ? Optional.of(record) : Optional.empty();
             });
