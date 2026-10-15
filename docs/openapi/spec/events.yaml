@@ -772,7 +772,9 @@ paths:
                 the offers the event has enabled.
             unregisterFromEvent:
               operation: unregisterFromEvent
-              description: Present when registrations are open and the caller is registered
+              description: |
+                Present when registrations are open and the caller is registered; targets the
+                caller's own registration
             discoverOrisRegistrations:
               operation: discoverOrisRegistrations
               description: |
@@ -1164,38 +1166,6 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
-    delete:
-      operationId: unregisterFromEvent
-      tags: [EventRegistrations]
-      summary: Unregister from an event
-      description: |
-        Unregister the authenticated member from an event. Only allowed before the event date.
-      security:
-        - KlabisAuth: [EVENTS]
-      # No x-klabis-authority / x-klabis-owner-visible: acts on the caller's own registration via
-      # @ActingMember, same reasoning as registerForEvent above.
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
-      parameters:
-        - $ref: '#/components/parameters/RegEventIdParam'
-      responses:
-        '204':
-          description: Successfully unregistered
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
     get:
       operationId: listRegistrations
       tags: [EventRegistrations]
@@ -1292,6 +1262,43 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
+    delete:
+      operationId: unregisterFromEvent
+      tags: [EventRegistrations]
+      summary: Unregister a member from an event
+      description: |
+        Cancel a member's registration. Accessible by the member themselves or a user with
+        EVENTS:REGISTRATIONS authority. Only allowed before the event date and before the
+        registration deadline.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_REGISTRATIONS
+      x-klabis-owner-visible: true
+      parameters:
+        - $ref: '#/components/parameters/RegEventIdParam'
+        - $ref: '#/components/parameters/RegMemberIdParam'
+      responses:
+        '204':
+          description: Successfully unregistered
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - must be the member or have EVENTS:REGISTRATIONS
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
     get:
       operationId: getRegistration
       tags: [EventRegistrations]
@@ -1357,7 +1364,8 @@ paths:
               operation: unregisterFromEvent
               description: |
                 Present only on the existing-registration (newRegistration=false) response, when
-                registrations are open and the caller is the registered member
+                registrations are open and the caller is the registered member or holds
+                EVENTS:REGISTRATIONS
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':

@@ -516,7 +516,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                 boolean isRegistered = currentMemberId != null
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, currentMemberId.value())));
                     selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
                             Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
@@ -596,7 +596,7 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                 boolean isRegistered = currentMemberId != null
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, currentMemberId.value())));
                     selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
                             Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))

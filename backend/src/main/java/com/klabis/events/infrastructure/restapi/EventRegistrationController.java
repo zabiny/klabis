@@ -99,9 +99,9 @@ class EventRegistrationController implements EventRegistrationsApi {
     @Override
     public ResponseEntity<Void> unregisterFromEvent(
             @PathVariable UUID eventId,
-            @ActingMember MemberId actingMember) {
+            @PathVariable UUID memberId) {
 
-        registrationService.unregisterMember(new EventId(eventId), actingMember);
+        registrationService.unregisterMember(new EventId(eventId), new MemberId(memberId));
         return ResponseEntity.noContent().build();
     }
 
@@ -364,14 +364,10 @@ class RegistrationDetailsPostprocessor
                                     memberId.value(),
                                     null),
                             Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))));
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
-            if (memberId.equals(actingMember)) {
-                selfLink = selfLink
-                        .andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(
-                                event.getId().value(),
-                                null)));
-            }
+            selfLink = selfLink
+                    .andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(
+                            event.getId().value(),
+                            memberId.value())));
         }
         return selfLink;
     }

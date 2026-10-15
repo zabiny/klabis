@@ -276,7 +276,7 @@ class EventRegistrationControllerTest {
     }
 
     @Nested
-    @DisplayName("DELETE /api/events/{id}/registrations")
+    @DisplayName("DELETE /api/events/{id}/registrations/{memberId}")
     class UnregisterFromEventTests {
 
         @Test
@@ -286,10 +286,34 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.randomUUID();
             final MemberId memberId = new MemberId(UUID.fromString(MEMBER_1_ID));
 
-            mockMvc.perform(delete("/api/events/{eventId}/registrations", eventId))
+            mockMvc.perform(delete("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID))
                     .andExpect(status().isNoContent());
 
             verify(registrationServiceMock).unregisterMember(new EventId(eventId), memberId);
+        }
+
+        @Test
+        @DisplayName("should return 403 when member unregisters another member without EVENTS:REGISTRATIONS")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222")
+        void shouldReturn403WhenMemberUnregistersAnotherMember() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(delete("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID))
+                    .andExpect(status().isForbidden());
+
+            verifyNoInteractions(registrationServiceMock);
+        }
+
+        @Test
+        @DisplayName("should let user with EVENTS:REGISTRATIONS unregister any member")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.EVENTS_REGISTRATIONS})
+        void shouldAllowManagerToUnregisterAnyMember() throws Exception {
+            UUID eventId = UUID.randomUUID();
+
+            mockMvc.perform(delete("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID))
+                    .andExpect(status().isNoContent());
+
+            verify(registrationServiceMock).unregisterMember(new EventId(eventId), new MemberId(UUID.fromString(MEMBER_1_ID)));
         }
 
         @Test
@@ -301,7 +325,7 @@ class EventRegistrationControllerTest {
             doThrow(new EventNotFoundException(new EventId(eventId))).when(registrationServiceMock)
                     .unregisterMember(any(), any());
 
-            mockMvc.perform(delete("/api/events/{eventId}/registrations", eventId))
+            mockMvc.perform(delete("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID))
                     .andExpect(status().isNotFound());
         }
 
@@ -311,7 +335,7 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.randomUUID();
 
             mockMvc.perform(
-                            delete("/api/events/{eventId}/registrations", eventId)
+                            delete("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                     )
                     .andExpect(status().isUnauthorized());
         }
@@ -323,10 +347,9 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.randomUUID();
 
             mockMvc.perform(
-                            delete("/api/events/{eventId}/registrations", eventId)
+                            delete("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                     )
-                    .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.title").value("Authorization Failed"));
+                    .andExpect(status().isForbidden());
         }
     }
 
@@ -645,7 +668,7 @@ class EventRegistrationControllerTest {
         }
 
         @Test
-        @DisplayName("DELETE /registrations returns 400 when service throws BusinessRuleViolationException for expired deadline")
+        @DisplayName("DELETE /registrations/{memberId} returns 400 when service throws BusinessRuleViolationException for expired deadline")
         @WithKlabisMockUser(memberId = MEMBER_1_ID)
         void shouldReturn400WhenUnregistrationDeadlinePassed() throws Exception {
             UUID eventId = UUID.randomUUID();
@@ -655,7 +678,7 @@ class EventRegistrationControllerTest {
                     .unregisterMember(any(), any());
 
             mockMvc.perform(
-                            delete("/api/events/{eventId}/registrations", eventId)
+                            delete("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
                     .andExpect(status().isBadRequest());
@@ -1383,6 +1406,32 @@ class EventRegistrationControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.firstName").value("Jane"))
                     .andExpect(jsonPath("$.siCardNumber").value("654321"));
+        }
+
+        @Test
+        @DisplayName("user with EVENTS:REGISTRATIONS sees unregister template targeting the other member's registration")
+        @WithKlabisMockUser(memberId = "22222222-2222-2222-2222-222222222222", authorities = {Authority.EVENTS_REGISTRATIONS})
+        void shouldOfferUnregisterTemplateToManagerOnForeignRegistration() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            MemberId targetMemberId = new MemberId(UUID.fromString(MEMBER_1_ID));
+
+            Event activeEvent = EventTestDataBuilder.anEvent()
+                    .withDate(LocalDate.now().plusDays(30))
+                    .addRegistration(aRegistration(targetMemberId, SiCardNumber.of("654321")))
+                    .build();
+            activeEvent.publish();
+
+            when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(activeEvent);
+            when(membersMock.findById(targetMemberId)).thenReturn(Optional.of(
+                    new MemberDto(targetMemberId.value(), "Jane", "Smith", "jane@example.com")));
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent.method").value("DELETE"))
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent.target", containsString("/registrations/" + MEMBER_1_ID)));
         }
 
         @Test
