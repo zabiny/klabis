@@ -1,22 +1,24 @@
 import {type ReactElement, useCallback, useEffect, useMemo, useState} from 'react';
 import {type LucideIcon, Calendar, Check, FileText, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
-import {getFieldLabel, labels} from '../../localization';
+import {getDialogTitleLabel, getFieldLabel, labels} from '../../localization';
 import {renderYesNo} from '../../utils/formatters';
-import {Alert, Button, DetailRow, Modal, Skeleton} from '../UI';
+import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from '../UI';
 import {type RegistrationDialogData, type RegistrationDialogMode, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas';
 import type {Link} from '../../api/types';
+import type {HalResourceLinks} from '../../api';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils';
 import {normalizeKlabisApiPath} from '../../utils/halFormsUtils';
 import {HalFormDisplay} from '../HalNavigator2/HalFormDisplay';
 import type {FormRenderHelpers, RenderFormCallback} from '../HalNavigator2/halforms';
 import * as Yup from 'yup';
+import {SyncStatusIndicator} from '../sync/SyncStatusIndicator.tsx';
 import {createRegistrationFieldsFactory, type SiRequirement} from './registrationFieldsFactory.tsx';
 
 export interface EventRegistrationDialogProps {
     registration: Link | null;
     onClose: () => void;
-    onRegistered?: () => void;
+    onChanged?: () => void;
 }
 
 const MODE_PRESENTATION: Record<RegistrationDialogMode, {title: string; Icon: LucideIcon}> = {
@@ -28,13 +30,15 @@ const MODE_PRESENTATION: Record<RegistrationDialogMode, {title: string; Icon: Lu
 export const EventRegistrationDialog = ({
     registration,
     onClose,
-    onRegistered,
+    onChanged,
 }: EventRegistrationDialogProps): ReactElement | null => {
     const {mode, template, memberName, prefillData, eventContext, isLoading, error} = useRegistrationDialogData(registration);
 
     const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string>>({});
+    const [confirmingUnregister, setConfirmingUnregister] = useState(false);
     useEffect(() => {
         setServerFieldErrors({});
+        setConfirmingUnregister(false);
     }, [registration?.href]);
 
     const transportProp = template?.properties.find(prop => prop.name === 'wantsSharedTransport');
@@ -96,8 +100,15 @@ export const EventRegistrationDialog = ({
         ? labels.events.registrationModal.confirmNew
         : labels.events.registrationModal.confirmEdit;
 
+    const unregisterTemplate = mode === 'edit' ? prefillData?._templates?.unregisterFromEvent : undefined;
+    const normalizedUnregisterTemplate = unregisterTemplate
+        ? {...unregisterTemplate, target: normalizeKlabisApiPath(unregisterTemplate.target ?? '')}
+        : undefined;
+    const showUnregisterConfirmation = confirmingUnregister && normalizedUnregisterTemplate !== undefined;
+
     const handleClose = () => {
         setServerFieldErrors({});
+        setConfirmingUnregister(false);
         onClose();
     };
 
@@ -131,6 +142,8 @@ export const EventRegistrationDialog = ({
             data-testid="event-registration-form"
             className="flex flex-col gap-4"
         >
+            {resolvedResource.missingInOris === true && <MissingInOrisNotice/>}
+            {mode === 'edit' && <SyncStatusIndicator syncLink={prefillData?._links?.sync} mode="icon+date"/>}
             {showSiField && helpers.renderField('siCardNumber')}
             {showRentCheckbox && helpers.renderField('wantsToRentSi')}
             {categoryProp && helpers.renderField('categoryId')}
@@ -142,9 +155,16 @@ export const EventRegistrationDialog = ({
             )}
             {hasInternalNote && helpers.renderField('internalNote')}
             {hasOrisNote && helpers.renderField('orisNote')}
-            <div className="mt-2 flex items-center justify-end gap-3 border-t border-border pt-4">
-                {helpers.renderField('cancel')}
-                {helpers.renderField('submit')}
+            <div className="mt-2 flex items-center gap-3 border-t border-border pt-4">
+                {unregisterTemplate && (
+                    <Button type="button" variant="danger" onClick={() => setConfirmingUnregister(true)}>
+                        {labels.buttons.unregister}
+                    </Button>
+                )}
+                <div className="ml-auto flex items-center gap-3">
+                    {helpers.renderField('cancel')}
+                    {helpers.renderField('submit')}
+                </div>
             </div>
         </div>
     );
@@ -155,7 +175,9 @@ export const EventRegistrationDialog = ({
             onClose={handleClose}
             closeOnBackdropClick={true}
             size="lg"
-            title={dialogTitle}
+            title={showUnregisterConfirmation
+                ? getDialogTitleLabel('unregisterFromEvent')
+                : dialogTitle}
             headerIcon={<HeaderIcon className="h-5 w-5 text-primary"/>}
             context={!isLoading && eventContext
                 ? <RegistrationContext event={eventContext}/>
@@ -165,12 +187,24 @@ export const EventRegistrationDialog = ({
                 <DialogSkeleton/>
             ) : error ? (
                 <Alert severity="error">{labels.events.registrationModal.prefillLoadError}</Alert>
+            ) : showUnregisterConfirmation ? (
+                <HalFormDisplay
+                    template={normalizedUnregisterTemplate}
+                    templateName="unregisterFromEvent"
+                    resourceData={resolvedResource}
+                    pathname={normalizedUnregisterTemplate.target}
+                    resourceUrl={registration.href}
+                    onClose={handleClose}
+                    onSubmitSuccess={() => onChanged?.()}
+                    navigateOnSuccess={false}
+                />
             ) : mode === 'view' && prefillData ? (
                 <ReadOnlyRegistration
                     registration={resolvedResource}
                     memberName={memberName}
                     eventContext={eventContext}
                     onClose={handleClose}
+                    syncLink={prefillData._links?.sync}
                 />
             ) : missingAffordance || !normalizedTemplate ? (
                 <Alert severity="error">{labels.events.registrationModal.noRegistrationAffordance}</Alert>
@@ -181,7 +215,7 @@ export const EventRegistrationDialog = ({
                     resourceData={resolvedResource}
                     pathname={normalizedTemplate.target}
                     onClose={handleClose}
-                    onSubmitSuccess={() => onRegistered?.()}
+                    onSubmitSuccess={() => onChanged?.()}
                     onSubmitError={handleSubmitError}
                     postprocessPayload={stripHiddenSharedServices}
                     refineValidationSchema={refineValidationSchema}
@@ -201,7 +235,8 @@ export const EventRegistrationDialog = ({
 
 const hasText = (value: unknown): boolean => typeof value === 'string' && value.trim() !== '';
 
-function ReadOnlyRegistration({registration, memberName, eventContext, onClose}: {
+function ReadOnlyRegistration({registration, memberName, eventContext, onClose, syncLink}: {
+    syncLink?: HalResourceLinks;
     registration: Record<string, unknown>;
     memberName: string;
     eventContext: RegistrationDialogData['eventContext'];
@@ -212,6 +247,8 @@ function ReadOnlyRegistration({registration, memberName, eventContext, onClose}:
 
     return (
         <div data-testid="event-registration-detail" className="flex flex-col gap-4">
+            {registration.missingInOris === true && <MissingInOrisNotice/>}
+            <SyncStatusIndicator syncLink={syncLink} mode="icon+date"/>
             <dl className="flex flex-col">
                 {memberName && <DetailRow label={labels.fields.memberId}>{memberName}</DetailRow>}
                 {category && <DetailRow label={labels.events.registrationModal.category}>{category}</DetailRow>}
@@ -240,6 +277,14 @@ function ReadOnlyRegistration({registration, memberName, eventContext, onClose}:
             <div className="mt-2 flex items-center justify-end border-t border-border pt-4">
                 <Button variant="secondary" onClick={onClose}>{labels.buttons.close}</Button>
             </div>
+        </div>
+    );
+}
+
+function MissingInOrisNotice() {
+    return (
+        <div data-testid="missing-in-oris-notice">
+            <Badge variant="warning">{labels.events.missingInOris}</Badge>
         </div>
     );
 }

@@ -51,6 +51,14 @@ The always-bootstrapped `admin` username user (password from `KLABIS_ADMIN_PASSW
 
 **CRITICAL:** Always check if services are already running before starting new processes (`lsof -i :8443`, `lsof -i :3000`, or check IntelliJ Run tool window).
 
+### Design principles
+
+Keep these in mind when designing features, proposals and code:
+
+- **Expected load** — the club has 200–300 users, typically at most 10–20 working concurrently; high tens of events per year. Size solutions accordingly.
+- **High cohesion, low coupling** — keep related logic together within a module/aggregate; minimize dependencies between modules.
+- **KISS** — prefer the simplest solution that works. Do not optimize performance (e.g. N+1 queries, batch loading for HAL+FORMS links in controllers, caching) until it is proven problematic — with the expected load it is most likely pointless.
+
 ### Design decisions
 
 Non-obvious architectural choices are recorded as ADRs in [`docs/design-decisions.md`](docs/design-decisions.md). **Read that file before proposing significant architectural changes** — the reasoning behind the auto-config layout, optional `myClubId`, cache-manager fallback, enum choices, and package structure is documented there. Add a new `ADR-NNN` section for any similarly-sized decision introduced in the future.

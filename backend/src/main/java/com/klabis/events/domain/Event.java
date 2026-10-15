@@ -14,6 +14,7 @@ import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Association;
 import org.jmolecules.ddd.annotation.Identity;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -255,6 +256,15 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             );
         }
     }
+
+    @RecordBuilder
+    public record SyncRegistrationFromOris(
+            String categoryOrisId,
+            SiCardNumber siCardNumber,
+            boolean wantsToRentSi,
+            RegistrationNote orisNote,
+            Instant registeredAt
+    ) {}
 
     @RecordBuilder
     public record CancelEvent(
@@ -880,7 +890,68 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                         command.internalNote(), command.orisNote(), wantsToRentSi));
         registrations.add(registration);
 
-        registerEvent(MemberRegisteredForEventEvent.fromAggregate(this, memberId));
+        registerEvent(MemberRegisteredForEventEvent.fromAggregate(this, memberId, UpdateOrigin.MANUAL));
+    }
+
+    /**
+     * Brings a registration in from ORIS, creating it or - when the member already has one - taking the ORIS values
+     * over (category, SI card, SI rental, ORIS note) while keeping the Klabis registration time, internal note and
+     * shared-service choices. Idempotent, as the synchronisation engine requires of a local write.
+     * <p>
+     * ORIS is the fact, so neither the registration window, the SI policy nor any sanction is checked here -
+     * validation belongs to Klabis input.
+     *
+     * @throws OrisCategoryNotYetSynchronisedException if the entry's class is not among the event's categories yet
+     */
+    public void syncRegistrationFromOris(MemberId memberId, SyncRegistrationFromOris command) {
+        EventCategoryId categoryId = resolveCategoryIdByOrisId(command.categoryOrisId());
+
+        Optional<EventRegistration> existing = findRegistration(memberId);
+        if (existing.isEmpty()) {
+            registrations.add(EventRegistration.create(
+                    new EventRegistration.CreateEventRegistration(memberId, command.siCardNumber(), categoryId,
+                            false, false, null, command.orisNote(), command.wantsToRentSi()),
+                    command.registeredAt()));
+            registerEvent(MemberRegisteredForEventEvent.fromAggregate(this, memberId, UpdateOrigin.SYNCHRONISATION));
+            return;
+        }
+
+        EventRegistration current = existing.get();
+        EventRegistration updated = current.withOrisValues(EventEditRegistrationCommandBuilder.builder()
+                .siCardNumber(command.siCardNumber())
+                .categoryId(categoryId)
+                .wantsSharedTransport(current.wantsSharedTransport())
+                .wantsSharedAccommodation(current.wantsSharedAccommodation())
+                .internalNote(current.internalNote())
+                .orisNote(command.orisNote())
+                .wantsToRentSi(command.wantsToRentSi())
+                .build());
+        registrations.remove(current);
+        registrations.add(updated);
+        registerEvent(RegistrationEditedEvent.fromAggregate(this, memberId, current, updated,
+                UpdateOrigin.SYNCHRONISATION));
+    }
+
+    /**
+     * ORIS no longer lists the member's entry: the registration is kept and only marked, so nothing the member or the
+     * club recorded is lost. A no-op for a member without a registration or one already marked.
+     */
+    public void markRegistrationMissingInOris(MemberId memberId) {
+        findRegistration(memberId).filter(registration -> !registration.missingInOris()).ifPresent(current -> {
+            registrations.remove(current);
+            registrations.add(current.markedMissingInOris());
+        });
+    }
+
+    private EventCategoryId resolveCategoryIdByOrisId(String categoryOrisId) {
+        if (categoryOrisId == null && categories.isEmpty()) {
+            return null;
+        }
+        return categories.stream()
+                .filter(c -> c.orisId() != null && c.orisId().equals(categoryOrisId))
+                .map(EventCategory::id)
+                .findFirst()
+                .orElseThrow(() -> new OrisCategoryNotYetSynchronisedException(this.id, categoryOrisId));
     }
 
     private EventCategoryId resolveCategoryId(EventCategoryId categoryId) {
@@ -915,7 +986,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
         registrations.remove(registration);
 
-        registerEvent(MemberUnregisteredFromEventEvent.fromAggregate(this, command.memberId()));
+        registerEvent(MemberUnregisteredFromEventEvent.fromAggregate(this, command.memberId(), UpdateOrigin.MANUAL));
     }
 
     public void editRegistration(MemberId memberId, EditRegistrationCommand command) {
@@ -948,7 +1019,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         registrations.remove(current);
         registrations.add(updated);
 
-        registerEvent(RegistrationEditedEvent.fromAggregate(this, memberId, current, updated));
+        registerEvent(RegistrationEditedEvent.fromAggregate(this, memberId, current, updated, UpdateOrigin.MANUAL));
     }
 
     private void assertRegistrationsOpen() {

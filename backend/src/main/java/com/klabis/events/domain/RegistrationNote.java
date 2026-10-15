@@ -30,6 +30,21 @@ public final class RegistrationNote {
         return new RegistrationNote(trimmed);
     }
 
+    /**
+     * For text that is not Klabis input (e.g. taken over from ORIS): never rejects, an over-long text is cut to
+     * {@link #MAX_LENGTH} code points.
+     */
+    public static @Nullable RegistrationNote truncatingOf(@Nullable String text) {
+        if (text == null) {
+            return null;
+        }
+        String trimmed = text.trim();
+        if (trimmed.codePointCount(0, trimmed.length()) > MAX_LENGTH) {
+            trimmed = trimmed.substring(0, trimmed.offsetByCodePoints(0, MAX_LENGTH));
+        }
+        return ofNullable(trimmed);
+    }
+
     public static @Nullable String textOrNull(@Nullable RegistrationNote note) {
         return note == null ? null : note.text;
     }

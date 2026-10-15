@@ -128,7 +128,7 @@ class EventRegistrationE2ETest {
 
         // When: Unregister from event (before event date)
         mockMvc.perform(
-                        delete("/api/events/{id}/registrations", publishedEventId)
+                        delete("/api/events/{id}/registrations/{memberId}", publishedEventId, TEST_MEMBER_ID)
                                 .contentType("application/json")
                                 .with(klabisAuthentication(
                                         member(TEST_MEMBER_ID)
@@ -269,7 +269,7 @@ class EventRegistrationE2ETest {
 
         // When: Try to unregister (rejected because event date is in the past)
         mockMvc.perform(
-                        delete("/api/events/{id}/registrations", eventId)
+                        delete("/api/events/{id}/registrations/{memberId}", eventId, TEST_MEMBER_ID)
                                 .contentType("application/json")
                 )
                 .andDo(print())

@@ -115,7 +115,7 @@ class EventRegistrationTest {
             SiCardNumber originalSiCard = SiCardNumber.of("123456");
             Instant originalRegisteredAt = Instant.now().minusSeconds(60);
             EventCategoryId originalCategoryId = EventCategoryId.generate();
-            EventRegistration original = EventRegistration.reconstruct(originalId, originalRegisteredAt, EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(originalSiCard).categoryId(originalCategoryId).build());
+            EventRegistration original = EventRegistration.reconstruct(originalId, originalRegisteredAt, EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(originalSiCard).categoryId(originalCategoryId).build(), false);
 
             SiCardNumber newSiCard = SiCardNumber.of("654321");
             EventCategoryId newCategoryId = EventCategoryId.generate();
@@ -153,8 +153,8 @@ class EventRegistrationTest {
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
             Instant registeredAt = Instant.now();
 
-            EventRegistration registration1 = EventRegistration.reconstruct(id, registeredAt, EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(siCardNumber).build());
-            EventRegistration registration2 = EventRegistration.reconstruct(id, registeredAt, EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(siCardNumber).build());
+            EventRegistration registration1 = EventRegistration.reconstruct(id, registeredAt, EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(siCardNumber).build(), false);
+            EventRegistration registration2 = EventRegistration.reconstruct(id, registeredAt, EventRegistrationCreateEventRegistrationBuilder.builder().memberId(memberId).siCardNumber(siCardNumber).build(), false);
 
             // Assert
             assertThat(registration1)

@@ -4,6 +4,8 @@ How to plug a new entity type into the `sync` engine (`com.klabis.sync`), which 
 
 The reference implementation is `OrisEventSyncAdapter` (`com.klabis.events.infrastructure.orissync`) — read it alongside this page. Snippets naming `Member` are illustrative only: no member adapter exists.
 
+`OrisEventRegistrationSyncAdapter` (same package) is the second reference, for a **child entity reached only through its aggregate** (a registration is loaded and saved via `Event`, never its own repository), with a composite entity id (`<eventId>:<memberId>`) and external id (`<orisEventId>:<clubUserId>`) that survive deleting and re-creating the record. It is pull-only with `containsSensitiveData = true`, resolves the EVENT/MEMBER pairings through `SyncPairingLookup` (not `SynchronizationPort`, which depends on every adapter), injects `SynchronizationPort` `@Lazy` only for the one `markDirty` it needs, and has no external version token (ORIS offers none per entry). New records come from a scheduled discovery job (`OrisEventRegistrationDiscoveryJob`, `klabis.events.oris-entries-discovery-cron`) calling `pullAndEnroll`; a short-TTL cache (`OrisEventEntries`, `klabis.events.oris-entries-cache-ttl`) shares one ORIS read per event across the job and the adapter.
+
 ## Before starting
 
 Read `com.klabis.sync.domain` in full — `SynchronizationAdapter`, `SyncCapabilities`, `SyncProjection`, `SyncEntityType`, `SyncRecord`. `@NamedInterface("sync.domain")` exports the whole package deliberately (ADR-005); depend on these types directly.

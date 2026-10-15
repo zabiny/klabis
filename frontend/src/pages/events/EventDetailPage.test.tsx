@@ -442,6 +442,21 @@ describe('EventDetailPage', () => {
             expect(screen.getByRole('button', {name: /přihlásit se/i})).toBeInTheDocument();
         });
 
+        it('shows discoverOrisRegistrations button when template exists', () => {
+            renderPage(createMockPageData(mockEventDetailData({
+                _templates: {
+                    default: mockHalFormsTemplate({method: 'POST'}),
+                    discoverOrisRegistrations: mockHalFormsTemplate({method: 'POST', title: 'Načíst přihlášky z ORIS'}),
+                },
+            })));
+            expect(screen.getByRole('button', {name: /Načíst přihlášky z ORIS/})).toBeInTheDocument();
+        });
+
+        it('hides discoverOrisRegistrations button when template is absent', () => {
+            renderPage(createMockPageData(mockEventDetailData()));
+            expect(screen.queryByRole('button', {name: /Načíst přihlášky z ORIS/})).not.toBeInTheDocument();
+        });
+
         it('shows unregisterFromEvent button when template exists', () => {
             const data = mockEventDetailData({
                 _templates: {
@@ -883,6 +898,21 @@ describe('EventDetailPage', () => {
             ...overrides,
         });
 
+        it('marks a registration missing in ORIS in the list only when the flag is true', () => {
+            renderPageWithRegistrationRows([
+                buildRegistrationRow('member-1', {missingInOris: true}),
+                buildRegistrationRow('member-2', {lastName: 'Jiná'}),
+            ]);
+
+            expect(screen.getAllByText('V ORISu nenalezena')).toHaveLength(1);
+        });
+
+        it('shows no ORIS mark when the flag is absent', () => {
+            renderPageWithRegistrationRows([buildRegistrationRow()]);
+
+            expect(screen.queryByText('V ORISu nenalezena')).not.toBeInTheDocument();
+        });
+
         const buildRegistrationRowWithoutTimestamp = (memberId = 'member-1') => ({
             firstName: 'Jana',
             lastName: 'Nováková',
@@ -949,6 +979,28 @@ describe('EventDetailPage', () => {
                 expect(screen.getByRole('dialog')).toBeInTheDocument();
                 expect(await screen.findByLabelText(/SI čip/)).toBeInTheDocument();
                 expect(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit})).toBeInTheDocument();
+            });
+        });
+
+        describe('sync status indicator in registrations list row', () => {
+            it('renders the indicator only on rows with _links.sync', () => {
+                const syncRow = buildRegistrationRow('member-1', {
+                    _links: {
+                        self: {href: 'http://localhost:8443/api/events/1/registrations/member-1'},
+                        sync: {href: 'http://localhost:8443/api/events/1/registrations/member-1/sync'},
+                    },
+                });
+                const plainRow = buildRegistrationRow('member-2');
+                renderPageWithRegistrationRows([syncRow, plainRow]);
+
+                expect(screen.getAllByTestId('sync-error')).toHaveLength(1);
+            });
+
+            it('renders no indicator when no row has _links.sync', () => {
+                renderPageWithRegistrationRows([buildRegistrationRow()]);
+
+                expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
+                expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
             });
         });
 

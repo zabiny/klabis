@@ -287,6 +287,28 @@ class EventJdbcRepositoryTest {
         }
 
         @Test
+        @DisplayName("should persist and reload the missing-in-ORIS mark")
+        void shouldRoundTripMissingInOrisMark() {
+            Event event = Event.create(EventCreateEventBuilder.builder()
+                    .name("Mark Event")
+                    .eventDate(LocalDate.now().plusDays(60))
+                    .location("Test Location")
+                    .organizer("Test OC")
+                    .build());
+            event.publish();
+            MemberId marked = new MemberId(TEST_MEMBER_1_ID);
+            MemberId plain = new MemberId(TEST_MEMBER_2_ID);
+            register(event, marked, new SiCardNumber("123456"), null);
+            register(event, plain, new SiCardNumber("789012"), null);
+            event.markRegistrationMissingInOris(marked);
+
+            Event retrieved = eventRepository.findById(eventRepository.save(event).getId()).orElseThrow();
+
+            assertThat(retrieved.findRegistration(marked).orElseThrow().missingInOris()).isTrue();
+            assertThat(retrieved.findRegistration(plain).orElseThrow().missingInOris()).isFalse();
+        }
+
+        @Test
         @DisplayName("should persist and reload a registration without SI number and the rental request")
         void shouldRoundTripAbsentSiNumberAndRental() {
             Event event = Event.create(EventCreateEventBuilder.builder()
@@ -2145,6 +2167,26 @@ class EventJdbcRepositoryTest {
             assertThat(eventRepository.findIdsCoordinatedBy(coordB))
                     .containsExactlyInAnyOrder(coordinatedByBoth.getId(), coordinatedByB.getId());
             assertThat(eventRepository.findIdsCoordinatedBy(new MemberId(TEST_MEMBER_3_ID))).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("Active event ids")
+    class ActiveEventIds {
+
+        @Test
+        @DisplayName("returns only the ids of ACTIVE events among the given ones")
+        void shouldReturnOnlyActiveIds() {
+            Event draft = eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                    .name("Draft").eventDate(LocalDate.of(2026, 9, 1)).organizer("OOB").build()));
+            Event active = Event.create(EventCreateEventBuilder.builder()
+                    .name("Active").eventDate(LocalDate.of(2026, 9, 2)).organizer("OOB").build());
+            active.publish();
+            active = eventRepository.save(active);
+
+            assertThat(eventRepository.findActiveIds(List.of(draft.getId(), active.getId(), EventId.generate())))
+                    .containsExactly(active.getId());
+            assertThat(eventRepository.findActiveIds(List.of())).isEmpty();
         }
     }
 

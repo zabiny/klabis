@@ -31,6 +31,7 @@ export const labels = {
         close: 'Zavřít',
         retry: 'Zkusit znovu',
         logout: 'Odhlásit',
+        unregister: 'Odhlásit',
         edit: 'Upravit',
         save: 'Uložit změny',
         saveChanges: 'Uložit změny',
@@ -51,6 +52,7 @@ export const labels = {
     templates: {
         cancelEvent: 'Zrušit akci',
         unregisterFromEvent: 'Odhlásit se z akce',
+        discoverOrisRegistrations: 'Načíst přihlášky z ORIS',
         editRegistration: 'Upravit přihlášku',
         showRegistrationDetail: 'Detail',
         updateEvent: 'Upravit',
@@ -125,6 +127,7 @@ export const labels = {
         cancelEvent: 'Zrušení akce',
         registerForEvent: 'Přihlásit se na akci',
         unregisterFromEvent: 'Odhlásit se z akce',
+        discoverOrisRegistrations: 'Načtení přihlášek z ORIS',
         editRegistration: 'Upravit přihlášku',
         registrationDetail: 'Detail přihlášky',
         suspendMember: 'Ukončení členství',
@@ -576,6 +579,7 @@ export const labels = {
     },
 
     events: {
+        missingInOris: 'V ORISu nenalezena',
         registrationModal: {
             siChip: 'SI čip',
             siChipHelperPrefilled: 'Předvyplněno z vašeho profilu · 4–8 číslic',

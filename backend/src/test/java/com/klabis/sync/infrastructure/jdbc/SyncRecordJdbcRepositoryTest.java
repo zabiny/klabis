@@ -673,4 +673,46 @@ class SyncRecordJdbcRepositoryTest {
             assertThat(found).hasSize(1);
         }
     }
+
+    @Nested
+    @DisplayName("non-retired lookups by entity type and entity id prefix")
+    class NonRetiredByEntityType {
+
+        private SyncRecord saved(SyncEntityType type, String entityId, String externalId, boolean retired) {
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), new SyncTarget(type, entityId),
+                    new ExternalReference(ExternalSystem.ORIS, externalId));
+            if (retired) {
+                record.retire(Instant.now());
+            }
+            return syncRecordRepository.save(record);
+        }
+
+        @Test
+        @DisplayName("by type returns only non-retired records of that type")
+        void byType() {
+            saved(SyncEntityType.EVENT_REGISTRATION, "aaa:1", "9001:1", false);
+            saved(SyncEntityType.EVENT_REGISTRATION, "aaa:2", "9001:2", true);
+            saved(SyncEntityType.EVENT, "aaa-event", "9001", false);
+
+            assertThat(syncRecordRepository.findNonRetiredByEntityType(SyncEntityType.EVENT_REGISTRATION))
+                    .extracting(r -> r.getTarget().entityId()).containsExactly("aaa:1");
+        }
+
+        @Test
+        @DisplayName("by prefix matches literally, not as a pattern")
+        void byPrefix() {
+            saved(SyncEntityType.EVENT_REGISTRATION, "e1:m1", "9101:1", false);
+            saved(SyncEntityType.EVENT_REGISTRATION, "e1:m2", "9101:2", false);
+            saved(SyncEntityType.EVENT_REGISTRATION, "e1:m3", "9101:3", true);
+            saved(SyncEntityType.EVENT_REGISTRATION, "e2:m1", "9102:1", false);
+            saved(SyncEntityType.EVENT_REGISTRATION, "e%:m1", "9103:1", false);
+
+            assertThat(syncRecordRepository.findNonRetiredByEntityTypeAndEntityIdPrefix(
+                    SyncEntityType.EVENT_REGISTRATION, "e1:"))
+                    .extracting(r -> r.getTarget().entityId()).containsExactlyInAnyOrder("e1:m1", "e1:m2");
+            assertThat(syncRecordRepository.findNonRetiredByEntityTypeAndEntityIdPrefix(
+                    SyncEntityType.EVENT_REGISTRATION, "e%"))
+                    .extracting(r -> r.getTarget().entityId()).containsExactly("e%:m1");
+        }
+    }
 }

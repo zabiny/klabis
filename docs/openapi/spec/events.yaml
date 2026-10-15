@@ -772,7 +772,13 @@ paths:
                 the offers the event has enabled.
             unregisterFromEvent:
               operation: unregisterFromEvent
-              description: Present when registrations are open and the caller is registered
+              description: |
+                Present when registrations are open and the caller is registered; targets the
+                caller's own registration
+            discoverOrisRegistrations:
+              operation: discoverOrisRegistrations
+              description: |
+                Present for callers with SYNC:MANAGE when the event is ACTIVE and kept in step with ORIS
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -1037,6 +1043,35 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
+  /api/events/{eventId}/oris-registrations/discovery:
+    post:
+      operationId: discoverOrisRegistrations
+      tags: [OrisEvents]
+      summary: Load registrations of club members from ORIS
+      description: |
+        Reads the club's ORIS entries of the event afresh and brings in each entry of a member who
+        exists in Klabis and is paired with their ORIS club membership. Only new entries are brought
+        in; registrations already paired with an ORIS entry are left to the regular synchronisation.
+        Does nothing for an event that is not ACTIVE or is not kept in step with ORIS.
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      x-spring-provide-args:
+        - '@com.klabis.common.users.ActingUser com.klabis.members.CurrentUserData currentUser'
+      parameters:
+        - $ref: '#/components/parameters/RegEventIdParam'
+      responses:
+        '204':
+          description: Discovery finished
+          content:
+            application/prs.hal-forms+json: {}
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+
   /api/events/import-batch:
     post:
       operationId: importEventsBatch
@@ -1128,38 +1163,6 @@ paths:
             application/problem+json:
               schema:
                 $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
-        '422':
-          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
-
-    delete:
-      operationId: unregisterFromEvent
-      tags: [EventRegistrations]
-      summary: Unregister from an event
-      description: |
-        Unregister the authenticated member from an event. Only allowed before the event date.
-      security:
-        - KlabisAuth: [EVENTS]
-      # No x-klabis-authority / x-klabis-owner-visible: acts on the caller's own registration via
-      # @ActingMember, same reasoning as registerForEvent above.
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
-      parameters:
-        - $ref: '#/components/parameters/RegEventIdParam'
-      responses:
-        '204':
-          description: Successfully unregistered
-          content:
-            application/prs.hal-forms+json: {}
-        '400':
-          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
-        '401':
-          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
-        '403':
-          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
-        '404':
-          $ref: './_shared/responses.yaml#/components/responses/NotFound'
-        '409':
-          $ref: './_shared/responses.yaml#/components/responses/Conflict'
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
@@ -1259,6 +1262,43 @@ paths:
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
+    delete:
+      operationId: unregisterFromEvent
+      tags: [EventRegistrations]
+      summary: Unregister a member from an event
+      description: |
+        Cancel a member's registration. Accessible by the member themselves or a user with
+        EVENTS:REGISTRATIONS authority. Only allowed before the event date and before the
+        registration deadline.
+      security:
+        - KlabisAuth: [EVENTS]
+      x-klabis-authority: EVENTS_REGISTRATIONS
+      x-klabis-owner-visible: true
+      parameters:
+        - $ref: '#/components/parameters/RegEventIdParam'
+        - $ref: '#/components/parameters/RegMemberIdParam'
+      responses:
+        '204':
+          description: Successfully unregistered
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden - must be the member or have EVENTS:REGISTRATIONS
+          content:
+            application/problem+json:
+              schema:
+                $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+        '409':
+          $ref: './_shared/responses.yaml#/components/responses/Conflict'
+        '422':
+          $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
+
     get:
       operationId: getRegistration
       tags: [EventRegistrations]
@@ -1300,6 +1340,12 @@ paths:
             event:
               operation: getEvent
               description: The event this registration belongs to
+            sync:
+              operation: getSyncState
+              description: |
+                Present when the registration is enrolled in synchronisation. The link and the
+                headline state are visible to any signed-in user; the detail fields and action
+                templates of the sync sub-resource are gated on SYNC:MANAGE.
           x-hal-templates:
             registerForEvent:
               operation: registerForEvent
@@ -1318,7 +1364,8 @@ paths:
               operation: unregisterFromEvent
               description: |
                 Present only on the existing-registration (newRegistration=false) response, when
-                registrations are open and the caller is the registered member
+                registrations are open and the caller is the registered member or holds
+                EVENTS:REGISTRATIONS
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -2226,6 +2273,12 @@ components:
           type: string
           format: date-time
           x-klabis-authority: [EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_READ]
+        missingInOris:
+          type: boolean
+          description: |
+            The registration's ORIS entry has disappeared; the registration is kept. Visible to callers
+            with EVENTS:REGISTRATIONS or EVENTS:REGISTRATIONS_READ over the event (the event coordinators).
+          x-klabis-authority: [EVENTS_REGISTRATIONS, EVENTS_REGISTRATIONS_READ]
         wantsSharedTransport:
           type: boolean
           description: |
@@ -2278,6 +2331,10 @@ components:
         registeredAt:
           type: string
           format: date-time
+          x-klabis-halforms-access: READ_ONLY
+        missingInOris:
+          type: boolean
+          description: The registration's ORIS entry has disappeared; the registration is kept.
           x-klabis-halforms-access: READ_ONLY
         wantsSharedTransport:
           type: boolean

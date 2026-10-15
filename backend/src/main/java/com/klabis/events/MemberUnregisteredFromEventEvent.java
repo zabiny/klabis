@@ -18,7 +18,8 @@ public record MemberUnregisteredFromEventEvent(
         UUID occurrenceId,
         EventId eventId,
         MemberId memberId,
-        Instant occurredAt
+        Instant occurredAt,
+        UpdateOrigin origin
 ) {
 
     public MemberUnregisteredFromEventEvent {
@@ -26,9 +27,10 @@ public record MemberUnregisteredFromEventEvent(
         Objects.requireNonNull(eventId, "Event ID is required");
         Objects.requireNonNull(memberId, "Member ID is required");
         Objects.requireNonNull(occurredAt, "Occurred at timestamp is required");
+        Objects.requireNonNull(origin, "Update origin is required");
     }
 
-    public static MemberUnregisteredFromEventEvent fromAggregate(Event event, MemberId memberId) {
-        return new MemberUnregisteredFromEventEvent(UUID.randomUUID(), event.getId(), memberId, Instant.now());
+    public static MemberUnregisteredFromEventEvent fromAggregate(Event event, MemberId memberId, UpdateOrigin origin) {
+        return new MemberUnregisteredFromEventEvent(UUID.randomUUID(), event.getId(), memberId, Instant.now(), origin);
     }
 }

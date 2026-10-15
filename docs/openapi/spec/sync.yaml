@@ -284,7 +284,11 @@ components:
     # one of them.
     SyncEntityTypeParam:
       type: string
-      enum: [events, disciplines, members]
+      description: |
+        Path segment of the synchronised entity kind. `event-registrations` is the only value that is
+        not a resource root of its own: its id is the participation `{eventId}:{memberId}` and the
+        registration itself lives under `/api/events/{eventId}/registrations/{memberId}`.
+      enum: [events, disciplines, members, event-registrations]
 
     SyncStateResponse:
       type: object

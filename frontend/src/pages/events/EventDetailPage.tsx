@@ -24,7 +24,7 @@ import {EventSiPolicyFields} from '../../components/events/EventSiPolicyFields.t
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
 import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
-import {Banknote, Check, ExternalLink, Eye, Globe, List, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {Banknote, Check, Download, ExternalLink, Eye, Globe, List, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
 import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
@@ -103,7 +103,9 @@ const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionD
             ? {label: labels.templates.editRegistration, Icon: Pencil}
             : {label: labels.templates.showRegistrationDetail, Icon: Eye};
 
-        const hasAnyAction = registrationLink || accountLink;
+        const syncLink = registration._links?.sync;
+
+        const hasAnyAction = registrationLink || accountLink || syncLink;
         if (!hasAnyAction) return null;
 
         return (
@@ -136,6 +138,7 @@ const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionD
                         <rowAction.Icon className="w-4 h-4"/>
                     </Button>
                 )}
+                {syncLink && <SyncStatusIndicator syncLink={syncLink} mode="icon"/>}
             </div>
         );
     };
@@ -143,7 +146,18 @@ const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionD
     return (
         <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList" hideEmptyColumns defaultOrderBy="registrationTime">
             <TableCell column="firstName" sortable>{labels.fields.firstName}</TableCell>
-            <TableCell column="lastName" sortable>{labels.fields.lastName}</TableCell>
+            <TableCell
+                column="lastName"
+                sortable
+                dataRender={({value, item}) => (
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                        {value as string}
+                        {(item as RegistrationData).missingInOris === true && (
+                            <Badge variant="warning">{labels.events.missingInOris}</Badge>
+                        )}
+                    </span>
+                )}
+            >{labels.fields.lastName}</TableCell>
             {event.categories && event.categories.length > 0 && (
                 <TableCell
                     column="category"
@@ -256,6 +270,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 </Button>
                             )}
                             <HalFormButton name="unregisterFromEvent" modal={true} icon={<UserMinus className="w-4 h-4"/>}/>
+                            <HalFormButton name="discoverOrisRegistrations" modal={true} variant="secondary" icon={<Download className="w-4 h-4"/>}/>
                             {resourceData._links?.['accommodation-list'] && (
                                 <Link
                                     to={`${route.pathname}/accommodation-list`}
@@ -482,7 +497,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
         <EventRegistrationDialog
             registration={newRegistrationTarget}
             onClose={() => setNewRegistrationTarget(null)}
-            onRegistered={route.refetch}
+            onChanged={route.refetch}
         />
     );
 

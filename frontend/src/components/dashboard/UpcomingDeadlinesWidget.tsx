@@ -90,7 +90,7 @@ export const UpcomingDeadlinesWidget = ({upcomingDeadlinesHref}: UpcomingDeadlin
             <EventRegistrationDialog
                 registration={registrationTarget}
                 onClose={() => setRegistrationTarget(null)}
-                onRegistered={refetch}
+                onChanged={refetch}
             />
         </>
     );

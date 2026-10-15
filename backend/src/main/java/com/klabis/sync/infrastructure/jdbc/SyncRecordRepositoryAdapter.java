@@ -81,6 +81,21 @@ class SyncRecordRepositoryAdapter implements SyncRecordRepository {
     }
 
     @Override
+    public List<SyncRecord> findNonRetiredByEntityType(SyncEntityType entityType) {
+        return jdbcRepository.findNonRetiredByEntityType(entityType.name()).stream()
+                .map(this::toSyncRecord)
+                .toList();
+    }
+
+    @Override
+    public List<SyncRecord> findNonRetiredByEntityTypeAndEntityIdPrefix(SyncEntityType entityType, String entityIdPrefix) {
+        return jdbcRepository.findNonRetiredByEntityTypeAndEntityIdPrefix(
+                        entityType.name(), entityIdPrefix, entityIdPrefix.length()).stream()
+                .map(this::toSyncRecord)
+                .toList();
+    }
+
+    @Override
     public List<SyncRecord> findDueForScan(Instant now, Duration claimLease) {
         return jdbcRepository.findDueForScan(now, now.minus(claimLease)).stream()
                 .map(this::toSyncRecord)

@@ -597,6 +597,67 @@ describe('EventsPage', () => {
         });
     });
 
+    describe('edit registration row action', () => {
+        const editTarget = '/api/events/evt-edit/registrations/M001';
+
+        const renderWithEventTemplates = (templates: Record<string, unknown>) => {
+            const eventRow = {
+                id: 'evt-edit',
+                name: 'Editační akce',
+                eventDate: '2025-09-01',
+                status: 'ACTIVE',
+                _links: {self: {href: '/api/events/evt-edit'}},
+                _templates: templates,
+            };
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => {
+                if (url.includes('/registrations/')) {
+                    return {data: undefined, isLoading: true, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
+                }
+                return {
+                    data: {
+                        _links: {self: {href: '/api/events'}},
+                        _embedded: {eventSummaryDtoList: [eventRow]},
+                        page: {totalElements: 1, totalPages: 1, size: 10, number: 0},
+                    },
+                    isLoading: false,
+                    error: null,
+                } as unknown as ReturnType<typeof useAuthorizedQuery>;
+            }) as typeof useAuthorizedQuery);
+            return renderPage(createMockPageData({_links: {self: {href: '/api/events'}}}));
+        };
+
+        it('shows edit registration action when row has editRegistration template', async () => {
+            renderWithEventTemplates({
+                editRegistration: mockHalFormsTemplate({method: 'PUT', target: editTarget}),
+            });
+            expect(await screen.findByTitle(labels.templates.editRegistration)).toBeInTheDocument();
+        });
+
+        it('hides edit registration action when row has no editRegistration template', async () => {
+            renderWithEventTemplates({
+                cancelEvent: mockHalFormsTemplate({method: 'POST', target: '/api/events/evt-edit/cancel'}),
+            });
+            await screen.findByTitle(labels.templates.cancelEvent);
+            expect(screen.queryByTitle(labels.templates.editRegistration)).not.toBeInTheDocument();
+        });
+
+        it('opens registration dialog loading the normalized template target', async () => {
+            const user = userEvent.setup();
+            renderWithEventTemplates({
+                editRegistration: mockHalFormsTemplate({method: 'PUT', target: editTarget}),
+            });
+
+            await user.click(await screen.findByTitle(labels.templates.editRegistration));
+
+            await waitFor(() => {
+                expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith(
+                    '/events/evt-edit/registrations/M001',
+                    expect.anything(),
+                );
+            });
+        });
+    });
+
     describe('action button color variants (K2)', () => {
         const buildEventWithTemplates = (templates: Record<string, unknown>) => ({
             id: 'evt-color',

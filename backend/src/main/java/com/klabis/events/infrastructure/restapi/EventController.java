@@ -18,7 +18,11 @@ import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.events.application.OrisEventRegistrationDiscoveryPort;
+import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncRecord;
+import com.klabis.sync.domain.SyncStatus;
 import com.klabis.sync.domain.SyncTarget;
 import com.klabis.sync.infrastructure.restapi.SyncApi;
 import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
@@ -484,11 +488,15 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
     private final MemberRegistrationSanctionPort sanctionPort;
     private final RegistrationReadAccess readAccess;
     private final SynchronizationPort synchronizationPort;
+    private final boolean orisRegistrationDiscoveryAvailable;
 
-    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, SynchronizationPort synchronizationPort, RegistrationReadAccess readAccess) {
+    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, SynchronizationPort synchronizationPort,
+                              RegistrationReadAccess readAccess,
+                              Optional<OrisEventRegistrationDiscoveryPort> orisRegistrationDiscoveryPort) {
         this.sanctionPort = sanctionPort;
         this.readAccess = readAccess;
         this.synchronizationPort = synchronizationPort;
+        this.orisRegistrationDiscoveryAvailable = orisRegistrationDiscoveryPort.isPresent();
     }
 
     @Override
@@ -498,6 +506,9 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
+        Optional<SyncRecord> syncRecord = synchronizationPort.findByTarget(
+                new SyncTarget(SyncEntityType.EVENT, eventId.toString()));
+
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
             var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event);
 
@@ -505,7 +516,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                 boolean isRegistered = currentMemberId != null
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, currentMemberId.value())));
                     selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
                             Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
@@ -520,6 +531,10 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                                 .ifPresent(link -> dtoModel.add(link.withRel("newRegistration")));
                     }
                 }
+            }
+
+            if (offersOrisRegistrationDiscovery(event, syncRecord)) {
+                selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).discoverOrisRegistrations(eventId, null)));
             }
 
             dtoModel.add(selfLink);
@@ -547,9 +562,14 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
 
-        boolean enrolled = synchronizationPort.findByTarget(
-                new SyncTarget(SyncEntityType.EVENT, eventId.toString())).isPresent();
-        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId, enrolled);
+        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId, syncRecord.isPresent());
+    }
+
+    private boolean offersOrisRegistrationDiscovery(Event event, Optional<SyncRecord> syncRecord) {
+        return orisRegistrationDiscoveryAvailable
+                && event.getStatus() == com.klabis.events.domain.EventStatus.ACTIVE
+                && syncRecord.filter(record -> record.getStatus() != SyncStatus.RETIRED
+                        && record.getExternalReference().system() == ExternalSystem.ORIS).isPresent();
     }
 }
 
@@ -576,7 +596,7 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
                 boolean isRegistered = currentMemberId != null
                         && event.findRegistration(currentMemberId).isPresent();
                 if (isRegistered) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, null)));
+                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, currentMemberId.value())));
                     selfLink = selfLink.andAffordances(klabisAffordWithOptions(
                             methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
                             Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))

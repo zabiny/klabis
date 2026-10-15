@@ -100,6 +100,33 @@ class SynchronizationControllerTest {
     }
 
     @Nested
+    @DisplayName("event registration sync resource")
+    class EventRegistrationPath {
+
+        private static final String COMPOSITE_ID = "6f1c2c0e-0b1b-4c63-8f35-3f2f1f1d2a11:0a7b9d44-5c1e-4e7a-9a1a-6a3c2b1d0e22";
+
+        @Test
+        @DisplayName("binds the colon-separated participation id under /api/event-registrations")
+        @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+        void bindsColonSeparatedId() throws Exception {
+            SyncTarget target = new SyncTarget(SyncEntityType.EVENT_REGISTRATION, COMPOSITE_ID);
+            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), target,
+                    new ExternalReference(ExternalSystem.ORIS, "8123:777"));
+            SyncSnapshot snapshot = SyncSnapshot.reconstruct(new TestSyncProjection("a", "b"), SyncHash.of("h1"));
+            record.recordSuccess(SyncDirection.INWARD, snapshot, snapshot, Instant.now());
+            when(fieldReader.fields(any())).thenReturn(java.util.Map.of());
+            when(synchronizationPort.findByTarget(target)).thenReturn(Optional.of(record));
+            when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
+
+            mockMvc.perform(get("/api/event-registrations/{id}/sync", COMPOSITE_ID)
+                            .accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.entityType").value("event-registrations"))
+                    .andExpect(jsonPath("$.status").value("IN_SYNC"));
+        }
+    }
+
+    @Nested
     @DisplayName("GET /api/{entityType}/{id}/sync")
     class GetSyncState {
 

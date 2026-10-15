@@ -11,7 +11,8 @@ public enum SyncEntityType {
 
     EVENT("events"),
     DISCIPLINE("disciplines"),
-    MEMBER("members");
+    MEMBER("members"),
+    EVENT_REGISTRATION("event-registrations");
 
     private final String pathSegment;
 

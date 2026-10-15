@@ -55,6 +55,20 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
             """)
     List<SyncRecordMemento> findAllNonRetired();
 
+    @Query("""
+            SELECT * FROM sync.sync_record
+            WHERE retired_at IS NULL AND entity_type = :entityType
+            """)
+    List<SyncRecordMemento> findNonRetiredByEntityType(@Param("entityType") String entityType);
+
+    @Query("""
+            SELECT * FROM sync.sync_record
+            WHERE retired_at IS NULL AND entity_type = :entityType
+              AND SUBSTRING(entity_id, 1, :prefixLength) = :prefix
+            """)
+    List<SyncRecordMemento> findNonRetiredByEntityTypeAndEntityIdPrefix(
+            @Param("entityType") String entityType, @Param("prefix") String prefix, @Param("prefixLength") int prefixLength);
+
     /**
      * Backs the due scan (design.md D10): dirty or retry-due, excluding a record
      * whose claim is still fresh. {@code RETIRED} is excluded via

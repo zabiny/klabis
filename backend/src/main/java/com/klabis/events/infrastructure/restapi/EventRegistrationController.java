@@ -15,12 +15,18 @@ import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRegistration;
 import com.klabis.events.domain.RegistrationNotFoundException;
 import com.klabis.events.domain.RegistrationNote;
+import com.klabis.events.domain.RegistrationSyncId;
 import com.klabis.events.domain.SiCardNumber;
 import org.springframework.util.StringUtils;
 import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
+import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncTarget;
+import com.klabis.sync.infrastructure.restapi.SyncApi;
+import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -39,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -92,9 +99,9 @@ class EventRegistrationController implements EventRegistrationsApi {
     @Override
     public ResponseEntity<Void> unregisterFromEvent(
             @PathVariable UUID eventId,
-            @ActingMember MemberId actingMember) {
+            @PathVariable UUID memberId) {
 
-        registrationService.unregisterMember(new EventId(eventId), actingMember);
+        registrationService.unregisterMember(new EventId(eventId), new MemberId(memberId));
         return ResponseEntity.noContent().build();
     }
 
@@ -201,6 +208,7 @@ class EventRegistrationController implements EventRegistrationsApi {
                 .wantsToRentSi(registration.wantsToRentSi())
                 .category(RegistrationDtoMapper.toCategoryDto(registration, event))
                 .registeredAt(registration.registeredAt())
+                .missingInOris(registration.missingInOris())
                 .wantsSharedTransport(RegistrationDtoMapper.wantsSharedTransport(registration, event))
                 .wantsSharedAccommodation(RegistrationDtoMapper.wantsSharedAccommodation(registration, event))
                 .internalNote(RegistrationNote.textOrNull(registration.internalNote()))
@@ -228,9 +236,11 @@ class RegistrationSummaryPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationSummaryDto, EventRegistrationController.RegistrationView> {
 
     private final RegistrationReadAccess readAccess;
+    private final RegistrationSyncLinks syncLinks;
 
-    RegistrationSummaryPostprocessor(RegistrationReadAccess readAccess) {
+    RegistrationSummaryPostprocessor(RegistrationReadAccess readAccess, RegistrationSyncLinks syncLinks) {
         this.readAccess = readAccess;
+        this.syncLinks = syncLinks;
     }
 
     @Override
@@ -250,6 +260,26 @@ class RegistrationSummaryPostprocessor
                         dtoModel.add(selfLinkBuilder.withSelfRel());
                     }
                 });
+
+        syncLinks.linkFor(event.getId(), view.memberId()).ifPresent(dtoModel::add);
+    }
+}
+
+@MvcComponent
+class RegistrationSyncLinks {
+
+    private final SynchronizationPort synchronizationPort;
+
+    RegistrationSyncLinks(SynchronizationPort synchronizationPort) {
+        this.synchronizationPort = synchronizationPort;
+    }
+
+    Optional<Link> linkFor(EventId eventId, MemberId memberId) {
+        String entityId = new RegistrationSyncId(eventId, memberId).format();
+        return synchronizationPort.findByTarget(new SyncTarget(SyncEntityType.EVENT_REGISTRATION, entityId))
+                .flatMap(record -> klabisLinkTo(
+                        methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENT_REGISTRATIONS, entityId)))
+                .map(link -> link.withRel("sync"));
     }
 }
 
@@ -280,9 +310,11 @@ class RegistrationDetailsPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationDto, EventRegistrationController.RegistrationView> {
 
     private final MemberRegistrationSanctionPort sanctionPort;
+    private final RegistrationSyncLinks syncLinks;
 
-    RegistrationDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort) {
+    RegistrationDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, RegistrationSyncLinks syncLinks) {
         this.sanctionPort = sanctionPort;
+        this.syncLinks = syncLinks;
     }
 
     @Override
@@ -304,6 +336,10 @@ class RegistrationDetailsPostprocessor
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null))
                 .map(l -> l.withRel("event"))
                 .ifPresent(dtoModel::add);
+
+        if (!view.prefill()) {
+            syncLinks.linkFor(event.getId(), memberId).ifPresent(dtoModel::add);
+        }
     }
 
     /**
@@ -328,14 +364,10 @@ class RegistrationDetailsPostprocessor
                                     memberId.value(),
                                     null),
                             Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))));
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            MemberId actingMember = EventAffordanceSupport.resolveMemberId(auth);
-            if (memberId.equals(actingMember)) {
-                selfLink = selfLink
-                        .andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(
-                                event.getId().value(),
-                                null)));
-            }
+            selfLink = selfLink
+                    .andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(
+                            event.getId().value(),
+                            memberId.value())));
         }
         return selfLink;
     }

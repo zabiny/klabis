@@ -21,6 +21,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -355,6 +356,16 @@ class EventRepositoryAdapter implements EventRepository {
                 .addValue("today", today)
                 .addValue("deadlineUntil", deadlineUntil);
         return namedJdbc.query(sql, params, (rs, rowNum) -> rs.getObject(1, UUID.class));
+    }
+
+    @Override
+    public List<EventId> findActiveIds(Collection<EventId> eventIds) {
+        if (eventIds.isEmpty()) {
+            return List.of();
+        }
+        String sql = "SELECT id FROM events.events WHERE status = 'ACTIVE' AND id IN (:ids)";
+        MapSqlParameterSource params = new MapSqlParameterSource("ids", eventIds.stream().map(EventId::value).toList());
+        return namedJdbc.query(sql, params, (rs, rowNum) -> new EventId(rs.getObject(1, UUID.class)));
     }
 
     @Override

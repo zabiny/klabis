@@ -71,6 +71,8 @@ paths:
     $ref: './events.yaml#/paths/~1api~1events~1import'
   /api/events/sync-from-oris/all-upcoming:
     $ref: './events.yaml#/paths/~1api~1events~1sync-from-oris~1all-upcoming'
+  /api/events/{eventId}/oris-registrations/discovery:
+    $ref: './events.yaml#/paths/~1api~1events~1{eventId}~1oris-registrations~1discovery'
   /api/events/import-batch:
     $ref: './events.yaml#/paths/~1api~1events~1import-batch'
   /api/events/{eventId}/registrations:

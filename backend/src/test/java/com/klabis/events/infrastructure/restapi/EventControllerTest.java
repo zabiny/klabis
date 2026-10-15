@@ -1383,6 +1383,8 @@ class EventControllerTest {
                     )
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.unregisterFromEvent.method").value("DELETE"))
+                    .andExpect(jsonPath("$._templates.unregisterFromEvent.target",
+                            containsString("/registrations/00000000-0000-0000-0000-000000000001")))
                     .andExpect(jsonPath("$._templates.registerForEvent").doesNotExist());
         }
 
