@@ -4,12 +4,10 @@ import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.autoconfigure.OrisClientProperties;
 import com.dpolach.api.orisclient.dto.EventEntry;
 import com.klabis.common.OrisIntegrationComponent;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
-import java.time.Clock;
-import java.time.Instant;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The club's ORIS entries of an event, cached per ORIS event for a short TTL.
@@ -21,36 +19,23 @@ import java.util.concurrent.ConcurrentHashMap;
 @OrisIntegrationComponent
 public class OrisEventEntries {
 
-    private record Cached(List<EventEntry> entries, Instant readAt) {
-    }
+    static final String CACHE_NAME = "orisEventEntries";
 
     private final OrisApiClient orisApiClient;
     private final OrisClientProperties orisClientProperties;
-    private final OrisEntriesProperties properties;
-    private final Clock clock;
-    private final Map<Integer, Cached> cache = new ConcurrentHashMap<>();
 
-    OrisEventEntries(OrisApiClient orisApiClient, OrisClientProperties orisClientProperties,
-                     OrisEntriesProperties properties, Clock clock) {
+    OrisEventEntries(OrisApiClient orisApiClient, OrisClientProperties orisClientProperties) {
         this.orisApiClient = orisApiClient;
         this.orisClientProperties = orisClientProperties;
-        this.properties = properties;
-        this.clock = clock;
     }
 
+    @Cacheable(CACHE_NAME)
     public List<EventEntry> entriesOf(int orisEventId) {
-        Instant now = clock.instant();
-        Cached cached = cache.get(orisEventId);
-        if (cached != null && now.isBefore(cached.readAt().plus(properties.getOrisEntriesCacheTtl()))) {
-            return cached.entries();
-        }
-        List<EventEntry> fresh = read(orisEventId);
-        cache.put(orisEventId, new Cached(fresh, now));
-        return fresh;
+        return read(orisEventId);
     }
 
+    @CacheEvict(CACHE_NAME)
     public void evict(int orisEventId) {
-        cache.remove(orisEventId);
     }
 
     private List<EventEntry> read(int orisEventId) {
