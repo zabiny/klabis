@@ -955,6 +955,34 @@ components:
             $ref: '#/components/schemas/MissingDataItem'
           x-klabis-authority: MEMBERS_MANAGE
           description: Required details this member currently lacks (visible to admins only)
+        displayContact:
+          $ref: '#/components/schemas/DisplayContact'
+          readOnly: true
+
+    DisplayContact:
+      type: object
+      description: |
+        Effective contact of a member: own value, or for a minor lacking it the contact of the first legal guardian
+        who has it. email and phone are resolved independently.
+      properties:
+        email:
+          $ref: '#/components/schemas/DisplayContactValue'
+        phone:
+          $ref: '#/components/schemas/DisplayContactValue'
+
+    DisplayContactValue:
+      type: object
+      properties:
+        value:
+          type: string
+        fromGuardian:
+          type: boolean
+          x-klabis-authority: MEMBERS_MANAGE
+          description: Whether the value is a legal guardian's contact (visible to admins only)
+        guardianName:
+          type: string
+          x-klabis-authority: MEMBERS_MANAGE
+          description: Name of the legal guardian the value comes from (visible to admins only)
 
     MissingDataItem:
       type: string

@@ -156,6 +156,10 @@ const mockMemberDetailData = (overrides?: Partial<HalResponse & Record<string, u
     gender: 'MALE',
     email: 'jan.novak@email.cz',
     phone: '+420777123456',
+    displayContact: {
+        email: {value: 'jan.novak@email.cz'},
+        phone: {value: '+420777123456'},
+    },
     address: {street: 'Hlavní 15', city: 'Praha', postalCode: '11000', country: 'CZ'},
     active: true,
     chipNumber: '12345678',
@@ -253,6 +257,62 @@ describe('MemberDetailPage', () => {
         expect(screen.getByText('KONTAKT')).toBeInTheDocument();
         expect(screen.getByText('jan.novak@email.cz')).toBeInTheDocument();
         expect(screen.getByText('+420777123456')).toBeInTheDocument();
+    });
+
+    describe('displayContact', () => {
+        const minorViaGuardian = {
+            email: 'raw-should-not-show@email.cz',
+            phone: undefined,
+            displayContact: {
+                email: {value: 'jan.zastupce@email.cz', fromGuardian: true, guardianName: 'Jan Novák'},
+                phone: {value: '+420111222333', fromGuardian: true, guardianName: 'Eva Svobodová'},
+            },
+        };
+
+        it('adult shows own contact without guardian marker', () => {
+            renderPage(createMockPageData(mockMemberDetailData()));
+            expect(screen.getByText('jan.novak@email.cz')).toBeInTheDocument();
+            expect(screen.queryByText(/kontakt zákonného zástupce/i)).not.toBeInTheDocument();
+        });
+
+        it('minor with own contact shows it without marker', () => {
+            renderPage(createMockPageData(mockMemberDetailData({
+                displayContact: {
+                    email: {value: 'maly@email.cz', fromGuardian: false},
+                    phone: {value: '+420999888777', fromGuardian: false},
+                },
+            })));
+            expect(screen.getByText('maly@email.cz')).toBeInTheDocument();
+            expect(screen.getByText('+420999888777')).toBeInTheDocument();
+            expect(screen.queryByText(/kontakt zákonného zástupce/i)).not.toBeInTheDocument();
+        });
+
+        it('minor via guardian as admin shows marker with guardian name per field', () => {
+            renderPage(createMockPageData(mockMemberDetailData(minorViaGuardian)));
+            expect(screen.getByText('jan.zastupce@email.cz')).toBeInTheDocument();
+            expect(screen.getByText('+420111222333')).toBeInTheDocument();
+            expect(screen.getByText('kontakt zákonného zástupce (Jan Novák)')).toBeInTheDocument();
+            expect(screen.getByText('kontakt zákonného zástupce (Eva Svobodová)')).toBeInTheDocument();
+            expect(screen.queryByText('raw-should-not-show@email.cz')).not.toBeInTheDocument();
+        });
+
+        it('minor via guardian as regular user shows only value', () => {
+            renderPage(createMockPageData(mockMemberDetailData({
+                ...minorViaGuardian,
+                displayContact: {
+                    email: {value: 'jan.zastupce@email.cz'},
+                    phone: {value: '+420111222333'},
+                },
+            })));
+            expect(screen.getByText('jan.zastupce@email.cz')).toBeInTheDocument();
+            expect(screen.getByText('+420111222333')).toBeInTheDocument();
+            expect(screen.queryByText(/kontakt zákonného zástupce/i)).not.toBeInTheDocument();
+        });
+
+        it('shows dash when no contact value exists', () => {
+            renderPage(createMockPageData(mockMemberDetailData({displayContact: {}})));
+            expect(screen.queryByText('jan.novak@email.cz')).not.toBeInTheDocument();
+        });
     });
 
     it('shows address section', () => {

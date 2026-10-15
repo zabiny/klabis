@@ -78,6 +78,9 @@ class MemberControllerApiTest {
     private com.klabis.members.application.MemberCompletenessPort memberCompletenessPort;
 
     @Autowired
+    private MemberContactPort memberContactPort;
+
+    @Autowired
     private ManagementPort managementService;
 
     @Autowired
@@ -772,6 +775,62 @@ class MemberControllerApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.address").doesNotExist())
                     .andExpect(jsonPath("$.missingData").value(org.hamcrest.Matchers.hasItem("ADDRESS")));
+        }
+
+        private Member minorWithoutContact(UUID memberId) {
+            Member member = MemberTestDataBuilder.aMemberWithId(memberId)
+                    .withDateOfBirth(LocalDate.now().minusYears(10))
+                    .withEmail((EmailAddress) null)
+                    .withPhone((PhoneNumber) null)
+                    .build();
+            when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
+            when(memberContactPort.effectiveContactOf(eq(member), any())).thenReturn(new EffectiveContact(
+                    new EffectiveContact.Value("jan@example.com", "Jan Novák"),
+                    new EffectiveContact.Value(null, null)));
+            return member;
+        }
+
+        @Test
+        @DisplayName("displayContact — MEMBERS:MANAGE caller sees guardian marker and raw email/phone stay empty")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void manageCallerSeesGuardianMarker() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            minorWithoutContact(memberId);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.displayContact.email.value").value("jan@example.com"))
+                    .andExpect(jsonPath("$.displayContact.email.fromGuardian").value(true))
+                    .andExpect(jsonPath("$.displayContact.email.guardianName").value("Jan Novák"))
+                    .andExpect(jsonPath("$.displayContact.phone.value").doesNotExist())
+                    .andExpect(jsonPath("$.email").doesNotExist())
+                    .andExpect(jsonPath("$.phone").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("displayContact — caller without MEMBERS:MANAGE sees the value only")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void regularCallerDoesNotSeeGuardianMarker() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            minorWithoutContact(memberId);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.displayContact.email.value").value("jan@example.com"))
+                    .andExpect(jsonPath("$.displayContact.email.fromGuardian").doesNotExist())
+                    .andExpect(jsonPath("$.displayContact.email.guardianName").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("edit template of a minor without own e-mail does not prefill the guardian's e-mail")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void editTemplateDoesNotPrefillGuardianEmail() throws Exception {
+            UUID memberId = UUID.randomUUID();
+            minorWithoutContact(memberId);
+
+            mockMvc.perform(getMemberById(memberId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.updateMember.properties[?(@.name=='email')].value").isEmpty());
         }
 
         @Test

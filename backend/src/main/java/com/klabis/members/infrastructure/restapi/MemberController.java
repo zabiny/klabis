@@ -12,7 +12,9 @@ import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.MemberAccountActivationPort;
+import com.klabis.members.application.EffectiveContact;
 import com.klabis.members.application.MemberCompletenessPort;
+import com.klabis.members.application.MemberContactPort;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.application.MemberViewAccess;
@@ -70,6 +72,7 @@ public class MemberController implements MembersApi {
     private final MemberCompletenessPort memberCompletenessPort;
     private final LegalGuardianGroupPort legalGuardianGroupPort;
     private final AuthorizationEvaluator authorizationEvaluator;
+    private final MemberContactPort memberContactPort;
 
     public MemberController(
             ManagementPort managementService,
@@ -78,7 +81,9 @@ public class MemberController implements MembersApi {
             SynchronizationPort synchronizationPort,
             MemberCompletenessPort memberCompletenessPort,
             LegalGuardianGroupPort legalGuardianGroupPort,
-            AuthorizationEvaluator authorizationEvaluator) {
+            AuthorizationEvaluator authorizationEvaluator,
+            MemberContactPort memberContactPort) {
+        this.memberContactPort = memberContactPort;
         this.authorizationEvaluator = authorizationEvaluator;
         this.memberCompletenessPort = memberCompletenessPort;
         this.legalGuardianGroupPort = legalGuardianGroupPort;
@@ -256,6 +261,7 @@ public class MemberController implements MembersApi {
         MemberDetailsResponse response = conversionService.convert(member, MemberDetailsResponse.class);
         return ResponseEntity.ok(MemberDetailsResponseBuilder.builder(response)
                 .missingData(liveMissingData(member, guardianGroup))
+                .displayContact(displayContact(member, guardianGroup))
                 .build());
     }
 
@@ -265,6 +271,23 @@ public class MemberController implements MembersApi {
         return new MemberViewAccess(
                 authorizationEvaluator.isAllowed(List.of(Authority.MEMBERS_MANAGE, Authority.MEMBERS_EDIT_PROFILE), member, false),
                 authorizationEvaluator.canReadField(MemberDetailsResponse.class, "birthNumber", member));
+    }
+
+    private DisplayContact displayContact(Member member, Optional<LegalGuardianGroup> guardianGroup) {
+        Set<UserId> guardians = guardianGroup.map(LegalGuardianGroup::getGuardians).orElse(Set.of());
+        EffectiveContact contact = memberContactPort.effectiveContactOf(member, guardians);
+        return DisplayContactBuilder.builder()
+                .email(toDto(contact.email()))
+                .phone(toDto(contact.phone()))
+                .build();
+    }
+
+    private static DisplayContactValue toDto(EffectiveContact.Value value) {
+        return DisplayContactValueBuilder.builder()
+                .value(value.value())
+                .fromGuardian(value.fromGuardian())
+                .guardianName(value.guardianName())
+                .build();
     }
 
     // The detail is computed live (the guardians' contacts may have changed since the member was last saved),

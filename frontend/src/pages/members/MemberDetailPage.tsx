@@ -36,6 +36,21 @@ const memberLink = <K extends keyof MemberLinks>(links: MemberLinks | undefined,
 
 const val = (value: ReactNode): ReactNode => value || '\u2014';
 
+type DisplayContactValue = NonNullable<NonNullable<MemberDetail['displayContact']>['email']>;
+
+// fromGuardian/guardianName are sent only to MEMBERS:MANAGE, so the marker is naturally admin-only.
+const DisplayContactText = ({contact}: { contact?: DisplayContactValue }) => {
+    if (!contact?.value) return <>{'\u2014'}</>;
+    return (
+        <>
+            {contact.value}
+            {contact.fromGuardian && (
+                <span className="ml-2 text-xs text-text-tertiary">{labels.ui.guardianContact(contact.guardianName)}</span>
+            )}
+        </>
+    );
+};
+
 const MaskedBirthNumber = ({value}: { value: string }) => {
     const [revealed, setRevealed] = useState(false);
     const formatted = value.includes('/')
@@ -173,8 +188,8 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                 )}
 
                 <Section title={labels.sections.contact}>
-                    <DetailRow label={labels.fields.email}>{ri('email') ?? val(member.email)}</DetailRow>
-                    <DetailRow label={labels.fields.phone}>{ri('phone') ?? val(member.phone)}</DetailRow>
+                    <DetailRow label={labels.fields.email}>{ri('email') ?? <DisplayContactText contact={member.displayContact?.email}/>}</DetailRow>
+                    <DetailRow label={labels.fields.phone}>{ri('phone') ?? <DisplayContactText contact={member.displayContact?.phone}/>}</DetailRow>
                 </Section>
 
                 <Section title={labels.sections.address}>
