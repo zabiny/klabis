@@ -31,6 +31,7 @@ export const labels = {
         close: 'Zavřít',
         retry: 'Zkusit znovu',
         logout: 'Odhlásit',
+        unregister: 'Odhlásit',
         edit: 'Upravit',
         save: 'Uložit změny',
         saveChanges: 'Uložit změny',

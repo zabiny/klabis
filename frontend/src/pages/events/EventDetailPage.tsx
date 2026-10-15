@@ -497,7 +497,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
         <EventRegistrationDialog
             registration={newRegistrationTarget}
             onClose={() => setNewRegistrationTarget(null)}
-            onRegistered={route.refetch}
+            onChanged={route.refetch}
         />
     );
 

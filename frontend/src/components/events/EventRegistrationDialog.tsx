@@ -1,6 +1,6 @@
 import {type ReactElement, useCallback, useEffect, useMemo, useState} from 'react';
 import {type LucideIcon, Calendar, Check, FileText, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
-import {getFieldLabel, labels} from '../../localization';
+import {getDialogTitleLabel, getFieldLabel, labels} from '../../localization';
 import {renderYesNo} from '../../utils/formatters';
 import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from '../UI';
 import {type RegistrationDialogData, type RegistrationDialogMode, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
@@ -18,7 +18,7 @@ import {createRegistrationFieldsFactory, type SiRequirement} from './registratio
 export interface EventRegistrationDialogProps {
     registration: Link | null;
     onClose: () => void;
-    onRegistered?: () => void;
+    onChanged?: () => void;
 }
 
 const MODE_PRESENTATION: Record<RegistrationDialogMode, {title: string; Icon: LucideIcon}> = {
@@ -30,13 +30,15 @@ const MODE_PRESENTATION: Record<RegistrationDialogMode, {title: string; Icon: Lu
 export const EventRegistrationDialog = ({
     registration,
     onClose,
-    onRegistered,
+    onChanged,
 }: EventRegistrationDialogProps): ReactElement | null => {
     const {mode, template, memberName, prefillData, eventContext, isLoading, error} = useRegistrationDialogData(registration);
 
     const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string>>({});
+    const [confirmingUnregister, setConfirmingUnregister] = useState(false);
     useEffect(() => {
         setServerFieldErrors({});
+        setConfirmingUnregister(false);
     }, [registration?.href]);
 
     const transportProp = template?.properties.find(prop => prop.name === 'wantsSharedTransport');
@@ -98,8 +100,15 @@ export const EventRegistrationDialog = ({
         ? labels.events.registrationModal.confirmNew
         : labels.events.registrationModal.confirmEdit;
 
+    const unregisterTemplate = mode === 'edit' ? prefillData?._templates?.unregisterFromEvent : undefined;
+    const normalizedUnregisterTemplate = unregisterTemplate
+        ? {...unregisterTemplate, target: normalizeKlabisApiPath(unregisterTemplate.target ?? '')}
+        : undefined;
+    const showUnregisterConfirmation = confirmingUnregister && normalizedUnregisterTemplate !== undefined;
+
     const handleClose = () => {
         setServerFieldErrors({});
+        setConfirmingUnregister(false);
         onClose();
     };
 
@@ -146,9 +155,16 @@ export const EventRegistrationDialog = ({
             )}
             {hasInternalNote && helpers.renderField('internalNote')}
             {hasOrisNote && helpers.renderField('orisNote')}
-            <div className="mt-2 flex items-center justify-end gap-3 border-t border-border pt-4">
-                {helpers.renderField('cancel')}
-                {helpers.renderField('submit')}
+            <div className="mt-2 flex items-center gap-3 border-t border-border pt-4">
+                {unregisterTemplate && (
+                    <Button type="button" variant="danger" onClick={() => setConfirmingUnregister(true)}>
+                        {labels.buttons.unregister}
+                    </Button>
+                )}
+                <div className="ml-auto flex items-center gap-3">
+                    {helpers.renderField('cancel')}
+                    {helpers.renderField('submit')}
+                </div>
             </div>
         </div>
     );
@@ -159,7 +175,9 @@ export const EventRegistrationDialog = ({
             onClose={handleClose}
             closeOnBackdropClick={true}
             size="lg"
-            title={dialogTitle}
+            title={showUnregisterConfirmation
+                ? (getDialogTitleLabel('unregisterFromEvent') ?? labels.templates.unregisterFromEvent)
+                : dialogTitle}
             headerIcon={<HeaderIcon className="h-5 w-5 text-primary"/>}
             context={!isLoading && eventContext
                 ? <RegistrationContext event={eventContext}/>
@@ -169,6 +187,17 @@ export const EventRegistrationDialog = ({
                 <DialogSkeleton/>
             ) : error ? (
                 <Alert severity="error">{labels.events.registrationModal.prefillLoadError}</Alert>
+            ) : showUnregisterConfirmation ? (
+                <HalFormDisplay
+                    template={normalizedUnregisterTemplate}
+                    templateName="unregisterFromEvent"
+                    resourceData={resolvedResource}
+                    pathname={normalizedUnregisterTemplate.target}
+                    resourceUrl={registration.href}
+                    onClose={handleClose}
+                    onSubmitSuccess={() => onChanged?.()}
+                    navigateOnSuccess={false}
+                />
             ) : mode === 'view' && prefillData ? (
                 <ReadOnlyRegistration
                     registration={resolvedResource}
@@ -186,7 +215,7 @@ export const EventRegistrationDialog = ({
                     resourceData={resolvedResource}
                     pathname={normalizedTemplate.target}
                     onClose={handleClose}
-                    onSubmitSuccess={() => onRegistered?.()}
+                    onSubmitSuccess={() => onChanged?.()}
                     onSubmitError={handleSubmitError}
                     postprocessPayload={stripHiddenSharedServices}
                     refineValidationSchema={refineValidationSchema}

@@ -401,7 +401,7 @@ export const EventsPage = (): ReactElement => {
         <EventRegistrationDialog
             registration={registrationTarget}
             onClose={() => setRegistrationTarget(null)}
-            onRegistered={route.refetch}
+            onChanged={route.refetch}
         />
     </div>;
 }

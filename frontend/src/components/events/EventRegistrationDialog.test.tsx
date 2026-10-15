@@ -319,9 +319,9 @@ describe('EventRegistrationDialog', () => {
 
     it('shows validation error and skips submit when SI chip is empty', async () => {
         const user = userEvent.setup();
-        const onRegistered = vi.fn();
+        const onChanged = vi.fn();
         mockRoutes((url) => url === PREFILL_URL ? jsonOk(prefillData({siCardNumber: ''})) : jsonOk(eventData()));
-        renderDialog({onRegistered});
+        renderDialog({onChanged});
 
         await screen.findByLabelText(/SI čip/);
         await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmNew}));
@@ -332,7 +332,7 @@ describe('EventRegistrationDialog', () => {
             expect.objectContaining({method: 'POST'}),
             expect.anything(),
         );
-        expect(onRegistered).not.toHaveBeenCalled();
+        expect(onChanged).not.toHaveBeenCalled();
     });
 
     it('shows validation error when SI chip does not match the template regex', async () => {
@@ -350,7 +350,7 @@ describe('EventRegistrationDialog', () => {
     it('submits POST with only template-present fields to the normalized registerForEvent target', async () => {
         const user = userEvent.setup();
         const onClose = vi.fn();
-        const onRegistered = vi.fn();
+        const onChanged = vi.fn();
         mockRoutes((url, options) => {
             if (options?.method === 'POST') return writeOk();
             if (options?.method) return writeOk();
@@ -358,7 +358,7 @@ describe('EventRegistrationDialog', () => {
             if (url === PREFILL_URL) return jsonOk(prefillData());
             return jsonOk({});
         });
-        renderDialog({onClose, onRegistered});
+        renderDialog({onClose, onChanged});
 
         const siInput = await screen.findByLabelText(/SI čip/);
         await user.clear(siInput);
@@ -371,7 +371,7 @@ describe('EventRegistrationDialog', () => {
         await waitFor(() => {
             expect(onClose).toHaveBeenCalled();
         });
-        expect(onRegistered).toHaveBeenCalled();
+        expect(onChanged).toHaveBeenCalled();
 
         const postCall = vi.mocked(authorizedFetch).mock.calls.find(([, options]) =>
             (options as RequestInit | undefined)?.method === 'POST');
@@ -381,6 +381,67 @@ describe('EventRegistrationDialog', () => {
             categoryId: 'cat-1',
             wantsSharedTransport: true,
             wantsSharedAccommodation: true,
+        });
+    });
+
+    describe('unregistering from edit mode', () => {
+        const unregisterTemplate = () => mockHalFormsTemplate({
+            method: 'DELETE',
+            target: EDIT_URL,
+            title: 'Odhlásit se z akce',
+            properties: [],
+        });
+        const routesWith = (templates: Record<string, unknown>) => mockRoutes((url, options) => {
+            if (options?.method) return writeOk();
+            if (url === EDIT_URL) return jsonOk(editInitialData({_templates: templates}));
+            if (url === EVENT_URL) return jsonOk(eventData());
+            return jsonOk({});
+        });
+        const hasDelete = () => vi.mocked(authorizedFetch).mock.calls.some(([, options]) =>
+            (options as RequestInit | undefined)?.method === 'DELETE');
+
+        it('shows the unregister button when the registration has unregisterFromEvent', async () => {
+            routesWith({editRegistration: editRegistrationTemplate(), unregisterFromEvent: unregisterTemplate()});
+            renderDialog({registration: {href: EDIT_URL}});
+
+            expect(await screen.findByRole('button', {name: labels.buttons.unregister})).toBeInTheDocument();
+        });
+
+        it('hides the unregister button without the template', async () => {
+            routesWith({editRegistration: editRegistrationTemplate()});
+            renderDialog({registration: {href: EDIT_URL}});
+
+            await screen.findByLabelText(/SI čip/);
+            expect(screen.queryByRole('button', {name: labels.buttons.unregister})).not.toBeInTheDocument();
+        });
+
+        it('confirming sends DELETE, closes the dialog and calls onChanged', async () => {
+            const user = userEvent.setup();
+            const onClose = vi.fn();
+            const onChanged = vi.fn();
+            routesWith({editRegistration: editRegistrationTemplate(), unregisterFromEvent: unregisterTemplate()});
+            renderDialog({registration: {href: EDIT_URL}, onClose, onChanged});
+
+            await user.click(await screen.findByRole('button', {name: labels.buttons.unregister}));
+            expect(screen.queryByLabelText(/SI čip/)).not.toBeInTheDocument();
+            await user.click(await screen.findByRole('button', {name: labels.buttons.submit}));
+
+            await waitFor(() => expect(onChanged).toHaveBeenCalled());
+            expect(hasDelete()).toBe(true);
+            expect(onClose).toHaveBeenCalled();
+        });
+
+        it('dismissing the confirmation sends nothing and does not call onChanged', async () => {
+            const user = userEvent.setup();
+            const onChanged = vi.fn();
+            routesWith({editRegistration: editRegistrationTemplate(), unregisterFromEvent: unregisterTemplate()});
+            renderDialog({registration: {href: EDIT_URL}, onChanged});
+
+            await user.click(await screen.findByRole('button', {name: labels.buttons.unregister}));
+            await user.click(await screen.findByRole('button', {name: labels.buttons.cancel}));
+
+            expect(hasDelete()).toBe(false);
+            expect(onChanged).not.toHaveBeenCalled();
         });
     });
 

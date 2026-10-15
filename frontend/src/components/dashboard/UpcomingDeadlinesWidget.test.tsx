@@ -21,7 +21,7 @@ vi.mock('../events/EventRegistrationDialog', () => ({
         'data-registration-href': props.registration?.href ?? '',
     }, [
         React.createElement('button', {key: 'close', onClick: props.onClose}, 'dialog-close'),
-        React.createElement('button', {key: 'register', onClick: props.onRegistered}, 'dialog-registered'),
+        React.createElement('button', {key: 'register', onClick: props.onChanged}, 'dialog-registered'),
     ]) : null,
 }));
 
