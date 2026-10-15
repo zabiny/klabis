@@ -6,6 +6,7 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {asLinkArray, toHref} from "../../api/hateoas.ts";
+import {normalizeKlabisApiPath} from "../../utils/halFormsUtils.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {useHalRoute} from "../../contexts/halRouteContext.ts";
 import {formatDate, getFutureDeadlines, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
@@ -22,7 +23,7 @@ import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {Section} from "../members/MemberSection.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
 import {MemberName} from "../../components/members/MemberName.tsx";
-import {ExternalLink, Globe, Pencil, UserMinus, UserPlus, XCircle} from "lucide-react";
+import {ExternalLink, Globe, Pencil, UserMinus, UserPen, UserPlus, XCircle} from "lucide-react";
 import {EventsFilterBar} from "../../components/events/EventsFilterBar.tsx";
 import {EventSiPolicyFields} from "../../components/events/EventSiPolicyFields.tsx";
 import {EventTypeBadge} from "../../components/events/EventTypeBadge.tsx";
@@ -105,7 +106,7 @@ export const EventsPage = (): ReactElement => {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isBulkSyncModalOpen, setIsBulkSyncModalOpen] = useState(false);
     const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
-    const [newRegistrationTarget, setNewRegistrationTarget] = useState<Link | null>(null);
+    const [registrationTarget, setRegistrationTarget] = useState<Link | null>(null);
     const {filterValue, extraParams, defaultSort, handleFilterChange} = useEventsFilterState();
 
     const importBatchTemplate = resourceData?._templates?.importEventsBatch;
@@ -133,6 +134,7 @@ export const EventsPage = (): ReactElement => {
         const templates = event._templates;
         const links = event._links as Record<string, HalResourceLinks> | undefined;
         const newRegLink = links?.['newRegistration'] ? asLinkArray(links['newRegistration'])[0] : undefined;
+        const editRegistrationTarget = templates?.editRegistration?.target;
         const syncLink = links?.sync ? asLinkArray(links.sync)[0] : undefined;
 
         return (
@@ -140,9 +142,17 @@ export const EventsPage = (): ReactElement => {
                 {newRegLink && (
                     <Button key="newRegistration" variant={getActionVariant('newRegistration')} size="sm" title={labels.templates.registerForEvent} onClick={(e) => {
                         e.stopPropagation();
-                        setNewRegistrationTarget(newRegLink);
+                        setRegistrationTarget(newRegLink);
                     }}>
                         <UserPlus className="w-4 h-4"/>
+                    </Button>
+                )}
+                {editRegistrationTarget && (
+                    <Button key="editRegistration" variant={getActionVariant('editRegistration')} size="sm" title={labels.templates.editRegistration} onClick={(e) => {
+                        e.stopPropagation();
+                        setRegistrationTarget({href: normalizeKlabisApiPath(editRegistrationTarget)});
+                    }}>
+                        <UserPen className="w-4 h-4"/>
                     </Button>
                 )}
                 {ROW_ACTION_BUTTONS.filter(({name}) => name !== 'registerForEvent' || !newRegLink).map(({name, icon: Icon, label}) => templates?.[name] && (
@@ -389,8 +399,8 @@ export const EventsPage = (): ReactElement => {
         )}
 
         <EventRegistrationDialog
-            registration={newRegistrationTarget}
-            onClose={() => setNewRegistrationTarget(null)}
+            registration={registrationTarget}
+            onClose={() => setRegistrationTarget(null)}
             onRegistered={route.refetch}
         />
     </div>;

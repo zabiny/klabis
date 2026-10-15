@@ -8,7 +8,7 @@
 
 ## 2. Edit own registration from the events list
 
-- [ ] 2.1 Frontend: add an "Upravit přihlášku" (Pencil) row action in `EventsPage.tsx` shown when the row has the `editRegistration` template; it opens `EventRegistrationDialog` with a link built from the normalized `template.target`; add label in `localization/labels.ts`; verify with vitest (action shown only with the template, opens the dialog with the expected link) and `npm run build`
+- [x] 2.1 Frontend: add an "Upravit přihlášku" (Pencil) row action in `EventsPage.tsx` shown when the row has the `editRegistration` template; it opens `EventRegistrationDialog` with a link built from the normalized `template.target`; add label in `localization/labels.ts`; verify with vitest (action shown only with the template, opens the dialog with the expected link) and `npm run build`
 
 ## 3. Unregister from the edit dialog
 
