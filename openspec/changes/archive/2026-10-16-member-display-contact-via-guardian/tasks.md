@@ -12,5 +12,5 @@
 
 ## 3. Wrap-up
 
-- [ ] 3.1 Manual check on http://localhost:3000 with an example minor lacking own contact (admin `ZBM9000` and member `ZBM9500`). Verify: visual check of detail and list.
-- [ ] 3.2 Code review of backend and frontend changes before commit.
+- [x] 3.1 Manual check on http://localhost:3000 with an example minor lacking own contact (admin `ZBM9000` and member `ZBM9500`). Verify: visual check of detail and list.
+- [x] 3.2 Code review of backend and frontend changes before commit.
