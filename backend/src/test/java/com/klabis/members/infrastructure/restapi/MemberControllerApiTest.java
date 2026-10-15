@@ -786,7 +786,7 @@ class MemberControllerApiTest {
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class))).thenReturn(member);
             when(memberContactPort.effectiveContactOf(eq(member), any())).thenReturn(new EffectiveContact(
                     new EffectiveContact.Value("jan@example.com", "Jan Novák"),
-                    new EffectiveContact.Value(null, null)));
+                    EffectiveContact.Value.EMPTY));
             return member;
         }
 
@@ -1506,7 +1506,7 @@ class MemberControllerApiTest {
                     .thenReturn(new PageImpl<>(List.of(member)));
             when(memberContactPort.effectiveContactOf(eq(member))).thenReturn(new EffectiveContact(
                     new EffectiveContact.Value("jan@example.com", "Jan Novák"),
-                    new EffectiveContact.Value(null, null)));
+                    EffectiveContact.Value.EMPTY));
         }
 
         @Test

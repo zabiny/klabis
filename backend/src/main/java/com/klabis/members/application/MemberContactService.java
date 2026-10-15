@@ -1,7 +1,9 @@
 package com.klabis.members.application;
 
 import com.klabis.common.users.UserId;
+import com.klabis.members.domain.EmailAddress;
 import com.klabis.members.domain.Member;
+import com.klabis.members.domain.PhoneNumber;
 import com.klabis.members.legalguardian.application.GuardianContact;
 import com.klabis.members.legalguardian.application.GuardianContactResolver;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
@@ -11,6 +13,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -42,15 +45,13 @@ class MemberContactService implements MemberContactPort {
     @Transactional(readOnly = true)
     @Override
     public EffectiveContact effectiveContactOf(Member member, Set<UserId> guardians) {
-        String ownEmail = ownEmail(member);
-        String ownPhone = ownPhone(member);
-        if (!needsGuardian(member) || guardians.isEmpty()) {
+        if (guardians.isEmpty() || !needsGuardian(member)) {
             return ownContactOf(member);
         }
         List<GuardianContact> ordered = guardianContactResolver.resolve(guardians).stream().sorted(BY_NAME).toList();
         return new EffectiveContact(
-                resolve(ownEmail, ordered, GuardianContact::email),
-                resolve(ownPhone, ordered, GuardianContact::phone));
+                resolve(ownEmail(member), ordered, GuardianContact::email),
+                resolve(ownPhone(member), ordered, GuardianContact::phone));
     }
 
     private static boolean needsGuardian(Member member) {
@@ -59,17 +60,14 @@ class MemberContactService implements MemberContactPort {
     }
 
     private static EffectiveContact ownContactOf(Member member) {
-        return new EffectiveContact(own(ownEmail(member)), own(ownPhone(member)));
-    }
-
-    private static EffectiveContact.Value own(String value) {
-        return StringUtils.hasText(value) ? new EffectiveContact.Value(value, null) : EffectiveContact.Value.EMPTY;
+        return new EffectiveContact(resolve(ownEmail(member), List.of(), GuardianContact::email),
+                resolve(ownPhone(member), List.of(), GuardianContact::phone));
     }
 
     private static EffectiveContact.Value resolve(String ownValue, List<GuardianContact> ordered,
                                                   Function<GuardianContact, String> detail) {
         if (StringUtils.hasText(ownValue)) {
-            return own(ownValue);
+            return new EffectiveContact.Value(ownValue, null);
         }
         return ordered.stream()
                 .filter(guardian -> StringUtils.hasText(detail.apply(guardian)))
@@ -80,10 +78,10 @@ class MemberContactService implements MemberContactPort {
     }
 
     private static String ownEmail(Member member) {
-        return member.getEmail() != null ? member.getEmail().value() : null;
+        return Optional.ofNullable(member.getEmail()).map(EmailAddress::value).orElse(null);
     }
 
     private static String ownPhone(Member member) {
-        return member.getPhone() != null ? member.getPhone().value() : null;
+        return Optional.ofNullable(member.getPhone()).map(PhoneNumber::value).orElse(null);
     }
 }

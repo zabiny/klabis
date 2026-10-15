@@ -15,8 +15,7 @@ class MemberContactPortStubConfiguration {
 
     @Bean
     MemberContactPort memberContactPort() {
-        EffectiveContact.Value none = new EffectiveContact.Value(null, null);
         return Mockito.mock(MemberContactPort.class, invocation ->
-                invocation.getMethod().getReturnType() == EffectiveContact.class ? new EffectiveContact(none, none) : null);
+                invocation.getMethod().getReturnType() == EffectiveContact.class ? EffectiveContact.EMPTY : null);
     }
 }
