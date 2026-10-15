@@ -8,4 +8,4 @@
 
 ## 2. Frontend check
 
-- [ ] 2.1 Frontend: verify with vitest in `EventRegistrationDialog.test.tsx` that "Odhlásit" appears and submits to the template target when the loaded registration belongs to another member; adjust code only if the test shows a gap; `npm run build`
+- [x] 2.1 Frontend: verify with vitest in `EventRegistrationDialog.test.tsx` that "Odhlásit" appears and submits to the template target when the loaded registration belongs to another member; adjust code only if the test shows a gap; `npm run build`

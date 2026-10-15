@@ -431,6 +431,36 @@ describe('EventRegistrationDialog', () => {
             expect(onClose).toHaveBeenCalled();
         });
 
+        it('offers unregistering of another member and sends DELETE to the template target', async () => {
+            const user = userEvent.setup();
+            const onChanged = vi.fn();
+            const otherMemberUrl = '/api/events/evt-1/registrations/member-2';
+            mockRoutes((url, options) => {
+                if (options?.method) return writeOk();
+                if (url === otherMemberUrl) {
+                    return jsonOk(editInitialData({
+                        _links: {self: {href: otherMemberUrl}, event: {href: EVENT_URL}},
+                        _templates: {
+                            editRegistration: {...editRegistrationTemplate(), target: otherMemberUrl},
+                            unregisterFromEvent: {...unregisterTemplate(), target: otherMemberUrl},
+                        },
+                    }));
+                }
+                if (url === EVENT_URL) return jsonOk(eventData());
+                return jsonOk({});
+            });
+            renderDialog({registration: {href: otherMemberUrl}, onChanged});
+
+            await user.click(await screen.findByRole('button', {name: labels.buttons.unregister}));
+            await user.click(await screen.findByRole('button', {name: labels.buttons.submit}));
+
+            await waitFor(() => expect(onChanged).toHaveBeenCalled());
+            const deleteCalls = vi.mocked(authorizedFetch).mock.calls.filter(([, options]) =>
+                (options as RequestInit | undefined)?.method === 'DELETE');
+            expect(deleteCalls).toHaveLength(1);
+            expect(deleteCalls[0][0]).toBe('/events/evt-1/registrations/member-2');
+        });
+
         it('dismissing the confirmation sends nothing and does not call onChanged', async () => {
             const user = userEvent.setup();
             const onChanged = vi.fn();
