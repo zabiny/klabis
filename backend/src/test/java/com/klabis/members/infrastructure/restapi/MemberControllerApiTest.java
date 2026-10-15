@@ -1496,6 +1496,45 @@ class MemberControllerApiTest {
                     .andExpect(jsonPath("$._links.self.href").exists());
         }
 
+        private void listMinorWithoutContact() {
+            Member member = MemberTestDataBuilder.aMemberWithId(UUID.randomUUID())
+                    .withDateOfBirth(LocalDate.now().minusYears(10))
+                    .withEmail((EmailAddress) null)
+                    .withPhone((PhoneNumber) null)
+                    .build();
+            when(managementService.listMembers(any(MemberFilter.class), any(org.springframework.data.domain.Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(member)));
+            when(memberContactPort.effectiveContactOf(eq(member))).thenReturn(new EffectiveContact(
+                    new EffectiveContact.Value("jan@example.com", "Jan Novák"),
+                    new EffectiveContact.Value(null, null)));
+        }
+
+        @Test
+        @DisplayName("displayContact — MEMBERS:MANAGE caller sees guardian fallback with marker")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void manageCallerSeesDisplayContactWithGuardianMarker() throws Exception {
+            listMinorWithoutContact();
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].displayContact.email.value").value("jan@example.com"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].displayContact.email.fromGuardian").value(true))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].displayContact.email.guardianName").value("Jan Novák"))
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].displayContact.phone.value").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("displayContact — caller without MEMBERS:MANAGE does not see it")
+        @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})
+        void regularCallerDoesNotSeeDisplayContact() throws Exception {
+            listMinorWithoutContact();
+
+            mockMvc.perform(getApiMembers())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].id").exists())
+                    .andExpect(jsonPath("$._embedded.memberSummaryResponseList[0].displayContact").doesNotExist());
+        }
+
         @Test
         @DisplayName("should call repository with correct default pagination parameters")
         @WithKlabisMockUser(username = MEMBER_USERNAME, authorities = {Authority.MEMBERS_READ})

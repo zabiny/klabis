@@ -209,6 +209,7 @@ export const labels = {
         lastName: 'Příjmení',
         email: 'E-mail',
         phone: 'Telefon',
+        contact: 'Kontakt',
         birthDate: 'Datum narození',
         dateOfBirth: 'Datum narození',
         gender: 'Pohlaví',

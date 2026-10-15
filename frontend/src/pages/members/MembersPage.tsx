@@ -11,6 +11,7 @@ import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx"
 import {Badge, Button, DetailRow, Modal} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {SyncMembersFromOrisModal} from "../../components/members/SyncMembersFromOrisModal.tsx";
+import {DisplayContactText} from "./DisplayContactText.tsx";
 import {Section} from "./MemberSection.tsx";
 import {RegistrationContactSection, RegistrationGuardianSections} from "./RegistrationGuardianSections.tsx";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField.tsx";
@@ -199,8 +200,15 @@ export const MembersPage = (): ReactElement => {
         );
     };
 
-    const renderEmailCell = ({item}: TableCellRenderProps) => {
-        return (item.email as string | null) ?? null;
+    const renderContactCell = ({item}: TableCellRenderProps) => {
+        const contact = (item as unknown as MemberSummaryData).displayContact;
+        if (!contact) return null;
+        return (
+            <div className="flex flex-col">
+                <div><DisplayContactText contact={contact.email}/></div>
+                <div><DisplayContactText contact={contact.phone}/></div>
+            </div>
+        );
     };
 
     const renderDataIncompleteCell = ({item}: TableCellRenderProps) => {
@@ -324,7 +332,7 @@ export const MembersPage = (): ReactElement => {
                     <TableCell sortable column={"registrationNumber"}>{labels.fields.registrationNumber}</TableCell>
                     <TableCell sortable column={"lastName"}>{labels.fields.lastName}</TableCell>
                     <TableCell sortable column={"firstName"}>{labels.fields.firstName}</TableCell>
-                    <TableCell column={"email"} dataRender={renderEmailCell}>{labels.fields.email}</TableCell>
+                    <TableCell column={"displayContact"} dataRender={renderContactCell}>{labels.fields.contact}</TableCell>
                     {hasManageAuthority && (
                         <TableCell column={"dataIncomplete"} dataRender={renderDataIncompleteCell}>{labels.membersFilter.incompleteBadge}</TableCell>
                     )}

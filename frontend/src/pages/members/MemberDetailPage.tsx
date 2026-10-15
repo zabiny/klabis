@@ -24,6 +24,7 @@ import {MemberFeeSection} from "./MemberFeeSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
 import {LegalGuardiansSection} from "../../components/legal-guardians/LegalGuardiansSection.tsx";
 import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
+import {DisplayContactText} from "./DisplayContactText.tsx";
 
 type MemberDetail = GetMemberResource;
 
@@ -35,21 +36,6 @@ const memberRel = <K extends keyof MemberLinks>(rel: K): K => rel;
 const memberLink = <K extends keyof MemberLinks>(links: MemberLinks | undefined, rel: K): MemberLinks[K] => links?.[rel];
 
 const val = (value: ReactNode): ReactNode => value || '\u2014';
-
-type DisplayContactValue = NonNullable<NonNullable<MemberDetail['displayContact']>['email']>;
-
-// fromGuardian/guardianName are sent only to MEMBERS:MANAGE, so the marker is naturally admin-only.
-const DisplayContactText = ({contact}: { contact?: DisplayContactValue }) => {
-    if (!contact?.value) return <>{'\u2014'}</>;
-    return (
-        <>
-            {contact.value}
-            {contact.fromGuardian && (
-                <span className="ml-2 text-xs text-text-tertiary">{labels.ui.guardianContact(contact.guardianName)}</span>
-            )}
-        </>
-    );
-};
 
 const MaskedBirthNumber = ({value}: { value: string }) => {
     const [revealed, setRevealed] = useState(false);

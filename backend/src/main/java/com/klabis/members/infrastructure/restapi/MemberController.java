@@ -199,7 +199,17 @@ public class MemberController implements MembersApi {
 
         HalResponseContext.setDomainList(memberPage.getContent());
 
-        return ResponseEntity.ok(memberPage.map(member -> conversionService.convert(member, MemberSummaryResponse.class)));
+        boolean canManage = authorizationEvaluator.has(Authority.MEMBERS_MANAGE);
+        return ResponseEntity.ok(memberPage.map(member -> {
+            MemberSummaryResponse summary = conversionService.convert(member, MemberSummaryResponse.class);
+            if (!canManage) {
+                return summary;
+            }
+            // Resolved only for admins: the column is MEMBERS:MANAGE-only, so lookups for others would be wasted.
+            return MemberSummaryResponseBuilder.builder(summary)
+                    .displayContact(displayContact(memberContactPort.effectiveContactOf(member)))
+                    .build();
+        }));
     }
 
     private MemberFilter buildFilter(String q, String status, Boolean incomplete) {
@@ -275,7 +285,10 @@ public class MemberController implements MembersApi {
 
     private DisplayContact displayContact(Member member, Optional<LegalGuardianGroup> guardianGroup) {
         Set<UserId> guardians = guardianGroup.map(LegalGuardianGroup::getGuardians).orElse(Set.of());
-        EffectiveContact contact = memberContactPort.effectiveContactOf(member, guardians);
+        return displayContact(memberContactPort.effectiveContactOf(member, guardians));
+    }
+
+    private static DisplayContact displayContact(EffectiveContact contact) {
         return DisplayContactBuilder.builder()
                 .email(toDto(contact.email()))
                 .phone(toDto(contact.phone()))

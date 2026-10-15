@@ -115,7 +115,6 @@ const buildMemberRow = (overrides?: Record<string, unknown>) => ({
     registrationNumber: 'REG-001',
     lastName: 'Novák',
     firstName: 'Jan',
-    email: 'jan.novak@example.com',
     active: true,
     _links: {self: {href: '/api/members/member-1'}},
     ...overrides,
@@ -213,12 +212,12 @@ describe('MembersPage', () => {
         expect(screen.getByText('Jméno')).toBeInTheDocument();
     });
 
-    it('renders E-mail column', () => {
+    it('renders Kontakt column', () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/members'}},
         };
         renderPage(createMockPageData(resourceData));
-        expect(screen.getByText('E-mail')).toBeInTheDocument();
+        expect(screen.getByText('Kontakt')).toBeInTheDocument();
     });
 
     it('does NOT render Status column header', () => {
@@ -248,9 +247,28 @@ describe('MembersPage — row data rendering', () => {
         vi.clearAllMocks();
     });
 
-    it('shows email value in email column', () => {
-        renderPageWithMembers([buildMemberRow({email: 'test@example.com'})]);
+    it('shows email and phone from displayContact in the contact column', () => {
+        renderPageWithMembers([buildMemberRow({
+            displayContact: {email: {value: 'test@example.com'}, phone: {value: '+420123456789'}},
+        })]);
         expect(screen.getByText('test@example.com')).toBeInTheDocument();
+        expect(screen.getByText('+420123456789')).toBeInTheDocument();
+    });
+
+    it('shows guardian marker next to value taken from guardian', () => {
+        renderPageWithMembers([buildMemberRow({
+            displayContact: {
+                email: {value: 'rodic@example.com', fromGuardian: true, guardianName: 'Jana Nováková'},
+                phone: {value: '+420111222333'},
+            },
+        })]);
+        expect(screen.getByText('rodic@example.com')).toBeInTheDocument();
+        expect(screen.getAllByText(labels.ui.guardianContact('Jana Nováková'))).toHaveLength(1);
+    });
+
+    it('does not render contact column when displayContact is absent', () => {
+        renderPageWithMembers([buildMemberRow({email: undefined})]);
+        expect(screen.queryByText(labels.fields.contact)).not.toBeInTheDocument();
     });
 
     it('shows edit icon when _templates.updateMember exists on member row', () => {

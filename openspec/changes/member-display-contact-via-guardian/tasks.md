@@ -7,8 +7,8 @@
 
 ## 2. Member list contact column
 
-- [ ] 2.1 Add `displayContact` to `MemberSummaryResponse` (MEMBERS_MANAGE only) and fill it in `listMembers`; regenerate bundle/types. Verify: `@WebMvcTest` of list for admin (present, guardian fallback) and regular user (absent).
-- [ ] 2.2 TDD: `MembersPage` contact column shows e-mail and telephone as two lines with the guardian marker; replaces the e-mail-only column. Verify: vitest; `npm run build` passes.
+- [x] 2.1 Add `displayContact` to `MemberSummaryResponse` (MEMBERS_MANAGE only) and fill it in `listMembers`; regenerate bundle/types. Verify: `@WebMvcTest` of list for admin (present, guardian fallback) and regular user (absent).
+- [x] 2.2 TDD: `MembersPage` contact column shows e-mail and telephone as two lines with the guardian marker; replaces the e-mail-only column. Verify: vitest; `npm run build` passes.
 
 ## 3. Wrap-up
 

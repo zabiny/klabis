@@ -1021,6 +1021,10 @@ components:
           type: boolean
           x-klabis-authority: MEMBERS_MANAGE
           description: Whether the member is missing required data (visible to admins only)
+        displayContact:
+          $ref: '#/components/schemas/DisplayContact'
+          readOnly: true
+          x-klabis-authority: MEMBERS_MANAGE
 
     MemberOptionResponse:
       type: object
