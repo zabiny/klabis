@@ -11,7 +11,7 @@ const signoutRedirect = vi.fn(async () => {
 });
 const userManager = {
     getUser: vi.fn(async () => null),
-    removeUser: vi.fn(async () => undefined),
+    signinRedirect: vi.fn(async () => undefined),
     signoutRedirect,
     signinRedirectCallback: vi.fn(),
 };
@@ -132,5 +132,32 @@ describe('AuthProvider logout', () => {
 
         expect(signoutRedirect).toHaveBeenCalled();
         expect(clearRegisteredEndpoint).toHaveBeenCalled();
+    });
+
+    it('does not start sign-in while logout is in progress', async () => {
+        getServiceWorkerRegistration.mockResolvedValue(
+            registrationWith(async () => ({unsubscribe: () => new Promise(() => {})})));
+        const {result} = await renderAuth();
+        vi.useFakeTimers();
+
+        const logout = act(() => result.current.logout());
+        act(() => result.current.login());
+        await vi.advanceTimersByTimeAsync(2000);
+        await logout;
+        act(() => result.current.login());
+
+        expect(userManager.signinRedirect).not.toHaveBeenCalled();
+        expect(signoutRedirect).toHaveBeenCalledTimes(1);
+    });
+
+    it('allows sign-in again after signoutRedirect rejects', async () => {
+        getServiceWorkerRegistration.mockResolvedValue(registrationWith(async () => null));
+        signoutRedirect.mockRejectedValueOnce(new Error('boom'));
+        const {result} = await renderAuth();
+
+        await act(() => result.current.logout());
+        act(() => result.current.login());
+
+        expect(userManager.signinRedirect).toHaveBeenCalledTimes(1);
     });
 });
