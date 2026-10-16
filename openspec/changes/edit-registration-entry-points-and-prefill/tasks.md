@@ -12,7 +12,7 @@
 
 ## 3. Edit registration on the dashboard
 
-- [ ] 3.1 Write failing tests for `useMyUpcomingRegistrations` (exposes `editRegistration` target per item) and `HomePage` (edit button only when the affordance is present, click opens the dialog and does not navigate). Implement the button and dialog wiring with refetch after save. Verify: tests pass; in the browser the widget shows the button for registered events with open registrations.
+- [x] 3.1 Write failing tests for `useMyUpcomingRegistrations` (exposes `editRegistration` target per item) and `HomePage` (edit button only when the affordance is present, click opens the dialog and does not navigate). Implement the button and dialog wiring with refetch after save. Verify: tests pass; in the browser the widget shows the button for registered events with open registrations.
 
 ## 4. Verification
 

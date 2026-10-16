@@ -7,6 +7,7 @@ export interface UpcomingRegistrationItem {
     name: string;
     eventDate: string;
     location: string;
+    editRegistrationTarget?: string;
 }
 
 export interface UpcomingRegistrationsData {
@@ -21,6 +22,7 @@ function toUpcomingRegistrationsData(response: HalResponse): UpcomingRegistratio
             eventDate?: string;
             location?: string;
             _links?: {self?: {href: string}};
+            _templates?: {editRegistration?: {target?: string}};
         }>;
     } | undefined;
 
@@ -32,6 +34,7 @@ function toUpcomingRegistrationsData(response: HalResponse): UpcomingRegistratio
             name: e.name ?? '',
             eventDate: e.eventDate ?? '',
             location: e.location ?? '',
+            editRegistrationTarget: e._templates?.editRegistration?.target,
         }));
 
     return {items};

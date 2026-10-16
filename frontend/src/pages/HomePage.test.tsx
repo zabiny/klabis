@@ -1,8 +1,9 @@
 import '@testing-library/jest-dom';
-import {render, screen} from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
+import {fireEvent, render, screen} from '@testing-library/react';
+import {MemoryRouter, useLocation} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
+import React from 'react';
 import type {NavigationItem} from '../hooks/useRootNavigation';
 import * as RootNavigationModule from '../hooks/useRootNavigation';
 import * as AuthContextModule from '../contexts/authContext';
@@ -42,6 +43,14 @@ vi.mock('../components/dashboard/UpcomingDeadlinesWidget', () => ({
     UpcomingDeadlinesWidget: vi.fn(() => null),
 }))
 
+vi.mock('../components/events/EventRegistrationDialog', () => ({
+    EventRegistrationDialog: (props: { registration: { href: string } | null; onClose: () => void; onChanged: () => void }) =>
+        props.registration ? React.createElement('div', {
+            'data-testid': 'event-registration-dialog',
+            'data-registration-href': props.registration.href,
+        }, React.createElement('button', {onClick: props.onChanged}, 'dialog-changed')) : null,
+}))
+
 const useRootNavigation = vi.mocked(RootNavigationModule.useRootNavigation)
 const useAuth = vi.mocked(AuthContextModule.useAuth)
 const useDashboard = vi.mocked(UseDashboardModule.useDashboard)
@@ -76,6 +85,8 @@ const regularNavItems: NavigationItem[] = [
     {rel: 'events', href: '/events', label: 'Akce', section: 'main'},
 ];
 
+const LocationDisplay = () => <div data-testid="location">{useLocation().pathname}</div>
+
 const renderHomePage = () => {
     const queryClient = new QueryClient({
         defaultOptions: {queries: {retry: false, gcTime: 0}},
@@ -84,6 +95,7 @@ const renderHomePage = () => {
         <QueryClientProvider client={queryClient}>
             <MemoryRouter initialEntries={['/']}>
                 <HomePage/>
+                <LocationDisplay/>
             </MemoryRouter>
         </QueryClientProvider>
     );
@@ -320,6 +332,50 @@ describe('HomePage - UserDashboard widget: link present, events returned', () =>
     it('does not render "Prohlédnout nadcházející akce klubu" CTA', () => {
         renderHomePage()
         expect(screen.queryByText('Prohlédnout nadcházející akce klubu')).not.toBeInTheDocument()
+    })
+})
+
+describe('HomePage - UserDashboard widget: edit registration action', () => {
+    const href = '/api/events?registeredBy=me&dateFrom=2026-04-24&sort=eventDate,ASC&size=3'
+    const refetch = vi.fn()
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        useRootNavigation.mockReturnValue(createMockQueryResult(regularNavItems))
+        useAuth.mockReturnValue({
+            isAuthenticated: true,
+            login: vi.fn(),
+            isLoading: false,
+            getUser: vi.fn().mockReturnValue({firstName: 'Jana', lastName: 'Horáková', id: 2, userName: 'jhorakova', memberId: 'member-uuid-123'}),
+            logout: vi.fn(),
+        })
+        useDashboard.mockReturnValue(createMockQueryResult({upcomingRegistrationsHref: href, upcomingDeadlinesHref: undefined}))
+        useMyUpcomingRegistrations.mockReturnValue(createMockQueryResult({
+            items: [
+                {selfHref: '/api/events/evt-1', name: 'Jarní závod', eventDate: '2026-05-01', location: 'Praha', editRegistrationTarget: '/api/events/evt-1/registrations/me'},
+                {selfHref: '/api/events/evt-2', name: 'Letní kemp', eventDate: '2026-06-15', location: 'Brno'},
+            ],
+        }, {refetch}))
+    })
+
+    it('shows the edit button only for rows with the editRegistration affordance', () => {
+        renderHomePage()
+        expect(screen.getAllByRole('button', {name: 'Upravit přihlášku'})).toHaveLength(1)
+    })
+
+    it('opens the registration dialog with the template target and does not navigate', () => {
+        renderHomePage()
+        const notPrevented = fireEvent.click(screen.getByRole('button', {name: 'Upravit přihlášku'}))
+        expect(notPrevented).toBe(false)
+        expect(screen.getByTestId('event-registration-dialog')).toHaveAttribute('data-registration-href', '/events/evt-1/registrations/me')
+        expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/)
+    })
+
+    it('refetches the widget data after the dialog reports a change', () => {
+        renderHomePage()
+        fireEvent.click(screen.getByRole('button', {name: 'Upravit přihlášku'}))
+        fireEvent.click(screen.getByText('dialog-changed'))
+        expect(refetch).toHaveBeenCalled()
     })
 })
 
