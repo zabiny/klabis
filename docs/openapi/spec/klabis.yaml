@@ -104,6 +104,14 @@ paths:
   # Outside /api/ and not HAL: text/calendar feed authenticated by a ?token= query parameter.
   /ical/my-schedule.ics:
     $ref: './calendar.yaml#/paths/~1ical~1my-schedule.ics'
+  /api/notifications:
+    $ref: './notifications.yaml#/paths/~1api~1notifications'
+  /api/notifications/devices:
+    $ref: './notifications.yaml#/paths/~1api~1notifications~1devices'
+  /api/notifications/devices/{deviceId}:
+    $ref: './notifications.yaml#/paths/~1api~1notifications~1devices~1{deviceId}'
+  /api/notifications/test:
+    $ref: './notifications.yaml#/paths/~1api~1notifications~1test'
   /api/membership-fee-tiers:
     $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers'
   /api/membership-fee-tiers/{id}:

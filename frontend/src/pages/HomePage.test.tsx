@@ -199,6 +199,21 @@ describe('HomePage - Regular User Dashboard', () => {
         expect(screen.queryByText('Můj profil')).not.toBeInTheDocument()
     })
 
+    it('shows notifications tile linking to the settings page when root has notifications link', () => {
+        useRootNavigation.mockReturnValue(createMockQueryResult([
+            ...regularNavItems,
+            {rel: 'notifications', href: '/notifications', label: 'Notifikace', section: 'main'},
+        ]))
+        renderHomePage()
+        expect(screen.getByRole('link', {name: /Notifikace/i})).toHaveAttribute('href', '/notifications')
+    })
+
+    it('hides notifications tile when root has no notifications link', () => {
+        useRootNavigation.mockReturnValue(createMockQueryResult(regularNavItems))
+        renderHomePage()
+        expect(screen.queryByText('Notifikace')).not.toBeInTheDocument()
+    })
+
     it('should not show admin statistics', () => {
         renderHomePage()
         expect(screen.queryByText('42')).not.toBeInTheDocument()

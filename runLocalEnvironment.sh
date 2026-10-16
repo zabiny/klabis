@@ -56,6 +56,9 @@ KLABIS_ADMIN_PASSWORD='admin123' \
 KLABIS_OAUTH2_CLIENT_SECRET='test-secret-123' \
 KLABIS_ENCRYPTION_PASSWORD='test-key-123' \
 KLABIS_ENCRYPTION_SALT='5c0744940b5c369b' \
+KLABIS_VAPID_PUBLIC_KEY='BKkNxEb4uqNdKoGdvxojFevTMSV9ClYRW4qxfBg6pMf7Uz1GSNrRA0GNtoZUMg9i39ntx3-L3gdj8_dOrFuAvKM' \
+KLABIS_VAPID_PRIVATE_KEY='8bzK6UJA6gxrdsqY1y_zlMZt2L-sNmsAYnx8VVwEjqM' \
+KLABIS_VAPID_SUBJECT='mailto:admin@localhost' \
 SPRING_PROFILES_ACTIVE='h2,ssl,debug,metrics,local-dev,example-data' \
 "$SCRIPT_DIR/backend/gradlew" -p "$SCRIPT_DIR/backend" bootRun \
     >"$BACKEND_LOG" 2>&1 &

@@ -1,9 +1,29 @@
-import React, {type ReactNode, useCallback, useEffect, useState,} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useRef, useState,} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {User, UserManager,} from 'oidc-client-ts';
 import {type AuthConfig, createUserManager} from '../api/klabisUserManager.ts';
 import {normalizeUrl} from "../api/hateoas.ts";
 import {AuthContext, type AuthUserDetails} from './authContext';
+import {unsubscribeCurrentDevice} from '../pwa/pushSubscription';
+import {clearRegisteredEndpoint} from '../pwa/pushSubscriptionStore';
+
+const PUSH_UNSUBSCRIBE_TIMEOUT_MS = 1500;
+
+async function unsubscribePushBestEffort(): Promise<void> {
+    if (typeof PushManager === 'undefined') {
+        clearRegisteredEndpoint();
+        return;
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, PUSH_UNSUBSCRIBE_TIMEOUT_MS);
+    });
+    try {
+        await Promise.race([unsubscribeCurrentDevice(), timeout]);
+    } finally {
+        clearTimeout(timer);
+    }
+}
 
 
 interface AuthProviderProps {
@@ -80,17 +100,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         }
     }, [userManager, config]);
 
+    // signoutRedirect clears the stored user, which makes ProtectedRoute call login(); a signin navigation would supersede the signout one.
+    const logoutInProgress = useRef(false);
+
     const login = useCallback(() => {
+        if (logoutInProgress.current) return;
         userManager?.signinRedirect();
     }, [userManager]);
 
     const logout = useCallback(async () => {
         if (!userManager) return;
+        logoutInProgress.current = true;
+        await unsubscribePushBestEffort();
         try {
-            const user = await userManager.getUser();
-            await userManager.removeUser();
-            await userManager.signoutRedirect({ id_token_hint: user?.id_token });
+            await userManager.signoutRedirect();
         } catch (err) {
+            logoutInProgress.current = false;
             console.error('Logout error:', err);
         }
     }, [userManager]);

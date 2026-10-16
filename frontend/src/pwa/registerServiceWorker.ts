@@ -7,6 +7,7 @@ export function registerServiceWorker(): Promise<ServiceWorkerRegistration | nul
     registrationPromise ??= navigator.serviceWorker.register(serviceWorkerUrl(), {
         scope: '/',
         updateViaCache: 'none',
+        ...(import.meta.env.DEV && {type: 'module' as const}),
     }).catch((error: unknown) => {
         registrationPromise = null;
         console.error('Service worker registration failed', error);

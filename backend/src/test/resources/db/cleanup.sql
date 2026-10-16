@@ -15,6 +15,9 @@ DELETE FROM oauth2_authorization;
 -- OAuth2 registered clients
 DELETE FROM oauth2_registered_client;
 
+-- Notification devices (owned by notifications module, FK → common.users with cascade)
+DELETE FROM notifications.notification_device;
+
 -- Calendar feed tokens (owned by calendar module, FK → common.users with cascade)
 DELETE FROM calendar.calendar_feed_token;
 

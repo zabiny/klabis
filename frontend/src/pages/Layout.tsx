@@ -8,6 +8,7 @@ import {RawDataViewToggle} from '../components/AdminToggle/RawDataViewToggle.tsx
 import type {AuthUserDetails} from '../contexts/authContext'
 import {useAuth} from '../contexts/authContext'
 import {useRootNavigation} from '../hooks/useRootNavigation'
+import {usePushReregistration} from '../pwa/usePushReregistration'
 import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout.tsx"
 import {HalFormProvider} from '../contexts/HalFormContext.tsx'
 import {ToastProvider} from '../contexts/ToastContext.tsx'
@@ -77,6 +78,8 @@ const Layout = () => {
     const mainItems = menuItems.filter(item => item.section === 'main')
     const adminItems = menuItems.filter(item => item.section === 'admin')
     const profileHref = menuItems.find(item => item.rel === 'profile')?.href
+    const notificationsHref = menuItems.find(item => item.rel === 'notifications')?.href
+    usePushReregistration(notificationsHref && `/api${notificationsHref}`)
 
     useEffect(() => {
         if (isAuthenticated) {

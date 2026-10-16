@@ -6,7 +6,7 @@
 -- Bootstrap data (admin user, OAuth2 clients) managed by BootstrapDataLoader component
 --
 -- Domain tables are organized into module schemas:
---   members, common, events, calendar, groups, finance, membershipfees, sync
+--   members, common, events, calendar, groups, finance, membershipfees, sync, notifications
 -- Framework tables (Spring AS, Spring Modulith) remain in public schema.
 --
 -- Tables in dependency order:
@@ -40,6 +40,7 @@ CREATE SCHEMA groups;
 CREATE SCHEMA finance;
 CREATE SCHEMA membershipfees;
 CREATE SCHEMA sync;
+CREATE SCHEMA notifications;
 
 -- ============================================================================
 -- 1. MEMBERS TABLE
@@ -1177,6 +1178,39 @@ COMMENT ON TABLE sync.sync_schedule IS 'Scheduling hint for one sync_record — 
 -- The only such index left (proposal.md task 4b.3 drops sync_record's own
 -- idx_sync_record_due_scan/columns once findDueForScan's query moves onto this table).
 CREATE INDEX idx_sync_schedule_due_scan ON sync.sync_schedule (dirty_since, next_attempt_due_at);
+
+-- ============================================================================
+-- NOTIFICATIONS.NOTIFICATION_DEVICE TABLE
+-- Browser installations (push subscriptions) that receive web push notifications for a user.
+-- Owned by the notifications module — common.users is not modified.
+-- ============================================================================
+
+CREATE TABLE notifications.notification_device
+(
+    id          UUID          NOT NULL PRIMARY KEY,
+    user_id     UUID          NOT NULL REFERENCES common.users (id) ON DELETE CASCADE,
+    endpoint    VARCHAR(1000) NOT NULL,
+    p256dh      VARCHAR(1000) NOT NULL,
+    auth        VARCHAR(1000) NOT NULL,
+    description VARCHAR(200)  NOT NULL,
+    enabled_at  TIMESTAMP     NOT NULL,
+
+    -- Audit fields
+    created_at  TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by  VARCHAR(100)  NOT NULL,
+    modified_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    modified_by VARCHAR(100)  NOT NULL,
+    version     BIGINT        NOT NULL DEFAULT 0
+);
+
+CREATE UNIQUE INDEX idx_notification_device_endpoint ON notifications.notification_device (endpoint);
+CREATE INDEX idx_notification_device_user ON notifications.notification_device (user_id);
+
+COMMENT ON TABLE notifications.notification_device IS 'Browser installation (push subscription) receiving web push notifications for one user';
+COMMENT ON COLUMN notifications.notification_device.endpoint IS 'Push service URL; unique across all devices';
+COMMENT ON COLUMN notifications.notification_device.p256dh IS 'Client public key for payload encryption (encrypted at rest)';
+COMMENT ON COLUMN notifications.notification_device.auth IS 'Client auth secret for payload encryption (encrypted at rest)';
+COMMENT ON COLUMN notifications.notification_device.description IS 'Device label derived from the User-Agent at registration';
 
 -- ============================================================================
 -- BOOTSTRAP DATA NOTE

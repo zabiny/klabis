@@ -57,7 +57,11 @@ describe('registerServiceWorker', () => {
         const {registerServiceWorker} = await loadModule();
 
         await registerServiceWorker();
-        expect(register).toHaveBeenCalledWith('/dev-sw.js?dev-sw', {scope: '/', updateViaCache: 'none'});
+        expect(register).toHaveBeenCalledWith('/dev-sw.js?dev-sw', {
+            scope: '/',
+            updateViaCache: 'none',
+            type: 'module',
+        });
     });
 
     it('registers only once', async () => {

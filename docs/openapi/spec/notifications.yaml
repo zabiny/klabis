@@ -1,0 +1,214 @@
+# Notifications module — web push notification settings of the current user.
+#
+# Any authenticated user may use these endpoints (notifications target a user, not a member);
+# there is no x-klabis-authority. Devices are always resolved through the caller's own user id.
+
+openapi: 3.1.0
+
+info:
+  title: Klabis API — Notifications module
+  description: The Notifications slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
+paths:
+
+  /api/notifications:
+    get:
+      operationId: getNotificationSettings
+      tags: [Notifications]
+      summary: Get notification settings of the current user
+      description: |
+        Returns the VAPID public key needed to subscribe the browser to push notifications and the
+        devices the current user has enabled notifications on. Devices of other users are never
+        included.
+      security:
+        - KlabisAuth: [openid]
+      x-spring-provide-args:
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
+      responses:
+        '200':
+          description: Notification settings returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSettings'
+          x-hal-links:
+            self:
+              description: This notification settings resource
+          x-hal-templates:
+            registerNotificationDevice:
+              operation: registerNotificationDevice
+            sendTestNotification:
+              operation: sendTestNotification
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
+  /api/notifications/devices:
+    post:
+      operationId: registerNotificationDevice
+      tags: [Notifications]
+      summary: Enable notifications on the current device
+      description: |
+        Registers the browser push subscription of the current device for the current user. Idempotent
+        by endpoint: registering an endpoint the user already owns updates its keys, registering an
+        endpoint owned by another user (same browser, different login) reassigns it to the current
+        user. The device description is derived from the User-Agent header.
+      security:
+        - KlabisAuth: [openid]
+      x-spring-provide-args:
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
+        - '@org.springframework.web.bind.annotation.RequestHeader(name = "User-Agent", required = false) String userAgent'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterNotificationDeviceRequest'
+      responses:
+        '201':
+          description: Device registered
+          headers:
+            Location:
+              description: URI of the registered device
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
+  /api/notifications/devices/{deviceId}:
+    delete:
+      operationId: removeNotificationDevice
+      tags: [Notifications]
+      summary: Disable notifications on a device
+      description: |
+        Removes a notification device of the current user. A device that does not exist or belongs to
+        another user is answered as not found.
+      security:
+        - KlabisAuth: [openid]
+      x-spring-provide-args:
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Notification device UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Device removed
+          content:
+            application/prs.hal-forms+json: {}
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+
+  /api/notifications/test:
+    post:
+      operationId: sendTestNotification
+      tags: [Notifications]
+      summary: Send a test notification to the current user's devices
+      description: |
+        Sends the "Notifikace fungují" test notification to every device the current user has enabled
+        notifications on. Delivery is asynchronous and best effort. The template is offered only when
+        the user has at least one device.
+      security:
+        - KlabisAuth: [openid]
+      x-spring-provide-args:
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
+      responses:
+        '204':
+          description: Test notification dispatched
+          content:
+            application/prs.hal-forms+json: {}
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
+            SYNC: Synchronisation
+
+  schemas:
+
+    NotificationSettings:
+      type: object
+      description: Push notification settings of the current user.
+      properties:
+        vapidPublicKey:
+          type: string
+          description: Base64url VAPID public key to pass to pushManager.subscribe.
+        devices:
+          type: array
+          x-hal-entity-items: true
+          items:
+            $ref: '#/components/schemas/NotificationDevice'
+
+    NotificationDevice:
+      type: object
+      description: A browser installation that receives push notifications for the current user.
+      properties:
+        id:
+          type: string
+          format: uuid
+        description:
+          type: string
+          description: Human readable device label derived from the User-Agent, e.g. "Chrome · Android".
+        enabledAt:
+          type: string
+          format: date-time
+        endpoint:
+          type: string
+          description: Push service URL; returned to its owner only, lets the SPA mark the current device.
+
+    RegisterNotificationDeviceRequest:
+      type: object
+      description: Browser push subscription to register for the current user.
+      required: [endpoint, p256dh, auth]
+      properties:
+        endpoint:
+          type: string
+          maxLength: 1000
+          description: Push service URL of the subscription; must use https.
+          pattern: '^https://.+'
+        p256dh:
+          type: string
+          maxLength: 200
+          description: Client public key of the subscription (base64url).
+        auth:
+          type: string
+          maxLength: 100
+          description: Auth secret of the subscription (base64url).
