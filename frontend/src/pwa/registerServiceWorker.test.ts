@@ -69,4 +69,18 @@ describe('registerServiceWorker', () => {
         await registerServiceWorker();
         expect(register).toHaveBeenCalledOnce();
     });
+
+    it('resolves null and retries when registration fails', async () => {
+        vi.stubEnv('DEV', false);
+        withServiceWorkerSupport();
+        register.mockRejectedValueOnce(new Error('registration failed'));
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        const {registerServiceWorker, getServiceWorkerRegistration} = await loadModule();
+
+        await expect(registerServiceWorker()).resolves.toBeNull();
+        await expect(getServiceWorkerRegistration()).resolves.toBeNull();
+
+        await expect(registerServiceWorker()).resolves.toBe(registration);
+        expect(register).toHaveBeenCalledTimes(2);
+    });
 });

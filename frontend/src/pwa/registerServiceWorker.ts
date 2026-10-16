@@ -1,4 +1,4 @@
-let registrationPromise: Promise<ServiceWorkerRegistration> | null = null;
+let registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
 export function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
     if (!('serviceWorker' in navigator)) {
@@ -7,6 +7,10 @@ export function registerServiceWorker(): Promise<ServiceWorkerRegistration | nul
     registrationPromise ??= navigator.serviceWorker.register(serviceWorkerUrl(), {
         scope: '/',
         updateViaCache: 'none',
+    }).catch((error: unknown) => {
+        registrationPromise = null;
+        console.error('Service worker registration failed', error);
+        return null;
     });
     return registrationPromise;
 }

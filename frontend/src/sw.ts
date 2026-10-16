@@ -21,9 +21,7 @@ async function activate(): Promise<void> {
     await sw.clients.claim();
     if (removedLegacyCaches) {
         const windowClients = await sw.clients.matchAll({type: 'window'});
-        for (const client of windowClients) {
-            client.navigate(client.url);
-        }
+        await Promise.allSettled(windowClients.map((client) => client.navigate(client.url)));
     }
 }
 
