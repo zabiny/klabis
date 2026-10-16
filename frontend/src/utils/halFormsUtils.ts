@@ -3,6 +3,7 @@
  */
 
 import type {HalFormsProperty, HalFormsTemplate} from '../api';
+import type {Link} from '../api/types';
 
 export function enrichTemplateWithReadOnlyFields(
     template: HalFormsTemplate,
@@ -87,4 +88,8 @@ export function shouldFetchTargetData(
 
 export function stripUriTemplate(href: string): string {
     return href.replace(/\{[^}]*\}/g, '');
+}
+
+export function toRegistrationLink(target?: string): Link | undefined {
+    return target ? {href: normalizeKlabisApiPath(target)} : undefined;
 }

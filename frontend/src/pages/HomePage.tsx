@@ -1,6 +1,11 @@
+import {useState} from 'react'
 import {Link as RouterLink} from 'react-router-dom'
-import {Bell, Calendar, ChevronRight, User} from 'lucide-react'
-import {Card} from '../components/UI'
+import {Bell, Calendar, ChevronRight, User, UserPen} from 'lucide-react'
+import {Button, Card} from '../components/UI'
+import {EventRegistrationDialog} from '../components/events/EventRegistrationDialog'
+import {getActionVariant} from '../utils/actionVariants'
+import {toRegistrationLink} from '../utils/halFormsUtils'
+import type {Link} from '../api'
 import {useRootNavigation} from "../hooks/useRootNavigation";
 import {labels} from "../localization/labels";
 import {formatDate} from "../utils/dateUtils";
@@ -18,7 +23,8 @@ const UserDashboard = ({profileHref, menuItems}: {
     const {data: dashboardData} = useDashboard()
     const upcomingRegistrationsHref = dashboardData?.upcomingRegistrationsHref
     const upcomingDeadlinesHref = dashboardData?.upcomingDeadlinesHref
-    const {data: registrationsData} = useMyUpcomingRegistrations(upcomingRegistrationsHref)
+    const [registrationTarget, setRegistrationTarget] = useState<Link | null>(null)
+    const {data: registrationsData, refetch: refetchRegistrations} = useMyUpcomingRegistrations(upcomingRegistrationsHref)
     const registrationItems = registrationsData?.items ?? []
     const notificationsHref = menuItems.find(item => item.rel === 'notifications')?.href ?? null
 
@@ -86,26 +92,44 @@ const UserDashboard = ({profileHref, menuItems}: {
                         {registrationItems.length > 0 ? (
                             <>
                                 <div className="divide-y divide-border">
-                                    {registrationItems.map((event) => (
+                                    {registrationItems.map((event) => {
+                                        const editLink = toRegistrationLink(event.editRegistrationTarget)
+                                        return (
                                         <RouterLink
                                             key={event.selfHref}
                                             to={extractNavigationPath(event.selfHref)}
                                             className="flex items-center justify-between p-4 hover:bg-surface-hover transition-colors"
                                         >
-                                            <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-4 flex-1 min-w-0">
                                                 <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg shrink-0">
                                                     <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400"/>
                                                 </div>
-                                                <div>
-                                                    <p className="font-medium text-text-primary">{event.name}</p>
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-text-primary truncate">{event.name}</p>
                                                     <p className="text-sm text-text-secondary">{event.location}</p>
                                                 </div>
                                             </div>
-                                            <span className="text-sm text-text-secondary hidden sm:block">
+                                            <span className="text-sm text-text-secondary hidden sm:block ml-3 shrink-0">
                                                 {formatDate(event.eventDate)}
                                             </span>
+                                            {editLink && (
+                                                <Button
+                                                    variant={getActionVariant('editRegistration')}
+                                                    size="sm"
+                                                    className="ml-3 shrink-0"
+                                                    title={labels.templates.editRegistration}
+                                                    onClick={(e) => {
+                                                        e.preventDefault()
+                                                        e.stopPropagation()
+                                                        setRegistrationTarget(editLink)
+                                                    }}
+                                                >
+                                                    <UserPen className="w-4 h-4"/>
+                                                </Button>
+                                            )}
                                         </RouterLink>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                                 <div className="p-4 border-t border-border">
                                     <RouterLink
@@ -132,6 +156,12 @@ const UserDashboard = ({profileHref, menuItems}: {
             )}
 
             <UpcomingDeadlinesWidget upcomingDeadlinesHref={upcomingDeadlinesHref}/>
+
+            <EventRegistrationDialog
+                registration={registrationTarget}
+                onClose={() => setRegistrationTarget(null)}
+                onChanged={refetchRegistrations}
+            />
         </div>
     )
 }

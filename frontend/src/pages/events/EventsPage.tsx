@@ -6,7 +6,7 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {asLinkArray, toHref} from "../../api/hateoas.ts";
-import {normalizeKlabisApiPath} from "../../utils/halFormsUtils.ts";
+import {toRegistrationLink} from "../../utils/halFormsUtils.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {useHalRoute} from "../../contexts/halRouteContext.ts";
 import {formatDate, getFutureDeadlines, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
@@ -134,7 +134,7 @@ export const EventsPage = (): ReactElement => {
         const templates = event._templates;
         const links = event._links as Record<string, HalResourceLinks> | undefined;
         const newRegLink = links?.['newRegistration'] ? asLinkArray(links['newRegistration'])[0] : undefined;
-        const editRegistrationTarget = templates?.editRegistration?.target;
+        const editRegistrationLink = toRegistrationLink(templates?.editRegistration?.target);
         const syncLink = links?.sync ? asLinkArray(links.sync)[0] : undefined;
 
         return (
@@ -147,10 +147,10 @@ export const EventsPage = (): ReactElement => {
                         <UserPlus className="w-4 h-4"/>
                     </Button>
                 )}
-                {editRegistrationTarget && (
+                {editRegistrationLink && (
                     <Button key="editRegistration" variant={getActionVariant('editRegistration')} size="sm" title={labels.templates.editRegistration} onClick={(e) => {
                         e.stopPropagation();
-                        setRegistrationTarget({href: normalizeKlabisApiPath(editRegistrationTarget)});
+                        setRegistrationTarget(editRegistrationLink);
                     }}>
                         <UserPen className="w-4 h-4"/>
                     </Button>

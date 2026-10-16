@@ -8,7 +8,7 @@ Defines the home dashboard surface — the landing page after login — includin
 
 ### Requirement: Upcoming Registrations Widget
 
-The home dashboard SHALL show a "Moje nadcházející akce" widget that lists the next three active events (status ACTIVE) the current user is registered to, ordered by event date with the nearest event first. The widget appears only for users for whom it applies (i.e. users with a member profile); users without a member profile do not see it at all. Each listed event shows its name, location, and event date.
+The home dashboard SHALL show a "Moje nadcházející akce" widget that lists the next three active events (status ACTIVE) the current user is registered to, ordered by event date with the nearest event first. The widget appears only for users for whom it applies (i.e. users with a member profile); users without a member profile do not see it at all. Each listed event shows its name, location, and event date. Each listed event additionally offers an "Upravit přihlášku" action whenever editing that registration is allowed; the action opens the registration edit dialog without leaving the dashboard.
 
 #### Scenario: Member with upcoming registrations sees the widget populated
 
@@ -48,6 +48,25 @@ The home dashboard SHALL show a "Moje nadcházející akce" widget that lists th
 
 - **WHEN** a member clicks one of the listed events in the widget
 - **THEN** the event detail page for that event opens
+
+#### Scenario: Edit action is offered on events whose registration can be edited
+
+- **GIVEN** a member registered to an upcoming event whose registration can still be edited
+- **WHEN** the member opens the home dashboard
+- **THEN** that event's row shows an "Upravit přihlášku" action
+
+#### Scenario: Edit action is hidden when editing is not allowed
+
+- **GIVEN** a member registered to an upcoming event whose registration deadline has passed
+- **WHEN** the member opens the home dashboard
+- **THEN** that event's row shows no "Upravit přihlášku" action
+
+#### Scenario: Member edits a registration from the dashboard
+
+- **WHEN** the member clicks "Upravit přihlášku" on an event row in the widget
+- **THEN** the registration edit dialog opens prefilled with the existing registration values
+- **AND** the event detail page is not opened
+- **AND** after saving, the member remains on the dashboard
 
 ### Requirement: Shortcut From Widget to Full Events List
 

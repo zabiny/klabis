@@ -123,6 +123,22 @@ describe('useHalFormData Hook', () => {
         });
     });
 
+    describe('Target Equals Current Path with cached raw response', () => {
+        it('should prefer the supplied resource data over the cached response of the same URL', () => {
+            const rawServerResponse = {id: 1, category: {id: 'cat-2'}};
+            queryClient.setQueryData(['authorized', '/members/123', ''], rawServerResponse);
+            const template = mockHalFormsTemplate({target: '/api/members/123'});
+
+            const {result} = renderHook(
+                () => useHalFormData(template, currentResourceData, '/members/123'),
+                {wrapper: createWrapper()}
+            );
+
+            expect(result.current.formData).toEqual(currentResourceData);
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+    });
+
     describe('Target Differs from Current Path', () => {
         it('should fire OPTIONS probe first and then GET when target differs', async () => {
             const template = mockHalFormsTemplate({target: '/api/events/456'});

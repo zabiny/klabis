@@ -71,6 +71,34 @@ describe('useMyUpcomingRegistrations', () => {
         expect(items[0].selfHref).toBe('/api/events/event-1');
     });
 
+    it('exposes editRegistration template target when the embedded event carries it', async () => {
+        const href = '/api/events?registeredBy=me&size=3';
+        mockFetchWithResponse({
+            _embedded: {
+                eventSummaryDtoList: [
+                    {
+                        name: 'Jarní závod', eventDate: '2026-05-01', location: 'Praha',
+                        _links: {self: {href: '/api/events/event-1'}},
+                        _templates: {editRegistration: {method: 'PUT', target: '/api/events/event-1/registrations/me'}},
+                    },
+                    {
+                        name: 'Letní kemp', eventDate: '2026-06-15', location: 'Brno',
+                        _links: {self: {href: '/api/events/event-2'}},
+                    },
+                ],
+            },
+            _links: {self: {href}},
+        });
+
+        const {result} = renderHook(() => useMyUpcomingRegistrations(href), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        const items = result.current.data?.items ?? [];
+        expect(items[0].editRegistrationTarget).toBe('/api/events/event-1/registrations/me');
+        expect(items[1].editRegistrationTarget).toBeUndefined();
+    });
+
     it('does not fetch when href is undefined (query is disabled)', () => {
         (globalThis as Record<string, unknown>).fetch = vi.fn();
 
