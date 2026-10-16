@@ -4,7 +4,7 @@ import {Bell, Calendar, ChevronRight, User, UserPen} from 'lucide-react'
 import {Button, Card} from '../components/UI'
 import {EventRegistrationDialog} from '../components/events/EventRegistrationDialog'
 import {getActionVariant} from '../utils/actionVariants'
-import {normalizeKlabisApiPath} from '../utils/halFormsUtils'
+import {toRegistrationLink} from '../utils/halFormsUtils'
 import type {Link} from '../api'
 import {useRootNavigation} from "../hooks/useRootNavigation";
 import {labels} from "../localization/labels";
@@ -92,7 +92,9 @@ const UserDashboard = ({profileHref, menuItems}: {
                         {registrationItems.length > 0 ? (
                             <>
                                 <div className="divide-y divide-border">
-                                    {registrationItems.map((event) => (
+                                    {registrationItems.map((event) => {
+                                        const editLink = toRegistrationLink(event.editRegistrationTarget)
+                                        return (
                                         <RouterLink
                                             key={event.selfHref}
                                             to={extractNavigationPath(event.selfHref)}
@@ -110,7 +112,7 @@ const UserDashboard = ({profileHref, menuItems}: {
                                             <span className="text-sm text-text-secondary hidden sm:block ml-3 shrink-0">
                                                 {formatDate(event.eventDate)}
                                             </span>
-                                            {event.editRegistrationTarget && (
+                                            {editLink && (
                                                 <Button
                                                     variant={getActionVariant('editRegistration')}
                                                     size="sm"
@@ -119,14 +121,15 @@ const UserDashboard = ({profileHref, menuItems}: {
                                                     onClick={(e) => {
                                                         e.preventDefault()
                                                         e.stopPropagation()
-                                                        setRegistrationTarget({href: normalizeKlabisApiPath(event.editRegistrationTarget!)})
+                                                        setRegistrationTarget(editLink)
                                                     }}
                                                 >
                                                     <UserPen className="w-4 h-4"/>
                                                 </Button>
                                             )}
                                         </RouterLink>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                                 <div className="p-4 border-t border-border">
                                     <RouterLink

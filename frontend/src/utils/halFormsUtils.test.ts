@@ -1,4 +1,4 @@
-import {stripUriTemplate, normalizeKlabisApiPath, shouldFetchTargetData} from './halFormsUtils';
+import {stripUriTemplate, normalizeKlabisApiPath, shouldFetchTargetData, toRegistrationLink} from './halFormsUtils';
 
 describe('normalizeApiPath', () => {
     it('removes /api prefix from path', () => {
@@ -96,5 +96,16 @@ describe('stripUriTemplate', () => {
 
     it('leaves non-templated urls untouched', () => {
         expect(stripUriTemplate('/api/x?a=1')).toBe('/api/x?a=1');
+    });
+});
+
+describe('toRegistrationLink', () => {
+    it('returns link with normalized href for a template target', () => {
+        expect(toRegistrationLink('/api/events/e1/registrations/me')).toEqual({href: '/events/e1/registrations/me'});
+    });
+
+    it('returns undefined for missing or empty target', () => {
+        expect(toRegistrationLink(undefined)).toBeUndefined();
+        expect(toRegistrationLink('')).toBeUndefined();
     });
 });

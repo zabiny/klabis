@@ -18,7 +18,7 @@ import type {HalFormsTemplate} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
 import {renderYesNo} from '../../utils/formatters.ts';
 import {getActionVariant} from '../../utils/actionVariants.ts';
-import {normalizeKlabisApiPath} from '../../utils/halFormsUtils.ts';
+import {toRegistrationLink} from '../../utils/halFormsUtils.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventSiPolicyFields} from '../../components/events/EventSiPolicyFields.tsx';
@@ -205,7 +205,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     const isCancelled = event.status === 'CANCELLED';
 
     const newRegistrationLink = asLinkArray(resourceData._links?.newRegistration)[0];
-    const editRegistrationTemplate = resourceData._templates?.editRegistration;
+    const editRegistrationLink = toRegistrationLink(resourceData._templates?.editRegistration?.target);
 
     const template: HalFormsTemplate | null = resourceData?._templates?.updateEvent ?? null;
     const hasEditTemplate = template !== null;
@@ -271,10 +271,10 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                     {labels.templates.registerForEvent}
                                 </Button>
                             )}
-                            {editRegistrationTemplate && (
+                            {editRegistrationLink && (
                                 <Button
                                     variant={getActionVariant('editRegistration')}
-                                    onClick={() => setRegistrationDialogTarget({href: normalizeKlabisApiPath(editRegistrationTemplate.target ?? '')})}
+                                    onClick={() => setRegistrationDialogTarget(editRegistrationLink)}
                                     startIcon={<UserPen className="w-4 h-4"/>}
                                 >
                                     {labels.templates.editRegistration}
