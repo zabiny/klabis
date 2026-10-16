@@ -13,6 +13,7 @@ import com.klabis.members.CurrentUserData;
 import com.klabis.members.MemberId;
 import com.klabis.members.application.MemberAccountActivationPort;
 import com.klabis.members.application.MemberCompletenessPort;
+import com.klabis.members.application.MemberContactPort;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberDiscoveryPort;
 import com.klabis.members.application.MemberViewAccess;
@@ -70,6 +71,7 @@ public class MemberController implements MembersApi {
     private final MemberCompletenessPort memberCompletenessPort;
     private final LegalGuardianGroupPort legalGuardianGroupPort;
     private final AuthorizationEvaluator authorizationEvaluator;
+    private final MemberContactPort memberContactPort;
 
     public MemberController(
             ManagementPort managementService,
@@ -78,7 +80,9 @@ public class MemberController implements MembersApi {
             SynchronizationPort synchronizationPort,
             MemberCompletenessPort memberCompletenessPort,
             LegalGuardianGroupPort legalGuardianGroupPort,
-            AuthorizationEvaluator authorizationEvaluator) {
+            AuthorizationEvaluator authorizationEvaluator,
+            MemberContactPort memberContactPort) {
+        this.memberContactPort = memberContactPort;
         this.authorizationEvaluator = authorizationEvaluator;
         this.memberCompletenessPort = memberCompletenessPort;
         this.legalGuardianGroupPort = legalGuardianGroupPort;
@@ -194,7 +198,17 @@ public class MemberController implements MembersApi {
 
         HalResponseContext.setDomainList(memberPage.getContent());
 
-        return ResponseEntity.ok(memberPage.map(member -> conversionService.convert(member, MemberSummaryResponse.class)));
+        // Resolved only for those who may read the column, so lookups for others would not be wasted.
+        boolean showsContact = authorizationEvaluator.canReadField(MemberSummaryResponse.class, "displayContact", null);
+        return ResponseEntity.ok(memberPage.map(member -> {
+            MemberSummaryResponse summary = conversionService.convert(member, MemberSummaryResponse.class);
+            if (!showsContact) {
+                return summary;
+            }
+            return MemberSummaryResponseBuilder.builder(summary)
+                    .displayContact(conversionService.convert(memberContactPort.effectiveContactOf(member), DisplayContact.class))
+                    .build();
+        }));
     }
 
     private MemberFilter buildFilter(String q, String status, Boolean incomplete) {
@@ -256,6 +270,8 @@ public class MemberController implements MembersApi {
         MemberDetailsResponse response = conversionService.convert(member, MemberDetailsResponse.class);
         return ResponseEntity.ok(MemberDetailsResponseBuilder.builder(response)
                 .missingData(liveMissingData(member, guardianGroup))
+                .displayContact(conversionService.convert(
+                        memberContactPort.effectiveContactOf(member, guardiansOf(guardianGroup)), DisplayContact.class))
                 .build());
     }
 
@@ -267,11 +283,14 @@ public class MemberController implements MembersApi {
                 authorizationEvaluator.canReadField(MemberDetailsResponse.class, "birthNumber", member));
     }
 
+    private static Set<UserId> guardiansOf(Optional<LegalGuardianGroup> guardianGroup) {
+        return guardianGroup.map(LegalGuardianGroup::getGuardians).orElse(Set.of());
+    }
+
     // The detail is computed live (the guardians' contacts may have changed since the member was last saved),
     // unlike the materialized flag the member list reads.
     private List<MissingDataItem> liveMissingData(Member member, Optional<LegalGuardianGroup> guardianGroup) {
-        Set<UserId> guardians = guardianGroup.map(LegalGuardianGroup::getGuardians).orElse(Set.of());
-        return memberCompletenessPort.missingData(member, guardians).stream()
+        return memberCompletenessPort.missingData(member, guardiansOf(guardianGroup)).stream()
                 .map(item -> MissingDataItem.valueOf(item.name()))
                 .toList();
     }

@@ -45,6 +45,7 @@ interface MemberDetailsConverter extends Converter<Member, MemberDetailsResponse
     @Mapping(target = "drivingLicenseGroup", source = "drivingLicenseGroup")
     @Mapping(target = "suspensionReason", source = "suspensionReason")
     @Mapping(target = "missingData", ignore = true)
+    @Mapping(target = "displayContact", ignore = true)
     MemberDetailsResponse convert(Member member);
 
     AddressResponse addressToResponse(Address address);

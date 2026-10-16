@@ -9,6 +9,7 @@ import com.klabis.members.legalguardian.application.LegalGuardianPort;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.members.LegalGuardians;
 import com.klabis.members.Members;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.lang.annotation.Documented;
@@ -28,6 +29,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Documented
+@Import(MemberContactPortStubConfiguration.class)
 @MockitoBean(types = {
         ManagementPort.class,
         RegistrationPort.class,

@@ -282,17 +282,18 @@ The system SHALL show or hide member actions based on the user's permissions.
 
 ### Requirement: Member List
 
-The system SHALL display a paginated, sortable and filterable list of members. Users with MEMBERS:MANAGE authority see all members including inactive ones and see the email column. Other users see only active members. By default, the list shows only active members for every user. The list can be filtered by a fulltext query over first name, last name, and registration number. Users with MEMBERS:MANAGE authority can additionally filter by status (Aktivní / Neaktivní / Vše). Multiple filters combine with AND semantics. The per-row active-status column is not shown to any user — status is reflected in the active filter selection instead.
+The system SHALL display a paginated, sortable and filterable list of members. Users with MEMBERS:MANAGE authority see all members including inactive ones and see the contact column (e-mail and telephone). Other users see only active members. By default, the list shows only active members for every user. The list can be filtered by a fulltext query over first name, last name, and registration number. Users with MEMBERS:MANAGE authority can additionally filter by status (Aktivní / Neaktivní / Vše). Multiple filters combine with AND semantics. The per-row active-status column is not shown to any user — status is reflected in the active filter selection instead.
 
 #### Scenario: Admin views member list with email column
 
 - **WHEN** user with MEMBERS:MANAGE authority views the member list
-- **THEN** each member row shows the member's email address
+- **THEN** each member row shows the member's e-mail address and telephone number as two lines in one column
+- **AND** a missing e-mail or telephone of a minor is replaced by that of a legal guardian, marked as the guardian's contact
 
 #### Scenario: Regular user does not see email column
 
 - **WHEN** user without MEMBERS:MANAGE authority views the member list
-- **THEN** the email column is not shown
+- **THEN** the contact column is not shown
 
 #### Scenario: Active-status column is not shown
 
@@ -431,6 +432,61 @@ The system SHALL display a paginated, sortable and filterable list of members. U
 
 - **WHEN** user attempts to sort by an unsupported field (e.g., email)
 - **THEN** the system shows an error listing the allowed sort fields (firstName, lastName, registrationNumber)
+
+### Requirement: Effective Contact Of A Member
+
+Wherever the system shows a member's e-mail or telephone, it SHALL show the member's own value when present. When a minor has no own value, it SHALL show the value of the minor's first legal guardian (ordered by surname) who has one; e-mail and telephone are resolved independently and MAY come from different guardians. Only users with MEMBERS:MANAGE authority SHALL see that such a value is a guardian's contact, together with the guardian's name.
+
+#### Scenario: Adult shows own contact
+
+- **GIVEN** an adult member with e-mail and telephone
+- **WHEN** any user opens the member's detail page
+- **THEN** the member's own e-mail and telephone are shown without any guardian marker
+
+#### Scenario: Minor with own contact
+
+- **GIVEN** a minor with own e-mail and telephone
+- **WHEN** any user opens the minor's detail page
+- **THEN** the minor's own e-mail and telephone are shown, even if guardians have different ones
+
+#### Scenario: Minor without own contact shows guardian contact to admin
+
+- **GIVEN** a minor without own e-mail and telephone whose guardian "Jan Novák" has both
+- **WHEN** a user with MEMBERS:MANAGE authority opens the minor's detail page
+- **THEN** the guardian's e-mail and telephone are shown
+- **AND** each is marked as the contact of legal guardian "Jan Novák"
+
+#### Scenario: Minor without own contact shows guardian contact to regular user
+
+- **GIVEN** a minor without own e-mail and telephone whose guardian has both
+- **WHEN** a user without MEMBERS:MANAGE authority opens the minor's detail page
+- **THEN** the guardian's e-mail and telephone are shown
+- **AND** no marker or guardian name is shown
+
+#### Scenario: E-mail and telephone from different sources
+
+- **GIVEN** a minor with own telephone but no own e-mail, with guardians "Eva Svobodová" (no e-mail) and "Jan Novák" (e-mail)
+- **WHEN** a user with MEMBERS:MANAGE authority opens the minor's detail page
+- **THEN** the minor's own telephone is shown without marker
+- **AND** the e-mail of "Jan Novák" is shown marked as the contact of legal guardian "Jan Novák"
+
+#### Scenario: Several guardians have the detail
+
+- **GIVEN** a minor without own e-mail whose guardians "Svobodová" and "Novák" both have an e-mail
+- **WHEN** a user opens the minor's detail page
+- **THEN** the e-mail of "Novák" is shown (first by surname)
+
+#### Scenario: Neither minor nor guardians have the detail
+
+- **GIVEN** a minor and guardians none of whom has a telephone
+- **WHEN** a user opens the minor's detail page
+- **THEN** no telephone is shown
+
+#### Scenario: Edit form does not copy guardian contact
+
+- **GIVEN** a minor without own e-mail shown with a guardian's e-mail
+- **WHEN** an admin opens "Upravit profil" for the minor
+- **THEN** the e-mail field is empty
 
 ### Requirement: Member Detail
 

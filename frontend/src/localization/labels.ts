@@ -209,6 +209,7 @@ export const labels = {
         lastName: 'Příjmení',
         email: 'E-mail',
         phone: 'Telefon',
+        contact: 'Kontakt',
         birthDate: 'Datum narození',
         dateOfBirth: 'Datum narození',
         gender: 'Pohlaví',
@@ -401,6 +402,8 @@ export const labels = {
     } as Record<string, string>,
 
     ui: {
+        guardianContact: (guardianName?: string) =>
+            guardianName ? `kontakt zákonného zástupce (${guardianName})` : 'kontakt zákonného zástupce',
         hide: 'Skrýt',
         reveal: 'Zobrazit',
         currentDeadline: 'aktuální',

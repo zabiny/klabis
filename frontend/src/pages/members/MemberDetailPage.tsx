@@ -24,6 +24,7 @@ import {MemberFeeSection} from "./MemberFeeSection.tsx";
 import {ChangePasswordDialog} from "../../components/auth/ChangePasswordDialog.tsx";
 import {LegalGuardiansSection} from "../../components/legal-guardians/LegalGuardiansSection.tsx";
 import {SyncStatusIndicator} from "../../components/sync/SyncStatusIndicator.tsx";
+import {DisplayContactText} from "./DisplayContactText.tsx";
 
 type MemberDetail = GetMemberResource;
 
@@ -173,8 +174,8 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                 )}
 
                 <Section title={labels.sections.contact}>
-                    <DetailRow label={labels.fields.email}>{ri('email') ?? val(member.email)}</DetailRow>
-                    <DetailRow label={labels.fields.phone}>{ri('phone') ?? val(member.phone)}</DetailRow>
+                    <DetailRow label={labels.fields.email}>{ri('email') ?? <DisplayContactText contact={member.displayContact?.email}/>}</DetailRow>
+                    <DetailRow label={labels.fields.phone}>{ri('phone') ?? <DisplayContactText contact={member.displayContact?.phone}/>}</DetailRow>
                 </Section>
 
                 <Section title={labels.sections.address}>
