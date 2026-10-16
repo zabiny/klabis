@@ -21,8 +21,8 @@
 
 ## 4. Publish resources
 
-- [ ] 4.1 `npm run refresh-backend-server-resources`; remove the stale `workbox-*.js` from `backend/src/main/resources/static/`
-- [ ] 4.2 Run the backend tests of the `common` module
+- [x] 4.1 `npm run refresh-backend-server-resources`; remove the stale `workbox-*.js` from `backend/src/main/resources/static/`
+- [x] 4.2 Run the backend tests of the `common` module
 
 ## 5. Manual verification (Chrome DevTools → Application)
 
