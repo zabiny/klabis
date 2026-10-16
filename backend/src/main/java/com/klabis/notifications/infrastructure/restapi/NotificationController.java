@@ -11,6 +11,7 @@ import com.klabis.notifications.application.NotificationDevicesPort;
 import com.klabis.notifications.application.NotificationDevicesPort.RegisterDeviceCommand;
 import com.klabis.notifications.application.VapidProperties;
 import com.klabis.notifications.domain.NotificationDevice;
+import com.klabis.notifications.domain.NotificationDeviceId;
 import com.klabis.notifications.domain.PushEndpoint;
 import com.klabis.notifications.domain.PushKeys;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
@@ -78,6 +80,12 @@ class NotificationController implements NotificationsApi {
                 .path("/{deviceId}")
                 .buildAndExpand(device.getId().value())
                 .toUri()).build();
+    }
+
+    @Override
+    public ResponseEntity<Void> removeNotificationDevice(UUID deviceId, @ActingUser UserId currentUserId) {
+        devicesPort.removeDevice(currentUserId, new NotificationDeviceId(deviceId));
+        return ResponseEntity.noContent().build();
     }
 
     @Override

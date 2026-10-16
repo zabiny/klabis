@@ -91,6 +91,38 @@ paths:
         '403':
           $ref: './_shared/responses.yaml#/components/responses/Forbidden'
 
+  /api/notifications/devices/{deviceId}:
+    delete:
+      operationId: removeNotificationDevice
+      tags: [Notifications]
+      summary: Disable notifications on a device
+      description: |
+        Removes a notification device of the current user. A device that does not exist or belongs to
+        another user is answered as not found.
+      security:
+        - KlabisAuth: [openid]
+      x-spring-provide-args:
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Notification device UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Device removed
+          content:
+            application/prs.hal-forms+json: {}
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
+
   /api/notifications/test:
     post:
       operationId: sendTestNotification

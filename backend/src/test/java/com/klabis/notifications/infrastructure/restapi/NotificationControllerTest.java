@@ -18,6 +18,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import org.springframework.test.context.TestPropertySource;
@@ -255,5 +256,55 @@ class NotificationControllerTest {
         mockMvc.perform(post("/api/notifications/test").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isUnauthorized());
         verify(pushNotifications, never()).send(any(), any());
+    }
+
+    @Test
+    @WithKlabisMockUser(userId = USER_ID)
+    @DisplayName("DELETE /api/notifications/devices/{id} removes the own device and answers 204")
+    void removesDevice() throws Exception {
+        UserId currentUser = new UserId(UUID.fromString(USER_ID));
+        var id = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/notifications/devices/" + id).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isNoContent());
+
+        verify(devicesPort).removeDevice(currentUser,
+                new com.klabis.notifications.domain.NotificationDeviceId(id));
+    }
+
+    @Test
+    @WithKlabisMockUser(userId = USER_ID)
+    @DisplayName("DELETE /api/notifications/devices/{id} answers 404 for a foreign or unknown device")
+    void removeForeignDeviceIsNotFound() throws Exception {
+        UserId currentUser = new UserId(UUID.fromString(USER_ID));
+        var id = new com.klabis.notifications.domain.NotificationDeviceId(UUID.randomUUID());
+        org.mockito.Mockito.doThrow(new com.klabis.notifications.application.NotificationDeviceNotFoundException(id))
+                .when(devicesPort).removeDevice(currentUser, id);
+
+        mockMvc.perform(delete("/api/notifications/devices/" + id.value()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("DELETE /api/notifications/devices/{id} is not available to anonymous callers")
+    void removeRequiresAuthentication() throws Exception {
+        mockMvc.perform(delete("/api/notifications/devices/" + UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithKlabisMockUser(userId = USER_ID)
+    @DisplayName("GET /api/notifications gives each device a self link and the removeNotificationDevice template")
+    void deviceItemsCarryLinkAndTemplate() throws Exception {
+        UserId currentUser = new UserId(UUID.fromString(USER_ID));
+        var device = NotificationDeviceTestDataBuilder.aDevice().withOwner(currentUser).build();
+        when(devicesPort.listDevices(currentUser)).thenReturn(List.of(device));
+
+        mockMvc.perform(get("/api/notifications").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.devices[0]._links.self.href",
+                        endsWith("/api/notifications/devices/" + device.getId().value())))
+                .andExpect(jsonPath("$.devices[0]._templates", hasKey("removeNotificationDevice")))
+                .andExpect(jsonPath("$.devices[0]._templates.removeNotificationDevice.method").value("DELETE"));
     }
 }

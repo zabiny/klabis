@@ -88,4 +88,27 @@ class NotificationDevicesServiceTest {
         assertThat(result.isOwnedBy(USER)).isTrue();
         assertThat(result.getKeys()).isEqualTo(new PushKeys("k2", "a2"));
     }
+
+    @Test
+    @DisplayName("removeDevice deletes a device resolved through its owner")
+    void removesOwnedDevice() {
+        NotificationDevice device = NotificationDeviceTestDataBuilder.aDevice().withOwner(USER).build();
+        when(repository.findOne(NotificationDeviceFilter.all().withOwner(USER).withId(device.getId())))
+                .thenReturn(Optional.of(device));
+
+        service().removeDevice(USER, device.getId());
+
+        verify(repository).delete(device);
+    }
+
+    @Test
+    @DisplayName("removeDevice treats an unknown or foreign device as not found")
+    void removeUnknownDevice() {
+        var id = com.klabis.notifications.domain.NotificationDeviceId.generate();
+        when(repository.findOne(NotificationDeviceFilter.all().withOwner(OTHER).withId(id))).thenReturn(Optional.empty());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service().removeDevice(OTHER, id))
+                .isInstanceOf(NotificationDeviceNotFoundException.class);
+        org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).delete(any());
+    }
 }

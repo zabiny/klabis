@@ -31,6 +31,11 @@ class NotificationDeviceRepositoryAdapter implements NotificationDeviceRepositor
     }
 
     @Override
+    public void delete(NotificationDevice device) {
+        jdbcRepository.deleteById(device.getId().value());
+    }
+
+    @Override
     public List<NotificationDevice> findAll(NotificationDeviceFilter filter) {
         return jdbcAggregateTemplate.findAll(toQuery(filter), NotificationDeviceMemento.class).stream()
                 .map(NotificationDeviceMemento::toNotificationDevice)
@@ -50,6 +55,9 @@ class NotificationDeviceRepositoryAdapter implements NotificationDeviceRepositor
         }
         if (filter.endpoint() != null) {
             criteria = criteria.and("endpoint").is(filter.endpoint().url());
+        }
+        if (filter.id() != null) {
+            criteria = criteria.and("id").is(filter.id().value());
         }
         return Query.query(criteria).sort(org.springframework.data.domain.Sort.by("enabled_at"));
     }

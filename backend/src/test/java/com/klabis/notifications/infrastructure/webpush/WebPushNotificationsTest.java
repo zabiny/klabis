@@ -88,4 +88,39 @@ class WebPushNotificationsTest {
 
         assertThatCode(() -> notifications.send(user, message)).doesNotThrowAnyException();
     }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {404, 410})
+    @DisplayName("removes a device the push service no longer knows")
+    void removesGoneDevice(int status) {
+        when(sender.send(first, message)).thenReturn(status);
+        when(sender.send(second, message)).thenReturn(201);
+
+        notifications.send(user, message);
+
+        verify(devicesPort).removeDevice(user, first.getId());
+        verify(devicesPort, never()).removeDevice(user, second.getId());
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {201, 400, 401, 403, 413, 429, 500, 503, WebPushSender.FAILED})
+    @DisplayName("keeps the device for any other outcome")
+    void keepsDevice(int status) {
+        when(sender.send(any(), any())).thenReturn(status);
+
+        notifications.send(user, message);
+
+        verify(devicesPort, never()).removeDevice(any(), any());
+    }
+
+    @Test
+    @DisplayName("a failing removal does not stop delivery to the others")
+    void removalFailureIsContained() {
+        when(sender.send(first, message)).thenReturn(410);
+        doThrow(new IllegalStateException("db down")).when(devicesPort).removeDevice(user, first.getId());
+
+        assertThatCode(() -> notifications.send(user, message)).doesNotThrowAnyException();
+
+        verify(sender).send(second, message);
+    }
 }

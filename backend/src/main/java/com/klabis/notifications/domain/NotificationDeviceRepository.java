@@ -10,6 +10,8 @@ public interface NotificationDeviceRepository {
 
     NotificationDevice save(NotificationDevice device);
 
+    void delete(NotificationDevice device);
+
     List<NotificationDevice> findAll(NotificationDeviceFilter filter);
 
     Optional<NotificationDevice> findOne(NotificationDeviceFilter filter);

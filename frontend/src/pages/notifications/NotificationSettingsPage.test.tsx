@@ -5,6 +5,7 @@ import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {getServiceWorkerRegistration} from '../../pwa/registerServiceWorker';
+import {getRegisteredEndpoint, setRegisteredEndpoint} from '../../pwa/pushSubscriptionStore';
 import {labels} from '../../localization';
 import {NotificationSettingsPage} from './NotificationSettingsPage';
 
@@ -40,9 +41,11 @@ const supportPush = (permission: NotificationPermission = 'default') => {
     setWindowProp('Notification', {permission, requestPermission: vi.fn()});
 };
 
+const unsubscribe = vi.fn();
+
 const mockSubscription = (endpoint: string | null) => {
     vi.mocked(getServiceWorkerRegistration).mockResolvedValue({
-        pushManager: {getSubscription: vi.fn().mockResolvedValue(endpoint ? {endpoint} : null)},
+        pushManager: {getSubscription: vi.fn().mockResolvedValue(endpoint ? {endpoint, unsubscribe} : null)},
     } as unknown as ServiceWorkerRegistration);
 };
 
@@ -70,6 +73,8 @@ const renderPage = (resourceData: unknown = settings) => {
 
 describe('NotificationSettingsPage', () => {
     beforeEach(() => {
+        localStorage.clear();
+        unsubscribe.mockResolvedValue(true);
         mockUserAgent('Mozilla/5.0 (X11; Linux x86_64) Chrome/120');
         mockSubscription(null);
         supportPush();
@@ -223,6 +228,70 @@ describe('NotificationSettingsPage', () => {
             renderPage(withTemplate);
             fireEvent.click(await screen.findByRole('button', {name: enableLabel}));
             expect(await screen.findByText(labels.notifications.enableFailed)).toBeInTheDocument();
+        });
+    });
+    describe('disabling and removing devices', () => {
+        const removeTemplate = (id: string) => ({
+            removeNotificationDevice: {method: 'DELETE', target: `/api/notifications/devices/${id}`, properties: []},
+        });
+        const withRemovable = {
+            ...settings,
+            devices: settings.devices.map(d => ({...d, _templates: removeTemplate(d.id)})),
+        };
+        const disableLabel = labels.notifications.disableOnThisDevice;
+        const removeLabel = labels.notifications.removeDevice;
+
+        it('disables this device: removes it, unsubscribes and forgets the endpoint', async () => {
+            setRegisteredEndpoint(CURRENT_ENDPOINT);
+            mockSubscription(CURRENT_ENDPOINT);
+            renderPage(withRemovable);
+            fireEvent.click(await screen.findByRole('button', {name: disableLabel}));
+
+            expect(mutate.mock.calls[0][0]).toEqual({url: '/api/notifications/devices/1'});
+            await waitFor(() => expect(unsubscribe).toHaveBeenCalled());
+            expect(getRegisteredEndpoint()).toBeNull();
+            await waitFor(() => expect(refetch).toHaveBeenCalled());
+        });
+
+        it('offers removal only for other devices', async () => {
+            mockSubscription(CURRENT_ENDPOINT);
+            renderPage(withRemovable);
+            await screen.findByText(labels.notifications.stateOn);
+            fireEvent.click(screen.getByRole('button', {name: removeLabel}));
+
+            expect(mutate.mock.calls[0][0]).toEqual({url: '/api/notifications/devices/2'});
+            expect(unsubscribe).not.toHaveBeenCalled();
+            await waitFor(() => expect(refetch).toHaveBeenCalled());
+        });
+
+        it('hides buttons without the item template', async () => {
+            mockSubscription(CURRENT_ENDPOINT);
+            renderPage(settings);
+            await screen.findByText(labels.notifications.stateOn);
+            expect(screen.queryByRole('button', {name: disableLabel})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: removeLabel})).not.toBeInTheDocument();
+        });
+
+        it('keeps the subscription and shows an error when disabling fails', async () => {
+            setRegisteredEndpoint(CURRENT_ENDPOINT);
+            mockSubscription(CURRENT_ENDPOINT);
+            mutate.mockImplementation((_vars, options) => options?.onError?.(new Error('500')));
+            renderPage(withRemovable);
+            fireEvent.click(await screen.findByRole('button', {name: disableLabel}));
+
+            expect(await screen.findByText(labels.notifications.disableFailed)).toBeInTheDocument();
+            expect(unsubscribe).not.toHaveBeenCalled();
+            expect(getRegisteredEndpoint()).toBe(CURRENT_ENDPOINT);
+        });
+
+        it('shows an error when removing another device fails', async () => {
+            mockSubscription(CURRENT_ENDPOINT);
+            mutate.mockImplementation((_vars, options) => options?.onError?.(new Error('500')));
+            renderPage(withRemovable);
+            await screen.findByText(labels.notifications.stateOn);
+            fireEvent.click(screen.getByRole('button', {name: removeLabel}));
+
+            expect(await screen.findByText(labels.notifications.removeFailed)).toBeInTheDocument();
         });
     });
     describe('test notification', () => {

@@ -51,7 +51,10 @@ class WebPushNotifications implements PushNotifications {
         try {
             devicesPort.listDevices(recipient).forEach(device -> {
                 try {
-                    sender.send(device, message);
+                    int status = sender.send(device, message);
+                    if (status == 404 || status == 410) {
+                        devicesPort.removeDevice(device.getOwner(), device.getId());
+                    }
                 } catch (RuntimeException e) {
                     log.warn("Push to device {} failed: {}", device.getId(), e.toString());
                 }

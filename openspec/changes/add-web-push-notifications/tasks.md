@@ -27,10 +27,10 @@
 
 ## 5. Slice: disabling, removing and auto-cleanup
 
-- [ ] 5.1 Spec + backend `removeNotificationDevice` (owner-only, a foreign id behaves as not found) and the per-item template; `@WebMvcTest` (red → green)
-- [ ] 5.2 Sender deletes a device on a push-service `404` / `410` response; unit test (red → green)
-- [ ] 5.3 Frontend: "Vypnout notifikace na tomto zařízení" (remove + `unsubscribe()`) and "Odebrat" on other devices; Vitest (red → green)
-- [ ] 5.4 `sw.ts` `pushsubscriptionchange` → notify an open client to re-register; the SPA re-registers on the settings page and app start when the endpoint changed; Vitest (red → green)
+- [x] 5.1 Spec + backend `removeNotificationDevice` (owner-only, a foreign id behaves as not found) and the per-item template; `@WebMvcTest` (red → green)
+- [x] 5.2 Sender deletes a device on a push-service `404` / `410` response; unit test (red → green)
+- [x] 5.3 Frontend: "Vypnout notifikace na tomto zařízení" (remove + `unsubscribe()`) and "Odebrat" on other devices; Vitest (red → green)
+- [x] 5.4 `sw.ts` `pushsubscriptionchange` → notify an open client to re-register; the SPA re-registers on the settings page and app start when the endpoint changed; Vitest (red → green)
 
 ## 6. Slice: logout stops notifications on the device
 

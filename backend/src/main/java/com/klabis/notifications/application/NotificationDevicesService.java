@@ -3,6 +3,7 @@ package com.klabis.notifications.application;
 import com.klabis.common.users.UserId;
 import com.klabis.notifications.domain.NotificationDevice;
 import com.klabis.notifications.domain.NotificationDeviceFilter;
+import com.klabis.notifications.domain.NotificationDeviceId;
 import com.klabis.notifications.domain.NotificationDeviceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,5 +35,14 @@ class NotificationDevicesService implements NotificationDevicesPort {
         device.reassignTo(command.owner());
         device.updateKeys(command.keys());
         return deviceRepository.save(device);
+    }
+
+    @Transactional
+    @Override
+    public void removeDevice(UserId owner, NotificationDeviceId deviceId) {
+        NotificationDevice device = deviceRepository
+                .findOne(NotificationDeviceFilter.all().withOwner(owner).withId(deviceId))
+                .orElseThrow(() -> new NotificationDeviceNotFoundException(deviceId));
+        deviceRepository.delete(device);
     }
 }

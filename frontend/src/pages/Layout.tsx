@@ -8,6 +8,7 @@ import {RawDataViewToggle} from '../components/AdminToggle/RawDataViewToggle.tsx
 import type {AuthUserDetails} from '../contexts/authContext'
 import {useAuth} from '../contexts/authContext'
 import {useRootNavigation} from '../hooks/useRootNavigation'
+import {usePushReregistration} from '../pwa/usePushReregistration'
 import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout.tsx"
 import {HalFormProvider} from '../contexts/HalFormContext.tsx'
 import {ToastProvider} from '../contexts/ToastContext.tsx'
@@ -74,6 +75,7 @@ const Layout = () => {
     const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
     const isLargeScreen = useMediaQuery('(min-width: 768px)')
     const {data: menuItems = [], isLoading: menuLoading, error: menuError} = useRootNavigation()
+    usePushReregistration()
     const mainItems = menuItems.filter(item => item.section === 'main')
     const adminItems = menuItems.filter(item => item.section === 'admin')
     const profileHref = menuItems.find(item => item.rel === 'profile')?.href

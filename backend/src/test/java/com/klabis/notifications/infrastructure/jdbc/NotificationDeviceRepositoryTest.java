@@ -157,4 +157,22 @@ class NotificationDeviceRepositoryTest {
             assertThat(repository.findAll(NotificationDeviceFilter.all())).isEmpty();
         }
     }
+
+    @Nested
+    @DisplayName("delete() and id filter")
+    class Delete {
+
+        @Test
+        @DisplayName("removes the device and finds it by owner and id before that")
+        void deletesDevice() {
+            NotificationDevice device = repository.save(NotificationDeviceTestDataBuilder.aDevice().withOwner(USER_A).build());
+            var filter = NotificationDeviceFilter.all().withOwner(USER_A).withId(device.getId());
+            assertThat(repository.findOne(filter)).isPresent();
+            assertThat(repository.findOne(NotificationDeviceFilter.all().withOwner(USER_B).withId(device.getId()))).isEmpty();
+
+            repository.delete(device);
+
+            assertThat(repository.findOne(filter)).isEmpty();
+        }
+    }
 }

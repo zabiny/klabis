@@ -1,16 +1,21 @@
 const ICON = '/pwa-192x192.png';
 const DEFAULT_TITLE = 'Klabis';
 const HOME_URL = '/';
+export const PUSH_SUBSCRIPTION_CHANGED = 'push-subscription-changed';
 
 interface WindowClientLike {
     url: string;
     focus(): Promise<unknown>;
     navigate(url: string): Promise<unknown>;
+    postMessage(message: unknown): void;
 }
 
 export interface PushScope {
     location: {origin: string};
-    registration: {showNotification(title: string, options?: NotificationOptions): Promise<void>};
+    registration: {
+        showNotification(title: string, options?: NotificationOptions): Promise<void>;
+        pushManager: {subscribe(options: PushSubscriptionOptionsInit): Promise<unknown>};
+    };
     clients: {
         matchAll(options: {type: 'window'; includeUncontrolled: boolean}): Promise<readonly WindowClientLike[]>;
         openWindow(url: string): Promise<unknown>;
@@ -19,6 +24,11 @@ export interface PushScope {
 
 interface PushEventLike {
     data: {json(): unknown} | null;
+    waitUntil(promise: Promise<unknown>): void;
+}
+
+interface SubscriptionChangeEventLike {
+    oldSubscription?: {options?: {applicationServerKey?: BufferSource | null}} | null;
     waitUntil(promise: Promise<unknown>): void;
 }
 
@@ -75,5 +85,21 @@ export function handleNotificationClick(scope: PushScope, event: NotificationCli
             await sameOrigin.focus();
             await sameOrigin.navigate(target);
         }),
+    );
+}
+
+export function handlePushSubscriptionChange(scope: PushScope, event: SubscriptionChangeEventLike): void {
+    const applicationServerKey = event.oldSubscription?.options?.applicationServerKey;
+
+    event.waitUntil(
+        (async () => {
+            if (applicationServerKey) {
+                await scope.registration.pushManager
+                    .subscribe({userVisibleOnly: true, applicationServerKey})
+                    .catch(() => undefined);
+            }
+            const windowClients = await scope.clients.matchAll({type: 'window', includeUncontrolled: true});
+            windowClients.forEach((client) => client.postMessage({type: PUSH_SUBSCRIPTION_CHANGED}));
+        })(),
     );
 }
