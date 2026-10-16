@@ -39,6 +39,6 @@
 ## 7. Integration and QA
 
 - [x] 7.1 Run the backend `notifications` module tests and the frontend tests + `npm run build`; `npm run refresh-backend-server-resources`
-- [ ] 7.2 Manual QA with the dev VAPID keys on `localhost:3000` (PWA dev mode) and `:8443`: enable on desktop Chrome and Firefox, test notification with the app closed, click opens `/notifications`, remove a device, logout stops delivery
+- [ ] 7.2 Manual QA with the dev VAPID keys on `localhost:3000` (PWA dev mode) and `:8443`: enable on desktop Chrome and Firefox, test notification with the app closed, click opens `/notifications`, remove a device, logout stops delivery — partially done in Playwright Chromium on :3000 (enable, real FCM delivery, remove, disable, logout), see testing/01_push-notifications-testing.md; Firefox, :8443, app closed and notification click remain manual
 - [ ] 7.3 Manual QA on a real Android phone (installed PWA) and an iPhone (iOS ≥ 16.4, added to the home screen), plus Safari without install showing the install hint
 - [ ] 7.4 Production checklist: VAPID secrets configured, GDPR record mentions push subscriptions and third-party push services

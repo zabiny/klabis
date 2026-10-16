@@ -53,6 +53,7 @@ export default defineConfig({
                 // Serve the manifest and the worker on the Vite dev server
                 // (localhost:3000) so PWA install and push can be tested with HMR.
                 enabled: true,
+                type: 'module',
             },
         }),
     ],
