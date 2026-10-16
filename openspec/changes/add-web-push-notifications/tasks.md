@@ -34,7 +34,7 @@
 
 ## 6. Slice: logout stops notifications on the device
 
-- [ ] 6.1 `AuthContext2.logout` performs a best-effort `pushManager` `unsubscribe()` before `signoutRedirect`, and never blocks logout on failure; Vitest (red → green)
+- [x] 6.1 `AuthContext2.logout` performs a best-effort `pushManager` `unsubscribe()` before `signoutRedirect`, and never blocks logout on failure; Vitest (red → green)
 
 ## 7. Integration and QA
 

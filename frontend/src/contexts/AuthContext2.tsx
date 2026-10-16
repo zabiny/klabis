@@ -4,6 +4,31 @@ import {User, UserManager,} from 'oidc-client-ts';
 import {type AuthConfig, createUserManager} from '../api/klabisUserManager.ts';
 import {normalizeUrl} from "../api/hateoas.ts";
 import {AuthContext, type AuthUserDetails} from './authContext';
+import {getServiceWorkerRegistration} from '../pwa/registerServiceWorker';
+import {clearRegisteredEndpoint} from '../pwa/pushSubscriptionStore';
+
+const PUSH_UNSUBSCRIBE_TIMEOUT_MS = 1500;
+
+async function unsubscribePushBestEffort(): Promise<void> {
+    clearRegisteredEndpoint();
+    if (typeof PushManager === 'undefined') return;
+    const unsubscribe = async () => {
+        const registration = await getServiceWorkerRegistration();
+        const subscription = await registration?.pushManager.getSubscription();
+        await subscription?.unsubscribe();
+    };
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, PUSH_UNSUBSCRIBE_TIMEOUT_MS);
+    });
+    try {
+        await Promise.race([unsubscribe(), timeout]);
+    } catch (err) {
+        console.error('Push unsubscribe failed during logout:', err);
+    } finally {
+        clearTimeout(timer);
+    }
+}
 
 
 interface AuthProviderProps {
@@ -86,6 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
 
     const logout = useCallback(async () => {
         if (!userManager) return;
+        await unsubscribePushBestEffort();
         try {
             const user = await userManager.getUser();
             await userManager.removeUser();
