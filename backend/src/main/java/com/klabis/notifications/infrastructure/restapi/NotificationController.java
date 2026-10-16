@@ -10,7 +10,6 @@ import com.klabis.notifications.PushNotifications;
 import com.klabis.notifications.application.NotificationDevicesPort;
 import com.klabis.notifications.application.NotificationDevicesPort.RegisterDeviceCommand;
 import com.klabis.notifications.application.VapidProperties;
-import com.klabis.notifications.domain.NotificationDevice;
 import com.klabis.notifications.domain.NotificationDeviceId;
 import com.klabis.notifications.domain.PushEndpoint;
 import com.klabis.notifications.domain.PushKeys;
@@ -20,7 +19,6 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -29,6 +27,7 @@ import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @PrimaryAdapter
@@ -70,16 +69,14 @@ class NotificationController implements NotificationsApi {
     @Override
     public ResponseEntity<Void> registerNotificationDevice(RegisterNotificationDeviceRequest request,
                                                            @ActingUser UserId currentUserId, String userAgent) {
-        NotificationDevice device = devicesPort.registerDevice(new RegisterDeviceCommand(
+        var device = devicesPort.registerDevice(new RegisterDeviceCommand(
                 currentUserId,
                 new PushEndpoint(request.endpoint()),
                 new PushKeys(request.p256dh(), request.auth()),
                 userAgent));
 
-        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
-                .path("/{deviceId}")
-                .buildAndExpand(device.getId().value())
-                .toUri()).build();
+        return ResponseEntity.created(linkTo(methodOn(NotificationsApi.class)
+                .removeNotificationDevice(device.getId().value(), null)).toUri()).build();
     }
 
     @Override
@@ -133,6 +130,19 @@ class NotificationsRootPostprocessor implements RepresentationModelProcessor<Ent
         }
         klabisLinkTo(methodOn(NotificationsApi.class).getNotificationSettings(null))
                 .ifPresent(link -> model.add(link.withRel("notifications")));
+        return model;
+    }
+}
+
+@MvcComponent
+class NotificationDeviceItemPostprocessor implements RepresentationModelProcessor<EntityModel<NotificationDevice>> {
+
+    @Override
+    public EntityModel<NotificationDevice> process(EntityModel<NotificationDevice> model) {
+        UUID deviceId = model.getContent().id();
+        var removeDevice = methodOn(NotificationsApi.class).removeNotificationDevice(deviceId, null);
+        klabisLinkTo(removeDevice)
+                .ifPresent(link -> model.add(link.withSelfRel().andAffordances(klabisAfford(removeDevice))));
         return model;
     }
 }

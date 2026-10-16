@@ -231,12 +231,16 @@ describe('NotificationSettingsPage', () => {
         });
     });
     describe('disabling and removing devices', () => {
-        const removeTemplate = (id: string) => ({
-            removeNotificationDevice: {method: 'DELETE', target: `/api/notifications/devices/${id}`, properties: []},
+        const removeTemplate = () => ({
+            removeNotificationDevice: {method: 'DELETE', properties: []},
         });
         const withRemovable = {
             ...settings,
-            devices: settings.devices.map(d => ({...d, _templates: removeTemplate(d.id)})),
+            devices: settings.devices.map(d => ({
+                ...d,
+                _links: {self: {href: `/api/notifications/devices/${d.id}`}},
+                _templates: removeTemplate(),
+            })),
         };
         const disableLabel = labels.notifications.disableOnThisDevice;
         const removeLabel = labels.notifications.removeDevice;

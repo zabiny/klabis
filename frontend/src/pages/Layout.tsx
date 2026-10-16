@@ -75,10 +75,11 @@ const Layout = () => {
     const [userDetails, setUserDetails] = useState<AuthUserDetails | null>(null)
     const isLargeScreen = useMediaQuery('(min-width: 768px)')
     const {data: menuItems = [], isLoading: menuLoading, error: menuError} = useRootNavigation()
-    usePushReregistration()
     const mainItems = menuItems.filter(item => item.section === 'main')
     const adminItems = menuItems.filter(item => item.section === 'admin')
     const profileHref = menuItems.find(item => item.rel === 'profile')?.href
+    const notificationsHref = menuItems.find(item => item.rel === 'notifications')?.href
+    usePushReregistration(notificationsHref && `/api${notificationsHref}`)
 
     useEffect(() => {
         if (isAuthenticated) {

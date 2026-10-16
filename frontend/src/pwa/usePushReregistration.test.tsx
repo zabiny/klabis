@@ -3,14 +3,12 @@ import {renderHook, waitFor} from '@testing-library/react';
 import type {ReactNode} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {authorizedFetch} from '../api/authorizedFetch';
-import {useAuthorizedQuery} from '../hooks/useAuthorizedFetch';
 import {getServiceWorkerRegistration} from './registerServiceWorker';
 import {getRegisteredEndpoint, setRegisteredEndpoint} from './pushSubscriptionStore';
 import {PUSH_SUBSCRIPTION_CHANGED} from './pushHandlers';
 import {usePushReregistration} from './usePushReregistration';
 
 vi.mock('../api/authorizedFetch', () => ({authorizedFetch: vi.fn()}));
-vi.mock('../hooks/useAuthorizedFetch', () => ({useAuthorizedQuery: vi.fn()}));
 vi.mock('./registerServiceWorker', () => ({getServiceWorkerRegistration: vi.fn()}));
 
 const OLD = 'https://push.example/old';
@@ -44,7 +42,6 @@ describe('usePushReregistration', () => {
     beforeEach(() => {
         localStorage.clear();
         vi.mocked(authorizedFetch).mockReset();
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: SETTINGS} as never);
         setPermission('granted');
     });
     afterEach(() => vi.clearAllMocks());
@@ -54,7 +51,7 @@ describe('usePushReregistration', () => {
         subscribeAs(NEW);
         vi.mocked(authorizedFetch).mockResolvedValueOnce(settingsResponse([{endpoint: OLD}])).mockResolvedValueOnce({} as Response);
 
-        renderHook(() => usePushReregistration(), {wrapper});
+        renderHook(() => usePushReregistration(SETTINGS), {wrapper});
 
         await waitFor(() => expect(authorizedFetch).toHaveBeenCalledTimes(2));
         const [url, init] = vi.mocked(authorizedFetch).mock.calls[1];
@@ -66,7 +63,7 @@ describe('usePushReregistration', () => {
 
     it('does nothing when notifications were never enabled on this device', async () => {
         subscribeAs(NEW);
-        renderHook(() => usePushReregistration(), {wrapper});
+        renderHook(() => usePushReregistration(SETTINGS), {wrapper});
         await new Promise(r => setTimeout(r, 10));
         expect(authorizedFetch).not.toHaveBeenCalled();
     });
@@ -74,7 +71,7 @@ describe('usePushReregistration', () => {
     it('does nothing when the endpoint is unchanged', async () => {
         setRegisteredEndpoint(OLD);
         subscribeAs(OLD);
-        renderHook(() => usePushReregistration(), {wrapper});
+        renderHook(() => usePushReregistration(SETTINGS), {wrapper});
         await new Promise(r => setTimeout(r, 10));
         expect(authorizedFetch).not.toHaveBeenCalled();
     });
@@ -83,7 +80,7 @@ describe('usePushReregistration', () => {
         setPermission('default');
         setRegisteredEndpoint(OLD);
         subscribeAs(NEW);
-        renderHook(() => usePushReregistration(), {wrapper});
+        renderHook(() => usePushReregistration(SETTINGS), {wrapper});
         await new Promise(r => setTimeout(r, 10));
         expect(authorizedFetch).not.toHaveBeenCalled();
     });
@@ -93,7 +90,7 @@ describe('usePushReregistration', () => {
         subscribeAs(NEW);
         vi.mocked(authorizedFetch).mockResolvedValueOnce(settingsResponse([{endpoint: NEW}]));
 
-        renderHook(() => usePushReregistration(), {wrapper});
+        renderHook(() => usePushReregistration(SETTINGS), {wrapper});
 
         await waitFor(() => expect(getRegisteredEndpoint()).toBe(NEW));
         expect(authorizedFetch).toHaveBeenCalledTimes(1);
@@ -110,7 +107,7 @@ describe('usePushReregistration', () => {
                 removeEventListener: vi.fn(),
             },
         });
-        renderHook(() => usePushReregistration(), {wrapper});
+        renderHook(() => usePushReregistration(SETTINGS), {wrapper});
         await new Promise(r => setTimeout(r, 10));
         expect(authorizedFetch).not.toHaveBeenCalled();
 

@@ -60,10 +60,6 @@ public class NotificationDevice extends KlabisAggregateRoot<NotificationDevice, 
         this.keys = newKeys;
     }
 
-    public boolean isOwnedBy(UserId user) {
-        return owner.equals(user);
-    }
-
     @Override
     public NotificationDeviceId getId() {
         return id;

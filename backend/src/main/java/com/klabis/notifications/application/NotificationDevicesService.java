@@ -5,6 +5,7 @@ import com.klabis.notifications.domain.NotificationDevice;
 import com.klabis.notifications.domain.NotificationDeviceFilter;
 import com.klabis.notifications.domain.NotificationDeviceId;
 import com.klabis.notifications.domain.NotificationDeviceRepository;
+import com.klabis.notifications.domain.PushEndpoint;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,5 +45,12 @@ class NotificationDevicesService implements NotificationDevicesPort {
                 .findOne(NotificationDeviceFilter.all().withOwner(owner).withId(deviceId))
                 .orElseThrow(() -> new NotificationDeviceNotFoundException(deviceId));
         deviceRepository.delete(device);
+    }
+
+    @Transactional
+    @Override
+    public void forgetEndpoint(PushEndpoint endpoint) {
+        deviceRepository.findOne(NotificationDeviceFilter.all().withEndpoint(endpoint))
+                .ifPresent(deviceRepository::delete);
     }
 }

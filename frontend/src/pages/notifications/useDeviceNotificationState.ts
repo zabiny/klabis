@@ -1,11 +1,15 @@
-import {useEffect, useState} from 'react';
-import {getServiceWorkerRegistration} from '../../pwa/registerServiceWorker';
+import {useCallback, useEffect, useState} from 'react';
+import {getCurrentPushSubscription} from '../../pwa/pushSubscription';
 
-export type DeviceNotificationState = 'loading' | 'unsupported' | 'ios-needs-install' | 'denied' | 'off' | 'on';
+export type BrowserNotificationState = 'loading' | 'unsupported' | 'ios-needs-install' | 'denied' | 'ready';
 
-export interface DeviceNotificationStatus {
-    state: DeviceNotificationState;
-    currentEndpoint: string | null;
+interface BrowserSnapshot {
+    state: BrowserNotificationState;
+    browserEndpoint: string | null;
+}
+
+export interface BrowserNotificationStatus extends BrowserSnapshot {
+    refresh: () => void;
 }
 
 const isIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent);
@@ -14,42 +18,35 @@ const isStandalone = () =>
     window.matchMedia?.('(display-mode: standalone)').matches === true ||
     (navigator as Navigator & {standalone?: boolean}).standalone === true;
 
-async function currentEndpoint(): Promise<string | null> {
-    const registration = await getServiceWorkerRegistration();
-    const subscription = await registration?.pushManager.getSubscription();
-    return subscription?.endpoint ?? null;
-}
-
-async function resolveStatus(deviceEndpoints: string[]): Promise<DeviceNotificationStatus> {
+async function resolveStatus(): Promise<BrowserSnapshot> {
     if (!('PushManager' in window) || !('Notification' in window)) {
-        return {state: 'unsupported', currentEndpoint: null};
+        return {state: 'unsupported', browserEndpoint: null};
     }
     if (isIos() && !isStandalone()) {
-        return {state: 'ios-needs-install', currentEndpoint: null};
+        return {state: 'ios-needs-install', browserEndpoint: null};
     }
     if (Notification.permission === 'denied') {
-        return {state: 'denied', currentEndpoint: null};
+        return {state: 'denied', browserEndpoint: null};
     }
-    const endpoint = await currentEndpoint().catch(() => null);
-    if (endpoint && deviceEndpoints.includes(endpoint)) {
-        return {state: 'on', currentEndpoint: endpoint};
-    }
-    return {state: 'off', currentEndpoint: null};
+    const subscription = await getCurrentPushSubscription().catch(() => null);
+    return {state: 'ready', browserEndpoint: subscription?.endpoint ?? null};
 }
 
-export function useDeviceNotificationState(deviceEndpoints: string[]): DeviceNotificationStatus {
-    const [status, setStatus] = useState<DeviceNotificationStatus>({state: 'loading', currentEndpoint: null});
-    const key = deviceEndpoints.join('\n');
+export function useDeviceNotificationState(): BrowserNotificationStatus {
+    const [snapshot, setSnapshot] = useState<BrowserSnapshot>({state: 'loading', browserEndpoint: null});
+    const [revision, setRevision] = useState(0);
 
     useEffect(() => {
         let cancelled = false;
-        resolveStatus(key ? key.split('\n') : []).then(result => {
-            if (!cancelled) setStatus(result);
+        resolveStatus().then(result => {
+            if (!cancelled) setSnapshot(result);
         });
         return () => {
             cancelled = true;
         };
-    }, [key]);
+    }, [revision]);
 
-    return status;
+    const refresh = useCallback(() => setRevision(value => value + 1), []);
+
+    return {...snapshot, refresh};
 }

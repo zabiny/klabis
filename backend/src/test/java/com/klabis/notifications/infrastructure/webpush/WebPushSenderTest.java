@@ -59,9 +59,9 @@ class WebPushSenderTest {
     @Test
     @DisplayName("posts an aes128gcm encrypted VAPID-signed request with TTL to the device endpoint")
     void postsEncryptedSignedRequest() {
-        int status = sender.send(device, new PushMessage("Notifikace fungují", "Tělo", "/notifications"));
+        var result = sender.send(device, new PushMessage("Notifikace fungují", "Tělo", "/notifications"));
 
-        assertThat(status).isEqualTo(201);
+        assertThat(result).isEqualTo(WebPushSender.Result.DELIVERED);
         assertThat(requests).hasSize(1);
         HttpRequest request = requests.getFirst();
         assertThat(request.uri().toString()).isEqualTo("https://push.example.org/send/abc");
@@ -112,12 +112,22 @@ class WebPushSenderTest {
         assertThat(json.getBytes(StandardCharsets.UTF_8).length).isLessThan(2048);
     }
 
-    @Test
-    @DisplayName("returns the push service status so callers can react to it")
-    void returnsStatus() {
-        responseStatus = 410;
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {404, 410})
+    @DisplayName("reports a device the push service no longer knows as gone")
+    void reportsGone(int status) {
+        responseStatus = status;
 
-        assertThat(sender.send(device, new PushMessage("t", "b", null))).isEqualTo(410);
+        assertThat(sender.send(device, new PushMessage("t", "b", null))).isEqualTo(WebPushSender.Result.GONE);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(ints = {400, 401, 403, 413, 429, 500, 503})
+    @DisplayName("reports any other non-success status as failed")
+    void reportsFailure(int status) {
+        responseStatus = status;
+
+        assertThat(sender.send(device, new PushMessage("t", "b", null))).isEqualTo(WebPushSender.Result.FAILED);
     }
 
     @Test
@@ -129,7 +139,7 @@ class WebPushSenderTest {
                     throw new java.io.IOException("down");
                 }, objectMapper);
 
-        assertThat(failing.send(device, new PushMessage("t", "b", null))).isEqualTo(WebPushSender.FAILED);
+        assertThat(failing.send(device, new PushMessage("t", "b", null))).isEqualTo(WebPushSender.Result.FAILED);
     }
 
     private static byte[] bodyBytes(HttpRequest request) {

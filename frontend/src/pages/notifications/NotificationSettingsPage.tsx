@@ -1,92 +1,85 @@
 import {type ReactElement, useState} from 'react';
 import type {HalEnvelope} from '../../api';
+import {templateTarget} from '../../api/hateoas';
 import type {components} from '../../api/klabisApi';
 import {Alert, Badge, Button, Card, Skeleton} from '../../components/UI';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
-import {clearRegisteredEndpoint, setRegisteredEndpoint} from '../../pwa/pushSubscriptionStore';
-import {getServiceWorkerRegistration} from '../../pwa/registerServiceWorker';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {labels} from '../../localization';
+import {
+    base64UrlToBytes,
+    toRegisterDeviceRequest,
+    unsubscribeCurrentDevice,
+} from '../../pwa/pushSubscription';
+import {setRegisteredEndpoint} from '../../pwa/pushSubscriptionStore';
+import {getServiceWorkerRegistration} from '../../pwa/registerServiceWorker';
 import {formatDateTime} from '../../utils/dateUtils';
-import {type DeviceNotificationState, useDeviceNotificationState} from './useDeviceNotificationState';
+import {type BrowserNotificationState, useDeviceNotificationState} from './useDeviceNotificationState';
 
 type NotificationSettings = components['schemas']['EntityModelNotificationSettings'];
+type Device = NonNullable<NotificationSettings['devices']>[number];
+type Severity = 'info' | 'warning' | 'success' | 'error';
+type Feedback = {severity: Severity; text: string} | null;
 
-const STATE_MESSAGES: Record<Exclude<DeviceNotificationState, 'loading'>, {text: string; severity: 'info' | 'warning' | 'success'}> = {
+const BROWSER_STATE_MESSAGES: Record<Exclude<BrowserNotificationState, 'loading' | 'ready'>, {text: string; severity: Severity}> = {
     unsupported: {text: labels.notifications.stateUnsupported, severity: 'warning'},
     'ios-needs-install': {text: labels.notifications.stateIosNeedsInstall, severity: 'info'},
     denied: {text: labels.notifications.stateDenied, severity: 'warning'},
-    off: {text: labels.notifications.stateOff, severity: 'info'},
-    on: {text: labels.notifications.stateOn, severity: 'success'},
 };
-
-function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
-    const base64 = value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=');
-    const binary = atob(base64);
-    return Uint8Array.from(binary, char => char.charCodeAt(0));
-}
 
 export const NotificationSettingsPage = (): ReactElement => {
     const {resourceData, isLoading, route} = useHalPageData<NotificationSettings & HalEnvelope>();
     const devices = resourceData?.devices ?? [];
-    const {state: detectedState, currentEndpoint} = useDeviceNotificationState(
-        devices.flatMap(device => (device.endpoint ? [device.endpoint] : []))
-    );
-    const [permissionRefused, setPermissionRefused] = useState(false);
-    const [enableFailed, setEnableFailed] = useState(false);
-    const [testResult, setTestResult] = useState<'success' | 'failed' | null>(null);
-    const [removeError, setRemoveError] = useState<'disable' | 'remove' | null>(null);
+    const {state, browserEndpoint, refresh} = useDeviceNotificationState();
+    const [feedback, setFeedback] = useState<Feedback>(null);
     const {mutate, isPending} = useAuthorizedMutation({method: 'POST'});
     const {mutate: mutateRemove, isPending: isRemoving} = useAuthorizedMutation({method: 'DELETE'});
 
-    const state = permissionRefused && detectedState === 'off' ? 'denied' : detectedState;
-    const currentDevice = devices.find(device => !!currentEndpoint && device.endpoint === currentEndpoint);
-    const registerTemplate = resourceData?._templates?.registerNotificationDevice;
-    const sendTestTemplate = resourceData?._templates?.sendTestNotification;
+    const currentDevice = browserEndpoint ? devices.find(device => device.endpoint === browserEndpoint) : undefined;
+    const registerTarget = templateTarget(resourceData?._templates?.registerNotificationDevice, resourceData);
+    const sendTestTarget = templateTarget(resourceData?._templates?.sendTestNotification, resourceData);
+    const removeTarget = (device: Device) => templateTarget(device._templates?.removeNotificationDevice, device);
 
     const handleSendTest = () => {
-        if (!sendTestTemplate?.target) {
+        if (!sendTestTarget) {
             return;
         }
-        setTestResult(null);
-        mutate({url: sendTestTemplate.target}, {
-            onSuccess: () => setTestResult('success'),
-            onError: () => setTestResult('failed'),
+        setFeedback(null);
+        mutate({url: sendTestTarget}, {
+            onSuccess: () => setFeedback({severity: 'success', text: labels.notifications.sendTestSuccess}),
+            onError: () => setFeedback({severity: 'error', text: labels.notifications.sendTestFailed}),
         });
     };
 
-    const removeTarget = (device: (typeof devices)[number]) =>
-        device._templates?.removeNotificationDevice?.target;
-
-    const handleRemove = (device: (typeof devices)[number], isCurrent: boolean) => {
+    const handleRemove = (device: Device, isCurrent: boolean) => {
         const url = removeTarget(device);
         if (!url) {
             return;
         }
-        setRemoveError(null);
+        setFeedback(null);
         mutateRemove({url}, {
             onSuccess: async () => {
                 if (isCurrent) {
-                    clearRegisteredEndpoint();
-                    try {
-                        const registration = await getServiceWorkerRegistration();
-                        const subscription = await registration?.pushManager.getSubscription();
-                        await subscription?.unsubscribe();
-                    } catch {
-                        // the server row is already gone; a leftover browser subscription is harmless
-                    }
+                    await unsubscribeCurrentDevice();
+                    refresh();
                 }
                 void route.refetch();
             },
-            onError: () => setRemoveError(isCurrent ? 'disable' : 'remove'),
+            onError: () => setFeedback({
+                severity: 'error',
+                text: isCurrent ? labels.notifications.disableFailed : labels.notifications.removeFailed,
+            }),
         });
     };
 
+    const enableFailed = () => setFeedback({severity: 'error', text: labels.notifications.enableFailed});
+
     const handleEnable = async () => {
-        setEnableFailed(false);
+        setFeedback(null);
         try {
             if (await Notification.requestPermission() !== 'granted') {
-                setPermissionRefused(true);
+                setFeedback(BROWSER_STATE_MESSAGES.denied);
+                refresh();
                 return;
             }
             const registration = await getServiceWorkerRegistration();
@@ -97,20 +90,19 @@ export const NotificationSettingsPage = (): ReactElement => {
                 userVisibleOnly: true,
                 applicationServerKey: base64UrlToBytes(resourceData.vapidPublicKey),
             });
-            const {p256dh, auth} = subscription.toJSON().keys ?? {};
-            const target = registerTemplate?.target ?? route.getResourceLink()?.href;
-            if (!target) {
+            if (!registerTarget) {
                 throw new Error('Missing registration target');
             }
-            mutate({url: target, data: {endpoint: subscription.endpoint, p256dh, auth}}, {
+            mutate({url: registerTarget, data: toRegisterDeviceRequest(subscription)}, {
                 onSuccess: () => {
                     setRegisteredEndpoint(subscription.endpoint);
+                    refresh();
                     void route.refetch();
                 },
-                onError: () => setEnableFailed(true),
+                onError: enableFailed,
             });
         } catch {
-            setEnableFailed(true);
+            enableFailed();
         }
     };
 
@@ -118,18 +110,20 @@ export const NotificationSettingsPage = (): ReactElement => {
         return <Skeleton/>;
     }
 
-    const message = state === 'loading' ? null : STATE_MESSAGES[state];
+    const stateMessage = state === 'loading' ? null
+        : state === 'ready' ? (currentDevice
+            ? {text: labels.notifications.stateOn, severity: 'success' as const}
+            : {text: labels.notifications.stateOff, severity: 'info' as const})
+            : BROWSER_STATE_MESSAGES[state];
 
     return (
         <div className="flex flex-col gap-6">
             <h1 className="text-3xl font-bold text-text-primary">{labels.notifications.pageTitle}</h1>
 
-            {message && <Alert severity={message.severity}>{message.text}</Alert>}
-            {removeError === 'disable' && <Alert severity="error">{labels.notifications.disableFailed}</Alert>}
-            {removeError === 'remove' && <Alert severity="error">{labels.notifications.removeFailed}</Alert>}
-            {enableFailed && <Alert severity="error">{labels.notifications.enableFailed}</Alert>}
+            {stateMessage && <Alert severity={stateMessage.severity}>{stateMessage.text}</Alert>}
+            {feedback && <Alert severity={feedback.severity}>{feedback.text}</Alert>}
 
-            {state === 'off' && registerTemplate && (
+            {state === 'ready' && !currentDevice && registerTarget && (
                 <div>
                     <Button onClick={handleEnable} disabled={isPending}>
                         {labels.notifications.enableOnThisDevice}
@@ -137,7 +131,7 @@ export const NotificationSettingsPage = (): ReactElement => {
                 </div>
             )}
 
-            {state === 'on' && currentDevice && removeTarget(currentDevice) && (
+            {currentDevice && removeTarget(currentDevice) && (
                 <div>
                     <Button variant="secondary" onClick={() => handleRemove(currentDevice, true)} disabled={isRemoving}>
                         {labels.notifications.disableOnThisDevice}
@@ -145,15 +139,13 @@ export const NotificationSettingsPage = (): ReactElement => {
                 </div>
             )}
 
-            {sendTestTemplate && (
+            {sendTestTarget && (
                 <div className="flex flex-col gap-3">
                     <div>
                         <Button variant="secondary" onClick={handleSendTest} disabled={isPending}>
                             {labels.notifications.sendTest}
                         </Button>
                     </div>
-                    {testResult === 'success' && <Alert severity="success">{labels.notifications.sendTestSuccess}</Alert>}
-                    {testResult === 'failed' && <Alert severity="error">{labels.notifications.sendTestFailed}</Alert>}
                 </div>
             )}
 
@@ -164,7 +156,7 @@ export const NotificationSettingsPage = (): ReactElement => {
                 ) : (
                     <Card className="divide-y divide-border">
                         {devices.map(device => {
-                            const isCurrent = !!currentEndpoint && device.endpoint === currentEndpoint;
+                            const isCurrent = device === currentDevice;
                             return (
                             <div key={device.id} className="flex items-center justify-between gap-4 p-4">
                                 <div>

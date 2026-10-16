@@ -22,13 +22,13 @@ import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPrivateKeySpec;
 import java.util.Base64;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 class WebPushSender {
 
-    static final int FAILED = -1;
+    enum Result {DELIVERED, GONE, FAILED}
 
     private static final Logger log = LoggerFactory.getLogger(WebPushSender.class);
     private static final String DEFAULT_TAG = "klabis";
@@ -49,7 +49,7 @@ class WebPushSender {
                 PublicKeySources.ofUncompressedBytes(Base64.getUrlDecoder().decode(properties.publicKey())));
     }
 
-    int send(NotificationDevice device, PushMessage message) {
+    Result send(NotificationDevice device, PushMessage message) {
         try {
             PushSubscription subscription = new PushSubscription();
             subscription.setEndpoint(device.getEndpoint().url());
@@ -68,28 +68,33 @@ class WebPushSender {
                     .toRequest();
 
             int status = transport.post(request);
-            if (status < 200 || status >= 300) {
-                log.warn("Push service answered {} for device {}", status, device.getId());
+            if (status >= 200 && status < 300) {
+                return Result.DELIVERED;
             }
-            return status;
+            if (status == 404 || status == 410) {
+                return Result.GONE;
+            }
+            log.warn("Push service answered {} for device {}", status, device.getId());
+            return Result.FAILED;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Push to device {} interrupted", device.getId());
-            return FAILED;
+            return Result.FAILED;
         } catch (Exception e) {
             log.warn("Push to device {} failed: {}", device.getId(), e.toString());
-            return FAILED;
+            return Result.FAILED;
         }
     }
 
     String payload(PushMessage message) {
-        String url = message.targetPath() == null ? "/" : message.targetPath();
-        Map<String, String> payload = new LinkedHashMap<>();
-        payload.put("title", abbreviate(message.title(), MAX_TITLE_LENGTH));
-        payload.put("body", abbreviate(message.body(), MAX_BODY_LENGTH));
-        payload.put("url", url);
-        payload.put("tag", message.targetPath() == null ? DEFAULT_TAG : message.targetPath());
-        return objectMapper.writeValueAsString(payload);
+        String target = message.targetPath();
+        String url = Objects.requireNonNullElse(target, "/");
+        String tag = Objects.requireNonNullElse(target, DEFAULT_TAG);
+        return objectMapper.writeValueAsString(Map.of(
+                "title", abbreviate(message.title(), MAX_TITLE_LENGTH),
+                "body", abbreviate(message.body(), MAX_BODY_LENGTH),
+                "url", url,
+                "tag", tag));
     }
 
     private static String abbreviate(String text, int maxLength) {

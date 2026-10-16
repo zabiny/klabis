@@ -305,6 +305,7 @@ class NotificationControllerTest {
                 .andExpect(jsonPath("$.devices[0]._links.self.href",
                         endsWith("/api/notifications/devices/" + device.getId().value())))
                 .andExpect(jsonPath("$.devices[0]._templates", hasKey("removeNotificationDevice")))
-                .andExpect(jsonPath("$.devices[0]._templates.removeNotificationDevice.method").value("DELETE"));
+                .andExpect(jsonPath("$.devices[0]._templates.removeNotificationDevice.method").value("DELETE"))
+                .andExpect(jsonPath("$.devices[0]._templates.removeNotificationDevice.target").doesNotExist());
     }
 }

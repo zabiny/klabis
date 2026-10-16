@@ -51,7 +51,7 @@ class NotificationDevicesServiceTest {
 
         NotificationDevice result = service().registerDevice(command(USER, new PushKeys("k1", "a1")));
 
-        assertThat(result.isOwnedBy(USER)).isTrue();
+        assertThat(result.getOwner()).isEqualTo(USER);
         assertThat(result.getDescription()).isEqualTo("Chrome · Android");
         assertThat(result.getKeys()).isEqualTo(new PushKeys("k1", "a1"));
         verify(repository).save(result);
@@ -69,7 +69,7 @@ class NotificationDevicesServiceTest {
         NotificationDevice result = service().registerDevice(command(USER, new PushKeys("k2", "a2")));
 
         assertThat(result.getId()).isEqualTo(existing.getId());
-        assertThat(result.isOwnedBy(USER)).isTrue();
+        assertThat(result.getOwner()).isEqualTo(USER);
         assertThat(result.getKeys()).isEqualTo(new PushKeys("k2", "a2"));
     }
 
@@ -85,7 +85,7 @@ class NotificationDevicesServiceTest {
         NotificationDevice result = service().registerDevice(command(USER, new PushKeys("k2", "a2")));
 
         assertThat(result.getId()).isEqualTo(existing.getId());
-        assertThat(result.isOwnedBy(USER)).isTrue();
+        assertThat(result.getOwner()).isEqualTo(USER);
         assertThat(result.getKeys()).isEqualTo(new PushKeys("k2", "a2"));
     }
 
@@ -109,6 +109,29 @@ class NotificationDevicesServiceTest {
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service().removeDevice(OTHER, id))
                 .isInstanceOf(NotificationDeviceNotFoundException.class);
+        org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("forgetEndpoint deletes the device registered for the endpoint regardless of its owner")
+    void forgetsEndpoint() {
+        NotificationDevice device = NotificationDeviceTestDataBuilder.aDevice().withOwner(OTHER).build();
+        var endpoint = new PushEndpoint(ENDPOINT);
+        when(repository.findOne(NotificationDeviceFilter.all().withEndpoint(endpoint))).thenReturn(Optional.of(device));
+
+        service().forgetEndpoint(endpoint);
+
+        verify(repository).delete(device);
+    }
+
+    @Test
+    @DisplayName("forgetEndpoint is a no-op for an unknown endpoint")
+    void forgetUnknownEndpoint() {
+        var endpoint = new PushEndpoint(ENDPOINT);
+        when(repository.findOne(NotificationDeviceFilter.all().withEndpoint(endpoint))).thenReturn(Optional.empty());
+
+        service().forgetEndpoint(endpoint);
+
         org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).delete(any());
     }
 }

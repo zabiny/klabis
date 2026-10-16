@@ -34,7 +34,7 @@ class NotificationDeviceTest {
                     "Firefox · Linux");
 
             assertThat(device.getId()).isNotNull();
-            assertThat(device.isOwnedBy(OWNER)).isTrue();
+            assertThat(device.getOwner()).isEqualTo(OWNER);
             assertThat(device.getEndpoint().url()).isEqualTo("https://push.example.org/1");
             assertThat(device.getKeys()).isEqualTo(new PushKeys("p256dh", "auth"));
             assertThat(device.getDescription()).isEqualTo("Firefox · Linux");
@@ -71,8 +71,8 @@ class NotificationDeviceTest {
 
             device.reassignTo(OTHER);
 
-            assertThat(device.isOwnedBy(OTHER)).isTrue();
-            assertThat(device.isOwnedBy(OWNER)).isFalse();
+            assertThat(device.getOwner()).isEqualTo(OTHER);
+            assertThat(device.getOwner()).isNotEqualTo(OWNER);
             assertThat(device.getEnabledAt()).isAfter(originalEnabledAt);
         }
 
@@ -84,7 +84,7 @@ class NotificationDeviceTest {
 
             device.reassignTo(OWNER);
 
-            assertThat(device.isOwnedBy(OWNER)).isTrue();
+            assertThat(device.getOwner()).isEqualTo(OWNER);
             assertThat(device.getEnabledAt()).isEqualTo(originalEnabledAt);
         }
     }
