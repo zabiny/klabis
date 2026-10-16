@@ -1,6 +1,9 @@
-import type {ReactElement} from 'react';
+import {type ReactElement, useState} from 'react';
+import type {HalEnvelope} from '../../api';
 import type {components} from '../../api/klabisApi';
-import {Alert, Badge, Card, Skeleton} from '../../components/UI';
+import {Alert, Badge, Button, Card, Skeleton} from '../../components/UI';
+import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
+import {getServiceWorkerRegistration} from '../../pwa/registerServiceWorker';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {labels} from '../../localization';
 import {formatDateTime} from '../../utils/dateUtils';
@@ -16,12 +19,55 @@ const STATE_MESSAGES: Record<Exclude<DeviceNotificationState, 'loading'>, {text:
     on: {text: labels.notifications.stateOn, severity: 'success'},
 };
 
+function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
+    const base64 = value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '=');
+    const binary = atob(base64);
+    return Uint8Array.from(binary, char => char.charCodeAt(0));
+}
+
 export const NotificationSettingsPage = (): ReactElement => {
-    const {resourceData, isLoading} = useHalPageData<NotificationSettings>();
+    const {resourceData, isLoading, route} = useHalPageData<NotificationSettings & HalEnvelope>();
     const devices = resourceData?.devices ?? [];
-    const {state, currentEndpoint} = useDeviceNotificationState(
+    const {state: detectedState, currentEndpoint} = useDeviceNotificationState(
         devices.flatMap(device => (device.endpoint ? [device.endpoint] : []))
     );
+    const [permissionRefused, setPermissionRefused] = useState(false);
+    const [enableFailed, setEnableFailed] = useState(false);
+    const {mutate, isPending} = useAuthorizedMutation({method: 'POST'});
+
+    const state = permissionRefused && detectedState === 'off' ? 'denied' : detectedState;
+    const registerTemplate = resourceData?._templates?.registerNotificationDevice;
+
+    const handleEnable = async () => {
+        setEnableFailed(false);
+        try {
+            if (await Notification.requestPermission() !== 'granted') {
+                setPermissionRefused(true);
+                return;
+            }
+            const registration = await getServiceWorkerRegistration();
+            if (!registration || !resourceData?.vapidPublicKey) {
+                throw new Error('Push subscription is not available');
+            }
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: base64UrlToBytes(resourceData.vapidPublicKey),
+            });
+            const {p256dh, auth} = subscription.toJSON().keys ?? {};
+            const target = registerTemplate?.target ?? route.getResourceLink()?.href;
+            if (!target) {
+                throw new Error('Missing registration target');
+            }
+            mutate({url: target, data: {endpoint: subscription.endpoint, p256dh, auth}}, {
+                onSuccess: () => {
+                    void route.refetch();
+                },
+                onError: () => setEnableFailed(true),
+            });
+        } catch {
+            setEnableFailed(true);
+        }
+    };
 
     if (isLoading || !resourceData) {
         return <Skeleton/>;
@@ -34,6 +80,15 @@ export const NotificationSettingsPage = (): ReactElement => {
             <h1 className="text-3xl font-bold text-text-primary">{labels.notifications.pageTitle}</h1>
 
             {message && <Alert severity={message.severity}>{message.text}</Alert>}
+            {enableFailed && <Alert severity="error">{labels.notifications.enableFailed}</Alert>}
+
+            {state === 'off' && registerTemplate && (
+                <div>
+                    <Button onClick={handleEnable} disabled={isPending}>
+                        {labels.notifications.enableOnThisDevice}
+                    </Button>
+                </div>
+            )}
 
             <div className="flex flex-col gap-3">
                 <h2 className="text-xl font-bold text-text-primary">{labels.notifications.devicesHeading}</h2>

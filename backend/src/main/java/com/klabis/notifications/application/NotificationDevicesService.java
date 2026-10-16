@@ -23,4 +23,16 @@ class NotificationDevicesService implements NotificationDevicesPort {
     public List<NotificationDevice> listDevices(UserId owner) {
         return deviceRepository.findAll(NotificationDeviceFilter.all().withOwner(owner));
     }
+
+    @Transactional
+    @Override
+    public NotificationDevice registerDevice(RegisterDeviceCommand command) {
+        NotificationDevice device = deviceRepository
+                .findOne(NotificationDeviceFilter.all().withEndpoint(command.endpoint()))
+                .orElseGet(() -> NotificationDevice.registerFor(command.owner(), command.endpoint(), command.keys(),
+                        UserAgentDescriber.describe(command.userAgent())));
+        device.reassignTo(command.owner());
+        device.updateKeys(command.keys());
+        return deviceRepository.save(device);
+    }
 }

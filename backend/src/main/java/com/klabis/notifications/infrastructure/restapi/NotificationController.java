@@ -6,16 +6,22 @@ import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.ActingUser;
 import com.klabis.common.users.UserId;
 import com.klabis.notifications.application.NotificationDevicesPort;
+import com.klabis.notifications.application.NotificationDevicesPort.RegisterDeviceCommand;
 import com.klabis.notifications.application.VapidProperties;
+import com.klabis.notifications.domain.NotificationDevice;
+import com.klabis.notifications.domain.PushEndpoint;
+import com.klabis.notifications.domain.PushKeys;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
@@ -51,6 +57,21 @@ class NotificationController implements NotificationsApi {
         HalResponseContext.setDomain(settings);
         return ResponseEntity.ok(settings);
     }
+
+    @Override
+    public ResponseEntity<Void> registerNotificationDevice(RegisterNotificationDeviceRequest request,
+                                                           @ActingUser UserId currentUserId, String userAgent) {
+        NotificationDevice device = devicesPort.registerDevice(new RegisterDeviceCommand(
+                currentUserId,
+                new PushEndpoint(request.endpoint()),
+                new PushKeys(request.p256dh(), request.auth()),
+                userAgent));
+
+        return ResponseEntity.created(ServletUriComponentsBuilder.fromCurrentRequestUri()
+                .path("/{deviceId}")
+                .buildAndExpand(device.getId().value())
+                .toUri()).build();
+    }
 }
 
 @MvcComponent
@@ -59,7 +80,8 @@ class NotificationSettingsPostprocessor implements RepresentationModelProcessor<
     @Override
     public EntityModel<NotificationSettings> process(EntityModel<NotificationSettings> model) {
         klabisLinkTo(methodOn(NotificationsApi.class).getNotificationSettings(null))
-                .ifPresent(link -> model.add(link.withSelfRel()));
+                .ifPresent(link -> model.add(link.withSelfRel().andAffordances(
+                        klabisAfford(methodOn(NotificationsApi.class).registerNotificationDevice(null, null, null)))));
         return model;
     }
 }

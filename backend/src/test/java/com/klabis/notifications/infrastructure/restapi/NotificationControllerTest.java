@@ -9,6 +9,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.http.MediaType;
+import com.klabis.notifications.domain.PushEndpoint;
+import com.klabis.notifications.domain.PushKeys;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -16,6 +25,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -81,6 +92,114 @@ class NotificationControllerTest {
     @DisplayName("GET /api/notifications is not available to anonymous callers")
     void requiresAuthentication() throws Exception {
         mockMvc.perform(get("/api/notifications").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithKlabisMockUser(userId = USER_ID)
+    @DisplayName("GET /api/notifications offers the registerNotificationDevice template")
+    void offersRegisterTemplate() throws Exception {
+        mockMvc.perform(get("/api/notifications").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._templates", hasKey("registerNotificationDevice")))
+                .andExpect(jsonPath("$._templates.registerNotificationDevice.method").value("POST"))
+                .andExpect(jsonPath("$._templates.registerNotificationDevice.target", endsWith("/api/notifications/devices")));
+    }
+
+    private static final String CHROME_UA = "Mozilla/5.0 (Linux; Android 14) Chrome/120.0.0.0 Mobile Safari/537.36";
+
+    private static String body(String endpoint, String p256dh, String auth) {
+        return """
+                {"endpoint": %s, "p256dh": %s, "auth": %s}
+                """.formatted(quote(endpoint), quote(p256dh), quote(auth));
+    }
+
+    private static String quote(String v) {
+        return v == null ? "null" : "\"" + v + "\"";
+    }
+
+    @Test
+    @WithKlabisMockUser(userId = USER_ID)
+    @DisplayName("POST /api/notifications/devices registers the device and returns 201 with Location")
+    void registersDevice() throws Exception {
+        UserId currentUser = new UserId(UUID.fromString(USER_ID));
+        var device = NotificationDeviceTestDataBuilder.aDevice().withOwner(currentUser).build();
+        when(devicesPort.registerDevice(any())).thenReturn(device);
+
+        mockMvc.perform(post("/api/notifications/devices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                        .header("User-Agent", CHROME_UA)
+                        .content(body("https://push.example.org/send/1", "pk", "au")))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", endsWith("/api/notifications/devices/" + device.getId().value())));
+
+        verify(devicesPort).registerDevice(new NotificationDevicesPort.RegisterDeviceCommand(
+                currentUser, new PushEndpoint("https://push.example.org/send/1"), new PushKeys("pk", "au"), CHROME_UA));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "http://push.example.org/send/1",
+            "not a uri",
+    })
+    @WithKlabisMockUser(userId = USER_ID)
+    @DisplayName("POST /api/notifications/devices rejects non-https endpoint")
+    void rejectsNonHttps(String endpoint) throws Exception {
+        mockMvc.perform(post("/api/notifications/devices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                        .content(body(endpoint, "pk", "au")))
+                .andExpect(status().isBadRequest());
+
+        verify(devicesPort, never()).registerDevice(any());
+    }
+
+    @Test
+    @WithKlabisMockUser(userId = USER_ID)
+    @DisplayName("POST /api/notifications/devices rejects too long values")
+    void rejectsTooLongValues() throws Exception {
+        String longEndpoint = "https://push.example.org/" + "a".repeat(1000);
+        for (String payload : new String[]{
+                body(longEndpoint, "pk", "au"),
+                body("https://push.example.org/1", "p".repeat(201), "au"),
+                body("https://push.example.org/1", "pk", "a".repeat(101))}) {
+            mockMvc.perform(post("/api/notifications/devices")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content(payload))
+                    .andExpect(status().isBadRequest());
+        }
+
+        verify(devicesPort, never()).registerDevice(any());
+    }
+
+    @Test
+    @WithKlabisMockUser(userId = USER_ID)
+    @DisplayName("POST /api/notifications/devices rejects missing fields")
+    void rejectsMissingFields() throws Exception {
+        for (String payload : new String[]{
+                body(null, "pk", "au"),
+                body("https://push.example.org/1", null, "au"),
+                body("https://push.example.org/1", "pk", null),
+                "{}"}) {
+            mockMvc.perform(post("/api/notifications/devices")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content(payload))
+                    .andExpect(status().isBadRequest());
+        }
+
+        verify(devicesPort, never()).registerDevice(any());
+    }
+
+    @Test
+    @DisplayName("POST /api/notifications/devices is not available to anonymous callers")
+    void registerRequiresAuthentication() throws Exception {
+        mockMvc.perform(post("/api/notifications/devices")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                        .content(body("https://push.example.org/1", "pk", "au")))
                 .andExpect(status().isUnauthorized());
     }
 }

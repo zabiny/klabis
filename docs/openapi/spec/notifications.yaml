@@ -41,6 +41,49 @@ paths:
           x-hal-links:
             self:
               description: This notification settings resource
+          x-hal-templates:
+            registerNotificationDevice:
+              operation: registerNotificationDevice
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
+  /api/notifications/devices:
+    post:
+      operationId: registerNotificationDevice
+      tags: [Notifications]
+      summary: Enable notifications on the current device
+      description: |
+        Registers the browser push subscription of the current device for the current user. Idempotent
+        by endpoint: registering an endpoint the user already owns updates its keys, registering an
+        endpoint owned by another user (same browser, different login) reassigns it to the current
+        user. The device description is derived from the User-Agent header.
+      security:
+        - KlabisAuth: [openid]
+      x-spring-provide-args:
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
+        - '@org.springframework.web.bind.annotation.RequestHeader(name = "User-Agent", required = false) String userAgent'
+      requestBody:
+        required: true
+        x-codegen-request-body-name: request
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterNotificationDeviceRequest'
+      responses:
+        '201':
+          description: Device registered
+          headers:
+            Location:
+              description: URI of the registered device
+              schema:
+                type: string
+                format: uri
+          content:
+            application/prs.hal-forms+json: {}
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
@@ -93,3 +136,22 @@ components:
         endpoint:
           type: string
           description: Push service URL; returned to its owner only, lets the SPA mark the current device.
+
+    RegisterNotificationDeviceRequest:
+      type: object
+      description: Browser push subscription to register for the current user.
+      required: [endpoint, p256dh, auth]
+      properties:
+        endpoint:
+          type: string
+          maxLength: 1000
+          description: Push service URL of the subscription; must use https.
+          pattern: '^https://.+'
+        p256dh:
+          type: string
+          maxLength: 200
+          description: Client public key of the subscription (base64url).
+        auth:
+          type: string
+          maxLength: 100
+          description: Auth secret of the subscription (base64url).

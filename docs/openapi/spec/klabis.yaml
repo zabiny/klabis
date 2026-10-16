@@ -106,6 +106,8 @@ paths:
     $ref: './calendar.yaml#/paths/~1ical~1my-schedule.ics'
   /api/notifications:
     $ref: './notifications.yaml#/paths/~1api~1notifications'
+  /api/notifications/devices:
+    $ref: './notifications.yaml#/paths/~1api~1notifications~1devices'
   /api/membership-fee-tiers:
     $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers'
   /api/membership-fee-tiers/{id}:

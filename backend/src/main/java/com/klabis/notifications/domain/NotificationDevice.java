@@ -16,7 +16,7 @@ public class NotificationDevice extends KlabisAggregateRoot<NotificationDevice, 
     private final NotificationDeviceId id;
     private UserId owner;
     private final PushEndpoint endpoint;
-    private final PushKeys keys;
+    private PushKeys keys;
     private final String description;
     private Instant enabledAt;
 
@@ -53,6 +53,11 @@ public class NotificationDevice extends KlabisAggregateRoot<NotificationDevice, 
         }
         this.owner = newOwner;
         this.enabledAt = Instant.now();
+    }
+
+    public void updateKeys(PushKeys newKeys) {
+        Assert.notNull(newKeys, "Keys are required");
+        this.keys = newKeys;
     }
 
     public boolean isOwnedBy(UserId user) {

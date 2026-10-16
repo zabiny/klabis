@@ -14,9 +14,9 @@
 
 ## 3. Slice: enabling notifications on the current device
 
-- [ ] 3.1 Spec: `registerNotificationDevice` + `RegisterNotificationDeviceRequest` (endpoint `https` only, length limits) and the template on `NotificationSettings`; regenerate the bundle + frontend types
-- [ ] 3.2 Backend: register with an idempotent upsert by endpoint, reassignment from another user, and a description derived from `User-Agent`; domain tests for reassignment + `@WebMvcTest` for validation and the 201 `Location` (red → green)
-- [ ] 3.3 Frontend: the "Zapnout notifikace na tomto zařízení" click handler requests the permission, subscribes via `getServiceWorkerRegistration()` and submits the template; the current device is marked by endpoint. Vitest: no permission prompt on page load, the denied path shows the explanation, the granted path registers (red → green)
+- [x] 3.1 Spec: `registerNotificationDevice` + `RegisterNotificationDeviceRequest` (endpoint `https` only, length limits) and the template on `NotificationSettings`; regenerate the bundle + frontend types
+- [x] 3.2 Backend: register with an idempotent upsert by endpoint, reassignment from another user, and a description derived from `User-Agent`; domain tests for reassignment + `@WebMvcTest` for validation and the 201 `Location` (red → green)
+- [x] 3.3 Frontend: the "Zapnout notifikace na tomto zařízení" click handler requests the permission, subscribes via `getServiceWorkerRegistration()` and submits the template; the current device is marked by endpoint. Vitest: no permission prompt on page load, the denied path shows the explanation, the granted path registers (red → green)
 
 ## 4. Slice: test notification delivered and clickable
 

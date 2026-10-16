@@ -88,4 +88,27 @@ class NotificationDeviceTest {
             assertThat(device.getEnabledAt()).isEqualTo(originalEnabledAt);
         }
     }
+
+    @Nested
+    @DisplayName("updateKeys()")
+    class UpdateKeys {
+
+        @Test
+        @DisplayName("replaces the push keys")
+        void replacesKeys() {
+            NotificationDevice device = NotificationDeviceTestDataBuilder.aDevice().build();
+
+            device.updateKeys(new PushKeys("newP256dh", "newAuth"));
+
+            assertThat(device.getKeys()).isEqualTo(new PushKeys("newP256dh", "newAuth"));
+        }
+
+        @Test
+        @DisplayName("requires keys")
+        void requiresKeys() {
+            NotificationDevice device = NotificationDeviceTestDataBuilder.aDevice().build();
+
+            assertThatThrownBy(() -> device.updateKeys(null)).isInstanceOf(IllegalArgumentException.class);
+        }
+    }
 }

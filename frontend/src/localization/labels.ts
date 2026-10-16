@@ -549,6 +549,8 @@ export const labels = {
         currentDevice: 'Toto zařízení',
         enabledAt: 'Povoleno',
         enable: 'Povolit notifikace',
+        enableOnThisDevice: 'Zapnout notifikace na tomto zařízení',
+        enableFailed: 'Notifikace se nepodařilo zapnout. Zkuste to prosím znovu.',
         stateUnsupported: 'Tento prohlížeč nepodporuje push notifikace.',
         stateIosNeedsInstall: 'Na iPhonu a iPadu fungují notifikace jen u aplikace přidané na plochu. Otevřete v Safari nabídku Sdílet, zvolte „Přidat na plochu“ a aplikaci spusťte z plochy.',
         stateDenied: 'Notifikace jsou v tomto prohlížeči zablokované. Povolte je v nastavení prohlížeče u oprávnění webu a stránku načtěte znovu.',
