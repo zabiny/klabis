@@ -159,7 +159,6 @@ Feature-based profiles (composable independently):
 - **test** — for integration tests, isolated H2 database (auto-includes `h2` and `debug` via profile group). `BootstrapDataLoader` runs with only the necessary initializers (admin user, OAuth2 clients, event types).
 - **test-bootstrap** — test-only addition: activates `example-data` via profile group so tests can also bootstrap demo data (`@ActiveProfiles({"test", "test-bootstrap"})`)
 - **local-dev** — **local developer machines only**. Registers a second OAuth2 client `klabis-web-local` (confidential, `CLIENT_SECRET_POST`, PKCE required, `AUTHORIZATION_CODE` + `REFRESH_TOKEN` grants). This enables refresh-token-based silent token renewal when the frontend runs on `http://localhost:3000` (cross-origin from the backend on `:8443`). Spring AS refuses to issue refresh tokens to public clients, so this profile adds a confidential workaround client that stays out of production entirely. See `openspec/changes/enable-refresh-tokens-for-local-dev` for full rationale. **Never activate in any deployed environment.**
-- **pwa** — opt-in. Exposes `manifest.webmanifest` and `sw.js` so browsers offer the "Install" affordance and register the PWA service worker. Without this profile, `PwaDisabledController` returns 404 on those paths, hiding the install prompt and skipping SW registration. Off by default to avoid stale caches in dev/staging — enable explicitly on production.
 - **example-data** — seeds demo data (17 members incl. ZBM9000/ZBM9500, 4 training groups, 27 events, 3 membership fee tiers) via the profile-gated `BootstrapDataInitializer`s. Without it the database starts empty apart from always-bootstrapped data (admin user, OAuth2 clients, event types). The four initializers (`MembersDataBootstrap`, `TrainingGroupDataBootstrap`, `EventsDataBootstrap`, `MembershipFeeTiersDataBootstrap`) are gated `@Profile("example-data & !oris")`: **demo data stands down whenever `oris` is also active**, so ORIS-imported members never collide with sample registration numbers. Sample and ORIS-sourced data are alternatives, never both at once.
 
 Default active profiles: `h2,ssl,debug,metrics,oris,example-data` (zero-config local dev, HTTPS on 8443, H2 database). Because `oris` and `example-data` are both active here, the `!oris` gate above means **this default profile set now yields an empty database** — no demo members, training groups, events or fee tiers. `runLocalEnvironment.sh` adds `local-dev` and `example-data` automatically, but does not drop `oris`, so the same applies there.
@@ -168,7 +167,7 @@ Getting demo data back: drop `oris` from the active profiles, e.g. `SPRING_PROFI
 
 Clean database (ORIS sync scenario): `SPRING_PROFILES_ACTIVE=h2,ssl,debug,metrics,oris ./gradlew bootRun` — equivalent to the default profile set minus `example-data`, since `oris` alone already suppresses demo data.
 
-Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics,pwa` (do NOT include `example-data` in deployed environments)
+Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics` (do NOT include `example-data` in deployed environments)
 
 **Email testing with MailPit:**
 1. Start the container: `docker compose -f docker-compose.mailpit.yml up -d`

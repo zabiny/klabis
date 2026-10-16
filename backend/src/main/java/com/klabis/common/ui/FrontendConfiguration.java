@@ -23,9 +23,17 @@ public class FrontendConfiguration implements WebMvcConfigurer {
         // Service worker + PWA manifest drive update detection.
         // Must revalidate every request — otherwise the browser keeps an old SW
         // and registration.update() returns 304, blocking the new release from propagating.
-        registry.addResourceHandler("/sw.js", "/workbox-*.js", "/registerSW.js", "/manifest.webmanifest")
+        registry.addResourceHandler("/sw.js", "/manifest.webmanifest")
                 .addResourceLocations("classpath:/static/")
                 .setCacheControl(CacheControl.noCache().mustRevalidate());
+
+        // SPA shell and silent-renew page must be revalidated on every request.
+        // A cached shell can reference hashed assets removed by a deploy,
+        // which renders a blank page. PathPattern specificity makes these
+        // handlers win over the /** handler below.
+        registry.addResourceHandler("/index.html", "/silent-renew.html")
+                .addResourceLocations("classpath:/static/")
+                .setCacheControl(CacheControl.noCache());
 
         // Remaining static files (favicon, pwa-*.png, robots.txt, ...).
         // Short cache so a logo swap propagates within the hour without manual purge.

@@ -15,7 +15,7 @@ DTO↔domain conversion in `dto-mapping.md`.
 
 ## Spec-First: the Controller Implements a Generated `*Api` Interface
 
-The REST layer is **spec-first**. `docs/openapi/spec/*.yaml` is the source of truth; the build generates, per module, an `*Api` interface plus the request/response DTOs into `backend/build/generated/openapi/<module>/`. A controller's job is to `implements <X>Api` and supply method bodies — nothing else. The only controllers outside this rule are ones serving no spec'd endpoint at all (e.g. `PwaDisabledController`).
+The REST layer is **spec-first**. `docs/openapi/spec/*.yaml` is the source of truth; the build generates, per module, an `*Api` interface plus the request/response DTOs into `backend/build/generated/openapi/<module>/`. A controller's job is to `implements <X>Api` and supply method bodies — nothing else. The only controllers outside this rule are ones serving no spec'd endpoint at all (e.g. `FrontendController`, which forwards `/auth/callback` to the SPA shell).
 
 ```java
 @PrimaryAdapter

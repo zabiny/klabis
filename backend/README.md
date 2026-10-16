@@ -123,7 +123,7 @@ Starts with an empty database apart from admin user, OAuth2 clients, and event t
 **Production Mode (PostgreSQL):**
 
 ```bash
-SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics,pwa ./gradlew bootRun
+SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics ./gradlew bootRun
 ```
 
 Do NOT include the `example-data` profile in deployed environments — production should contain only real data.

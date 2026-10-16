@@ -19,7 +19,7 @@ flowchart LR
     end
 ```
 
-- **Frontend – service worker:** switch `vite-plugin-pwa` from `generateSW` to `injectManifest` with a hand-written `src/sw.ts`. It has no precache, no navigation route and no fetch handler. It calls `skipWaiting()` + `clients.claim()`. On activation it deletes leftover `workbox-precache-*` / runtime caches. If it found any, it reloads the open windows once to evict stale shells.
+- **Frontend – service worker:** switch `vite-plugin-pwa` from `generateSW` to `injectManifest` with a hand-written `src/sw.ts`. It has no precache, no navigation route and no fetch handler. It calls `skipWaiting()` + `clients.claim()` and carries no migration code for the old worker (clean browsers are assumed).
 - **Frontend – registration:** always register the service worker (scope `/`, `updateViaCache: 'none'`) from a small module the future notification feature can reuse. It uses `/sw.js` in production and the plugin's dev worker in development.
 - **Frontend – development mode:** enable `vite-plugin-pwa` `devOptions`, so the manifest, the service worker and (later) push can be tested on the Vite dev server (`localhost:3000`) with HMR.
 - **Frontend – stale bundle on resume:** an installed app that is resumed from the background keeps old JS in memory. When the app becomes visible again after being hidden for a while and a newer build is deployed, it reloads.
@@ -43,5 +43,5 @@ The change fixes delivery infrastructure: how fast a deployed release reaches th
 - `frontend/vite.config.ts`, new `frontend/src/sw.ts`, new SW registration and stale-bundle modules, `frontend/src/main.tsx`, `frontend/tsconfig*.json` (WebWorker lib for `sw.ts`).
 - `backend/.../common/ui/FrontendConfiguration.java`; `PwaDisabledController.java` deleted; the `pwa` profile disappears from deployment configuration.
 - Regenerated static resources in `backend/src/main/resources/static/` (`sw.js`; `workbox-*.js` no longer emitted).
-- One-time migration: existing clients with the old precaching worker get reloaded once after the new worker activates.
+- No migration code: a browser that still has the old precaching worker switches to the new one after one more navigation and keeps the old caches until its site data is cleared.
 - Developer docs: see `docs/pwa-offline-mode.md` for how to re-introduce precaching later.

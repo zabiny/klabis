@@ -16,7 +16,7 @@ The only bundle is `index-<hash>.js`. There are no dynamic imports, so chunk-loa
 **Goals:**
 - A deployed release reaches every client on its next navigation or launch. An installed app that is resumed from the background picks it up when it is resumed.
 - A registered, self-updating service worker exists on every PWA-enabled client, as the foundation for web push.
-- Existing stuck clients recover automatically, without user action.
+- Clean browsers are the target. A browser with the old precaching worker still recovers without user action after one extra navigation (D3).
 - Correct `Cache-Control` for every PWA-relevant resource.
 
 **Non-Goals:**
@@ -42,7 +42,7 @@ VitePWA({
 })
 ```
 
-`injectionPoint: undefined` skips `self.__WB_MANIFEST` injection, so no build asset list ends up in the worker. Verify this against the installed plugin version during implementation. `sw.ts` contains only `install` → `skipWaiting()`, `activate` → `clients.claim()` + D3 migration, and later the push handlers.
+`injectionPoint: undefined` skips `self.__WB_MANIFEST` injection, so no build asset list ends up in the worker. Verify this against the installed plugin version during implementation. `sw.ts` contains only `install` → `skipWaiting()`, `activate` → `clients.claim()`, and later the push handlers.
 
 *Alternatives:*
 - Keep `generateSW` with `globPatterns: []` and no `navigateFallback`. This still emits a Workbox runtime and cannot host push handlers without `importScripts`.
@@ -59,11 +59,11 @@ Without a fetch handler, every request goes straight to the network and HTTP cac
 
 It is called once from `main.tsx`, outside React, so StrictMode cannot double-register. Workbox-window is not needed because there is no prompt and no `SKIP_WAITING` message.
 
-### D3: One-time migration of clients with the old precaching worker
+### D3: No migration code for clients with the old precaching worker
 
-In `activate` the new worker deletes every cache whose name starts with `workbox-` or equals `klabis-fonts`. If at least one existed, it was replacing the old precaching worker, so it calls `client.navigate(client.url)` for all window clients. After that, the shells come from the network. The next activations find no such caches and do not reload.
+The worker carries no one-time cleanup: the change assumes clean browsers. A browser that still has the old precaching worker heals itself without extra code. Its next navigation is still served from the old precache, but the update check that follows fetches the new (byte-different) `sw.js`. The new worker replaces any waiting worker, `skipWaiting()` activates it and `clients.claim()` takes over. From the following navigation on, the shell comes from the network. The old `workbox-*` / `klabis-fonts` caches stay as unused storage until the site data is cleared.
 
-The stuck clients' waiting worker is replaced: the browser's update check fetches the new `sw.js` (byte-different), installs it as the new waiting/installing worker, and `skipWaiting()` activates it immediately.
+*Alternative:* delete those caches in `activate` and reload the windows once. This was rejected: it is code for a transition only, and its `workbox-` prefix match would also wipe the caches of a future precaching worker (`docs/pwa-offline-mode.md`).
 
 ### D4: Cache-Control policy
 
@@ -82,7 +82,7 @@ Implemented as an additional `addResourceHandler("/index.html", "/silent-renew.h
 The `pwa` profile (`PwaDisabledController`, which returned 404 for the manifest and worker when the profile was off) was added because the precaching worker made local development on `:8443` painful: after a rebuild, the old shell kept being served. With D1 the worker caches nothing, so that cause is gone. The profile was active in production, so removing it changes nothing there.
 
 - Delete `PwaDisabledController`. The manifest and `sw.js` are served in every profile with the D4 headers.
-- Local/test environments that never had the profile start registering the (inert) worker. Developers with an old precaching worker in their browser on `:8443` are migrated by D3, like production clients.
+- Local/test environments that never had the profile start registering the (inert) worker. Developers with an old precaching worker in their browser on `:8443` heal as described in D3, or clear the site data (DevTools → Application → Storage → Clear site data).
 - **Emergency rollback** without a profile: build with `vite-plugin-pwa` `selfDestroying: true`. It emits a `sw.js` that unregisters itself and clears caches. A 404 on `/sw.js` must never be used for this, because browsers keep the old registration.
 
 *Alternative:* keep the profile with a kill-switch worker instead of 404. This was rejected because it adds a runtime switch that no environment needs any more.
@@ -97,7 +97,7 @@ The `pwa` profile (`PwaDisabledController`, which returned 404 for the manifest 
 
 ## Risks / Trade-offs
 
-- **A one-time reload of open windows during migration (D3) can lose unsaved form input.** → It happens once per client, only for clients with the old worker, and usually on the navigation that triggered the update check.
+- **A browser with the old precaching worker shows the old release for one more navigation and keeps its old caches (D3).** → Acceptable: the change assumes clean browsers, and clearing the site data removes the leftovers.
 - **Without a fetch handler some browser might refuse install.** → Manual verification task. Fallback: add an empty `fetch` listener (no `respondWith`). Chromium logs a "no-op fetch handler" warning but installs.
 - **`no-cache` on HTML adds one conditional request per navigation.** → Negligible at the expected load of 10–20 concurrent users.
 - **D6 reload after ≥ 15 min hidden can still interrupt a half-filled form.** → Acceptable: the alternative is an old bundle talking to a new API.
@@ -106,7 +106,7 @@ The `pwa` profile (`PwaDisabledController`, which returned 404 for the manifest 
 ## Migration Plan
 
 1. Deploy backend + frontend together (single artifact).
-2. Clients with the old worker: the next navigation triggers an update check → the new worker activates → caches are deleted → the windows reload once → fresh shell.
+2. Clients with the old worker (not expected): the next navigation triggers an update check → the new worker activates → the navigation after that gets a fresh shell (D3).
 3. Remove `pwa` from the production `SPRING_PROFILES_ACTIVE` (harmless if left: the profile no longer exists in code).
 4. Rollback: redeploy the previous artifact (with the `pwa` profile re-added). The old `generateSW` worker would re-install with its precache; no data is at risk.
 

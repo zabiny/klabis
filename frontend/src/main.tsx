@@ -8,7 +8,14 @@ import {AuthProvider} from './contexts/AuthContext2';
 import {authConfig} from './api/klabisUserManager';
 import App from './App';
 import {HalRouteProvider} from './contexts/HalRouteContext';
+import {registerServiceWorker} from './pwa/registerServiceWorker';
+import {installStaleBundleReload} from './pwa/staleBundleReload';
 import './index.css';
+
+registerServiceWorker();
+if (import.meta.env.PROD) {
+    installStaleBundleReload();
+}
 
 // Create a client for react-query
 const queryClient = new QueryClient({
