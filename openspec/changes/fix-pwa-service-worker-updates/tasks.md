@@ -13,11 +13,11 @@
 
 ## 3. Frontend – registration and stale-bundle reload
 
-- [ ] 3.1 Unit tests for `src/pwa/registerServiceWorker.ts`: skips when `serviceWorker` is unsupported; registers `/sw.js` in PROD and `/dev-sw.js?dev-sw` in DEV, both with `{scope: '/', updateViaCache: 'none'}`; `getServiceWorkerRegistration()` resolves accordingly (red)
-- [ ] 3.2 Implement `registerServiceWorker.ts` (design D2) and call it once from `main.tsx` outside the React tree (green)
-- [ ] 3.3 Unit tests for `src/pwa/staleBundleReload.ts`: no fetch when hidden < 15 min; reload when the fetched `index.html` references a different `/assets/index-*.js`; no reload when equal or the fetch fails (red)
-- [ ] 3.4 Implement `staleBundleReload.ts` (design D6) and install it from `main.tsx` in PROD only (green)
-- [ ] 3.5 Run frontend tests, lint and `npm run build` (not just `tsc`)
+- [x] 3.1 Unit tests for `src/pwa/registerServiceWorker.ts`: skips when `serviceWorker` is unsupported; registers `/sw.js` in PROD and `/dev-sw.js?dev-sw` in DEV, both with `{scope: '/', updateViaCache: 'none'}`; `getServiceWorkerRegistration()` resolves accordingly (red)
+- [x] 3.2 Implement `registerServiceWorker.ts` (design D2) and call it once from `main.tsx` outside the React tree (green)
+- [x] 3.3 Unit tests for `src/pwa/staleBundleReload.ts`: no fetch when hidden < 15 min; reload when the fetched `index.html` references a different `/assets/index-*.js`; no reload when equal or the fetch fails (red)
+- [x] 3.4 Implement `staleBundleReload.ts` (design D6) and install it from `main.tsx` in PROD only (green)
+- [x] 3.5 Run frontend tests, lint and `npm run build` (not just `tsc`)
 
 ## 4. Publish resources
 
