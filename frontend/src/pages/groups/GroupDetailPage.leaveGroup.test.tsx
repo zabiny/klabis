@@ -22,7 +22,8 @@ vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
 }));
 
-vi.mock('../../contexts/authContext.ts', () => ({
+vi.mock('../../contexts/authContext.ts', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../contexts/authContext.ts')>()),
     useAuth: () => ({getUser: () => ({memberId: currentMemberId.value})}),
 }));
 

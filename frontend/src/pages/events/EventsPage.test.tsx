@@ -20,7 +20,8 @@ vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
 }));
 
-vi.mock('../../contexts/authContext', () => ({
+vi.mock('../../contexts/authContext', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../contexts/authContext')>()),
     useAuth: vi.fn().mockReturnValue({
         getUser: () => ({memberId: 'M001', firstName: 'Jana', lastName: 'Novak', id: 1, userName: 'ZBM9500'}),
         isAuthenticated: true,

@@ -50,6 +50,9 @@ function resolveUrl(url: string | URL): string {
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/api')) {
         return url;
     }
+    if (url === '/') {
+        return '/api';
+    }
     return `/api${url.startsWith('/') ? '' : '/'}${url}`;
 }
 

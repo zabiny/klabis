@@ -1,6 +1,7 @@
 import {render, renderHook, screen, waitFor} from '@testing-library/react';
 import {HalRouteProvider, HalSubresourceProvider} from './HalRouteContext';
 import {useHalRoute} from './halRouteContext';
+import {AuthContext} from './authContext';
 import {mockHalResponse} from '../__mocks__/halData';
 import {createDelayedMockResponse, createMockResponse} from '../__mocks__/mockFetch';
 import {BrowserRouter} from 'react-router-dom';
@@ -80,6 +81,43 @@ describe('useHalRoute Hook', () => {
             }).toThrow('useHalRoute must be used within a component wrapped by HalRouteProvider');
 
             consoleSpy.mockRestore();
+        });
+    });
+
+    describe('Authentication gating', () => {
+        const renderWithAuth = (isAuthenticated: boolean, isLoading: boolean) =>
+            renderHook(() => useHalRoute(), {
+                wrapper: ({children}: { children: React.ReactNode }) => (
+                    <QueryClientProvider client={queryClient}>
+                        <BrowserRouter>
+                            <AuthContext.Provider
+                                value={{isAuthenticated, isLoading, login: vi.fn(), logout: vi.fn(), getUser: () => null}}>
+                                <HalRouteProvider>{children}</HalRouteProvider>
+                            </AuthContext.Provider>
+                        </BrowserRouter>
+                    </QueryClientProvider>
+                ),
+            });
+
+        it('should not fetch while user is not authenticated', async () => {
+            renderWithAuth(false, false);
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        it('should not fetch while authentication is still loading', async () => {
+            renderWithAuth(false, true);
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        it('should fetch once user is authenticated', async () => {
+            mockFetchResponse(mockHalResponse());
+            renderWithAuth(true, false);
+
+            await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
         });
     });
 

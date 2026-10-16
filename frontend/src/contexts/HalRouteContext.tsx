@@ -7,6 +7,7 @@ import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
 import {useAuthorizedQuery} from "../hooks/useAuthorizedFetch.ts";
 import {toHref} from "../api/hateoas.ts";
 import {HalRouteContext, useHalRoute} from './halRouteContext';
+import {useIsAuthReady} from '../hooks/useIsAuthReady';
 
 interface HalRouteProviderProps {
     children: React.ReactNode;
@@ -47,9 +48,12 @@ function useHalRoutePath(routeLink?: HalResourceLinks): Path {
 export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, routeLink}) => {
     const navigate = useNavigate();
     const targetUrl = useHalRoutePath(routeLink);
+    const isAuthReady = useIsAuthReady();
 
-    // Skip HAL fetching for login route
-    const shouldFetch = !targetUrl.pathname.startsWith('/login') && !targetUrl.pathname.startsWith('/auth/callback');
+    // Skip HAL fetching for login route and until the user is authenticated
+    const shouldFetch = isAuthReady
+        && !targetUrl.pathname.startsWith('/login')
+        && !targetUrl.pathname.startsWith('/auth/callback');
 
     // React Query hook for fetching HAL data
     // Stale Time: 5 minutes - HAL navigation data rarely changes, but re-validate on mount

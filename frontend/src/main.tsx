@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom/client';
 import {BrowserRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools'
+// AuthProvider/authConfig must be imported before App: reordering triggers a circular import (klabisUserManager <-> hateoas)
+import {AuthProvider} from './contexts/AuthContext2';
+import {authConfig} from './api/klabisUserManager';
 import App from './App';
 import {HalRouteProvider} from './contexts/HalRouteContext';
 import './index.css';
@@ -21,9 +24,11 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <React.StrictMode>
         <QueryClientProvider client={queryClient}>
             <BrowserRouter>
-                <HalRouteProvider>
-                    <App/>
-                </HalRouteProvider>
+                <AuthProvider config={authConfig}>
+                    <HalRouteProvider>
+                        <App/>
+                    </HalRouteProvider>
+                </AuthProvider>
             </BrowserRouter>
 <ReactQueryDevtools initialIsOpen={false}/>
         </QueryClientProvider>

@@ -1,11 +1,9 @@
 import {useEffect} from 'react';
 import {Outlet, Route, Routes} from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
-import {AuthProvider} from './contexts/AuthContext2';
 import {useAuth} from './contexts/authContext';
 import Layout from './pages/Layout';
 import LoginPage from './pages/LoginPage';
-import {authConfig} from "./api/klabisUserManager.ts";
 import {ThemeProvider} from "./theme/ThemeContext.tsx";
 import {AdminModeProvider} from "./contexts/AdminModeContext.tsx";
 import {useAdminMode} from "./contexts/adminModeContext.ts";
@@ -78,60 +76,58 @@ function App() {
     return (
         <ErrorBoundary FallbackComponent={ErrorFallback}>
             <TokenRenewalOverlay/>
-            <AuthProvider config={authConfig}>
-                <ThemeProvider>
-                    <AdminModeProvider>
-                        <Routes>
-                            {/* Public routes - no authentication required */}
-                            <Route path="/password-setup" element={<PasswordSetupPage />} />
-                            <Route path="/password-setup/request" element={<PasswordExpiredPage />} />
-                            <Route path="/login" element={<LoginPage/>}/>
+            <ThemeProvider>
+                <AdminModeProvider>
+                    <Routes>
+                        {/* Public routes - no authentication required */}
+                        <Route path="/password-setup" element={<PasswordSetupPage />} />
+                        <Route path="/password-setup/request" element={<PasswordExpiredPage />} />
+                        <Route path="/login" element={<LoginPage/>}/>
 
-                            {/* Protected routes - authentication required */}
-                            <Route path="/" element={
-                                <ProtectedRoute>
-                                    <Layout/>
-                                </ProtectedRoute>
-                            }>
-                                {/* Vždy povolené trasy */}
-                                <Route path="/sandplace" element={<SandplacePage/>}/>
-                                <Route path="/admin" element={<AdminDashboardPage/>}/>
+                        {/* Protected routes - authentication required */}
+                        <Route path="/" element={
+                            <ProtectedRoute>
+                                <Layout/>
+                            </ProtectedRoute>
+                        }>
+                            {/* Vždy povolené trasy */}
+                            <Route path="/sandplace" element={<SandplacePage/>}/>
+                            <Route path="/admin" element={<AdminDashboardPage/>}/>
 
-                                {/* Trasy zakázané v admin módu */}
-                                <Route element={<AdminModeAwareRoute allowedInAdminMode={false} />}>
-                                    <Route index path="/" element={<HomePage/>}/>
-                                    <Route path="/index.html" element={<HomePage/>}/>
-                                    <Route path="/calendar-items" element={<CalendarPage/>}/>
-                                    <Route path="/members/:memberId/account" element={<MemberAccountManagePage/>}/>
-                                    <Route path="/members" element={<MembersPage/>}/>
-                                    <Route path="/members/:id" element={<MemberDetailPage/>}/>
-                                    <Route path="/members/:memberId/fee-choice" element={<MemberFeeChoicePage/>}/>
-                                    <Route path="/members/:memberId/fee-choice/:year" element={<MemberFeeChoicePage/>}/>
-                                    <Route path="/events" element={<EventsPage/>}/>
-                                    <Route path="/events/:id" element={<EventDetailPage/>}/>
-                                    <Route path="/events/:id/accommodation-list" element={<AccommodationListPage/>}/>
-                                    <Route path="/groups" element={<GroupsPage/>}/>
-                                    <Route path="/groups/:id" element={<GroupDetailPage/>}/>
-                                    <Route path="/training-groups" element={<TrainingGroupsPage/>}/>
-                                    <Route path="/training-groups/:id" element={<TrainingGroupDetailPage/>}/>
-                                    <Route path="/legal-guardians/:id" element={<LegalGuardianDetailPage/>}/>
-                                    <Route path="/legal-guardian-groups" element={<LegalGuardianGroupsPage/>}/>
-                                    <Route path="/legal-guardian-groups/:id" element={<LegalGuardianGroupDetailPage/>}/>
-                                    <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
-                                    <Route path="/event-types" element={<EventTypesPage/>}/>
-                                    <Route path="/membership-fee-tiers" element={<MembershipFeesAdminPage/>}/>
-                                    <Route path="/membership-fee-tiers/:id" element={<MembershipFeeTierDetailPage/>}/>
-                                    <Route path="/fee-selection-campaigns/:id" element={<FeeSelectionCampaignDetailPage/>}/>
-                                    <Route path="/membership-fee-groups/:id" element={<MembershipFeeGroupDetailPage/>}/>
-                                </Route>
-
-                                {/* Catch-all - vždy povoleno (zachytí i ignorované routes v admin módu) */}
-                                <Route path="*" element={<GenericHalPage/>}/>
+                            {/* Trasy zakázané v admin módu */}
+                            <Route element={<AdminModeAwareRoute allowedInAdminMode={false} />}>
+                                <Route index path="/" element={<HomePage/>}/>
+                                <Route path="/index.html" element={<HomePage/>}/>
+                                <Route path="/calendar-items" element={<CalendarPage/>}/>
+                                <Route path="/members/:memberId/account" element={<MemberAccountManagePage/>}/>
+                                <Route path="/members" element={<MembersPage/>}/>
+                                <Route path="/members/:id" element={<MemberDetailPage/>}/>
+                                <Route path="/members/:memberId/fee-choice" element={<MemberFeeChoicePage/>}/>
+                                <Route path="/members/:memberId/fee-choice/:year" element={<MemberFeeChoicePage/>}/>
+                                <Route path="/events" element={<EventsPage/>}/>
+                                <Route path="/events/:id" element={<EventDetailPage/>}/>
+                                <Route path="/events/:id/accommodation-list" element={<AccommodationListPage/>}/>
+                                <Route path="/groups" element={<GroupsPage/>}/>
+                                <Route path="/groups/:id" element={<GroupDetailPage/>}/>
+                                <Route path="/training-groups" element={<TrainingGroupsPage/>}/>
+                                <Route path="/training-groups/:id" element={<TrainingGroupDetailPage/>}/>
+                                <Route path="/legal-guardians/:id" element={<LegalGuardianDetailPage/>}/>
+                                <Route path="/legal-guardian-groups" element={<LegalGuardianGroupsPage/>}/>
+                                <Route path="/legal-guardian-groups/:id" element={<LegalGuardianGroupDetailPage/>}/>
+                                <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
+                                <Route path="/event-types" element={<EventTypesPage/>}/>
+                                <Route path="/membership-fee-tiers" element={<MembershipFeesAdminPage/>}/>
+                                <Route path="/membership-fee-tiers/:id" element={<MembershipFeeTierDetailPage/>}/>
+                                <Route path="/fee-selection-campaigns/:id" element={<FeeSelectionCampaignDetailPage/>}/>
+                                <Route path="/membership-fee-groups/:id" element={<MembershipFeeGroupDetailPage/>}/>
                             </Route>
-                        </Routes>
-                    </AdminModeProvider>
-                </ThemeProvider>
-            </AuthProvider>
+
+                            {/* Catch-all - vždy povoleno (zachytí i ignorované routes v admin módu) */}
+                            <Route path="*" element={<GenericHalPage/>}/>
+                        </Route>
+                    </Routes>
+                </AdminModeProvider>
+            </ThemeProvider>
         </ErrorBoundary>
     );
 }
