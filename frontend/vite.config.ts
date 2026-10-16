@@ -10,10 +10,16 @@ export default defineConfig({
         react(),
         devtoolsJson(),
         VitePWA({
-            registerType: 'autoUpdate',
+            strategies: 'injectManifest',
+            srcDir: 'src',
+            filename: 'sw.ts',
             injectRegister: false,
+            injectManifest: {
+                injectionPoint: undefined,
+            },
             includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
             manifest: {
+                id: '/',
                 name: 'Klabis - Členská sekce',
                 short_name: 'Klabis',
                 description: 'Členská sekce klubu orientačního běhu',
@@ -43,42 +49,10 @@ export default defineConfig({
                     },
                 ],
             },
-            workbox: {
-                globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2}'],
-                // Never let the SW serve API, auth, or backend-rendered pages
-                // (Swagger UI, OpenAPI doc, developer manual, actuator, h2-console)
-                // from the SPA cache. The NavigationRoute scope is the entire origin,
-                // so any path the SPA does not own must be explicitly excluded.
-                navigateFallback: '/index.html',
-                navigateFallbackDenylist: [
-                    /^\/api\//,
-                    /^\/oauth2\//,
-                    /^\/login/,
-                    /^\/logout/,
-                    /^\/\.well-known\//,
-                    /^\/silent-renew\.html$/,
-                    /^\/swagger-ui(\/|\.html$)/,
-                    /^\/v3\/api-docs/,
-                    /^\/docs\//,
-                    /^\/actuator\//,
-                    /^\/h2-console\//,
-                    /^\/error/,
-                ],
-                runtimeCaching: [
-                    {
-                        // Allow opaque/CORS responses for icons & fonts to be cached
-                        urlPattern: ({request}) => request.destination === 'font',
-                        handler: 'CacheFirst',
-                        options: {
-                            cacheName: 'klabis-fonts',
-                            expiration: {maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365},
-                        },
-                    },
-                ],
-            },
             devOptions: {
-                // Enable to test PWA install prompt on `npm run dev`
-                enabled: false,
+                // Serve the manifest and the worker on the Vite dev server
+                // (localhost:3000) so PWA install and push can be tested with HMR.
+                enabled: true,
             },
         }),
     ],

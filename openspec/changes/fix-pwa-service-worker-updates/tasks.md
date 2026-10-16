@@ -7,9 +7,9 @@
 
 ## 2. Frontend – service worker
 
-- [ ] 2.1 Create `src/sw.ts` (design D1 + D3): `install` → `skipWaiting()`, `activate` → delete `workbox-*` / `klabis-fonts` caches, `clients.claim()`, navigate window clients only if a legacy cache was found; type it via `/// <reference lib="webworker" />`
-- [ ] 2.2 Switch `vite.config.ts` to `strategies: 'injectManifest'` (`srcDir: 'src'`, `filename: 'sw.ts'`, `injectManifest.injectionPoint: undefined`); remove the `workbox` block and `registerType`; add `devOptions: {enabled: true}` (design D7) and `manifest.id: '/'`
-- [ ] 2.3 `npm run build` and confirm `dist/sw.js` contains no precache list, no `NavigationRoute`, and no `workbox-*.js` is emitted; `dist/manifest.webmanifest` contains `"id":"/"`
+- [x] 2.1 Create `src/sw.ts` (design D1 + D3): `install` → `skipWaiting()`, `activate` → delete `workbox-*` / `klabis-fonts` caches, `clients.claim()`, navigate window clients only if a legacy cache was found; type it via `/// <reference lib="webworker" />`
+- [x] 2.2 Switch `vite.config.ts` to `strategies: 'injectManifest'` (`srcDir: 'src'`, `filename: 'sw.ts'`, `injectManifest.injectionPoint: undefined`); remove the `workbox` block and `registerType`; add `devOptions: {enabled: true}` (design D7) and `manifest.id: '/'`
+- [x] 2.3 `npm run build` and confirm `dist/sw.js` contains no precache list, no `NavigationRoute`, and no `workbox-*.js` is emitted; `dist/manifest.webmanifest` contains `"id":"/"`
 
 ## 3. Frontend – registration and stale-bundle reload
 
