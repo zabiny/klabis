@@ -116,7 +116,7 @@ klabis:
       subject:     ${KLABIS_VAPID_SUBJECT:mailto:admin@example.org}
 ```
 
-The feature is on only when both keys are set (`@ConditionalOnProperty`-style condition on the sender and the root link processor). With no keys, `PushNotifications` is a no-op bean, so callers never need to check, and the home page entry is hidden. Keys are generated once (e.g. `npx web-push generate-vapid-keys`). Rotating them invalidates all subscriptions. Local dev: `runLocalEnvironment.sh` sets a fixed dev key pair. The PWA must also be enabled (`pwa` profile); otherwise no service worker exists and the page shows "unsupported".
+The feature is on only when both keys are set (`@ConditionalOnProperty`-style condition on the sender and the root link processor). With no keys, `PushNotifications` is a no-op bean, so callers never need to check, and the home page entry is hidden. Keys are generated once (e.g. `npx web-push generate-vapid-keys`). Rotating them invalidates all subscriptions. Local dev: `runLocalEnvironment.sh` sets a fixed dev key pair. Thanks to the PWA dev mode (`devOptions`, see `fix-pwa-service-worker-updates` D7), push works on `localhost:3000` too.
 
 ### D5: Frontend
 
@@ -205,7 +205,7 @@ HAL:
 ## Migration Plan
 
 1. Merge after `fix-pwa-service-worker-updates`.
-2. Generate the production VAPID key pair, store it as secrets (`KLABIS_VAPID_*`), make sure the `pwa` profile is active.
+2. Generate the production VAPID key pair, store it as secrets (`KLABIS_VAPID_*`).
 3. Deploy. Without the keys the feature stays hidden, so the deploy is safe before the secrets exist.
 4. Rollback: remove the keys (feature hidden) or redeploy the previous version. The table can stay.
 

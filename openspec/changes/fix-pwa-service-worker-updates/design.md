@@ -6,7 +6,7 @@ The PWA was introduced in `3954c610` with `vite-plugin-pwa` (`generateSW`, preca
 |---|---|
 | New visitor | No SW is ever registered (manifest only). |
 | Visitor with SW from Apr–Jun builds | Old SW serves precached `index.html` on every navigation. A new SW installs and then waits forever, because nothing sends `SKIP_WAITING` and a reload does not activate a waiting worker. It activates only after all windows are closed, which rarely happens for an installed app on mobile. |
-| `pwa` profile off | `/sw.js` returns 404. A failed update check keeps the old registration alive, so stale clients stay stale. |
+| `pwa` profile off (local/test only) | `/sw.js` returns 404. A failed update check keeps the old registration alive, so stale clients stay stale. |
 | Any browser | `index.html` has `max-age=3600, public`. After a deploy CI deletes old hashed assets, so a cached shell can load 404 scripts and render a blank page. |
 
 The only bundle is `index-<hash>.js`. There are no dynamic imports, so chunk-load failures beyond the shell itself are not a concern.
@@ -37,6 +37,7 @@ VitePWA({
   filename: 'sw.ts',
   injectRegister: false,
   injectManifest: { injectionPoint: undefined },
+  devOptions: { enabled: true },              // D7
   manifest: { id: '/', /* existing fields */ },
 })
 ```
@@ -52,9 +53,8 @@ Without a fetch handler, every request goes straight to the network and HTTP cac
 ### D2: Own registration module instead of `virtual:pwa-register`
 
 `src/pwa/registerServiceWorker.ts`:
-- runs only when `import.meta.env.PROD` is true,
-- probes `HEAD /manifest.webmanifest` and skips registration on non-OK (`pwa` profile off),
-- calls `navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' })`,
+- skips registration when `serviceWorker` is unsupported,
+- calls `navigator.serviceWorker.register(url, { scope: '/', updateViaCache: 'none' })` with `url = import.meta.env.DEV ? '/dev-sw.js?dev-sw' : '/sw.js'`. The dev URL is where `vite-plugin-pwa` serves the worker when `devOptions.enabled` (D7). `sw.ts` has no `import` statements, so the default `classic` type works in both modes and in non-Chromium browsers.
 - exposes a `getServiceWorkerRegistration(): Promise<ServiceWorkerRegistration | null>` that the notification change will reuse.
 
 It is called once from `main.tsx`, outside React, so StrictMode cannot double-register. Workbox-window is not needed because there is no prompt and no `SKIP_WAITING` message.
@@ -77,17 +77,19 @@ The stuck clients' waiting worker is replaced: the browser's update check fetche
 
 Implemented as an additional `addResourceHandler("/index.html", "/silent-renew.html")` with `CacheControl.noCache()` before the `/**` handler. `PathPattern` specificity makes it win over `/**`. Forwards go through the same handler mapping, so they inherit the header. `no-cache` keeps ETag/Last-Modified revalidation, so the cost is a 304 per navigation.
 
-### D5: Kill-switch worker when the `pwa` profile is off
+### D5: Remove the `pwa` profile
 
-`PwaDisabledController` keeps returning 404 for `/manifest.webmanifest`, so the app is not installable. For `/sw.js` it returns a static script (`classpath:/pwa/sw-disabled.js`, `Content-Type: text/javascript`, `Cache-Control: no-cache`). The script:
-1. calls `skipWaiting()`,
-2. deletes the caches named in D3,
-3. calls `registration.unregister()`,
-4. navigates the window clients.
+The `pwa` profile (`PwaDisabledController`, which returned 404 for the manifest and worker when the profile was off) was added because the precaching worker made local development on `:8443` painful: after a rebuild, the old shell kept being served. With D1 the worker caches nothing, so that cause is gone. The profile was active in production, so removing it changes nothing there.
 
-The frontend never registers it because the D2 manifest probe fails. Browsers only receive it through the update check of an already-installed worker. The `/workbox-{hash}.js` mapping is removed.
+- Delete `PwaDisabledController`. The manifest and `sw.js` are served in every profile with the D4 headers.
+- Local/test environments that never had the profile start registering the (inert) worker. Developers with an old precaching worker in their browser on `:8443` are migrated by D3, like production clients.
+- **Emergency rollback** without a profile: build with `vite-plugin-pwa` `selfDestroying: true`. It emits a `sw.js` that unregisters itself and clears caches. A 404 on `/sw.js` must never be used for this, because browsers keep the old registration.
 
-*Alternative:* drop the `pwa` profile and always enable PWA. This is out of scope here (see Open Questions).
+*Alternative:* keep the profile with a kill-switch worker instead of 404. This was rejected because it adds a runtime switch that no environment needs any more.
+
+### D7: Development mode
+
+`devOptions: { enabled: true }` serves the manifest and the worker (compiled from `src/sw.ts`) on the Vite dev server at `/dev-sw.js?dev-sw`. Because the worker has no fetch handler, it cannot interfere with HMR or the `/api` proxy. `localhost` is a secure context, so permission and push subscription also work there, which the notification change relies on. Changing `sw.ts` triggers a full page reload (plugin behavior), and HMR inside the worker is not supported.
 
 ### D6: Reload a stale bundle when an installed app is resumed
 
@@ -95,7 +97,7 @@ The frontend never registers it because the D2 manifest probe fails. Browsers on
 
 ## Risks / Trade-offs
 
-- **A one-time reload of open windows during migration (D3/D5) can lose unsaved form input.** → It happens once per client, only for clients with the old worker, and usually on the navigation that triggered the update check.
+- **A one-time reload of open windows during migration (D3) can lose unsaved form input.** → It happens once per client, only for clients with the old worker, and usually on the navigation that triggered the update check.
 - **Without a fetch handler some browser might refuse install.** → Manual verification task. Fallback: add an empty `fetch` listener (no `respondWith`). Chromium logs a "no-op fetch handler" warning but installs.
 - **`no-cache` on HTML adds one conditional request per navigation.** → Negligible at the expected load of 10–20 concurrent users.
 - **D6 reload after ≥ 15 min hidden can still interrupt a half-filled form.** → Acceptable: the alternative is an old bundle talking to a new API.
@@ -105,9 +107,9 @@ The frontend never registers it because the D2 manifest probe fails. Browsers on
 
 1. Deploy backend + frontend together (single artifact).
 2. Clients with the old worker: the next navigation triggers an update check → the new worker activates → caches are deleted → the windows reload once → fresh shell.
-3. Rollback: redeploy the previous artifact. The old `generateSW` worker would re-install with its precache; no data is at risk.
+3. Remove `pwa` from the production `SPRING_PROFILES_ACTIVE` (harmless if left: the profile no longer exists in code).
+4. Rollback: redeploy the previous artifact (with the `pwa` profile re-added). The old `generateSW` worker would re-install with its precache; no data is at risk.
 
 ## Open Questions
 
-- Keep the `pwa` Spring profile as a deployment switch, or enable PWA unconditionally? Default in this change: **keep**. Production must have `pwa` active for installation, so verify the production config.
 - Keep `orientation: 'portrait'` in the manifest? It locks rotation on tablets. Unchanged in this change.

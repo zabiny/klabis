@@ -20,11 +20,12 @@ flowchart LR
 ```
 
 - **Frontend – service worker:** switch `vite-plugin-pwa` from `generateSW` to `injectManifest` with a hand-written `src/sw.ts`. It has no precache, no navigation route and no fetch handler. It calls `skipWaiting()` + `clients.claim()`. On activation it deletes leftover `workbox-precache-*` / runtime caches. If it found any, it reloads the open windows once to evict stale shells.
-- **Frontend – registration:** always register `/sw.js` (scope `/`, `updateViaCache: 'none'`) when the PWA manifest is available, from a small module the future notification feature can reuse.
+- **Frontend – registration:** always register the service worker (scope `/`, `updateViaCache: 'none'`) from a small module the future notification feature can reuse. It uses `/sw.js` in production and the plugin's dev worker in development.
+- **Frontend – development mode:** enable `vite-plugin-pwa` `devOptions`, so the manifest, the service worker and (later) push can be tested on the Vite dev server (`localhost:3000`) with HMR.
 - **Frontend – stale bundle on resume:** an installed app that is resumed from the background keeps old JS in memory. When the app becomes visible again after being hidden for a while and a newer build is deployed, it reloads.
 - **Frontend – manifest:** add `id: '/'`. Drop the now-obsolete `workbox` options (`globPatterns`, `navigateFallback*`, `runtimeCaching`).
 - **Backend – cache headers:** serve `index.html` (direct, `/`, SPA forwards, `/auth/callback`) and `silent-renew.html` with `Cache-Control: no-cache`. The existing policies for `/assets/**`, `sw.js` and the manifest stay.
-- **Backend – PWA disabled profile:** when the `pwa` profile is off, `/sw.js` serves a kill-switch service worker instead of 404. A 404 leaves already-installed workers alive. The manifest keeps returning 404.
+- **Backend – remove the `pwa` profile:** delete `PwaDisabledController` and serve the manifest and `sw.js` in every profile. The profile only existed to avoid a poor local-development experience caused by the precaching worker, and removing the precache removes that cause.
 
 ## No Behavior Change Justification
 
@@ -35,12 +36,12 @@ flowchart LR
 - No other spec mentions PWA installation, service workers or offline behavior (grep for `pwa|service worker|offline|install`).
 
 **Why no spec update is needed:**
-The change fixes delivery infrastructure: how fast a deployed release reaches the browser. Features, API contracts, authorization and UI stay the same. The app remains installable under the `pwa` profile and not installable without it. Offline support was never specified and is not offered today in any working form.
+The change fixes delivery infrastructure: how fast a deployed release reaches the browser. Features, API contracts, authorization and UI stay the same. The app remains installable in production, where the `pwa` profile was already active. Removing the profile only changes local and test environments. Offline support was never specified and is not offered today in any working form.
 
 ## Impact
 
 - `frontend/vite.config.ts`, new `frontend/src/sw.ts`, new SW registration and stale-bundle modules, `frontend/src/main.tsx`, `frontend/tsconfig*.json` (WebWorker lib for `sw.ts`).
-- `backend/.../common/ui/FrontendConfiguration.java`, `PwaDisabledController.java`, new kill-switch script resource.
+- `backend/.../common/ui/FrontendConfiguration.java`; `PwaDisabledController.java` deleted; the `pwa` profile disappears from deployment configuration.
 - Regenerated static resources in `backend/src/main/resources/static/` (`sw.js`; `workbox-*.js` no longer emitted).
 - One-time migration: existing clients with the old precaching worker get reloaded once after the new worker activates.
 - Developer docs: see `docs/pwa-offline-mode.md` for how to re-introduce precaching later.

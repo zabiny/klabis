@@ -9,7 +9,8 @@ Po změně `fix-pwa-service-worker-updates` (viz `openspec/changes/fix-pwa-servi
 - Service worker `frontend/src/sw.ts` (strategie `injectManifest`) **nemá precache ani fetch handler**. Všechny požadavky jdou do sítě a čerstvost řídí jen HTTP cache.
 - `index.html` a `silent-renew.html` se posílají s `Cache-Control: no-cache`, hashované `/assets/**` jako `immutable` na 1 rok, `sw.js` a manifest jako `no-cache`.
 - SW volá `skipWaiting()` + `clients.claim()`. To je bezpečné jen proto, že nic necachuje.
-- Bez profilu `pwa` backend na `/sw.js` vrací kill-switch SW, který odregistruje SW a smaže cache.
+- Spring profil `pwa` už neexistuje. Manifest a `sw.js` se servírují vždy.
+- Dev režim (`devOptions.enabled: true`) servíruje SW na Vite dev serveru (`localhost:3000`) z `/dev-sw.js?dev-sw`.
 - Případný SW pro web push (`add-web-push-notifications`) obsahuje handlery `push` a `notificationclick`.
 
 Offline režim tento model zásadně mění: jakmile SW začne servírovat aplikaci z cache, **řídí aktualizace SW, ne HTTP hlavičky**.
@@ -90,6 +91,7 @@ registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), {
 ```
 
 - Ve `vite.config.ts` odstranit `injectManifest.injectionPoint: undefined` a nastavit `globPatterns` (js, css, html, ikony, fonty).
+- **Dev režim:** v dev režimu plugin precachuje jen `index.html` (`devOptions.navigateFallback`). `NavigationRoute` proto v DEV potřebuje `allowlist: [/^\/$/]`, jinak SW zachytí navigace a rozbije HMR. Alternativou je `devOptions.enabled: false` po dobu vývoje offline režimu.
 - **Denylist musí odpovídat `SpaFallbackFilter.EXCLUDED_PREFIXES` / `EXCLUDED_EXACT`** na backendu. Doporučení: test, který oba seznamy porovná, nebo jejich generování z jednoho zdroje. Jinak SW servíruje SPA tam, kde má odpovědět backend (Swagger, iCal feed, manuál).
 - `/auth/callback` je SPA routa. Shell z cache je v pořádku, ale výměna kódu za token vyžaduje síť.
 - Přidat UI stav „Jste offline“: `navigator.onLine` + události `online` / `offline` a chybové stavy dotazů. Mutace (HAL šablony) offline zakázat.
@@ -135,7 +137,7 @@ Pokud se přesto zvolí SW runtime caching `/api`:
 
 ### 7. Rollback
 
-- Kill-switch zůstává k dispozici: vypnutí profilu `pwa` servíruje SW, který se odregistruje a smaže cache.
+- Nouzový kill-switch: build s `vite-plugin-pwa` `selfDestroying: true` vygeneruje `sw.js`, který se odregistruje a smaže cache. Nikdy k tomu nepoužívat 404 na `/sw.js`.
 - Návrat na verzi bez precache funguje automaticky: nový `sw.js` při aktivaci smaže `workbox-precache-*` cache a jednorázově obnoví okna (logika z `fix-pwa-service-worker-updates`, D3). Při úpravách SW ji nemazat, dokud může existovat klient se starou verzí.
 
 ## Známé pasti (poučení z historie)
@@ -144,7 +146,8 @@ Pokud se přesto zvolí SW runtime caching `/api`:
 |---|---|---|
 | `registerType: 'autoUpdate'` + `injectRegister: false` | plugin nenastaví `skipWaiting` / `clientsClaim`, nový SW věčně čeká | vlastní registrace a explicitní update flow |
 | SW nikdo neregistruje (smazaný `useRegisterSW`) | noví uživatelé SW nemají, staří nemají kontrolu aktualizací | registrace na jednom místě (`registerServiceWorker.ts`) s testem |
-| `/sw.js` vrací 404 | prohlížeč registraci **ponechá** a starý SW dál servíruje starou verzi | kill-switch SW, nikdy 404 |
+| `/sw.js` vrací 404 | prohlížeč registraci **ponechá** a starý SW dál servíruje starou verzi | kill-switch SW (`selfDestroying: true`), nikdy 404 |
+| precache v dev režimu bez `allowlist` | SW zachytává navigace na `localhost:3000`, rozbije HMR | `NavigationRoute` `allowlist: [/^\/$/]` v DEV |
 | Reload stránky | **neaktivuje** čekající SW, ten se aktivuje až po zavření všech oken | `SKIP_WAITING` + `controllerchange` → reload |
 | `index.html` s `max-age` | starý shell odkazuje na smazané assety, výsledkem je bílá stránka | `no-cache` na HTML |
 | `skipWaiting` + precache + lazy chunky | stará stránka a nový SW, chybějící chunky | čekající SW + řízený reload, ponechat staré assety |
