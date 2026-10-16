@@ -1,21 +1,30 @@
 package com.klabis.common.ui;
 
 import com.klabis.TestApplicationConfiguration;
+import jakarta.servlet.ServletContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockServletContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.io.IOException;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -37,6 +46,19 @@ class WebContentRoutingIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ServletContext servletContext;
+
+    @BeforeEach
+    void registerContainerMimeMappings() {
+        // The embedded container maps .webmanifest -> application/manifest+json
+        // through MvcConfiguration.pwaMimeMappingsCustomizer. MockMvc uses a MockServletContext
+        // that does not receive those container mappings, so mirror it here.
+        if (servletContext instanceof MockServletContext mockServletContext) {
+            mockServletContext.addMimeType("webmanifest", MediaType.parseMediaType("application/manifest+json"));
+        }
+    }
 
     @Test
     @DisplayName("authenticated /docs/index.html serves the developer manual, not the SPA shell")
@@ -178,5 +200,88 @@ class WebContentRoutingIntegrationTest {
 
         assertThat(forwarded).isNotEqualTo("/index.html");
         assertThat(body).doesNotContain("<div id=\"root\">");
+    }
+
+    @Test
+    @DisplayName("GET /index.html is served with Cache-Control: no-cache")
+    void indexHtmlHasNoCache() throws Exception {
+        mockMvc.perform(get("/index.html").accept(MediaType.TEXT_HTML))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-cache")));
+    }
+
+    @Test
+    @DisplayName("GET / (SPA welcome page) is served with Cache-Control: no-cache")
+    void rootHasNoCache() throws Exception {
+        mockMvc.perform(get("/").accept(MediaType.TEXT_HTML))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-cache")));
+    }
+
+    @Test
+    @DisplayName("GET an SPA route is served with Cache-Control: no-cache")
+    void spaRouteHasNoCache() throws Exception {
+        mockMvc.perform(get("/members").accept(MediaType.TEXT_HTML))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-cache")));
+    }
+
+    @Test
+    @DisplayName("GET /auth/callback is served with Cache-Control: no-cache")
+    void authCallbackHasNoCache() throws Exception {
+        mockMvc.perform(get("/auth/callback").accept(MediaType.TEXT_HTML))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-cache")));
+    }
+
+    @Test
+    @DisplayName("GET /silent-renew.html is served with Cache-Control: no-cache")
+    void silentRenewHasNoCache() throws Exception {
+        mockMvc.perform(get("/silent-renew.html").accept(MediaType.TEXT_HTML))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-cache")));
+    }
+
+    @Test
+    @DisplayName("hashed /assets/** keep the immutable one-year policy")
+    void hashedAssetsAreImmutable() throws Exception {
+        mockMvc.perform(get(firstAssetPath()))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("max-age=31536000")))
+                .andExpect(header().string("Cache-Control", containsString("immutable")));
+    }
+
+    @Test
+    @DisplayName("non-hashed static files keep the one-hour public policy")
+    void plainStaticFilesKeepOneHourCache() throws Exception {
+        mockMvc.perform(get("/favicon.svg"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("max-age=3600")));
+    }
+
+    @Test
+    @DisplayName("manifest is served in every profile with application/manifest+json and no-cache")
+    void manifestServedWithoutPwaProfile() throws Exception {
+        mockMvc.perform(get("/manifest.webmanifest"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.parseMediaType("application/manifest+json")))
+                .andExpect(header().string("Cache-Control", containsString("no-cache")))
+                .andExpect(header().string("Cache-Control", containsString("must-revalidate")));
+    }
+
+    @Test
+    @DisplayName("service worker is served in every profile with no-cache, must-revalidate")
+    void serviceWorkerServedWithoutPwaProfile() throws Exception {
+        mockMvc.perform(get("/sw.js"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-cache")))
+                .andExpect(header().string("Cache-Control", containsString("must-revalidate")));
+    }
+
+    private static String firstAssetPath() throws IOException {
+        Resource[] resources = new PathMatchingResourcePatternResolver()
+                .getResources("classpath:/static/assets/*.js");
+        assertThat(resources).as("at least one hashed JS asset must be published").isNotEmpty();
+        return "/assets/" + resources[0].getFilename();
     }
 }

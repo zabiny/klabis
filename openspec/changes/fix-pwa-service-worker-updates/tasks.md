@@ -1,9 +1,9 @@
 ## 1. Backend – cache headers and kill-switch
 
-- [ ] 1.1 Extend `WebContentRoutingIntegrationTest` (or a new test in `common.ui`) with header assertions: `Cache-Control: no-cache` for `/`, `/index.html`, an SPA route (e.g. `/members`), `/auth/callback` and `/silent-renew.html`; the `/assets/**` immutable policy and the 1h icon policy stay unchanged (red)
-- [ ] 1.2 Add the `/index.html`, `/silent-renew.html` resource handler with `CacheControl.noCache()` in `FrontendConfiguration`; drop the `/workbox-*.js` and `/registerSW.js` patterns (green)
-- [ ] 1.3 Test with the default profiles (no `pwa`): `/manifest.webmanifest` → 200 `application/manifest+json`, `/sw.js` → 200, both `no-cache, must-revalidate` (red)
-- [ ] 1.4 Delete `PwaDisabledController` (design D5) and remove `pwa` references from code, docs and `CLAUDE.md`; `grep -rn "\"pwa\"\|Profile(\"!pwa\")"` finds nothing (green)
+- [x] 1.1 Extend `WebContentRoutingIntegrationTest` (or a new test in `common.ui`) with header assertions: `Cache-Control: no-cache` for `/`, `/index.html`, an SPA route (e.g. `/members`), `/auth/callback` and `/silent-renew.html`; the `/assets/**` immutable policy and the 1h icon policy stay unchanged (red)
+- [x] 1.2 Add the `/index.html`, `/silent-renew.html` resource handler with `CacheControl.noCache()` in `FrontendConfiguration`; drop the `/workbox-*.js` and `/registerSW.js` patterns (green)
+- [x] 1.3 Test with the default profiles (no `pwa`): `/manifest.webmanifest` → 200 `application/manifest+json`, `/sw.js` → 200, both `no-cache, must-revalidate` (red)
+- [x] 1.4 Delete `PwaDisabledController` (design D5) and remove `pwa` references from code, docs and `CLAUDE.md`; `grep -rn "\"pwa\"\|Profile(\"!pwa\")"` finds nothing (green)
 
 ## 2. Frontend – service worker
 
