@@ -8,7 +8,7 @@
 
 ## 2. Edit registration on the event detail
 
-- [ ] 2.1 Write a failing `EventDetailPage` test: with `editRegistration` on the event, an "Upravit přihlášku" button opens the dialog and no "Odhlásit se z akce" button is rendered; without the affordance neither edit button appears. Replace the `unregisterFromEvent` button accordingly and refetch after save. Verify: tests pass; in the browser unregister works through the dialog.
+- [x] 2.1 Write a failing `EventDetailPage` test: with `editRegistration` on the event, an "Upravit přihlášku" button opens the dialog and no "Odhlásit se z akce" button is rendered; without the affordance neither edit button appears. Replace the `unregisterFromEvent` button accordingly and refetch after save. Verify: tests pass; in the browser unregister works through the dialog.
 
 ## 3. Edit registration on the dashboard
 

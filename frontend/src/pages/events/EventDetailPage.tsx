@@ -18,13 +18,14 @@ import type {HalFormsTemplate} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
 import {renderYesNo} from '../../utils/formatters.ts';
 import {getActionVariant} from '../../utils/actionVariants.ts';
+import {normalizeKlabisApiPath} from '../../utils/halFormsUtils.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventSiPolicyFields} from '../../components/events/EventSiPolicyFields.tsx';
 import {EventTypeBadge} from '../../components/events/EventTypeBadge.tsx';
 import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import {useEventTypes} from '../../hooks/useEventTypes.ts';
-import {Banknote, Check, Download, ExternalLink, Eye, Globe, List, Pencil, UserMinus, UserPlus, XCircle} from 'lucide-react';
+import {Banknote, Check, Download, ExternalLink, Eye, Globe, List, Pencil, UserPen, UserPlus, XCircle} from 'lucide-react';
 import {MemberName} from '../../components/members/MemberName.tsx';
 import {eventFormFieldsFactory} from '../../components/events/eventFormFieldsFactory.tsx';
 import type {TableCellRenderProps} from '../../components/KlabisTable/types.ts';
@@ -204,6 +205,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     const isCancelled = event.status === 'CANCELLED';
 
     const newRegistrationLink = asLinkArray(resourceData._links?.newRegistration)[0];
+    const editRegistrationTemplate = resourceData._templates?.editRegistration;
 
     const template: HalFormsTemplate | null = resourceData?._templates?.updateEvent ?? null;
     const hasEditTemplate = template !== null;
@@ -269,7 +271,15 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                     {labels.templates.registerForEvent}
                                 </Button>
                             )}
-                            <HalFormButton name="unregisterFromEvent" modal={true} icon={<UserMinus className="w-4 h-4"/>}/>
+                            {editRegistrationTemplate && (
+                                <Button
+                                    variant={getActionVariant('editRegistration')}
+                                    onClick={() => setRegistrationDialogTarget({href: normalizeKlabisApiPath(editRegistrationTemplate.target ?? '')})}
+                                    startIcon={<UserPen className="w-4 h-4"/>}
+                                >
+                                    {labels.templates.editRegistration}
+                                </Button>
+                            )}
                             <HalFormButton name="discoverOrisRegistrations" modal={true} variant="secondary" icon={<Download className="w-4 h-4"/>}/>
                             {resourceData._links?.['accommodation-list'] && (
                                 <Link
@@ -490,6 +500,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
         <EventRegistrationDialog
             registration={registrationDialogTarget}
             onClose={handleRegistrationDialogClose}
+            onChanged={route.refetch}
         />
     );
 

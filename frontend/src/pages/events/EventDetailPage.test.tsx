@@ -457,14 +457,33 @@ describe('EventDetailPage', () => {
             expect(screen.queryByRole('button', {name: /Načíst přihlášky z ORIS/})).not.toBeInTheDocument();
         });
 
-        it('shows unregisterFromEvent button when template exists', () => {
+        it('shows edit registration button instead of unregister when editRegistration template exists', () => {
             const data = mockEventDetailData({
                 _templates: {
+                    editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku', target: 'http://localhost:8443/api/events/1/registrations/M001'}),
                     unregisterFromEvent: mockHalFormsTemplate({title: 'Odhlásit se'}),
                 },
             });
             renderPage(createMockPageData(data));
-            expect(screen.getByRole('button', {name: /odhlásit se/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /upravit přihlášku/i})).toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /odhlásit se z akce/i})).not.toBeInTheDocument();
+        });
+
+        it('opens registration dialog when edit registration button is clicked', () => {
+            const data = mockEventDetailData({
+                _templates: {
+                    editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku', target: 'http://localhost:8443/api/events/1/registrations/M001'}),
+                },
+            });
+            renderPage(createMockPageData(data));
+            fireEvent.click(screen.getByRole('button', {name: /upravit přihlášku/i}));
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+        });
+
+        it('hides edit and unregister buttons without editRegistration template', () => {
+            renderPage(createMockPageData(mockEventDetailData()));
+            expect(screen.queryByRole('button', {name: /upravit přihlášku/i})).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', {name: /odhlásit se/i})).not.toBeInTheDocument();
         });
     });
 
@@ -1132,18 +1151,6 @@ describe('EventDetailPage', () => {
 
                 expect(screen.getAllByRole('button', {name: /provést finanční transakci/i})).toHaveLength(1);
             });
-        });
-    });
-
-    describe('edit own registration button (Group 6)', () => {
-        it('no longer renders a toolbar editRegistration button (editing moved to registration rows)', () => {
-            const data = mockEventDetailData({
-                _templates: {
-                    editRegistration: mockHalFormsTemplate({method: 'PUT', title: 'Upravit přihlášku'}),
-                },
-            });
-            renderPage(createMockPageData(data));
-            expect(screen.queryByRole('button', {name: /upravit přihlášku/i})).not.toBeInTheDocument();
         });
     });
 
