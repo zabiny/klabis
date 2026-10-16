@@ -16,5 +16,5 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run `npm run build` and `npm run lint`; QA the three entry points with Playwright on http://localhost:3000 (user ZBM9500): prefilled values, edit save, unregister from the dialog. Verify: build clean, scenarios from the delta specs pass.
-- [ ] 4.2 Run `npm run refresh-backend-server-resources` before committing frontend changes. Verify: backend static resources updated and staged.
+- [x] 4.1 Run `npm run build` and `npm run lint`; QA the three entry points with Playwright on http://localhost:3000 (user ZBM9500): prefilled values, edit save, unregister from the dialog. Verify: build clean, scenarios from the delta specs pass.
+- [x] 4.2 Run `npm run refresh-backend-server-resources` before committing frontend changes. Verify: backend static resources updated and staged.
