@@ -585,6 +585,41 @@ describe('EventRegistrationDialog', () => {
         });
     });
 
+    it('edit mode prefills category, notes, SI rental and shared services from the existing registration', async () => {
+        const SHARED_EDIT_URL = '/events/evt-1/registrations/member-1';
+        const template = {
+            ...editRegistrationTemplate(),
+            target: SHARED_EDIT_URL,
+            properties: [
+                ...editRegistrationTemplate().properties,
+                {name: 'internalNote', prompt: 'Interní poznámka', type: 'textarea', maxLength: 255},
+                {name: 'orisNote', prompt: 'Poznámka do ORIS', type: 'textarea', maxLength: 255},
+            ],
+        };
+        mockRoutes((url) => {
+            if (url === EVENT_URL) return jsonOk(eventData({siRentalAllowed: true}));
+            if (url === SHARED_EDIT_URL) {
+                return jsonOk(editInitialData({
+                    wantsToRentSi: true,
+                    wantsSharedTransport: true,
+                    wantsSharedAccommodation: true,
+                    internalNote: 'interní',
+                    orisNote: 'oris',
+                    _templates: {editRegistration: template},
+                }));
+            }
+            return jsonOk({});
+        });
+        renderDialog({registration: {href: SHARED_EDIT_URL}});
+
+        expect(await screen.findByLabelText(labels.fields.internalNote)).toHaveValue('interní');
+        expect(screen.getByLabelText(labels.fields.orisNote)).toHaveValue('oris');
+        expect(screen.getByLabelText(/Kategorie/)).toHaveValue('cat-2');
+        expect(screen.getByLabelText(/Chci si půjčit čip/)).toBeChecked();
+        expect(screen.getByRole('checkbox', {name: labels.fields.wantsSharedTransport})).toBeChecked();
+        expect(screen.getByRole('checkbox', {name: labels.fields.wantsSharedAccommodation})).toBeChecked();
+    });
+
     it('edit mode submits PUT with values from fetched registration', async () => {
         const user = userEvent.setup();
         const onClose = vi.fn();

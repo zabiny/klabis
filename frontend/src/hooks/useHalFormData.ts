@@ -118,7 +118,7 @@ export function useHalFormData(
         retry: false
     });
 
-    const formData = fetchedData ? fetchedData : currentResourceData ?? null;
+    const formData = shouldFetch && fetchedData ? fetchedData : currentResourceData ?? null;
 
     // OPTIONS error takes precedence since it gates the entire prefill flow.
     const targetFetchError = (probeResult.error ?? getError) as Error | null;
