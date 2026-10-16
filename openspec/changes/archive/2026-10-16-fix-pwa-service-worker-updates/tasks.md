@@ -7,7 +7,7 @@
 
 ## 2. Frontend – service worker
 
-- [x] 2.1 Create `src/sw.ts` (design D1 + D3): `install` → `skipWaiting()`, `activate` → delete `workbox-*` / `klabis-fonts` caches, `clients.claim()`, navigate window clients only if a legacy cache was found; type it via `/// <reference lib="webworker" />`
+- [x] 2.1 Create `src/sw.ts` (design D1 + D3): `install` → `skipWaiting()`, `activate` → `clients.claim()`, no legacy-cache migration; type it via `/// <reference lib="webworker" />`
 - [x] 2.2 Switch `vite.config.ts` to `strategies: 'injectManifest'` (`srcDir: 'src'`, `filename: 'sw.ts'`, `injectManifest.injectionPoint: undefined`); remove the `workbox` block and `registerType`; add `devOptions: {enabled: true}` (design D7) and `manifest.id: '/'`
 - [x] 2.3 `npm run build` and confirm `dist/sw.js` contains no precache list, no `NavigationRoute`, and no `workbox-*.js` is emitted; `dist/manifest.webmanifest` contains `"id":"/"`
 
@@ -26,7 +26,7 @@
 
 ## 5. Manual verification (Chrome DevTools → Application)
 
-- [ ] 5.1 Migration: check out a pre-change build with the `pwa` profile active, open the app so the old SW is installed, deploy this change, navigate → the new SW activates without closing the tab, `workbox-precache-*` caches are gone, and the page reloaded once
+- [ ] 5.1 Clean browser (cleared site data): open the app → `sw.js` is registered and activated, no caches exist under Cache Storage
 - [ ] 5.2 Update propagation: change a visible string, redeploy, reload once → the new string is shown (no "one load behind")
 - [ ] 5.3 Dev mode on `localhost:3000`: the worker is registered from `/dev-sw.js?dev-sw`, the manifest is served, HMR and the `/api` proxy work unchanged, and editing `sw.ts` reloads the page
 - [ ] 5.4 Installability: the install prompt is offered on desktop Chrome/Edge and Android Chrome; if not, apply the empty fetch-listener fallback (design Risks)

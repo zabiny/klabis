@@ -138,7 +138,7 @@ Pokud se přesto zvolí SW runtime caching `/api`:
 ### 7. Rollback
 
 - Nouzový kill-switch: build s `vite-plugin-pwa` `selfDestroying: true` vygeneruje `sw.js`, který se odregistruje a smaže cache. Nikdy k tomu nepoužívat 404 na `/sw.js`.
-- Návrat na verzi bez precache funguje automaticky: nový `sw.js` při aktivaci smaže `workbox-precache-*` cache a jednorázově obnoví okna (logika z `fix-pwa-service-worker-updates`, D3). Při úpravách SW ji nemazat, dokud může existovat klient se starou verzí.
+- Návrat na verzi bez precache: nový `sw.js` se aktivuje přes `skipWaiting()` a od další navigace jde shell ze sítě. Staré `workbox-precache-*` cache zůstanou, protože SW nemá žádný migrační kód (`fix-pwa-service-worker-updates`, D3). Bez fetch handleru je nic nečte, takže jen zabírají místo. Nový precaching SW je uklidí přes `cleanupOutdatedCaches()`.
 
 ## Známé pasti (poučení z historie)
 
