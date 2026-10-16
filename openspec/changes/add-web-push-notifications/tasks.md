@@ -1,8 +1,8 @@
 ## 1. Setup (prerequisite: `fix-pwa-service-worker-updates` merged)
 
-- [ ] 1.1 Confirm the latest `com.zerodeplibs:zerodep-web-push-java` via `maven-metadata.xml`, add it to `backend/build.gradle`; verify with `./gradlew compileJava`
-- [ ] 1.2 Create the Modulith module `com.klabis.notifications` (`package-info.java`, published `PushNotifications` + `PushMessage`) and the `klabis.notifications.vapid.*` properties; the module verification test (`ApplicationModules.verify()`) passes
-- [ ] 1.3 Generate a dev VAPID key pair and wire `KLABIS_VAPID_*` into `runLocalEnvironment.sh`; document key generation and rotation in `backend/CLAUDE.md` (operations note)
+- [x] 1.1 Confirm the latest `com.zerodeplibs:zerodep-web-push-java` via `maven-metadata.xml`, add it to `backend/build.gradle`; verify with `./gradlew compileJava`
+- [x] 1.2 Create the Modulith module `com.klabis.notifications` (`package-info.java`, published `PushNotifications` + `PushMessage`) and the `klabis.notifications.vapid.*` properties; the module verification test (`ApplicationModules.verify()`) passes
+- [x] 1.3 Generate a dev VAPID key pair and wire `KLABIS_VAPID_*` into `runLocalEnvironment.sh`; document key generation and rotation in `backend/CLAUDE.md` (operations note)
 
 ## 2. Slice: notification settings page reachable from home
 

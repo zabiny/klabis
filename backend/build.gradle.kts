@@ -131,6 +131,9 @@ dependencies {
     // Apache Commons CSV for accommodation list CSV export
     implementation("org.apache.commons:commons-csv:1.14.1")
 
+    // Web Push (VAPID + aes128gcm), zero transitive dependencies
+    implementation("com.zerodeplibs:zerodep-web-push-java:2.1.5")
+
     // JsonNullable: tri-state (absent / null / value) wrapper for PATCH request bodies.
     // 0.2.10+ ships a Jackson 3 module (tools.jackson); the Jackson 2 artifacts it also declares
     // stay off the classpath because both are `provided` upstream.

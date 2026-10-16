@@ -174,6 +174,14 @@ Production example: `SPRING_PROFILES_ACTIVE=postgresql,ssl,email,metrics` (do NO
 2. Use run configuration "Klabis Backend" (profile `email` is active, MailPit SMTP settings are in run config env vars)
 3. View captured emails: http://localhost:8025
 
+## Web Push (VAPID) operations
+
+Web push in the `notifications` module is active only when both `KLABIS_VAPID_PUBLIC_KEY` and `KLABIS_VAPID_PRIVATE_KEY` are set; `KLABIS_VAPID_SUBJECT` (default `mailto:admin@example.org`) should be a real contact `mailto:`/`https:` URL.
+
+- Generate a key pair once: `npx web-push generate-vapid-keys --json` (public key = base64url uncompressed P-256 point, private key = base64url 32 bytes). Store both as secrets.
+- `runLocalEnvironment.sh` sets a fixed dev pair; never reuse it in a deployed environment.
+- **Rotation invalidates every existing push subscription** (they are bound to the public key) - users must re-enable notifications on each device. Rotate only when the private key leaked.
+
 ## Key Technologies
 
 - **Java 21+**
