@@ -4,6 +4,8 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.UserId;
 import com.klabis.notifications.NotificationDeviceTestDataBuilder;
 import com.klabis.notifications.NotificationsWebMvcTest;
+import com.klabis.notifications.PushMessage;
+import com.klabis.notifications.PushNotifications;
 import com.klabis.notifications.application.NotificationDevicesPort;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,6 +28,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.verify;
@@ -49,6 +52,9 @@ class NotificationControllerTest {
 
     @Autowired
     private NotificationDevicesPort devicesPort;
+
+    @Autowired
+    private PushNotifications pushNotifications;
 
     @Test
     @WithKlabisMockUser(userId = USER_ID)
@@ -201,5 +207,53 @@ class NotificationControllerTest {
                         .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                         .content(body("https://push.example.org/1", "pk", "au")))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithKlabisMockUser(userId = USER_ID)
+    @DisplayName("GET /api/notifications offers sendTestNotification only when the user has a device")
+    void offersTestTemplateOnlyWithDevice() throws Exception {
+        UserId currentUser = new UserId(UUID.fromString(USER_ID));
+        when(devicesPort.listDevices(currentUser)).thenReturn(List.of(
+                NotificationDeviceTestDataBuilder.aDevice().withOwner(currentUser).build()));
+
+        mockMvc.perform(get("/api/notifications").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._templates", hasKey("sendTestNotification")))
+                .andExpect(jsonPath("$._templates.sendTestNotification.method").value("POST"))
+                .andExpect(jsonPath("$._templates.sendTestNotification.target", endsWith("/api/notifications/test")));
+    }
+
+    @Test
+    @WithKlabisMockUser(userId = USER_ID)
+    @DisplayName("GET /api/notifications hides sendTestNotification when the user has no device")
+    void hidesTestTemplateWithoutDevice() throws Exception {
+        UserId currentUser = new UserId(UUID.fromString(USER_ID));
+        when(devicesPort.listDevices(currentUser)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/notifications").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._templates", not(hasKey("sendTestNotification"))));
+    }
+
+    @Test
+    @WithKlabisMockUser(userId = USER_ID)
+    @DisplayName("POST /api/notifications/test sends the test notification to the current user")
+    void sendsTestNotification() throws Exception {
+        UserId currentUser = new UserId(UUID.fromString(USER_ID));
+
+        mockMvc.perform(post("/api/notifications/test").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isNoContent());
+
+        verify(pushNotifications).send(currentUser, new PushMessage("Notifikace fungují",
+                "Na tomto zařízení budete dostávat oznámení z Klabisu.", "/notifications"));
+    }
+
+    @Test
+    @DisplayName("POST /api/notifications/test is not available to anonymous callers")
+    void testNotificationRequiresAuthentication() throws Exception {
+        mockMvc.perform(post("/api/notifications/test").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isUnauthorized());
+        verify(pushNotifications, never()).send(any(), any());
     }
 }

@@ -5,6 +5,8 @@ import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.RootModel;
 import com.klabis.common.users.ActingUser;
 import com.klabis.common.users.UserId;
+import com.klabis.notifications.PushMessage;
+import com.klabis.notifications.PushNotifications;
 import com.klabis.notifications.application.NotificationDevicesPort;
 import com.klabis.notifications.application.NotificationDevicesPort.RegisterDeviceCommand;
 import com.klabis.notifications.application.VapidProperties;
@@ -21,6 +23,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
+
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisLinkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
@@ -32,9 +36,12 @@ class NotificationController implements NotificationsApi {
 
     private final NotificationDevicesPort devicesPort;
     private final VapidProperties vapidProperties;
+    private final PushNotifications pushNotifications;
 
-    NotificationController(NotificationDevicesPort devicesPort, VapidProperties vapidProperties) {
+    NotificationController(NotificationDevicesPort devicesPort, VapidProperties vapidProperties,
+                           PushNotifications pushNotifications) {
         this.devicesPort = devicesPort;
+        this.pushNotifications = pushNotifications;
         this.vapidProperties = vapidProperties;
     }
 
@@ -72,6 +79,13 @@ class NotificationController implements NotificationsApi {
                 .buildAndExpand(device.getId().value())
                 .toUri()).build();
     }
+
+    @Override
+    public ResponseEntity<Void> sendTestNotification(@ActingUser UserId currentUserId) {
+        pushNotifications.send(currentUserId, new PushMessage("Notifikace fungují",
+                "Na tomto zařízení budete dostávat oznámení z Klabisu.", "/notifications"));
+        return ResponseEntity.noContent().build();
+    }
 }
 
 @MvcComponent
@@ -79,9 +93,16 @@ class NotificationSettingsPostprocessor implements RepresentationModelProcessor<
 
     @Override
     public EntityModel<NotificationSettings> process(EntityModel<NotificationSettings> model) {
+        boolean hasDevice = model.getContent() != null && !model.getContent().devices().isEmpty();
         klabisLinkTo(methodOn(NotificationsApi.class).getNotificationSettings(null))
-                .ifPresent(link -> model.add(link.withSelfRel().andAffordances(
-                        klabisAfford(methodOn(NotificationsApi.class).registerNotificationDevice(null, null, null)))));
+                .ifPresent(link -> {
+                    var affordances = new ArrayList<>(klabisAfford(
+                            methodOn(NotificationsApi.class).registerNotificationDevice(null, null, null)));
+                    if (hasDevice) {
+                        affordances.addAll(klabisAfford(methodOn(NotificationsApi.class).sendTestNotification(null)));
+                    }
+                    model.add(link.withSelfRel().andAffordances(affordances));
+                });
         return model;
     }
 }

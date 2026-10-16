@@ -20,10 +20,10 @@
 
 ## 4. Slice: test notification delivered and clickable
 
-- [ ] 4.1 Backend `PushNotifications` implementation: async sender (after commit), VAPID-signed `aes128gcm` push, TTL 24 h, JSON payload `{title, body, url, tag}`; a no-op bean when the keys are missing. Unit test with a stubbed HTTP push endpoint asserting the encrypted request and VAPID header (red → green)
-- [ ] 4.2 Spec + backend `sendTestNotification` (template only when ≥ 1 device) sends "Notifikace fungují" with target `/notifications` to all the caller's devices; `@WebMvcTest` for template presence and dispatch (red → green)
-- [ ] 4.3 `src/sw.ts`: `push` → `showNotification` with icon/badge/tag/data.url; `notificationclick` → focus + navigate an existing window or `openWindow`; unit-test the handlers with a mocked `ServiceWorkerGlobalScope` (red → green)
-- [ ] 4.4 Frontend "Poslat testovací notifikaci" button + success message; Vitest (red → green)
+- [x] 4.1 Backend `PushNotifications` implementation: async sender (after commit), VAPID-signed `aes128gcm` push, TTL 24 h, JSON payload `{title, body, url, tag}`; a no-op bean when the keys are missing. Unit test with a stubbed HTTP push endpoint asserting the encrypted request and VAPID header (red → green)
+- [x] 4.2 Spec + backend `sendTestNotification` (template only when ≥ 1 device) sends "Notifikace fungují" with target `/notifications` to all the caller's devices; `@WebMvcTest` for template presence and dispatch (red → green)
+- [x] 4.3 `src/sw.ts`: `push` → `showNotification` with icon/badge/tag/data.url; `notificationclick` → focus + navigate an existing window or `openWindow`; unit-test the handlers with a mocked `ServiceWorkerGlobalScope` (red → green)
+- [x] 4.4 Frontend "Poslat testovací notifikaci" button + success message; Vitest (red → green)
 
 ## 5. Slice: disabling, removing and auto-cleanup
 

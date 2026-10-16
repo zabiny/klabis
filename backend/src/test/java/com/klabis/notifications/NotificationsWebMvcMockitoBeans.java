@@ -13,7 +13,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Documented
 @MockitoBean(types = {
-        NotificationDevicesPort.class
+        NotificationDevicesPort.class,
+        PushNotifications.class
 })
 public @interface NotificationsWebMvcMockitoBeans {
 }

@@ -44,6 +44,8 @@ paths:
           x-hal-templates:
             registerNotificationDevice:
               operation: registerNotificationDevice
+            sendTestNotification:
+              operation: sendTestNotification
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
@@ -84,6 +86,29 @@ paths:
             application/prs.hal-forms+json: {}
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
+  /api/notifications/test:
+    post:
+      operationId: sendTestNotification
+      tags: [Notifications]
+      summary: Send a test notification to the current user's devices
+      description: |
+        Sends the "Notifikace fungují" test notification to every device the current user has enabled
+        notifications on. Delivery is asynchronous and best effort. The template is offered only when
+        the user has at least one device.
+      security:
+        - KlabisAuth: [openid]
+      x-spring-provide-args:
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
+      responses:
+        '204':
+          description: Test notification dispatched
+          content:
+            application/prs.hal-forms+json: {}
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':

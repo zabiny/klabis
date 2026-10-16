@@ -225,4 +225,35 @@ describe('NotificationSettingsPage', () => {
             expect(await screen.findByText(labels.notifications.enableFailed)).toBeInTheDocument();
         });
     });
+    describe('test notification', () => {
+        const TEST_TARGET = '/api/notifications/test';
+        const testLabel = labels.notifications.sendTest;
+        const withTestTemplate = {
+            ...settings,
+            _templates: {sendTestNotification: {method: 'POST', target: TEST_TARGET, properties: []}},
+        };
+
+        it('hides the button without the template', async () => {
+            renderPage();
+            await screen.findByText(labels.notifications.stateOff);
+            expect(screen.queryByRole('button', {name: testLabel})).not.toBeInTheDocument();
+        });
+
+        it('submits the template and shows success', async () => {
+            renderPage(withTestTemplate);
+            fireEvent.click(await screen.findByRole('button', {name: testLabel}));
+
+            expect(mutate.mock.calls[0][0]).toEqual({url: TEST_TARGET});
+            expect(await screen.findByText(labels.notifications.sendTestSuccess)).toBeInTheDocument();
+        });
+
+        it('shows an error when sending fails', async () => {
+            mutate.mockImplementation((_vars, options) => options?.onError?.(new Error('500')));
+            renderPage(withTestTemplate);
+            fireEvent.click(await screen.findByRole('button', {name: testLabel}));
+
+            expect(await screen.findByText(labels.notifications.sendTestFailed)).toBeInTheDocument();
+            expect(screen.queryByText(labels.notifications.sendTestSuccess)).not.toBeInTheDocument();
+        });
+    });
 });

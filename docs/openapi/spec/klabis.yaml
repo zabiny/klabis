@@ -108,6 +108,8 @@ paths:
     $ref: './notifications.yaml#/paths/~1api~1notifications'
   /api/notifications/devices:
     $ref: './notifications.yaml#/paths/~1api~1notifications~1devices'
+  /api/notifications/test:
+    $ref: './notifications.yaml#/paths/~1api~1notifications~1test'
   /api/membership-fee-tiers:
     $ref: './membershipfees.yaml#/paths/~1api~1membership-fee-tiers'
   /api/membership-fee-tiers/{id}:

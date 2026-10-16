@@ -33,10 +33,23 @@ export const NotificationSettingsPage = (): ReactElement => {
     );
     const [permissionRefused, setPermissionRefused] = useState(false);
     const [enableFailed, setEnableFailed] = useState(false);
+    const [testResult, setTestResult] = useState<'success' | 'failed' | null>(null);
     const {mutate, isPending} = useAuthorizedMutation({method: 'POST'});
 
     const state = permissionRefused && detectedState === 'off' ? 'denied' : detectedState;
     const registerTemplate = resourceData?._templates?.registerNotificationDevice;
+    const sendTestTemplate = resourceData?._templates?.sendTestNotification;
+
+    const handleSendTest = () => {
+        if (!sendTestTemplate?.target) {
+            return;
+        }
+        setTestResult(null);
+        mutate({url: sendTestTemplate.target}, {
+            onSuccess: () => setTestResult('success'),
+            onError: () => setTestResult('failed'),
+        });
+    };
 
     const handleEnable = async () => {
         setEnableFailed(false);
@@ -87,6 +100,18 @@ export const NotificationSettingsPage = (): ReactElement => {
                     <Button onClick={handleEnable} disabled={isPending}>
                         {labels.notifications.enableOnThisDevice}
                     </Button>
+                </div>
+            )}
+
+            {sendTestTemplate && (
+                <div className="flex flex-col gap-3">
+                    <div>
+                        <Button variant="secondary" onClick={handleSendTest} disabled={isPending}>
+                            {labels.notifications.sendTest}
+                        </Button>
+                    </div>
+                    {testResult === 'success' && <Alert severity="success">{labels.notifications.sendTestSuccess}</Alert>}
+                    {testResult === 'failed' && <Alert severity="error">{labels.notifications.sendTestFailed}</Alert>}
                 </div>
             )}
 
