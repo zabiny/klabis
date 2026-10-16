@@ -1,5 +1,5 @@
 import {Link as RouterLink} from 'react-router-dom'
-import {Calendar, ChevronRight, User} from 'lucide-react'
+import {Bell, Calendar, ChevronRight, User} from 'lucide-react'
 import {Card} from '../components/UI'
 import {useRootNavigation} from "../hooks/useRootNavigation";
 import {labels} from "../localization/labels";
@@ -13,13 +13,14 @@ const containsRel = (menuItems: { rel: string }[], rel: string) => menuItems.som
 
 const UserDashboard = ({profileHref, menuItems}: {
     profileHref: string | null;
-    menuItems: { rel: string }[]
+    menuItems: { rel: string; href?: string }[]
 }) => {
     const {data: dashboardData} = useDashboard()
     const upcomingRegistrationsHref = dashboardData?.upcomingRegistrationsHref
     const upcomingDeadlinesHref = dashboardData?.upcomingDeadlinesHref
     const {data: registrationsData} = useMyUpcomingRegistrations(upcomingRegistrationsHref)
     const registrationItems = registrationsData?.items ?? []
+    const notificationsHref = menuItems.find(item => item.rel === 'notifications')?.href ?? null
 
     return (
         <div className="space-y-8 animate-fade-in">
@@ -51,6 +52,23 @@ const UserDashboard = ({profileHref, menuItems}: {
                                 <div className="flex-1">
                                     <p className="font-semibold text-text-primary">{labels.dashboard.eventsPanelTitle}</p>
                                     <p className="text-sm text-text-secondary">{labels.dashboard.eventsPanelSubtitle}</p>
+                                </div>
+                                <ChevronRight className="w-5 h-5 text-text-tertiary group-hover:translate-x-1 transition-transform"/>
+                            </div>
+                        </Card>
+                    </RouterLink>
+                )}
+
+                {notificationsHref && (
+                    <RouterLink to={notificationsHref} className="group block">
+                        <Card className="card-hoverable h-full p-5">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl">
+                                    <Bell className="w-6 h-6 text-amber-600 dark:text-amber-400"/>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-text-primary">{labels.dashboard.notificationsPanelTitle}</p>
+                                    <p className="text-sm text-text-secondary">{labels.dashboard.notificationsPanelSubtitle}</p>
                                 </div>
                                 <ChevronRight className="w-5 h-5 text-text-tertiary group-hover:translate-x-1 transition-transform"/>
                             </div>

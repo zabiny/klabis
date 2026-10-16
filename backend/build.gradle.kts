@@ -306,6 +306,13 @@ openApiModule(
 )
 
 openApiModule(
+    module = "notifications",
+    pkg = "com.klabis.notifications.infrastructure.restapi",
+    specFile = "notifications.yaml",
+    mappings = emptyMap()
+)
+
+openApiModule(
     module = "membershipfees",
     pkg = "com.klabis.membershipfees.infrastructure.restapi",
     specFile = "membershipfees.yaml",

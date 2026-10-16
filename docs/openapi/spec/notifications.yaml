@@ -1,0 +1,95 @@
+# Notifications module — web push notification settings of the current user.
+#
+# Any authenticated user may use these endpoints (notifications target a user, not a member);
+# there is no x-klabis-authority. Devices are always resolved through the caller's own user id.
+
+openapi: 3.1.0
+
+info:
+  title: Klabis API — Notifications module
+  description: The Notifications slice of the Klabis API. See klabis.yaml for the full API.
+  version: 0.1.0
+
+servers:
+  - url: https://localhost:8443
+    description: Local development server
+  - url: https://api.klabis.com
+    description: Production server
+
+paths:
+
+  /api/notifications:
+    get:
+      operationId: getNotificationSettings
+      tags: [Notifications]
+      summary: Get notification settings of the current user
+      description: |
+        Returns the VAPID public key needed to subscribe the browser to push notifications and the
+        devices the current user has enabled notifications on. Devices of other users are never
+        included.
+      security:
+        - KlabisAuth: [openid]
+      x-spring-provide-args:
+        - '@com.klabis.common.users.ActingUser com.klabis.common.users.UserId currentUserId'
+      responses:
+        '200':
+          description: Notification settings returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSettings'
+          x-hal-links:
+            self:
+              description: This notification settings resource
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    KlabisAuth:
+      type: oauth2
+      description: OAuth2 authentication with Klabis Authorization Server
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: authenticate
+            profile: display user profile information
+            MEMBERS: Members
+            EVENTS: Events
+            SYNC: Synchronisation
+
+  schemas:
+
+    NotificationSettings:
+      type: object
+      description: Push notification settings of the current user.
+      properties:
+        vapidPublicKey:
+          type: string
+          description: Base64url VAPID public key to pass to pushManager.subscribe.
+        devices:
+          type: array
+          x-hal-entity-items: true
+          items:
+            $ref: '#/components/schemas/NotificationDevice'
+
+    NotificationDevice:
+      type: object
+      description: A browser installation that receives push notifications for the current user.
+      properties:
+        id:
+          type: string
+          format: uuid
+        description:
+          type: string
+          description: Human readable device label derived from the User-Agent, e.g. "Chrome · Android".
+        enabledAt:
+          type: string
+          format: date-time
+        endpoint:
+          type: string
+          description: Push service URL; returned to its owner only, lets the SPA mark the current device.

@@ -1,3 +1,4 @@
+import {NotificationSettingsPage} from './pages/notifications/NotificationSettingsPage';
 import {useEffect} from 'react';
 import {Outlet, Route, Routes} from 'react-router-dom';
 import {ErrorBoundary} from 'react-error-boundary';
@@ -116,6 +117,7 @@ function App() {
                                 <Route path="/legal-guardian-groups/:id" element={<LegalGuardianGroupDetailPage/>}/>
                                 <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
                                 <Route path="/event-types" element={<EventTypesPage/>}/>
+                                <Route path="/notifications" element={<NotificationSettingsPage/>}/>
                                 <Route path="/membership-fee-tiers" element={<MembershipFeesAdminPage/>}/>
                                 <Route path="/membership-fee-tiers/:id" element={<MembershipFeeTierDetailPage/>}/>
                                 <Route path="/fee-selection-campaigns/:id" element={<FeeSelectionCampaignDetailPage/>}/>

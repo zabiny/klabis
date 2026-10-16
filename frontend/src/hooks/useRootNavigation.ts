@@ -16,7 +16,7 @@ export interface NavigationItem {
 
 const ADMIN_RELS = new Set(['admin', 'training-groups', 'category-presets', 'legalGuardianGroups', 'event-types', 'membership-fees', 'disciplines']);
 
-const PERSONAL_RELS = new Set(['profile']);
+const PERSONAL_RELS = new Set(['profile', 'notifications']);
 
 const navLabels = labels.nav as Record<string, string>;
 

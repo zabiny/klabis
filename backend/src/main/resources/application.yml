@@ -135,6 +135,10 @@ springdoc:
       display-name: Membership fees API
       packages-to-scan:
         - com.klabis.membershipfees
+    - group: notifications
+      display-name: Notifications API
+      packages-to-scan:
+        - com.klabis.notifications
     - group: oris
       display-name: ORIS proxy API
       packages-to-scan:

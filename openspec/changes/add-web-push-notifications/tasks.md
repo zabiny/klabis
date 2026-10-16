@@ -6,11 +6,11 @@
 
 ## 2. Slice: notification settings page reachable from home
 
-- [ ] 2.1 Spec-first: add `docs/openapi/spec/notifications.yaml` with `getNotificationSettings` and the `NotificationSettings` / `NotificationDevice` schemas (design API chapter), register it in `klabis.yaml` + codegen; `./gradlew openapiBundle -PopenapiCheck` and `npm run openapi` pass
-- [ ] 2.2 `NotificationDevice` aggregate + `notification_device` table in `V001__initial_schema.sql` + memento/JDBC repository (keys stored as `EncryptedString`); domain unit tests + repository test (red → green)
-- [ ] 2.3 Controller `getNotificationSettings` returning the VAPID public key and only the caller's devices; `@WebMvcTest` covers own-devices-only and HAL `self` (red → green)
-- [ ] 2.4 Root link processor `notifications`, present only when VAPID keys are configured; tests for both cases (red → green)
-- [ ] 2.5 Frontend: route `/notifications`, `NotificationSettingsPage` with device states `unsupported` / `ios-needs-install` / `denied` / `off` / `on`, home page tile "Notifikace" driven by the root link, labels in `labels.ts`; Vitest for each state and for tile visibility (red → green)
+- [x] 2.1 Spec-first: add `docs/openapi/spec/notifications.yaml` with `getNotificationSettings` and the `NotificationSettings` / `NotificationDevice` schemas (design API chapter), register it in `klabis.yaml` + codegen; `./gradlew openapiBundle -PopenapiCheck` and `npm run openapi` pass
+- [x] 2.2 `NotificationDevice` aggregate + `notification_device` table in `V001__initial_schema.sql` + memento/JDBC repository (keys stored as `EncryptedString`); domain unit tests + repository test (red → green)
+- [x] 2.3 Controller `getNotificationSettings` returning the VAPID public key and only the caller's devices; `@WebMvcTest` covers own-devices-only and HAL `self` (red → green)
+- [x] 2.4 Root link processor `notifications`, present only when VAPID keys are configured; tests for both cases (red → green)
+- [x] 2.5 Frontend: route `/notifications`, `NotificationSettingsPage` with device states `unsupported` / `ios-needs-install` / `denied` / `off` / `on`, home page tile "Notifikace" driven by the root link, labels in `labels.ts`; Vitest for each state and for tile visibility (red → green)
 
 ## 3. Slice: enabling notifications on the current device
 

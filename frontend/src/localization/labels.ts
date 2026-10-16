@@ -542,6 +542,20 @@ export const labels = {
         coParticipationRules: 'PRAVIDLA SPOLUÚČASTI',
     },
 
+    notifications: {
+        pageTitle: 'Notifikace',
+        devicesHeading: 'Zařízení s povolenými notifikacemi',
+        noDevices: 'Zatím nemáte povolené notifikace na žádném zařízení.',
+        currentDevice: 'Toto zařízení',
+        enabledAt: 'Povoleno',
+        enable: 'Povolit notifikace',
+        stateUnsupported: 'Tento prohlížeč nepodporuje push notifikace.',
+        stateIosNeedsInstall: 'Na iPhonu a iPadu fungují notifikace jen u aplikace přidané na plochu. Otevřete v Safari nabídku Sdílet, zvolte „Přidat na plochu“ a aplikaci spusťte z plochy.',
+        stateDenied: 'Notifikace jsou v tomto prohlížeči zablokované. Povolte je v nastavení prohlížeče u oprávnění webu a stránku načtěte znovu.',
+        stateOff: 'Notifikace na tomto zařízení jsou vypnuté.',
+        stateOn: 'Notifikace na tomto zařízení jsou zapnuté.',
+    },
+
     dashboard: {
         welcome: 'Vítejte v Klabis',
         subtitle: 'Moderní systém pro správu členského klubu',
@@ -558,6 +572,8 @@ export const labels = {
         browseClubEvents: 'Prohlédnout nadcházející akce klubu',
         eventsPanelTitle: 'Akce',
         eventsPanelSubtitle: 'Všechny nadcházející akce',
+        notificationsPanelTitle: 'Notifikace',
+        notificationsPanelSubtitle: 'Nastavit upozornění na tomto zařízení',
         upcomingDeadlinesTitle: 'Končící přihlášky tento týden',
         deadlinePrefix: 'Uzávěrka:',
         registerForEvent: 'Přihlásit se',
