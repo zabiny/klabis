@@ -152,6 +152,14 @@ export const labels = {
         title: 'Synchronizace',
         attemptsHeading: 'Pokusy o synchronizaci',
         empty: 'Zatím nebyl zaznamenán žádný pokus o synchronizaci.',
+        filters: {
+            entityType: 'Druh entity',
+            outcome: 'Výsledek',
+            dateFrom: 'Datum od',
+            dateTo: 'Datum do',
+            all: 'Vše',
+            includeUnchanged: 'Zobrazit i pokusy bez změny',
+        },
         columns: {
             startedAt: 'Kdy',
             entity: 'Entita',

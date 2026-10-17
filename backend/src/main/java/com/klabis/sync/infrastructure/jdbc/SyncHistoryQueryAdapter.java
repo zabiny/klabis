@@ -15,6 +15,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,13 +43,32 @@ class SyncHistoryQueryAdapter implements SyncHistoryQuery {
 
     @Override
     public Page<AttemptView> listAttempts(AttemptFilter filter, Pageable pageable) {
-        String where = filter.includeUnchanged() ? "" : "WHERE " + UNCHANGED_RULE + "\n";
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        List<String> conditions = new ArrayList<>();
+        if (!filter.includeUnchanged()) {
+            conditions.add(UNCHANGED_RULE);
+        }
+        if (filter.entityType() != null) {
+            conditions.add("r.entity_type = :entityType");
+            params.addValue("entityType", filter.entityType().name());
+        }
+        if (filter.outcome() != null) {
+            conditions.add("a.outcome = :outcome");
+            params.addValue("outcome", filter.outcome().name());
+        }
+        if (filter.from() != null) {
+            conditions.add("a.started_at >= :from");
+            params.addValue("from", Timestamp.from(filter.from()));
+        }
+        if (filter.to() != null) {
+            conditions.add("a.started_at < :to");
+            params.addValue("to", Timestamp.from(filter.to()));
+        }
+        String where = conditions.isEmpty() ? "" : "WHERE " + String.join(" AND ", conditions) + "\n";
 
-        Long total = jdbc.queryForObject("SELECT COUNT(*) " + FROM + where, new MapSqlParameterSource(), Long.class);
+        Long total = jdbc.queryForObject("SELECT COUNT(*) " + FROM + where, params, Long.class);
 
-        MapSqlParameterSource params = new MapSqlParameterSource()
-                .addValue("limit", pageable.getPageSize())
-                .addValue("offset", pageable.getOffset());
+        params.addValue("limit", pageable.getPageSize()).addValue("offset", pageable.getOffset());
         List<AttemptView> content = jdbc.query(
                 SELECT + FROM + where + "ORDER BY a.started_at DESC, a.id DESC LIMIT :limit OFFSET :offset",
                 params, ATTEMPT_VIEW);

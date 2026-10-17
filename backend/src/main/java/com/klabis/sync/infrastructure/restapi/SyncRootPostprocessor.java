@@ -14,7 +14,7 @@ class SyncRootPostprocessor implements RepresentationModelProcessor<EntityModel<
 
     @Override
     public EntityModel<RootModel> process(EntityModel<RootModel> model) {
-        klabisLinkTo(methodOn(SyncApi.class).listSyncAttempts(null, Pageable.unpaged()))
+        klabisLinkTo(methodOn(SyncApi.class).listSyncAttempts(null, null, null, null, null, Pageable.unpaged()))
                 .ifPresent(link -> model.add(link.withRel("syncOverview")));
         return model;
     }

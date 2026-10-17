@@ -58,7 +58,7 @@ const pageData = (resourceData: HalResponse | null) => ({
     getPageMetadata: vi.fn(() => undefined),
 });
 
-const renderPage = (items: unknown[], page = {size: 10, totalElements: items.length, totalPages: 1, number: 0}) => {
+const renderPage = (items: unknown[], page = {size: 10, totalElements: items.length, totalPages: 1, number: 0}, initialEntry = '/sync/attempts') => {
     const resourceData: HalResponse = {
         _links: {self: {href: 'http://localhost/api/sync/attempts'}},
         _embedded: {syncAttempts: items},
@@ -69,12 +69,88 @@ const renderPage = (items: unknown[], page = {size: 10, totalElements: items.len
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/sync/attempts']}>
+            <MemoryRouter initialEntries={[initialEntry]}>
                 <SyncOverviewPage/>
             </MemoryRouter>
         </QueryClientProvider>
     );
 };
+
+const lastUrl = () => new URL(vi.mocked(useAuthorizedQuery).mock.calls.at(-1)![0] as string, 'http://localhost');
+
+describe('SyncOverviewPage filters', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    const pagedPage = {size: 10, totalElements: 30, totalPages: 3, number: 0};
+
+    it('sends no filter parameters by default and hides unchanged attempts', () => {
+        renderPage([attempt()], pagedPage);
+
+        const params = lastUrl().searchParams;
+        ['entityType', 'outcome', 'from', 'to', 'includeUnchanged'].forEach(p => expect(params.has(p)).toBe(false));
+    });
+
+    it('sends entityType and resets to the first page', () => {
+        renderPage([attempt()], pagedPage);
+        fireEvent.click(screen.getByText('Další →'));
+        expect(lastUrl().searchParams.get('page')).toBe('1');
+
+        fireEvent.change(screen.getByLabelText('Druh entity'), {target: {value: 'members'}});
+
+        expect(lastUrl().searchParams.get('entityType')).toBe('members');
+        expect(lastUrl().searchParams.get('page')).toBe('0');
+    });
+
+    it('sends outcome and resets to the first page', () => {
+        renderPage([attempt()], pagedPage);
+        fireEvent.click(screen.getByText('Další →'));
+
+        fireEvent.change(screen.getByLabelText('Výsledek'), {target: {value: 'CONFLICT'}});
+
+        expect(lastUrl().searchParams.get('outcome')).toBe('CONFLICT');
+        expect(lastUrl().searchParams.get('page')).toBe('0');
+    });
+
+    it('sends the local date range as instants with an inclusive end date', () => {
+        renderPage([attempt()], pagedPage);
+        fireEvent.click(screen.getByText('Další →'));
+
+        fireEvent.change(screen.getByLabelText('Datum od'), {target: {value: '2026-01-10'}});
+        fireEvent.change(screen.getByLabelText('Datum do'), {target: {value: '2026-01-31'}});
+
+        const params = lastUrl().searchParams;
+        expect(params.get('from')).toBe(new Date(2026, 0, 10).toISOString());
+        expect(params.get('to')).toBe(new Date(2026, 1, 1).toISOString());
+        expect(params.get('page')).toBe('0');
+    });
+
+    it('sends includeUnchanged when the toggle is checked and resets to the first page', () => {
+        renderPage([attempt()], pagedPage);
+        fireEvent.click(screen.getByText('Další →'));
+
+        fireEvent.click(screen.getByLabelText('Zobrazit i pokusy bez změny'));
+
+        expect(lastUrl().searchParams.get('includeUnchanged')).toBe('true');
+        expect(lastUrl().searchParams.get('page')).toBe('0');
+    });
+
+    it('ignores invalid dates from a hand-edited URL', () => {
+        renderPage([attempt()], pagedPage, '/sync/attempts?dateFrom=abc&dateTo=2026-13-45x');
+
+        const params = lastUrl().searchParams;
+        expect(params.has('from')).toBe(false);
+        expect(params.has('to')).toBe(false);
+    });
+
+    it('clears a filter parameter when the selection is reset', () => {
+        renderPage([attempt()], pagedPage);
+        fireEvent.change(screen.getByLabelText('Výsledek'), {target: {value: 'FAILED'}});
+
+        fireEvent.change(screen.getByLabelText('Výsledek'), {target: {value: ''}});
+
+        expect(lastUrl().searchParams.has('outcome')).toBe(false);
+    });
+});
 
 describe('SyncOverviewPage', () => {
     beforeEach(() => vi.clearAllMocks());

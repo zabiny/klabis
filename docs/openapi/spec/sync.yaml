@@ -46,6 +46,34 @@ paths:
       x-klabis-authority: SYNC_MANAGE
       x-spring-paginated: true
       parameters:
+        - name: entityType
+          in: query
+          description: Only attempts on this kind of entity.
+          required: false
+          schema:
+            $ref: '#/components/schemas/SyncEntityTypeParam'
+        - name: outcome
+          in: query
+          description: Only attempts that ended with this outcome.
+          required: false
+          schema:
+            # Plain string: an inline enum on a query parameter generates an empty enum class
+            # (see membershipfees.yaml listPublications); the controller validates the value.
+            type: string
+        - name: from
+          in: query
+          description: Only attempts started at or after this instant (inclusive).
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Only attempts started before this instant (exclusive).
+          required: false
+          schema:
+            type: string
+            format: date-time
         - name: includeUnchanged
           in: query
           description: Also return automatic attempts that succeeded without changing anything.

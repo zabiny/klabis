@@ -11,6 +11,7 @@ import com.klabis.sync.application.SyncHistoryQuery;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.application.SyncProjectionFieldsPort;
+import com.klabis.sync.domain.SyncOutcome;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncResolution;
 import com.klabis.sync.domain.SyncTarget;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -108,9 +110,19 @@ public class SynchronizationController implements SyncApi {
 
     @Override
     public ResponseEntity<Page<SyncAttemptResponse>> listSyncAttempts(
+            SyncEntityTypeParam entityType,
+            String outcome,
+            Instant from,
+            Instant to,
             Boolean includeUnchanged,
             @PageableDefault(size = 25) Pageable pageable) {
-        Page<AttemptView> page = historyQuery.listAttempts(new AttemptFilter(Boolean.TRUE.equals(includeUnchanged)), pageable);
+        AttemptFilter filter = AttemptFilter.changedOnly()
+                .withIncludeUnchanged(Boolean.TRUE.equals(includeUnchanged))
+                .withEntityType(entityType != null ? SyncEntityTypeResolver.resolve(entityType) : null)
+                .withOutcome(outcome != null ? SyncOutcome.valueOf(outcome) : null)
+                .withFrom(from)
+                .withTo(to);
+        Page<AttemptView> page = historyQuery.listAttempts(filter, pageable);
 
         Page<DescribedAttempt> described = page.map(view -> new DescribedAttempt(view, descriptions.describe(view.target())));
 

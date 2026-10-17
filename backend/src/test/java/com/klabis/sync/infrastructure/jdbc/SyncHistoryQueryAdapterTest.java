@@ -113,4 +113,64 @@ class SyncHistoryQueryAdapterTest {
                 .containsExactly(BASE.plus(5, ChronoUnit.MINUTES), BASE.plus(4, ChronoUnit.MINUTES), BASE.plus(3, ChronoUnit.MINUTES));
         assertThat(all.getTotalElements()).isEqualTo(5);
     }
+
+    private static java.util.List<Instant> startedAts(Page<AttemptView> page) {
+        return page.getContent().stream().map(v -> v.attempt().getStartedAt()).toList();
+    }
+
+    @Test
+    @DisplayName("filters by entity type")
+    void filtersByEntityType() {
+        attempt(eventRecord, 1, SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS);
+        attempt(memberRecord, 2, SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS);
+
+        Page<AttemptView> page = query.listAttempts(AttemptFilter.all().withEntityType(SyncEntityType.MEMBER), PageRequest.of(0, 10));
+
+        assertThat(page.getTotalElements()).isEqualTo(1);
+        assertThat(page.getContent().get(0).target().entityType()).isEqualTo(SyncEntityType.MEMBER);
+    }
+
+    @Test
+    @DisplayName("filters by outcome")
+    void filtersByOutcome() {
+        attempt(eventRecord, 1, SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS);
+        attempt(eventRecord, 2, SyncTriggerKind.MANUAL, null, SyncOutcome.CONFLICT);
+        attempt(eventRecord, 3, SyncTriggerKind.MANUAL, null, SyncOutcome.FAILED);
+
+        Page<AttemptView> page = query.listAttempts(AttemptFilter.all().withOutcome(SyncOutcome.CONFLICT), PageRequest.of(0, 10));
+
+        assertThat(startedAts(page)).containsExactly(BASE.plus(2, ChronoUnit.MINUTES));
+    }
+
+    @Test
+    @DisplayName("filters by period with inclusive from and exclusive to")
+    void filtersByPeriod() {
+        for (int i = 1; i <= 4; i++) {
+            attempt(eventRecord, i, SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS);
+        }
+        Instant from = BASE.plus(2, ChronoUnit.MINUTES);
+        Instant to = BASE.plus(4, ChronoUnit.MINUTES);
+
+        assertThat(startedAts(query.listAttempts(AttemptFilter.all().withFrom(from).withTo(to), PageRequest.of(0, 10))))
+                .containsExactly(BASE.plus(3, ChronoUnit.MINUTES), from);
+        assertThat(query.listAttempts(AttemptFilter.all().withFrom(from), PageRequest.of(0, 10)).getTotalElements()).isEqualTo(3);
+        assertThat(query.listAttempts(AttemptFilter.all().withTo(to), PageRequest.of(0, 10)).getTotalElements()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("combines filters, including with the unchanged rule, and counts only matching rows")
+    void combinesFilters() {
+        attempt(eventRecord, 1, SyncTriggerKind.MANUAL, null, SyncOutcome.CONFLICT);
+        attempt(memberRecord, 2, SyncTriggerKind.MANUAL, null, SyncOutcome.CONFLICT);
+        attempt(eventRecord, 3, SyncTriggerKind.SCHEDULED, null, SyncOutcome.SUCCESS);
+        attempt(eventRecord, 4, SyncTriggerKind.MANUAL, null, SyncOutcome.FAILED);
+
+        AttemptFilter filter = AttemptFilter.changedOnly().withEntityType(SyncEntityType.EVENT).withOutcome(SyncOutcome.CONFLICT);
+        Page<AttemptView> page = query.listAttempts(filter, PageRequest.of(0, 10));
+
+        assertThat(page.getTotalElements()).isEqualTo(1);
+        assertThat(startedAts(page)).containsExactly(BASE.plus(1, ChronoUnit.MINUTES));
+        assertThat(query.listAttempts(AttemptFilter.changedOnly().withEntityType(SyncEntityType.EVENT).withOutcome(SyncOutcome.SUCCESS),
+                PageRequest.of(0, 10)).getTotalElements()).isZero();
+    }
 }

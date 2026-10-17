@@ -11,62 +11,74 @@ import {asLinkArray, toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {formatDateTimeSeconds} from '../../utils/dateUtils.ts';
 import {getEnumLabel, labels} from '../../localization';
+import {SyncAttemptFilterBar} from './SyncAttemptFilterBar.tsx';
+import {useSyncAttemptFilters} from './useSyncAttemptFilters.ts';
 
 type SyncAttemptItem = components['schemas']['EntityModelSyncAttemptResponse'];
 
 const enumCell = (enumType: string) =>
     ({value}: {value: unknown}) => typeof value === 'string' ? getEnumLabel(enumType, value) : null;
 
-const AttemptsTab = (): ReactElement => (
-    <HalEmbeddedTable<SyncAttemptItem>
-        collectionName="syncAttempts"
-        tableId="sync.attempts"
-        emptyMessage={labels.syncOverview.empty}
-    >
-        <TableCell column="startedAt"
-                   dataRender={({value}) => typeof value === 'string' ? formatDateTimeSeconds(value) : ''}>
-            {labels.syncOverview.columns.startedAt}
-        </TableCell>
-        <TableCell column="entityLabel"
-                   dataRender={({value, item}) => {
-                       const links = item._links as Record<string, HalResourceLinks> | undefined;
-                       const label = typeof value === 'string' ? value : '';
-                       return links?.entity
-                           ? <Link to={extractNavigationPath(toHref(links.entity))}
-                                   onClick={(e) => e.stopPropagation()}
-                                   className="hover:text-primary hover:underline">{label}</Link>
-                           : label;
-                   }}>
-            {labels.syncOverview.columns.entity}
-        </TableCell>
-        <TableCell column="entityType" dataRender={enumCell('syncEntityType')}>
-            {labels.syncOverview.columns.entityType}
-        </TableCell>
-        <TableCell column="trigger" dataRender={enumCell('syncTrigger')}>
-            {labels.syncOverview.columns.trigger}
-        </TableCell>
-        <TableCell column="direction" dataRender={enumCell('syncDirection')}>
-            {labels.syncOverview.columns.direction}
-        </TableCell>
-        <TableCell column="outcome" dataRender={enumCell('syncOutcome')}>
-            {labels.syncOverview.columns.outcome}
-        </TableCell>
-        <TableCell column="failureReason">{labels.syncOverview.columns.failureReason}</TableCell>
-        <TableCell column="performedBy">{labels.syncOverview.columns.performedBy}</TableCell>
-        <TableCell column="_links-syncState"
-                   dataRender={({item}) => {
-                       const links = item._links as Record<string, HalResourceLinks> | undefined;
-                       const syncLink = links?.syncState ? asLinkArray(links.syncState)[0] : undefined;
-                       return syncLink
-                           ? <span onClick={(e) => e.stopPropagation()}>
-                               <SyncStatusIndicator syncLink={syncLink} mode="icon"/>
-                           </span>
-                           : null;
-                   }}>
-            {labels.syncOverview.columns.status}
-        </TableCell>
-    </HalEmbeddedTable>
-);
+const AttemptsTab = (): ReactElement => {
+    const {filters, extraParams, handleFilterChange} = useSyncAttemptFilters();
+
+    return (
+        <>
+            <SyncAttemptFilterBar value={filters} onChange={handleFilterChange}/>
+            {/* remount on filter change so the table's internal page state returns to the first page */}
+            <HalEmbeddedTable<SyncAttemptItem>
+                key={JSON.stringify(extraParams)}
+                collectionName="syncAttempts"
+                tableId="sync.attempts"
+                emptyMessage={labels.syncOverview.empty}
+                extraParams={extraParams}
+            >
+                <TableCell column="startedAt"
+                           dataRender={({value}) => typeof value === 'string' ? formatDateTimeSeconds(value) : ''}>
+                    {labels.syncOverview.columns.startedAt}
+                </TableCell>
+                <TableCell column="entityLabel"
+                           dataRender={({value, item}) => {
+                               const links = item._links as Record<string, HalResourceLinks> | undefined;
+                               const label = typeof value === 'string' ? value : '';
+                               return links?.entity
+                                   ? <Link to={extractNavigationPath(toHref(links.entity))}
+                                           onClick={(e) => e.stopPropagation()}
+                                           className="hover:text-primary hover:underline">{label}</Link>
+                                   : label;
+                           }}>
+                    {labels.syncOverview.columns.entity}
+                </TableCell>
+                <TableCell column="entityType" dataRender={enumCell('syncEntityType')}>
+                    {labels.syncOverview.columns.entityType}
+                </TableCell>
+                <TableCell column="trigger" dataRender={enumCell('syncTrigger')}>
+                    {labels.syncOverview.columns.trigger}
+                </TableCell>
+                <TableCell column="direction" dataRender={enumCell('syncDirection')}>
+                    {labels.syncOverview.columns.direction}
+                </TableCell>
+                <TableCell column="outcome" dataRender={enumCell('syncOutcome')}>
+                    {labels.syncOverview.columns.outcome}
+                </TableCell>
+                <TableCell column="failureReason">{labels.syncOverview.columns.failureReason}</TableCell>
+                <TableCell column="performedBy">{labels.syncOverview.columns.performedBy}</TableCell>
+                <TableCell column="_links-syncState"
+                           dataRender={({item}) => {
+                               const links = item._links as Record<string, HalResourceLinks> | undefined;
+                               const syncLink = links?.syncState ? asLinkArray(links.syncState)[0] : undefined;
+                               return syncLink
+                                   ? <span onClick={(e) => e.stopPropagation()}>
+                                       <SyncStatusIndicator syncLink={syncLink} mode="icon"/>
+                                   </span>
+                                   : null;
+                           }}>
+                    {labels.syncOverview.columns.status}
+                </TableCell>
+            </HalEmbeddedTable>
+        </>
+    );
+};
 
 export const SyncOverviewPage = (): ReactElement => {
     const {isLoading, error} = useHalPageData();

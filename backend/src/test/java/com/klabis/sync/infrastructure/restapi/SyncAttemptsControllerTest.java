@@ -204,6 +204,42 @@ class SyncAttemptsControllerTest {
     }
 
     @Test
+    @DisplayName("passes entityType, outcome and period to the query")
+    @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+    void passesNarrowingFilters() throws Exception {
+        mockMvc.perform(get("/api/sync/attempts?entityType=event-registrations&outcome=CONFLICT"
+                        + "&from=2026-01-01T00:00:00Z&to=2026-02-01T00:00:00Z").accept(MediaTypes.HAL_FORMS_JSON))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<AttemptFilter> filter = ArgumentCaptor.forClass(AttemptFilter.class);
+        verify(historyQuery).listAttempts(filter.capture(), any());
+        assertThat(filter.getValue()).isEqualTo(AttemptFilter.changedOnly()
+                .withEntityType(SyncEntityType.EVENT_REGISTRATION)
+                .withOutcome(SyncOutcome.CONFLICT)
+                .withFrom(Instant.parse("2026-01-01T00:00:00Z"))
+                .withTo(Instant.parse("2026-02-01T00:00:00Z")));
+    }
+
+    @Test
+    @DisplayName("answers 400 for an unknown outcome, entityType or malformed date")
+    @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+    void rejectsInvalidFilterValues() throws Exception {
+        for (String query : List.of("outcome=NOPE", "entityType=nope", "from=yesterday")) {
+            mockMvc.perform(get("/api/sync/attempts?" + query).accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
+    @DisplayName("answers 400, not the path-segment 404, for an invalid entityType query parameter")
+    @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+    void invalidEntityTypeQueryIsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/sync/attempts?entityType=nope").accept(MediaTypes.HAL_FORMS_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Bad Request"));
+    }
+
+    @Test
     @DisplayName("is forbidden without SYNC:MANAGE")
     @WithKlabisMockUser(authorities = {})
     void forbiddenWithoutAuthority() throws Exception {

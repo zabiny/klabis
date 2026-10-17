@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
@@ -114,7 +115,8 @@ class SyncExceptionHandler {
      * these endpoints ("nothing here matches what you asked for"). Safe to handle
      * unconditionally — the class-level {@code assignableTypes} restricts this whole
      * advice to {@link SynchronizationController}, whose only {@code @PathVariable}
-     * enum is {@code entityType}, so no other parameter's mismatch can reach here.
+     * enum is {@code entityType}. A mismatch on a query parameter (filters of the attempts
+     * feed) is a plain 400.
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ApiResponse(
@@ -126,6 +128,11 @@ class SyncExceptionHandler {
             )
     )
     ErrorResponse handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        if (ex.getParameter().getParameterAnnotation(PathVariable.class) == null) {
+            return ErrorResponse.builder(ex, HttpStatusCode.valueOf(400), "Invalid value for parameter '" + ex.getName() + "': " + ex.getValue())
+                    .title("Bad Request")
+                    .build();
+        }
         return ErrorResponse.builder(ex, HttpStatusCode.valueOf(404), "Unknown synchronisable entity type: " + ex.getValue())
                 .title("Resource Not Found")
                 .build();

@@ -18,9 +18,9 @@ GitHub issue: zabiny/klabis#389. Each group is an end-to-end vertical slice; fol
 
 ## 3. Filtering the attempt list (spec: "The Attempt List Can Be Narrowed Down", "Attempts That Changed Nothing…")
 
-- [ ] 3.1 Add `entityType`, `outcome`, `from`, `to` parameters to `listSyncAttempts` in `sync.yaml` and the query adapter; verify with repository integration tests for each filter and a combination
-- [ ] 3.2 Pass filters through the controller; verify with `@WebMvcTest` that query parameters reach the query port and invalid enum values answer 400
-- [ ] 3.3 Frontend: filter bar (entity kind, outcome, date range, "Zobrazit i pokusy bez změny" toggle) driving query parameters; verify with Vitest that each control changes the request and resets to page 1
+- [x] 3.1 Add `entityType`, `outcome`, `from`, `to` parameters to `listSyncAttempts` in `sync.yaml` and the query adapter; verify with repository integration tests for each filter and a combination
+- [x] 3.2 Pass filters through the controller; verify with `@WebMvcTest` that query parameters reach the query port and invalid enum values answer 400
+- [x] 3.3 Frontend: filter bar (entity kind, outcome, date range, "Zobrazit i pokusy bez změny" toggle) driving query parameters; verify with Vitest that each control changes the request and resets to page 1
 
 ## 4. "Vyžaduje pozornost" view (design D6)
 

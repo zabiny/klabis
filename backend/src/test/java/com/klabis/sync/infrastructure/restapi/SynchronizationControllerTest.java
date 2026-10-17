@@ -240,7 +240,8 @@ class SynchronizationControllerTest {
         @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
         void returns404ForUnknownEntityType() throws Exception {
             mockMvc.perform(get("/api/nonsense/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.title").value("Resource Not Found"));
         }
 
         @Test
