@@ -6,6 +6,8 @@ import {formatDateTime, formatDateTimeSeconds} from '../../utils/dateUtils';
 import {labels, getEnumLabel} from '../../localization';
 import {SYNC_STATUS_MAP} from './syncStatusMap';
 import type {GetSyncStateResource} from '../../api';
+import {toHref} from '../../api/hateoas';
+import {SyncAttemptHistory} from './SyncAttemptHistory';
 
 export interface SyncStatusOverlayProps {
     isOpen: boolean;
@@ -48,6 +50,7 @@ export const SyncStatusOverlay = ({isOpen, onClose}: SyncStatusOverlayProps): Re
     const divergedFields = syncState.status === 'CONFLICT' && syncState.divergedFields?.length
         ? syncState.divergedFields
         : null;
+    const attemptsLink = syncState._links?.attempts;
     const lastSyncText = syncState.lastSuccessfulSyncAt
         ? formatDateTimeSeconds(syncState.lastSuccessfulSyncAt)
         : labels.sync.neverSynced;
@@ -135,6 +138,8 @@ export const SyncStatusOverlay = ({isOpen, onClose}: SyncStatusOverlayProps): Re
                         </table>
                     </div>
                 )}
+
+                {attemptsLink && <SyncAttemptHistory href={toHref(attemptsLink)}/>}
 
                 <div className="flex flex-col gap-2">
                     <p className="text-sm font-medium text-text-secondary">{labels.sync.actionsHeading}</p>

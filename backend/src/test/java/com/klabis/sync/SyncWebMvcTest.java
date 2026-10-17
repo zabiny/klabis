@@ -27,7 +27,7 @@ import java.lang.annotation.*;
 @WebMvcTest
 @ModuleSlicing(module = "sync", extraIncludes = {"members"}, mode = ApplicationModuleTest.BootstrapMode.STANDALONE, verifyAutomatically = false)
 @ActiveProfiles("test")
-@Import(KlabisWebMvcSliceConfiguration.class)
+@Import({KlabisWebMvcSliceConfiguration.class, SyncDescriberStubConfiguration.class})
 @SyncWebMvcMockitoBeans
 @CommonWebMvcMockitoBeans
 @MembersWebMvcMockitoBeans

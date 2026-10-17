@@ -6,6 +6,7 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncResolution;
+import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 
@@ -39,7 +40,7 @@ class SyncStatePostprocessor extends ModelWithDomainPostprocessor<SyncStateRespo
 
     @Override
     public void process(EntityModel<SyncStateResponse> dtoModel, SyncRecord record) {
-        SyncEntityTypeParam entityType = SyncEntityTypeParam.fromValue(record.getTarget().entityType().pathSegment());
+        SyncEntityTypeParam entityType = SyncEntityTypeResolver.toParam(record.getTarget().entityType());
         String id = record.getTarget().entityId();
 
         klabisLinkTo(methodOn(SyncApi.class).getSyncState(entityType, id))
@@ -56,6 +57,9 @@ class SyncStatePostprocessor extends ModelWithDomainPostprocessor<SyncStateRespo
                     return self;
                 })
                 .ifPresent(dtoModel::add);
+
+        klabisLinkTo(methodOn(SyncApi.class).listEntitySyncAttempts(entityType, id, null, Pageable.unpaged()))
+                .ifPresent(link -> dtoModel.add(link.withRel("attempts")));
     }
 
     private Link withConflictAffordances(

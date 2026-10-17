@@ -27,6 +27,7 @@ import {
     ListChecks,
     Tags,
     Trophy,
+    RefreshCw,
     Users,
     UsersRound
 } from 'lucide-react'
@@ -42,6 +43,7 @@ const navIcons: Record<string, LucideIcon> = {
     'category-presets': Tags,
     'event-types': ListChecks,
     disciplines: BookOpen,
+    syncOverview: RefreshCw,
     account: Banknote,
     admin: LayoutDashboard,
 }

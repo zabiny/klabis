@@ -38,4 +38,8 @@ final class SyncEntityTypeResolver {
         // than an unchecked one, in case the two enums ever drift apart.
         throw new IllegalStateException("No SyncEntityType declares path segment " + pathValue.getValue());
     }
+
+    static SyncEntityTypeParam toParam(SyncEntityType entityType) {
+        return SyncEntityTypeParam.fromValue(entityType.pathSegment());
+    }
 }

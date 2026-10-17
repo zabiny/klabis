@@ -10,6 +10,8 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.util.Assert;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -76,6 +78,21 @@ class SyncAttemptMemento implements Persistable<UUID> {
         memento.externalHash = attempt.getExternalHash() != null ? attempt.getExternalHash().value() : null;
         memento.failureReason = attempt.getFailureReason();
         memento.actingUser = attempt.getActingUser();
+        return memento;
+    }
+
+    static SyncAttemptMemento fromRow(ResultSet rs) throws SQLException {
+        SyncAttemptMemento memento = new SyncAttemptMemento(false);
+        memento.id = rs.getObject("id", UUID.class);
+        memento.syncRecordId = rs.getObject("sync_record_id", UUID.class);
+        memento.startedAt = rs.getTimestamp("started_at").toInstant();
+        memento.trigger = rs.getString("trigger");
+        memento.direction = rs.getString("direction");
+        memento.outcome = rs.getString("outcome");
+        memento.localHash = rs.getString("local_hash");
+        memento.externalHash = rs.getString("external_hash");
+        memento.failureReason = rs.getString("failure_reason");
+        memento.actingUser = rs.getString("acting_user");
         return memento;
     }
 

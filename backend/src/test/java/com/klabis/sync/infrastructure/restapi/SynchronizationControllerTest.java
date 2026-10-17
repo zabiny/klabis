@@ -226,6 +226,32 @@ class SynchronizationControllerTest {
         }
 
         @Test
+        @DisplayName("links to the entity's attempts for SYNC:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+        void linksToAttemptsForManager() throws Exception {
+            when(fieldReader.fields(any())).thenReturn(java.util.Map.of());
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(inSyncRecord()));
+            when(synchronizationPort.failedAttemptsSinceLastSuccess(any())).thenReturn(0);
+
+            mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.attempts.href")
+                            .value(org.hamcrest.Matchers.containsString("/api/events/event-1/sync/attempts")))
+                    .andExpect(jsonPath("$._links.attempts.templated").value(true));
+        }
+
+        @Test
+        @DisplayName("has no attempts link without SYNC:MANAGE")
+        @WithKlabisMockUser(authorities = {})
+        void noAttemptsLinkForPlainUser() throws Exception {
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(inSyncRecord()));
+
+            mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.attempts").doesNotExist());
+        }
+
+        @Test
         @DisplayName("returns 404 when the entity is not enrolled")
         @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
         void returns404WhenNotEnrolled() throws Exception {
@@ -240,7 +266,8 @@ class SynchronizationControllerTest {
         @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
         void returns404ForUnknownEntityType() throws Exception {
             mockMvc.perform(get("/api/nonsense/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.title").value("Resource Not Found"));
         }
 
         @Test

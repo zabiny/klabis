@@ -14,7 +14,7 @@ export interface NavigationItem {
     section: 'main' | 'admin' | 'personal';
 }
 
-const ADMIN_RELS = new Set(['admin', 'training-groups', 'category-presets', 'legalGuardianGroups', 'event-types', 'membership-fees', 'disciplines']);
+const ADMIN_RELS = new Set(['admin', 'training-groups', 'category-presets', 'legalGuardianGroups', 'event-types', 'membership-fees', 'disciplines', 'syncOverview']);
 
 const PERSONAL_RELS = new Set(['profile', 'notifications']);
 

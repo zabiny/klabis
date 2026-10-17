@@ -21,6 +21,7 @@ export const labels = {
         'fee-selection-campaigns': 'Kampaň volby členského příspěvku',
         'membership-fees': 'Členské příspěvky',
         admin: 'Přehled administrace',
+        syncOverview: 'Synchronizace',
     },
 
     buttons: {
@@ -147,6 +148,37 @@ export const labels = {
         failuresHeading: 'Chyby:',
     },
 
+    syncOverview: {
+        title: 'Synchronizace',
+        tabAttempts: 'Všechny pokusy',
+        tabAttention: 'Vyžaduje pozornost',
+        attentionEmpty: 'Nic nevyžaduje pozornost.',
+        empty: 'Zatím nebyl zaznamenán žádný pokus o synchronizaci.',
+        emptyFiltered: 'Žádný pokus neodpovídá zvoleným filtrům.',
+        filters: {
+            entityType: 'Druh entity',
+            outcome: 'Výsledek',
+            dateFrom: 'Datum od',
+            dateTo: 'Datum do',
+            all: 'Vše',
+            includeUnchanged: 'Zobrazit i pokusy bez změny',
+        },
+        columns: {
+            startedAt: 'Kdy',
+            entity: 'Entita',
+            entityType: 'Druh entity',
+            trigger: 'Spouštěč',
+            direction: 'Směr',
+            outcome: 'Výsledek',
+            failureReason: 'Důvod selhání',
+            performedBy: 'Provedl',
+            status: 'Stav',
+            currentStatus: 'Aktuální stav',
+            lastSuccessfulSyncAt: 'Poslední úspěšná synchronizace',
+            failedAttempts: 'Selhaných pokusů',
+        },
+    },
+
     sync: {
         neverSynced: 'Nikdy synchronizováno',
         overlayTitle: 'Synchronizace',
@@ -168,6 +200,8 @@ export const labels = {
         divergenceSideExternal: 'externě',
         divergenceSideBoth: 'oboustranně',
         actionsHeading: 'Akce',
+        historyHeading: 'Historie pokusů',
+        historyEmpty: 'V rámci doby uchování nejsou zaznamenány žádné pokusy.',
     },
 
     orisImport: {
@@ -306,6 +340,29 @@ export const labels = {
     },
 
     enums: {
+        syncTrigger: {
+            SCHEDULED: 'Plánovaný',
+            LOCAL_CHANGE: 'Lokální změna',
+            MANUAL: 'Ruční',
+        },
+        syncDirection: {
+            INWARD: 'Do Klabisu',
+            OUTWARD: 'Ven z Klabisu',
+        },
+        syncOutcome: {
+            SUCCESS: 'Úspěch',
+            CONFLICT: 'Konflikt',
+            FAILED: 'Selhalo',
+            OUTAGE: 'Výpadek',
+            RESET: 'Resetováno',
+            SKIPPED: 'Přeskočeno',
+        },
+        syncEntityType: {
+            events: 'Akce',
+            disciplines: 'Disciplína',
+            members: 'Člen',
+            'event-registrations': 'Přihláška na akci',
+        },
         eventStatus: {
             ACTIVE: 'Aktivní',
             FINISHED: 'Ukončeno',

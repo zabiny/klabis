@@ -139,6 +139,18 @@ describe('useRootNavigation — section assignment', () => {
         expect(items.find(i => i.rel === 'membership-fees')?.section).toBe('admin');
     });
 
+    it('assigns admin section and label "Synchronizace" to syncOverview rel', async () => {
+        mockFetchWithResponse(buildHalResponse(['events', 'syncOverview']));
+
+        const {result} = renderHook(() => useRootNavigation(), {wrapper: createWrapper()});
+
+        await waitFor(() => expect(result.current.data).toBeDefined());
+
+        const item = result.current.data!.find(i => i.rel === 'syncOverview');
+        expect(item?.section).toBe('admin');
+        expect(item?.label).toBe('Synchronizace');
+    });
+
     it('assigns label "Členské příspěvky" to membership-fees rel', async () => {
         mockFetchWithResponse(buildHalResponse(['membership-fees']));
 

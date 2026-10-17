@@ -566,4 +566,34 @@ describe('SyncStatusOverlay', () => {
             });
         });
     });
+
+    describe('attempt history', () => {
+        const open = async (links: Record<string, {href: string}>) => {
+            const user = userEvent.setup();
+            renderIndicator({
+                syncLink: buildSyncLink(),
+                mode: 'icon',
+                queryState: {
+                    isLoading: false,
+                    error: null,
+                    data: buildSyncState({
+                        _links: {self: {href: '/api/events/1/sync'}, ...links},
+                        _templates: {synchronizeNow: buildTemplate('Synchronizovat nyní')},
+                    }),
+                },
+            });
+            await openOverlay(user);
+        };
+
+        it('renders history section when attempts link is present', async () => {
+            await open({attempts: {href: '/api/events/1/sync/attempts'}});
+            expect(screen.getByTestId('sync-overlay-history')).toBeInTheDocument();
+            expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith('/api/events/1/sync/attempts?page=0&size=10', expect.anything());
+        });
+
+        it('renders no history section when attempts link is absent', async () => {
+            await open({});
+            expect(screen.queryByTestId('sync-overlay-history')).not.toBeInTheDocument();
+        });
+    });
 });

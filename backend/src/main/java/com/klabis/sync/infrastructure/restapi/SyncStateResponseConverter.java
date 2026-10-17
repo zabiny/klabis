@@ -68,8 +68,8 @@ class SyncStateResponseConverter {
                 : null;
 
         return SyncStateResponseBuilder.builder()
-                .entityType(SyncEntityTypeParam.fromValue(record.getTarget().entityType().pathSegment()))
-                .status(SyncStateResponseStatus.fromValue(record.getStatus().name()))
+                .entityType(SyncEntityTypeResolver.toParam(record.getTarget().entityType()))
+                .status(SyncStatusParam.valueOf(record.getStatus().name()))
                 .externalSystem(SyncStateResponseExternalSystem.fromValue(record.getExternalReference().system().name()))
                 .externalId(record.getExternalReference().externalId())
                 .lastSuccessfulSyncAt(JsonNullable.of(record.getLastSuccessfulSyncAt()))

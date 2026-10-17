@@ -28,6 +28,7 @@ import {LegalGuardianDetailPage} from "./pages/legal-guardians/LegalGuardianDeta
 import {LegalGuardianGroupsPage} from "./pages/legal-guardian-groups/LegalGuardianGroupsPage.tsx";
 import {LegalGuardianGroupDetailPage} from "./pages/legal-guardian-groups/LegalGuardianGroupDetailPage.tsx";
 import {CategoryPresetsPage} from "./pages/events/CategoryPresetsPage.tsx";
+import {SyncOverviewPage} from "./pages/sync/SyncOverviewPage.tsx";
 import {EventTypesPage} from "./pages/events/EventTypesPage.tsx";
 import {MembershipFeesAdminPage} from "./pages/membership-fees/MembershipFeesAdminPage.tsx";
 import {MembershipFeeTierDetailPage} from "./pages/membership-fees/MembershipFeeTierDetailPage.tsx";
@@ -117,6 +118,7 @@ function App() {
                                 <Route path="/legal-guardian-groups/:id" element={<LegalGuardianGroupDetailPage/>}/>
                                 <Route path="/category-presets" element={<CategoryPresetsPage/>}/>
                                 <Route path="/event-types" element={<EventTypesPage/>}/>
+                                <Route path="/sync/attempts" element={<SyncOverviewPage/>}/>
                                 <Route path="/notifications" element={<NotificationSettingsPage/>}/>
                                 <Route path="/membership-fee-tiers" element={<MembershipFeesAdminPage/>}/>
                                 <Route path="/membership-fee-tiers/:id" element={<MembershipFeeTierDetailPage/>}/>

@@ -3,7 +3,9 @@
 ## Purpose
 
 Defines how the application presents its main navigation menu and how navigation behaves after user actions such as form submissions. The menu is driven by authorization-gated API links; its layout adapts to the current device (desktop sidebar vs. mobile bottom bar).
+
 ## Requirements
+
 ### Requirement: Main Menu is Driven by Authorization-Gated Links
 
 The system SHALL derive the application's main menu from the links returned by the root API response. Each menu entry SHALL correspond to a link the current user is authorized to receive; links the user is not authorized to receive SHALL NOT appear in the menu.
@@ -179,3 +181,26 @@ The system SHALL offer a "Můj profil" entry on the home page to every logged-in
 - **WHEN** the bootstrap administrator without a member or guardian profile opens the home page
 - **THEN** no "Můj profil" entry is shown
 
+### Requirement: Main Menu Offers a "Synchronizace" Entry for Sync Managers
+
+The system SHALL include a "Synchronizace" entry in the Administrace section of the main menu for users with the synchronisation permission. Following the entry SHALL open the synchronisation overview page. Users without the permission SHALL NOT see the entry.
+
+#### Scenario: Sync manager sees the Synchronizace entry in Administrace
+
+- **WHEN** a user with the synchronisation permission views the desktop sidebar
+- **THEN** the Administrace section shows a "Synchronizace" entry
+
+#### Scenario: Following the entry opens the synchronisation overview
+
+- **WHEN** a sync manager follows the "Synchronizace" entry
+- **THEN** the synchronisation overview page opens
+
+#### Scenario: User without the permission does not see the entry
+
+- **WHEN** a user without the synchronisation permission views the main menu
+- **THEN** the "Synchronizace" entry is not shown
+
+#### Scenario: Synchronizace entry is not in the mobile bottom navigation
+
+- **WHEN** a sync manager uses the application on a mobile device
+- **THEN** the "Synchronizace" entry is not shown in the bottom navigation, like the other administrative destinations
