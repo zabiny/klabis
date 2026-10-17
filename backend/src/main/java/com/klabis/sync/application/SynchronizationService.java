@@ -162,7 +162,7 @@ class SynchronizationService implements SynchronizationPort {
     @Override
     public int failedAttemptsSinceLastSuccess(SyncRecordId id) {
         getOrThrow(id);
-        return retryScheduler.failedAttemptsSince(syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(id));
+        return SyncAttempts.failedSinceLastSuccess(syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(id));
     }
 
     @Transactional(readOnly = true)
@@ -528,14 +528,14 @@ class SynchronizationService implements SynchronizationPort {
                 yield outcomeWriter.persist(record, scheduleEffect, now, trigger, null, SyncOutcome.OUTAGE, null, null, reason, actingUser);
             }
             case RETRYABLE -> {
-                int failedAttempts = retryScheduler.failedAttemptsSince(syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(record.getId())) + 1;
+                int failedAttempts = SyncAttempts.failedSinceLastSuccess(syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(record.getId())) + 1;
                 ScheduleEffect scheduleEffect = retryScheduler.hasReachedLimit(failedAttempts)
                         ? record.recordTerminalFailure(failedAttempts, reason, now)
                         : record.recordRetryableFailure(retryScheduler.nextAttemptDueAfter(failedAttempts, now));
                 yield outcomeWriter.persist(record, scheduleEffect, now, trigger, null, SyncOutcome.FAILED, null, null, reason, actingUser);
             }
             case TERMINAL -> {
-                int failedAttempts = retryScheduler.failedAttemptsSince(syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(record.getId())) + 1;
+                int failedAttempts = SyncAttempts.failedSinceLastSuccess(syncAttemptRepository.findByRecordIdOrderByStartedAtDesc(record.getId())) + 1;
                 ScheduleEffect scheduleEffect = record.recordTerminalFailure(failedAttempts, reason, now);
                 yield outcomeWriter.persist(record, scheduleEffect, now, trigger, null, SyncOutcome.FAILED, null, null, reason, actingUser);
             }

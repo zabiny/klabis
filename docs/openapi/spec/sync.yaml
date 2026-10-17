@@ -57,9 +57,7 @@ paths:
           description: Only attempts that ended with this outcome.
           required: false
           schema:
-            # Plain string: an inline enum on a query parameter generates an empty enum class
-            # (see membershipfees.yaml listPublications); the controller validates the value.
-            type: string
+            $ref: '#/components/schemas/SyncOutcomeParam'
         - name: from
           in: query
           description: Only attempts started at or after this instant (inclusive).
@@ -142,8 +140,7 @@ paths:
             type: array
             minItems: 1
             items:
-              # Plain string: see the outcome parameter of listSyncAttempts; the controller validates the value.
-              type: string
+              $ref: '#/components/schemas/SyncStatusParam'
       responses:
         '200':
           description: Linked entities in the requested statuses
@@ -486,6 +483,16 @@ components:
         registration itself lives under `/api/events/{eventId}/registrations/{memberId}`.
       enum: [events, disciplines, members, event-registrations]
 
+    SyncOutcomeParam:
+      type: string
+      description: How a synchronisation attempt ended.
+      enum: [SUCCESS, CONFLICT, FAILED, OUTAGE, RESET, SKIPPED]
+
+    SyncStatusParam:
+      type: string
+      description: Current synchronisation status of a linked entity.
+      enum: [NEW, IN_SYNC, RETRYING, CONFLICT, FAILED, RETIRED]
+
     SyncStateResponse:
       type: object
       description: |
@@ -498,8 +505,7 @@ components:
         entityType:
           $ref: '#/components/schemas/SyncEntityTypeParam'
         status:
-          type: string
-          enum: [NEW, IN_SYNC, RETRYING, CONFLICT, FAILED, RETIRED]
+          $ref: '#/components/schemas/SyncStatusParam'
         externalSystem:
           type: string
           enum: [ORIS]
@@ -581,8 +587,7 @@ components:
           description: Absent when the attempt wrote to neither side.
           enum: [INWARD, OUTWARD]
         outcome:
-          type: string
-          enum: [SUCCESS, CONFLICT, FAILED, OUTAGE, RESET, SKIPPED]
+          $ref: '#/components/schemas/SyncOutcomeParam'
         failureReason:
           type: string
         performedBy:
@@ -609,8 +614,7 @@ components:
         entityType:
           $ref: '#/components/schemas/SyncEntityTypeParam'
         status:
-          type: string
-          enum: [NEW, IN_SYNC, RETRYING, CONFLICT, FAILED, RETIRED]
+          $ref: '#/components/schemas/SyncStatusParam'
         entityLabel:
           type: string
           description: Readable name of the entity; falls back to the external identifier.

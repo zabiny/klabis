@@ -104,7 +104,8 @@ class SyncHistoryQueryAdapter implements SyncHistoryQuery {
         }
         MapSqlParameterSource params = new MapSqlParameterSource(
                 "statuses", statuses.stream().map(SyncStatus::name).toList());
-        return jdbc.query(RECORD_SELECT, params, this::toRecordView);
+        List<RecordRow> rows = jdbc.query(RECORD_SELECT, params, SyncHistoryQueryAdapter::toRecordRow);
+        return rows.stream().map(this::toRecordView).toList();
     }
 
     private static final String RECORD_SELECT = """
@@ -114,36 +115,30 @@ class SyncHistoryQueryAdapter implements SyncHistoryQuery {
             ORDER BY r.entity_type, r.entity_id
             """;
 
-    private RecordView toRecordView(ResultSet rs, int rowNum) throws SQLException {
+    private record RecordRow(SyncRecordId id, RecordView view) {
+    }
+
+    private static RecordRow toRecordRow(ResultSet rs, int rowNum) throws SQLException {
         Timestamp lastSuccess = rs.getTimestamp("last_successful_sync_at");
-        SyncRecordId id = new SyncRecordId(rs.getObject("id", UUID.class));
-        return new RecordView(
-                new SyncTarget(SyncEntityType.valueOf(rs.getString("entity_type")), rs.getString("entity_id")),
-                rs.getString("external_id"),
-                SyncStatus.valueOf(rs.getString("status")),
-                lastSuccess != null ? lastSuccess.toInstant() : null,
-                SyncAttempts.failedSinceLastSuccess(attemptRepository.findByRecordIdOrderByStartedAtDesc(id)));
+        return new RecordRow(
+                new SyncRecordId(rs.getObject("id", UUID.class)),
+                new RecordView(
+                        new SyncTarget(SyncEntityType.valueOf(rs.getString("entity_type")), rs.getString("entity_id")),
+                        rs.getString("external_id"),
+                        SyncStatus.valueOf(rs.getString("status")),
+                        lastSuccess != null ? lastSuccess.toInstant() : null,
+                        0));
+    }
+
+    private RecordView toRecordView(RecordRow row) {
+        int failed = SyncAttempts.failedSinceLastSuccess(attemptRepository.findByRecordIdOrderByStartedAtDesc(row.id()));
+        RecordView view = row.view();
+        return new RecordView(view.target(), view.externalId(), view.status(), view.lastSuccessfulSyncAt(), failed);
     }
 
     private static final RowMapper<AttemptView> ATTEMPT_VIEW = (rs, rowNum) -> {
-        String direction = rs.getString("direction");
-        String localHash = rs.getString("local_hash");
-        String externalHash = rs.getString("external_hash");
-        Timestamp startedAt = rs.getTimestamp("started_at");
-
-        SyncAttempt attempt = SyncAttempt.reconstruct(
-                new SyncAttemptId(rs.getObject("id", UUID.class)),
-                new SyncRecordId(rs.getObject("sync_record_id", UUID.class)),
-                startedAt.toInstant(),
-                SyncTriggerKind.valueOf(rs.getString("trigger")),
-                direction != null ? SyncDirection.valueOf(direction) : null,
-                SyncOutcome.valueOf(rs.getString("outcome")),
-                localHash != null ? SyncHash.of(localHash) : null,
-                externalHash != null ? SyncHash.of(externalHash) : null,
-                rs.getString("failure_reason"),
-                rs.getString("acting_user"));
         SyncTarget target = new SyncTarget(
                 SyncEntityType.valueOf(rs.getString("entity_type")), rs.getString("entity_id"));
-        return new AttemptView(attempt, target, rs.getString("external_id"));
+        return new AttemptView(SyncAttemptMemento.fromRow(rs).toSyncAttempt(), target, rs.getString("external_id"));
     };
 }

@@ -2,8 +2,8 @@ import {type ReactElement} from 'react';
 import {getEnumLabel, labels} from '../../localization';
 import type {SyncAttemptFilters} from './useSyncAttemptFilters.ts';
 
-const ENTITY_TYPES = ['events', 'disciplines', 'members', 'event-registrations'];
-const OUTCOMES = ['SUCCESS', 'CONFLICT', 'FAILED', 'OUTAGE', 'RESET', 'SKIPPED'];
+const ENTITY_TYPES = Object.keys(labels.enums.syncEntityType);
+const OUTCOMES = Object.keys(labels.enums.syncOutcome);
 
 const labelClass = 'text-xs font-semibold text-text-secondary uppercase tracking-wide';
 const controlClass = 'px-3 py-1.5 rounded border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500';

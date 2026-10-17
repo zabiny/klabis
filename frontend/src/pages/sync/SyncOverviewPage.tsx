@@ -3,7 +3,7 @@ import {Link, useSearchParams} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
 import {KlabisTableWithQuery, TableCell} from '../../components/KlabisTable';
-import {Alert, Skeleton} from '../../components/UI';
+import {Alert, Skeleton, TabButton} from '../../components/UI';
 import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import type {components} from '../../api/klabisApi';
 import type {HalResourceLinks} from '../../api';
@@ -11,15 +11,12 @@ import {asLinkArray, toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {formatDateTimeSeconds} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
-import {enumLabelOrEmpty} from '../../components/sync/syncAttemptFormat.ts';
+import {attemptColumns, enumCell} from '../../components/sync/syncAttemptColumns.tsx';
 import {SyncAttemptFilterBar} from './SyncAttemptFilterBar.tsx';
 import {useSyncAttemptFilters} from './useSyncAttemptFilters.ts';
 
 type SyncRecordItem = components['schemas']['SyncRecordSummaryResponse'];
 type SyncAttemptItem = components['schemas']['EntityModelSyncAttemptResponse'];
-
-const enumCell = (enumType: string) =>
-    ({value}: {value: unknown}) => enumLabelOrEmpty(enumType, value);
 
 const syncStateIndicator = (item: {_links?: unknown}) => {
     const links = item._links as Record<string, HalResourceLinks> | undefined;
@@ -55,28 +52,18 @@ const AttemptsTab = (): ReactElement => {
                 emptyMessage={labels.syncOverview.empty}
                 extraParams={extraParams}
             >
-                <TableCell column="startedAt"
-                           dataRender={({value}) => typeof value === 'string' ? formatDateTimeSeconds(value) : ''}>
-                    {labels.syncOverview.columns.startedAt}
-                </TableCell>
-                <TableCell column="entityLabel"
-                           dataRender={entityLabelCell}>
+                {attemptColumns.startedAt}
+                <TableCell column="entityLabel" dataRender={entityLabelCell}>
                     {labels.syncOverview.columns.entity}
                 </TableCell>
                 <TableCell column="entityType" dataRender={enumCell('syncEntityType')}>
                     {labels.syncOverview.columns.entityType}
                 </TableCell>
-                <TableCell column="trigger" dataRender={enumCell('syncTrigger')}>
-                    {labels.syncOverview.columns.trigger}
-                </TableCell>
-                <TableCell column="direction" dataRender={enumCell('syncDirection')}>
-                    {labels.syncOverview.columns.direction}
-                </TableCell>
-                <TableCell column="outcome" dataRender={enumCell('syncOutcome')}>
-                    {labels.syncOverview.columns.outcome}
-                </TableCell>
-                <TableCell column="failureReason">{labels.syncOverview.columns.failureReason}</TableCell>
-                <TableCell column="performedBy">{labels.syncOverview.columns.performedBy}</TableCell>
+                {attemptColumns.trigger}
+                {attemptColumns.direction}
+                {attemptColumns.outcome}
+                {attemptColumns.failureReason}
+                {attemptColumns.performedBy}
                 <TableCell column="_links-syncState"
                            dataRender={({item}) => syncStateIndicator(item)}>
                     {labels.syncOverview.columns.status}
@@ -119,31 +106,6 @@ const AttentionTab = ({href}: {href: string}): ReactElement => (
 
 type TabId = 'attempts' | 'attention';
 
-const TabButton = ({tabId, activeTab, label, onClick}: {
-    tabId: TabId;
-    activeTab: TabId;
-    label: string;
-    onClick: (tab: TabId) => void;
-}): ReactElement => {
-    const isActive = activeTab === tabId;
-    return (
-        <button
-            role="tab"
-            id={`sync-tab-${tabId}`}
-            aria-controls={`sync-tabpanel-${tabId}`}
-            aria-selected={isActive}
-            onClick={() => onClick(tabId)}
-            className={`px-4 py-3 text-sm font-medium transition-colors ${
-                isActive
-                    ? 'text-primary border-b-2 border-primary'
-                    : 'text-text-secondary hover:text-text-primary'
-            }`}
-        >
-            {label}
-        </button>
-    );
-};
-
 export const SyncOverviewPage = (): ReactElement => {
     const {resourceData, isLoading, error} = useHalPageData();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -173,9 +135,11 @@ export const SyncOverviewPage = (): ReactElement => {
             <div className="flex flex-col gap-4">
                 {attentionHref && (
                     <div role="tablist" className="flex border-b border-border">
-                        <TabButton tabId="attempts" activeTab={activeTab} onClick={setActiveTab}
+                        <TabButton active={activeTab === 'attempts'} onClick={() => setActiveTab('attempts')}
+                                   id="sync-tab-attempts" controls="sync-tabpanel-attempts"
                                    label={labels.syncOverview.tabAttempts}/>
-                        <TabButton tabId="attention" activeTab={activeTab} onClick={setActiveTab}
+                        <TabButton active={activeTab === 'attention'} onClick={() => setActiveTab('attention')}
+                                   id="sync-tab-attention" controls="sync-tabpanel-attention"
                                    label={labels.syncOverview.tabAttention}/>
                     </div>
                 )}

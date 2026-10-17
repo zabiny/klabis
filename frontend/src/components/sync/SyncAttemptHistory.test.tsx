@@ -22,7 +22,7 @@ const attempt = (overrides: Record<string, unknown> = {}) => ({
 
 const mockResponse = (items: unknown[]) => {
     vi.mocked(useAuthorizedQuery).mockReturnValue({
-        data: {_embedded: {syncAttempts: items}},
+        data: {_embedded: {syncAttempts: items}, page: {size: 10, totalElements: items.length, totalPages: 1, number: 0}},
         isLoading: false,
         error: null,
     } as unknown as ReturnType<typeof useAuthorizedQuery>);
@@ -41,19 +41,25 @@ describe('SyncAttemptHistory', () => {
     it('requests the 10 most recent attempts without unchanged ones', () => {
         mockResponse([attempt()]);
         renderHistory();
-        expect(useAuthorizedQuery).toHaveBeenCalledWith('/api/events/1/sync/attempts?size=10&page=0');
+        expect(vi.mocked(useAuthorizedQuery).mock.calls[0][0]).toBe('/api/events/1/sync/attempts?page=0&size=10');
+    });
+
+    it('drops a URI template from the attempts link', () => {
+        mockResponse([attempt()]);
+        renderHistory('/api/events/1/sync/attempts{?includeUnchanged,page,size}');
+        expect(vi.mocked(useAuthorizedQuery).mock.calls[0][0]).toBe('/api/events/1/sync/attempts?page=0&size=10');
     });
 
     it('keeps existing query parameters and drops a URI template suffix', () => {
         mockResponse([attempt()]);
         renderHistory('/api/events/1/sync/attempts?foo=bar{&page,size}');
-        expect(useAuthorizedQuery).toHaveBeenCalledWith('/api/events/1/sync/attempts?foo=bar&size=10&page=0');
+        expect(vi.mocked(useAuthorizedQuery).mock.calls[0][0]).toBe('/api/events/1/sync/attempts?foo=bar&page=0&size=10');
     });
 
     it('renders attempt details with localized enums', () => {
         mockResponse([attempt()]);
         renderHistory();
-        const row = screen.getByTestId('sync-history-row');
+        const row = screen.getByText('ORIS nedostupný').closest('tr') as HTMLElement;
         expect(row).toHaveTextContent('Ruční');
         expect(row).toHaveTextContent('Do Klabisu');
         expect(row).toHaveTextContent('Selhalo');
@@ -65,14 +71,13 @@ describe('SyncAttemptHistory', () => {
         mockResponse([attempt()]);
         renderHistory();
         await userEvent.click(screen.getByLabelText('Zobrazit i pokusy bez změny'));
-        expect(useAuthorizedQuery).toHaveBeenLastCalledWith(
-            '/api/events/1/sync/attempts?size=10&page=0&includeUnchanged=true');
+        expect(vi.mocked(useAuthorizedQuery).mock.lastCall?.[0]).toBe(
+            '/api/events/1/sync/attempts?includeUnchanged=true&page=0&size=10');
     });
 
     it('shows retention message when there are no attempts', () => {
         mockResponse([]);
         renderHistory();
-        expect(screen.getByTestId('sync-history-empty')).toBeInTheDocument();
-        expect(screen.queryByTestId('sync-history-row')).not.toBeInTheDocument();
+        expect(screen.getByText('V rámci doby uchování nejsou zaznamenány žádné pokusy.')).toBeInTheDocument();
     });
 });

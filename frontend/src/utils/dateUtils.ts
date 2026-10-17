@@ -82,3 +82,12 @@ export const formatDateTimeSeconds = (dateString: string) => {
         second: '2-digit',
     }).format(date);
 };
+/**
+ * Instant (ISO string) of local midnight of the given yyyy-MM-dd date, shifted by dayOffset days.
+ * Returns null for an unparsable date.
+ */
+export function startOfLocalDayInstant(isoDate: string, dayOffset = 0): string | null {
+    const [year, month, day] = isoDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day + dayOffset);
+    return isNaN(date.getTime()) ? null : date.toISOString();
+}

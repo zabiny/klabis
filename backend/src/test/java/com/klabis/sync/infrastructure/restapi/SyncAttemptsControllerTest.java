@@ -219,11 +219,8 @@ class SyncAttemptsControllerTest {
 
         ArgumentCaptor<AttemptFilter> filter = ArgumentCaptor.forClass(AttemptFilter.class);
         verify(historyQuery).listAttempts(filter.capture(), any());
-        assertThat(filter.getValue()).isEqualTo(AttemptFilter.changedOnly()
-                .withEntityType(SyncEntityType.EVENT_REGISTRATION)
-                .withOutcome(SyncOutcome.CONFLICT)
-                .withFrom(Instant.parse("2026-01-01T00:00:00Z"))
-                .withTo(Instant.parse("2026-02-01T00:00:00Z")));
+        assertThat(filter.getValue()).isEqualTo(new AttemptFilter(false, SyncEntityType.EVENT_REGISTRATION, SyncOutcome.CONFLICT,
+                Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2026-02-01T00:00:00Z")));
     }
 
     @Test

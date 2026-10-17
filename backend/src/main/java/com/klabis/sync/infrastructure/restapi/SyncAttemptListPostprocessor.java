@@ -23,7 +23,7 @@ class SyncAttemptListPostprocessor implements RepresentationModelProcessor<Paged
         if (HalResponseContext.findContext(SyncOverviewListing.class).isEmpty()) {
             return model;
         }
-        klabisLinkTo(methodOn(SyncApi.class).listSyncRecords(List.of("CONFLICT", "FAILED")))
+        klabisLinkTo(methodOn(SyncApi.class).listSyncRecords(List.of(SyncStatusParam.CONFLICT, SyncStatusParam.FAILED)))
                 .ifPresent(link -> model.add(link.withRel("recordsNeedingAttention")));
         return model;
     }

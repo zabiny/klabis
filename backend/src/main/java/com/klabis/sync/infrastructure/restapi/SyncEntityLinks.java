@@ -14,7 +14,7 @@ final class SyncEntityLinks {
     }
 
     static void addTo(EntityModel<?> model, SyncTarget target, Optional<EntityDescription> description) {
-        SyncEntityTypeParam entityType = SyncEntityTypeParam.fromValue(target.entityType().pathSegment());
+        SyncEntityTypeParam entityType = SyncEntityTypeResolver.toParam(target.entityType());
 
         klabisLinkTo(methodOn(SyncApi.class).getSyncState(entityType, target.entityId()))
                 .ifPresent(link -> model.add(link.withRel("syncState")));

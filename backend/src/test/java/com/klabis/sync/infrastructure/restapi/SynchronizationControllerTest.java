@@ -236,7 +236,8 @@ class SynchronizationControllerTest {
             mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.attempts.href")
-                            .value(org.hamcrest.Matchers.endsWith("/api/events/event-1/sync/attempts")));
+                            .value(org.hamcrest.Matchers.containsString("/api/events/event-1/sync/attempts")))
+                    .andExpect(jsonPath("$._links.attempts.templated").value(true));
         }
 
         @Test

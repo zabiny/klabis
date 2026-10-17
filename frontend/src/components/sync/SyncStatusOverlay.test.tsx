@@ -588,7 +588,7 @@ describe('SyncStatusOverlay', () => {
         it('renders history section when attempts link is present', async () => {
             await open({attempts: {href: '/api/events/1/sync/attempts'}});
             expect(screen.getByTestId('sync-overlay-history')).toBeInTheDocument();
-            expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith('/api/events/1/sync/attempts?size=10&page=0');
+            expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith('/api/events/1/sync/attempts?page=0&size=10', expect.anything());
         });
 
         it('renders no history section when attempts link is absent', async () => {

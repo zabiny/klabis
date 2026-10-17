@@ -125,7 +125,7 @@ class SyncHistoryQueryAdapterTest {
         attempt(eventRecord, 1, SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS);
         attempt(memberRecord, 2, SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS);
 
-        Page<AttemptView> page = query.listAttempts(AttemptFilter.all().withEntityType(SyncEntityType.MEMBER), PageRequest.of(0, 10));
+        Page<AttemptView> page = query.listAttempts(new AttemptFilter(true, SyncEntityType.MEMBER, null, null, null), PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements()).isEqualTo(1);
         assertThat(page.getContent().get(0).target().entityType()).isEqualTo(SyncEntityType.MEMBER);
@@ -138,7 +138,7 @@ class SyncHistoryQueryAdapterTest {
         attempt(eventRecord, 2, SyncTriggerKind.MANUAL, null, SyncOutcome.CONFLICT);
         attempt(eventRecord, 3, SyncTriggerKind.MANUAL, null, SyncOutcome.FAILED);
 
-        Page<AttemptView> page = query.listAttempts(AttemptFilter.all().withOutcome(SyncOutcome.CONFLICT), PageRequest.of(0, 10));
+        Page<AttemptView> page = query.listAttempts(new AttemptFilter(true, null, SyncOutcome.CONFLICT, null, null), PageRequest.of(0, 10));
 
         assertThat(startedAts(page)).containsExactly(BASE.plus(2, ChronoUnit.MINUTES));
     }
@@ -152,10 +152,10 @@ class SyncHistoryQueryAdapterTest {
         Instant from = BASE.plus(2, ChronoUnit.MINUTES);
         Instant to = BASE.plus(4, ChronoUnit.MINUTES);
 
-        assertThat(startedAts(query.listAttempts(AttemptFilter.all().withFrom(from).withTo(to), PageRequest.of(0, 10))))
+        assertThat(startedAts(query.listAttempts(new AttemptFilter(true, null, null, from, to), PageRequest.of(0, 10))))
                 .containsExactly(BASE.plus(3, ChronoUnit.MINUTES), from);
-        assertThat(query.listAttempts(AttemptFilter.all().withFrom(from), PageRequest.of(0, 10)).getTotalElements()).isEqualTo(3);
-        assertThat(query.listAttempts(AttemptFilter.all().withTo(to), PageRequest.of(0, 10)).getTotalElements()).isEqualTo(3);
+        assertThat(query.listAttempts(new AttemptFilter(true, null, null, from, null), PageRequest.of(0, 10)).getTotalElements()).isEqualTo(3);
+        assertThat(query.listAttempts(new AttemptFilter(true, null, null, null, to), PageRequest.of(0, 10)).getTotalElements()).isEqualTo(3);
     }
 
     @Test
@@ -166,12 +166,12 @@ class SyncHistoryQueryAdapterTest {
         attempt(eventRecord, 3, SyncTriggerKind.SCHEDULED, null, SyncOutcome.SUCCESS);
         attempt(eventRecord, 4, SyncTriggerKind.MANUAL, null, SyncOutcome.FAILED);
 
-        AttemptFilter filter = AttemptFilter.changedOnly().withEntityType(SyncEntityType.EVENT).withOutcome(SyncOutcome.CONFLICT);
+        AttemptFilter filter = new AttemptFilter(false, SyncEntityType.EVENT, SyncOutcome.CONFLICT, null, null);
         Page<AttemptView> page = query.listAttempts(filter, PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements()).isEqualTo(1);
         assertThat(startedAts(page)).containsExactly(BASE.plus(1, ChronoUnit.MINUTES));
-        assertThat(query.listAttempts(AttemptFilter.changedOnly().withEntityType(SyncEntityType.EVENT).withOutcome(SyncOutcome.SUCCESS),
+        assertThat(query.listAttempts(new AttemptFilter(false, SyncEntityType.EVENT, SyncOutcome.SUCCESS, null, null),
                 PageRequest.of(0, 10)).getTotalElements()).isZero();
     }
 

@@ -25,24 +25,4 @@ public record AttemptFilter(
     public static AttemptFilter all() {
         return new AttemptFilter(true, null, null, null, null);
     }
-
-    public AttemptFilter withIncludeUnchanged(boolean includeUnchanged) {
-        return new AttemptFilter(includeUnchanged, entityType, outcome, from, to);
-    }
-
-    public AttemptFilter withEntityType(@Nullable SyncEntityType entityType) {
-        return new AttemptFilter(includeUnchanged, entityType, outcome, from, to);
-    }
-
-    public AttemptFilter withOutcome(@Nullable SyncOutcome outcome) {
-        return new AttemptFilter(includeUnchanged, entityType, outcome, from, to);
-    }
-
-    public AttemptFilter withFrom(@Nullable Instant from) {
-        return new AttemptFilter(includeUnchanged, entityType, outcome, from, to);
-    }
-
-    public AttemptFilter withTo(@Nullable Instant to) {
-        return new AttemptFilter(includeUnchanged, entityType, outcome, from, to);
-    }
 }

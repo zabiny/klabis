@@ -40,7 +40,7 @@ class SyncStatePostprocessor extends ModelWithDomainPostprocessor<SyncStateRespo
 
     @Override
     public void process(EntityModel<SyncStateResponse> dtoModel, SyncRecord record) {
-        SyncEntityTypeParam entityType = SyncEntityTypeParam.fromValue(record.getTarget().entityType().pathSegment());
+        SyncEntityTypeParam entityType = SyncEntityTypeResolver.toParam(record.getTarget().entityType());
         String id = record.getTarget().entityId();
 
         klabisLinkTo(methodOn(SyncApi.class).getSyncState(entityType, id))
@@ -58,9 +58,8 @@ class SyncStatePostprocessor extends ModelWithDomainPostprocessor<SyncStateRespo
                 })
                 .ifPresent(dtoModel::add);
 
-        // expand() drops the optional-parameter template: the client appends its own page/size query.
         klabisLinkTo(methodOn(SyncApi.class).listEntitySyncAttempts(entityType, id, null, Pageable.unpaged()))
-                .ifPresent(link -> dtoModel.add(link.withRel("attempts").expand()));
+                .ifPresent(link -> dtoModel.add(link.withRel("attempts")));
     }
 
     private Link withConflictAffordances(

@@ -30,8 +30,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 /**
  * One controller for every synchronisable entity type (design.md D14) — the
@@ -116,24 +118,21 @@ public class SynchronizationController implements SyncApi {
     @Override
     public ResponseEntity<Page<SyncAttemptResponse>> listSyncAttempts(
             SyncEntityTypeParam entityType,
-            String outcome,
+            SyncOutcomeParam outcome,
             Instant from,
             Instant to,
             Boolean includeUnchanged,
             @PageableDefault(size = 25) Pageable pageable) {
-        AttemptFilter filter = AttemptFilter.changedOnly()
-                .withIncludeUnchanged(Boolean.TRUE.equals(includeUnchanged))
-                .withEntityType(entityType != null ? SyncEntityTypeResolver.resolve(entityType) : null)
-                .withOutcome(outcome != null ? SyncOutcome.valueOf(outcome) : null)
-                .withFrom(from)
-                .withTo(to);
-        Page<AttemptView> page = historyQuery.listAttempts(filter, pageable);
+        AttemptFilter filter = new AttemptFilter(
+                Boolean.TRUE.equals(includeUnchanged),
+                entityType != null ? SyncEntityTypeResolver.resolve(entityType) : null,
+                outcome != null ? SyncOutcome.valueOf(outcome.name()) : null,
+                from,
+                to);
 
-        Page<DescribedAttempt> described = page.map(view -> new DescribedAttempt(view, descriptions.describe(view.target())));
-
-        HalResponseContext.setDomainList(described.getContent());
         HalResponseContext.setContext(new SyncOverviewListing());
-        return ResponseEntity.ok(described.map(this::toResponse));
+        return attemptsResponse(historyQuery.listAttempts(filter, pageable),
+                view -> descriptions.describe(view.target()));
     }
 
     @Override
@@ -146,38 +145,44 @@ public class SynchronizationController implements SyncApi {
         Page<AttemptView> page = historyQuery.listAttemptsOf(
                 record.getId(), Boolean.TRUE.equals(includeUnchanged), pageable);
 
-        Page<DescribedAttempt> described = page.map(view -> new DescribedAttempt(view, descriptions.describe(view.target())));
-
-        HalResponseContext.setDomainList(described.getContent());
-        return ResponseEntity.ok(described.map(this::toResponse));
+        Optional<EntityDescription> description = descriptions.describe(record.getTarget());
+        return attemptsResponse(page, view -> description);
     }
 
     @Override
-    public ResponseEntity<List<SyncRecordSummaryResponse>> listSyncRecords(List<String> status) {
+    public ResponseEntity<List<SyncRecordSummaryResponse>> listSyncRecords(List<SyncStatusParam> status) {
         Set<SyncStatus> statuses = EnumSet.noneOf(SyncStatus.class);
-        status.forEach(value -> statuses.add(SyncStatus.valueOf(value)));
+        status.forEach(value -> statuses.add(SyncStatus.valueOf(value.name())));
 
-        List<DescribedRecord> described = historyQuery.listRecordsIn(statuses).stream()
-                .map(view -> new DescribedRecord(view, descriptions.describe(view.target())))
+        List<Described<RecordView>> described = historyQuery.listRecordsIn(statuses).stream()
+                .map(view -> new Described<>(view, descriptions.describe(view.target())))
                 .toList();
 
         HalResponseContext.setDomainList(described);
-        return ResponseEntity.ok(described.stream().map(this::toResponse).toList());
+        return ResponseEntity.ok(described.stream().map(this::toRecordResponse).toList());
     }
 
-    private SyncRecordSummaryResponse toResponse(DescribedRecord described) {
+    private ResponseEntity<Page<SyncAttemptResponse>> attemptsResponse(
+            Page<AttemptView> page, Function<AttemptView, Optional<EntityDescription>> describer) {
+        Page<Described<AttemptView>> described = page.map(view -> new Described<>(view, describer.apply(view)));
+
+        HalResponseContext.setDomainList(described.getContent());
+        return ResponseEntity.ok(described.map(this::toAttemptResponse));
+    }
+
+    private SyncRecordSummaryResponse toRecordResponse(Described<RecordView> described) {
         RecordView view = described.view();
         return SyncRecordSummaryResponseBuilder.builder()
-                .entityType(SyncEntityTypeParam.fromValue(view.target().entityType().pathSegment()))
-                .status(SyncStateResponseStatus.fromValue(view.status().name()))
-                .entityLabel(described.description().map(EntityDescription::label).orElse(view.externalId()))
+                .entityType(SyncEntityTypeResolver.toParam(view.target().entityType()))
+                .status(SyncStatusParam.valueOf(view.status().name()))
+                .entityLabel(described.labelOrElse(view.externalId()))
                 .externalId(view.externalId())
                 .lastSuccessfulSyncAt(view.lastSuccessfulSyncAt())
                 .failedAttemptsSinceLastSuccess(view.failedAttemptsSinceLastSuccess())
                 .build();
     }
 
-    private SyncAttemptResponse toResponse(DescribedAttempt described) {
+    private SyncAttemptResponse toAttemptResponse(Described<AttemptView> described) {
         AttemptView view = described.view();
         var attempt = view.attempt();
         return SyncAttemptResponseBuilder.builder()
@@ -186,11 +191,11 @@ public class SynchronizationController implements SyncApi {
                 .direction(attempt.getDirection() != null
                         ? SyncAttemptResponseDirection.fromValue(attempt.getDirection().name())
                         : null)
-                .outcome(SyncAttemptResponseOutcome.fromValue(attempt.getOutcome().name()))
+                .outcome(SyncOutcomeParam.valueOf(attempt.getOutcome().name()))
                 .failureReason(attempt.getFailureReason())
                 .performedBy(performedBy(attempt.getActingUser()))
-                .entityType(SyncEntityTypeParam.fromValue(view.target().entityType().pathSegment()))
-                .entityLabel(described.description().map(EntityDescription::label).orElse(view.externalId()))
+                .entityType(SyncEntityTypeResolver.toParam(view.target().entityType()))
+                .entityLabel(described.labelOrElse(view.externalId()))
                 .externalId(view.externalId())
                 .build();
     }

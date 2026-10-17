@@ -201,7 +201,6 @@ export const labels = {
         actionsHeading: 'Akce',
         historyHeading: 'Historie pokusů',
         historyEmpty: 'V rámci doby uchování nejsou zaznamenány žádné pokusy.',
-        historyLoadError: 'Historii pokusů se nepodařilo načíst.',
     },
 
     orisImport: {

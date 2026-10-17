@@ -2,7 +2,7 @@ import {type ReactElement, useEffect, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Banknote, Check, CircleArrowDown, CircleArrowUp} from 'lucide-react';
 import {labels} from '../../localization';
-import {Alert, Button, Modal, Skeleton} from '../UI';
+import {Alert, Button, Modal, Skeleton, TabButton} from '../UI';
 import {authorizedFetch} from '../../api/authorizedFetch';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';
@@ -34,37 +34,6 @@ function resolveInitialTab(
     if (storedTab === 'charge' && hasCharge) return 'charge';
     if (storedTab === 'deposit' && hasDeposit) return 'deposit';
     return hasDeposit ? 'deposit' : 'charge';
-}
-
-function TabButton({
-    tabId,
-    activeTab,
-    label,
-    icon,
-    onClick,
-}: {
-    tabId: TabId;
-    activeTab: TabId;
-    label: string;
-    icon: ReactElement;
-    onClick: (tab: TabId) => void;
-}) {
-    const isActive = activeTab === tabId;
-    return (
-        <button
-            role="tab"
-            aria-selected={isActive}
-            onClick={() => onClick(tabId)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-                isActive
-                    ? 'text-primary border-b-2 border-primary'
-                    : 'text-text-secondary hover:text-text-primary'
-            }`}
-        >
-            {icon}
-            {label}
-        </button>
-    );
 }
 
 export const FinanceTransactionDialog = ({
@@ -217,18 +186,16 @@ export const FinanceTransactionDialog = ({
                     {hasBothTemplates && (
                         <div role="tablist" className="flex border-b border-border">
                             <TabButton
-                                tabId="deposit"
-                                activeTab={activeTab}
+                                active={activeTab === 'deposit'}
                                 label={labels.finance.tabDeposit}
                                 icon={<CircleArrowDown className="w-4 h-4" />}
-                                onClick={handleTabChange}
+                                onClick={() => handleTabChange('deposit')}
                             />
                             <TabButton
-                                tabId="charge"
-                                activeTab={activeTab}
+                                active={activeTab === 'charge'}
                                 label={labels.finance.tabCharge}
                                 icon={<CircleArrowUp className="w-4 h-4" />}
-                                onClick={handleTabChange}
+                                onClick={() => handleTabChange('charge')}
                             />
                         </div>
                     )}

@@ -1,22 +1,15 @@
 package com.klabis.sync.application;
 
-import com.klabis.sync.domain.SyncAttempt;
-import com.klabis.sync.domain.SyncAttempts;
-
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 
 /**
  * Derives the retry state from a record's attempt history (design.md D10): the
  * failure count since the most recent success or reset, and the next-attempt-due
  * delay grown from it.
  * <p>
- * The count is derived rather than denormalised onto the record — one source of
- * truth, no drift (design.md D10) — at the cost of walking the history newest-first
- * until a {@code SUCCESS} or {@code RESET} row, or the list ends. {@code OUTAGE} rows
- * are skipped entirely: an outage counts toward neither the failure count nor the
- * backoff delay (design.md D11).
+ * The count itself is derived from the history by {@link com.klabis.sync.domain.SyncAttempts#failedSinceLastSuccess}
+ * (design.md D10); an outage counts toward neither the failure count nor the backoff delay (design.md D11).
  */
 class RetryScheduler {
 
@@ -24,16 +17,6 @@ class RetryScheduler {
 
     RetryScheduler(SyncProperties properties) {
         this.properties = properties;
-    }
-
-    /**
-     * Attempts since the most recent {@code SUCCESS} or {@code RESET}, ignoring
-     * {@code OUTAGE} rows (design.md D10, D11). History is expected newest-first, as
-     * {@link com.klabis.sync.domain.SyncAttemptRepository#findByRecordIdOrderByStartedAtDesc}
-     * returns it.
-     */
-    int failedAttemptsSince(List<SyncAttempt> historyNewestFirst) {
-        return SyncAttempts.failedSinceLastSuccess(historyNewestFirst);
     }
 
     /**
