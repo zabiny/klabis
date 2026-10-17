@@ -21,6 +21,7 @@ export const labels = {
         'fee-selection-campaigns': 'Kampaň volby členského příspěvku',
         'membership-fees': 'Členské příspěvky',
         admin: 'Přehled administrace',
+        syncOverview: 'Synchronizace',
     },
 
     buttons: {
@@ -145,6 +146,23 @@ export const labels = {
         successCount: (n: number) => `${n} úspěšně synchronizováno`,
         failureCount: (n: number) => `${n} chyb`,
         failuresHeading: 'Chyby:',
+    },
+
+    syncOverview: {
+        title: 'Synchronizace',
+        attemptsHeading: 'Pokusy o synchronizaci',
+        empty: 'Zatím nebyl zaznamenán žádný pokus o synchronizaci.',
+        columns: {
+            startedAt: 'Kdy',
+            entity: 'Entita',
+            entityType: 'Druh entity',
+            trigger: 'Spouštěč',
+            direction: 'Směr',
+            outcome: 'Výsledek',
+            failureReason: 'Důvod selhání',
+            performedBy: 'Provedl',
+            status: 'Stav',
+        },
     },
 
     sync: {
@@ -306,6 +324,29 @@ export const labels = {
     },
 
     enums: {
+        syncTrigger: {
+            SCHEDULED: 'Plánovaný',
+            LOCAL_CHANGE: 'Lokální změna',
+            MANUAL: 'Ruční',
+        },
+        syncDirection: {
+            INWARD: 'Do Klabisu',
+            OUTWARD: 'Ven z Klabisu',
+        },
+        syncOutcome: {
+            SUCCESS: 'Úspěch',
+            CONFLICT: 'Konflikt',
+            FAILED: 'Selhalo',
+            OUTAGE: 'Výpadek',
+            RESET: 'Resetováno',
+            SKIPPED: 'Přeskočeno',
+        },
+        syncEntityType: {
+            events: 'Akce',
+            disciplines: 'Disciplína',
+            members: 'Člen',
+            'event-registrations': 'Přihláška na akci',
+        },
         eventStatus: {
             ACTIVE: 'Aktivní',
             FINISHED: 'Ukončeno',

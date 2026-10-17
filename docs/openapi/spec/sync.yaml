@@ -31,6 +31,65 @@ servers:
 
 paths:
 
+  /api/sync/attempts:
+    get:
+      operationId: listSyncAttempts
+      tags: [Sync]
+      summary: List synchronisation attempts
+      description: |
+        Returns a paginated, newest-first feed of synchronisation attempts across all linked
+        entities. Attempts that changed nothing (an automatic pass that succeeded without
+        writing to either side) are left out unless `includeUnchanged=true`; manual attempts are
+        always included. Default: page=0, size=25.
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      x-spring-paginated: true
+      parameters:
+        - name: includeUnchanged
+          in: query
+          description: Also return automatic attempts that succeeded without changing anything.
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
+        - name: size
+          in: query
+          description: The size of the page to be returned
+          required: false
+          schema:
+            type: integer
+            default: 25
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated list of synchronisation attempts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SyncAttemptResponse'
+          x-hal-links:
+            self:
+              description: This collection, with the current paging parameters
+            first:
+              description: First page (present when the result is paged)
+            last:
+              description: Last page (present when the result is paged)
+            next:
+              description: Next page (present when one exists)
+            prev:
+              description: Previous page (present when one exists)
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
   /api/{entityType}/{id}/sync:
     get:
       operationId: getSyncState
@@ -363,6 +422,41 @@ components:
           description: The external half of the baseline pair — present only while an accepted divergence stands (design.md D6); the common case has identical baseline halves and omits this field.
           additionalProperties: true
           x-klabis-authority: SYNC_MANAGE
+
+    SyncAttemptResponse:
+      type: object
+      description: |
+        One recorded synchronisation attempt together with the entity it belongs to. Each item
+        links to the current synchronisation state of that entity (`syncState`).
+      x-klabis-relation:
+        collectionRelation: syncAttempts
+      required: [startedAt, trigger, outcome, entityType, entityLabel, externalId]
+      properties:
+        startedAt:
+          type: string
+          format: date-time
+        trigger:
+          type: string
+          enum: [SCHEDULED, LOCAL_CHANGE, MANUAL]
+        direction:
+          type: string
+          description: Absent when the attempt wrote to neither side.
+          enum: [INWARD, OUTWARD]
+        outcome:
+          type: string
+          enum: [SUCCESS, CONFLICT, FAILED, OUTAGE, RESET, SKIPPED]
+        failureReason:
+          type: string
+        performedBy:
+          type: string
+          description: Username of the user who triggered the attempt; absent for automatic attempts and unknown users.
+        entityType:
+          $ref: '#/components/schemas/SyncEntityTypeParam'
+        entityLabel:
+          type: string
+          description: Readable name of the entity; falls back to the external identifier.
+        externalId:
+          type: string
 
     ResolveSyncConflictRequest:
       type: object

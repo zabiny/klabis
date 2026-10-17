@@ -4,10 +4,10 @@ GitHub issue: zabiny/klabis#389. Each group is an end-to-end vertical slice; fol
 
 ## 1. Attempt feed reachable from the menu (design D1, D2, D4, D5, D8)
 
-- [ ] 1.1 Add `listSyncAttempts` (`GET /api/sync/attempts`, params `includeUnchanged`, `page`, `size`) and `SyncAttemptResponse` (with `entityLabel` = external id for now) to `sync.yaml`, plus `syncOverview` root link path in `klabis.yaml`; verify `./gradlew openapiBundle -PopenapiCheck` passes
-- [ ] 1.2 Implement `SyncHistoryQuery.listAttempts` with its JDBC adapter (join `sync_attempt` + `sync_record`, newest first, paged, "changed nothing" excluded unless `includeUnchanged`); verify with a repository integration test covering ordering, paging, the unchanged rule (scheduled no-op hidden, manual direction-less success shown)
-- [ ] 1.3 Implement the controller operation (username via `UserService.findUserById`, `syncState` item link) and a root link processor adding `syncOverview` for `SYNC:MANAGE`; verify with `@WebMvcTest` (HAL-FORMS accept) covering fields, `syncState` link, 403 without `SYNC:MANAGE`, root link present/absent by authority
-- [ ] 1.4 Frontend: add `syncOverview` to admin rels in `useRootNavigation`, labels in `labels.ts`, and a page for `/sync/attempts` rendering the paged attempt table (`KlabisTable`) with a `SyncStatusIndicator` per row opening `SyncStatusOverlay`; verify with Vitest tests for menu placement, table columns, paging and opening the overlay
+- [x] 1.1 Add `listSyncAttempts` (`GET /api/sync/attempts`, params `includeUnchanged`, `page`, `size`) and `SyncAttemptResponse` (with `entityLabel` = external id for now) to `sync.yaml`, plus `syncOverview` root link path in `klabis.yaml`; verify `./gradlew openapiBundle -PopenapiCheck` passes
+- [x] 1.2 Implement `SyncHistoryQuery.listAttempts` with its JDBC adapter (join `sync_attempt` + `sync_record`, newest first, paged, "changed nothing" excluded unless `includeUnchanged`); verify with a repository integration test covering ordering, paging, the unchanged rule (scheduled no-op hidden, manual direction-less success shown)
+- [x] 1.3 Implement the controller operation (username via `UserService.findUserById`, `syncState` item link) and a root link processor adding `syncOverview` for `SYNC:MANAGE`; verify with `@WebMvcTest` (HAL-FORMS accept) covering fields, `syncState` link, 403 without `SYNC:MANAGE`, root link present/absent by authority
+- [x] 1.4 Frontend: add `syncOverview` to admin rels in `useRootNavigation`, labels in `labels.ts`, and a page for `/sync/attempts` rendering the paged attempt table (`KlabisTable`) with a `SyncStatusIndicator` per row opening `SyncStatusOverlay`; verify with Vitest tests for menu placement, table columns, paging and opening the overlay
 
 ## 2. Readable entity names and entity links (design D3)
 
