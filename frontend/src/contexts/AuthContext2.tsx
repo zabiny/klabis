@@ -1,7 +1,7 @@
 import React, {type ReactNode, useCallback, useEffect, useRef, useState,} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {User, UserManager,} from 'oidc-client-ts';
-import {normalizeUrl} from "../api/hateoas.ts";
+import {normalizeUrl} from "../api/url.ts";
 import {AuthContext, type AuthUserDetails} from './authContext';
 import {unsubscribeCurrentDevice} from '../pwa/pushSubscription';
 import {clearRegisteredEndpoint} from '../pwa/pushSubscriptionStore';

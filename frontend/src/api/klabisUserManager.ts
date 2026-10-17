@@ -1,5 +1,5 @@
 import {UserManager, WebStorageStateStore,} from 'oidc-client-ts';
-import {normalizeUrl} from "./hateoas.ts";
+import {normalizeUrl} from "./url.ts";
 import {hideRenewalOverlay, showRenewalOverlay} from "./tokenRenewalState.ts";
 
 export interface AuthConfig {

@@ -102,23 +102,6 @@ export const parseHalHref = (href: string): URL => new URL(href, window.location
  */
 export const serializeHalHref = (url: URL): string => `${url.pathname}${url.search}${url.hash}`;
 
-/**
- * Converts relative URL to absolute using current window.location's hostname. Absolute URL is left unchanged
- * @param input
- */
-export const normalizeUrl = (input: string): string => {
-    if (input.startsWith("/")) {
-        // relative paths - normalize against current location URL
-        const result = new URL(window.location.toString());
-        result.pathname = input;
-        result.search = "";
-        return result.toString();
-    } else {
-        // presumably absolute path, return unchanged
-        return input;
-    }
-}
-
 // Spring HATEOAS omits a HAL-FORMS template's target when it equals the resource's self href
 export function templateTarget(
     template: {target?: string} | undefined,
