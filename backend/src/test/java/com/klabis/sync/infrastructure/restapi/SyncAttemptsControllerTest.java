@@ -58,6 +58,12 @@ class SyncAttemptsControllerTest {
         when(historyQuery.listAttempts(any(), any())).thenReturn(Page.empty());
     }
 
+    private AttemptView viewOf(SyncEntityType type, String entityId) {
+        SyncAttempt attempt = SyncAttempt.record(SyncRecordId.newId(), STARTED_AT, SyncTriggerKind.SCHEDULED, SyncDirection.INWARD,
+                SyncOutcome.SUCCESS, SyncHash.of("a"), SyncHash.of("b"), null, null);
+        return new AttemptView(attempt, new SyncTarget(type, entityId), "ext-" + entityId);
+    }
+
     private AttemptView view(SyncTriggerKind trigger, SyncDirection direction, SyncOutcome outcome,
                              String failureReason, String actingUser) {
         SyncAttempt attempt = SyncAttempt.record(SyncRecordId.newId(), STARTED_AT, trigger, direction, outcome,
@@ -83,11 +89,69 @@ class SyncAttemptsControllerTest {
                 .andExpect(jsonPath("$._embedded.syncAttempts[0].failureReason").value("boom"))
                 .andExpect(jsonPath("$._embedded.syncAttempts[0].performedBy").value("ZBM9000"))
                 .andExpect(jsonPath("$._embedded.syncAttempts[0].entityType").value("events"))
-                .andExpect(jsonPath("$._embedded.syncAttempts[0].entityLabel").value("8123"))
+                .andExpect(jsonPath("$._embedded.syncAttempts[0].entityLabel").value("Spring Cup"))
                 .andExpect(jsonPath("$._embedded.syncAttempts[0].externalId").value("8123"))
                 .andExpect(jsonPath("$._embedded.syncAttempts[0]._links.syncState.href")
                         .value(containsString("/api/events/event-1/sync")))
                 .andExpect(jsonPath("$.page.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("uses the describer label and entity link when a describer answers")
+    @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+    void usesDescriberLabelAndLink() throws Exception {
+        when(historyQuery.listAttempts(any(), any())).thenReturn(new PageImpl<>(
+                List.of(viewOf(SyncEntityType.EVENT, "event-1")), PageRequest.of(0, 25), 1));
+
+        mockMvc.perform(get("/api/sync/attempts").accept(MediaTypes.HAL_FORMS_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.syncAttempts[0].entityLabel").value("Spring Cup"))
+                .andExpect(jsonPath("$._embedded.syncAttempts[0].externalId").value("ext-event-1"))
+                .andExpect(jsonPath("$._embedded.syncAttempts[0]._links.entity.href")
+                        .value(containsString("/api/events/event-1")));
+    }
+
+    @Test
+    @DisplayName("falls back to the external id without entity link when describer returns empty or none exists")
+    @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+    void fallsBackToExternalId() throws Exception {
+        when(historyQuery.listAttempts(any(), any())).thenReturn(new PageImpl<>(
+                List.of(viewOf(SyncEntityType.EVENT, "gone"), viewOf(SyncEntityType.MEMBER, "m-1")),
+                PageRequest.of(0, 25), 2));
+
+        mockMvc.perform(get("/api/sync/attempts").accept(MediaTypes.HAL_FORMS_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.syncAttempts[0].entityLabel").value("ext-gone"))
+                .andExpect(jsonPath("$._embedded.syncAttempts[0]._links.entity").doesNotExist())
+                .andExpect(jsonPath("$._embedded.syncAttempts[1].entityLabel").value("ext-m-1"))
+                .andExpect(jsonPath("$._embedded.syncAttempts[1]._links.entity").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("a describer that throws only affects its own row")
+    @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+    void throwingDescriberFallsBack() throws Exception {
+        when(historyQuery.listAttempts(any(), any())).thenReturn(new PageImpl<>(
+                List.of(viewOf(SyncEntityType.EVENT, "event-boom"), viewOf(SyncEntityType.EVENT, "event-1")),
+                PageRequest.of(0, 25), 2));
+
+        mockMvc.perform(get("/api/sync/attempts").accept(MediaTypes.HAL_FORMS_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.syncAttempts[0].entityLabel").value("ext-event-boom"))
+                .andExpect(jsonPath("$._embedded.syncAttempts[1].entityLabel").value("Spring Cup"));
+    }
+
+    @Test
+    @DisplayName("keeps the describer label but omits the entity link when the describer has none")
+    @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+    void labelWithoutLink() throws Exception {
+        when(historyQuery.listAttempts(any(), any())).thenReturn(new PageImpl<>(
+                List.of(viewOf(SyncEntityType.EVENT, "event-nolink")), PageRequest.of(0, 25), 1));
+
+        mockMvc.perform(get("/api/sync/attempts").accept(MediaTypes.HAL_FORMS_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.syncAttempts[0].entityLabel").value("Hidden Cup"))
+                .andExpect(jsonPath("$._embedded.syncAttempts[0]._links.entity").doesNotExist());
     }
 
     @Test

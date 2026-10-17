@@ -427,7 +427,8 @@ components:
       type: object
       description: |
         One recorded synchronisation attempt together with the entity it belongs to. Each item
-        links to the current synchronisation state of that entity (`syncState`).
+        links to the current synchronisation state of that entity (`syncState`) and, when the
+        entity still exists and the caller may open it, to the entity's own resource (`entity`).
       x-klabis-relation:
         collectionRelation: syncAttempts
       required: [startedAt, trigger, outcome, entityType, entityLabel, externalId]
@@ -454,7 +455,7 @@ components:
           $ref: '#/components/schemas/SyncEntityTypeParam'
         entityLabel:
           type: string
-          description: Readable name of the entity; falls back to the external identifier.
+          description: Readable name of the entity (e.g. member name and registration number); falls back to the external identifier.
         externalId:
           type: string
 

@@ -1,4 +1,5 @@
 import {type ReactElement} from 'react';
+import {Link} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
 import {TableCell} from '../../components/KlabisTable';
@@ -6,7 +7,8 @@ import {Alert, Skeleton} from '../../components/UI';
 import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx';
 import type {components} from '../../api/klabisApi';
 import type {HalResourceLinks} from '../../api';
-import {asLinkArray} from '../../api/hateoas.ts';
+import {asLinkArray, toHref} from '../../api/hateoas.ts';
+import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {formatDateTimeSeconds} from '../../utils/dateUtils.ts';
 import {getEnumLabel, labels} from '../../localization';
 
@@ -25,7 +27,18 @@ const AttemptsTab = (): ReactElement => (
                    dataRender={({value}) => typeof value === 'string' ? formatDateTimeSeconds(value) : ''}>
             {labels.syncOverview.columns.startedAt}
         </TableCell>
-        <TableCell column="entityLabel">{labels.syncOverview.columns.entity}</TableCell>
+        <TableCell column="entityLabel"
+                   dataRender={({value, item}) => {
+                       const links = item._links as Record<string, HalResourceLinks> | undefined;
+                       const label = typeof value === 'string' ? value : '';
+                       return links?.entity
+                           ? <Link to={extractNavigationPath(toHref(links.entity))}
+                                   onClick={(e) => e.stopPropagation()}
+                                   className="hover:text-primary hover:underline">{label}</Link>
+                           : label;
+                   }}>
+            {labels.syncOverview.columns.entity}
+        </TableCell>
         <TableCell column="entityType" dataRender={enumCell('syncEntityType')}>
             {labels.syncOverview.columns.entityType}
         </TableCell>

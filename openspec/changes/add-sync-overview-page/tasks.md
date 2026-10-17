@@ -11,10 +11,10 @@ GitHub issue: zabiny/klabis#389. Each group is an end-to-end vertical slice; fol
 
 ## 2. Readable entity names and entity links (design D3)
 
-- [ ] 2.1 Add the `SyncEntityDescriber` SPI to the `sync` REST layer and use it in `listSyncAttempts` (label + optional `entity` link, fallback to external id with no link); add `entity` link to `sync.yaml`; verify with a `@WebMvcTest` using stub describers, including the fallback
-- [ ] 2.2 Implement the members describer ("name (registration number)", link to member) in `members` `infrastructure.restapi`; verify with a unit test incl. missing member → empty, and register it in the module's `*WebMvcMockitoBeans` if needed
-- [ ] 2.3 Implement the events, disciplines and event-registration describers in `events` `infrastructure.restapi` (registration label "member – event" via `com.klabis.members.Members`, link to the event); verify with unit tests incl. missing entity → empty
-- [ ] 2.4 Frontend: render `entityLabel` as a link to the entity page when an `entity` link is present, plain text otherwise; verify with Vitest
+- [x] 2.1 Add the `SyncEntityDescriber` SPI to the `sync` REST layer and use it in `listSyncAttempts` (label + optional `entity` link, fallback to external id with no link); add `entity` link to `sync.yaml`; verify with a `@WebMvcTest` using stub describers, including the fallback
+- [x] 2.2 Implement the members describer ("name (registration number)", link to member) in `members` `infrastructure.restapi`; verify with a unit test incl. missing member → empty, and register it in the module's `*WebMvcMockitoBeans` if needed
+- [x] 2.3 Implement the events, disciplines and event-registration describers in `events` `infrastructure.restapi` (registration label "member – event" via `com.klabis.members.Members`, link to the event); verify with unit tests incl. missing entity → empty
+- [x] 2.4 Frontend: render `entityLabel` as a link to the entity page when an `entity` link is present, plain text otherwise; verify with Vitest
 
 ## 3. Filtering the attempt list (spec: "The Attempt List Can Be Narrowed Down", "Attempts That Changed Nothing…")
 

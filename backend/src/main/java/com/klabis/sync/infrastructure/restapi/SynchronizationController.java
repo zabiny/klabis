@@ -41,15 +41,18 @@ public class SynchronizationController implements SyncApi {
     private final SyncStateResponseConverter responseConverter;
     private final SyncHistoryQuery historyQuery;
     private final UserService userService;
+    private final SyncEntityDescriptions descriptions;
 
     // SyncStateResponseConverter is deliberately not a Spring bean of its own — see its
     // javadoc — so it is built here from the same two ports it would otherwise be
     // injected with.
     SynchronizationController(SynchronizationPort synchronizationPort, SyncProjectionFieldsPort fieldReader,
-                              SyncHistoryQuery historyQuery, UserService userService) {
+                              SyncHistoryQuery historyQuery, UserService userService,
+                              SyncEntityDescriptions descriptions) {
         this.synchronizationPort = synchronizationPort;
         this.historyQuery = historyQuery;
         this.userService = userService;
+        this.descriptions = descriptions;
         this.responseConverter = new SyncStateResponseConverter(fieldReader, synchronizationPort);
     }
 
@@ -109,11 +112,14 @@ public class SynchronizationController implements SyncApi {
             @PageableDefault(size = 25) Pageable pageable) {
         Page<AttemptView> page = historyQuery.listAttempts(new AttemptFilter(Boolean.TRUE.equals(includeUnchanged)), pageable);
 
-        HalResponseContext.setDomainList(page.getContent());
-        return ResponseEntity.ok(page.map(this::toResponse));
+        Page<DescribedAttempt> described = page.map(view -> new DescribedAttempt(view, descriptions.describe(view.target())));
+
+        HalResponseContext.setDomainList(described.getContent());
+        return ResponseEntity.ok(described.map(this::toResponse));
     }
 
-    private SyncAttemptResponse toResponse(AttemptView view) {
+    private SyncAttemptResponse toResponse(DescribedAttempt described) {
+        AttemptView view = described.view();
         var attempt = view.attempt();
         return SyncAttemptResponseBuilder.builder()
                 .startedAt(attempt.getStartedAt())
@@ -125,7 +131,7 @@ public class SynchronizationController implements SyncApi {
                 .failureReason(attempt.getFailureReason())
                 .performedBy(performedBy(attempt.getActingUser()))
                 .entityType(SyncEntityTypeParam.fromValue(view.target().entityType().pathSegment()))
-                .entityLabel(view.externalId())
+                .entityLabel(described.description().map(EntityDescription::label).orElse(view.externalId()))
                 .externalId(view.externalId())
                 .build();
     }

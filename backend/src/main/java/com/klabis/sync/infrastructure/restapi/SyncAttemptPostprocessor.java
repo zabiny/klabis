@@ -13,13 +13,18 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
  * reset) are offered from there and never duplicated on the history.
  */
 @MvcComponent
-class SyncAttemptPostprocessor extends ModelWithDomainPostprocessor<SyncAttemptResponse, AttemptView> {
+class SyncAttemptPostprocessor extends ModelWithDomainPostprocessor<SyncAttemptResponse, DescribedAttempt> {
 
     @Override
-    public void process(EntityModel<SyncAttemptResponse> dtoModel, AttemptView view) {
+    public void process(EntityModel<SyncAttemptResponse> dtoModel, DescribedAttempt described) {
+        AttemptView view = described.view();
         SyncEntityTypeParam entityType = SyncEntityTypeParam.fromValue(view.target().entityType().pathSegment());
 
         klabisLinkTo(methodOn(SyncApi.class).getSyncState(entityType, view.target().entityId()))
                 .ifPresent(link -> dtoModel.add(link.withRel("syncState")));
+
+        described.description()
+                .map(EntityDescription::entityLink)
+                .ifPresent(link -> dtoModel.add(link.withRel("entity")));
     }
 }

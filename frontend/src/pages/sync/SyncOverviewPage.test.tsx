@@ -107,6 +107,20 @@ describe('SyncOverviewPage', () => {
         expect(indicators[0]).toHaveAttribute('data-href', 'http://localhost/api/members/1/sync');
     });
 
+    it('renders entity label as a link to the frontend route when entity link is present', () => {
+        renderPage([attempt({_links: {entity: {href: 'http://localhost/api/members/abc'}}})]);
+
+        const link = screen.getByRole('link', {name: 'Jan Novák (ZBM9500)'});
+        expect(link).toHaveAttribute('href', '/members/abc');
+    });
+
+    it('renders entity label as plain text when entity link is absent', () => {
+        renderPage([attempt({entityLabel: '4711', _links: {}})]);
+
+        expect(screen.getByText('4711')).toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: '4711'})).not.toBeInTheDocument();
+    });
+
     it('requests the next page when paging forward', () => {
         renderPage([attempt()], {size: 10, totalElements: 30, totalPages: 3, number: 0});
 
