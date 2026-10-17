@@ -4,6 +4,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {AuthProvider} from './AuthContext2';
 import {useAuth} from './authContext';
+import type {User, UserManager} from 'oidc-client-ts';
 
 const callOrder: string[] = [];
 const signoutRedirect = vi.fn(async () => {
@@ -14,11 +15,14 @@ const userManager = {
     signinRedirect: vi.fn(async () => undefined),
     signoutRedirect,
     signinRedirectCallback: vi.fn(),
-};
-
-vi.mock('../api/klabisUserManager.ts', () => ({
-    createUserManager: () => userManager,
-}));
+    settings: {redirect_uri: 'http://localhost/callback'},
+    events: {
+        addUserLoaded: vi.fn(),
+        addUserUnloaded: vi.fn(),
+        removeUserLoaded: vi.fn(),
+        removeUserUnloaded: vi.fn(),
+    },
+} as unknown as UserManager;
 
 const getServiceWorkerRegistration = vi.fn();
 vi.mock('../pwa/registerServiceWorker', () => ({
@@ -32,15 +36,9 @@ vi.mock('../pwa/pushSubscriptionStore', () => ({
     clearRegisteredEndpoint: () => clearRegisteredEndpoint(),
 }));
 
-const config = {
-    authority: 'http://a',
-    client_id: 'c',
-    redirect_uri: 'http://localhost/callback',
-} as never;
-
 const wrapper = ({children}: { children: React.ReactNode }) => (
     <MemoryRouter>
-        <AuthProvider config={config}>{children}</AuthProvider>
+        <AuthProvider userManager={userManager}>{children}</AuthProvider>
     </MemoryRouter>
 );
 
@@ -53,6 +51,24 @@ async function renderAuth() {
 function registrationWith(getSubscription: () => Promise<unknown>) {
     return {pushManager: {getSubscription}};
 }
+
+describe('AuthProvider user state', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('follows user loaded and unloaded events of the shared user manager', async () => {
+        const {result} = await renderAuth();
+        const onUserLoaded = vi.mocked(userManager.events.addUserLoaded).mock.calls.at(-1)![0];
+        const onUserUnloaded = vi.mocked(userManager.events.addUserUnloaded).mock.calls.at(-1)![0];
+
+        act(() => onUserLoaded({expired: false, profile: {sub: '1'}} as User));
+        expect(result.current.isAuthenticated).toBe(true);
+
+        act(() => onUserUnloaded());
+        expect(result.current.isAuthenticated).toBe(false);
+    });
+});
 
 describe('AuthProvider logout', () => {
     beforeEach(() => {

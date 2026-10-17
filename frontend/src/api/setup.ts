@@ -15,7 +15,8 @@ const fetchClient = createFetchClient<paths>({
 
 const promiseAccessToken = async (): Promise<string | null> => {
     const authUser = await klabisAuthUserManager.getUser();
-    if (!authUser || authUser.expired || !authUser.access_token) return null;
+    // An expired token is sent anyway: the 401 it gets triggers silent renew in onResponse
+    if (!authUser || !authUser.access_token) return null;
     return authUser.access_token;
 }
 

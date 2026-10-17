@@ -67,6 +67,21 @@ describe('setup.ts authMiddleware', () => {
             expect((result as Request).headers.get('Authorization')).toBe('Bearer initial-token');
         });
 
+        it('sends an expired access token so the 401 response triggers silent renew', async () => {
+            mockGetUser.mockResolvedValue({access_token: 'expired-token', expired: true});
+
+            const request = new Request('http://localhost/api/test');
+            const result = await authMiddleware.onRequest!({
+                request,
+                schemaPath: '/test',
+                params: {},
+                id: 'test-id',
+                options: {baseUrl: '/api', fetch: globalThis.fetch, parseAs: 'json', querySerializer: vi.fn(), bodySerializer: vi.fn()},
+            });
+
+            expect((result as Request).headers.get('Authorization')).toBe('Bearer expired-token');
+        });
+
         it('throws when no access token is available', async () => {
             mockGetUser.mockResolvedValue(null);
 

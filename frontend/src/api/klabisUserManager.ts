@@ -1,4 +1,4 @@
-import {User, UserManager, WebStorageStateStore,} from 'oidc-client-ts';
+import {UserManager, WebStorageStateStore,} from 'oidc-client-ts';
 import {normalizeUrl} from "./hateoas.ts";
 import {hideRenewalOverlay, showRenewalOverlay} from "./tokenRenewalState.ts";
 
@@ -9,8 +9,6 @@ export interface AuthConfig {
     post_logout_redirect_uri: string;
     response_type?: string;
     scope?: string;
-    onUserLoaded?: (user: User) => void;
-    onUserUnloaded?: () => void;
 }
 
 const SILENT_RENEW_MAX_ATTEMPTS = 3;
@@ -38,7 +36,8 @@ export const silentRenewRetry = (userManager: UserManager): Promise<void> => {
 
     const execute = async (): Promise<void> => {
         const existingUser = await userManager.getUser();
-        if (!existingUser || existingUser.expired) {
+        // An expired access token is still renewable: prompt=none relies on the authorization-server session, not on the token
+        if (!existingUser) {
             throw new Error('No active session — silent renew is not applicable');
         }
 
@@ -83,13 +82,7 @@ export const authConfig: AuthConfig = {
     scope: import.meta.env.VITE_OAUTH_SCOPE ?? 'openid profile MEMBERS EVENTS'
 };
 
-export const createUserManager = ({
-                                      onUserLoaded = () => {
-                                      },
-                                      onUserUnloaded = () => {
-                                      },
-                                      ...config
-                                  }: AuthConfig): UserManager => {
+export const createUserManager = (config: AuthConfig): UserManager => {
 
     const clientSecret = import.meta.env.VITE_OAUTH_CLIENT_SECRET;
 
@@ -118,7 +111,6 @@ export const createUserManager = ({
                 : '<unknown>';
             console.log(`Successfully refreshed token - will expire at ${expiresAt}`);
         }
-        onUserLoaded(user);
     });
 
     userManager.events.addAccessTokenExpiring(() => {
@@ -128,7 +120,6 @@ export const createUserManager = ({
 
     userManager.events.addUserUnloaded(() => {
         console.log('User unloaded');
-        onUserUnloaded();
     });
 
     userManager.events.addAccessTokenExpired(() => {

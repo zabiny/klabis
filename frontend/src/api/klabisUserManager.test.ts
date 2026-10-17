@@ -110,6 +110,16 @@ describe('silentRenewRetry', () => {
         expect(mockUserManager.removeUser).not.toHaveBeenCalled();
     });
 
+    it('renews when the stored access token has already expired', async () => {
+        mockUserManager.getUser.mockResolvedValue({access_token: 'old-token', expired: true} as User);
+        mockUserManager.signinSilent.mockResolvedValue({access_token: 'new-token'});
+
+        await silentRenewRetry(mockUserManager as unknown as UserManager);
+
+        expect(mockUserManager.signinSilent).toHaveBeenCalledTimes(1);
+        expect(mockUserManager.removeUser).not.toHaveBeenCalled();
+    });
+
     it('allows a new retry cycle after the previous one completes', async () => {
         mockUserManager.signinSilent
             .mockRejectedValueOnce(new Error('fail'))

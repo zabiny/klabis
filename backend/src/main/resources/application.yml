@@ -239,6 +239,11 @@ oris:
 
 server:
   port: 8080
+  servlet:
+    session:
+      # Silent renew of the SPA token (prompt=none) needs a live authorization-server session;
+      # each renewal touches it, so it must outlive the access token TTL with a wide margin.
+      timeout: ${KLABIS_SESSION_TIMEOUT:8h}
   ssl:
     enabled: false
   http2:

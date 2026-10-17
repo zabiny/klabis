@@ -1,7 +1,6 @@
 import React, {type ReactNode, useCallback, useEffect, useRef, useState,} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {User, UserManager,} from 'oidc-client-ts';
-import {type AuthConfig, createUserManager} from '../api/klabisUserManager.ts';
 import {normalizeUrl} from "../api/hateoas.ts";
 import {AuthContext, type AuthUserDetails} from './authContext';
 import {unsubscribeCurrentDevice} from '../pwa/pushSubscription';
@@ -28,7 +27,7 @@ async function unsubscribePushBestEffort(): Promise<void> {
 
 interface AuthProviderProps {
     children: ReactNode;
-    config: AuthConfig;
+    userManager: UserManager;
 }
 
 function createAuthUserDetails(user: User): AuthUserDetails {
@@ -41,23 +40,23 @@ function createAuthUserDetails(user: User): AuthUserDetails {
     } as AuthUserDetails;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({children, userManager}) => {
     const navigate = useNavigate();
 
-    const [userManager, setUserManager] = useState<UserManager>();
     const [isLoading, setLoading] = useState(true);
 
     const [authUserDetails, setAuthUserDetails] = useState<AuthUserDetails | null>(null);
 
     useEffect(() => {
-        const userManager = createUserManager({
-            onUserLoaded: (user) => setValidUser(user),
-            onUserUnloaded: () => setValidUser(null),
-            ...config
-        });
-
-        setUserManager(userManager);
-    }, [config]);
+        const onUserLoaded = (user: User) => setValidUser(user);
+        const onUserUnloaded = () => setValidUser(null);
+        userManager.events.addUserLoaded(onUserLoaded);
+        userManager.events.addUserUnloaded(onUserUnloaded);
+        return () => {
+            userManager.events.removeUserLoaded(onUserLoaded);
+            userManager.events.removeUserUnloaded(onUserUnloaded);
+        };
+    }, [userManager]);
 
     function setValidUser(user: User | null): void {
         if (user != null && !user.expired) {
@@ -67,45 +66,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, config}) =>
         }
     }
 
-    function isCurrentLocationSameAsRedirectUri(config: { redirect_uri: string }): boolean {
-        return new URL(normalizeUrl(config.redirect_uri)).pathname === window.location.pathname;
+    function isCurrentLocationSameAsRedirectUri(redirectUri: string): boolean {
+        return new URL(normalizeUrl(redirectUri)).pathname === window.location.pathname;
     }
 
-    useEffect(() => {
-        if (userManager != null) {
-            // Handle the redirect callback on app load
-            if (isCurrentLocationSameAsRedirectUri(config)) {
-                // handling callback from OAuth server
-                userManager
-                    .signinRedirectCallback()
-                    .then((user) => {
-                        setValidUser(user);
-                        setLoading(false);
-                        navigate('/', {replace: true});
-                    })
-                    .catch((err) => {
-                        console.error('Signin redirect callback error:', err);
-                        setLoading(false);
-                    });
-            } else {
-                userManager
-                    .getUser()
-                    .then((user) => {
-                        setValidUser(user);
-                    })
-                    .catch(console.error)
-                    .finally(() => setLoading(false));
-            }
+    // StrictMode runs effects twice on mount; the authorization code can be exchanged only once.
+    const initialized = useRef(false);
 
+    useEffect(() => {
+        if (initialized.current) return;
+        initialized.current = true;
+        // Handle the redirect callback on app load
+        if (isCurrentLocationSameAsRedirectUri(userManager.settings.redirect_uri)) {
+            // handling callback from OAuth server
+            userManager
+                .signinRedirectCallback()
+                .then((user) => {
+                    setValidUser(user);
+                    setLoading(false);
+                    navigate('/', {replace: true});
+                })
+                .catch((err) => {
+                    console.error('Signin redirect callback error:', err);
+                    setLoading(false);
+                });
+        } else {
+            userManager
+                .getUser()
+                .then((user) => {
+                    setValidUser(user);
+                })
+                .catch(console.error)
+                .finally(() => setLoading(false));
         }
-    }, [userManager, config]);
+    }, [userManager]);
 
     // signoutRedirect clears the stored user, which makes ProtectedRoute call login(); a signin navigation would supersede the signout one.
     const logoutInProgress = useRef(false);
 
     const login = useCallback(() => {
         if (logoutInProgress.current) return;
-        userManager?.signinRedirect();
+        userManager.signinRedirect();
     }, [userManager]);
 
     const logout = useCallback(async () => {
