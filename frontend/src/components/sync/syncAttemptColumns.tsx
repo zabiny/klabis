@@ -6,6 +6,8 @@ import {enumLabelOrEmpty} from './syncAttemptFormat';
 export const enumCell = (enumType: string) =>
     ({value}: {value: unknown}) => enumLabelOrEmpty(enumType, value);
 
+const textCell = ({value}: {value: unknown}) => typeof value === 'string' ? value : '';
+
 const columnLabels = labels.syncOverview.columns;
 
 export const attemptColumns = {
@@ -31,9 +33,9 @@ export const attemptColumns = {
         </TableCell>
     ),
     failureReason: (
-        <TableCell key="failureReason" column="failureReason">{columnLabels.failureReason}</TableCell>
+        <TableCell key="failureReason" column="failureReason" dataRender={textCell}>{columnLabels.failureReason}</TableCell>
     ),
     performedBy: (
-        <TableCell key="performedBy" column="performedBy">{columnLabels.performedBy}</TableCell>
+        <TableCell key="performedBy" column="performedBy" dataRender={textCell}>{columnLabels.performedBy}</TableCell>
     ),
 };

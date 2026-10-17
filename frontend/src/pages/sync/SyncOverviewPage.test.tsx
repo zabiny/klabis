@@ -211,6 +211,18 @@ describe('SyncOverviewPage', () => {
 
         expect(screen.getByText('Zatím nebyl zaznamenán žádný pokus o synchronizaci.')).toBeInTheDocument();
     });
+
+    it('shows filtered empty message when filters are active', () => {
+        renderPage([], undefined, '/sync/attempts?outcome=FAILED');
+
+        expect(screen.getByText('Žádný pokus neodpovídá zvoleným filtrům.')).toBeInTheDocument();
+    });
+
+    it('does not render "undefined" for missing optional values', () => {
+        renderPage([attempt({direction: undefined})]);
+
+        expect(screen.queryByText(/undefined/)).not.toBeInTheDocument();
+    });
 });
 
 describe('SyncOverviewPage attention tab', () => {

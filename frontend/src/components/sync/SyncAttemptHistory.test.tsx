@@ -75,6 +75,12 @@ describe('SyncAttemptHistory', () => {
             '/api/events/1/sync/attempts?includeUnchanged=true&page=0&size=10');
     });
 
+    it('does not render "undefined" for missing optional values', () => {
+        mockResponse([attempt({failureReason: undefined, performedBy: undefined, direction: undefined})]);
+        renderHistory();
+        expect(screen.queryByText(/undefined/)).not.toBeInTheDocument();
+    });
+
     it('shows retention message when there are no attempts', () => {
         mockResponse([]);
         renderHistory();

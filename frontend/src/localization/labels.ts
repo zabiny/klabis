@@ -154,6 +154,7 @@ export const labels = {
         tabAttention: 'Vyžaduje pozornost',
         attentionEmpty: 'Nic nevyžaduje pozornost.',
         empty: 'Zatím nebyl zaznamenán žádný pokus o synchronizaci.',
+        emptyFiltered: 'Žádný pokus neodpovídá zvoleným filtrům.',
         filters: {
             entityType: 'Druh entity',
             outcome: 'Výsledek',

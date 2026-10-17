@@ -37,9 +37,9 @@ GitHub issue: zabiny/klabis#389. Each group is an end-to-end vertical slice; fol
 ## 6. Integration and verification
 
 - [x] 6.1 Run backend and frontend test suites via the test-runner agent and verify they pass
-- [ ] 6.2 Run `npm run refresh-backend-server-resources` and verify the build succeeds
-- [ ] 6.3 QA the page in the browser at http://localhost:3000 as ZBM9000 (overview, filters, attention view, resolve a conflict and restart a failed record from the overview, history in overlay) and as ZBM9500 (no menu entry); verify all spec scenarios behave as written
-- [ ] 6.4 Run `openspec validate add-sync-overview-page --strict` and verify it passes
+- [x] 6.2 Run `npm run refresh-backend-server-resources` and verify the build succeeds
+- [x] 6.3 QA the page in the browser at http://localhost:3000 as ZBM9000 (overview, filters, attention view, resolve a conflict and restart a failed record from the overview, history in overlay) and as ZBM9500 (no menu entry); verify all spec scenarios behave as written — overview, entity names/links, filters, attention view and permission checks verified with seeded local data; overlay actions and overlay history not verifiable locally (sync state needs the `oris` profile adapters), covered by unit tests only
+- [x] 6.4 Run `openspec validate add-sync-overview-page --strict` and verify it passes
 - [ ] 6.5 Add label `BackendCompleted` to GitHub issue #389 once backend groups 1–5 are merged
 
 ## Workflow follow-up

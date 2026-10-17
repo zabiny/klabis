@@ -49,7 +49,9 @@ const AttemptsTab = (): ReactElement => {
                 key={JSON.stringify(extraParams)}
                 collectionName="syncAttempts"
                 tableId="sync.attempts"
-                emptyMessage={labels.syncOverview.empty}
+                emptyMessage={Object.keys(extraParams).length > 0
+                    ? labels.syncOverview.emptyFiltered
+                    : labels.syncOverview.empty}
                 extraParams={extraParams}
             >
                 {attemptColumns.startedAt}
