@@ -111,6 +111,51 @@ paths:
               description: Next page (present when one exists)
             prev:
               description: Previous page (present when one exists)
+            recordsNeedingAttention:
+              description: Linked entities in CONFLICT or FAILED, which wait for a person (listSyncRecords)
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+
+  /api/sync/records:
+    get:
+      operationId: listSyncRecords
+      tags: [Sync]
+      summary: List linked entities by synchronisation status
+      description: |
+        Returns the linked entities currently in any of the requested statuses, unpaged. The
+        "needs attention" view asks for `CONFLICT` and `FAILED`.
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      parameters:
+        - name: status
+          in: query
+          description: Only records in one of these statuses; repeat the parameter to request several.
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: array
+            minItems: 1
+            items:
+              # Plain string: see the outcome parameter of listSyncAttempts; the controller validates the value.
+              type: string
+      responses:
+        '200':
+          description: Linked entities in the requested statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SyncRecordSummaryResponse'
+          x-hal-links:
+            self:
+              description: This collection, with the requested statuses
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -486,6 +531,34 @@ components:
           description: Readable name of the entity (e.g. member name and registration number); falls back to the external identifier.
         externalId:
           type: string
+
+    SyncRecordSummaryResponse:
+      type: object
+      description: |
+        A linked entity and its current synchronisation status. Each item links to the current
+        synchronisation state of that entity (`syncState`) and, when the entity still exists and
+        the caller may open it, to the entity's own resource (`entity`).
+      x-klabis-relation:
+        collectionRelation: syncRecords
+      required: [entityType, status, entityLabel, externalId, failedAttemptsSinceLastSuccess]
+      properties:
+        entityType:
+          $ref: '#/components/schemas/SyncEntityTypeParam'
+        status:
+          type: string
+          enum: [NEW, IN_SYNC, RETRYING, CONFLICT, FAILED, RETIRED]
+        entityLabel:
+          type: string
+          description: Readable name of the entity; falls back to the external identifier.
+        externalId:
+          type: string
+        lastSuccessfulSyncAt:
+          type: string
+          format: date-time
+          description: Absent when the entity was never synchronised successfully.
+        failedAttemptsSinceLastSuccess:
+          type: integer
+          description: Failed attempts since the last success or reset, outages not counted.
 
     ResolveSyncConflictRequest:
       type: object

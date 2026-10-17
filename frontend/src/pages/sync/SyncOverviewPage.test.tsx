@@ -212,3 +212,122 @@ describe('SyncOverviewPage', () => {
         expect(screen.getByText('Zatím nebyl zaznamenán žádný pokus o synchronizaci.')).toBeInTheDocument();
     });
 });
+
+describe('SyncOverviewPage attention tab', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    const record = (overrides?: Record<string, unknown>) => ({
+        entityType: 'members',
+        status: 'CONFLICT',
+        entityLabel: 'Jan Novák (ZBM9500)',
+        externalId: '4711',
+        lastSuccessfulSyncAt: '2026-10-01T10:15:30Z',
+        failedAttemptsSinceLastSuccess: 3,
+        _links: {syncState: {href: 'http://localhost/api/members/1/sync'}},
+        ...overrides,
+    });
+
+    const renderWithAttention = (records: unknown[], initialEntry = '/sync/attempts') => {
+        const attempts: HalResponse = {
+            _links: {
+                self: {href: 'http://localhost/api/sync/attempts'},
+                recordsNeedingAttention: {href: 'http://localhost/api/sync/records?status=CONFLICT&status=FAILED'},
+            },
+            _embedded: {syncAttempts: [attempt()]},
+            page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
+        };
+        const recordsData: HalResponse = {
+            _links: {self: {href: 'http://localhost/api/sync/records?status=CONFLICT&status=FAILED'}},
+            _embedded: {syncRecords: records},
+        };
+        vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => ({
+            data: url.includes('/sync/records') ? recordsData : attempts,
+            error: null,
+        })) as unknown as typeof useAuthorizedQuery);
+        vi.mocked(useHalPageData).mockReturnValue(pageData(attempts) as unknown as ReturnType<typeof useHalPageData>);
+        const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+        return render(
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter initialEntries={[initialEntry]}>
+                    <SyncOverviewPage/>
+                </MemoryRouter>
+            </QueryClientProvider>
+        );
+    };
+
+    const openAttentionTab = () => fireEvent.click(screen.getByRole('tab', {name: 'Vyžaduje pozornost'}));
+
+    it('shows attempts tab first and switches to attention tab', () => {
+        renderWithAttention([record()]);
+
+        expect(screen.getByRole('tab', {name: 'Všechny pokusy'})).toHaveAttribute('aria-selected', 'true');
+        expect(screen.queryByText('Selhaných pokusů')).not.toBeInTheDocument();
+
+        openAttentionTab();
+
+        expect(screen.getByRole('tab', {name: 'Vyžaduje pozornost'})).toHaveAttribute('aria-selected', 'true');
+        expect(screen.getByRole('columnheader', {name: 'Selhaných pokusů'})).toBeInTheDocument();
+    });
+
+    it('follows the recordsNeedingAttention link', () => {
+        renderWithAttention([record()]);
+        openAttentionTab();
+
+        const params = lastUrl().searchParams;
+        expect(lastUrl().pathname).toBe('/api/sync/records');
+        expect(params.getAll('status')).toEqual(['CONFLICT', 'FAILED']);
+    });
+
+    it('renders record rows with status, kind, last sync, failed count, indicator and entity link', () => {
+        renderWithAttention([record({status: 'FAILED', _links: {
+            syncState: {href: 'http://localhost/api/members/1/sync'},
+            entity: {href: 'http://localhost/api/members/abc'},
+        }})]);
+        openAttentionTab();
+
+        const row = screen.getByRole('link', {name: 'Jan Novák (ZBM9500)'}).closest('tr')!;
+        expect(screen.getByRole('link', {name: 'Jan Novák (ZBM9500)'})).toHaveAttribute('href', '/members/abc');
+        expect(within(row).getByText('Selhalo')).toBeInTheDocument();
+        expect(within(row).getByText('Člen')).toBeInTheDocument();
+        expect(within(row).getByText('3')).toBeInTheDocument();
+        expect(within(row).getByTestId('sync-indicator')).toHaveAttribute('data-href', 'http://localhost/api/members/1/sync');
+    });
+
+    it('shows never-synchronised text when there was no successful sync', () => {
+        renderWithAttention([record({lastSuccessfulSyncAt: undefined})]);
+        openAttentionTab();
+
+        expect(screen.getByText('Nikdy synchronizováno')).toBeInTheDocument();
+    });
+
+    it('shows empty message when nothing needs attention', () => {
+        renderWithAttention([]);
+        openAttentionTab();
+
+        expect(screen.getByText('Nic nevyžaduje pozornost.')).toBeInTheDocument();
+    });
+
+    it('does not offer the attention tab when the link is missing', () => {
+        renderPage([attempt()]);
+
+        expect(screen.queryByRole('tab', {name: 'Vyžaduje pozornost'})).not.toBeInTheDocument();
+    });
+
+    it('links tab and panel for accessibility', () => {
+        renderWithAttention([record()]);
+        openAttentionTab();
+
+        const tab = screen.getByRole('tab', {name: 'Vyžaduje pozornost'});
+        const panel = screen.getByRole('tabpanel');
+        expect(tab).toHaveAttribute('aria-controls', panel.id);
+        expect(panel).toHaveAttribute('aria-labelledby', tab.id);
+    });
+
+    it('restores the attention tab from the URL and keeps attempt filters', () => {
+        renderWithAttention([record()], '/sync/attempts?tab=attention&outcome=FAILED');
+
+        expect(screen.getByRole('tab', {name: 'Vyžaduje pozornost'})).toHaveAttribute('aria-selected', 'true');
+        fireEvent.click(screen.getByRole('tab', {name: 'Všechny pokusy'}));
+        expect(screen.getByLabelText('Výsledek')).toHaveValue('FAILED');
+    });
+});

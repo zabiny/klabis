@@ -1,7 +1,7 @@
 package com.klabis.sync.application;
 
 import com.klabis.sync.domain.SyncAttempt;
-import com.klabis.sync.domain.SyncOutcome;
+import com.klabis.sync.domain.SyncAttempts;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -33,17 +33,7 @@ class RetryScheduler {
      * returns it.
      */
     int failedAttemptsSince(List<SyncAttempt> historyNewestFirst) {
-        int count = 0;
-        for (SyncAttempt attempt : historyNewestFirst) {
-            if (attempt.getOutcome() == SyncOutcome.SUCCESS || attempt.getOutcome() == SyncOutcome.RESET) {
-                break;
-            }
-            if (attempt.getOutcome() == SyncOutcome.OUTAGE) {
-                continue;
-            }
-            count++;
-        }
-        return count;
+        return SyncAttempts.failedSinceLastSuccess(historyNewestFirst);
     }
 
     /**

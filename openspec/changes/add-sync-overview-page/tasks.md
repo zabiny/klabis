@@ -24,9 +24,9 @@ GitHub issue: zabiny/klabis#389. Each group is an end-to-end vertical slice; fol
 
 ## 4. "Vyžaduje pozornost" view (design D6)
 
-- [ ] 4.1 Add `listSyncRecords` (`GET /api/sync/records?status=…`) and `SyncRecordSummaryResponse` to `sync.yaml`, plus the `recordsNeedingAttention` collection link on `listSyncAttempts`; verify `openapiBundle -PopenapiCheck` passes
-- [ ] 4.2 Implement `SyncHistoryQuery.listRecordsIn` and the controller operation (describer label/link, `syncState` link, failure count); verify with repository test (CONFLICT/FAILED returned, RETRYING/RETIRED not) and `@WebMvcTest` incl. 403 without `SYNC:MANAGE`
-- [ ] 4.3 Frontend: second tab following `recordsNeedingAttention`, rows with `SyncStatusIndicator`, empty state "nothing needs attention", list refreshed after an overlay action; verify with Vitest
+- [x] 4.1 Add `listSyncRecords` (`GET /api/sync/records?status=…`) and `SyncRecordSummaryResponse` to `sync.yaml`, plus the `recordsNeedingAttention` collection link on `listSyncAttempts`; verify `openapiBundle -PopenapiCheck` passes
+- [x] 4.2 Implement `SyncHistoryQuery.listRecordsIn` and the controller operation (describer label/link, `syncState` link, failure count); verify with repository test (CONFLICT/FAILED returned, RETRYING/RETIRED not) and `@WebMvcTest` incl. 403 without `SYNC:MANAGE`
+- [x] 4.3 Frontend: second tab following `recordsNeedingAttention`, rows with `SyncStatusIndicator`, empty state "nothing needs attention", list refreshed after an overlay action; verify with Vitest
 
 ## 5. Recent attempts in the synchronisation state view (design D7)
 

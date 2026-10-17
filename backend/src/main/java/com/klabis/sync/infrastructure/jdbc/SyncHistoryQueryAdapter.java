@@ -4,6 +4,7 @@ import com.klabis.sync.SyncAttemptId;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.application.AttemptFilter;
 import com.klabis.sync.application.AttemptView;
+import com.klabis.sync.application.RecordView;
 import com.klabis.sync.application.SyncHistoryQuery;
 import com.klabis.sync.domain.*;
 import org.springframework.data.domain.Page;
@@ -14,9 +15,12 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Component
@@ -36,9 +40,11 @@ class SyncHistoryQueryAdapter implements SyncHistoryQuery {
             """;
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final SyncAttemptRepository attemptRepository;
 
-    SyncHistoryQueryAdapter(NamedParameterJdbcTemplate jdbc) {
+    SyncHistoryQueryAdapter(NamedParameterJdbcTemplate jdbc, SyncAttemptRepository attemptRepository) {
         this.jdbc = jdbc;
+        this.attemptRepository = attemptRepository;
     }
 
     @Override
@@ -74,6 +80,34 @@ class SyncHistoryQueryAdapter implements SyncHistoryQuery {
                 params, ATTEMPT_VIEW);
 
         return new PageImpl<>(content, pageable, total == null ? 0 : total);
+    }
+
+    @Override
+    public List<RecordView> listRecordsIn(Set<SyncStatus> statuses) {
+        if (statuses.isEmpty()) {
+            return List.of();
+        }
+        MapSqlParameterSource params = new MapSqlParameterSource(
+                "statuses", statuses.stream().map(SyncStatus::name).toList());
+        return jdbc.query(RECORD_SELECT, params, this::toRecordView);
+    }
+
+    private static final String RECORD_SELECT = """
+            SELECT r.id, r.entity_type, r.entity_id, r.external_id, r.status, r.last_successful_sync_at
+            FROM sync.sync_record r
+            WHERE r.status IN (:statuses)
+            ORDER BY r.entity_type, r.entity_id
+            """;
+
+    private RecordView toRecordView(ResultSet rs, int rowNum) throws SQLException {
+        Timestamp lastSuccess = rs.getTimestamp("last_successful_sync_at");
+        SyncRecordId id = new SyncRecordId(rs.getObject("id", UUID.class));
+        return new RecordView(
+                new SyncTarget(SyncEntityType.valueOf(rs.getString("entity_type")), rs.getString("entity_id")),
+                rs.getString("external_id"),
+                SyncStatus.valueOf(rs.getString("status")),
+                lastSuccess != null ? lastSuccess.toInstant() : null,
+                SyncAttempts.failedSinceLastSuccess(attemptRepository.findByRecordIdOrderByStartedAtDesc(id)));
     }
 
     private static final RowMapper<AttemptView> ATTEMPT_VIEW = (rs, rowNum) -> {

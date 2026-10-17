@@ -150,7 +150,9 @@ export const labels = {
 
     syncOverview: {
         title: 'Synchronizace',
-        attemptsHeading: 'Pokusy o synchronizaci',
+        tabAttempts: 'Všechny pokusy',
+        tabAttention: 'Vyžaduje pozornost',
+        attentionEmpty: 'Nic nevyžaduje pozornost.',
         empty: 'Zatím nebyl zaznamenán žádný pokus o synchronizaci.',
         filters: {
             entityType: 'Druh entity',
@@ -170,6 +172,9 @@ export const labels = {
             failureReason: 'Důvod selhání',
             performedBy: 'Provedl',
             status: 'Stav',
+            currentStatus: 'Aktuální stav',
+            lastSuccessfulSyncAt: 'Poslední úspěšná synchronizace',
+            failedAttempts: 'Selhaných pokusů',
         },
     },
 

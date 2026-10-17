@@ -7,6 +7,7 @@ import com.klabis.common.users.UserService;
 import com.klabis.common.users.domain.User;
 import com.klabis.sync.application.AttemptFilter;
 import com.klabis.sync.application.AttemptView;
+import com.klabis.sync.application.RecordView;
 import com.klabis.sync.application.SyncHistoryQuery;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
@@ -14,6 +15,7 @@ import com.klabis.sync.application.SyncProjectionFieldsPort;
 import com.klabis.sync.domain.SyncOutcome;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncResolution;
+import com.klabis.sync.domain.SyncStatus;
 import com.klabis.sync.domain.SyncTarget;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -128,6 +133,31 @@ public class SynchronizationController implements SyncApi {
 
         HalResponseContext.setDomainList(described.getContent());
         return ResponseEntity.ok(described.map(this::toResponse));
+    }
+
+    @Override
+    public ResponseEntity<List<SyncRecordSummaryResponse>> listSyncRecords(List<String> status) {
+        Set<SyncStatus> statuses = EnumSet.noneOf(SyncStatus.class);
+        status.forEach(value -> statuses.add(SyncStatus.valueOf(value)));
+
+        List<DescribedRecord> described = historyQuery.listRecordsIn(statuses).stream()
+                .map(view -> new DescribedRecord(view, descriptions.describe(view.target())))
+                .toList();
+
+        HalResponseContext.setDomainList(described);
+        return ResponseEntity.ok(described.stream().map(this::toResponse).toList());
+    }
+
+    private SyncRecordSummaryResponse toResponse(DescribedRecord described) {
+        RecordView view = described.view();
+        return SyncRecordSummaryResponseBuilder.builder()
+                .entityType(SyncEntityTypeParam.fromValue(view.target().entityType().pathSegment()))
+                .status(SyncStateResponseStatus.fromValue(view.status().name()))
+                .entityLabel(described.description().map(EntityDescription::label).orElse(view.externalId()))
+                .externalId(view.externalId())
+                .lastSuccessfulSyncAt(view.lastSuccessfulSyncAt())
+                .failedAttemptsSinceLastSuccess(view.failedAttemptsSinceLastSuccess())
+                .build();
     }
 
     private SyncAttemptResponse toResponse(DescribedAttempt described) {

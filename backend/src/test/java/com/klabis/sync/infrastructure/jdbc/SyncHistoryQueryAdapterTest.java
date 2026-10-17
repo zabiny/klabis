@@ -4,6 +4,7 @@ import com.klabis.CleanupTestData;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.application.AttemptFilter;
 import com.klabis.sync.application.AttemptView;
+import com.klabis.sync.application.RecordView;
 import com.klabis.sync.application.SyncHistoryQuery;
 import com.klabis.sync.domain.*;
 import org.jmolecules.ddd.annotation.Repository;
@@ -172,5 +173,68 @@ class SyncHistoryQueryAdapterTest {
         assertThat(startedAts(page)).containsExactly(BASE.plus(1, ChronoUnit.MINUTES));
         assertThat(query.listAttempts(AttemptFilter.changedOnly().withEntityType(SyncEntityType.EVENT).withOutcome(SyncOutcome.SUCCESS),
                 PageRequest.of(0, 10)).getTotalElements()).isZero();
+    }
+
+    private SyncRecordId recordIn(SyncEntityType type, String entityId, String externalId, SyncStatus status, Instant lastSuccess) {
+        return recordRepository.save(SyncRecord.reconstruct(SyncRecordId.newId(), new SyncTarget(type, entityId),
+                new ExternalReference(ExternalSystem.ORIS, externalId), status, null, null, null, null,
+                SyncSchedule.empty(), null, null, lastSuccess, null, null)).getId();
+    }
+
+    @Test
+    @DisplayName("lists only records in the requested statuses")
+    void listsRecordsInRequestedStatuses() {
+        recordIn(SyncEntityType.EVENT, "e-conflict", "1", SyncStatus.CONFLICT, null);
+        recordIn(SyncEntityType.EVENT, "e-failed", "2", SyncStatus.FAILED, null);
+        recordIn(SyncEntityType.EVENT, "e-retrying", "3", SyncStatus.RETRYING, null);
+        recordIn(SyncEntityType.EVENT, "e-retired", "4", SyncStatus.RETIRED, null);
+
+        var attention = query.listRecordsIn(java.util.Set.of(SyncStatus.CONFLICT, SyncStatus.FAILED));
+        var conflictOnly = query.listRecordsIn(java.util.Set.of(SyncStatus.CONFLICT));
+
+        assertThat(attention).extracting(r -> r.target().entityId()).containsExactlyInAnyOrder("e-conflict", "e-failed");
+        assertThat(attention).extracting(RecordView::status)
+                .containsExactlyInAnyOrder(SyncStatus.CONFLICT, SyncStatus.FAILED);
+        assertThat(conflictOnly).extracting(r -> r.target().entityId()).containsExactly("e-conflict");
+        assertThat(query.listRecordsIn(java.util.Set.of())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("exposes external id and last successful sync")
+    void exposesExternalIdAndLastSuccess() {
+        recordIn(SyncEntityType.MEMBER, "m-1", "177", SyncStatus.CONFLICT, BASE);
+        recordIn(SyncEntityType.MEMBER, "m-2", "178", SyncStatus.CONFLICT, null);
+
+        var views = query.listRecordsIn(java.util.Set.of(SyncStatus.CONFLICT));
+
+        assertThat(views).filteredOn(v -> v.target().entityId().equals("m-1")).singleElement().satisfies(v -> {
+            assertThat(v.externalId()).isEqualTo("177");
+            assertThat(v.lastSuccessfulSyncAt()).isEqualTo(BASE);
+        });
+        assertThat(views).filteredOn(v -> v.target().entityId().equals("m-2")).singleElement()
+                .satisfies(v -> assertThat(v.lastSuccessfulSyncAt()).isNull());
+    }
+
+    @Test
+    @DisplayName("counts failed attempts since the last success or reset, ignoring outages")
+    void countsFailedAttemptsSinceLastSuccess() {
+        SyncRecordId failed = recordIn(SyncEntityType.EVENT, "e-failed", "9", SyncStatus.FAILED, BASE);
+        attempt(failed, 1, SyncTriggerKind.SCHEDULED, SyncDirection.INWARD, SyncOutcome.FAILED);
+        attempt(failed, 2, SyncTriggerKind.SCHEDULED, SyncDirection.INWARD, SyncOutcome.SUCCESS);
+        attempt(failed, 3, SyncTriggerKind.SCHEDULED, null, SyncOutcome.FAILED);
+        attempt(failed, 4, SyncTriggerKind.SCHEDULED, null, SyncOutcome.OUTAGE);
+        attempt(failed, 5, SyncTriggerKind.SCHEDULED, null, SyncOutcome.FAILED);
+        SyncRecordId reset = recordIn(SyncEntityType.EVENT, "e-reset", "10", SyncStatus.CONFLICT, null);
+        attempt(reset, 1, SyncTriggerKind.SCHEDULED, null, SyncOutcome.FAILED);
+        attempt(reset, 2, SyncTriggerKind.MANUAL, null, SyncOutcome.RESET);
+        attempt(reset, 3, SyncTriggerKind.SCHEDULED, null, SyncOutcome.CONFLICT);
+        SyncRecordId neverAttempted = recordIn(SyncEntityType.EVENT, "e-none", "11", SyncStatus.CONFLICT, null);
+        attempt(neverAttempted, 1, SyncTriggerKind.SCHEDULED, null, SyncOutcome.FAILED);
+        attempt(neverAttempted, 2, SyncTriggerKind.SCHEDULED, null, SyncOutcome.FAILED);
+
+        var views = query.listRecordsIn(java.util.Set.of(SyncStatus.CONFLICT, SyncStatus.FAILED));
+
+        assertThat(views).extracting(v -> v.target().entityId() + "=" + v.failedAttemptsSinceLastSuccess())
+                .containsExactlyInAnyOrder("e-failed=2", "e-reset=1", "e-none=2");
     }
 }
