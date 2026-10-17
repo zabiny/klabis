@@ -5,6 +5,8 @@ import jakarta.servlet.ServletContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -276,6 +278,23 @@ class WebContentRoutingIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", containsString("no-cache")))
                 .andExpect(header().string("Cache-Control", containsString("must-revalidate")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/index.html", "/manifest.webmanifest", "/sw.js", "/silent-renew.html", "/favicon.svg"})
+    @DisplayName("non-hashed static files are validated by content ETag, never by Last-Modified")
+    void staticFilesAreValidatedByContentEtag(String path) throws Exception {
+        MvcResult result = mockMvc.perform(get(path))
+                .andExpect(status().isOk())
+                .andExpect(header().doesNotExist("Last-Modified"))
+                .andExpect(header().exists("ETag"))
+                .andReturn();
+        String etag = result.getResponse().getHeader("ETag");
+
+        mockMvc.perform(get(path).header("If-None-Match", etag))
+                .andExpect(status().isNotModified());
+        mockMvc.perform(get(path).header("If-None-Match", "\"previous-release\""))
+                .andExpect(status().isOk());
     }
 
     private static String firstAssetPath() throws IOException {
