@@ -191,6 +191,8 @@ paths:
           x-hal-links:
             self:
               description: This synchronisation resource
+            attempts:
+              description: The most recent attempts on this entity (listEntitySyncAttempts); present only with SYNC:MANAGE
           x-hal-templates:
             synchronizeNow:
               operation: synchronizeNow
@@ -239,6 +241,68 @@ paths:
           $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/NeedsDecision'
+
+  /api/{entityType}/{id}/sync/attempts:
+    get:
+      operationId: listEntitySyncAttempts
+      tags: [Sync]
+      summary: List synchronisation attempts of one entity
+      description: |
+        Returns the paginated, newest-first attempts recorded for one linked entity, with the
+        same items as `listSyncAttempts`. Attempts that changed nothing are left out unless
+        `includeUnchanged=true`; manual attempts are always included. Default: page=0, size=25.
+      security:
+        - KlabisAuth: [SYNC]
+      x-klabis-authority: SYNC_MANAGE
+      x-spring-paginated: true
+      parameters:
+        - $ref: '#/components/parameters/EntityTypeParam'
+        - $ref: '#/components/parameters/SyncEntityIdParam'
+        - name: includeUnchanged
+          in: query
+          description: Also return automatic attempts that succeeded without changing anything.
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - $ref: './_shared/pagination.yaml#/components/parameters/PageParam'
+        - name: size
+          in: query
+          description: The size of the page to be returned
+          required: false
+          schema:
+            type: integer
+            default: 25
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated list of the entity's synchronisation attempts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SyncAttemptResponse'
+          x-hal-links:
+            self:
+              description: This collection, with the current paging parameters
+            first:
+              description: First page (present when the result is paged)
+            last:
+              description: Last page (present when the result is paged)
+            next:
+              description: Next page (present when one exists)
+            prev:
+              description: Previous page (present when one exists)
+        '400':
+          $ref: './_shared/responses.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: './_shared/responses.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: './_shared/responses.yaml#/components/responses/NotFound'
 
   /api/{entityType}/{id}/sync/acknowledgement:
     post:

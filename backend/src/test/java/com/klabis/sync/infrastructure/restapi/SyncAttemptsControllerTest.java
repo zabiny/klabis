@@ -10,9 +10,11 @@ import com.klabis.sync.SyncWebMvcTest;
 import com.klabis.sync.application.AttemptFilter;
 import com.klabis.sync.application.AttemptView;
 import com.klabis.sync.application.SyncHistoryQuery;
+import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -93,6 +97,8 @@ class SyncAttemptsControllerTest {
                 .andExpect(jsonPath("$._embedded.syncAttempts[0].externalId").value("8123"))
                 .andExpect(jsonPath("$._embedded.syncAttempts[0]._links.syncState.href")
                         .value(containsString("/api/events/event-1/sync")))
+                .andExpect(jsonPath("$._links.recordsNeedingAttention.href")
+                        .value(org.hamcrest.Matchers.endsWith("/api/sync/records?status=CONFLICT&status=FAILED")))
                 .andExpect(jsonPath("$.page.totalElements").value(1));
     }
 
@@ -239,6 +245,78 @@ class SyncAttemptsControllerTest {
                 .andExpect(jsonPath("$.title").value("Bad Request"));
     }
 
+    @Nested
+    @DisplayName("GET /api/{entityType}/{id}/sync/attempts")
+    class EntityAttempts {
+
+        private static final SyncTarget TARGET = new SyncTarget(SyncEntityType.EVENT, "event-1");
+
+        @Autowired
+        private SynchronizationPort synchronizationPort;
+
+        private SyncRecord record;
+
+        @BeforeEach
+        void linkedEntity() {
+            record = SyncRecord.enroll(SyncRecordId.newId(), TARGET, new ExternalReference(ExternalSystem.ORIS, "8123"));
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.of(record));
+            when(historyQuery.listAttemptsOf(any(), anyBoolean(), any())).thenReturn(Page.empty());
+        }
+
+        @Test
+        @DisplayName("returns the entity's attempts with the same items as the overview")
+        @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+        void returnsAttempts() throws Exception {
+            when(historyQuery.listAttemptsOf(eq(record.getId()), eq(false), any())).thenReturn(new PageImpl<>(
+                    List.of(viewOf(SyncEntityType.EVENT, "event-1")), PageRequest.of(0, 25), 1));
+
+            mockMvc.perform(get("/api/events/event-1/sync/attempts").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.syncAttempts[0].outcome").value("SUCCESS"))
+                    .andExpect(jsonPath("$._embedded.syncAttempts[0].entityLabel").value("Spring Cup"))
+                    .andExpect(jsonPath("$._embedded.syncAttempts[0]._links.syncState.href")
+                            .value(containsString("/api/events/event-1/sync")))
+                    .andExpect(jsonPath("$._links.recordsNeedingAttention").doesNotExist())
+                    .andExpect(jsonPath("$.page.totalElements").value(1));
+        }
+
+        @Test
+        @DisplayName("hides attempts that changed nothing by default and passes includeUnchanged and paging on")
+        @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+        void passesFlagAndPaging() throws Exception {
+            mockMvc.perform(get("/api/events/event-1/sync/attempts").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk());
+            mockMvc.perform(get("/api/events/event-1/sync/attempts?includeUnchanged=true&page=1&size=10")
+                            .accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isOk());
+
+            ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+            verify(historyQuery).listAttemptsOf(eq(record.getId()), eq(false), pageable.capture());
+            assertThat(pageable.getValue().getPageSize()).isEqualTo(25);
+            verify(historyQuery).listAttemptsOf(eq(record.getId()), eq(true), pageable.capture());
+            assertThat(pageable.getValue().getPageNumber()).isEqualTo(1);
+            assertThat(pageable.getValue().getPageSize()).isEqualTo(10);
+        }
+
+        @Test
+        @DisplayName("answers 404 when the entity is not linked")
+        @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
+        void returns404WhenNotLinked() throws Exception {
+            when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.empty());
+
+            mockMvc.perform(get("/api/events/event-1/sync/attempts").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("is forbidden without SYNC:MANAGE")
+        @WithKlabisMockUser(authorities = {})
+        void forbiddenWithoutAuthority() throws Exception {
+            mockMvc.perform(get("/api/events/event-1/sync/attempts").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
     @Test
     @DisplayName("is forbidden without SYNC:MANAGE")
     @WithKlabisMockUser(authorities = {})
@@ -253,7 +331,7 @@ class SyncAttemptsControllerTest {
     void rootLinkPresentForManager() throws Exception {
         mockMvc.perform(get("/api").accept(MediaTypes.HAL_JSON_VALUE))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$._links.syncOverview.href").value(containsString("/api/sync/attempts")));
+                .andExpect(jsonPath("$._links.syncOverview.href").value(org.hamcrest.Matchers.startsWith("http://localhost/api/sync/attempts{?")));
     }
 
     @Test

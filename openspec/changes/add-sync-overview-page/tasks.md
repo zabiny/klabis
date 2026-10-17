@@ -30,9 +30,9 @@ GitHub issue: zabiny/klabis#389. Each group is an end-to-end vertical slice; fol
 
 ## 5. Recent attempts in the synchronisation state view (design D7)
 
-- [ ] 5.1 Add `listEntitySyncAttempts` (`GET /api/{entityType}/{id}/sync/attempts`) and the `attempts` link on `getSyncState` to `sync.yaml`; verify `openapiBundle -PopenapiCheck` passes
-- [ ] 5.2 Implement `SyncHistoryQuery.listAttemptsOf` and the controller operation; add the `attempts` link in `SyncStatePostprocessor` only for `SYNC:MANAGE`; verify with repository test and `@WebMvcTest` (link present for manager, absent for plain user, 404 for unlinked entity)
-- [ ] 5.3 Frontend: "Historie pokusů" section in `SyncStatusOverlay` following the `attempts` link (10 most recent, "show unchanged" toggle, empty-retention message); verify with Vitest incl. no section when the link is absent
+- [x] 5.1 Add `listEntitySyncAttempts` (`GET /api/{entityType}/{id}/sync/attempts`) and the `attempts` link on `getSyncState` to `sync.yaml`; verify `openapiBundle -PopenapiCheck` passes
+- [x] 5.2 Implement `SyncHistoryQuery.listAttemptsOf` and the controller operation; add the `attempts` link in `SyncStatePostprocessor` only for `SYNC:MANAGE`; verify with repository test and `@WebMvcTest` (link present for manager, absent for plain user, 404 for unlinked entity)
+- [x] 5.3 Frontend: "Historie pokusů" section in `SyncStatusOverlay` following the `attempts` link (10 most recent, "show unchanged" toggle, empty-retention message); verify with Vitest incl. no section when the link is absent
 
 ## 6. Integration and verification
 

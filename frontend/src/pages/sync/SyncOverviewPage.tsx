@@ -10,7 +10,8 @@ import type {HalResourceLinks} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {formatDateTimeSeconds} from '../../utils/dateUtils.ts';
-import {getEnumLabel, labels} from '../../localization';
+import {labels} from '../../localization';
+import {enumLabelOrEmpty} from '../../components/sync/syncAttemptFormat.ts';
 import {SyncAttemptFilterBar} from './SyncAttemptFilterBar.tsx';
 import {useSyncAttemptFilters} from './useSyncAttemptFilters.ts';
 
@@ -18,7 +19,7 @@ type SyncRecordItem = components['schemas']['SyncRecordSummaryResponse'];
 type SyncAttemptItem = components['schemas']['EntityModelSyncAttemptResponse'];
 
 const enumCell = (enumType: string) =>
-    ({value}: {value: unknown}) => typeof value === 'string' ? getEnumLabel(enumType, value) : null;
+    ({value}: {value: unknown}) => enumLabelOrEmpty(enumType, value);
 
 const syncStateIndicator = (item: {_links?: unknown}) => {
     const links = item._links as Record<string, HalResourceLinks> | undefined;

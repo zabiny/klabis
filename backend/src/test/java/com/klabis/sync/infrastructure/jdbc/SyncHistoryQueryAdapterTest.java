@@ -175,6 +175,39 @@ class SyncHistoryQueryAdapterTest {
                 PageRequest.of(0, 10)).getTotalElements()).isZero();
     }
 
+    @Test
+    @DisplayName("lists only the attempts of one record, newest first, hiding unchanged ones unless asked")
+    void listsAttemptsOfOneRecord() {
+        attempt(eventRecord, 1, SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS);
+        attempt(eventRecord, 2, SyncTriggerKind.SCHEDULED, null, SyncOutcome.SUCCESS);
+        attempt(eventRecord, 3, SyncTriggerKind.SCHEDULED, SyncDirection.INWARD, SyncOutcome.SUCCESS);
+        attempt(memberRecord, 4, SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS);
+
+        Page<AttemptView> changed = query.listAttemptsOf(eventRecord, false, PageRequest.of(0, 10));
+        Page<AttemptView> all = query.listAttemptsOf(eventRecord, true, PageRequest.of(0, 10));
+
+        assertThat(startedAts(changed)).containsExactly(BASE.plus(3, ChronoUnit.MINUTES), BASE.plus(1, ChronoUnit.MINUTES));
+        assertThat(changed.getTotalElements()).isEqualTo(2);
+        assertThat(startedAts(all)).containsExactly(
+                BASE.plus(3, ChronoUnit.MINUTES), BASE.plus(2, ChronoUnit.MINUTES), BASE.plus(1, ChronoUnit.MINUTES));
+        assertThat(all.getContent()).allSatisfy(v ->
+                assertThat(v.target()).isEqualTo(new SyncTarget(SyncEntityType.EVENT, "event-1")));
+    }
+
+    @Test
+    @DisplayName("pages the attempts of one record")
+    void pagesAttemptsOfOneRecord() {
+        for (int i = 0; i < 5; i++) {
+            attempt(eventRecord, i, SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS);
+        }
+        attempt(memberRecord, 9, SyncTriggerKind.MANUAL, null, SyncOutcome.SUCCESS);
+
+        Page<AttemptView> second = query.listAttemptsOf(eventRecord, true, PageRequest.of(1, 2));
+
+        assertThat(second.getTotalElements()).isEqualTo(5);
+        assertThat(startedAts(second)).containsExactly(BASE.plus(2, ChronoUnit.MINUTES), BASE.plus(1, ChronoUnit.MINUTES));
+    }
+
     private SyncRecordId recordIn(SyncEntityType type, String entityId, String externalId, SyncStatus status, Instant lastSuccess) {
         return recordRepository.save(SyncRecord.reconstruct(SyncRecordId.newId(), new SyncTarget(type, entityId),
                 new ExternalReference(ExternalSystem.ORIS, externalId), status, null, null, null, null,

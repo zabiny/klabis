@@ -132,6 +132,23 @@ public class SynchronizationController implements SyncApi {
         Page<DescribedAttempt> described = page.map(view -> new DescribedAttempt(view, descriptions.describe(view.target())));
 
         HalResponseContext.setDomainList(described.getContent());
+        HalResponseContext.setContext(new SyncOverviewListing());
+        return ResponseEntity.ok(described.map(this::toResponse));
+    }
+
+    @Override
+    public ResponseEntity<Page<SyncAttemptResponse>> listEntitySyncAttempts(
+            @PathVariable SyncEntityTypeParam entityType,
+            @PathVariable String id,
+            Boolean includeUnchanged,
+            @PageableDefault(size = 25) Pageable pageable) {
+        SyncRecord record = requireRecord(entityType, id);
+        Page<AttemptView> page = historyQuery.listAttemptsOf(
+                record.getId(), Boolean.TRUE.equals(includeUnchanged), pageable);
+
+        Page<DescribedAttempt> described = page.map(view -> new DescribedAttempt(view, descriptions.describe(view.target())));
+
+        HalResponseContext.setDomainList(described.getContent());
         return ResponseEntity.ok(described.map(this::toResponse));
     }
 

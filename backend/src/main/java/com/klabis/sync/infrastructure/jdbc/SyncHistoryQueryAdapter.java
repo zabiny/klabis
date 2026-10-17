@@ -70,6 +70,21 @@ class SyncHistoryQueryAdapter implements SyncHistoryQuery {
             conditions.add("a.started_at < :to");
             params.addValue("to", Timestamp.from(filter.to()));
         }
+        return page(conditions, params, pageable);
+    }
+
+    @Override
+    public Page<AttemptView> listAttemptsOf(SyncRecordId recordId, boolean includeUnchanged, Pageable pageable) {
+        MapSqlParameterSource params = new MapSqlParameterSource("recordId", recordId.value());
+        List<String> conditions = new ArrayList<>();
+        conditions.add("a.sync_record_id = :recordId");
+        if (!includeUnchanged) {
+            conditions.add(UNCHANGED_RULE);
+        }
+        return page(conditions, params, pageable);
+    }
+
+    private Page<AttemptView> page(List<String> conditions, MapSqlParameterSource params, Pageable pageable) {
         String where = conditions.isEmpty() ? "" : "WHERE " + String.join(" AND ", conditions) + "\n";
 
         Long total = jdbc.queryForObject("SELECT COUNT(*) " + FROM + where, params, Long.class);

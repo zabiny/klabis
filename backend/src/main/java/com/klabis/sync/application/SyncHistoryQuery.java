@@ -1,5 +1,6 @@
 package com.klabis.sync.application;
 
+import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.SyncStatus;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,12 @@ public interface SyncHistoryQuery {
      * Newest first. The sort of {@code pageable} is ignored.
      */
     Page<AttemptView> listAttempts(AttemptFilter filter, Pageable pageable);
+
+    /**
+     * Attempts of one record, newest first, applying the same "changed nothing" rule as
+     * {@link #listAttempts}. The sort of {@code pageable} is ignored.
+     */
+    Page<AttemptView> listAttemptsOf(SyncRecordId recordId, boolean includeUnchanged, Pageable pageable);
 
     /**
      * Records currently in any of {@code statuses}; empty for an empty set.
