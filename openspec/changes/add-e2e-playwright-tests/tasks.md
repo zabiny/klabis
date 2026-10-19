@@ -10,9 +10,9 @@
 
 ## 2. Read-only slice: role-based main menu
 
-- [ ] 2.1 Add `e2e/features/application-navigation.feature` (`@spec:application-navigation`) with the scenario "User sees only menu items they are authorized for", for admin and member (Scenario Outline).
-- [ ] 2.2 Implement the reusable navigation steps (`I open the application`, `the main menu shows "<item>"`, `the main menu does not show "<item>"`).
-- [ ] 2.3 Run against target A on `:3000` and on `:8443`. Make the scenario fail by asserting a wrong menu item, to confirm it really checks the menu, then revert.
+- [x] 2.1 Add `e2e/features/application-navigation.feature` (`@spec:application-navigation`) with the scenario "User sees only menu items they are authorized for", for admin and member (Scenario Outline).
+- [x] 2.2 Implement the reusable navigation steps (`I open the application`, `the main menu shows "<item>"`, `the main menu does not show "<item>"`).
+- [x] 2.3 Run against target A on `:3000` and on `:8443`. Make the scenario fail by asserting a wrong menu item, to confirm it really checks the menu, then revert.
 
 ## 3. Mutating slice: create event through the UI
 
