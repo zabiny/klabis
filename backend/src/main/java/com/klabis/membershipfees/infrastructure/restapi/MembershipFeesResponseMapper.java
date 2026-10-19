@@ -77,13 +77,13 @@ final class MembershipFeesResponseMapper {
                         .yearlyFee(info.yearlyFee().amount())
                         .build()
                 : null;
-        UUID recommendedLevelId = info.recommendedLevelId()
-                .map(MembershipFeeTierId::value)
+        UUID recommendedGroupId = info.recommendedGroupId()
+                .map(MembershipFeeGroupId::value)
                 .orElse(null);
         return MemberFeeSummaryResponseBuilder.builder()
                 .currentGroup(currentGroup)
                 .votingOpen(info.votingOpen())
-                .recommendedLevelId(recommendedLevelId)
+                .recommendedGroupId(recommendedGroupId)
                 .build();
     }
 

@@ -12,7 +12,7 @@ const l = labels.memberFee;
 interface FeeSummaryData extends FeeSummaryBase {
     _templates?: {
         chooseTier?: HalFormsTemplate;
-        cancelChoice?: HalFormsTemplate;
+        removeChoice?: HalFormsTemplate;
     };
 }
 
@@ -106,7 +106,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
     }
 
     const chooseLevelTemplate = summary?._templates?.chooseTier;
-    const cancelChoiceTemplate = summary?._templates?.cancelChoice;
+    const removeChoiceTemplate = summary?._templates?.removeChoice;
 
     const groupOptions: ChooseLevelOption[] =
         chooseLevelTemplate?.properties?.[0]?.options?.inline?.flatMap((o) => {
@@ -117,12 +117,14 @@ export const MemberFeeChoicePage = (): ReactElement => {
             return [];
         }) ?? [];
 
-    const effectiveGroupId = chosenGroupId || summary?.recommendedLevelId || groupOptions[0]?.value || '';
+    const effectiveGroupId = chosenGroupId || summary?.recommendedGroupId || groupOptions[0]?.value || '';
 
     const handleChooseLevel = () => {
-        const url = chooseLevelTemplate?.target ?? `/api/members/${memberId}/fee-choice/${year}`;
+        if (!chooseLevelTemplate?.target) {
+            return;
+        }
         submitChoice(
-            {url, data: {membershipFeeGroupId: effectiveGroupId}},
+            {url: chooseLevelTemplate.target, data: {membershipFeeGroupId: effectiveGroupId}},
             {
                 onSuccess: async () => {
                     await refetch();
@@ -132,9 +134,11 @@ export const MemberFeeChoicePage = (): ReactElement => {
     };
 
     const handleCancelChoice = () => {
-        const url = cancelChoiceTemplate?.target ?? `/api/members/${memberId}/fee-choice/${year}`;
+        if (!removeChoiceTemplate?.target) {
+            return;
+        }
         cancelChoice(
-            {url},
+            {url: removeChoiceTemplate.target},
             {
                 onSuccess: async () => {
                     await refetch();
@@ -222,7 +226,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
                                     {summary.currentGroup ? l.changeTier : l.chooseTier}
                                 </Button>
 
-                                {cancelChoiceTemplate && summary.currentGroup && (
+                                {removeChoiceTemplate && summary.currentGroup && (
                                     <Button
                                         variant="secondary"
                                         onClick={handleCancelChoice}

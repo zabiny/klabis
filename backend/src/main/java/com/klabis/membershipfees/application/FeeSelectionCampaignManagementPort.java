@@ -64,8 +64,8 @@ public interface FeeSelectionCampaignManagementPort {
     FeeSelectionCampaign changeDeadline(FeeSelectionCampaignId id, ChangeDeadlineCommand command);
 
     /**
-     * Returns the year of the currently active campaign if one exists,
-     * or the current calendar year as a fallback.
+     * Returns the year of the active campaign if one exists, otherwise the latest campaign year
+     * that is not in the past (so a just-closed campaign still counts), otherwise the current year.
      * Used to build links pointing to the most relevant fee summary endpoint.
      */
     int relevantFeeYear(LocalDate today);

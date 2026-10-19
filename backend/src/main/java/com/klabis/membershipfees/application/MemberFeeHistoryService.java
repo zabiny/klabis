@@ -1,6 +1,7 @@
 package com.klabis.membershipfees.application;
 
 import com.klabis.members.MemberId;
+import com.klabis.membershipfees.MembershipFeeGroupId;
 import com.klabis.membershipfees.MembershipFeeTierId;
 import com.klabis.membershipfees.domain.FeeSelectionCampaignRepository;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
@@ -47,11 +48,19 @@ class MemberFeeHistoryService implements MemberFeeHistoryPort {
                     votingOpen, Optional.empty());
         }
 
-        Optional<MembershipFeeTierId> recommended = votingOpen
+        Optional<MembershipFeeGroupId> recommended = votingOpen
                 ? memberChoicePort.getRecommendedLevelForYear(memberId, year)
+                        .flatMap(tierId -> findPublishedGroup(year, tierId))
                 : Optional.empty();
 
         return new CurrentLevelInfo(null, null, null, votingOpen, recommended);
+    }
+
+    private Optional<MembershipFeeGroupId> findPublishedGroup(int year, MembershipFeeTierId tierId) {
+        return groupRepository.findByYear(year).stream()
+                .filter(group -> group.getSourceLevelId().equals(tierId))
+                .map(MembershipFeeGroup::getId)
+                .findFirst();
     }
 
     @Transactional(readOnly = true)

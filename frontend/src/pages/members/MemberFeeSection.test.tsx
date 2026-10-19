@@ -68,7 +68,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -81,7 +81,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2027'}},
             });
 
@@ -96,7 +96,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2099'}},
             });
 
@@ -112,7 +112,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -125,7 +125,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2027'}},
             });
 
@@ -140,7 +140,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -155,7 +155,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: false,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -168,7 +168,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: false,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -181,7 +181,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: false,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -196,7 +196,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: false,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -209,7 +209,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: false,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
             });
 
@@ -224,7 +224,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {
                     self: {href: '/api/members/member-1/fee-summary/2026'},
                     feeHistory: {href: '/api/members/member-1/fee-history'},
@@ -240,7 +240,7 @@ describe('MemberFeeSection', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {
                     self: {href: '/api/members/member-1/fee-summary/2026'},
                 },

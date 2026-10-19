@@ -88,12 +88,12 @@ class MemberFeeSummaryControllerTest {
         }
 
         @Test
-        @DisplayName("should return votingOpen=true and recommendedLevelId when no choice and voting open")
+        @DisplayName("should return votingOpen=true and recommendedGroupId when no choice and voting open")
         @WithKlabisMockUser(memberId = MEMBER_ID_STR)
         void shouldReturnVotingOpenWithRecommended() throws Exception {
             MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
                     null, null, null, true,
-                    Optional.of(new MembershipFeeTierId(LEVEL_UUID)));
+                    Optional.of(new MembershipFeeGroupId(LEVEL_UUID)));
             when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
 
             mockMvc.perform(
@@ -102,7 +102,7 @@ class MemberFeeSummaryControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.currentGroup").doesNotExist())
                     .andExpect(jsonPath("$.votingOpen").value(true))
-                    .andExpect(jsonPath("$.recommendedLevelId").value(LEVEL_UUID.toString()));
+                    .andExpect(jsonPath("$.recommendedGroupId").value(LEVEL_UUID.toString()));
         }
 
         @Test
@@ -139,6 +139,38 @@ class MemberFeeSummaryControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.chooseTier.properties[?(@.name=='membershipFeeGroupId')].options.inline[0].prompt")
                             .value("Základní"));
+        }
+
+        @Test
+        @DisplayName("should include removeChoice affordance targeting the fee-choice endpoint when voting is open and member has chosen")
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        void shouldIncludeRemoveChoiceAffordanceWhenChosenAndVotingOpen() throws Exception {
+            MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
+                    new MembershipFeeGroupId(GROUP_UUID), "Základ", FEE, true, Optional.empty());
+            when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.removeChoice.method").value("DELETE"))
+                    .andExpect(jsonPath("$._templates.removeChoice.target").value(
+                            org.hamcrest.Matchers.endsWith("/api/members/" + MEMBER_UUID + "/fee-choice/" + YEAR)));
+        }
+
+        @Test
+        @DisplayName("should not include removeChoice affordance when voting is closed")
+        @WithKlabisMockUser(memberId = MEMBER_ID_STR)
+        void shouldNotIncludeRemoveChoiceAffordanceWhenVotingClosed() throws Exception {
+            MemberFeeHistoryPort.CurrentLevelInfo info = new MemberFeeHistoryPort.CurrentLevelInfo(
+                    new MembershipFeeGroupId(GROUP_UUID), "Základ", FEE, false, Optional.empty());
+            when(memberFeeHistoryPort.getCurrentLevelInfo(any(), eq(YEAR))).thenReturn(info);
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-summary/{year}", MEMBER_UUID, YEAR)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.removeChoice").doesNotExist());
         }
 
         @Test
