@@ -53,7 +53,7 @@ A new `RepresentationModelProcessor<EntityModel<MemberDetailsResponse>>` in the 
 
 *Alternative: a guardian-specific check*, either imperative like `GuardianListAccess` or a new guardian-only authority. Rejected. `MEMBERS:EDIT_PROFILE` is how the project already models "a guardian may see and edit the data of their minor". It is evaluated declaratively by `AuthorizationEvaluator`, so both the endpoint and the `klabisLinkTo` link follow it with no extra code. A new authority would need a new relationship source and new grant plumbing for a single read endpoint.
 
-*Consequence:* a free group can also delegate "Úprava údajů člena" (`MEMBERS:EDIT_PROFILE`), and such a group's owners would also see the history of its members. Those owners can already see and edit the member's full profile, which is more sensitive than fee levels, so this is accepted. Confirming it is the only remaining open question.
+*Consequence:* a free group can also delegate "Úprava údajů člena" (`MEMBERS:EDIT_PROFILE`), and such a group's owners would also see the history of its members. Those owners can already see and edit the member's full profile, which is more sensitive than fee levels, so this is accepted. Confirmed by the product owner.
 
 The rest stays as it is:
 
@@ -151,7 +151,7 @@ No new parameters or request bodies, and no HAL+FORMS affordances.
 
 - [The yearly fee snapshot can be edited until the first surcharge] → The history shows the current snapshot of that year's group. After the first surcharge the snapshot is frozen, so for past years the value is stable.
 - [A wider read authorization exposes the history to `MEMBERS:MANAGE` holders and guardians] → This is intended. Administrators already see the same data through the fee group member lists. WebMvc tests pin that ordinary members, `MEMBERS:READ` holders and a guardian of a different minor are still refused.
-- [Free-group owners with delegated "Úprava údajů člena" also gain access] → An accepted consequence of D2. See the open question.
+- [Free-group owners with delegated "Úprava údajů člena" also gain access] → An accepted consequence of D2, confirmed by the product owner.
 - [A guardian loses access when the minor turns 18] → This is intended. It follows the existing guardian grant lifecycle.
 - [The fee section now renders for administrators on other members] → It shows only the history link. A `MemberDetailPage` test covers the "admin on another member" case, which the existing "does NOT show MemberFeeSection when feeSummary link is absent" test describes. That test has to be rewritten.
 
@@ -170,4 +170,4 @@ No data migration. Deploy backend and frontend together, as usual. Rollback is a
 
 ## Open Questions
 
-1. **Free-group owners with delegated "Úprava údajů člena".** Through D2 they also see the fee history of their group's members. The design accepts this, but it needs product confirmation. If it is rejected, the alternative is a guardian-only check that reads `LegalGuardianGroup` membership. That would replace `MEMBERS_EDIT_PROFILE` in `x-klabis-authority`, and the link processor would need a matching explicit check.
+None. Free-group owners with delegated "Úprava údajů člena" seeing members' fee history is confirmed as intended for now. Splitting fee visibility into its own authority may follow in a future change.
