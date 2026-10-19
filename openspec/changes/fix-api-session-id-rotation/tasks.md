@@ -18,5 +18,5 @@ Test and fix ship together so that every commit stays green (Red-Green inside th
 
 ## 3. Documentation (one commit)
 
-- [ ] 3.1 Update the "Authentication" paragraph of the E2E section in `frontend/CLAUDE.md`. Remove the "known backend defect" sentence and describe the mechanism that resulted from group 2.
-- [ ] 3.2 If group 2 changed the re-entry mechanism, add a note to the D4 section of `openspec/changes/add-e2e-playwright-tests/design.md` (or its archived copy) that cookie-only re-entry works after `fix-api-session-id-rotation`.
+- [x] 3.1 Update the "Authentication" paragraph of the E2E section in `frontend/CLAUDE.md`. Remove the "known backend defect" sentence and describe the mechanism that resulted from group 2.
+- [x] 3.2 If group 2 changed the re-entry mechanism, add a note to the D4 section of `openspec/changes/add-e2e-playwright-tests/design.md` (or its archived copy) that cookie-only re-entry works after `fix-api-session-id-rotation`.
