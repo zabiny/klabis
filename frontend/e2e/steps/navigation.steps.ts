@@ -34,3 +34,11 @@ Then(/^the main menu (shows|does not show) "(.*)"$/, async ({page}, visibility: 
         await expect(entry).toHaveCount(0);
     }
 });
+
+Then('the page shows section {text}', async ({page}, heading: string) => {
+    await expect(page.getByRole('heading', {name: heading, exact: true})).toBeVisible();
+});
+
+Then('the page does not show section {text}', async ({page}, heading: string) => {
+    await expect(page.getByRole('heading', {name: heading, exact: true})).toHaveCount(0);
+});

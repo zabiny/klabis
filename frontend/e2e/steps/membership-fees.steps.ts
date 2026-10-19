@@ -1,6 +1,7 @@
 import {expect} from '@playwright/test';
 import {createBdd} from 'playwright-bdd';
-import {test, type ApiClient, type HalResource} from '../support/fixtures';
+import {localIsoDate, toDisplayDate} from '../support/dates';
+import {test, type ApiClient, type FeeScenarioState, type HalResource} from '../support/fixtures';
 
 const {Given, When, Then} = createBdd(test);
 
@@ -9,11 +10,11 @@ type Linked = HalResource & {
     [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 };
 
-const isoDate = (daysFromToday: number) => {
-    const date = new Date();
-    date.setDate(date.getDate() + daysFromToday);
-    return date.toISOString().slice(0, 10);
-};
+// membership-fees.feature asserts the voting deadline as "{date+30}".
+const VOTING_DEADLINE_DAYS = 30;
+const CATALOG_TIER_FEE = 1500;
+// membership-fees.feature asserts "1000 CZK" for the first tier of a campaign.
+const campaignTierFee = (index: number) => 1000 * (index + 1);
 
 const embeddedList = (resource: Linked) => Object.values(resource._embedded ?? {})[0] ?? [];
 
@@ -45,14 +46,22 @@ const ensureTier = async (admin: ApiClient, name: string, yearlyFeeAmount: numbe
     return created!.id as string;
 };
 
-const publishCampaign = async (admin: ApiClient, year: number, tierNames: string[]) => {
+const publishCampaign = async (admin: ApiClient, feeState: FeeScenarioState, tierNames: string[]) => {
     await closeActiveCampaign(admin);
+    const year = await nextFreeCampaignYear(admin);
     const levelIds = [];
     for (const [index, name] of tierNames.entries()) {
-        levelIds.push(await ensureTier(admin, name, 1000 * (index + 1)));
+        levelIds.push(await ensureTier(admin, name, campaignTierFee(index)));
     }
     const root = await feeRoot(admin);
-    await admin.post(admin.templateTarget(root, 'publishYear'), {year, votingDeadline: isoDate(30), levelIds});
+    await admin.post(admin.templateTarget(root, 'publishYear'), {
+        year,
+        votingDeadline: localIsoDate(VOTING_DEADLINE_DAYS),
+        levelIds,
+    });
+    feeState.year = year;
+    const campaign = await admin.follow(await feeRoot(admin), 'activeCampaign');
+    feeState.campaignPath = new URL(campaign._links!.self.href, 'http://placeholder').pathname.replace(/^\/api/, '');
 };
 
 const memberProfileHref = async (member: ApiClient) =>
@@ -71,24 +80,16 @@ Given('no fee selection campaign is active', async ({apiAs, feeState}) => {
 });
 
 Given('an active fee selection campaign for tier {text}', async ({apiAs, feeState}, tier: string) => {
-    const admin = apiAs('admin');
-    await closeActiveCampaign(admin);
-    feeState.year = await nextFreeCampaignYear(admin);
-    await publishCampaign(admin, feeState.year, [tier]);
+    await publishCampaign(apiAs('admin'), feeState, [tier]);
 });
 
 Given('an active fee selection campaign for tiers {text} and {text}', async ({apiAs, feeState}, first: string, second: string) => {
-    const admin = apiAs('admin');
-    await closeActiveCampaign(admin);
-    feeState.year = await nextFreeCampaignYear(admin);
-    await publishCampaign(admin, feeState.year, [first, second]);
+    await publishCampaign(apiAs('admin'), feeState, [first, second]);
 });
 
 Given('a closed fee selection campaign for tier {text}', async ({apiAs, feeState}, tier: string) => {
     const admin = apiAs('admin');
-    await closeActiveCampaign(admin);
-    feeState.year = await nextFreeCampaignYear(admin);
-    await publishCampaign(admin, feeState.year, [tier]);
+    await publishCampaign(admin, feeState, [tier]);
     await closeActiveCampaign(admin);
     feeState.closedYear = feeState.year;
 });
@@ -99,12 +100,12 @@ Given('the fee selection campaign is closed', async ({apiAs, feeState}) => {
 });
 
 Given('a catalog fee tier {text} exists', async ({apiAs}, name: string) => {
-    await ensureTier(apiAs('admin'), name, 1500);
+    await ensureTier(apiAs('admin'), name, CATALOG_TIER_FEE);
 });
 
 Given('a catalog fee tier {text} with a percentage rule for ranking {text} exists', async ({apiAs}, name: string, ranking: string) => {
     const admin = apiAs('admin');
-    const tierId = await ensureTier(admin, name, 1500);
+    const tierId = await ensureTier(admin, name, CATALOG_TIER_FEE);
     const tier = await admin.get(`/api/membership-fee-tiers/${tierId}`);
     const rules = await admin.follow(tier, 'rules');
     const raceType = (rules._templates!.addRule as any).properties // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -145,10 +146,10 @@ Given('a published event {text} with open registration exists', async ({apiAs}, 
     const events = await admin.follow(await admin.get('/api'), 'events');
     await admin.post(admin.templateTarget(events, 'createEvent'), {
         name,
-        eventDate: isoDate(60),
+        eventDate: localIsoDate(60),
         organizer: 'ZBM',
         siUsage: 'NOT_USED',
-        deadlines: [isoDate(30)],
+        deadlines: [localIsoDate(VOTING_DEADLINE_DAYS)],
         categories: [{name: 'M21'}],
     });
     const created = embeddedList(await admin.get(`${events._links!.self.href}?q=${encodeURIComponent(name)}`))
@@ -180,14 +181,6 @@ When('I open the closed campaign', async ({page, feeState}) => {
     await page.getByRole('link', {name: String(feeState.closedYear), exact: true}).first().click();
 });
 
-When('I open the campaign of the scenario year', async ({page, feeState}) => {
-    await page.getByRole('link', {name: String(feeState.year), exact: true}).first().click();
-});
-
-Then('I see the campaign year', async ({page, feeState}) => {
-    await expect(page.getByText(String(feeState.year), {exact: true}).first()).toBeVisible();
-});
-
 const section = (page: import('@playwright/test').Page, heading: string) =>
     page.getByRole('heading', {name: heading, exact: true}).locator('xpath=..');
 
@@ -207,22 +200,19 @@ Then('the active campaign lists fee group {text}', async ({page}, name: string) 
     await expect(section(page, 'Skupiny').getByText(name, {exact: true})).toBeVisible();
 });
 
-Then('I do not see the date {text}', async ({page}, isoDate: string) => {
-    const [year, month, day] = isoDate.split('-').map(Number);
-    await expect(page.getByText(`${day}. ${month}. ${year}`, {exact: true})).toHaveCount(0);
+Then('I do not see the date {text}', async ({page}, iso: string) => {
+    await expect(page.getByText(toDisplayDate(iso), {exact: true})).toHaveCount(0);
 });
 
-Then('I see the date {text}', async ({page}, isoDate: string) => {
-    const [year, month, day] = isoDate.split('-').map(Number);
-    await expect(page.getByText(`${day}. ${month}. ${year}`, {exact: true}).first()).toBeVisible();
+Then('I see the date {text}', async ({page}, iso: string) => {
+    await expect(page.getByText(toDisplayDate(iso), {exact: true}).first()).toBeVisible();
 });
 
-When('I choose option {text}', async ({page}, name: string) => {
-    await page.getByRole('radio', {name}).click();
-});
-
-Then('the option {text} is selected', async ({page}, name: string) => {
-    await expect(page.getByRole('radio', {name})).toHaveAttribute('aria-checked', 'true');
+When('I navigate in the application to the scenario campaign', async ({page, feeState}) => {
+    await page.evaluate((target) => {
+        window.history.pushState({}, '', target);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+    }, feeState.campaignPath);
 });
 
 Then(/^the event registrations (contain|do not contain) "(.*)"$/, async ({page}, presence: string, text: string) => {
@@ -237,6 +227,7 @@ Then(/^the event registrations (contain|do not contain) "(.*)"$/, async ({page},
 
 Then(/^the account (shows|does not show) the yearly membership fee of the scenario year$/,
     async ({page, feeState}, presence: string) => {
+        await expect(page.getByText('Zůstatek').first()).toBeVisible();
         const charge = page.getByText(`Roční členský příspěvek ${feeState.year}`, {exact: true});
         if (presence === 'shows') {
             await expect(charge).toBeVisible();
@@ -244,11 +235,3 @@ Then(/^the account (shows|does not show) the yearly membership fee of the scenar
             await expect(charge).toHaveCount(0);
         }
     });
-
-Then('the page shows section {text}', async ({page}, heading: string) => {
-    await expect(page.getByRole('heading', {name: heading, exact: true})).toBeVisible();
-});
-
-Then('the page does not show section {text}', async ({page}, heading: string) => {
-    await expect(page.getByRole('heading', {name: heading, exact: true})).toHaveCount(0);
-});

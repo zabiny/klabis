@@ -1,4 +1,7 @@
 @spec:membership-fees
+# Spec scenarios intentionally not automated:
+# - "Editing is rejected after the first surcharge": needs a surcharge calculated for a finished event registration.
+# - "Yearly fee is not posted twice": needs the fee generation job to run a second time, which only a clock-driven job triggers.
 Feature: Membership fees
 
   Scenario: Administrator creates a fee level
@@ -32,7 +35,8 @@ Feature: Membership fees
     And a catalog fee tier "{prefix}Member view tier" exists
     When I open the application
     And I navigate in the application to "/membership-fee-tiers"
-    Then I do not see "Přidat tier"
+    Then I see "{prefix}Member view tier"
+    And I do not see "Přidat tier"
     When I open the catalog tier "{prefix}Member view tier"
     Then I see "Základní informace"
     And I do not see "Upravit"
@@ -95,7 +99,7 @@ Feature: Membership fees
     And I tick "{prefix}Campaign tier" in "Tiery"
     And I click "Odeslat"
     Then the page shows section "Aktivní kampaň"
-    And I see the campaign year
+    And the active campaigns section contains the campaign year
     And the active campaign lists fee group "{prefix}Campaign tier"
 
   Scenario: Voting deadline must be in the future
@@ -166,7 +170,8 @@ Feature: Membership fees
     When I open the application
     And I click "Členské příspěvky"
     And I open the closed campaign
-    Then I do not see "Změnit deadline"
+    Then I see "Skupiny"
+    And I do not see "Změnit deadline"
 
   Scenario: Member chooses a level
     Given I am logged in as "member"
@@ -246,7 +251,8 @@ Feature: Membership fees
     Then I see "ZBM9500"
     When I navigate back
     And I click "{prefix}Basic"
-    Then I do not see "ZBM9500"
+    Then I see "Žádní členové ve skupině."
+    And I do not see "ZBM9500"
 
   Scenario: Member who missed the choice is blocked and deregistered
     Given I am logged in as "member"
@@ -260,9 +266,8 @@ Feature: Membership fees
     And I click "Akce"
     And I fill "Hledat" with "{prefix}Sanction event"
     And I open the list row "{prefix}Sanction event"
-    Then I see "Aktivní"
+    Then the event registrations do not contain "Svobodová"
     And I do not see "Přihlásit se"
-    And the event registrations do not contain "Svobodová"
 
   Scenario: Member who chose a level is not sanctioned
     Given I am logged in as "member"
@@ -290,7 +295,8 @@ Feature: Membership fees
     And I select "Eva Svobodová (ZBM9500)" in "Člen"
     And I fill "Rok" with the scenario year
     And I click "Odeslat"
-    And I continue as "member"
+    Then I see "ZBM9500"
+    When I continue as "member"
     And I open the application
     And I click "Akce"
     And I fill "Hledat" with "{prefix}Unblock event"
@@ -313,7 +319,8 @@ Feature: Membership fees
     And I select "Eva Svobodová (ZBM9500)" in "Člen"
     And I fill "Rok" with the scenario year
     And I click "Odeslat"
-    And I continue as "member"
+    Then I see "ZBM9500"
+    When I continue as "member"
     And I open the application
     And I click "Akce"
     And I fill "Hledat" with "{prefix}Restore event"
@@ -333,12 +340,11 @@ Feature: Membership fees
     Then I see "2500 CZK"
 
   Scenario: Yearly fee is posted the day after the deadline
-    Given I am logged in as "admin"
+    Given I am logged in as "member"
     And an active fee selection campaign for tiers "{prefix}Basic" and "{prefix}Plus"
     And the member has chosen tier "{prefix}Plus"
     And the fee selection campaign is closed
-    When I continue as "member"
-    And I open the application
+    When I open the application
     And I click "Finance"
     Then the account shows the yearly membership fee of the scenario year
 
@@ -394,7 +400,8 @@ Feature: Membership fees
     And an active fee selection campaign for tier "{prefix}Hidden tier"
     When I open the application
     And I navigate in the application to "/membership-fee-tiers"
-    Then I do not see "Aktivní kampaň"
+    Then I see "{prefix}Hidden tier"
+    And I do not see "Aktivní kampaň"
     And I do not see "Minulé kampaně"
 
   Scenario: Active campaign is shown inline
@@ -403,7 +410,7 @@ Feature: Membership fees
     When I open the application
     And I click "Členské příspěvky"
     Then the page shows section "Aktivní kampaň"
-    And I see the campaign year
+    And the active campaigns section contains the campaign year
     And I see the date "{date+30}"
     And I see "Změnit deadline"
     And I see "Uzavřít kampaň"

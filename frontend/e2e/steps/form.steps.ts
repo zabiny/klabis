@@ -48,3 +48,11 @@ When('I tick {text} in {text}', async ({page}, option: string, label: string) =>
 When('I open the list row {text}', async ({page}, text: string) => {
     await page.getByRole('cell', {name: text}).first().click();
 });
+
+When('I choose option {text}', async ({page}, name: string) => {
+    await page.getByRole('radio', {name}).click();
+});
+
+Then('the option {text} is selected', async ({page}, name: string) => {
+    await expect(page.getByRole('radio', {name})).toHaveAttribute('aria-checked', 'true');
+});

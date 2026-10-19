@@ -42,7 +42,7 @@ The always-bootstrapped `admin` username user (password from `KLABIS_ADMIN_PASSW
 
 ### E2E tests
 
-Playwright + playwright-bdd scenarios against a running instance (needs the `example-data` users). Locally: start `./runLocalEnvironment.sh`, then `cd frontend && npm run test:e2e`. In CI: manual workflow **E2E Tests** (`workflow_dispatch`, input `image_tag` of `ghcr.io/zabiny/klabis-be`). Details in [`frontend/CLAUDE.md`](frontend/CLAUDE.md#e2e-tests-playwright--playwright-bdd).
+Playwright + playwright-bdd scenarios against a running instance (needs the `example-data` users). Locally: start `./runLocalEnvironment.sh`, then `cd frontend && npm run test:e2e`. In CI: manual workflow **E2E Tests** (`workflow_dispatch`, input `image_tag` of `ghcr.io/zabiny/klabis-be`). Details in [`frontend/e2e/README.md`](frontend/e2e/README.md).
 
 ## Development Workflow Best Practices
 

@@ -16,7 +16,7 @@ export type ApiClient = {
     templateTarget: (resource: HalResource, template: string) => string;
 };
 
-type FeeScenarioState = { year?: number; closedYear?: number };
+export type FeeScenarioState = { year?: number; closedYear?: number; campaignPath?: string };
 
 type Fixtures = {
     api: ApiClient;

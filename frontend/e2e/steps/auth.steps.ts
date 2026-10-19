@@ -11,9 +11,6 @@ Given('I am logged in as {string}', async ({loginAs}, role: string) => {
 // The OIDC user lives in sessionStorage of the current tab, so it has to be dropped together with the cookies.
 When('I continue as {string}', async ({page, loginAs}, role: string) => {
     await page.context().clearCookies();
-    if (page.url().startsWith('http')) {
-        await page.evaluate(() => sessionStorage.clear());
-    }
+    await page.evaluate(() => sessionStorage.clear());
     await loginAs(role as Role);
-    await page.goto('/');
 });
