@@ -104,8 +104,8 @@ Defaults are the `example-data` seed users. Report: `playwright-report/` (HTML);
 e2e/
 ├── auth.setup.ts     # "setup" project: logs in each role once
 ├── features/         # *.feature, one per capability area
-├── steps/            # reusable step definitions (auth, navigation, form, events)
-└── support/          # fixtures.ts (loginAs, api), parameters.ts ({text}), app.ts, roles.ts
+├── steps/            # reusable step definitions (auth, navigation, form, events, membership-fees)
+└── support/          # fixtures.ts (loginAs, api, apiAs, feeState), parameters.ts ({text}), session.ts, app.ts, roles.ts
 ```
 
 Generated/ignored: `.features-gen/`, `e2e/.auth/`, `playwright-report/`, `test-results/`. Type-checked via `tsconfig.e2e.json`.
@@ -115,9 +115,12 @@ Generated/ignored: `.features-gen/`, `e2e/.auth/`, `playwright-report/`, `test-r
 **Rules:**
 
 - **`Given` via API, `When`/`Then` via UI.** Data setup uses the `api` fixture (bearer token from the logged-in role's stored OIDC entry, navigates by HAL links/templates from `/api`). UI-driven setup only where no API exists.
-- **Run prefix.** Every entity a scenario creates is named with `{prefix}` (→ `E2E-<runId>-<worker>-`); only seeded users are assumed and nothing is cleaned up. `{date+N}` resolves to today + N days (`YYYY-MM-DD`). Both are resolved automatically by the `{text}` parameter type (`support/parameters.ts`) in every step argument; use `{text}` (quoted string) for all steps taking user text.
+- **Run prefix.** Every entity a scenario creates is named with `{prefix}` (→ `E2E-<runId>-<worker>-`); only seeded users are assumed and nothing is cleaned up. `{date+N}` / `{date-N}` resolve to today ± N days (`YYYY-MM-DD`). Both are resolved automatically by the `{text}` parameter type (`support/parameters.ts`) in every step argument; use `{text}` (quoted string) for all steps taking user text.
 - **Traceability.** Tag each feature `@spec:<capability>` (OpenSpec capability name) and copy each `Scenario:` title verbatim from the spec.
 - **No generated OpenAPI types** in E2E code — `test:e2e` does not trigger the `openapi` pre-hook.
+- **Access tokens expire after ~5 minutes**, shorter than a full run: the `api` fixtures transparently re-login (`support/session.ts`) when the stored token is about to expire. `apiAs(role)` gives an API client for a role other than the logged-in one (e.g. admin-prepared data in a member scenario).
+- **No deep links.** `page.goto('/some/path')` is bounced through the OAuth2 redirect back to `/`; reach pages through the menu or `When I navigate in the application to "<path>"`.
+- **Shared backend state.** Only one fee campaign can be active and every close sanctions members without a choice, so fee `Given` steps close any active campaign and publish a fresh year; the year is kept in the `feeState` fixture (`the scenario year`).
 - Reuse existing steps before adding new ones; new steps go to the matching `steps/*.ts` file.
 
 **Step vocabulary:**
@@ -126,12 +129,33 @@ Generated/ignored: `.features-gen/`, `e2e/.auth/`, `playwright-report/`, `test-r
 |---|---|
 | `Given I am logged in as "<role>"` | `admin` or `member` |
 | `Given a draft event "<name>" exists` | created via API |
+| `Given a catalog fee tier "<name>" exists` (`... with a percentage rule for ranking "<r>" exists`) | admin API |
+| `Given no fee selection campaign is active` | closes the active one, reserves a fresh year |
+| `Given an active fee selection campaign for tier(s) "<a>"[ and "<b>"]` | closes the active one, creates missing tiers, publishes a fresh year |
+| `Given a closed fee selection campaign for tier "<a>"` / `Given the fee selection campaign is closed` | |
+| `Given the member has chosen tier "<t>"` / `has cancelled the tier choice` | as member via API |
+| `Given the administrator has assigned the member to tier "<t>"` | emergency assignment via API |
+| `Given a published event "<n>" with open registration exists` / `the member is registered for event "<n>"` | |
 | `When I open the application` | waits for main navigation (`waitForApp`) |
 | `When I click "<label>"` | button (exact name or `Select <label> form`) or link by exact name |
 | `When I fill "<label>" with "<value>"` | form field by label |
 | `When I select "<option>" in "<label>"` | select by option label |
 | `When I open the list row "<text>"` | clicks a table cell |
+| `When I fill "<label>" with the scenario year` | fee campaign year kept in scenario state |
+| `When I tick "<option>" in "<label>"` | checkbox in a multi-select field |
+| `When I choose option "<name>"` / `Then the option "<name>" is selected` | radio card (member fee choice) |
+| `When I open the catalog tier "<name>"` | row of the fee tier catalog table |
+| `When I open the closed campaign` / `When I open my profile` | |
+| `When I navigate back` / `When I navigate in the application to "<path>"` | browser back / SPA router push |
+| `When I continue as "<role>"` | drops the current session and continues in the same scenario as another role |
 | `Then I see "<text>"` | visible text, substring match |
+| `Then I do not see "<text>"` / `Then I see an error message` | text absent / any `role=alert` |
+| `Then I see the date "<YYYY-MM-DD>"` / `I do not see the date` | rendered as `d. M. yyyy` |
+| `Then the page shows section "<h>"` / `does not show` | heading |
+| `Then the active|past campaigns section contains|does not contain the campaign|closed campaign year` | |
+| `Then the active campaign lists fee group "<name>"` | |
+| `Then the event registrations contain|do not contain "<text>"` | registrations table on the event detail |
+| `Then the account shows|does not show the yearly membership fee of the scenario year` | |
 | `Then the main menu shows "<item>"` / `does not show "<item>"` | navigation link |
 
 ### Deployment
