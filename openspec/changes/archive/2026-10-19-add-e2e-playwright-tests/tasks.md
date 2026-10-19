@@ -31,7 +31,8 @@
 
 - [x] 5.1 Add `.github/workflows/e2e-tests.yml`: `workflow_dispatch` with `image_tag` input, GHCR login, `docker run` of `ghcr.io/zabiny/klabis-be:<tag>` with `h2,ssl,example-data` and the `KLABIS_*` env values copied from `runLocalEnvironment.sh` (without `local-dev`), and a health wait on `/actuator/health`.
 - [x] 5.2 Install Node, dependencies and Chromium. Run `npm run test:e2e` with `E2E_BASE_URL=https://localhost:8443`. Always upload `playwright-report/` and the container log.
-- [ ] 5.3 Trigger the workflow manually on `latest` and confirm a green run. Confirm the workflow does not run on PR or push.
+- [x] 5.3 Trigger the workflow manually on `latest` and confirm a green run. Confirm the workflow does not run on PR or push.
+  - Outcome: run 39280588953 on `latest` passed 8/8 (verified from the uploaded Playwright report). The push to `main` did not trigger the workflow.
 
 ## 6. Documentation
 
