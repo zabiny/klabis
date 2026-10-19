@@ -30,10 +30,12 @@ class CollectionPostprocessorScopingTest {
     private final MembershipFeeTierOptionsPort optionsPort = mock(MembershipFeeTierOptionsPort.class);
     private final AuthorizationEvaluator evaluator = mock(AuthorizationEvaluator.class);
 
+    private final PublishYearAffordance publishYearAffordance = new PublishYearAffordance(tierPort, campaignPort, evaluator);
+
     private final RepresentationModelProcessorInvoker invoker = new RepresentationModelProcessorInvoker(
             List.<RepresentationModelProcessor<?>>of(
-                    new FeeSelectionCampaignListPostprocessor(tierPort),
-                    new MembershipFeeTierListPostprocessor(evaluator, campaignPort),
+                    new FeeSelectionCampaignListPostprocessor(publishYearAffordance),
+                    new MembershipFeeTierListPostprocessor(evaluator, campaignPort, publishYearAffordance),
                     new MembershipFeeTierListRulesPostprocessor(optionsPort)));
 
     private void assertUntouchedFor(Object element, ResolvableType elementType) {
@@ -79,6 +81,7 @@ class CollectionPostprocessorScopingTest {
     @Test
     @DisplayName("control: the same setup does fire the campaign processor for its own DTO type")
     void ownDtoFires() {
+        org.mockito.Mockito.when(evaluator.has(com.klabis.common.users.Authority.MEMBERS_MANAGE)).thenReturn(true);
         CollectionModel<EntityModel<Object>> model = CollectionModel.<EntityModel<Object>>of(List.of())
                 .withFallbackType(ResolvableType.forClassWithGenerics(EntityModel.class, FeeSelectionCampaignResponse.class));
         model.add(Link.of("/self", IanaLinkRelations.SELF));

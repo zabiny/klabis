@@ -107,7 +107,7 @@ const PaymentRuleFormFields = (conf: HalFormsInputProps): ReactElement => {
     const eventTypeSubProps = conf.subElementProps("eventTypeId", {prompt: "Typ akce"});
     const eventTypePropWithOptions = {...eventTypeSubProps.prop, options: {inline: eventTypeOptions}};
 
-    const ruleTypeSubProps = conf.subElementProps("ruleType", {prompt: "Typ pravidla"});
+    const ruleTypeSubProps = conf.subElementProps("ruleType", {prompt: "Typ pravidla", type: "CoParticipationRuleType"});
     const ruleTypePropWithOptions = {...ruleTypeSubProps.prop, options: {inline: RULE_TYPE_OPTIONS}};
 
     const rankingSubProps = conf.subElementProps("rankingShortName", {prompt: "Zkratka žebříčku"});

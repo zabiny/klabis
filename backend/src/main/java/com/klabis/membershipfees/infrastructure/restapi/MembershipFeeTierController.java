@@ -14,6 +14,7 @@ import com.klabis.membershipfees.application.MembershipFeeTierOptionsPort;
 import com.klabis.membershipfees.domain.*;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.hateoas.Affordance;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
@@ -214,25 +215,36 @@ class MembershipFeeTierListPostprocessor
 
     private final AuthorizationEvaluator authorizationEvaluator;
     private final FeeSelectionCampaignManagementPort campaignManagementPort;
+    private final PublishYearAffordance publishYearAffordance;
 
     MembershipFeeTierListPostprocessor(AuthorizationEvaluator authorizationEvaluator,
-                                       FeeSelectionCampaignManagementPort campaignManagementPort) {
+                                       FeeSelectionCampaignManagementPort campaignManagementPort,
+                                       PublishYearAffordance publishYearAffordance) {
         this.authorizationEvaluator = authorizationEvaluator;
         this.campaignManagementPort = campaignManagementPort;
+        this.publishYearAffordance = publishYearAffordance;
     }
 
     @Override
     public org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> process(
             org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> model) {
+        boolean manager = authorizationEvaluator.has(Authority.MEMBERS_MANAGE);
+        // getPublication/listPublications are readable by any authenticated caller; the campaign
+        // lookup and the publishYear template are management concerns, so both are skipped for
+        // everyone else.
+        Optional<FeeSelectionCampaign> activeCampaign = manager
+                ? campaignManagementPort.findActiveCampaign()
+                : Optional.empty();
+        List<Affordance> publishYear = manager
+                ? publishYearAffordance.affordances(activeCampaign.isPresent())
+                : List.of();
+
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                .andAffordances(klabisAfford(methodOn(FeeSelectionCampaignsApi.class).publishYear(null)))
+                .andAffordances(publishYear)
                 .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).createTier(null))));
 
-        // getPublication/listPublications are readable by any authenticated caller; the campaign
-        // links are management navigation and are offered to managers only, so the campaign lookup
-        // is skipped for everyone else.
-        if (authorizationEvaluator.has(Authority.MEMBERS_MANAGE)) {
-            campaignManagementPort.findActiveCampaign().ifPresent(campaign ->
+        if (manager) {
+            activeCampaign.ifPresent(campaign ->
                     klabisLinkTo(methodOn(FeeSelectionCampaignsApi.class).getPublication(campaign.getId()
                             .value()))
                             .map(link -> link.withRel("activeCampaign"))

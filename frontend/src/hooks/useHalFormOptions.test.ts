@@ -501,20 +501,17 @@ describe('useHalFormOptions', () => {
     });
 });
 
-describe('localizeEnumOptions by property name', () => {
-    it('translates ruleType options', () => {
+describe('localizeEnumOptions by input type', () => {
+    it('translates CoParticipationRuleType options', () => {
         const result = localizeEnumOptions(
             [{value: 'PERCENTAGE', label: 'PERCENTAGE'}, {value: 'FIXED_AMOUNT', label: 'FIXED_AMOUNT'}],
-            {name: 'ruleType'}
+            {type: 'CoParticipationRuleType'}
         );
         expect(result.map(o => o.label)).toEqual(['Procento', 'Fixní částka']);
     });
 
-    it('translates ruleType options for the production property shape', () => {
-        const result = localizeEnumOptions(
-            [{value: 'PERCENTAGE', label: 'PERCENTAGE'}],
-            {type: 'text', name: 'ruleType'}
-        );
-        expect(result[0].label).toBe('Procento');
+    it('leaves options untranslated for an unmapped type', () => {
+        const options = [{value: 'PERCENTAGE', label: 'PERCENTAGE'}];
+        expect(localizeEnumOptions(options, {type: 'text'})).toEqual(options);
     });
 });

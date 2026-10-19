@@ -1304,6 +1304,7 @@ components:
           # rejects unknown values.
           type: string
           x-klabis-not-blank: true
+          x-hal-input-type: CoParticipationRuleType
         percent:
           type: integer
           format: int32
@@ -1350,6 +1351,7 @@ components:
         ruleType:
           type: string
           x-klabis-not-blank: true
+          x-hal-input-type: CoParticipationRuleType
         percentage:
           type: integer
           format: int32
@@ -1368,6 +1370,7 @@ components:
         ruleType:
           type: string
           x-klabis-not-blank: true
+          x-hal-input-type: CoParticipationRuleType
         percentage:
           type: integer
           format: int32

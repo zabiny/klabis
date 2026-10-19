@@ -1,15 +1,12 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.common.ui.HalFormsInlineOption;
-import com.klabis.common.ui.HalFormsOptionsDef;
 import com.klabis.common.ui.HalResponseContext;
 import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.membershipfees.FeeSelectionCampaignId;
 import com.klabis.membershipfees.application.CampaignStatusFilter;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.ManualCampaignClosePort;
-import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.domain.FeeSelectionCampaign;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
@@ -26,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -147,22 +143,17 @@ class FeeSelectionCampaignDetailsPostprocessor
 class FeeSelectionCampaignListPostprocessor
         implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<FeeSelectionCampaignResponse>>> {
 
-    private final MembershipFeeTierManagementPort levelManagementPort;
+    private final PublishYearAffordance publishYearAffordance;
 
-    FeeSelectionCampaignListPostprocessor(MembershipFeeTierManagementPort levelManagementPort) {
-        this.levelManagementPort = levelManagementPort;
+    FeeSelectionCampaignListPostprocessor(PublishYearAffordance publishYearAffordance) {
+        this.publishYearAffordance = publishYearAffordance;
     }
 
     @Override
     public org.springframework.hateoas.CollectionModel<EntityModel<FeeSelectionCampaignResponse>> process(
             org.springframework.hateoas.CollectionModel<EntityModel<FeeSelectionCampaignResponse>> model) {
-        List<HalFormsInlineOption> levelOptions = levelManagementPort.listTiers().stream()
-                .map(level -> new HalFormsInlineOption(level.getId().value().toString(), level.getName()))
-                .toList();
-        model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                .andAffordances(klabisAffordWithOptions(
-                        methodOn(FeeSelectionCampaignsApi.class).publishYear(null),
-                        Map.of("levelIds", new HalFormsOptionsDef.Inline(levelOptions)))));
+        model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF,
+                selfLink -> (Link) selfLink.andAffordances(publishYearAffordance.affordances()));
         return model;
     }
 }
