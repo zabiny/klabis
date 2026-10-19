@@ -105,17 +105,17 @@ e2e/
 ├── auth.setup.ts     # "setup" project: logs in each role once
 ├── features/         # *.feature, one per capability area
 ├── steps/            # reusable step definitions (auth, navigation, form, events)
-└── support/          # fixtures.ts (loginAs, api, resolve), roles.ts
+└── support/          # fixtures.ts (loginAs, api), parameters.ts ({text}), app.ts, roles.ts
 ```
 
 Generated/ignored: `.features-gen/`, `e2e/.auth/`, `playwright-report/`, `test-results/`. Type-checked via `tsconfig.e2e.json`.
 
-**Authentication:** the `setup` project logs in through the login form per role and saves cookies plus the `oidc.user:*` sessionStorage entry to `e2e/.auth/`. `Given I am logged in as "<role>"` restores both before the app boots. A stored cookie alone is not enough — the authorization server rotates `JSESSIONID` on concurrent bearer-authenticated calls.
+**Authentication:** the `setup` project logs in through the login form per role and saves cookies plus the `oidc.user:*` sessionStorage entries to `e2e/.auth/<role>.json`. `Given I am logged in as "<role>"` restores both before the app boots. A stored cookie alone is not enough — known backend defect (tracked as a follow-up): the API security chain with explicit STATELESS installs `SessionManagementFilter` with `ChangeSessionIdAuthenticationStrategy`, so every bearer `/api` call rotates the authorization server `JSESSIONID`. The OIDC restore is a workaround, not intended behaviour.
 
 **Rules:**
 
-- **`Given` via API, `When`/`Then` via UI.** Data setup uses the `api` fixture (bearer token from sessionStorage, navigates by HAL links/templates from `/api`). UI-driven setup only where no API exists.
-- **Run prefix.** Every entity a scenario creates is named with `{prefix}` (→ `E2E-<runId>-<worker>-`); only seeded users are assumed and nothing is cleaned up. `{date+N}` resolves to today + N days (`YYYY-MM-DD`). Both placeholders are resolved by the `resolve` fixture in step arguments.
+- **`Given` via API, `When`/`Then` via UI.** Data setup uses the `api` fixture (bearer token from the logged-in role's stored OIDC entry, navigates by HAL links/templates from `/api`). UI-driven setup only where no API exists.
+- **Run prefix.** Every entity a scenario creates is named with `{prefix}` (→ `E2E-<runId>-<worker>-`); only seeded users are assumed and nothing is cleaned up. `{date+N}` resolves to today + N days (`YYYY-MM-DD`). Both are resolved automatically by the `{text}` parameter type (`support/parameters.ts`) in every step argument; use `{text}` (quoted string) for all steps taking user text.
 - **Traceability.** Tag each feature `@spec:<capability>` (OpenSpec capability name) and copy each `Scenario:` title verbatim from the spec.
 - **No generated OpenAPI types** in E2E code — `test:e2e` does not trigger the `openapi` pre-hook.
 - Reuse existing steps before adding new ones; new steps go to the matching `steps/*.ts` file.
@@ -126,8 +126,8 @@ Generated/ignored: `.features-gen/`, `e2e/.auth/`, `playwright-report/`, `test-r
 |---|---|
 | `Given I am logged in as "<role>"` | `admin` or `member` |
 | `Given a draft event "<name>" exists` | created via API |
-| `When I open the application` | waits for main navigation |
-| `When I click "<label>"` | button or link by accessible name |
+| `When I open the application` | waits for main navigation (`waitForApp`) |
+| `When I click "<label>"` | button (exact name or `Select <label> form`) or link by exact name |
 | `When I fill "<label>" with "<value>"` | form field by label |
 | `When I select "<option>" in "<label>"` | select by option label |
 | `When I open the list row "<text>"` | clicks a table cell |

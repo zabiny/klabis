@@ -46,21 +46,6 @@ jobs:
             -e KLABIS_VAPID_SUBJECT='mailto:admin@localhost' \
             "$IMAGE"
 
-      - name: Wait for backend health
-        run: |
-          timeout=180
-          start=$(date +%s)
-          until curl -ksf https://localhost:8443/actuator/health; do
-            if (( $(date +%s) - start >= timeout )); then
-              echo "::error::Backend did not become healthy within ${timeout}s"
-              docker logs "$CONTAINER_NAME"
-              exit 1
-            fi
-            sleep 3
-          done
-          echo
-          echo "Backend healthy after $(( $(date +%s) - start ))s"
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -75,6 +60,20 @@ jobs:
       - name: Install Playwright Chromium
         working-directory: frontend
         run: npx playwright install --with-deps chromium
+
+      - name: Wait for backend health
+        run: |
+          timeout=180
+          start=$(date +%s)
+          until curl -ksf https://localhost:8443/actuator/health; do
+            if (( $(date +%s) - start >= timeout )); then
+              echo "::error::Backend did not become healthy within ${timeout}s"
+              exit 1
+            fi
+            sleep 3
+          done
+          echo
+          echo "Backend healthy after $(( $(date +%s) - start ))s"
 
       - name: Run E2E tests
         working-directory: frontend

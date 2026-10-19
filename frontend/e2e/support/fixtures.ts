@@ -1,17 +1,12 @@
-import {readFileSync} from 'node:fs';
 import {test as base} from 'playwright-bdd';
-import {authFile, oidcSessionFile, type Role} from './roles';
+import {readSession, type Role} from './roles';
 
-// The authorization server rotates JSESSIONID on concurrent bearer-authenticated API calls,
-// so a stored cookie alone is not a reliable way back in. The OIDC user is restored into
-// sessionStorage before the app boots.
-export type HalResource = {
+type HalResource = {
     _links?: Record<string, {href: string}>;
     _templates?: Record<string, {target?: string}>;
-    _location?: string;
 };
 
-export type ApiClient = {
+type ApiClient = {
     get: (path: string) => Promise<HalResource>;
     post: (path: string, body: unknown) => Promise<HalResource>;
     follow: (resource: HalResource, rel: string) => Promise<HalResource>;
@@ -21,82 +16,78 @@ export type ApiClient = {
 type Fixtures = {
     api: ApiClient;
     loginAs: (role: Role) => Promise<void>;
-    resolve: (text: string) => string;
+    currentRole: { value?: Role };
 };
 
 export const test = base.extend<Fixtures>({
     // eslint-disable-next-line no-empty-pattern
-    resolve: async ({}, provide, testInfo) => {
-        const prefix = `E2E-${process.env.E2E_RUN_ID}-${testInfo.workerIndex}-`;
-        await provide((text) => text
-            .replaceAll('{prefix}', prefix)
-            .replace(/\{date\+(\d+)\}/g, (_, days) => {
-                const date = new Date();
-                date.setDate(date.getDate() + Number(days));
-                return date.toISOString().slice(0, 10);
-            }));
+    currentRole: async ({}, provide) => {
+        await provide({});
     },
-    api: async ({page, request}, provide) => {
-        const accessToken = async () => {
-            const raw = await page.evaluate(() => {
-                const key = Object.keys(sessionStorage).find((k) => k.startsWith('oidc.user:'));
-                return key ? sessionStorage.getItem(key) : null;
+    api: async ({playwright, currentRole, baseURL}, provide) => {
+        let context: Awaited<ReturnType<typeof playwright.request.newContext>> | undefined;
+        const getContext = async () => {
+            if (context) return context;
+            if (!currentRole.value) throw new Error('api fixture: no role logged in; use "Given I am logged in as" first');
+            const [, raw] = readSession(currentRole.value).oidc[0];
+            context = await playwright.request.newContext({
+                baseURL,
+                ignoreHTTPSErrors: true,
+                extraHTTPHeaders: {
+                    Authorization: `Bearer ${JSON.parse(raw).access_token}`,
+                    Accept: 'application/prs.hal-forms+json',
+                },
             });
-            if (!raw) throw new Error('api fixture: no oidc.user:* entry in sessionStorage; log in first');
-            return JSON.parse(raw).access_token as string;
+            return context;
         };
 
-        // HAL hrefs are absolute and carry the backend origin; only path and query are kept so the call goes through the E2E_BASE_URL target.
+        // Mirrors parseHalHref/serializeHalHref in src/api/hateoas.ts (not importable: generated types / window).
+        // HAL hrefs carry the backend origin; only path and query are kept so calls go through E2E_BASE_URL.
         const toPath = (href: string) => {
             const url = new URL(href, 'http://placeholder');
             return url.pathname + url.search;
         };
 
         const call = async (method: 'GET' | 'POST', path: string, body?: unknown) => {
-            const response = await request.fetch(toPath(path), {
-                method,
-                headers: {
-                    Authorization: `Bearer ${await accessToken()}`,
-                    Accept: 'application/prs.hal-forms+json',
-                    ...(body === undefined ? {} : {'Content-Type': 'application/json'}),
-                },
-                data: body,
-            });
+            const response = await (await getContext()).fetch(toPath(path), {method, data: body});
             const text = await response.text();
             if (!response.ok()) {
                 throw new Error(`API ${method} ${path} failed with ${response.status()}: ${text}`);
             }
-            return text ? JSON.parse(text) : {_location: response.headers()['location']};
+            return text ? JSON.parse(text) : {};
         };
 
-        const client: ApiClient = {
+        await provide({
             get: (path) => call('GET', path),
             post: (path, body) => call('POST', path, body),
             follow: (resource, rel) => {
-                const href = resource?._links?.[rel]?.href;
-                if (!href) throw new Error(`api fixture: link "${rel}" missing, available: ${Object.keys(resource?._links ?? {})}`);
+                const href = resource._links?.[rel]?.href;
+                if (!href) throw new Error(`api fixture: link "${rel}" missing, available: ${Object.keys(resource._links ?? {})}`);
                 return call('GET', href.replace(/\{[^}]*\}/g, ''));
             },
             templateTarget: (resource, template) => {
-                const target = resource?._templates?.[template]?.target;
-                if (!target) throw new Error(`api fixture: template "${template}" missing, available: ${Object.keys(resource?._templates ?? {})}`);
+                // Spring HATEOAS omits the target when it equals self.
+                const target = resource._templates?.[template]?.target ?? resource._links?.self?.href;
+                if (!target) throw new Error(`api fixture: template "${template}" missing, available: ${Object.keys(resource._templates ?? {})}`);
                 return target;
             },
-        };
-        await provide(client);
+        });
+        await context?.dispose();
     },
-    loginAs: async ({page}, provide) => {
+    // Workaround for a backend defect: the API security chain (explicit STATELESS) installs
+    // SessionManagementFilter with ChangeSessionIdAuthenticationStrategy, so every bearer /api call
+    // rotates the authorization server JSESSIONID. A stored cookie is therefore unreliable; the OIDC
+    // user is restored into sessionStorage before the app boots instead.
+    loginAs: async ({page, currentRole}, provide) => {
         await provide(async (role) => {
-            const {cookies} = JSON.parse(readFileSync(authFile(role), 'utf-8'));
-            const oidcEntries: [string, string][] = JSON.parse(readFileSync(oidcSessionFile(role), 'utf-8'));
+            const {cookies, oidc} = readSession(role);
+            currentRole.value = role;
             await page.context().addCookies(cookies);
             await page.addInitScript((entries) => {
                 if (sessionStorage.getItem('e2e.oidcRestored')) return;
                 entries.forEach(([key, value]) => sessionStorage.setItem(key, value));
                 sessionStorage.setItem('e2e.oidcRestored', '1');
-            }, oidcEntries);
-            await page.goto('/');
-            await page.locator('nav:visible').first().waitFor();
+            }, oidc);
         });
     },
 });

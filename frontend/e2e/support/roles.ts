@@ -1,3 +1,6 @@
+import {readFileSync} from 'node:fs';
+import type {BrowserContext} from '@playwright/test';
+
 export type Role = 'admin' | 'member';
 
 export const roles: Record<Role, { user: string; password: string }> = {
@@ -11,5 +14,12 @@ export const roles: Record<Role, { user: string; password: string }> = {
     },
 };
 
-export const authFile = (role: Role) => `e2e/.auth/${role}.json`;
-export const oidcSessionFile = (role: Role) => `e2e/.auth/${role}.oidc.json`;
+export type RoleSession = {
+    cookies: Parameters<BrowserContext['addCookies']>[0];
+    oidc: [string, string][];
+};
+
+export const sessionFile = (role: Role) => `e2e/.auth/${role}.json`;
+
+export const readSession = (role: Role): RoleSession =>
+    JSON.parse(readFileSync(sessionFile(role), 'utf-8'));
