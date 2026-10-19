@@ -29,3 +29,7 @@ When('I select {string} in {string}', async ({page}, option: string, label: stri
 Then('I see {string}', async ({page, resolve}, text: string) => {
     await expect(page.getByText(resolve(text), {exact: false}).first()).toBeVisible();
 });
+
+When('I open the list row {string}', async ({page, resolve}, text: string) => {
+    await page.getByRole('cell', {name: resolve(text)}).first().click();
+});

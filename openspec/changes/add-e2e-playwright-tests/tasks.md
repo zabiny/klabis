@@ -23,9 +23,9 @@
 
 ## 4. API-setup slice: update event with `Given` via REST API
 
-- [ ] 4.1 Add the `api` fixture: read the token from the `oidc.user:*` key in `sessionStorage` and call `/api/...` relative to `E2E_BASE_URL` with Bearer + HAL-FORMS headers.
-- [ ] 4.2 Add the scenario "Manager updates a DRAFT event" with `Given a draft event "<name>" exists` created through the API, then edit through the UI and assert the change in the detail page.
-- [ ] 4.3 Run the full suite against target A on `:3000` and `:8443`.
+- [x] 4.1 Add the `api` fixture: read the token from the `oidc.user:*` key in `sessionStorage` and call `/api/...` relative to `E2E_BASE_URL` with Bearer + HAL-FORMS headers.
+- [x] 4.2 Add the scenario "Manager updates a DRAFT event" with `Given a draft event "<name>" exists` created through the API, then edit through the UI and assert the change in the detail page.
+- [x] 4.3 Run the full suite against target A on `:3000` and `:8443`.
 
 ## 5. Manual CI workflow (target B)
 
