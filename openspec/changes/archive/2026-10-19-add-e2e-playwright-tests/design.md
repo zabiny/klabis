@@ -74,6 +74,7 @@ sequenceDiagram
 - `storageState` keeps cookies but not `sessionStorage`. Each test re-enters through the authorization server, whose session cookie logs it in silently. Cookies are scoped by host, not port, so the `localhost` cookie works for both targets.
 - A `loginAs(role)` step (`Given I am logged in as "admin"`) selects the role's state through a fixture. Tests wait for the main navigation before continuing.
 - **Fallback** if silent re-entry proves unreliable: the setup project also serialises the `oidc.user:*` entry, and a fixture restores it via `page.addInitScript` before the app loads.
+- **Note (after `fix-api-session-id-rotation`):** the fallback was needed only because bearer `/api` calls rotated the authorization server `JSESSIONID`. With that fixed, cookie-only re-entry works and `loginAs` restores cookies only. The stored `oidc.user:*` entry remains for the `api` fixture.
 
 ### D5: `Given` data setup through the REST API
 
