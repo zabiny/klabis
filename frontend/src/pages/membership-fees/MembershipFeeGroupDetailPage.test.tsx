@@ -118,6 +118,11 @@ describe('MembershipFeeGroupDetailPage', () => {
         expect(screen.getByText('Chyba serveru')).toBeInTheDocument();
     });
 
+    it('back link leads to the membership fees page', () => {
+        renderPage(createMockPageData(buildGroupDetail()));
+        expect(screen.getByRole('link', {name: /zpět na seznam/i})).toHaveAttribute('href', '/membership-fee-tiers');
+    });
+
     it('renders group name as heading', () => {
         renderPage(createMockPageData(buildGroupDetail()));
         expect(screen.getByRole('heading', {name: /základní členství/i})).toBeInTheDocument();
