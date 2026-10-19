@@ -18,7 +18,7 @@ const MemberSourceBadge = ({source}: {source: 'MEMBER_CHOICE' | 'ADMIN_ASSIGNMEN
         return (
             <span
                 className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                style={{background: '#DCFCE7', color: '#15803D'}}
+                style={{background: 'var(--color-success-bg)', color: 'var(--color-success)'}}
             >
                 {getEnumLabel('feeMemberSource', source)}
             </span>
@@ -27,7 +27,7 @@ const MemberSourceBadge = ({source}: {source: 'MEMBER_CHOICE' | 'ADMIN_ASSIGNMEN
     return (
         <span
             className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-            style={{background: '#EFF6FF', color: '#2563EB'}}
+            style={{background: 'var(--color-primary-subtle)', color: 'var(--color-primary)'}}
         >
             {getEnumLabel('feeMemberSource', source)}
         </span>
@@ -39,7 +39,7 @@ const StatusBadge = ({status}: {status: 'EDITABLE' | 'FROZEN'}): ReactElement =>
         return (
             <span
                 className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                style={{background: '#DCFCE7', color: '#15803D'}}
+                style={{background: 'var(--color-success-bg)', color: 'var(--color-success)'}}
             >
                 {getEnumLabel('feeGroupStatus', status)}
             </span>
@@ -48,7 +48,7 @@ const StatusBadge = ({status}: {status: 'EDITABLE' | 'FROZEN'}): ReactElement =>
     return (
         <span
             className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-            style={{background: '#F4F4F5', color: '#71717A'}}
+            style={{background: 'var(--color-secondary-subtle)', color: 'var(--color-text-secondary)'}}
         >
             {getEnumLabel('feeGroupStatus', status)}
         </span>
@@ -67,22 +67,22 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
 
     return (
         <div className="flex flex-col gap-6">
-            <nav className="flex items-center gap-1 text-sm" style={{color: '#71717A'}}>
-                <Link to="/membership-fee-tiers" className="hover:text-zinc-700 transition-colors">
+            <nav className="flex items-center gap-1 text-sm" style={{color: 'var(--color-text-secondary)'}}>
+                <Link to="/membership-fee-tiers" className="hover:text-text-primary transition-colors">
                     {labels.ui.backToList}
                 </Link>
-                <ChevronRight className="w-4 h-4" style={{color: '#A1A1AA'}}/>
-                <span className="font-medium" style={{color: '#18181B'}}>{resourceData.name}</span>
+                <ChevronRight className="w-4 h-4" style={{color: 'var(--color-text-tertiary)'}}/>
+                <span className="font-medium" style={{color: 'var(--color-text-primary)'}}>{resourceData.name}</span>
             </nav>
 
             <h1 className="sr-only">{resourceData.name}</h1>
 
             <div
                 className="rounded-xl border p-6"
-                style={{background: '#FFFFFF', borderColor: '#E4E4E7', borderRadius: '12px'}}
+                style={{background: 'var(--color-bg-elevated)', borderColor: 'var(--color-border-subtle)', borderRadius: '12px'}}
             >
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-bold" style={{fontSize: '16px', color: '#18181B'}}>
+                    <h2 className="font-bold" style={{fontSize: '16px', color: 'var(--color-text-primary)'}}>
                         Základní informace
                     </h2>
                     <div className="flex gap-3">
@@ -90,8 +90,8 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                             <button
                                 type="button"
                                 onClick={() => setIsEditing(true)}
-                                className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border transition-colors hover:bg-zinc-50"
-                                style={{borderColor: '#E4E4E7', color: '#374151'}}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium border transition-colors hover:bg-bg-subtle"
+                                style={{borderColor: 'var(--color-border-subtle)', color: 'var(--color-text-secondary)'}}
                             >
                                 <Pencil className="w-4 h-4"/>
                                 {labels.buttons.edit}
@@ -102,7 +102,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                                 type="button"
                                 onClick={() => setAssignMemberModal(true)}
                                 className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-white transition-colors hover:opacity-90"
-                                style={{background: '#2563EB'}}
+                                style={{background: 'var(--color-primary)'}}
                             >
                                 <UserPlus className="w-4 h-4"/>
                                 {labels.templates.assignMember}
@@ -110,7 +110,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                         )}
                     </div>
                 </div>
-                <hr style={{borderColor: '#E4E4E7'}} className="mb-5"/>
+                <hr style={{borderColor: 'var(--color-border-subtle)'}} className="mb-5"/>
 
                 {isEditing && editTemplate ? (
                     <HalFormDisplay
@@ -125,18 +125,18 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-xs font-bold mb-1" style={{color: '#374151'}}>
+                            <label className="block text-xs font-bold mb-1" style={{color: 'var(--color-text-secondary)'}}>
                                 {labels.fields.yearlyFeeAmount}
                             </label>
                             <div
                                 className="h-[38px] flex items-center px-3 rounded-md text-sm border"
-                                style={{borderColor: '#E4E4E7', color: '#18181B'}}
+                                style={{borderColor: 'var(--color-border-subtle)', color: 'var(--color-text-primary)'}}
                             >
                                 {resourceData.yearlyFeeAmount} {resourceData.yearlyFeeCurrency ?? labels.finance.currency}
                             </div>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold mb-1" style={{color: '#374151'}}>
+                            <label className="block text-xs font-bold mb-1" style={{color: 'var(--color-text-secondary)'}}>
                                 Status
                             </label>
                             <div className="h-[38px] flex items-center">
@@ -153,48 +153,48 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
 
             <div
                 className="rounded-xl border overflow-hidden"
-                style={{background: '#FFFFFF', borderColor: '#E4E4E7', borderRadius: '12px'}}
+                style={{background: 'var(--color-bg-elevated)', borderColor: 'var(--color-border-subtle)', borderRadius: '12px'}}
             >
                 <div className="px-6 py-4">
-                    <h2 className="font-bold" style={{fontSize: '16px', color: '#18181B'}}>
+                    <h2 className="font-bold" style={{fontSize: '16px', color: 'var(--color-text-primary)'}}>
                         {labels.sections.membershipFeeGroupMembers}
                     </h2>
                 </div>
-                <hr style={{borderColor: '#E4E4E7'}}/>
+                <hr style={{borderColor: 'var(--color-border-subtle)'}}/>
 
                 {members.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 gap-3">
-                        <Users className="w-7 h-7" style={{color: '#A1A1AA'}}/>
-                        <p className="text-sm" style={{color: '#71717A'}}>Žádní členové ve skupině.</p>
+                        <Users className="w-7 h-7" style={{color: 'var(--color-text-tertiary)'}}/>
+                        <p className="text-sm" style={{color: 'var(--color-text-secondary)'}}>Žádní členové ve skupině.</p>
                     </div>
                 ) : (
                     <table className="w-full text-sm">
                         <thead>
-                            <tr style={{background: '#F8FAFC', height: '44px'}}>
-                                <th className="px-5 text-left text-xs font-semibold" style={{color: '#71717A'}}>
+                            <tr style={{background: 'var(--color-bg-subtle)', height: '44px'}}>
+                                <th className="px-5 text-left text-xs font-semibold" style={{color: 'var(--color-text-secondary)'}}>
                                     {labels.fields.memberId}
                                 </th>
-                                <th className="px-5 text-left text-xs font-semibold" style={{color: '#71717A'}}>
+                                <th className="px-5 text-left text-xs font-semibold" style={{color: 'var(--color-text-secondary)'}}>
                                     {labels.fields.registrationNumber}
                                 </th>
-                                <th className="px-5 text-left text-xs font-semibold" style={{color: '#71717A'}}>
+                                <th className="px-5 text-left text-xs font-semibold" style={{color: 'var(--color-text-secondary)'}}>
                                     {labels.tables.joinedAt}
                                 </th>
-                                <th className="px-5 text-left text-xs font-semibold" style={{color: '#71717A'}}>
+                                <th className="px-5 text-left text-xs font-semibold" style={{color: 'var(--color-text-secondary)'}}>
                                     {labels.fields.source}
                                 </th>
                             </tr>
                         </thead>
                         <tbody>
                             {members.map((member) => (
-                                <tr key={member.memberId} className="border-t" style={{borderColor: '#F4F4F5', height: '60px'}}>
-                                    <td className="px-5 font-medium" style={{color: '#18181B'}}>
+                                <tr key={member.memberId} className="border-t" style={{borderColor: 'var(--color-border-subtle)', height: '60px'}}>
+                                    <td className="px-5 font-medium" style={{color: 'var(--color-text-primary)'}}>
                                         {member.firstName && member.lastName
                                             ? `${member.firstName} ${member.lastName}`
                                             : member.memberId}
                                     </td>
-                                    <td className="px-5" style={{color: '#18181B'}}>{member.registrationNumber ?? '—'}</td>
-                                    <td className="px-5" style={{color: '#18181B'}}>{formatDate(member.joinedAt)}</td>
+                                    <td className="px-5" style={{color: 'var(--color-text-primary)'}}>{member.registrationNumber ?? '—'}</td>
+                                    <td className="px-5" style={{color: 'var(--color-text-primary)'}}>{formatDate(member.joinedAt)}</td>
                                     <td className="px-5">
                                         {member.source && <MemberSourceBadge source={member.source}/>}
                                     </td>

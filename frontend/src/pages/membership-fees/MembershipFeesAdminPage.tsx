@@ -32,11 +32,11 @@ export const MembershipFeesAdminPage = (): ReactElement => {
 
     return (
         <div className="flex flex-col gap-8">
-            <h1 className="text-[28px] font-bold text-[#18181B]">{labels.nav['membership-fees']}</h1>
+            <h1 className="text-[28px] font-bold text-text-primary">{labels.nav['membership-fees']}</h1>
 
             {activeCampaignHref ? (
                 <div className="flex flex-col gap-4">
-                    <h2 className="text-xl font-bold text-[#18181B]">{labels.sections.activeCampaign}</h2>
+                    <h2 className="text-xl font-bold text-text-primary">{labels.sections.activeCampaign}</h2>
                     <HalSubresourceProvider subresourceLinkName="activeCampaign">
                         <CampaignDetail/>
                     </HalSubresourceProvider>

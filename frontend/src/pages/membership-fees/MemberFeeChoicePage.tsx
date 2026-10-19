@@ -40,9 +40,9 @@ const RadioCard = ({
         className="w-full flex items-center gap-3 px-4 rounded-lg border transition-colors cursor-pointer text-left"
         style={{
             height: '56px',
-            background: selected ? '#EFF6FF' : '#FFFFFF',
+            background: selected ? 'var(--color-primary-subtle)' : 'var(--color-bg-elevated)',
             borderWidth: selected ? '1.5px' : '1px',
-            borderColor: selected ? '#2563EB' : '#E4E4E7',
+            borderColor: selected ? 'var(--color-primary)' : 'var(--color-border-subtle)',
             borderRadius: '8px',
         }}
     >
@@ -53,8 +53,8 @@ const RadioCard = ({
                 width: '18px',
                 height: '18px',
                 borderRadius: '4px',
-                background: selected ? '#2563EB' : '#FFFFFF',
-                border: selected ? 'none' : '1.5px solid #D1D5DB',
+                background: selected ? 'var(--color-primary)' : 'var(--color-bg-elevated)',
+                border: selected ? 'none' : '1.5px solid var(--color-border-default)',
             }}
         >
             {selected && <Check className="w-3 h-3 text-white" strokeWidth={3}/>}
@@ -63,7 +63,7 @@ const RadioCard = ({
         {/* Option name */}
         <span
             className="flex-1 font-bold"
-            style={{fontSize: '14px', color: '#18181B'}}
+            style={{fontSize: '14px', color: 'var(--color-text-primary)'}}
         >
             {option.prompt}
         </span>
@@ -73,11 +73,11 @@ const RadioCard = ({
 const LockedChoiceCard = ({name, yearlyFee}: {name: string; yearlyFee: number}): ReactElement => (
     <div
         className="p-4 rounded-lg border"
-        style={{background: '#F8FAFC', borderColor: '#E4E4E7', borderRadius: '8px'}}
+        style={{background: 'var(--color-bg-subtle)', borderColor: 'var(--color-border-subtle)', borderRadius: '8px'}}
     >
-        <p className="text-sm font-medium mb-1" style={{color: '#71717A'}}>{l.currentTier}</p>
-        <p className="text-lg font-semibold" style={{color: '#18181B'}}>{name}</p>
-        <p className="text-sm mt-1" style={{color: '#71717A'}}>
+        <p className="text-sm font-medium mb-1" style={{color: 'var(--color-text-secondary)'}}>{l.currentTier}</p>
+        <p className="text-lg font-semibold" style={{color: 'var(--color-text-primary)'}}>{name}</p>
+        <p className="text-sm mt-1" style={{color: 'var(--color-text-secondary)'}}>
             {yearlyFee} {labels.finance.currency} / rok
         </p>
     </div>
@@ -171,7 +171,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
             {/* Voting closed, choice locked */}
             {!summary?.votingOpen && summary?.currentGroup && (
                 <div className="flex flex-col gap-4 max-w-lg">
-                    <p className="text-sm" style={{color: '#71717A'}}>{l.choiceLockedInfo}</p>
+                    <p className="text-sm" style={{color: 'var(--color-text-secondary)'}}>{l.choiceLockedInfo}</p>
                     <LockedChoiceCard
                         name={summary.currentGroup.name}
                         yearlyFee={summary.currentGroup.yearlyFee}
@@ -185,7 +185,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
                     {/* Current choice info */}
                     {summary.currentGroup && (
                         <div className="flex flex-col gap-2">
-                            <p className="text-sm font-medium" style={{color: '#71717A'}}>{l.currentTier}</p>
+                            <p className="text-sm font-medium" style={{color: 'var(--color-text-secondary)'}}>{l.currentTier}</p>
                             <LockedChoiceCard
                                 name={summary.currentGroup.name}
                                 yearlyFee={summary.currentGroup.yearlyFee}
@@ -196,7 +196,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
                     {/* Radio card selection */}
                     {chooseLevelTemplate && groupOptions.length > 0 && (
                         <div className="flex flex-col gap-3">
-                            <p className="text-sm font-medium" style={{color: '#71717A'}}>
+                            <p className="text-sm font-medium" style={{color: 'var(--color-text-secondary)'}}>
                                 {l.choiceTier}
                             </p>
 
@@ -241,7 +241,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
                     )}
 
                     {!chooseLevelTemplate && !summary.currentGroup && (
-                        <p className="text-sm" style={{color: '#71717A'}}>{l.noChoiceMade}</p>
+                        <p className="text-sm" style={{color: 'var(--color-text-secondary)'}}>{l.noChoiceMade}</p>
                     )}
                 </div>
             )}

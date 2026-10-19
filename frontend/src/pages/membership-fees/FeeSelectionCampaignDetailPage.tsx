@@ -11,15 +11,15 @@ const FeeSelectionCampaignDetailContent = (): ReactElement => {
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-2 text-sm text-[#71717A]">
-                <Link to="/membership-fee-tiers" className="hover:text-[#18181B]">
+            <div className="flex items-center gap-2 text-sm text-text-secondary">
+                <Link to="/membership-fee-tiers" className="hover:text-text-primary">
                     {labels.ui.backToList}
                 </Link>
                 <span>/</span>
-                <span className="text-[#18181B] font-medium">{resourceData?.year}</span>
+                <span className="text-text-primary font-medium">{resourceData?.year}</span>
             </div>
 
-            <h1 className="text-[28px] font-bold text-[#18181B]">{resourceData?.year}</h1>
+            <h1 className="text-[28px] font-bold text-text-primary">{resourceData?.year}</h1>
 
             <CampaignDetail/>
         </div>

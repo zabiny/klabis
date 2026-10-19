@@ -15,16 +15,16 @@ export const TierCatalogSection = (): ReactElement => {
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-[#18181B]">{labels.sections.membershipFeeTiersList}</h2>
+                <h2 className="text-xl font-bold text-text-primary">{labels.sections.membershipFeeTiersList}</h2>
                 <HalFormButton
                     name="createTier"
                     modal={true}
                     icon={<Plus size={16} className="text-white"/>}
-                    className="flex items-center gap-1.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-[13px] font-bold h-[38px] px-3.5 rounded-lg"
+                    className="flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white text-[13px] font-bold h-[38px] px-3.5 rounded-lg"
                 />
             </div>
 
-            <div className="bg-white border border-[#E4E4E7] rounded-xl overflow-hidden">
+            <div className="bg-surface border border-border-subtle rounded-xl overflow-hidden">
                 <HalEmbeddedTable<FeeTierSummary>
                     collectionName="membershipFeeTierSummaryResponseList"
                     tableId="membership-fee-tiers"
@@ -38,7 +38,7 @@ export const TierCatalogSection = (): ReactElement => {
                         dataRender={({item}) => {
                             const tier = item as unknown as FeeTierSummary;
                             return (
-                                <span className="text-sm font-bold text-[#18181B]">{tier.name}</span>
+                                <span className="text-sm font-bold text-text-primary">{tier.name}</span>
                             );
                         }}
                     >
@@ -52,7 +52,7 @@ export const TierCatalogSection = (): ReactElement => {
                         dataRender={() => (
                             <button
                                 type="button"
-                                className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-[#F8FAFC] text-[#71717A] hover:bg-[#F1F5F9]"
+                                className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-bg-subtle text-text-secondary hover:bg-bg-subtle"
                                 aria-label="Otevřít detail"
                             >
                                 <ArrowRight size={16}/>

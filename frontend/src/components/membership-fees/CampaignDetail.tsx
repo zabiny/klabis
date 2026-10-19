@@ -39,27 +39,27 @@ export const CampaignDetail = (): ReactElement | null => {
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="bg-white border border-[#E4E4E7] rounded-xl p-6">
+            <div className="bg-surface border border-border-subtle rounded-xl p-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     <div>
-                        <p className="text-xs font-semibold text-[#71717A] uppercase tracking-wide">{labels.fields.year}</p>
-                        <p className="mt-1 text-[#18181B] font-medium">{resourceData?.year}</p>
+                        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">{labels.fields.year}</p>
+                        <p className="mt-1 text-text-primary font-medium">{resourceData?.year}</p>
                     </div>
                     <div>
-                        <p className="text-xs font-semibold text-[#71717A] uppercase tracking-wide">{labels.fields.votingDeadline}</p>
-                        <p className="mt-1 text-[#18181B] font-medium">
+                        <p className="text-xs font-semibold text-text-secondary uppercase tracking-wide">{labels.fields.votingDeadline}</p>
+                        <p className="mt-1 text-text-primary font-medium">
                             {resourceData?.votingDeadline ? formatDate(resourceData.votingDeadline) : '—'}
                         </p>
                     </div>
                 </div>
 
                 {(changeDeadlineTemplate || closeCampaignTemplate) && (
-                    <div className="mt-5 pt-5 border-t border-[#E4E4E7] flex flex-wrap gap-2">
+                    <div className="mt-5 pt-5 border-t border-border-subtle flex flex-wrap gap-2">
                         {changeDeadlineTemplate && (
                             <button
                                 type="button"
                                 onClick={() => setChangeDeadlineOpen(true)}
-                                className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 transition-colors"
+                                className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-text-secondary bg-surface border border-border-subtle hover:bg-bg-subtle transition-colors"
                                 aria-label={labels.templates.changeDeadline}
                             >
                                 <Calendar className="w-[15px] h-[15px]"/>
@@ -70,7 +70,7 @@ export const CampaignDetail = (): ReactElement | null => {
                             <button
                                 type="button"
                                 onClick={() => setCloseCampaignOpen(true)}
-                                className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-white bg-red-600 border border-red-600 hover:bg-red-700 transition-colors"
+                                className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-white bg-error hover:brightness-110 transition-colors"
                                 aria-label={labels.templates.closeCampaign}
                             >
                                 <Lock className="w-[15px] h-[15px]"/>
@@ -82,7 +82,7 @@ export const CampaignDetail = (): ReactElement | null => {
             </div>
 
             <div className="flex flex-col gap-4">
-                <h3 className="text-lg font-bold text-[#18181B]">{labels.sections.membershipFeeGroups}</h3>
+                <h3 className="text-lg font-bold text-text-primary">{labels.sections.membershipFeeGroups}</h3>
                 <FeeGroupsTable groups={groups}/>
             </div>
 
