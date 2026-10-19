@@ -96,8 +96,10 @@ Feature: Membership fees
     And I click "Vypsat kampaň"
     And I fill "Rok" with the scenario year
     And I fill "Uzávěrka hlasování" with "{date+30}"
-    And I tick "{prefix}Campaign tier" in "Tiery"
+    And I pick "{prefix}Campaign tier" in "Tiery"
     And I click "Odeslat"
+    Then I see "Úspěšně uloženo"
+    When I click "Členské příspěvky"
     Then the page shows section "Aktivní kampaň"
     And the active campaigns section contains the campaign year
     And the active campaign lists fee group "{prefix}Campaign tier"
@@ -111,7 +113,7 @@ Feature: Membership fees
     And I click "Vypsat kampaň"
     And I fill "Rok" with the scenario year
     And I fill "Uzávěrka hlasování" with "{date+0}"
-    And I tick "{prefix}Deadline tier" in "Tiery"
+    And I pick "{prefix}Deadline tier" in "Tiery"
     And I click "Odeslat"
     Then I see an error message
     And the page does not show section "Aktivní kampaň"

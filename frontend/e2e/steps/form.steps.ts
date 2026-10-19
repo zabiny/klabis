@@ -40,9 +40,13 @@ Then('I see an error message', async ({page}) => {
     await expect(page.getByRole('alert').first()).toBeVisible();
 });
 
-When('I tick {text} in {text}', async ({page}, option: string, label: string) => {
-    const container = page.locator('dt', {hasText: new RegExp(`^${escapeRegExp(label)}$`)}).locator('xpath=following-sibling::dd');
-    await container.getByRole('checkbox', {name: option}).or(container.getByLabel(option)).first().check();
+// The multi-select combobox has no accessible name yet, so it is located through the wrapper holding the field label.
+When('I pick {text} in {text}', async ({page}, option: string, label: string) => {
+    const wrapper = page.locator('label', {hasText: new RegExp(`^${escapeRegExp(label)}\\*?$`)}).locator('xpath=..');
+    const combobox = wrapper.getByRole('combobox');
+    await combobox.fill(option);
+    await wrapper.getByRole('option', {name: option, exact: true}).click();
+    await expect(wrapper.getByRole('button', {name: `Odebrat ${option}`})).toBeVisible();
 });
 
 When('I open the list row {text}', async ({page}, text: string) => {

@@ -60,7 +60,7 @@ Generated/ignored: `.features-gen/`, `e2e/.auth/`, `playwright-report/`, `test-r
 | `When I select "<option>" in "<label>"` | select by option label |
 | `When I open the list row "<text>"` | clicks a table cell |
 | `When I fill "<label>" with the scenario year` | fee campaign year kept in scenario state |
-| `When I tick "<option>" in "<label>"` | checkbox in a multi-select field |
+| `When I pick "<option>" in "<label>"` | option of a searchable multi-select (types into the combobox, clicks the option, waits for its chip); field located via its label text |
 | `When I choose option "<name>"` / `Then the option "<name>" is selected` | radio card (member fee choice) |
 | `When I open the catalog tier "<name>"` | row of the fee tier catalog table |
 | `When I open the closed campaign` / `When I open my profile` | |
