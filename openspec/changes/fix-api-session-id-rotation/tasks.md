@@ -2,13 +2,13 @@
 
 Test and fix ship together so that every commit stays green (Red-Green inside the group).
 
-- [ ] 1.1 Red: add an integration test in `backend/src/test/java/com/klabis/common/security/` (design D2). It gets an AS session + real access token via form login and code exchange, then calls `GET /api` with `Authorization: Bearer` and the same `MockHttpSession`. It asserts `200`, no `Set-Cookie` response header, and an unchanged session id. Run it and confirm it fails on the current configuration.
-- [ ] 1.2 In the same test class, add a scenario: after the bearer `/api` call, `/oauth2/authorize?prompt=none` with the same session redirects with `code=` (not `error=login_required`).
-- [ ] 1.3 Add a scenario for `/ical/**` with a valid iCal token and an existing session: the session id is unchanged.
-- [ ] 1.4 Green: in `WebSecurityCommonConfiguration.defaultSecurityFilterChain`, add `.sessionFixation(fixation -> fixation.none())` next to `SessionCreationPolicy.STATELESS` (design D1). Add a one-line comment with the reason (authentication is per request, never stored in a session, rotation would break the AS session needed for `prompt=none`).
-- [ ] 1.5 Run the new test class plus `AuthorizationServerPromptNoneTest`, `OidcFlowE2ETest` and `common.security` tests. All pass without modification.
-- [ ] 1.6 Run the full backend test suite. Only known pre-existing failures may remain.
-- [ ] 1.7 Manual check: run `./runLocalEnvironment.sh`, log in on `http://localhost:3000`, and load several pages. The backend log shows no `ChangeSessionIdAuthenticationStrategy - Changed session id` lines.
+- [x] 1.1 Red: add an integration test in `backend/src/test/java/com/klabis/common/security/` (design D2). It gets an AS session + real access token via form login and code exchange, then calls `GET /api` with `Authorization: Bearer` and the same `MockHttpSession`. It asserts `200`, no `Set-Cookie` response header, and an unchanged session id. Run it and confirm it fails on the current configuration.
+- [x] 1.2 In the same test class, add a scenario: after the bearer `/api` call, `/oauth2/authorize?prompt=none` with the same session redirects with `code=` (not `error=login_required`).
+- [x] 1.3 Add a scenario for `/ical/**` with a valid iCal token and an existing session: the session id is unchanged.
+- [x] 1.4 Green: in `WebSecurityCommonConfiguration.defaultSecurityFilterChain`, add `.sessionFixation(fixation -> fixation.none())` next to `SessionCreationPolicy.STATELESS` (design D1). Add a one-line comment with the reason (authentication is per request, never stored in a session, rotation would break the AS session needed for `prompt=none`).
+- [x] 1.5 Run the new test class plus `AuthorizationServerPromptNoneTest`, `OidcFlowE2ETest` and `common.security` tests. All pass without modification.
+- [x] 1.6 Run the full backend test suite. Only known pre-existing failures may remain.
+- [x] 1.7 Manual check: run `./runLocalEnvironment.sh`, log in on `http://localhost:3000`, and load several pages. The backend log shows no `ChangeSessionIdAuthenticationStrategy - Changed session id` lines.
 
 ## 2. Re-evaluate the E2E authentication workaround (frontend E2E, one commit)
 
