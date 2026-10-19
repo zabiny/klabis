@@ -74,20 +74,11 @@ export const test = base.extend<Fixtures>({
         });
         await context?.dispose();
     },
-    // Workaround for a backend defect: the API security chain (explicit STATELESS) installs
-    // SessionManagementFilter with ChangeSessionIdAuthenticationStrategy, so every bearer /api call
-    // rotates the authorization server JSESSIONID. A stored cookie is therefore unreliable; the OIDC
-    // user is restored into sessionStorage before the app boots instead.
     loginAs: async ({page, currentRole}, provide) => {
         await provide(async (role) => {
-            const {cookies, oidc} = readSession(role);
+            const {cookies} = readSession(role);
             currentRole.value = role;
             await page.context().addCookies(cookies);
-            await page.addInitScript((entries) => {
-                if (sessionStorage.getItem('e2e.oidcRestored')) return;
-                entries.forEach(([key, value]) => sessionStorage.setItem(key, value));
-                sessionStorage.setItem('e2e.oidcRestored', '1');
-            }, oidc);
         });
     },
 });

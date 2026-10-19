@@ -12,9 +12,9 @@ Test and fix ship together so that every commit stays green (Red-Green inside th
 
 ## 2. Re-evaluate the E2E authentication workaround (frontend E2E, one commit)
 
-- [ ] 2.1 In `frontend/e2e/support/fixtures.ts`, change `loginAs` to restore only the stored cookies (no `oidc.user:*` init script), with the backend from group 1 running. Keep the `oidc` entry in the stored role state for the `api` fixture (design D3).
-- [ ] 2.2 Run the full E2E suite locally against `http://localhost:3000` at least twice. Cookie-only re-entry must pass in every scenario without the login form appearing.
-- [ ] 2.3 If 2.2 is stable, keep the simplification and remove the workaround comment above `loginAs`. If it is not stable, revert 2.1, keep the restore, and rewrite the comment to name the actual remaining reason.
+- [x] 2.1 In `frontend/e2e/support/fixtures.ts`, change `loginAs` to restore only the stored cookies (no `oidc.user:*` init script), with the backend from group 1 running. Keep the `oidc` entry in the stored role state for the `api` fixture (design D3).
+- [x] 2.2 Run the full E2E suite locally against `http://localhost:3000` at least twice. Cookie-only re-entry must pass in every scenario without the login form appearing.
+- [x] 2.3 If 2.2 is stable, keep the simplification and remove the workaround comment above `loginAs`. If it is not stable, revert 2.1, keep the restore, and rewrite the comment to name the actual remaining reason.
 
 ## 3. Documentation (one commit)
 
