@@ -20,12 +20,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.web.util.UriComponentsBuilder;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.Base64;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,8 +52,8 @@ class ApiChainSessionStabilityTest {
 
     private static final String CLIENT_ID = "klabis-web";
     private static final String REDIRECT_URI = "http://localhost:3000/silent-renew.html";
+    private static final String CODE_CHALLENGE = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
     private static final String CODE_VERIFIER = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
-    private static final UUID ICAL_USER_UUID = UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
     @Autowired
     private MockMvc mockMvc;
@@ -109,14 +108,11 @@ class ApiChainSessionStabilityTest {
     @Test
     @DisplayName("iCal token request keeps the session id")
     void icalTokenRequestKeepsSessionId() throws Exception {
-        jdbcTemplate.execute("INSERT INTO common.users (id, user_name, password_hash, account_status, created_at, modified_at, version) " +
-                "VALUES ('" + ICAL_USER_UUID + "', 'ZBM8200', 'hash', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)");
-        jdbcTemplate.execute("INSERT INTO members.members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) " +
-                "VALUES ('" + ICAL_USER_UUID + "', 'ZBM8200', 'Test', 'Member', '1990-01-01', 'CZ', 'MALE', 'ical@test.cz', '+420111111112', 'Street 1', 'City', '10000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)");
-        String rawToken = icalTokenPort.generateOrRotate(new UserId(ICAL_USER_UUID)).rawToken();
+        UUID adminId = jdbcTemplate.queryForObject("SELECT id FROM common.users WHERE user_name = 'admin'", UUID.class);
+        String rawToken = icalTokenPort.generateOrRotate(new UserId(adminId)).rawToken();
 
         MockHttpSession session = new MockHttpSession();
-        obtainAccessToken(session);
+        login(session);
         String idBefore = session.getId();
 
         mockMvc.perform(get("/ical/my-schedule.ics").param("token", rawToken).session(session))
@@ -125,19 +121,19 @@ class ApiChainSessionStabilityTest {
         assertThat(session.getId()).isEqualTo(idBefore);
     }
 
-    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder authorizeRequest(MockHttpSession session) throws Exception {
+    private MockHttpServletRequestBuilder authorizeRequest(MockHttpSession session) {
         return get("/oauth2/authorize")
                 .queryParam("response_type", "code")
                 .queryParam("client_id", CLIENT_ID)
                 .queryParam("scope", "openid")
                 .queryParam("redirect_uri", REDIRECT_URI)
                 .queryParam("state", "state")
-                .queryParam("code_challenge", codeChallenge())
+                .queryParam("code_challenge", CODE_CHALLENGE)
                 .queryParam("code_challenge_method", "S256")
                 .session(session);
     }
 
-    private String obtainAccessToken(MockHttpSession session) throws Exception {
+    private void login(MockHttpSession session) throws Exception {
         mockMvc.perform(authorizeRequest(session)).andExpect(status().is3xxRedirection());
         mockMvc.perform(post("/login")
                         .param("username", "admin")
@@ -145,13 +141,17 @@ class ApiChainSessionStabilityTest {
                         .session(session)
                         .with(csrf()))
                 .andExpect(status().is3xxRedirection());
+    }
+
+    private String obtainAccessToken(MockHttpSession session) throws Exception {
+        login(session);
 
         MvcResult authorized = mockMvc.perform(authorizeRequest(session))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(header().string(HttpHeaders.LOCATION, containsString("code=")))
                 .andReturn();
         String location = authorized.getResponse().getHeader(HttpHeaders.LOCATION);
-        String code = location.substring(location.indexOf("code=") + 5).split("&")[0];
+        String code = UriComponentsBuilder.fromUriString(location).build().getQueryParams().getFirst("code");
 
         MvcResult token = mockMvc.perform(post("/oauth2/token")
                         .param("grant_type", "authorization_code")
@@ -163,10 +163,5 @@ class ApiChainSessionStabilityTest {
                 .andReturn();
         JsonNode body = objectMapper.readTree(token.getResponse().getContentAsString());
         return body.get("access_token").asString();
-    }
-
-    private static String codeChallenge() throws Exception {
-        byte[] digest = MessageDigest.getInstance("SHA-256").digest(CODE_VERIFIER.getBytes(StandardCharsets.US_ASCII));
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
     }
 }
