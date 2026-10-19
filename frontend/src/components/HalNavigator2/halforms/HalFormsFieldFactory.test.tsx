@@ -57,6 +57,17 @@ describe('halFormsFieldsFactory', () => {
             expect(screen.getByRole('combobox')).toBeInTheDocument();
         });
 
+        it('falls back to the localized field label for a select without prompt', () => {
+            const prop: HalFormsProperty = {
+                name: 'ruleType',
+                type: 'text',
+                options: {inline: ['A', 'B']},
+            };
+            const element = halFormsFieldsFactory('text', makeProps(prop));
+            renderInFormik(element);
+            expect(screen.getByLabelText('Typ pravidla')).toBeInTheDocument();
+        });
+
         it('renders text input when type is "text" and no options present', () => {
             const prop: HalFormsProperty = {
                 name: 'testField',

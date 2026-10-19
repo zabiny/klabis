@@ -11,6 +11,7 @@ import {getPermissionInfo, labels} from '../localization';
  */
 export interface EnumOptionContext {
     type?: string;
+    name?: string;
 }
 
 const AUTHORITY_GROUP = 'authority';
@@ -23,8 +24,14 @@ const ENUM_GROUP_BY_TYPE: Record<string, string> = {
     Authority: AUTHORITY_GROUP,
 };
 
+// ruleType is a plain string in the spec (no x-hal-input-type), so it can only be recognised by name.
+const ENUM_GROUP_BY_PROPERTY_NAME: Record<string, string> = {
+    ruleType: 'coParticipationRuleType',
+};
+
 function resolveEnumGroup(prop?: EnumOptionContext): string | undefined {
-    return prop?.type ? ENUM_GROUP_BY_TYPE[prop.type] : undefined;
+    if (prop?.type && ENUM_GROUP_BY_TYPE[prop.type]) return ENUM_GROUP_BY_TYPE[prop.type];
+    return prop?.name ? ENUM_GROUP_BY_PROPERTY_NAME[prop.name] : undefined;
 }
 
 function lookupTranslation(group: string, value: string): string | undefined {

@@ -2,6 +2,7 @@ import {forwardRef} from 'react'
 import clsx from 'clsx'
 import {FieldWrapper} from './FieldWrapper.tsx'
 import type {SelectFieldProps} from './types.ts'
+import {useFieldId} from './useFieldId.ts'
 
 const selectBaseClasses = clsx(
     'w-full px-3 py-1.5 border rounded-md font-normal text-sm',
@@ -33,11 +34,12 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
             options,
             placeholder,
             multiple = false,
-            id,
+            id: explicitId,
             ...selectProps
         },
         ref
     ) => {
+        const id = useFieldId(explicitId)
         const selectClasses = clsx(
             selectBaseClasses,
             error && errorSelectClasses,

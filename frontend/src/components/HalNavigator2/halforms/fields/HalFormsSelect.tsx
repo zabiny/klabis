@@ -4,6 +4,7 @@ import {Field} from 'formik'
 import {SelectField} from '../../../UI/forms'
 import {useHalFormOptions} from '../../../../hooks/useHalFormOptions.ts'
 import type {HalFormsInputProps} from '../types.ts'
+import {getFieldLabel} from '../../../../localization'
 
 /**
  * HalFormsSelect component - dropdown selection for HAL+Forms
@@ -23,7 +24,7 @@ export const HalFormsSelect = ({prop, errorText, renderMode = 'field'}: HalForms
                     <SelectField
                         {...field}
                         value={fieldValue}
-                        label={renderMode === 'field' ? (prop.prompt || prop.name) : undefined}
+                        label={renderMode === 'field' ? (prop.prompt || getFieldLabel(prop.name)) : undefined}
                         placeholder={isLoading ? 'Načítání...' : 'Vyberte možnost'}
                         disabled={prop.readOnly || isLoading || false}
                         required={prop.required}

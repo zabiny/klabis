@@ -2,7 +2,7 @@ import type {ReactNode} from 'react';
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {useHalFormOptions} from './useHalFormOptions';
+import {localizeEnumOptions, useHalFormOptions} from './useHalFormOptions';
 import type {HalFormsOption} from '../api';
 import {createMockResponse} from '../__mocks__/mockFetch';
 import {type Mock, vi} from 'vitest';
@@ -498,5 +498,23 @@ describe('useHalFormOptions', () => {
             // Should only fetch once due to React Query deduplication
             expect(fetchSpy).toHaveBeenCalledTimes(1);
         });
+    });
+});
+
+describe('localizeEnumOptions by property name', () => {
+    it('translates ruleType options', () => {
+        const result = localizeEnumOptions(
+            [{value: 'PERCENTAGE', label: 'PERCENTAGE'}, {value: 'FIXED_AMOUNT', label: 'FIXED_AMOUNT'}],
+            {name: 'ruleType'}
+        );
+        expect(result.map(o => o.label)).toEqual(['Procento', 'Fixní částka']);
+    });
+
+    it('translates ruleType options for the production property shape', () => {
+        const result = localizeEnumOptions(
+            [{value: 'PERCENTAGE', label: 'PERCENTAGE'}],
+            {type: 'text', name: 'ruleType'}
+        );
+        expect(result[0].label).toBe('Procento');
     });
 });

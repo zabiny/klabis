@@ -197,6 +197,12 @@ describe('MembershipFeesAdminPage', () => {
             expect(screen.getByRole('button', {name: /vypsat kampaň/i})).toBeInTheDocument();
         });
 
+        it('does not stretch the publishYear button to full width', () => {
+            renderPage(createMockPageData(tierCatalogResourceWithPublishYear));
+            const wrapper = screen.getByRole('button', {name: /vypsat kampaň/i}).parentElement;
+            expect(wrapper).toHaveClass('flex');
+        });
+
         it('opens modal when publishYear button is clicked', async () => {
             const user = userEvent.setup();
             renderPage(createMockPageData(tierCatalogResourceWithPublishYear));

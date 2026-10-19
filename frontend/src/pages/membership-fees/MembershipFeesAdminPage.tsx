@@ -42,7 +42,9 @@ export const MembershipFeesAdminPage = (): ReactElement => {
                     </HalSubresourceProvider>
                 </div>
             ) : (
-                <HalFormButton name="publishYear"/>
+                <div className="flex">
+                    <HalFormButton name="publishYear"/>
+                </div>
             )}
 
             <TierCatalogSection/>
