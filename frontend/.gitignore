@@ -29,3 +29,9 @@ dist-ssr
 # Generated from docs/openapi/spec/ via `npm run openapi`
 src/api/klabisApi.d.ts
 src/api/halTypes.ts
+
+# Playwright E2E
+.features-gen/
+playwright-report/
+test-results/
+e2e/.auth/

@@ -1,11 +1,12 @@
 ## 1. Walking skeleton: login against a running instance (target A)
 
-- [ ] 1.1 Add `@playwright/test` and `playwright-bdd` devDependencies (current versions verified against the registry). Install the Chromium browser.
-- [ ] 1.2 Add `playwright.config.ts` (`E2E_BASE_URL` default `http://localhost:3000`, `ignoreHTTPSErrors`, Chromium desktop, HTML reporter, `defineBddConfig` for `e2e/features` and `e2e/steps`), and add the `test:e2e` script (`bddgen && playwright test`).
-- [ ] 1.3 Add `tsconfig.e2e.json` and reference it from `tsconfig.json`. Add `.features-gen/`, `playwright-report/`, `test-results/` and `e2e/.auth/` to `.gitignore` and ESLint ignores.
-- [ ] 1.4 Add the auth setup project for roles `admin` (`ZBM9000`) and `member` (`ZBM9500`), with credentials from `E2E_*` env and seeded defaults. Store `e2e/.auth/<role>.json`.
-- [ ] 1.5 Add the `Given I am logged in as "<role>"` step plus fixture. Verify silent re-login through the AS session cookie on both `:3000` and `:8443`. If it is unreliable, implement the `sessionStorage` + `addInitScript` fallback (design D4).
-- [ ] 1.6 Verify isolation: `npm test` still runs only Vitest with an unchanged test count, and `npm run lint` and `npm run build` pass.
+- [x] 1.1 Add `@playwright/test` and `playwright-bdd` devDependencies (current versions verified against the registry). Install the Chromium browser.
+- [x] 1.2 Add `playwright.config.ts` (`E2E_BASE_URL` default `http://localhost:3000`, `ignoreHTTPSErrors`, Chromium desktop, HTML reporter, `defineBddConfig` for `e2e/features` and `e2e/steps`), and add the `test:e2e` script (`bddgen && playwright test`).
+- [x] 1.3 Add `tsconfig.e2e.json` and reference it from `tsconfig.json`. Add `.features-gen/`, `playwright-report/`, `test-results/` and `e2e/.auth/` to `.gitignore` and ESLint ignores.
+- [x] 1.4 Add the auth setup project for roles `admin` (`ZBM9000`) and `member` (`ZBM9500`), with credentials from `E2E_*` env and seeded defaults. Store `e2e/.auth/<role>.json`.
+- [x] 1.5 Add the `Given I am logged in as "<role>"` step plus fixture. Verify silent re-login through the AS session cookie on both `:3000` and `:8443`. If it is unreliable, implement the `sessionStorage` + `addInitScript` fallback (design D4).
+  - Outcome: cookie re-entry was flaky on `:8443` because the AS rotates `JSESSIONID` on concurrent bearer-authenticated API calls. The D4 fallback is in use.
+- [x] 1.6 Verify isolation: `npm test` still runs only Vitest with an unchanged test count, and `npm run lint` and `npm run build` pass.
 
 ## 2. Read-only slice: role-based main menu
 
