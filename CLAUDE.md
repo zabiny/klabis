@@ -40,6 +40,10 @@ These example users exist only when the `example-data` profile is active (defaul
 
 The always-bootstrapped `admin` username user (password from `KLABIS_ADMIN_PASSWORD`, `admin123` via runLocalEnvironment.sh) is available in every profile.
 
+### E2E tests
+
+Playwright + playwright-bdd scenarios against a running instance (needs the `example-data` users). Locally: start `./runLocalEnvironment.sh`, then `cd frontend && npm run test:e2e`. In CI: manual workflow **E2E Tests** (`workflow_dispatch`, input `image_tag` of `ghcr.io/zabiny/klabis-be`). Details in [`frontend/CLAUDE.md`](frontend/CLAUDE.md#e2e-tests-playwright--playwright-bdd).
+
 ## Development Workflow Best Practices
 
 ### Check specifications when expected behavior is in question

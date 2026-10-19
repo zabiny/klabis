@@ -35,5 +35,5 @@
 
 ## 6. Documentation
 
-- [ ] 6.1 Document E2E in `frontend/CLAUDE.md`: purpose, `npm run test:e2e`, `E2E_BASE_URL` and credential env vars, folder layout, run prefix rule, `Given`-via-API / `When`-`Then`-via-UI rule, `@spec:` tag and verbatim scenario titles, reusable step vocabulary, and that E2E never runs as part of `npm test`.
-- [ ] 6.2 Add a short pointer in root `CLAUDE.md` (how to run against a local instance, and the manual CI workflow).
+- [x] 6.1 Document E2E in `frontend/CLAUDE.md`: purpose, `npm run test:e2e`, `E2E_BASE_URL` and credential env vars, folder layout, run prefix rule, `Given`-via-API / `When`-`Then`-via-UI rule, `@spec:` tag and verbatim scenario titles, reusable step vocabulary, and that E2E never runs as part of `npm test`.
+- [x] 6.2 Add a short pointer in root `CLAUDE.md` (how to run against a local instance, and the manual CI workflow).

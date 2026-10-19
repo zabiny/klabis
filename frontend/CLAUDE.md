@@ -21,7 +21,7 @@
 - **Forms:** Formik 2.4.6 + Yup 1.7.1
 - **Authentication:** oidc-client-ts 3.3.0 (OAuth2/OIDC)
 - **API Client:** openapi-fetch 0.14.0 + openapi-react-query 0.5.0
-- **Testing:** Vitest 2.1.8 + Testing Library
+- **Testing:** Vitest 2.1.8 + Testing Library (unit), Playwright + playwright-bdd (E2E)
 
 ## Project Structure
 
@@ -41,6 +41,7 @@ frontend/
 │   ├── theme/           # Theme configuration
 │   ├── utils/           # Utility functions
 │   └── constants/       # Application constants
+├── e2e/                 # Playwright E2E tests (see "E2E Tests")
 ├── docs/                # Documentation
 └── dist/                # Build output (copied to backend/resources/static)
 ```
@@ -71,14 +72,67 @@ npm run preview
 
 ### Testing
 
-**IMPORTANT:** Always use the `test-runner` agent to execute tests. Never run `npm test` directly.
+**IMPORTANT:** Always use the `test-runner` agent to execute unit tests (Vitest). Never run `npm test` directly. E2E tests are separate — see [E2E Tests](#e2e-tests-playwright--playwright-bdd).
 
-**Test Configuration:**
+**Test Configuration (Vitest):**
 
 - Test files: `src/**/*.{test,spec}.{ts,tsx}`
 - Setup file: `src/setupTests.ts`
 - Environment: jsdom
 - Coverage provider: v8
+
+### E2E Tests (Playwright + playwright-bdd)
+
+Gherkin scenarios that drive a **running** Klabis instance through the browser and trace back to OpenSpec scenarios. Never part of `npm test` or `refresh-backend-server-resources`.
+
+```bash
+npx playwright install chromium   # once
+npm run test:e2e                  # bddgen && playwright test
+```
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `E2E_BASE_URL` | `http://localhost:3000` | Target instance; `https://localhost:8443` also works (self-signed cert ignored) |
+| `E2E_ADMIN_USER` / `E2E_ADMIN_PASSWORD` | `ZBM9000` / `password` | `admin` role |
+| `E2E_MEMBER_USER` / `E2E_MEMBER_PASSWORD` | `ZBM9500` / `password` | `member` role |
+
+Defaults are the `example-data` seed users. Report: `playwright-report/` (HTML); traces of failed tests in `test-results/`.
+
+**Layout:**
+
+```
+e2e/
+├── auth.setup.ts     # "setup" project: logs in each role once
+├── features/         # *.feature, one per capability area
+├── steps/            # reusable step definitions (auth, navigation, form, events)
+└── support/          # fixtures.ts (loginAs, api, resolve), roles.ts
+```
+
+Generated/ignored: `.features-gen/`, `e2e/.auth/`, `playwright-report/`, `test-results/`. Type-checked via `tsconfig.e2e.json`.
+
+**Authentication:** the `setup` project logs in through the login form per role and saves cookies plus the `oidc.user:*` sessionStorage entry to `e2e/.auth/`. `Given I am logged in as "<role>"` restores both before the app boots. A stored cookie alone is not enough — the authorization server rotates `JSESSIONID` on concurrent bearer-authenticated calls.
+
+**Rules:**
+
+- **`Given` via API, `When`/`Then` via UI.** Data setup uses the `api` fixture (bearer token from sessionStorage, navigates by HAL links/templates from `/api`). UI-driven setup only where no API exists.
+- **Run prefix.** Every entity a scenario creates is named with `{prefix}` (→ `E2E-<runId>-<worker>-`); only seeded users are assumed and nothing is cleaned up. `{date+N}` resolves to today + N days (`YYYY-MM-DD`). Both placeholders are resolved by the `resolve` fixture in step arguments.
+- **Traceability.** Tag each feature `@spec:<capability>` (OpenSpec capability name) and copy each `Scenario:` title verbatim from the spec.
+- **No generated OpenAPI types** in E2E code — `test:e2e` does not trigger the `openapi` pre-hook.
+- Reuse existing steps before adding new ones; new steps go to the matching `steps/*.ts` file.
+
+**Step vocabulary:**
+
+| Step | Notes |
+|---|---|
+| `Given I am logged in as "<role>"` | `admin` or `member` |
+| `Given a draft event "<name>" exists` | created via API |
+| `When I open the application` | waits for main navigation |
+| `When I click "<label>"` | button or link by accessible name |
+| `When I fill "<label>" with "<value>"` | form field by label |
+| `When I select "<option>" in "<label>"` | select by option label |
+| `When I open the list row "<text>"` | clicks a table cell |
+| `Then I see "<text>"` | visible text, substring match |
+| `Then the main menu shows "<item>"` / `does not show "<item>"` | navigation link |
 
 ### Deployment
 
@@ -212,6 +266,7 @@ npm run build
 - `tsconfig.json` - Base configuration
 - `tsconfig.app.json` - App-specific settings
 - `tsconfig.node.json` - Node/build scripts
+- `tsconfig.e2e.json` - E2E tests (`e2e/`, `playwright.config.ts`)
 
 ## Gotchas & Best Practices
 
