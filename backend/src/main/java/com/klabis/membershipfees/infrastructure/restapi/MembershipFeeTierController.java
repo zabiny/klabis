@@ -103,6 +103,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
                 .toList();
 
         HalResponseContext.setDomainList(domains);
+        HalResponseContext.setContext(new TierRulesListing(tier.getId()));
         return ResponseEntity.ok(items);
     }
 
@@ -121,6 +122,9 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     record PaymentRuleDomain(MembershipFeeTierId tierId, MembershipPaymentRule rule) {
+    }
+
+    record TierRulesListing(MembershipFeeTierId tierId) {
     }
 
     @Override
@@ -261,13 +265,15 @@ class MembershipFeeTierListPostprocessor
 
 @MvcComponent
 class PaymentRuleDetailsPostprocessor
-        extends ModelWithDomainPostprocessor<PaymentRuleResponse, MembershipFeeTierController.PaymentRuleDomain> {
+        extends ModelWithDomainPostprocessor<PaymentRuleResponse, Object> {
 
     private static final List<String> RULE_TYPE_OPTIONS = List.of("PERCENTAGE", "FIXED_AMOUNT");
 
     @Override
-    public void process(EntityModel<PaymentRuleResponse> dtoModel,
-                        MembershipFeeTierController.PaymentRuleDomain domain) {
+    public void process(EntityModel<PaymentRuleResponse> dtoModel, Object source) {
+        if (!(source instanceof MembershipFeeTierController.PaymentRuleDomain domain)) {
+            return;
+        }
         UUID tierId = domain.tierId().value();
         UUID eventTypeId = domain.rule().eventTypeId().value();
         String ranking = domain.rule().rankingShortName();
@@ -286,9 +292,10 @@ class PaymentRuleDetailsPostprocessor
     }
 }
 
-// The tier id is read off the current request's resolved @PathVariable map, since
-// CollectionModel<EntityModel<PaymentRuleResponse>> carries no reference back to the tier when the
-// list is empty. Same pattern as EventRegistrationController.RegistrationListPostprocessor.
+// The tier id comes from HalResponseContext, since CollectionModel<EntityModel<PaymentRuleResponse>>
+// carries no reference back to the tier when the list is empty. PaymentRuleResponse is shared with
+// the fee group rules snapshot, which must not get tier rule management affordances, so the
+// context entry published by the tier endpoint is what scopes this postprocessor.
 @MvcComponent
 class MembershipFeeTierListRulesPostprocessor
         implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<PaymentRuleResponse>>> {
@@ -315,19 +322,8 @@ class MembershipFeeTierListRulesPostprocessor
     }
 
     private static Optional<UUID> currentTierId() {
-        org.springframework.web.context.request.RequestAttributes attrs =
-                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
-        if (attrs == null) {
-            return Optional.empty();
-        }
-        Object variables = attrs.getAttribute(
-                org.springframework.web.servlet.HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
-                org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
-        if (!(variables instanceof Map<?, ?> pathVariables)) {
-            return Optional.empty();
-        }
-        Object id = pathVariables.get("id");
-        return id != null ? Optional.of(UUID.fromString(id.toString())) : Optional.empty();
+        return HalResponseContext.findContext(MembershipFeeTierController.TierRulesListing.class)
+                .map(listing -> listing.tierId().value());
     }
 }
 

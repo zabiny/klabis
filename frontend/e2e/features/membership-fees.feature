@@ -89,7 +89,7 @@ Feature: Membership fees
 
   Scenario: Administrator starts a fee selection campaign
     Given I am logged in as "admin"
-    And a catalog fee tier "{prefix}Campaign tier" exists
+    And a catalog fee tier "{prefix}Campaign tier" with a percentage rule for ranking "{prefix}Rank" exists
     And no fee selection campaign is active
     When I open the application
     And I click "Členské příspěvky"
@@ -103,6 +103,9 @@ Feature: Membership fees
     Then the page shows section "Aktivní kampaň"
     And the active campaigns section contains the campaign year
     And the active campaign lists fee group "{prefix}Campaign tier"
+    When I click "{prefix}Campaign tier"
+    Then I see "{prefix}Rank"
+    And I see "50 %"
 
   Scenario: Voting deadline must be in the future
     Given I am logged in as "admin"

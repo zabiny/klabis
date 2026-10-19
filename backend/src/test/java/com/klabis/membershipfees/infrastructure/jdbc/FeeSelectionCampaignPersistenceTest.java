@@ -255,4 +255,25 @@ class FeeSelectionCampaignPersistenceTest {
             assertThat(groups).hasSize(2);
         }
     }
+
+    @Nested
+    @DisplayName("published group rules snapshot")
+    class RulesSnapshot {
+
+        @Test
+        @DisplayName("should persist rules of the source level into published groups")
+        void shouldPersistRulesSnapshot() {
+            MembershipFeeTier level = MembershipFeeTier.create("Rules level", YEARLY_FEE);
+            level.addRule(MembershipPaymentRule.percentage(EVENT_TYPE, "A", 50));
+            level = levelRepository.save(level);
+            assertThat(levelRepository.findById(level.getId()).orElseThrow().getRules()).hasSize(1);
+
+            var result = FeeSelectionCampaign.publish(2031, DEADLINE, List.of(level));
+            result.groups().forEach(groupRepository::save);
+
+            MembershipFeeGroup loaded = groupRepository.findById(result.groups().getFirst().getId()).orElseThrow();
+            assertThat(loaded.getRulesSnapshot())
+                    .containsExactly(MembershipPaymentRule.percentage(EVENT_TYPE, "A", 50));
+        }
+    }
 }
