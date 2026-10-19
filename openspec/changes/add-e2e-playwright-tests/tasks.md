@@ -16,10 +16,10 @@
 
 ## 3. Mutating slice: create event through the UI
 
-- [ ] 3.1 Add the run prefix helper (`E2E-<runId>-<worker>-`) as a fixture.
-- [ ] 3.2 Add `e2e/features/events.feature` (`@spec:events`) with the scenario "Manager creates an event with all required fields". The event name uses the run prefix.
-- [ ] 3.3 Implement the generic form steps (`I click "<label>"`, `I fill "<label>" with "<value>"`, `I see "<text>"`) and the event-specific steps where no generic step fits. The scenario runs as `admin` (`ZBM9000`, all permissions).
-- [ ] 3.4 Run the scenario twice in a row against target A and confirm both runs pass, which proves independence from previous runs.
+- [x] 3.1 Add the run prefix helper (`E2E-<runId>-<worker>-`) as a fixture.
+- [x] 3.2 Add `e2e/features/events.feature` (`@spec:events`) with the scenario "Manager creates an event with all required fields". The event name uses the run prefix.
+- [x] 3.3 Implement the generic form steps (`I click "<label>"`, `I fill "<label>" with "<value>"`, `I see "<text>"`) and the event-specific steps where no generic step fits. The scenario runs as `admin` (`ZBM9000`, all permissions).
+- [x] 3.4 Run the scenario twice in a row against target A and confirm both runs pass, which proves independence from previous runs.
 
 ## 4. API-setup slice: update event with `Given` via REST API
 
