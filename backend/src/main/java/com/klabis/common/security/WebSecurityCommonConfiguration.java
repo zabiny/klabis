@@ -98,7 +98,11 @@ public class WebSecurityCommonConfiguration implements WebMvcConfigurer {
                 )
                 .addFilterAfter(accountStatusValidationFilter, BearerTokenAuthenticationFilter.class)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // STATELESS still installs SessionManagementFilter, which would rotate the AS session id on every
+                // authenticated request and break prompt=none renewal; auth here is per request, never in a session
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        .sessionFixation(fixation -> fixation.none()))
                 .headers(headers -> headers
                         .contentSecurityPolicy(csp -> csp
                                 .policyDirectives(

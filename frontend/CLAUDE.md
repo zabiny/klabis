@@ -110,7 +110,7 @@ e2e/
 
 Generated/ignored: `.features-gen/`, `e2e/.auth/`, `playwright-report/`, `test-results/`. Type-checked via `tsconfig.e2e.json`.
 
-**Authentication:** the `setup` project logs in through the login form per role and saves cookies plus the `oidc.user:*` sessionStorage entries to `e2e/.auth/<role>.json`. `Given I am logged in as "<role>"` restores both before the app boots. A stored cookie alone is not enough — known backend defect (tracked as a follow-up): the API security chain with explicit STATELESS installs `SessionManagementFilter` with `ChangeSessionIdAuthenticationStrategy`, so every bearer `/api` call rotates the authorization server `JSESSIONID`. The OIDC restore is a workaround, not intended behaviour.
+**Authentication:** the `setup` project logs in through the login form per role and saves cookies plus the `oidc.user:*` sessionStorage entries to `e2e/.auth/<role>.json`. `Given I am logged in as "<role>"` restores only the cookies: the app redirects to `/oauth2/authorize` and the authorization server session issues a code without the login form. The stored `oidc.user:*` entry is used only by the `api` fixture, which reads its bearer token from it.
 
 **Rules:**
 
