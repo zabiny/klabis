@@ -211,6 +211,52 @@ Feature: Membership fees
     And I see "Volba je uzamčena."
     And I do not see "Změnit tier"
 
+  Scenario: Member withdraws the choice before the deadline
+    Given I am logged in as "member"
+    And an active fee selection campaign for tiers "{prefix}Basic" and "{prefix}Plus"
+    And the member has chosen tier "{prefix}Basic"
+    When I open the application
+    And I open my profile
+    And I click "Změnit tier"
+    And I click "Zrušit volbu"
+    And I click "← Zpět na seznam"
+    Then I see "Probíhá volba tieru příspěvku. Zvolte si svůj tier."
+    And I do not see "{prefix}Basic"
+
+  Scenario: Member withdraws a level assigned by an administrator
+    Given I am logged in as "member"
+    And an active fee selection campaign for tiers "{prefix}Basic" and "{prefix}Plus"
+    And the administrator has assigned the member to tier "{prefix}Basic"
+    When I open the application
+    And I open my profile
+    And I click "Změnit tier"
+    And I click "Zrušit volbu"
+    And I click "← Zpět na seznam"
+    Then I see "Probíhá volba tieru příspěvku. Zvolte si svůj tier."
+    And I do not see "{prefix}Basic"
+
+  Scenario: Member cannot withdraw the choice after the deadline
+    Given I am logged in as "member"
+    And an active fee selection campaign for tiers "{prefix}Basic" and "{prefix}Plus"
+    And the member has chosen tier "{prefix}Basic"
+    And the fee selection campaign is closed
+    When I open the application
+    And I open my profile
+    And I navigate in the application to my fee choice page
+    Then I see "Volba je uzamčena."
+    And I see "{prefix}Basic"
+    And I do not see "Zrušit volbu"
+
+  Scenario: Member still sees the chosen level after the campaign is closed
+    Given I am logged in as "member"
+    And an active fee selection campaign for tiers "{prefix}Basic" and "{prefix}Plus"
+    And the member has chosen tier "{prefix}Plus"
+    And the fee selection campaign is closed
+    When I open the application
+    And I open my profile
+    Then I see "{prefix}Plus"
+    And I see "Volba je uzamčena."
+
   Scenario: Previous year's level is offered as a default
     Given I am logged in as "member"
     And an active fee selection campaign for tiers "{prefix}Basic" and "{prefix}Plus"

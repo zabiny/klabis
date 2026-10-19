@@ -2,7 +2,7 @@
 
 ### Requirement: Audit Trail of Level Assignments
 
-The system SHALL keep a record of the level each member was assigned in each year, for accounting purposes. A page SHALL show a member's fee level history, with one entry per year in which the member had a level. Each entry shows the year, the level name, the yearly fee and how the level was assigned. Only the member and a membership administrator may open the page.
+The system SHALL keep a record of the level each member was assigned in each year, for accounting purposes. A page SHALL show a member's fee level history, with one entry per year in which the member had a level. Each entry shows the year, the level name, the yearly fee and how the level was assigned. Only the member, a membership administrator and a legal guardian of the member may open the page. Years without an assignment are not listed.
 
 #### Scenario: Member opens their fee level history from the profile
 
@@ -26,6 +26,28 @@ The system SHALL keep a record of the level each member was assigned in each yea
 - **GIVEN** a member was assigned a level in a fee selection campaign that is now closed
 - **WHEN** a membership administrator opens that member's detail and clicks "Zobrazit historii příspěvků"
 - **THEN** the history page shows the level the member was assigned in that year
+
+#### Scenario: Legal guardian sees the fee level history of their minor
+
+- **GIVEN** a minor was assigned a fee level in a past year
+- **WHEN** the minor's legal guardian opens the minor's detail and clicks "Zobrazit historii příspěvků"
+- **THEN** the history page shows the level the minor was assigned in that year
+
+#### Scenario: Legal guardian cannot open the history of a member who is not their minor
+
+- **WHEN** a legal guardian without membership administration permission opens the detail of a member they are not guardian of
+- **THEN** the "Zobrazit historii příspěvků" link is not displayed
+
+#### Scenario: Year without an assignment is not listed
+
+- **GIVEN** a member had no fee level in some year, for example because they missed the choice
+- **WHEN** the member's fee level history page is opened
+- **THEN** that year does not appear in the history
+
+#### Scenario: History of an inactive member is not offered
+
+- **WHEN** a membership administrator opens the detail of an inactive member
+- **THEN** the "Zobrazit historii příspěvků" link is not displayed
 
 #### Scenario: Member without any assignment sees an empty history
 

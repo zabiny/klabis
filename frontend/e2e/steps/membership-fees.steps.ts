@@ -215,6 +215,14 @@ When('I navigate in the application to the scenario campaign', async ({page, fee
     }, feeState.campaignPath);
 });
 
+When('I navigate in the application to my fee choice page', async ({page, apiAs, feeState}) => {
+    const memberId = (await memberProfileHref(apiAs('member'))).split('/').pop();
+    await page.evaluate((target) => {
+        window.history.pushState({}, '', target);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+    }, `/members/${memberId}/fee-choice/${feeState.year}`);
+});
+
 Then(/^the event registrations (contain|do not contain) "(.*)"$/, async ({page}, presence: string, text: string) => {
     const table = page.getByRole('table').filter({hasText: 'Příjmení'});
     await expect(table).toBeVisible();

@@ -7,37 +7,46 @@ The Klabis UI is Czech, but almost every error produced by the backend reaches t
 - adding a duplicate payment rule shows *"A rule for event type 728af44d-… and ranking 'Dupx' already exists on this level"*: English, with a raw UUID instead of the event type name;
 - starting a campaign with today's deadline shows *"Form validation errors / error: Voting deadline must be in the future, but was: 2026-10-18"*: an English heading plus an English sentence, shown above the form instead of next to the deadline field.
 
-The problem is project-wide. The backend has about 90 exception classes, about 150 `IllegalArgumentException`/`IllegalStateException` throw sites, and about 400 `Assert` invariant messages. All of them are written in English, and the global handler copies `ex.getMessage()` straight into the ProblemDetail `detail`. The frontend shows that text verbatim. Its own fallback heading, *"Form validation errors"*, is also a hardcoded English string, even though `labels.ts` already has the Czech `formValidationErrors` label. No requirement in `openspec/specs/` says which language the user sees errors in, so nothing stops new English messages from being added.
+The problem is project-wide.
+
+- **Backend.** About 90 exception classes, about 150 `IllegalArgumentException`/`IllegalStateException` throw sites and about 400 `Assert` invariant messages are all English. Handlers copy `ex.getMessage()` straight into the ProblemDetail `detail`. The ProblemDetail `type` is mostly `about:blank`, and the few explicit values use three unrelated styles.
+- **Frontend.** The frontend shows `detail` verbatim, under a hardcoded English heading *"Form validation errors"*.
+- **Specs.** No requirement in `openspec/specs/` says which language the user sees errors in.
 
 ## What Changes
 
-- **New cross-cutting rule:** every error message shown to a user is in Czech. It names things by their user-visible names, such as the event type name or the member's name, and never shows internal identifiers (UUIDs, class names, field keys).
-- **Backend:** error texts are resolved into Czech at the HTTP boundary from one message catalogue, keyed by a stable error code. Exception classes keep their English `getMessage()` for logs. Each error response carries:
-  - the stable `code`;
-  - a Czech `detail`;
-  - Czech per-field messages for errors tied to a form field.
-
-  Bean-validation messages are rendered in Czech regardless of the browser language. Errors without a catalogue entry, including internal invariant failures, return a generic Czech message instead of the raw English text.
-- **Frontend:**
-  - field-level server errors are shown next to the matching form field;
-  - form-level errors are shown in a Czech alert above the form, without raw field keys;
-  - unrecognised errors fall back to a generic Czech message;
-  - the hardcoded English *"Form validation errors"* heading and the English-substring matching in `ChangePasswordDialog` are removed.
-- **Rollout in phases:**
-  1. shared infrastructure plus the membership fees module;
-  2. each remaining module (members, events, calendar, finance, groups, common/users, sync, notifications);
-  3. a completeness check that fails the build when a user-facing exception has no Czech message.
-- **Membership fees:** the duplicate-rule error names the event type and ranking. The past-deadline error is shown on the voting deadline field.
+- **New cross-cutting rule:** every error message shown to a user is in Czech. It names things by their user-visible names and never shows internal identifiers.
+- **Backend identifies errors; it does not word them.**
+  - Every error response carries an RFC 9457 `type`: a relative URI `/errors/{error-name}`, for example `/errors/duplicate-payment-rule` or `/errors/voting-deadline-not-in-future`.
+  - The values the message needs (names, dates, amounts) are sent as ProblemDetail extension properties, never as IDs.
+  - A domain error that concerns one form field also names that field.
+  - `detail` stays an English, developer-facing text that the UI never shows.
+  - Existing explicit `type` values are migrated to the relative form: `https://api.klabis.example.com/errors/*` and `https://klabis.com/problems/*` (security, permissions), and `OVERDRAFT_LIMIT_EXCEEDED`/`TRANSACTION_ALREADY_REVERSED` (finance).
+- **Frontend words errors.**
+  - `labels.ts` maps each error type to a Czech text template and interpolates the parameters.
+  - Field-bound errors are shown at their form field.
+  - An unknown type falls back to a generic Czech text chosen by HTTP status.
+- **Bean validation stays on the backend.** A fixed Czech locale makes Hibernate Validator produce Czech field messages, and the frontend shows them as they are. The 38 hand-written English `message=` texts are rewritten in Czech.
+- **Internal checks** (`Assert`, `IllegalArgumentException`/`IllegalStateException`) return one generic error type, and the English message is only logged. Checks a user can realistically trigger become typed errors with their own type and Czech text.
+- **Shared list of error types.** It is documented once in the OpenAPI spec as the `ErrorType` enum. Completeness is enforced on both sides:
+  - a backend test asserts that every emitted type is distinct and listed in the spec;
+  - the frontend's `Record<ErrorType, …>` in `labels.ts` fails the TypeScript build when a type has no Czech text.
+- **One change, delivered in phases:**
+  1. infrastructure plus membership fees;
+  2. the remaining modules one by one;
+  3. closing.
 
 ```mermaid
 flowchart LR
-    D[Domain or validation error<br/>code + named parameters] --> H[Exception handler]
-    C[(Czech message catalogue)] --> H
-    H --> P[ProblemDetail<br/>code, Czech detail, Czech fieldErrors]
-    P --> F[Frontend form]
-    F --> FE[Message next to the field]
+    D[Domain error] --> H[Exception handler]
+    H --> P[ProblemDetail<br/>type /errors/x, parameters by name,<br/>field, Czech bean-validation fieldErrors]
+    S[(OpenAPI ErrorType enum)] -. checked by backend test .-> H
+    S -. generated TS union .-> L[labels.ts<br/>type to Czech template]
+    P --> F[Frontend]
+    L --> F
+    F --> FE[Message at the form field]
     F --> FA[Form-level alert]
-    P -. no catalogue entry .-> G[Generic Czech message]
+    F -. unknown type .-> G[Generic Czech text by status]
 ```
 
 ## Capabilities
@@ -48,31 +57,35 @@ None.
 
 ### Modified Capabilities
 
-- `non-functional-requirements`: adds a requirement that user-facing error messages are in Czech, name domain objects by their names rather than internal identifiers, are shown next to the related form field when tied to one, and fall back to a generic Czech message.
-- `membership-fees`: the duplicate payment rule scenario and the past voting deadline scenario now state what the administrator sees: a Czech message naming the event type and ranking, and an error on the voting deadline field.
+- `non-functional-requirements`: adds requirements that:
+  - user-facing error messages are in Czech, name records by their names, are shown at the related form field, and fall back to a generic Czech message;
+  - error responses identify the error by a documented `/errors/...` type and carry the message parameters by name.
+- `membership-fees`: the duplicate payment rule scenario and the past voting deadline scenario now state what the administrator sees.
 
 ## Impact
 
 - **Backend:**
-  - `common/exceptions` base classes gain an error code and message arguments;
-  - `common/mvc/MvcExceptionHandler` the 11 module `*ExceptionHandler` classes and the local handler in `PermissionController` (44 handler methods in total) resolve Czech texts from a new message catalogue (`messages.properties`);
-  - Spring `MessageSource` and locale configuration are set to fixed Czech;
-  - exception classes in every module get message arguments that use names instead of IDs. Some application services must look up names, for example the event type name for duplicate payment rules.
-- **API:** additive only. ProblemDetail gains a `code` property, and `detail`/`fieldErrors` become Czech. `docs/openapi/spec/_shared/problem.yaml` documents `code` and `fieldErrors`. The only API client is the Klabis SPA.
+  - `common/exceptions` gains a small opt-in contract (error type derived from the class name, plus message parameters), which each module's exceptions adopt in that module's phase. Exceptions not yet migrated emit a generic type for their status;
+  - `MvcExceptionHandler`, the 11 module `*ExceptionHandler` classes, the local handler in `PermissionController`, the security entry point and access-denied handler, and `AccountStatusValidationFilter` set `/errors/...` types and parameters;
+  - the locale resolver is fixed to Czech;
+  - module handlers resolve names where the domain only has an ID.
+- **API:**
+  - The `type` values change. No current consumer reads `type`: there are no frontend or E2E usages. Four backend test assertions are affected: three in `PermissionControllerTest` and one in `MemberAccountControllerTest`.
+  - Additive extension properties.
+  - `_shared/problem.yaml` gains the `ErrorType` enum and documents the extension properties. The backend codegen maps `ErrorType` to `String`.
+  - The Klabis SPA is the only API client.
 - **Frontend:**
-  - `api/hateoas.ts` (`toFormValidationError`) and `components/UI/ErrorDisplay.tsx`;
-  - `HalFormsForm` (server field errors applied after submit);
-  - `ChangePasswordDialog` and `usePermissionsEditor` switch to code-based handling;
-  - `localization/labels.ts` (generic fallbacks).
-- **Tests:**
-  - backend handler and exception tests that assert on English `detail` text;
-  - frontend tests of `hateoas.ts` and `ErrorDisplay`;
-  - E2E scenarios in `frontend/e2e` that assert on English error texts.
-- **Out of scope:** server-rendered pages (login, password setup), e-mail texts, and messages stored in synchronisation history. These have their own UI paths and do not use ProblemDetail.
+  - `api/hateoas.ts`, `ErrorDisplay` and `HalFormsForm` (field errors applied after submit);
+  - a new `describeError` helper replacing about 20 `error.message` renders;
+  - `labels.ts` (`errorTypes`);
+  - `ChangePasswordDialog` (type instead of English substring matching).
+- **Tests:** backend assertions on English `detail`, frontend `hateoas`/`ErrorDisplay` tests, and E2E features asserting English error texts.
+- **Documentation:** a new ADR in `docs/design-decisions.md` records the type-URI mapping decision.
+- **Out of scope:** server-rendered pages (login, password setup), e-mail texts, and synchronisation history entries.
 
-## Open Decisions
+## Decisions Taken
 
-1. **Where Czech texts live.** The recommendation is option (c) in `design.md`: the backend owns the Czech texts in one catalogue and also sends a stable `code`. The alternatives are hardcoded Czech in the exceptions (a) or frontend-only mapping (b).
-2. **Fixed Czech locale or the browser's `Accept-Language`.** The recommendation is a fixed Czech locale, because the application is Czech-only.
-3. **Generic message for internal invariant failures.** About 550 `Assert` and `IllegalArgumentException`/`IllegalStateException` messages would not be translated one by one; the user sees a generic Czech message. The alternative is translating the ones that users can actually reach.
-4. **Change granularity.** One change with module-by-module phases, or this change for infrastructure plus membership fees with each further module as its own follow-up change.
+1. Frontend mapping keyed by the ProblemDetail `type` (`/errors/{error-name}`), with parameters by name. There is no backend message catalogue for domain errors.
+2. Fixed Czech locale. Bean-validation field messages come from the backend in Czech and are not mapped in the frontend.
+3. One generic type for internal checks, with the English message only logged. Checks users can trigger become typed errors.
+4. One change, delivered in phases.

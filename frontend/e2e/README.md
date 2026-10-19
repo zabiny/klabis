@@ -65,6 +65,7 @@ Generated/ignored: `.features-gen/`, `e2e/.auth/`, `playwright-report/`, `test-r
 | `When I open the catalog tier "<name>"` | row of the fee tier catalog table |
 | `When I open the closed campaign` / `When I open my profile` | |
 | `When I navigate back` / `When I navigate in the application to "<path>"` | browser back / SPA router push |
+| `When I navigate in the application to my fee choice page` | SPA route of the member's fee choice form for the scenario year (not linked from the profile once voting is closed) |
 | `When I navigate in the application to the scenario campaign` | SPA route of the campaign created by the `Given` step |
 | `When I continue as "<role>"` | drops cookies and sessionStorage, restores the role's cookies; follow with `When I open the application` (needs a loaded page) |
 | `Then I see "<text>"` | visible text, substring match |

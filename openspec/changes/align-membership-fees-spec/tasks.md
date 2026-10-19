@@ -8,10 +8,10 @@ The behaviour is already implemented, so no code changes are needed:
 
 ## 1. E2E coverage for the new spec scenarios
 
-- [ ] 1.1 Add the E2E scenario "Member withdraws the choice before the deadline" to `frontend/e2e/features/membership-fees.feature`. The member opens the choice form, clicks "Zrušit volbu", and then the profile prompts them to choose a tier. Verify with `npm run test:e2e` against a running local environment.
-- [ ] 1.2 Add the E2E scenario "Member withdraws a level assigned by an administrator". The administrator assigns a tier, the member withdraws it on the choice form, and then no tier is shown. Verify with `npm run test:e2e`.
-- [ ] 1.3 Add the E2E scenario "Member cannot withdraw the choice after the deadline". After the campaign is closed, the choice form shows "Volba je uzamčena." and no "Zrušit volbu" button. Verify with `npm run test:e2e`.
-- [ ] 1.4 Add the E2E scenario "Member still sees the chosen level after the campaign is closed". The member chooses a tier and the campaign is closed. The profile then still shows the tier and "Volba je uzamčena.". Verify with `npm run test:e2e`.
+- [x] 1.1 Add the E2E scenario "Member withdraws the choice before the deadline" to `frontend/e2e/features/membership-fees.feature`. The member opens the choice form, clicks "Zrušit volbu", and then the profile prompts them to choose a tier. Verify with `npm run test:e2e` against a running local environment.
+- [x] 1.2 Add the E2E scenario "Member withdraws a level assigned by an administrator". The administrator assigns a tier, the member withdraws it on the choice form, and then no tier is shown. Verify with `npm run test:e2e`.
+- [x] 1.3 Add the E2E scenario "Member cannot withdraw the choice after the deadline". After the campaign is closed, the choice form shows "Volba je uzamčena." and no "Zrušit volbu" button. Verify with `npm run test:e2e`.
+- [x] 1.4 Add the E2E scenario "Member still sees the chosen level after the campaign is closed". The member chooses a tier and the campaign is closed. The profile then still shows the tier and "Volba je uzamčena.". Verify with `npm run test:e2e`.
 
 ## Workflow follow-up
 

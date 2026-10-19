@@ -12,9 +12,12 @@ The backend already has a fee history endpoint, but nothing links to it, no page
 - **Entry point.** A "Zobrazit historii příspěvků" link appears in the fee section of the member's profile or member detail. The link is shown only when the user may open the history.
 - **Who may see it:**
   - the member themselves, on their own profile;
-  - a membership administrator, for any member, on that member's detail page.
+  - a membership administrator, for any member, on that member's detail page;
+  - a legal guardian, for the minors they are guardian of, on the minor's detail page.
 
-  Today the history endpoint is owner-only: it declares `x-klabis-owner-visible` with no `x-klabis-authority`, so even a membership administrator gets "forbidden" for another member. The change keeps owner access and adds the `MEMBERS:MANAGE` authority as an alternative.
+  Nobody else may see it. Holders of `MEMBERS:READ` or `FINANCE:MANAGE` do not get access through those permissions.
+
+  Today the history endpoint is owner-only: it declares `x-klabis-owner-visible` with no `x-klabis-authority`, so even a membership administrator gets "forbidden" for another member. The change keeps owner access and adds two alternatives: the `MEMBERS:MANAGE` authority, and the `MEMBERS:EDIT_PROFILE` permission that a legal guardian holds over each of their minors. This is the mechanism the project already uses for guardian access to a minor's data.
 - **Yearly fee in the history.** The history data does not contain the yearly fee today. It is added.
 - **Dormant frontend code is replaced.** The `feeHistory` link on the fee summary is removed: the backend never sends it, and the frontend checks it only in a branch that never runs. The history link comes from the member resource instead (see design).
 - **E2E.** The scenario "Past assignments remain available" opens the new page instead of the closed campaign's fee group.
@@ -25,7 +28,10 @@ flowchart LR
     H -->|back| P
     M[Member] -.->|own profile only| P
     A[Membership administrator] -.->|any member| P
+    G[Legal guardian] -.->|own minors only| P
 ```
+
+Not shown, by product decision: years without an assignment, the history of inactive members (for an administrator), and links from a history row to its fee group.
 
 ## Capabilities
 
@@ -35,14 +41,14 @@ None.
 
 ### Modified Capabilities
 
-- `membership-fees`: the requirement "Audit Trail of Level Assignments" gets user-facing scenarios for the history page, covering access by the member and by a membership administrator. Its existing scenario "Past assignments remain available" is reworded to use the page.
+- `membership-fees`: the requirement "Audit Trail of Level Assignments" gets user-facing scenarios for the history page, covering access by the member, by a membership administrator and by a legal guardian. Its existing scenario "Past assignments remain available" is reworded to use the page.
 
 The requirement "Member Sees Their Current Fee Level" is not changed here. The active change `align-membership-fees-spec` already modifies it, and keeping the two changes apart avoids a merge conflict.
 
 ## Impact
 
 - **API spec**: `docs/openapi/spec/membershipfees.yaml`:
-  - `getFeeHistory` gets `x-klabis-authority: MEMBERS_MANAGE`;
+  - `getFeeHistory` gets `x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]`, and its `@ActingMember` argument is dropped, so that a non-member guardian can call it;
   - its response gets a `member` link;
   - `FeeAssignmentResponse` gets a `yearlyFee` field;
   - `members.yaml` documents the new `feeHistory` link on the member resource;
@@ -57,5 +63,5 @@ The requirement "Member Sees Their Current Fee Level" is not changed here. The a
   - `MemberDetailPage` and `MemberFeeSection` render the history link from the member resource;
   - the `feeHistory` field is removed from `memberFeeTypes.ts`;
   - new labels.
-- **E2E**: `frontend/e2e/features/membership-fees.feature`, `frontend/e2e/steps/*`, and the step vocabulary in `frontend/e2e/README.md`.
+- **E2E**: `frontend/e2e/features/membership-fees.feature`, `frontend/e2e/steps/*`, and the step vocabulary in `frontend/e2e/README.md`. The guardian scenario uses the `member` role (`ZBM9500`, Eva Svobodová), who in the example data is the guardian of Sofie Svobodová.
 - No database or domain model changes.

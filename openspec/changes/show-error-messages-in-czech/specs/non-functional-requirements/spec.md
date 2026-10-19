@@ -50,12 +50,44 @@ When the system rejects a submitted form because of a problem with a specific fi
 - **THEN** a Czech message explaining the reason appears above the form
 - **AND** the values the user entered remain in the form
 
+### Requirement: Error Responses Identify the Error Type
+
+Every error response SHALL carry a problem type: a relative URI of the form `/errors/{error-name}`, taken from the documented list of error types. Each distinct kind of error SHALL have its own type. The values needed to explain the error SHALL be included as named properties, using names rather than internal identifiers. An error concerning one request field SHALL name that field.
+
+#### Scenario: Business rule violation carries its own type
+
+- **WHEN** a request is rejected because a business rule is violated
+- **THEN** the error response carries the problem type documented for that rule, for example `/errors/duplicate-payment-rule`
+- **AND** the response includes the values the message needs as named properties, for example the event type name and the ranking label
+
+#### Scenario: Error tied to a request field names the field
+
+- **WHEN** a request is rejected because of the value of one request field
+- **THEN** the error response names that field so the client can show the message next to it
+
+#### Scenario: Internal failure carries a generic type
+
+- **WHEN** a request fails because of an internal consistency check or an unexpected failure
+- **THEN** the error response carries a generic problem type
+- **AND** the response does not contain the internal failure text
+
+#### Scenario: Every emitted type is documented
+
+- **WHEN** the backend can produce a problem type
+- **THEN** that type appears in the documented list of error types
+- **AND** the user interface has a Czech text for it
+
 ### Requirement: Unexpected Errors Show a Generic Czech Message
 
-When the system cannot give a specific explanation for a failure, the user SHALL see a generic Czech message saying that the action failed and can be retried. Technical details of the failure SHALL NOT be shown to the user.
+When the system cannot give a specific explanation for a failure, including an error type the user interface does not recognise, the user SHALL see a generic Czech message that matches the kind of failure (not found, not permitted, conflict, invalid request, unexpected) and says whether it can be retried. Technical details of the failure SHALL NOT be shown to the user.
 
 #### Scenario: Unexpected failure shows a generic message
 
 - **WHEN** a user performs an action that fails for an unexpected reason
 - **THEN** the user sees a generic Czech message that the action failed and can be retried
 - **AND** no technical error text is shown
+
+#### Scenario: Missing record shows a generic not-found message
+
+- **WHEN** a user opens a page for a record that no longer exists and the system gives no more specific explanation
+- **THEN** the user sees a Czech message that the record was not found

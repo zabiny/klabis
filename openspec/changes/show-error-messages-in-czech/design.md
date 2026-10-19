@@ -12,80 +12,118 @@ See proposal.md, section Why, for the motivation. This section describes the cur
   - `InvalidDataException`: 5 subclasses, mapped to 400;
   - `AuthorizationException`: 5 subclasses, mapped to 403.
 
-  Another 16 extend `RuntimeException` directly and are mapped by module handlers. Every exception builds an English sentence in its constructor, often with an ID inside, for example `DuplicatePaymentRuleException(EventTypeReference, rankingShortName)`.
-- **Handlers.**
-  - `common/mvc/MvcExceptionHandler` maps the four base classes, `IllegalArgumentException`, optimistic locking, and bean-validation exceptions. It copies `ex.getMessage()` into `detail`.
-  - Eleven module `*ExceptionHandler` classes and a local handler in `PermissionController` (44 `@ExceptionHandler` methods in total) do the same, with English `title`s.
+  Another 16 extend `RuntimeException` directly and are mapped by module handlers. Each builds an English sentence in its constructor, often with an ID inside, for example `DuplicatePaymentRuleException(EventTypeReference, rankingShortName)`.
+- **Handlers.** `common/mvc/MvcExceptionHandler`, 11 module `*ExceptionHandler` classes and a local handler in `PermissionController` (44 `@ExceptionHandler` methods in total) copy `ex.getMessage()` into `detail`.
+- **ProblemDetail `type` today.**
+  - Mostly the Spring default `about:blank`.
+  - `https://api.klabis.example.com/errors/unauthorized` and `/forbidden`, set by the security entry point and access-denied handler in `ResourceServerSecurityConfiguration`. `AccountStatusValidationFilter` also writes the forbidden one, as `application/json`.
+  - `https://klabis.com/problems/{user-not-found, cannot-remove-last-admin, admin-lockout, invalid-authority, invalid-request}`, set in `PermissionController`.
+  - The bare strings `OVERDRAFT_LIMIT_EXCEEDED` and `TRANSACTION_ALREADY_REVERSED`, set in `FinanceExceptionHandler`.
+  - No frontend or E2E code reads `type`. Four backend test assertions check it: three in `PermissionControllerTest` and one in `MemberAccountControllerTest`.
 - **Validation output.**
   - Field errors from bean validation are emitted as `fieldErrors: {field: defaultMessage}`.
-  - Global errors are emitted as `errors: ["message [ConstraintCode]"]`. The constraint code leaks into the text.
+  - Global errors are emitted as `errors: ["message [ConstraintCode]"]`.
   - Parameter errors are emitted as `parameterErrors: ["param: message"]`.
-- **Invariants.** There are about 150 `IllegalArgumentException`/`IllegalStateException` throw sites and about 400 `Assert.*` invariant messages. All are English. `IllegalArgumentException` reaches the user verbatim as a 400 `detail`.
-- **Bean validation.** There are about 35 hand-written constraint annotations, 38 of them with English `message=` texts. The generated DTOs carry about 2,000 constraint annotations with no explicit message, so they use the Hibernate Validator defaults. The Hibernate Validator jar ships `ValidationMessages_cs.properties`, so these defaults are Czech only when the request locale is Czech. Today that depends on the browser's `Accept-Language`.
-- **No message catalogue.** There is no `messages.properties`, no `MessageSource` configuration and no locale configuration.
+- **Invariants.** There are about 150 `IllegalArgumentException`/`IllegalStateException` throw sites and about 400 `Assert.*` messages, all English. `IllegalArgumentException` reaches the user verbatim as a 400 `detail`.
+- **Bean validation.**
+  - About 2,000 constraints on the generated DTOs use the Hibernate Validator default messages. The Hibernate Validator jar ships `ValidationMessages_cs.properties`, but there is no locale configuration, so the language follows the browser's `Accept-Language`.
+  - There are 38 hand-written `message="…"` English texts.
 
 ### Frontend
 
-- `api/hateoas.ts` `toFormValidationError` turns every 400 `application/problem+json` response into an error with the hardcoded English message `'Form validation errors'`. Its `validationErrors` field is `fieldErrors`, or `errors`, or `{error: detail}`. Other problem responses become `new Error(detail)`.
-- `ErrorDisplay` renders that message and then a list of `field: message` lines with raw keys. This produces the *"Form validation errors / error: Voting deadline…"* output seen in the E2E tests.
-- `HalFormsForm` passes server errors to Formik as `initialErrors`. Formik reads that only when the form mounts, so after a failed submit the errors most likely do not appear next to the fields. Phase 1 verifies this.
-- About 20 pages render `<Alert>{error.message}</Alert>` for load failures. They show the technical `HTTP 404 (Not Found)` text from `FetchError`.
-- Two places already interpret errors in the frontend:
-  - `ChangePasswordDialog` matches the English substring `'Current password is incorrect'` in `detail`;
-  - `usePermissionsEditor` maps status 409 to a Czech label.
-- Client-side Yup validation already uses Czech texts from `labels.ts` (`VALIDATION_MESSAGES`).
+- `api/hateoas.ts` `toFormValidationError` turns every 400 `application/problem+json` response into an error with the hardcoded English message `'Form validation errors'`. Its `validationErrors` field is `fieldErrors`, or `errors`, or `{error: detail}`. `ErrorDisplay` lists these as `field: message` lines with raw keys.
+- `HalFormsForm` passes server errors to Formik as `initialErrors`. Formik reads that only when the form mounts, so after a failed submit the errors most likely never appear at the fields. Phase 1 verifies this.
+- About 20 pages render `<Alert>{error.message}</Alert>`, which shows the technical `HTTP 404 (Not Found)` text.
+- `ChangePasswordDialog` matches the English substring `'Current password is incorrect'`. `usePermissionsEditor` maps status 409 to a Czech label.
+- `localization/labels.ts` is the central Czech text store. Client-side Yup validation already uses it.
 
 ### Constraints
 
 - The application is Czech-only, and the Klabis SPA is its only API client.
-- The project principle is KISS, with 200–300 users and at most 10–20 working concurrently. Error paths are rare, so a name lookup at error time costs nothing that matters.
-- Domain and application code must stay free of web-framework types, because the dependency rule points inward.
+- The project principle is KISS, with 200–300 users. Error paths are rare, so a name lookup at error time costs nothing that matters.
+- Domain code stays free of web-framework types, because the dependency rule points inward.
+- The OpenAPI spec is the source of truth for the API (spec-first). Both the backend and the frontend generate from it.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Czech text for every error the SPA shows, produced in one place that a reviewer can read through.
-- A stable machine-readable error code, so tests and the occasional special UI handling do not depend on message wording.
+- Czech text for every error the SPA shows. Texts live in `labels.ts`, next to the rest of the UI language.
+- A stable, documented error type per kind of error, usable by the UI, by tests and by any future client.
 - Field-bound server errors rendered at the field.
-- A safe generic fallback that never shows raw English or technical text.
-- A build-time check that keeps the catalogue complete as new exceptions are added.
+- A generic Czech fallback that never shows raw English or technical text.
+- A build-time guarantee that the backend's error types, the spec list and the Czech texts stay in step.
 
 **Non-Goals:**
-- Supporting multiple UI languages. The design must not prevent this later, but it is not built now.
-- Translating log output. Exception messages stay English for operators.
+- Multiple UI languages, although nothing here prevents adding them later.
+- Translating log output or `detail`. `detail` stays English and is meant for developers.
 - Server-rendered pages (login, password setup), e-mail texts, and synchronisation history entries.
-- Translating every `Assert`/`IllegalArgumentException` invariant one by one (see D4).
+- Translating every `Assert`/`IllegalArgumentException` one by one (see D5).
 
 ## Decisions
 
-### D1: Where Czech texts live: hybrid (backend catalogue plus stable code)
+### D1: The backend identifies errors and the frontend words them
 
-The options were compared on the effort to cover about 90 exceptions plus validation, the drift risk, and how much each touches.
+The backend reports *what* went wrong as a ProblemDetail `type` plus named parameters. The frontend turns that into Czech text using `labels.ts`.
 
-| Option | How it works | Pros | Cons |
-|---|---|---|---|
-| **(a1) Czech hardcoded in exceptions** | The constructor builds a Czech sentence. | Smallest diff per exception. No infrastructure. | Czech text ends up in logs. Texts are scattered over 90 files. There is no stable code, so tests and the frontend match on wording. Names must be known at throw time, inside the domain. |
-| **(a2) Backend message catalogue** | `messages.properties` (Czech) keyed by code. The handler resolves the text with arguments. | One reviewable file. Logs stay English. Bean validation can use the same catalogue. Fixed Czech locale makes the Hibernate Validator defaults Czech for free. | Small infrastructure: `MessageSource` and locale configuration, plus code and arguments on the exceptions. |
-| **(b) Codes and parameters only, frontend maps** | ProblemDetail carries `code` and `params`. `labels.ts` holds a Czech template per code. | Fits the existing frontend `labels.ts` localization. | Every exception needs a change in both backend and frontend. Parameter formatting is duplicated in TypeScript. About 2,000 generated bean-validation constraints would each need a frontend mapping per constraint type and attribute. A code without a frontend entry silently degrades to the generic text, and no backend test can catch that. |
-| **(c) Hybrid** | (a2), plus the ProblemDetail also carries `code`. The frontend shows the backend text and reacts to `code` only where it needs behaviour. | Everything (a2) offers, plus a stable code for E2E/unit assertions and for UI special cases such as `ChangePasswordDialog`. The frontend stays generic. | Same small infrastructure as (a2). |
+| Option considered | Verdict |
+|---|---|
+| (a) Czech texts in the backend (hardcoded or a `MessageSource` catalogue) | Rejected. It splits the UI language between two code bases. |
+| **(b) Type plus parameters, frontend maps** | **Chosen.** One place for UI language (`labels.ts`). Standard RFC 9457 `type`, no custom code property. The frontend can format dates and amounts the Czech way. |
+| (c) Hybrid (backend text plus code) | Rejected. It needs two mechanisms for the same thing. |
 
-**Recommendation: (c).** Texts that depend on domain data, such as names, counts and dates, are formatted where the data is. One catalogue is the cheapest thing to keep complete, and a backend test can enforce that (D6). Option (b) doubles the work for each exception and gives nothing back to a Czech-only, single-client application.
+The known cost of (b) is that each new error touches the backend, the spec and `labels.ts`. D4 makes forgetting any of them a build failure rather than a silent English or generic message.
 
-### D2: Error code and message arguments on exceptions (domain change)
+**Exception:** bean-validation field messages are generic constraint texts ("nesmí být prázdné"). The backend sends them already in Czech (D6), so the frontend does not need one mapping for every constraint and attribute.
 
-The common exception bases get two framework-free properties:
+### D2: Error type URIs
 
-- **`errorCode`**: by default, the exception's simple class name without the `Exception` suffix, for example `DuplicatePaymentRule` or `DeadlineNotInFuture`. Simple class names are unique across the codebase today, and the completeness test (D6) guards that. An exception may override the code.
-- **`messageArguments`**: an ordered list of values used in the Czech template. These are names and labels, never IDs (see D5).
+- **Form.** A relative URI `/errors/{error-name}`. `error-name` is kebab-case, specific and stable, for example `/errors/duplicate-payment-rule` or `/errors/voting-deadline-not-in-future`. RFC 9457 allows relative type URIs. They resolve against the API origin and do not have to be dereferenceable.
+- **Default derivation.** The type is derived from the exception's simple class name without the `Exception` suffix, in kebab-case: `DuplicatePaymentRuleException` becomes `/errors/duplicate-payment-rule`. An exception may override it. `DeadlineNotInFutureException` covers two rules:
+  - `/errors/voting-deadline-not-in-future` when a campaign is started;
+  - `/errors/voting-deadline-in-past` when the deadline of an active campaign is changed, because today is allowed there.
+- **Generic types emitted by handlers, not by domain exceptions:**
 
-`getMessage()` keeps its English text for logs. Module exceptions that extend `RuntimeException` directly, such as `TransactionAlreadyReversedException` and `AdminLockoutException`, are moved under the matching base, or they implement the same small contract.
+  | Type | Status | Used for |
+  |---|---|---|
+  | `/errors/validation-failed` | 400 | Bean-validation failures. Carry Czech `fieldErrors`/`errors`. |
+  | `/errors/invalid-request` | 400 | Internal checks (`IllegalArgumentException`/`IllegalStateException`), unreadable or mistyped requests, and 400 errors that do not have their own type yet |
+  | `/errors/unauthorized` | 401 | Missing or invalid authentication |
+  | `/errors/forbidden` | 403 | Missing authority |
+  | `/errors/account-inactive` | 403 | Deactivated account (`AccountStatusValidationFilter`) |
+  | `/errors/not-found` | 404 | Unknown path, and not-found errors without their own type |
+  | `/errors/conflict` | 409 | Conflict errors that do not have their own type yet (exceptions not yet migrated) |
+  | `/errors/concurrent-update` | 409 | Optimistic locking |
+  | `/errors/unexpected` | 500 | Anything unhandled |
+
+- **Migration of existing explicit types**, done in the phase of the owning module:
+  - `https://api.klabis.example.com/errors/unauthorized` and `/forbidden` become `/errors/unauthorized` and `/errors/forbidden`. This is in phase 1, because it is common infrastructure. `AccountStatusValidationFilter` also switches to `application/problem+json` with `/errors/account-inactive`.
+  - `https://klabis.com/problems/*` become `/errors/user-not-found`, `/errors/cannot-remove-last-permission-manager`, `/errors/admin-lockout`, `/errors/invalid-authority` and `/errors/invalid-request` (common/users phase).
+  - `OVERDRAFT_LIMIT_EXCEEDED` and `TRANSACTION_ALREADY_REVERSED` become `/errors/overdraft-limit-exceeded` and `/errors/transaction-already-reversed` (finance phase).
+  - **Consumers affected:** no frontend or E2E code reads `type`. Only the four backend test assertions change. There are no external API clients.
+
+### D3: Parameters and field binding (domain change)
+
+A small framework-free contract, **UserFacingError**, is opted into by each migrated exception. The four bases do not implement it. This lets the modules migrate one at a time, and an exception that has not migrated yet falls back to a generic type (D2):
+
+- **`errorType`**: the `error-name` from D2. A default method derives it from the class name.
+- **`messageParameters`**: a map from parameter name to value, containing names, labels, dates and amounts. Never IDs.
+
+`getMessage()` stays English and goes into `detail` and the logs.
+
+Handlers write each parameter as a top-level ProblemDetail extension property. An error bound to one form field adds the `field` property with the request field name. That binding is done by the module's REST exception handler, not by the domain, so wire names stay out of the domain.
+
+- **Value formats.**
+  - Dates are ISO-8601 strings, consistent with the existing NFR. The frontend formats them as Czech dates.
+  - Amounts are a number plus a currency.
+  - Names and labels are plain strings.
+- **Names for ID-only errors.** If the domain only knows an ID, the module handler resolves the name through a port the module already has. For example, the membership fees handler uses `MembershipFeeTierOptionsPort.listEventTypeOptions()` and `listRankingOptions()` for `/errors/duplicate-payment-rule`. If the lookup fails, the parameter is left out, and the Czech template has a wording without it. It never falls back to the ID.
 
 ```mermaid
 classDiagram
     class UserFacingError {
         <<contract>>
-        errorCode
-        messageArguments
+        errorType
+        messageParameters
     }
     class BusinessRuleViolationException
     class ResourceNotFoundException
@@ -97,114 +135,121 @@ classDiagram
     }
     class DeadlineNotInFutureException {
         deadline
+        errorType
     }
-    UserFacingError <|.. BusinessRuleViolationException
-    UserFacingError <|.. ResourceNotFoundException
-    UserFacingError <|.. InvalidDataException
-    UserFacingError <|.. AuthorizationException
     BusinessRuleViolationException <|-- DuplicatePaymentRuleException
     BusinessRuleViolationException <|-- DeadlineNotInFutureException
+    UserFacingError <|.. DuplicatePaymentRuleException
+    UserFacingError <|.. DeadlineNotInFutureException
+    ResourceNotFoundException ..> UserFacingError : subclasses implement
+    InvalidDataException ..> UserFacingError : subclasses implement
+    AuthorizationException ..> UserFacingError : subclasses implement
 ```
 
 | Element | Change | Description |
 |---|---|---|
-| UserFacingError | **added** | The contract that a user-facing error has a stable error code and message arguments. |
-| BusinessRuleViolationException, ResourceNotFoundException, InvalidDataException, AuthorizationException | **changed** | Implement the contract. Error code defaults to the simple class name. Arguments default to none. |
-| Module exceptions extending `RuntimeException` (16) | **changed** | Rebased onto one of the four bases, or implement the contract directly. |
-| DuplicatePaymentRuleException | **changed** | Keeps the event type identifier for the handler to resolve. The English message no longer needs to be user-safe. |
-| DeadlineNotInFutureException | **changed** | The argument is the deadline date. The campaign-start and deadline-change cases use different codes, because changing a deadline to today is allowed. |
+| UserFacingError | **added** | The contract that a user-facing error has an error type (default: kebab-cased class name) and message parameters (default: none). |
+| BusinessRuleViolationException, ResourceNotFoundException, InvalidDataException, AuthorizationException | **unchanged** | They keep the HTTP status mapping. In phase 3, a test requires every subclass to implement UserFacingError. |
+| Module exceptions (about 90, including the 16 that extend `RuntimeException` directly) | **changed per module phase** | Implement UserFacingError. The 16 are also rebased onto one of the four bases. |
+| DuplicatePaymentRuleException | **changed** | Keeps the event type identifier. The handler resolves the name and the ranking label as parameters. |
+| DeadlineNotInFutureException | **changed** | The parameter is the deadline. The error type differs for the start case and the change case. |
 
-Rejected alternative: making the exceptions implement Spring's `ErrorResponse` (built-in `problemDetail.<FQCN>` codes). That would pull a web type into the domain layer, and fully qualified class names as keys break on every package move.
+### D4: Shared list of error types and completeness
 
-### D3: Fixed Czech locale and one message catalogue
+The **OpenAPI spec is the shared list**, and no extra artifact is introduced.
 
-- **Catalogue.** `backend/src/main/resources/messages.properties` holds the Czech texts:
-  - keys `error.<ErrorCode>`;
-  - generic fallbacks `error.generic.badRequest`, `error.generic.notFound`, `error.generic.forbidden`, `error.generic.conflict` and `error.generic.unexpected`;
-  - Czech overrides for the few Spring MVC framework errors a user can hit, such as an unreadable body or a type mismatch.
-- **Locale.** The locale resolver is fixed to `cs`, so the request locale is Czech regardless of `Accept-Language`. Spring Boot's validator interpolates through the same locale, so all generated bean-validation constraints produce the Czech Hibernate Validator messages without any annotation change. The 38 hand-written `message="…"` texts are rewritten either to catalogue keys (`{validation.calendarItem.nameRequired}`) or to plain Czech.
-- **Handlers.** `MvcExceptionHandler` and the module handlers resolve `detail` from the catalogue using `errorCode` and `messageArguments`. They set `code` on the ProblemDetail. They keep their HTTP status mapping and their English `title`, because the frontend never shows `title`.
+- **Spec.** `docs/openapi/spec/_shared/problem.yaml` gains an `ErrorType` schema: `type: string`, with an `enum` of every `/errors/...` value. Each value has a short description of its parameters and, where it applies, its `field`. `ProblemDetail.type` references it, and the extension properties (`field`, `fieldErrors`, `errors`, `parameterErrors`) are documented.
+- **Backend codegen.** The generate-all backend codegen would otherwise emit an empty Java enum. To prevent that, `ErrorType` is added to the common `schemaMappings` (`OpenApiModule.kt`, next to `ProblemDetail`) as `java.lang.String`.
+- **Backend test.** `ErrorTypeCatalogueTest` checks that:
+  - every class implementing the contract (classpath scan of `com.klabis`) and every generic type constant (D2 table, kept in one `CommonErrorTypes` class) has a distinct type;
+  - every emitted type is listed in the `ErrorType` enum, which the test reads from `problem.yaml`;
+  - every enum value is emitted somewhere, so the list has no stale entries.
+- **Frontend.** `npm run openapi` turns the enum into a TypeScript string union, `components['schemas']['ErrorType']`. `labels.ts` declares `errorTypes: Record<ErrorType, (p: ErrorParams) => string>`, so a type without a Czech text fails `tsc`/`npm run build`. This is a compile-time completeness check, and no separate frontend test is needed.
 
-Rejected alternative: honouring `Accept-Language`. An English browser would then get English bean-validation messages next to Czech domain messages.
+```mermaid
+flowchart LR
+    BE[Exception classes + CommonErrorTypes] -- ErrorTypeCatalogueTest --> SPEC[problem.yaml ErrorType enum]
+    SPEC -- npm run openapi --> TS[ErrorType TS union]
+    TS -- Record of ErrorType --> LBL[labels.ts errorTypes]
+    LBL -- tsc fails if a type is missing --> OK[npm run build]
+```
 
-### D4: Fallback for unmapped errors
+Because the contract is opt-in (D3), an exception that has not migrated yet emits the generic type for its status, so the test needs no allow-list. A module's errors enter the enum only when the module migrates. Phase 3 adds one more assertion: every subclass of the four bases implements UserFacingError.
+
+### D5: Internal checks and fallbacks
 
 ```mermaid
 flowchart TD
-    E[Exception reaches the handler] --> Q1{Has error code?}
-    Q1 -- yes --> Q2{Catalogue has error.code?}
-    Q2 -- yes --> T[Czech text with arguments]
-    Q2 -- no --> G[Generic Czech text for the status<br/>WARN log names the missing code]
-    Q1 -- no --> I{IllegalArgument or IllegalState?}
-    I -- yes --> GB[Generic Czech bad-request text<br/>English message logged only]
-    I -- no --> GU[Generic Czech unexpected-error text]
-    T --> P[ProblemDetail: code, detail]
-    G --> P
-    GB --> P
-    GU --> P
+    E[Exception reaches a handler] --> Q1{UserFacingError?}
+    Q1 -- yes --> T[type /errors/name + parameters + field]
+    Q1 -- no --> B{One of the four bases?}
+    B -- yes --> GS[Generic type for its status<br/>invalid-request, not-found, forbidden, conflict]
+    B -- no --> I{IllegalArgument or IllegalState?}
+    I -- yes --> GB[type /errors/invalid-request<br/>detail: fixed generic English text<br/>raw message logged only]
+    I -- no --> GU[type /errors/unexpected<br/>raw message logged only]
+    T --> FE{Frontend knows the type?}
+    GS --> FE
+    GB --> FE
+    GU --> FE
+    FE -- yes --> CZ[Czech template with parameters]
+    FE -- no --> ST[Generic Czech text by HTTP status]
 ```
 
-- **Invariant failures.** `IllegalArgumentException` and `Assert` failures are programming invariants. The frontend's own validation normally prevents them, so the user sees only a generic Czech text. Their raw message is never sent, which also closes the internal-ID leak.
-- **Reachable invariants.** Where a module review finds an invariant that users actually reach through a form, it is promoted to a proper domain exception with a catalogue entry. This is part of each module phase.
-- **Frontend fallback.** One helper, `describeError(error)`, turns any thrown error into a Czech text:
-  1. the ProblemDetail `detail`, when the response is `application/problem+json`;
-  2. otherwise a Czech text chosen by HTTP status (403, 404, 409, 5xx);
+- **Internal checks.** `Assert` and `IllegalArgumentException`/`IllegalStateException` produce `/errors/invalid-request`. Their message is logged at WARN and never sent.
+- **User-reachable checks.** During each module phase, invariants that users can realistically trigger become typed domain errors with their own type and Czech text. This applies, for example, to a form value that the frontend validation does not catch.
+- **Frontend helper.** One helper, `describeError(error)`, turns any thrown error into Czech:
+  1. a known `type` gives its template from `labels.errorTypes`;
+  2. otherwise a status-based generic text (400, 401, 403, 404, 409, 5xx);
   3. otherwise `labels.errors.unexpectedError`.
 
-  All `<Alert>{error.message}</Alert>` sites switch to this helper.
+  All `<Alert>{error.message}</Alert>` sites use this helper.
 
-### D5: Names instead of identifiers
+### D6: Fixed Czech locale for bean validation
 
-The Czech template takes names, so the handler must have them.
+- The locale resolver is fixed to `cs`, so the Spring validator interpolates the bundled Czech Hibernate Validator messages regardless of `Accept-Language`. There is no `messages.properties`.
+- The 38 hand-written `message="…"` texts are rewritten in Czech directly in the annotation.
+- `errors` and `parameterErrors` lose the `[ConstraintCode]` and `param:` prefixes.
+- The frontend shows `fieldErrors` texts as they are, at the matching field.
 
-- **Names known where the exception is thrown.** Prefer this. For example, a group name or a member's full name already loaded in the aggregate is passed as a message argument.
-- **Only an identifier known.** This is the case for `DuplicatePaymentRule`, because the domain holds an `EventTypeReference`. The module's exception handler resolves the display name through a port the module already has. Membership fees already exposes event type and ranking options through `MembershipFeeTierOptionsPort` (`listEventTypeOptions`, `listRankingOptions`). The lookup runs only on the error path. If the name cannot be resolved, the text omits it ("pro tento typ akce") rather than showing the identifier.
-- **Not-found errors** never repeat the identifier. For example: "Člen nebyl nalezen."
+### D7: Field-level rendering in the frontend
 
-Rejected alternative: passing names into the domain only so that it can build error texts. That couples aggregate methods to presentation.
-
-### D6: Completeness check
-
-A backend unit test scans `com.klabis` for every class implementing the error contract (D2) and asserts three things:
-
-- the simple class names are unique;
-- `messages.properties` has `error.<code>` for each;
-- every catalogue `error.*` key has a matching code. This catches stale keys.
-
-The test is added in phase 1 with an allow-list of modules not yet migrated. Each module phase removes its module from the allow-list, and phase 3 deletes the allow-list.
-
-### D7: Field-level rendering
-
-- **Backend: binding errors to fields.** Bean-validation field errors already carry the field path. They now carry Czech messages through D3.
-  - For a domain error that belongs to one form field, the module's REST exception handler, not the domain, binds it to the request field name. For example, `DeadlineNotInFuture` binds to `votingDeadline`. The handler emits the field in `fieldErrors` and leaves `detail` as the general sentence. Binding in the adapter keeps wire names out of the domain.
-  - Global errors (`errors`) and parameter errors (`parameterErrors`) lose the `[ConstraintCode]` and `param:` prefixes and contain only Czech text.
-- **Frontend.**
-  - `toFormValidationError` keeps `fieldErrors`, `detail`, `errors` and `code` separately, instead of folding them into one map.
-  - `HalFormsForm` applies `fieldErrors` with Formik `setErrors` and marks those fields as touched after a failed submit, so each message appears under its field. Values stay in the form.
-  - The alert above the form shows:
-    - the `detail` and `errors` texts for form-level problems;
-    - `labels.errors.formValidationErrors` ("Chyby validace formuláře") as a heading when only field errors exist;
-    - field errors whose key matches no rendered field, labelled with that property's `prompt` from the HAL-FORMS template, or without a label. Never with the raw key.
-  - The English `'Form validation errors'` literal is removed.
-- **Special handling by code.** `ChangePasswordDialog` uses `code` instead of English substring matching. `usePermissionsEditor` may stay status-based.
+- `toFormValidationError` keeps `type`, the parameters, `field`, `fieldErrors` and `errors` separately, and drops the English `'Form validation errors'` literal.
+- **Field assignment.**
+  - A typed error with `field` puts its Czech template text on that field.
+  - Bean-validation `fieldErrors` put their Czech texts on their fields.
+  - `HalFormsForm` applies these with Formik `setErrors` and marks the fields as touched after a failed submit. The entered values stay in the form.
+- **The alert above the form shows:**
+  - the Czech text of a typed error without `field`;
+  - the `errors` texts;
+  - `labels.errors.formValidationErrors` as a heading when only field errors exist;
+  - field errors whose key matches no rendered field, labelled with that property's `prompt` from the HAL-FORMS template. Never with the raw key.
+- **Special handling by type.** `ChangePasswordDialog` switches from English substring matching to `type === '/errors/incorrect-current-password'`.
 
 ### D8: Phasing
 
-- **Phase 1:** the infrastructure (D2–D4, D6 with allow-list, D7) plus the whole membership fees module. This module was chosen because the E2E tests found the problem there and its 11 exceptions form a small first slice.
-- **Phase 2:** module by module, each one a vertical slice covering exceptions, handler, catalogue entries, tests and E2E texts. The order is members, events (with event types and disciplines), calendar, finance, groups (free, training, family), common/users (permissions, password), sync/oris, notifications.
-- **Phase 3:** remove the allow-list, then sweep the frontend `error.message` sites and the E2E features.
+- **Phase 1:** infrastructure plus membership fees, starting with the voting deadline and duplicate rule slices. It includes:
+  - the contract (D3);
+  - the generic types and the security type migration (D2);
+  - the fixed locale (D6);
+  - the spec enum and completeness test (D4);
+  - the frontend mapping and field rendering (D7);
+  - the `describeError` helper (D5).
+- **Phase 2:** module by module, in this order: members, events (with event types, disciplines and registrations), calendar, finance (type migration), groups, common/users (permission type migration, `ChangePasswordDialog`), sync/oris and notifications. Each module is a vertical slice covering exceptions, handler, spec enum, `labels.ts`, tests and E2E.
+- **Phase 3:** frontend sweep of the remaining `error.message` renders, the ADR, and the full verification.
 
 ## API Changes
 
-No endpoints, links or affordances change. Every `application/problem+json` error response changes additively:
+No endpoints, links or affordances change. Every `application/problem+json` response changes:
 
 | Property | Before | After |
 |---|---|---|
-| `type`, `status`, `instance` | unchanged | unchanged |
-| `title` | English, per handler | unchanged (English, not shown by the SPA) |
-| `detail` | English `ex.getMessage()`, may contain IDs | Czech text from the catalogue, or a generic Czech text |
-| `code` | absent | **new**: stable error code, for example `DuplicatePaymentRule`. Generic fallbacks use `BadRequest`, `NotFound`, `Forbidden`, `Conflict` and `Unexpected`. |
-| `fieldErrors` | `{field: English message}` | `{field: Czech message}`. Also used for domain errors bound to a field. |
+| `type` | `about:blank`, or three ad-hoc styles (see Context) | `/errors/{error-name}` from the `ErrorType` enum. **Changed values.** |
+| `title` | English | unchanged (English, not shown by the SPA) |
+| `status`, `instance` | unchanged | unchanged |
+| `detail` | English `ex.getMessage()`, may contain IDs | English, developer-facing, not shown by the SPA. A fixed generic sentence for `/errors/invalid-request` and `/errors/unexpected`. |
+| *parameters* | absent | **new**: named extension properties per type, for example `eventTypeName` or `deadline` |
+| `field` | absent | **new**: request field name for field-bound typed errors |
+| `fieldErrors` | `{field: English message}` | `{field: Czech message}` (bean validation only) |
 | `errors` | `["message [ConstraintCode]"]` | `["Czech message"]` |
 | `parameterErrors` | `["param: message"]` | `["Czech message"]` |
 
@@ -212,11 +257,12 @@ Example of a duplicate payment rule (409):
 
 ```json
 {
-  "type": "about:blank",
+  "type": "/errors/duplicate-payment-rule",
   "title": "Duplicate Payment Rule",
   "status": 409,
-  "code": "DuplicatePaymentRule",
-  "detail": "Úroveň již obsahuje pravidlo pro typ akce „Závod jednotlivců“ a žebříček „Ž A“."
+  "detail": "A rule for event type 728af44d-… and ranking 'A' already exists on this level",
+  "eventTypeName": "Závod jednotlivců",
+  "rankingLabel": "Ž A"
 }
 ```
 
@@ -224,39 +270,49 @@ Example of a voting deadline in the past when starting a campaign (400):
 
 ```json
 {
+  "type": "/errors/voting-deadline-not-in-future",
   "title": "Bad Request",
   "status": 400,
-  "code": "DeadlineNotInFuture",
-  "detail": "Termín pro výběr musí být v budoucnosti.",
-  "fieldErrors": { "votingDeadline": "Termín pro výběr musí být v budoucnosti." }
+  "detail": "Voting deadline must be in the future, but was: 2026-10-18",
+  "deadline": "2026-10-18",
+  "field": "votingDeadline"
 }
 ```
 
-`docs/openapi/spec/_shared/problem.yaml` documents `code`, `fieldErrors`, `errors` and `parameterErrors` as top-level properties. The bundle and the frontend types are regenerated.
+The matching `labels.ts` entries:
+
+```ts
+errorTypes: {
+  '/errors/duplicate-payment-rule': (p) =>
+    `Úroveň již obsahuje pravidlo pro typ akce „${p.eventTypeName ?? 'zvolený typ akce'}“ a žebříček „${p.rankingLabel}“.`,
+  '/errors/voting-deadline-not-in-future': () => 'Termín pro výběr musí být v budoucnosti.',
+}
+```
 
 ## Glossary
 
 | Term | Meaning |
 |---|---|
-| Error code | A stable, language-independent name of an error kind, for example `DuplicatePaymentRule`. It is used by tests and by UI special cases, and is never shown to the user. |
-| Message catalogue | The single list of Czech error texts, keyed by error code, with placeholders for message arguments. |
-| Message arguments | The user-visible values inserted into an error text: names, labels, dates and amounts. Never internal identifiers. |
-| Field-bound error | An error that concerns one form field and is shown next to it. |
-| Form-level error | An error that concerns the whole submission and is shown above the form. |
-| Generic error message | The Czech fallback text shown when no specific text exists. |
+| Error type | The RFC 9457 problem type `/errors/{error-name}`. It identifies one kind of error and is never shown to the user. |
+| Error type list | The `ErrorType` enum in the OpenAPI spec, which every emitted type must belong to. |
+| Message parameters | Named, user-visible values that the Czech text needs: names, labels, dates and amounts. Never internal identifiers. |
+| Field-bound error | An error concerning one form field, named by `field` (typed errors) or keyed in `fieldErrors` (bean validation), and shown at that field. |
+| Form-level error | An error concerning the whole submission, shown above the form. |
+| Generic error message | A Czech fallback text chosen by HTTP status when the type is unknown or generic. |
 
 ## Risks / Trade-offs
 
-- **[Risk] The catalogue drifts from the exceptions.** → The completeness test (D6) fails the build.
-- **[Risk] Backend and E2E tests that assert on English `detail` text break.** → In each phase, switch those assertions to `code` where the wording is not the point. Keep a few text assertions to check the Czech output itself.
-- **[Risk] `MessageFormat` quoting.** Apostrophes and `{` in Czech texts need escaping, and numbers and dates format with the locale. → Pass dates and amounts already formatted as strings (`d. M. yyyy`, `1 200 Kč`). One catalogue test resolves every key with sample arguments.
-- **[Risk] Hibernate Validator's generic Czech texts read awkwardly next to a specific label**, for example "nesmí být prázdné". → They are shown under the labelled field, so the subject is clear. Override individual constraint messages in the catalogue only when feedback asks for it.
-- **[Trade-off] Czech text lives in the backend while other UI text lives in `labels.ts`.** This is accepted. The two halves meet at the error code, and the backend is the only place that has the data the message describes.
-- **[Risk] A name lookup in the error handler fails**, for example when the events module is unavailable. → The text degrades to a wording without the name. It never falls back to the identifier.
+- **[Trade-off] Each new error touches three places:** the exception, the spec enum and `labels.ts`. → D4 turns any omission into a failing backend test or a failing `tsc`, not a silent fallback.
+- **[Risk] Message parameters drift from the template**, for example when a parameter is renamed in Java. → The frontend tests for each type use the parameter names documented in the spec enum description. Backend handler tests assert the parameter names.
+- **[Risk] The generic codegen emits an empty Java enum for `ErrorType`.** → The `schemaMappings` entry to `String` (D4). Verify it in phase 1 by building the backend after the spec change.
+- **[Risk] Tests that assert on English `detail` text.** → Keep them where they are (`detail` stays English), and add `type` assertions.
+- **[Risk] Relative type URIs that someone dereferences end on the SPA fallback page.** → RFC 9457 does not require dereferenceable types, and no client dereferences them.
+- **[Risk] Hibernate Validator's generic Czech texts read awkwardly.** → They are shown under the labelled field. Override an individual constraint text in the annotation only when feedback asks for it.
+- **[Risk] A name lookup fails on the error path.** → The parameter is left out, and the template has a wording without it.
 
 ## Migration Plan
 
 - There is no data migration. The backend and the frontend ship in one artifact, so each phase deploys atomically.
-- The frontend helper accepts both old responses (English `detail`, no `code`) and new ones. A phase can therefore land backend-first or frontend-first in development without breaking the UI.
-- Rollback means reverting the phase's commits. The API change is additive.
-- When phase 1 lands, record the decision as a new ADR in `docs/design-decisions.md`. It covers why the backend owns Czech error texts and the frontend keys behaviour on `code`.
+- `describeError` handles both old responses (`about:blank`, English `detail`) and new ones through the status fallback. A partially migrated codebase therefore never shows raw English to users. It shows a generic Czech text until the module is migrated.
+- Rollback means reverting the phase's commits.
+- Record the decision as a new ADR (ADR-011) in `docs/design-decisions.md` when phase 1 lands. The ADR records that the backend identifies errors by RFC 9457 `type` URIs `/errors/{name}` with named parameters, that the frontend owns the Czech wording in `labels.ts`, and that the spec `ErrorType` enum is the shared list enforced on both sides. It also records why bean validation is the exception (fixed Czech locale).
