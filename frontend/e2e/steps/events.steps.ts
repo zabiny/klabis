@@ -65,6 +65,68 @@ When('{persona} changes the location of event {name} to {string}', async ({page,
     await submit(page, 'Uložit změny');
 });
 
+When('{persona} publishes event {name}', async ({page, actAs}, persona: Persona, name: string) => {
+    await actAs(persona);
+    await openEvent(page, name);
+    await click(page, 'Publikovat');
+    await submit(page);
+});
+
+When('{persona} cancels event {name} because of {string}', async ({page, actAs}, persona: Persona, name: string, reason: string) => {
+    await actAs(persona);
+    await openEvent(page, name);
+    await click(page, 'Zrušit akci');
+    await fill(page, 'Důvod zrušení (volitelné)', reason);
+    await submit(page);
+});
+
+When('{persona} registers for event {name} in category {string}', async ({page, actAs}, persona: Persona, name: string, category: string) => {
+    await actAs(persona);
+    await openEvent(page, name);
+    await click(page, 'Přihlásit se');
+    await select(page, 'Kategorie', category);
+    await submit(page, 'Potvrdit přihlášku');
+});
+
+const confirmUnregistering = async (page: Page) => {
+    await action(page.getByRole('dialog'), 'Odhlásit').click();
+    await submit(page);
+};
+
+When('{persona} unregisters from event {name}', async ({page, actAs}, persona: Persona, name: string) => {
+    await actAs(persona);
+    await openEvent(page, name);
+    await click(page, 'Upravit přihlášku');
+    await confirmUnregistering(page);
+});
+
+When('{persona} unregisters {persona} from event {name}', async ({page, actAs, apiAs}, manager: Persona, member: Persona, name: string) => {
+    const {firstName, lastName} = await memberIdentity(apiAs(personas[member]));
+    await actAs(manager);
+    await openEvent(page, name);
+    await action(registrationRow(page, firstName, lastName), 'Upravit přihlášku').first().click();
+    await confirmUnregistering(page);
+});
+
+Then('{persona} sees event {name} in the event list', async ({page, actAs}, persona: Persona, name: string) => {
+    await actAs(persona);
+    await openEventList(page, name);
+    await expect(page.getByRole('cell', {name}).first()).toBeVisible();
+});
+
+Then('event {name} is cancelled because of {string}', async ({page}, name: string, reason: string) => {
+    await openEvent(page, name);
+    await expect(page.getByText(reason, {exact: true})).toBeVisible();
+    await expect(page.getByText('Zrušeno', {exact: true}).first()).toBeVisible();
+});
+
+Then('{persona} is registered for event {name} in category {string}', async ({page, actAs, apiAs}, persona: Persona, name: string, category: string) => {
+    const {firstName, lastName} = await memberIdentity(apiAs(personas[persona]));
+    await actAs(persona);
+    await openEvent(page, name);
+    await expect(registrationRow(page, firstName, lastName).filter({hasText: category})).toBeVisible();
+});
+
 Then('event {name} is a draft', async ({page}, name: string) => {
     await openEvent(page, name);
     await expect(page.getByText('Koncept', {exact: true}).first()).toBeVisible();
