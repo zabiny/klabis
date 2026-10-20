@@ -8,37 +8,49 @@ export type CampaignLevel = {name: string; yearlyFee?: number};
 const DEFAULT_YEARLY_FEE = 1500;
 const DEFAULT_VOTING_DEADLINE = localIsoDate(30);
 
+// The fee root is the whole tier catalog, so it is fetched once per helper and passed on.
 const feeRoot = async (admin: ApiClient): Promise<Linked> =>
-    admin.follow(await admin.get('/api'), 'membership-fees');
+    admin.follow(await admin.root(), 'membership-fees');
 
-export const closeActiveCampaign = async (admin: ApiClient, feeState: FeeScenarioState) => {
-    const root = await feeRoot(admin);
-    if (!root._links?.activeCampaign) return;
+// Returns whether a campaign was closed, which changes the fee root's links and templates.
+const closeListedCampaign = async (admin: ApiClient, root: Linked, feeState: FeeScenarioState) => {
+    if (!root._links?.activeCampaign) return false;
     const campaign = await admin.follow(root, 'activeCampaign');
     await admin.post(admin.templateTarget(campaign, 'closeCampaign'), {});
     feeState.closedYear = feeState.year;
+    return true;
+};
+
+export const closeActiveCampaign = async (admin: ApiClient, feeState: FeeScenarioState) => {
+    await closeListedCampaign(admin, await feeRoot(admin), feeState);
 };
 
 // Campaign years are unique and closed campaigns are never removed, so every scenario publishes a year never used before.
-export const nextFreeCampaignYear = async (admin: ApiClient) => {
-    const root = await feeRoot(admin);
-    const pastHref = root._links?.pastCampaigns?.href;
-    const past: Linked = pastHref ? await admin.get(`${pastHref}&size=500`) : {};
+export const nextFreeCampaignYear = async (admin: ApiClient, root?: Linked) => {
+    const pastHref = (root ?? await feeRoot(admin))._links?.pastCampaigns?.href;
+    const past: Linked = pastHref ? await admin.get(pastHref) : {};
     const years = embeddedList(past).map((campaign) => campaign.year as number);
     return Math.max(new Date().getFullYear(), ...years) + 1;
 };
 
-const findTier = async (admin: ApiClient, name: string) => {
-    const root = await feeRoot(admin);
-    return embeddedList(await admin.get(`${root._links!.self.href}?size=500`)).find((tier) => tier.name === name);
+// Returns the fee root as it is once the year is reserved.
+export const reserveCampaignYear = async (admin: ApiClient, feeState: FeeScenarioState) => {
+    let root = await feeRoot(admin);
+    if (await closeListedCampaign(admin, root, feeState)) {
+        root = await feeRoot(admin);
+    }
+    feeState.year = await nextFreeCampaignYear(admin, root);
+    return root;
 };
 
-export const ensureCatalogLevel = async (admin: ApiClient, name: string, yearlyFeeAmount = DEFAULT_YEARLY_FEE) => {
-    const existing = await findTier(admin, name);
+const ensureLevel = async (admin: ApiClient, root: Linked, name: string, yearlyFeeAmount = DEFAULT_YEARLY_FEE) => {
+    const existing = embeddedList(root).find((tier) => tier.name === name);
     if (existing) return existing.id as string;
-    await admin.post(admin.templateTarget(await feeRoot(admin), 'createTier'), {name, yearlyFeeAmount});
-    return (await findTier(admin, name))!.id as string;
+    return (await admin.create(admin.templateTarget(root, 'createTier'), {name, yearlyFeeAmount})).split('/').pop()!;
 };
+
+export const ensureCatalogLevel = async (admin: ApiClient, name: string, yearlyFeeAmount?: number) =>
+    ensureLevel(admin, await feeRoot(admin), name, yearlyFeeAmount);
 
 export const addCatalogRule = async (admin: ApiClient, levelName: string, contribution: Contribution, ranking: string) => {
     const tier = await admin.get(`/api/membership-fee-tiers/${await ensureCatalogLevel(admin, levelName)}`);
@@ -53,35 +65,26 @@ export const addCatalogRule = async (admin: ApiClient, levelName: string, contri
     });
 };
 
-export const reserveCampaignYear = async (admin: ApiClient, feeState: FeeScenarioState) => {
-    await closeActiveCampaign(admin, feeState);
-    feeState.year = await nextFreeCampaignYear(admin);
-};
-
-const rememberActiveCampaign = async (admin: ApiClient, feeState: FeeScenarioState) => {
-    const campaign = await admin.follow(await feeRoot(admin), 'activeCampaign');
-    feeState.campaignPath = new URL(campaign._links!.self.href, 'http://placeholder').pathname.replace(/^\/api/, '');
-};
-
 export const publishCampaign = async (
     admin: ApiClient, feeState: FeeScenarioState, levels: CampaignLevel[], votingDeadline = DEFAULT_VOTING_DEADLINE,
 ) => {
-    await reserveCampaignYear(admin, feeState);
+    const root = await reserveCampaignYear(admin, feeState);
     const levelIds = [];
     for (const level of levels) {
-        levelIds.push(await ensureCatalogLevel(admin, level.name, level.yearlyFee));
+        levelIds.push(await ensureLevel(admin, root, level.name, level.yearlyFee));
     }
-    await admin.post(admin.templateTarget(await feeRoot(admin), 'publishYear'), {year: feeState.year, votingDeadline, levelIds});
-    await rememberActiveCampaign(admin, feeState);
+    const campaign = await admin.create(admin.templateTarget(root, 'publishYear'), {year: feeState.year, votingDeadline, levelIds});
+    feeState.campaignPath = campaign.replace(/^\/api/, '');
 };
 
-const publishedLevels = async (admin: ApiClient, year: number) => {
-    const campaigns = await admin.get('/api/fee-selection-campaigns');
-    return embeddedList(await admin.get(`${campaigns._links!.self.href}/${year}/levels`)) as Linked[];
+const publishedLevels = async (admin: ApiClient, feeState: FeeScenarioState) => {
+    if (!feeState.campaignPath) throw new Error('membershipFeesApi: no campaign published through the API in this scenario');
+    const campaign = await admin.get(`/api${feeState.campaignPath}`);
+    return embeddedList(await admin.follow(campaign, 'levels')) as Linked[];
 };
 
 const feeSummary = async (member: ApiClient, year: number) =>
-    member.get(`${(await member.get('/api'))._links!.profile.href}/fee-summary/${year}`) as Promise<Linked>;
+    member.get(`${(await member.root())._links!.profile.href}/fee-summary/${year}`) as Promise<Linked>;
 
 export const chooseLevel = async (member: ApiClient, year: number, levelName: string) => {
     const summary = await feeSummary(member, year);
@@ -96,10 +99,10 @@ export const withdrawChoice = async (member: ApiClient, year: number) => {
     }
 };
 
-export const assignLevel = async (admin: ApiClient, member: MemberIdentity, year: number, levelName: string) => {
-    const level = (await publishedLevels(admin, year)).find((candidate) => candidate.name === levelName)!;
-    await admin.post(admin.templateTarget(level, 'assignMember'), {memberId: member.id, year});
+export const assignLevel = async (admin: ApiClient, member: MemberIdentity, feeState: FeeScenarioState, levelName: string) => {
+    const level = (await publishedLevels(admin, feeState)).find((candidate) => candidate.name === levelName)!;
+    await admin.post(admin.templateTarget(level, 'assignMember'), {memberId: member.id, year: feeState.year});
 };
 
-export const firstPublishedLevelName = async (admin: ApiClient, year: number) =>
-    (await publishedLevels(admin, year))[0].name as string;
+export const firstPublishedLevelName = async (admin: ApiClient, feeState: FeeScenarioState) =>
+    (await publishedLevels(admin, feeState))[0].name as string;

@@ -1,4 +1,4 @@
-import {mkdirSync, writeFileSync} from 'node:fs';
+import {mkdirSync, renameSync, writeFileSync} from 'node:fs';
 import {dirname} from 'node:path';
 import {expect, type Browser, type Page} from '@playwright/test';
 import {waitForApp} from './app';
@@ -16,7 +16,9 @@ export const loginAndStoreSession = async (page: Page, role: Role) => {
     expect(oidc).not.toHaveLength(0);
     const session: RoleSession = {cookies: await page.context().cookies(), oidc};
     mkdirSync(dirname(sessionFile(role)), {recursive: true});
-    writeFileSync(sessionFile(role), JSON.stringify(session));
+    // Written atomically, as other workers may read the file meanwhile.
+    writeFileSync(`${sessionFile(role)}.tmp`, JSON.stringify(session));
+    renameSync(`${sessionFile(role)}.tmp`, sessionFile(role));
     return session;
 };
 

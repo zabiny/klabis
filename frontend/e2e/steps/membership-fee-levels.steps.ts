@@ -19,7 +19,7 @@ Given('{persona} has not chosen a fee level', async ({apiAs, feeState}, persona:
 });
 
 Given('{persona} has assigned {persona} to level {name}', async ({apiAs, feeState}, administrator: Persona, member: Persona, name: string) => {
-    await assignLevel(apiAs(personas[administrator]), await memberIdentity(apiAs(personas[member])), feeState.year!, name);
+    await assignLevel(apiAs(personas[administrator]), await memberIdentity(apiAs(personas[member])), feeState, name);
 });
 
 Given('{persona} had level {name} in the previous fee selection campaign', async ({apiAs, feeState}, persona: Persona, name: string) => {

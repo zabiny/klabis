@@ -40,7 +40,7 @@ Given('{persona} is registered for the open event {name}', async ({apiAs, feeSta
     const admin = apiAs('admin');
     const member = apiAs(personas[persona]);
     await createOpenEvent(admin, name);
-    await assignLevel(admin, await memberIdentity(member), feeState.year!, await firstPublishedLevelName(admin, feeState.year!));
+    await assignLevel(admin, await memberIdentity(member), feeState, await firstPublishedLevelName(admin, feeState));
     await registerForEvent(member, name);
     await withdrawChoice(member, feeState.year!);
 });
