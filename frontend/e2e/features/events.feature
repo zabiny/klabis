@@ -15,3 +15,17 @@ Feature: Events
       Given a draft event "Autumn race" exists
       When Jan changes the location of event "Autumn race" to "Brno"
       Then event "Autumn race" takes place in "Brno"
+
+  Rule: A published event is open for members
+
+    Scenario: Manager publishes a DRAFT event
+      Given a draft event "Summer race" exists
+      When Jan publishes event "Summer race"
+      Then Eva sees event "Summer race" in the event list
+
+  Rule: A cancelled event keeps the reason of its cancellation
+
+    Scenario: Manager cancels an ACTIVE event with a reason
+      Given event "Winter race" is open for registration
+      When Jan cancels event "Winter race" because of "Heavy snowfall"
+      Then event "Winter race" is cancelled because of "Heavy snowfall"
