@@ -1,5 +1,7 @@
 import type {APIRequestContext} from '@playwright/test';
 import {test as base} from 'playwright-bdd';
+import {waitForApp} from './app';
+import {personas, type Persona} from './personas';
 import {readSession, type Role} from './roles';
 import {renewSession} from './session';
 
@@ -19,10 +21,9 @@ export type ApiClient = {
 export type FeeScenarioState = { year?: number; closedYear?: number; campaignPath?: string };
 
 type Fixtures = {
-    api: ApiClient;
     apiAs: (role: Role) => ApiClient;
     feeState: FeeScenarioState;
-    loginAs: (role: Role) => Promise<void>;
+    actAs: (persona: Persona) => Promise<void>;
     currentRole: { value?: Role };
 };
 
@@ -103,24 +104,20 @@ export const test = base.extend<Fixtures>({
         await provide(clientFor);
         await Promise.all([...contexts.values()].map((context) => context.dispose()));
     },
-    api: async ({apiAs, currentRole}, provide) => {
-        const client = () => {
-            if (!currentRole.value) throw new Error('api fixture: no role logged in; use "Given I am logged in as" first');
-            return apiAs(currentRole.value);
-        };
-        await provide({
-            get: (path) => client().get(path),
-            post: (path, body) => client().post(path, body),
-            delete: (path) => client().delete(path),
-            follow: (resource, rel) => client().follow(resource, rel),
-            templateTarget: (resource, template) => client().templateTarget(resource, template),
-        });
-    },
-    loginAs: async ({page, currentRole}, provide) => {
-        await provide(async (role) => {
-            const {cookies} = readSession(role);
+    // Switches the browser to the persona's session only when another role is signed in, so consecutive steps of
+    // one persona continue on the current page. The OIDC user lives in sessionStorage, so it is dropped with the cookies.
+    actAs: async ({page, currentRole}, provide) => {
+        await provide(async (persona) => {
+            const role = personas[persona];
+            if (currentRole.value === role) return;
+            if (currentRole.value) {
+                await page.evaluate(() => sessionStorage.clear());
+                await page.context().clearCookies();
+            }
+            await page.context().addCookies(readSession(role).cookies);
             currentRole.value = role;
-            await page.context().addCookies(cookies);
+            await page.goto('/');
+            await waitForApp(page);
         });
     },
 });

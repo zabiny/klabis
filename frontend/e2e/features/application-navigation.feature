@@ -1,19 +1,29 @@
 @spec:application-navigation
 Feature: Application navigation
+  The main menu is derived from the destinations the signed-in user is authorized for.
+  Jan administers the club, Eva is a club member without administration permissions.
 
-  Scenario Outline: User sees only menu items they are authorized for
-    Given I am logged in as "<role>"
-    When I open the application
-    Then the main menu shows "Kalendář"
-    And the main menu shows "Akce"
-    And the main menu shows "Finance"
-    And the main menu shows "Skupiny"
-    And the main menu shows "Členové"
-    And the main menu <visibility> "<item>"
+  Rule: The main menu offers exactly the destinations the user is authorized for
 
-    Examples:
-      | role   | visibility    | item                 |
-      | admin  | shows         | Přehled administrace |
-      | admin  | shows         | Synchronizace        |
-      | member | does not show | Přehled administrace |
-      | member | does not show | Synchronizace        |
+    Scenario: User sees only menu items they are authorized for
+      When Eva opens the application
+      Then the main menu offers:
+        | Kalendář |
+        | Akce     |
+        | Finance  |
+        | Skupiny  |
+        | Členové  |
+      And the main menu does not offer:
+        | Přehled administrace |
+        | Synchronizace        |
+
+    Scenario: Administrator also sees the administration destinations
+      When Jan opens the application
+      Then the main menu offers:
+        | Kalendář             |
+        | Akce                 |
+        | Finance              |
+        | Skupiny              |
+        | Členové              |
+        | Přehled administrace |
+        | Synchronizace        |

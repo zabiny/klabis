@@ -1,44 +1,28 @@
 import {expect} from '@playwright/test';
-import {createBdd} from 'playwright-bdd';
-import {waitForApp} from '../support/app';
+import {createBdd, type DataTable} from 'playwright-bdd';
 import {test} from '../support/fixtures';
+import type {Persona} from '../support/personas';
+import {menuEntry} from '../support/ui';
 
 const {When, Then} = createBdd(test);
 
-When('I open the application', async ({page}) => {
-    await page.goto('/');
-    await waitForApp(page);
+When('{persona} opens the application', async ({actAs}, persona: Persona) => {
+    await actAs(persona);
 });
 
-When('I open my profile', async ({page}) => {
-    await page.getByText('Můj profil', {exact: true}).click();
-});
-
-When('I navigate back', async ({page}) => {
+When('{persona} navigates back', async ({page, actAs}, persona: Persona) => {
+    await actAs(persona);
     await page.goBack();
 });
 
-// Deep links reload the app through the OAuth2 redirect and lose the path, so the SPA router is driven directly.
-When('I navigate in the application to {text}', async ({page}, path: string) => {
-    await page.evaluate((target) => {
-        window.history.pushState({}, '', target);
-        window.dispatchEvent(new PopStateEvent('popstate'));
-    }, path);
-});
-
-Then(/^the main menu (shows|does not show) "(.*)"$/, async ({page}, visibility: string, item: string) => {
-    const entry = page.getByRole('navigation').getByRole('link', {name: item, exact: true});
-    if (visibility === 'shows') {
-        await expect(entry).toBeVisible();
-    } else {
-        await expect(entry).toHaveCount(0);
+Then('the main menu offers:', async ({page}, items: DataTable) => {
+    for (const [item] of items.raw()) {
+        await expect(menuEntry(page, item)).toBeVisible();
     }
 });
 
-Then('the page shows section {text}', async ({page}, heading: string) => {
-    await expect(page.getByRole('heading', {name: heading, exact: true})).toBeVisible();
-});
-
-Then('the page does not show section {text}', async ({page}, heading: string) => {
-    await expect(page.getByRole('heading', {name: heading, exact: true})).toHaveCount(0);
+Then('the main menu does not offer:', async ({page}, items: DataTable) => {
+    for (const [item] of items.raw()) {
+        await expect(menuEntry(page, item)).toHaveCount(0);
+    }
 });
