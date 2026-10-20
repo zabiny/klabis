@@ -106,11 +106,11 @@ class MemberFeeHistoryServiceTest {
             assertThat(result.name()).isEqualTo("Základ");
             assertThat(result.yearlyFee()).isEqualTo(Money.ofCzk(new BigDecimal("500.00")));
             assertThat(result.votingOpen()).isTrue();
-            assertThat(result.recommendedLevelId()).isEmpty();
+            assertThat(result.recommendedGroupId()).isEmpty();
         }
 
         @Test
-        @DisplayName("should return null groupId with votingOpen=true and recommendedLevelId when no choice and voting is open")
+        @DisplayName("should return null groupId with votingOpen=true and recommendedGroupId (published group of last year's tier) when no choice and voting is open")
         void shouldReturnVotingOpenWithRecommendedWhenNoChoice() {
             FeeSelectionCampaign publication = buildOpenPublication(YEAR);
 
@@ -120,12 +120,34 @@ class MemberFeeHistoryServiceTest {
                     .thenReturn(Optional.of(publication));
             org.mockito.Mockito.when(memberChoicePort.getRecommendedLevelForYear(MEMBER_ID, YEAR))
                     .thenReturn(Optional.of(LEVEL_ID));
+            org.mockito.Mockito.when(groupRepository.findByYear(YEAR))
+                    .thenReturn(List.of(buildGroupWithMember(
+                            GROUP_ID, YEAR, new MemberId(UUID.randomUUID()), TODAY, AssignmentSource.MEMBER_CHOICE)));
 
             MemberFeeHistoryPort.CurrentLevelInfo result = service.getCurrentLevelInfo(MEMBER_ID, YEAR);
 
             assertThat(result.groupId()).isNull();
             assertThat(result.votingOpen()).isTrue();
-            assertThat(result.recommendedLevelId()).contains(LEVEL_ID);
+            assertThat(result.recommendedGroupId()).contains(GROUP_ID);
+        }
+
+        @Test
+        @DisplayName("should not recommend a group when last year's tier is not published for the year")
+        void shouldNotRecommendWhenTierNotPublished() {
+            MembershipFeeGroup otherTierGroup = MembershipFeeGroup.reconstruct(
+                    GROUP_ID, new MembershipFeeTierId(UUID.randomUUID()), "Jiný", YEAR, GROUP_DEADLINE,
+                    Money.ofCzk(new BigDecimal("500.00")), PublishedLevelStatus.EDITABLE,
+                    List.of(), Set.of(), null);
+
+            org.mockito.Mockito.when(groupRepository.findByMemberAndYear(MEMBER_ID, YEAR))
+                    .thenReturn(Optional.empty());
+            org.mockito.Mockito.when(publicationRepository.findByYear(YEAR))
+                    .thenReturn(Optional.of(buildOpenPublication(YEAR)));
+            org.mockito.Mockito.when(memberChoicePort.getRecommendedLevelForYear(MEMBER_ID, YEAR))
+                    .thenReturn(Optional.of(LEVEL_ID));
+            org.mockito.Mockito.when(groupRepository.findByYear(YEAR)).thenReturn(List.of(otherTierGroup));
+
+            assertThat(service.getCurrentLevelInfo(MEMBER_ID, YEAR).recommendedGroupId()).isEmpty();
         }
 
         @Test

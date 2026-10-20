@@ -14,6 +14,7 @@ import com.klabis.membershipfees.application.MembershipFeeTierOptionsPort;
 import com.klabis.membershipfees.domain.*;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.core.convert.ConversionService;
+import org.springframework.hateoas.Affordance;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
@@ -102,6 +103,7 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
                 .toList();
 
         HalResponseContext.setDomainList(domains);
+        HalResponseContext.setContext(new TierRulesListing(tier.getId()));
         return ResponseEntity.ok(items);
     }
 
@@ -120,6 +122,9 @@ class MembershipFeeTierController implements MembershipFeeTiersApi {
     }
 
     record PaymentRuleDomain(MembershipFeeTierId tierId, MembershipPaymentRule rule) {
+    }
+
+    record TierRulesListing(MembershipFeeTierId tierId) {
     }
 
     @Override
@@ -214,25 +219,36 @@ class MembershipFeeTierListPostprocessor
 
     private final AuthorizationEvaluator authorizationEvaluator;
     private final FeeSelectionCampaignManagementPort campaignManagementPort;
+    private final PublishYearAffordance publishYearAffordance;
 
     MembershipFeeTierListPostprocessor(AuthorizationEvaluator authorizationEvaluator,
-                                       FeeSelectionCampaignManagementPort campaignManagementPort) {
+                                       FeeSelectionCampaignManagementPort campaignManagementPort,
+                                       PublishYearAffordance publishYearAffordance) {
         this.authorizationEvaluator = authorizationEvaluator;
         this.campaignManagementPort = campaignManagementPort;
+        this.publishYearAffordance = publishYearAffordance;
     }
 
     @Override
     public org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> process(
             org.springframework.hateoas.CollectionModel<EntityModel<MembershipFeeTierSummaryResponse>> model) {
+        boolean manager = authorizationEvaluator.has(Authority.MEMBERS_MANAGE);
+        // getPublication/listPublications are readable by any authenticated caller; the campaign
+        // lookup and the publishYear template are management concerns, so both are skipped for
+        // everyone else.
+        Optional<FeeSelectionCampaign> activeCampaign = manager
+                ? campaignManagementPort.findActiveCampaign()
+                : Optional.empty();
+        List<Affordance> publishYear = manager
+                ? publishYearAffordance.affordances(activeCampaign.isPresent())
+                : List.of();
+
         model.mapLink(org.springframework.hateoas.IanaLinkRelations.SELF, selfLink -> (Link) selfLink
-                .andAffordances(klabisAfford(methodOn(FeeSelectionCampaignsApi.class).publishYear(null)))
+                .andAffordances(publishYear)
                 .andAffordances(klabisAfford(methodOn(MembershipFeeTiersApi.class).createTier(null))));
 
-        // getPublication/listPublications are readable by any authenticated caller; the campaign
-        // links are management navigation and are offered to managers only, so the campaign lookup
-        // is skipped for everyone else.
-        if (authorizationEvaluator.has(Authority.MEMBERS_MANAGE)) {
-            campaignManagementPort.findActiveCampaign().ifPresent(campaign ->
+        if (manager) {
+            activeCampaign.ifPresent(campaign ->
                     klabisLinkTo(methodOn(FeeSelectionCampaignsApi.class).getPublication(campaign.getId()
                             .value()))
                             .map(link -> link.withRel("activeCampaign"))
@@ -249,13 +265,15 @@ class MembershipFeeTierListPostprocessor
 
 @MvcComponent
 class PaymentRuleDetailsPostprocessor
-        extends ModelWithDomainPostprocessor<PaymentRuleResponse, MembershipFeeTierController.PaymentRuleDomain> {
+        extends ModelWithDomainPostprocessor<PaymentRuleResponse, Object> {
 
     private static final List<String> RULE_TYPE_OPTIONS = List.of("PERCENTAGE", "FIXED_AMOUNT");
 
     @Override
-    public void process(EntityModel<PaymentRuleResponse> dtoModel,
-                        MembershipFeeTierController.PaymentRuleDomain domain) {
+    public void process(EntityModel<PaymentRuleResponse> dtoModel, Object source) {
+        if (!(source instanceof MembershipFeeTierController.PaymentRuleDomain domain)) {
+            return;
+        }
         UUID tierId = domain.tierId().value();
         UUID eventTypeId = domain.rule().eventTypeId().value();
         String ranking = domain.rule().rankingShortName();
@@ -274,9 +292,10 @@ class PaymentRuleDetailsPostprocessor
     }
 }
 
-// The tier id is read off the current request's resolved @PathVariable map, since
-// CollectionModel<EntityModel<PaymentRuleResponse>> carries no reference back to the tier when the
-// list is empty. Same pattern as EventRegistrationController.RegistrationListPostprocessor.
+// The tier id comes from HalResponseContext, since CollectionModel<EntityModel<PaymentRuleResponse>>
+// carries no reference back to the tier when the list is empty. PaymentRuleResponse is shared with
+// the fee group rules snapshot, which must not get tier rule management affordances, so the
+// context entry published by the tier endpoint is what scopes this postprocessor.
 @MvcComponent
 class MembershipFeeTierListRulesPostprocessor
         implements RepresentationModelProcessor<org.springframework.hateoas.CollectionModel<EntityModel<PaymentRuleResponse>>> {
@@ -303,19 +322,8 @@ class MembershipFeeTierListRulesPostprocessor
     }
 
     private static Optional<UUID> currentTierId() {
-        org.springframework.web.context.request.RequestAttributes attrs =
-                org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
-        if (attrs == null) {
-            return Optional.empty();
-        }
-        Object variables = attrs.getAttribute(
-                org.springframework.web.servlet.HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE,
-                org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST);
-        if (!(variables instanceof Map<?, ?> pathVariables)) {
-            return Optional.empty();
-        }
-        Object id = pathVariables.get("id");
-        return id != null ? Optional.of(UUID.fromString(id.toString())) : Optional.empty();
+        return HalResponseContext.findContext(MembershipFeeTierController.TierRulesListing.class)
+                .map(listing -> listing.tierId().value());
     }
 }
 

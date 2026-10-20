@@ -45,6 +45,19 @@ class FeeSelectionCampaignTest {
         }
 
         @Test
+        @DisplayName("should copy the level's payment rules into each group snapshot")
+        void shouldCopyRulesIntoGroupSnapshot() {
+            MembershipFeeTier level = buildLevel("Dospělý");
+            MembershipPaymentRule rule = MembershipPaymentRule.percentage(
+                    EventTypeReference.of(UUID.randomUUID()), "A", 50);
+            level.addRule(rule);
+
+            var result = FeeSelectionCampaign.publish(YEAR, DEADLINE, List.of(level));
+
+            assertThat(result.groups().getFirst().getRulesSnapshot()).containsExactly(rule);
+        }
+
+        @Test
         @DisplayName("should create one MembershipFeeGroup snapshot per level")
         void shouldCreateGroupSnapshotsForEachLevel() {
             MembershipFeeTier level1 = buildLevel("Dospělý");

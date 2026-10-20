@@ -264,6 +264,37 @@ class MembershipFeeTierControllerTest {
         }
 
         @Test
+        @DisplayName("should offer publishYear template with tier options when no campaign is active")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldOfferPublishYearWithTierOptionsWhenNoCampaignActive() throws Exception {
+            when(managementPort.listTiers()).thenReturn(List.of(buildLevel(LEVEL_UUID, "Standard")));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.publishYear.properties[?(@.name=='levelIds')].options.inline[0].value")
+                            .value(LEVEL_UUID.toString()))
+                    .andExpect(jsonPath("$._templates.publishYear.properties[?(@.name=='levelIds')].options.inline[0].prompt")
+                            .value("Standard"));
+        }
+
+        @Test
+        @DisplayName("should not offer publishYear template while a campaign is active")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldNotOfferPublishYearWhenCampaignActive() throws Exception {
+            when(managementPort.listTiers()).thenReturn(List.of());
+            when(campaignManagementPort.findActiveCampaign()).thenReturn(Optional.of(buildActiveCampaign(CAMPAIGN_UUID)));
+
+            mockMvc.perform(
+                            get("/api/membership-fee-tiers")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.publishYear").doesNotExist())
+                    .andExpect(jsonPath("$._templates.createTier").exists());
+        }
+
+        @Test
         @DisplayName("should include activeCampaign and pastCampaigns links for MEMBERS:MANAGE user when active campaign exists")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldIncludeActiveCampaignAndPastCampaignLinksForAdminWhenCampaignActive() throws Exception {
@@ -501,7 +532,8 @@ class MembershipFeeTierControllerTest {
                     .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule").exists())
                     .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule.properties[?(@.name=='ruleType')].options.inline").isArray())
                     .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule.properties[?(@.name=='ruleType')].options.inline[0]").value("PERCENTAGE"))
-                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule.properties[?(@.name=='ruleType')].options.inline[1]").value("FIXED_AMOUNT"));
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule.properties[?(@.name=='ruleType')].options.inline[1]").value("FIXED_AMOUNT"))
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates.editRule.properties[?(@.name=='ruleType')].type").value("CoParticipationRuleType"));
         }
 
         @Test
@@ -627,7 +659,8 @@ class MembershipFeeTierControllerTest {
                     .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')]").exists())
                     .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline").isArray())
                     .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline[0]").value("PERCENTAGE"))
-                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline[1]").value("FIXED_AMOUNT"));
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].options.inline[1]").value("FIXED_AMOUNT"))
+                    .andExpect(jsonPath("$._templates.addRule.properties[?(@.name=='ruleType')].type").value("CoParticipationRuleType"));
         }
     }
 

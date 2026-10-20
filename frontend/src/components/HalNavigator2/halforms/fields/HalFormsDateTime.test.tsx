@@ -41,6 +41,11 @@ describe('HalFormsDateTime Component', () => {
     };
 
     describe('Rendering', () => {
+        it('falls back to the localized field label when prompt is missing', () => {
+            renderWithFormik(createHalFormsProperty({name: 'votingDeadline', prompt: undefined}));
+            expect(screen.getByText('Uzávěrka hlasování')).toBeInTheDocument();
+        });
+
         it('should render a datetime-local input field', () => {
             const prop = createHalFormsProperty();
             renderWithFormik(prop);

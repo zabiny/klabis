@@ -2,7 +2,7 @@ import type {ReactNode} from 'react';
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {useHalFormOptions} from './useHalFormOptions';
+import {localizeEnumOptions, useHalFormOptions} from './useHalFormOptions';
 import type {HalFormsOption} from '../api';
 import {createMockResponse} from '../__mocks__/mockFetch';
 import {type Mock, vi} from 'vitest';
@@ -498,5 +498,20 @@ describe('useHalFormOptions', () => {
             // Should only fetch once due to React Query deduplication
             expect(fetchSpy).toHaveBeenCalledTimes(1);
         });
+    });
+});
+
+describe('localizeEnumOptions by input type', () => {
+    it('translates CoParticipationRuleType options', () => {
+        const result = localizeEnumOptions(
+            [{value: 'PERCENTAGE', label: 'PERCENTAGE'}, {value: 'FIXED_AMOUNT', label: 'FIXED_AMOUNT'}],
+            {type: 'CoParticipationRuleType'}
+        );
+        expect(result.map(o => o.label)).toEqual(['Procento', 'Fixní částka']);
+    });
+
+    it('leaves options untranslated for an unmapped type', () => {
+        const options = [{value: 'PERCENTAGE', label: 'PERCENTAGE'}];
+        expect(localizeEnumOptions(options, {type: 'text'})).toEqual(options);
     });
 });

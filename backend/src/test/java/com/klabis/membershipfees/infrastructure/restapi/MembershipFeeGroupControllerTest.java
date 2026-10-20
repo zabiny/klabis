@@ -13,7 +13,9 @@ import com.klabis.membershipfees.application.AdminFeeAssignmentPort;
 import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.domain.AssignmentSource;
 import com.klabis.membershipfees.domain.FeeGroupMembership;
+import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.domain.MembershipFeeGroup;
+import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import com.klabis.membershipfees.domain.SnapshotFrozenException;
 import org.junit.jupiter.api.DisplayName;
@@ -90,6 +92,37 @@ class MembershipFeeGroupControllerTest {
                 Money.ofCzk(new BigDecimal("1200.00")),
                 PublishedLevelStatus.EDITABLE,
                 List.of(), Set.of(), null);
+    }
+
+    @Nested
+    @DisplayName("GET /api/membership-fee-groups/{id}/rules")
+    class ListGroupRulesTests {
+
+        @Test
+        @DisplayName("should return the rules snapshot as a HAL collection without tier rule management templates")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturnRulesSnapshotAsHalCollection() throws Exception {
+            UUID eventTypeUuid = UUID.fromString("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+            MembershipFeeGroup group = MembershipFeeGroup.reconstruct(
+                    new MembershipFeeGroupId(GROUP_UUID),
+                    new MembershipFeeTierId(UUID.randomUUID()),
+                    "Dospělý", 2026, VOTING_DEADLINE,
+                    Money.ofCzk(new BigDecimal("1200.00")),
+                    PublishedLevelStatus.EDITABLE,
+                    List.of(MembershipPaymentRule.percentage(EventTypeReference.of(eventTypeUuid), "A", 50)),
+                    Set.of(), null);
+            when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
+
+            mockMvc.perform(
+                            get("/api/membership-fee-groups/{id}/rules", GROUP_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0].eventTypeId").value(eventTypeUuid.toString()))
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0].rankingShortName").value("A"))
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0].percentage").value(50))
+                    .andExpect(jsonPath("$._embedded.paymentRuleResponseList[0]._templates").doesNotExist())
+                    .andExpect(jsonPath("$._templates.addRule").doesNotExist());
+        }
     }
 
     @Nested

@@ -21,6 +21,7 @@ const ENUM_GROUP_BY_TYPE: Record<string, string> = {
     SyncResolution: 'resolution',
     SiUsage: 'siUsage',
     Authority: AUTHORITY_GROUP,
+    CoParticipationRuleType: 'coParticipationRuleType',
 };
 
 function resolveEnumGroup(prop?: EnumOptionContext): string | undefined {

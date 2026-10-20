@@ -285,6 +285,7 @@ export const labels = {
         yearlyFeeAmount: 'Roční poplatek',
         yearlyFeeCurrency: 'Měna',
         tierIds: 'Tiery',
+        levelIds: 'Tiery',
         votingDeadline: 'Uzávěrka hlasování',
         year: 'Rok',
         membershipFeeGroupId: 'Tier poplatku',
@@ -395,6 +396,10 @@ export const labels = {
         feeGroupStatus: {
             EDITABLE: 'Editovatelná',
             FROZEN: 'Zmrazená',
+        },
+        coParticipationRuleType: {
+            PERCENTAGE: 'Procento',
+            FIXED_AMOUNT: 'Fixní částka',
         },
         feeMemberSource: {
             MEMBER_CHOICE: 'Vlastní volba',

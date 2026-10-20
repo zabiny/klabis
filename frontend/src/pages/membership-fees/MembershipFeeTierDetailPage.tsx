@@ -23,34 +23,34 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
 
     return (
         <div className="flex flex-col gap-6">
-            <nav className="flex items-center gap-1 text-sm text-zinc-500">
-                <Link to="/membership-fee-tiers" className="hover:text-zinc-700 transition-colors">
+            <nav className="flex items-center gap-1 text-sm text-text-secondary">
+                <Link to="/membership-fee-tiers" className="hover:text-text-primary transition-colors">
                     {labels.nav['membership-fees']}
                 </Link>
-                <ChevronRight className="w-4 h-4 text-zinc-400"/>
-                <Link to="/membership-fee-tiers" className="hover:text-zinc-700 transition-colors">
+                <ChevronRight className="w-4 h-4 text-text-tertiary"/>
+                <Link to="/membership-fee-tiers" className="hover:text-text-primary transition-colors">
                     {labels.nav['membership-fee-tiers']}
                 </Link>
-                <ChevronRight className="w-4 h-4 text-zinc-400"/>
-                <span className="text-zinc-800 font-medium">{resourceData.name}</span>
+                <ChevronRight className="w-4 h-4 text-text-tertiary"/>
+                <span className="text-text-primary font-medium">{resourceData.name}</span>
             </nav>
 
-            <div className="bg-white rounded-xl border border-zinc-200 p-6">
-                <h2 className="text-base font-bold text-zinc-900 mb-4">Základní informace</h2>
-                <hr className="border-slate-100 mb-5"/>
+            <div className="bg-surface rounded-xl border border-border-subtle p-6">
+                <h2 className="text-base font-bold text-text-primary mb-4">Základní informace</h2>
+                <hr className="border-border-subtle mb-5"/>
 
                 {!isEditing ? (
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-5">
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">Název tieru</label>
-                                <div className="h-[38px] flex items-center px-3 border border-zinc-200 rounded-md text-sm text-zinc-800">
+                                <label className="block text-xs font-bold text-text-secondary mb-1">Název tieru</label>
+                                <div className="h-[38px] flex items-center px-3 border border-border-subtle rounded-md text-sm text-text-primary">
                                     {resourceData.name}
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-gray-700 mb-1">Roční poplatek (Kč)</label>
-                                <div className="h-[38px] flex items-center px-3 border border-zinc-200 rounded-md text-sm text-zinc-800">
+                                <label className="block text-xs font-bold text-text-secondary mb-1">Roční poplatek (Kč)</label>
+                                <div className="h-[38px] flex items-center px-3 border border-border-subtle rounded-md text-sm text-text-primary">
                                     {resourceData.yearlyFeeAmount} {resourceData.yearlyFeeCurrency ?? labels.finance.currency}
                                 </div>
                             </div>
@@ -60,7 +60,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                                 <button
                                     type="button"
                                     onClick={() => setIsEditing(true)}
-                                    className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-zinc-700 bg-white border border-zinc-200 hover:bg-zinc-50 transition-colors"
+                                    className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-text-secondary bg-surface border border-border-subtle hover:bg-bg-subtle transition-colors"
                                 >
                                     <Pencil className="w-[15px] h-[15px]"/>
                                     {labels.buttons.edit}
@@ -70,7 +70,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                                 <button
                                     type="button"
                                     onClick={() => setDeleteModal(true)}
-                                    className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
+                                    className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-error bg-error-bg border border-error hover:opacity-80 transition-colors"
                                 >
                                     <Trash2 className="w-[15px] h-[15px]"/>
                                     {labels.templates.deleteMembershipFeeTier}

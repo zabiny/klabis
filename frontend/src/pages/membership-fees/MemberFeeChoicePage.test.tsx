@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
@@ -84,7 +84,7 @@ describe('MemberFeeChoicePage', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2025'}},
                 _templates: {},
             });
@@ -100,7 +100,7 @@ describe('MemberFeeChoicePage', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: false,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
                 _templates: {},
             });
@@ -114,7 +114,7 @@ describe('MemberFeeChoicePage', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: false,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
                 _templates: {},
             });
@@ -130,7 +130,7 @@ describe('MemberFeeChoicePage', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: false,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
                 _templates: {},
             });
@@ -146,7 +146,7 @@ describe('MemberFeeChoicePage', () => {
             mockFeeSummary({
                 currentGroup: null,
                 votingOpen: true,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
                 _templates: {
                     chooseTier: {
@@ -178,7 +178,7 @@ describe('MemberFeeChoicePage', () => {
             mockFeeSummary({
                 currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
                 votingOpen: true,
-                recommendedLevelId: null,
+                recommendedGroupId: null,
                 _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
                 _templates: {
                     chooseTier: {
@@ -201,6 +201,66 @@ describe('MemberFeeChoicePage', () => {
             renderPage();
 
             expect(screen.getByText('Základ')).toBeInTheDocument();
+        });
+    });
+    describe('submitting', () => {
+        const chooseTier = {
+            method: 'POST',
+            target: '/api/members/member-1/fee-choice/2026',
+            properties: [
+                {
+                    name: 'membershipFeeGroupId',
+                    type: 'text',
+                    prompt: 'Skupina',
+                    options: {
+                        inline: [
+                            {value: 'group-1', prompt: 'Základ'},
+                            {value: 'group-2', prompt: 'Rozšířené'},
+                        ],
+                    },
+                },
+            ],
+        };
+
+        it('pre-selects the recommended group and submits it', () => {
+            const mutate = vi.fn();
+            mockMutation({mutate} as never);
+            mockFeeSummary({
+                currentGroup: null,
+                votingOpen: true,
+                recommendedGroupId: 'group-2',
+                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _templates: {chooseTier},
+            });
+
+            renderPage();
+
+            expect(screen.getByRole('radio', {name: 'Rozšířené'})).toHaveAttribute('aria-checked', 'true');
+            fireEvent.click(screen.getByText(/Zvolit tier/i));
+            expect(mutate).toHaveBeenCalledWith(
+                {url: '/api/members/member-1/fee-choice/2026', data: {membershipFeeGroupId: 'group-2'}},
+                expect.anything(),
+            );
+        });
+
+        it('cancels the choice using the target of the removeChoice template', () => {
+            const mutate = vi.fn();
+            mockMutation({mutate} as never);
+            mockFeeSummary({
+                currentGroup: {id: 'group-1', name: 'Základ', yearlyFee: 500},
+                votingOpen: true,
+                recommendedGroupId: null,
+                _links: {self: {href: '/api/members/member-1/fee-summary/2026'}},
+                _templates: {
+                    chooseTier,
+                    removeChoice: {method: 'DELETE', target: '/api/members/member-1/fee-choice/2026'},
+                },
+            });
+
+            renderPage();
+
+            fireEvent.click(screen.getByText('Zrušit volbu'));
+            expect(mutate).toHaveBeenCalledWith({url: '/api/members/member-1/fee-choice/2026'}, expect.anything());
         });
     });
 });

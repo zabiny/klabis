@@ -201,4 +201,50 @@ class FeeSelectionCampaignManagementServiceTest {
             verify(publicationRepository, never()).save(any());
         }
     }
+
+    @Nested
+    @DisplayName("relevantFeeYear()")
+    class RelevantFeeYear {
+
+        private FeeSelectionCampaign closedCampaignForYear(int year) {
+            return FeeSelectionCampaign.reconstruct(
+                    new FeeSelectionCampaignId(UUID.randomUUID()),
+                    year, TODAY.minusDays(1), java.time.Instant.parse("2026-02-28T00:00:00Z"), List.of());
+        }
+
+        @Test
+        @DisplayName("should return active campaign year")
+        void shouldReturnActiveCampaignYear() {
+            when(publicationRepository.findActive(TODAY)).thenReturn(Optional.of(anActiveCampaign()));
+
+            assertThat(service.relevantFeeYear(TODAY)).isEqualTo(YEAR);
+        }
+
+        @Test
+        @DisplayName("should keep returning the campaign year after the campaign has closed")
+        void shouldReturnClosedCampaignYearForUpcomingYear() {
+            when(publicationRepository.findActive(TODAY)).thenReturn(Optional.empty());
+            when(publicationRepository.findAll()).thenReturn(List.of(closedCampaignForYear(2025), closedCampaignForYear(2027)));
+
+            assertThat(service.relevantFeeYear(TODAY)).isEqualTo(2027);
+        }
+
+        @Test
+        @DisplayName("should return current year when no campaigns exist")
+        void shouldReturnCurrentYearWhenNoCampaigns() {
+            when(publicationRepository.findActive(TODAY)).thenReturn(Optional.empty());
+            when(publicationRepository.findAll()).thenReturn(List.of());
+
+            assertThat(service.relevantFeeYear(TODAY)).isEqualTo(2026);
+        }
+
+        @Test
+        @DisplayName("should fall back to current year when only past-year campaigns exist")
+        void shouldFallBackToCurrentYear() {
+            when(publicationRepository.findActive(TODAY)).thenReturn(Optional.empty());
+            when(publicationRepository.findAll()).thenReturn(List.of(closedCampaignForYear(2025)));
+
+            assertThat(service.relevantFeeYear(TODAY)).isEqualTo(2026);
+        }
+    }
 }

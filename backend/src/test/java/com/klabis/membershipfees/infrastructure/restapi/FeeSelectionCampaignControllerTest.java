@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -191,6 +192,20 @@ class FeeSelectionCampaignControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._templates.publishYear").exists());
+        }
+
+        @Test
+        @DisplayName("should not offer publishYear template while a campaign is active")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldNotOfferPublishYearWhenCampaignActive() throws Exception {
+            when(managementPort.listPublications(CampaignStatusFilter.ALL)).thenReturn(List.of());
+            when(managementPort.findActiveCampaign()).thenReturn(Optional.of(buildActiveCampaign(UUID.randomUUID())));
+
+            mockMvc.perform(
+                            get("/api/fee-selection-campaigns")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._templates.publishYear").doesNotExist());
         }
 
         @Test

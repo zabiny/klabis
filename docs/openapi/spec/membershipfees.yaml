@@ -1040,6 +1040,9 @@ paths:
             chooseTier:
               operation: chooseTier
               description: Present only while voting is open for this year
+            removeChoice:
+              operation: removeChoice
+              description: Present only while voting is open and the member has a current choice
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -1304,6 +1307,7 @@ components:
           # rejects unknown values.
           type: string
           x-klabis-not-blank: true
+          x-hal-input-type: CoParticipationRuleType
         percent:
           type: integer
           format: int32
@@ -1350,6 +1354,7 @@ components:
         ruleType:
           type: string
           x-klabis-not-blank: true
+          x-hal-input-type: CoParticipationRuleType
         percentage:
           type: integer
           format: int32
@@ -1368,6 +1373,7 @@ components:
         ruleType:
           type: string
           x-klabis-not-blank: true
+          x-hal-input-type: CoParticipationRuleType
         percentage:
           type: integer
           format: int32
@@ -1534,7 +1540,10 @@ components:
           $ref: '#/components/schemas/CurrentGroupResponse'
         votingOpen:
           type: boolean
-        recommendedLevelId:
+        recommendedGroupId:
+          description: >-
+            Published group of the summary year derived from the member's tier of the previous year;
+            matches the chooseTier options. Unlike MemberFeeChoiceResponse.recommendedLevelId, which is a catalog tier id.
           type: string
           format: uuid
 

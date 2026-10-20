@@ -130,8 +130,14 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
     @Transactional(readOnly = true)
     @Override
     public int relevantFeeYear(LocalDate today) {
+        // Campaigns are for the upcoming year, so after a campaign closes the member must keep seeing
+        // the (locked) assignment for the campaign year instead of snapping back to the current year.
         return publicationRepository.findActive(today)
                 .map(FeeSelectionCampaign::getYear)
+                .or(() -> publicationRepository.findAll().stream()
+                        .map(FeeSelectionCampaign::getYear)
+                        .filter(year -> year >= today.getYear())
+                        .max(Integer::compare))
                 .orElse(today.getYear());
     }
 }

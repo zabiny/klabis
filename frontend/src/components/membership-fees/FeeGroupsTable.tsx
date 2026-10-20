@@ -21,17 +21,17 @@ interface FeeGroupsTableProps {
 
 export const FeeGroupsTable = ({groups}: FeeGroupsTableProps): ReactElement => {
     if (groups.length === 0) {
-        return <p className="text-sm text-[#71717A]">Žádné skupiny.</p>;
+        return <p className="text-sm text-text-secondary">Žádné skupiny.</p>;
     }
 
     return (
-        <div className="bg-white border border-[#E4E4E7] rounded-xl overflow-hidden">
+        <div className="bg-surface border border-border-subtle rounded-xl overflow-hidden">
             <table className="w-full text-sm">
                 <thead>
-                    <tr className="bg-[#F8FAFC] border-b border-[#E4E4E7]" style={{height: '44px'}}>
-                        <th className="px-5 text-left text-xs font-semibold text-[#71717A]">Název</th>
-                        <th className="px-5 text-right text-xs font-semibold text-[#71717A]">Počet členů</th>
-                        <th className="px-5 text-left text-xs font-semibold text-[#71717A]">Stav</th>
+                    <tr className="bg-bg-subtle border-b border-border-subtle" style={{height: '44px'}}>
+                        <th className="px-5 text-left text-xs font-semibold text-text-secondary">Název</th>
+                        <th className="px-5 text-right text-xs font-semibold text-text-secondary">Počet členů</th>
+                        <th className="px-5 text-left text-xs font-semibold text-text-secondary">Stav</th>
                         <th className="px-5 w-12"></th>
                     </tr>
                 </thead>
@@ -39,18 +39,18 @@ export const FeeGroupsTable = ({groups}: FeeGroupsTableProps): ReactElement => {
                     {groups.map((group) => (
                         <tr
                             key={group.id}
-                            className="border-b border-[#E4E4E7] last:border-0 hover:bg-[#F8FAFC]"
+                            className="border-b border-border-subtle last:border-0 hover:bg-bg-subtle"
                             style={{height: '60px'}}
                         >
-                            <td className="px-5 text-[#18181B] font-medium">
+                            <td className="px-5 text-text-primary font-medium">
                                 <Link
                                     to={extractNavigationPath(group._links.self.href)}
-                                    className="hover:text-[#2563EB]"
+                                    className="hover:text-primary"
                                 >
                                     {group.name}
                                 </Link>
                             </td>
-                            <td className="px-5 text-right text-[#18181B]">{group.memberCount}</td>
+                            <td className="px-5 text-right text-text-primary">{group.memberCount}</td>
                             <td className="px-5">
                                 <Badge variant={group.status === 'EDITABLE' ? 'success' : 'default'} size="sm">
                                     {getEnumLabel('feeGroupStatus', group.status)}
@@ -59,7 +59,7 @@ export const FeeGroupsTable = ({groups}: FeeGroupsTableProps): ReactElement => {
                             <td className="px-5">
                                 <Link
                                     to={extractNavigationPath(group._links.self.href)}
-                                    className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-[#F8FAFC] text-[#71717A] hover:bg-[#F1F5F9]"
+                                    className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-bg-subtle text-text-secondary hover:bg-bg-subtle"
                                     aria-label="Otevřít detail skupiny"
                                 >
                                     <ArrowRight size={16}/>

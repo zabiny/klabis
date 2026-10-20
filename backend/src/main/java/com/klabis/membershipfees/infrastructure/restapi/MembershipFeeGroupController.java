@@ -94,6 +94,7 @@ class MembershipFeeGroupController implements MembershipFeeGroupsApi {
         List<PaymentRuleResponse> items = group.getRulesSnapshot().stream()
                 .map(MembershipFeesResponseMapper::toResponse)
                 .toList();
+        HalResponseContext.setDomainList(group.getRulesSnapshot());
         return ResponseEntity.ok(items);
     }
 

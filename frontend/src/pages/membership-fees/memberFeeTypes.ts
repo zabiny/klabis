@@ -12,6 +12,6 @@ export interface FeeSummaryLinks {
 export interface FeeSummaryData {
     currentGroup: FeeSummaryGroup | null;
     votingOpen: boolean;
-    recommendedLevelId: string | null;
+    recommendedGroupId: string | null;
     _links: FeeSummaryLinks;
 }
