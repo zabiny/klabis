@@ -115,14 +115,14 @@ class MemberAccountControllerTest {
         }
 
         @Test
-        @DisplayName("returns 400 when the deposit amount is rejected as non-positive")
+        @DisplayName("maps IllegalArgumentException from the deposit port to 400")
         @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
-        void shouldReturn400WhenDepositAmountNotPositive() throws Exception {
-            when(depositPort.deposit(any())).thenThrow(new IllegalArgumentException("amount must be positive"));
+        void shouldMapIllegalArgumentFromDepositPortTo400() throws Exception {
+            when(depositPort.deposit(any())).thenThrow(new IllegalArgumentException("rejected by domain"));
 
             mockMvc.perform(post("/api/members/{id}/account/transactions", MEMBER_UUID)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(validDepositBody().replace("200.00", "0")))
+                            .content(validDepositBody()))
                     .andExpect(status().isBadRequest());
         }
     }
@@ -147,14 +147,14 @@ class MemberAccountControllerTest {
         }
 
         @Test
-        @DisplayName("returns 400 when the charge amount is rejected as non-positive")
+        @DisplayName("maps IllegalArgumentException from the charge port to 400")
         @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
-        void shouldReturn400WhenChargeAmountNotPositive() throws Exception {
-            when(chargePort.charge(any())).thenThrow(new IllegalArgumentException("amount must be positive"));
+        void shouldMapIllegalArgumentFromChargePortTo400() throws Exception {
+            when(chargePort.charge(any())).thenThrow(new IllegalArgumentException("rejected by domain"));
 
             mockMvc.perform(post("/api/members/{id}/account/transactions/charge", MEMBER_UUID)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(validChargeBody().replace("100.00", "-1")))
+                            .content(validChargeBody()))
                     .andExpect(status().isBadRequest());
         }
 
