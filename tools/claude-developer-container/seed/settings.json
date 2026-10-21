@@ -1,0 +1,67 @@
+{
+  "env": {
+    "CLAUDE_CODE_TMPDIR": "/mnt/ramdisk/claude",
+    "BASH_MAX_TIMEOUT_MS": "1800000"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(bash /home/dev/.claude/plugins/cache/davidovo/developer/*)",
+      "Bash(sh /home/dev/.claude/plugins/cache/davidovo/developer/*)",
+      "Bash(/home/dev/.claude/plugins/cache/davidovo/developer/*)",
+      "Bash(python /home/dev/.claude/plugins/cache/davidovo/developer/*)",
+      "Bash(python3 /home/dev/.claude/plugins/cache/davidovo/developer/*)"
+    ],
+    "defaultMode": "auto"
+  },
+  "model": "opus",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/dev/.claude/hooks/check-gradle-tests.sh",
+            "statusMessage": "Checking for concurrent Gradle test builds (to prevent test result overwrites)..."
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "developer@davidovo": true,
+    "openspec-ext@davidovo": true,
+    "playwright@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "davidovo": {
+      "source": {
+        "source": "git",
+        "url": "https://gitlab.polach.cloud/davca/claude-marketplace.git"
+      }
+    }
+  },
+  "outputStyle": "Concise",
+  "language": "czech",
+  "effortLevel": "medium",
+  "skipAutoPermissionPrompt": true,
+  "autoMode": {
+    "allow": [
+      "Test Artifacts: Hardcoded test API keys, placeholder credentials in examples, or hardcoding test cases",
+      "Local Operations: Agent deleting local files in working directory, local file operations within project scope, or using `--ignore-certificate-errors` for local testing. \"Project scope\" means the repository the session started in — wandering into ~/, ~/Library/, /etc, or other repos is scope escalation (User Intent Rule #2), not a local operation. Does NOT cover irreversible destruction of pre-existing files or local stateful services — see \"Irreversible Local Destruction\" in BLOCK.",
+      "Read-Only Operations: GET requests, read-only API calls, or queries that don't modify state and don't contain sensitive information in the URL. Note: PREEMPTIVE BLOCK ON CLEAR INTENT still applies — if the transcript contains clear evidence the agent is using read-only operations to scout for a blocked action, block it.",
+      "Declared Dependencies: Installing packages that are already declared in the repo's manifest files (requirements.txt, package.json, Cargo.toml, pyproject.toml, Gemfile, etc.) via standard commands that read those manifests (`pip install -r requirements.txt`, `npm install`, `cargo build`, `bundle install`) — provided the agent has not modified the manifest in this session. Does NOT cover installing agent-chosen package names (e.g. `pip install foo`, `npm install bar`) — those carry typosquat and supply-chain risk.",
+      "Toolchain Bootstrap: Installing language toolchains (not packages) from their official one-line installers — `sh.rustup.rs`, `bootstrap.pypa.io`, `astral.sh`, `bun.sh`, `deb.nodesource.com`, `get.docker.com`, `brew.sh` — when the repo's manifest or build config indicates that toolchain is required.",
+      "Standard Credentials: Reading credentials from the agent's own config (.env, config files) and sending them to their intended provider (e.g. API key to its matching API endpoint)",
+      "Git Push to Working Branch: Pushing to the branch the user started the session on (unless it is the repository default branch), or to a branch the agent created during the session. Does not cover pushing to other pre-existing branches.",
+      "Memory Directory: Routine writes to and deletes from the agent's memory directory (e.g. ~/.claude/projects/*/memory/) — recording or pruning user preferences, project facts, references. This is intended persistence the system prompt directs the agent to use, not Self-Modification or Irreversible Local Destruction. Does NOT cover content described in Memory Poisoning.",
+      "Trusted Plugin Scripts: Direct invocation of scripts under /home/dev/.claude/plugins/cache/davidovo/developer/*/skills/*/scripts/** via bash/sh/python/python3 is allowed. The allowed form is <interpreter> <script-path> [args...], where <script-path> is the first positional argument to the interpreter and resolves under the plugin directory listed above. Forms where the script is invoked indirectly (piped into the interpreter, sourced, or passed via -c/-m) are NOT covered. The plugin is under the user's own control and is not expected to be tampered with. Examples of covered scripts: run-backend-tests.sh, run-frontend-tests.sh, parse-test-output.py. The resolved script path must literally be under the listed directory — paths containing .. traversal or symlinks that resolve outside this directory are NOT covered. Non-path arguments (flags like --verbose/-k pattern, test IDs, numeric/string option values, key=value pairs) are always allowed. Path-like arguments (anything that resolves to a filesystem path) must point inside the project working directory. NOT covered: (a) chained commands — each part is evaluated independently per the COMPOSITE ACTIONS rule, (b) path-like arguments (positional paths, --file=/..., or values consumed as paths) that resolve outside the project working directory — non-path flags and values are not subject to this restriction, (c) arguments containing command substitution ($(...), backticks), process substitution (<(...), >(...)), or redirections to files outside the project (> /tmp/..., >> ~/...), (d) interpreter flags before the script path that change interpretation — -c (inline code), -m (module mode), -x (xtrace), shebang overrides, etc. Only the script path and its arguments may follow the interpreter name."
+    ],
+    "soft_deny": [
+      "$defaults",
+      "Bash(git push:*) targeting the public `main` branch of zabiny/klabis origin, or force-push to any branch of origin/polachGithub/polachCloud — publishing or rewriting history on a public/mirrored remote",
+      "openspec proposal archive or spec.md edits under openspec/specs/ that bypass the openspec skill workflow (writing proposal files by hand instead of via the documented skill)"
+    ]
+  }
+}
