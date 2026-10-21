@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
@@ -124,5 +125,18 @@ class ChargeServiceTest {
 
         assertThat(result).isNotNull();
         assertThat(result.getAmount()).isEqualTo(Money.ofCzk(FEE_AMOUNT).negate());
+    }
+
+    @Test
+    @DisplayName("chargeMembershipFee is recorded on an account already deep in overdraft")
+    void chargeMembershipFeeIsNotLimitedByOverdraft() {
+        MemberAccount account = MemberAccount.openFor(MEMBER_ID);
+        account.charge(Money.ofCzk(new BigDecimal("100000")), "debt", LocalDate.now(), Instant.now(), ChargePort.SYSTEM_USER_ID);
+        when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
+        when(memberAccountRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.chargeMembershipFee(MEMBER_ID, new BigDecimal("300"), YEAR);
+
+        assertThat(account.getBalance()).isEqualTo(Money.ofCzk(new BigDecimal("-100300")));
     }
 }

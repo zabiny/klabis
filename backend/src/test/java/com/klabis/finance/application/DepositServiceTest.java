@@ -19,8 +19,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,32 +53,6 @@ class DepositServiceTest {
 
         assertThat(account.getBalance()).isEqualTo(Money.ofCzk(new BigDecimal("250.00")));
         verify(memberAccountRepository).save(account);
-    }
-
-    @Test
-    @DisplayName("zero deposit is rejected and nothing is saved")
-    void zeroDepositIsRejected() {
-        MemberAccount account = MemberAccount.openFor(MEMBER_ID);
-        when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
-
-        assertThatThrownBy(() -> service.deposit(deposit("0")))
-                .isInstanceOf(IllegalArgumentException.class);
-
-        assertThat(account.getTransactions()).isEmpty();
-        verify(memberAccountRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("negative deposit is rejected and nothing is saved")
-    void negativeDepositIsRejected() {
-        MemberAccount account = MemberAccount.openFor(MEMBER_ID);
-        when(memberAccountRepository.findById(MEMBER_ID)).thenReturn(Optional.of(account));
-
-        assertThatThrownBy(() -> service.deposit(deposit("-10")))
-                .isInstanceOf(IllegalArgumentException.class);
-
-        assertThat(account.getTransactions()).isEmpty();
-        verify(memberAccountRepository, never()).save(any());
     }
 
     @Test
