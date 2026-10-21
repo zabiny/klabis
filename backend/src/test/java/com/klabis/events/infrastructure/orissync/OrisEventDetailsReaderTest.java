@@ -1,4 +1,4 @@
-package com.klabis.events.application;
+package com.klabis.events.infrastructure.orissync;
 
 import com.dpolach.api.orisclient.OrisApiClient;
 import com.dpolach.api.orisclient.OrisWebUrls;
@@ -7,6 +7,7 @@ import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Organizer;
 import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
+import com.klabis.events.application.EventNotFoundException;
 import com.klabis.events.domain.EventType;
 import com.klabis.events.domain.EventTypeRepository;
 import com.klabis.sync.application.SynchronizationPort;
@@ -31,19 +32,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-/**
- * Event-type auto-mapping (discipline ID → catalog) coverage, relocated from
- * {@code OrisEventTypeAutoMappingTest}'s "importEventFromOris() — auto-mapping" nested
- * class (task 9.1/9.2): {@code OrisEventImportService.importEventFromOris} no longer
- * calls {@link OrisEventFieldsReader} directly — the read now happens inside {@code
- * OrisEventSyncAdapter.readExternal} via the synchronisation engine's {@code
- * pullAndEnroll} (design.md D2, D3) — so this resolution is exercised directly against
- * {@link OrisEventFieldsReader#readOrisFields}, the one place it lives regardless of
- * which caller triggers the read.
- */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("OrisEventFieldsReader — event type auto-mapping via Discipline ID")
-class OrisEventFieldsReaderTest {
+@DisplayName("OrisEventDetailsReader — event type auto-mapping via Discipline ID")
+class OrisEventDetailsReaderTest {
 
     @Mock
     private OrisApiClient orisApiClient;
@@ -57,15 +48,15 @@ class OrisEventFieldsReaderTest {
     @Mock
     private SynchronizationPort synchronizationPort;
 
-    private OrisEventFieldsReader reader;
+    private OrisEventDetailsReader reader;
 
     @BeforeEach
     void setUp() {
-        reader = new OrisEventFieldsReader(orisApiClient, orisWebUrls, eventTypeRepository, synchronizationPort);
+        reader = new OrisEventDetailsReader(orisApiClient, orisWebUrls, eventTypeRepository, synchronizationPort);
     }
 
     @Nested
-    @DisplayName("readOrisFields() — auto-mapping")
+    @DisplayName("read() — auto-mapping")
     class AutoMapping {
 
         @Test
@@ -88,7 +79,7 @@ class OrisEventFieldsReaderTest {
             when(eventTypeRepository.findByDisciplineId(disciplineId))
                     .thenReturn(Optional.of(eventTypeWithId(eventTypeId)));
 
-            OrisEventFields result = reader.readOrisFields(orisId);
+            OrisEventProjection result = reader.read(orisId);
 
             assertThat(result.resolvedEventTypeId()).isEqualTo(eventTypeId);
         }
@@ -107,7 +98,7 @@ class OrisEventFieldsReaderTest {
                     SyncEntityType.DISCIPLINE, ExternalSystem.ORIS, List.of("99")))
                     .thenReturn(List.of());
 
-            OrisEventFields result = reader.readOrisFields(orisId);
+            OrisEventProjection result = reader.read(orisId);
 
             assertThat(result.resolvedEventTypeId()).isNull();
             Mockito.verifyNoInteractions(eventTypeRepository);
@@ -131,7 +122,7 @@ class OrisEventFieldsReaderTest {
                             new ExternalReference(ExternalSystem.ORIS, "5"))));
             when(eventTypeRepository.findByDisciplineId(disciplineId)).thenReturn(Optional.empty());
 
-            OrisEventFields result = reader.readOrisFields(orisId);
+            OrisEventProjection result = reader.read(orisId);
 
             assertThat(result.resolvedEventTypeId()).isNull();
         }
@@ -145,7 +136,7 @@ class OrisEventFieldsReaderTest {
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
 
-            OrisEventFields result = reader.readOrisFields(orisId);
+            OrisEventProjection result = reader.read(orisId);
 
             assertThat(result.resolvedEventTypeId()).isNull();
             Mockito.verifyNoInteractions(eventTypeRepository);
@@ -163,7 +154,7 @@ class OrisEventFieldsReaderTest {
             when(orisApiClient.getEventDetails(orisId)).thenReturn(okResponse(details));
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.example.cz/event/" + orisId);
 
-            OrisEventFields result = reader.readOrisFields(orisId);
+            OrisEventProjection result = reader.read(orisId);
 
             assertThat(result.resolvedEventTypeId()).isNull();
             Mockito.verifyNoInteractions(eventTypeRepository);
@@ -179,7 +170,7 @@ class OrisEventFieldsReaderTest {
         when(orisApiClient.getEventDetails(orisId)).thenReturn(
                 new OrisApiClient.OrisResponse<>(null, "JSON", "OK", null, "getEvent"));
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> reader.readOrisFields(orisId))
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> reader.read(orisId))
                 .isInstanceOf(EventNotFoundException.class);
     }
 

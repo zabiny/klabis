@@ -4,8 +4,7 @@ import com.klabis.events.domain.Event;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
 /**
- * Orchestrates the ORIS import flow; the ORIS field primitives live on
- * {@link OrisEventFieldsReader}.
+ * Orchestrates the ORIS import flow.
  */
 @PrimaryPort
 public interface OrisEventImportPort {

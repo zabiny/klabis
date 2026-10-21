@@ -21,7 +21,7 @@ import org.springframework.modulith.events.ApplicationModuleListener;
  * A {@code @PrimaryAdapter} event listener is permitted to call a foreign module's
  * primary port ({@link SynchronizationPort}, in {@code sync.application}) — the same
  * pattern {@link EventsSyncListener} already uses. No {@code @Lazy} is needed here:
- * unlike {@code OrisEventFieldsReader}, this class is not itself collected by
+ * unlike {@link OrisEventDetailsReader}, this class is not itself collected by
  * {@code SynchronizationAdapterRegistry} (it is a plain event listener, not a
  * {@code SynchronizationAdapter} bean), so no circular bean dependency arises —
  * exactly the same reasoning that already lets {@code EventsSyncListener} depend on
