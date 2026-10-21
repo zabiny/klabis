@@ -8,6 +8,7 @@ import com.klabis.membershipfees.domain.MembershipPaymentRule;
 import com.klabis.membershipfees.domain.PublishedLevelStatus;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 import org.springframework.core.convert.converter.Converter;
 
 import java.util.UUID;
@@ -20,17 +21,18 @@ import java.util.UUID;
  * {@code uses=} on a Converter, see backend-patterns).
  */
 @Mapper(config = MapstructSpringMapperConfig.class)
-interface MembershipFeeGroupResponseConverter extends Converter<MembershipFeeGroup, MembershipFeeGroupResponse> {
+interface MembershipFeeGroupResponseConverter extends MoneyMapping, Converter<MembershipFeeGroup, MembershipFeeGroupResponse> {
 
     @Override
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "sourceLevelId", source = "sourceLevelId")
-    @Mapping(target = "yearlyFeeAmount", expression = "java(group.getYearlyFeeSnapshot().amount())")
-    @Mapping(target = "yearlyFeeCurrency", expression = "java(group.getYearlyFeeSnapshot().currency().getCurrencyCode())")
-    @Mapping(target = "status", source = "status")
-    @Mapping(target = "memberCount", expression = "java(group.memberCount())")
-    @Mapping(target = "rulesSnapshot", source = "rulesSnapshot")
+    @Mapping(target = "yearlyFeeAmount", source = "yearlyFeeSnapshot")
+    @Mapping(target = "yearlyFeeCurrency", source = "yearlyFeeSnapshot", qualifiedByName = "currencyCode")
+    @Mapping(target = "memberCount", source = ".", qualifiedByName = "memberCount")
     MembershipFeeGroupResponse convert(MembershipFeeGroup group);
+
+    @Named("memberCount")
+    default int memberCount(MembershipFeeGroup group) {
+        return group.memberCount();
+    }
 
     default UUID toUuid(MembershipFeeGroupId id) {
         return id == null ? null : id.value();
