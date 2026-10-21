@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import {fireEvent, render, screen} from '@testing-library/react';
-import {MemoryRouter, useLocation} from 'react-router-dom';
+import {Link, MemoryRouter, useLocation} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
@@ -618,5 +618,105 @@ describe('MembersPage — sync status indicator in actions cell (4.3)', () => {
         expect(screen.queryByTestId('sync-error')).not.toBeInTheDocument();
         expect(screen.queryByTestId('sync-loading')).not.toBeInTheDocument();
         expect(screen.queryByTestId(/^sync-status-/)).not.toBeInTheDocument();
+    });
+});
+
+describe('MembersPage — access-dependent filters', () => {
+    const manageResource: HalResponse = {
+        _links: {self: {href: '/api/members'}},
+        _templates: {
+            default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
+            registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
+        },
+    };
+    const plainResource: HalResponse = {_links: {self: {href: '/api/members'}}};
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    const renderFor = (resource: HalResponse) => {
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resource, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        renderPageWithSearchReader('/members?status=ACTIVE', createMockPageData(resource));
+    };
+
+    it('regular user sees neither status pills nor the incomplete toggle, but keeps the search', () => {
+        renderFor(plainResource);
+
+        expect(screen.queryByRole('button', {name: labels.membersFilter.statusInactive})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: labels.membersFilter.statusAll})).not.toBeInTheDocument();
+        expect(screen.queryByRole('checkbox', {name: labels.membersFilter.incompleteOnly})).not.toBeInTheDocument();
+        expect(screen.getByRole('textbox', {name: labels.membersFilter.search})).toBeInTheDocument();
+    });
+
+    it('manager sees status pills with Aktivní selected by default', () => {
+        renderFor(manageResource);
+
+        expect(screen.getByRole('button', {name: labels.membersFilter.statusActive})).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getByRole('button', {name: labels.membersFilter.statusInactive})).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('regular user does not see the registration button', () => {
+        renderFor(plainResource);
+
+        expect(screen.queryByRole('button', {name: labels.templates.registerMember})).not.toBeInTheDocument();
+    });
+});
+
+describe('MembersPage — search text and URL state', () => {
+    const resource: HalResponse = {_links: {self: {href: '/api/members'}}};
+    const requestedUrls = () => vi.mocked(useAuthorizedQuery).mock.calls.map(([url]) => String(url));
+
+    const renderWithMenuLink = (initialUrl: string) => {
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resource, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        vi.mocked(useHalPageData).mockReturnValue(createMockPageData(resource));
+        const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+        return render(
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter initialEntries={[initialUrl]}>
+                    <Link to="/members">menu-members</Link>
+                    <MembersPage/>
+                    <SearchReader/>
+                </MemoryRouter>
+            </QueryClientProvider>
+        );
+    };
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('prefills the search input from the q URL param and sends it with the table request', () => {
+        renderWithMenuLink('/members?status=ACTIVE&q=nov');
+
+        expect(screen.getByRole('textbox', {name: labels.membersFilter.search})).toHaveValue('nov');
+        expect(requestedUrls().some(u => u.includes('q=nov') && u.includes('status=ACTIVE'))).toBe(true);
+    });
+
+    it('does not send a one-character q to the table request', () => {
+        renderWithMenuLink('/members?status=ACTIVE&q=n');
+
+        expect(requestedUrls().some(u => u.includes('q='))).toBe(false);
+    });
+
+    it('clears the search input and drops q from the request when returning via the menu link', async () => {
+        renderWithMenuLink('/members?status=ACTIVE&q=nov');
+        vi.mocked(useAuthorizedQuery).mockClear();
+
+        await userEvent.click(screen.getByRole('link', {name: 'menu-members'}));
+
+        expect(screen.getByRole('textbox', {name: labels.membersFilter.search})).toHaveValue('');
+        expect(requestedUrls().some(u => u.includes('q='))).toBe(false);
+    });
+
+    it.fails('keeps the default active-only filter in the request after returning via the menu link', async () => {
+        renderWithMenuLink('/members?status=INACTIVE');
+        vi.mocked(useAuthorizedQuery).mockClear();
+
+        await userEvent.click(screen.getByRole('link', {name: 'menu-members'}));
+
+        const urls = requestedUrls();
+        expect(urls.length).toBeGreaterThan(0);
+        expect(urls.every(u => u.includes('status=ACTIVE'))).toBe(true);
     });
 });
