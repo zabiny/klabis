@@ -246,6 +246,8 @@ describe('FulltextSearchInput', () => {
             expect(screen.getByRole('textbox')).toHaveValue('xyz');
         });
 
+        // lastEmittedRef is not cleared when the value prop is reset externally, so retyping the same text is
+        // swallowed as a duplicate. Once fixed, switch this to `it`.
         it.fails('emits again when the same text is retyped after the value was reset externally', () => {
             vi.useFakeTimers();
             try {

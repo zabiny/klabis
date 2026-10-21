@@ -5,7 +5,6 @@ import {describe, expect, it, vi} from 'vitest';
 import type {HalFormsTemplate} from '../../api';
 import {HalFormsForm} from '../../components/HalNavigator2/halforms/HalFormsForm.tsx';
 import {klabisFieldsFactory} from '../../components/KlabisFieldsFactory';
-import {getFieldLabel} from '../../localization';
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn(() => ({data: undefined, isLoading: false, error: null})),
@@ -54,13 +53,19 @@ describe('suspendMember form', () => {
         expect(screen.getByText('*')).toBeInTheDocument();
     });
 
+    // Without a server prompt the label falls back to labels.fields; 'reason' maps to the cancellation-specific
+    // "(volitelné)" text and 'note' has no mapping. Once the fallback is fixed, switch these to `it`.
     describe('field labels used when the server sends no prompt', () => {
         it.fails('does not label the mandatory reason as optional', () => {
-            expect(getFieldLabel('reason')).not.toMatch(/volitelné/i);
+            renderForm();
+
+            expect(screen.queryByText(/volitelné/i)).not.toBeInTheDocument();
         });
 
         it.fails('has a localized label for note instead of the raw property name', () => {
-            expect(getFieldLabel('note')).not.toBe('note');
+            renderForm();
+
+            expect(screen.queryByText('note')).not.toBeInTheDocument();
         });
     });
 });

@@ -709,6 +709,8 @@ describe('MembersPage — search text and URL state', () => {
         expect(requestedUrls().some(u => u.includes('q='))).toBe(false);
     });
 
+    // useDefaultSearchParam applies the default only on first mount, so the menu link to a bare /members drops
+    // the filter instead of restoring ACTIVE. Once fixed, switch this to `it`.
     it.fails('keeps the default active-only filter in the request after returning via the menu link', async () => {
         renderWithMenuLink('/members?status=INACTIVE');
         vi.mocked(useAuthorizedQuery).mockClear();
