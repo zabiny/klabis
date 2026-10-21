@@ -12,7 +12,6 @@ import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 import org.springframework.util.Assert;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.Set;
