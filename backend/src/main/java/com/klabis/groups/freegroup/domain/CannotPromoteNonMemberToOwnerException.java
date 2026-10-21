@@ -1,9 +1,9 @@
 package com.klabis.groups.freegroup.domain;
 
-import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.exceptions.ConflictException;
 import com.klabis.members.MemberId;
 
-public class CannotPromoteNonMemberToOwnerException extends BusinessRuleViolationException {
+public class CannotPromoteNonMemberToOwnerException extends ConflictException {
 
     private final MemberId memberId;
 

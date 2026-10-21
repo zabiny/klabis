@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -938,7 +939,7 @@ class FreeGroupControllerTest {
                                             """.formatted(OTHER_MEMBER_ID))
                     )
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.title").value("Cannot Promote Non-Member to Owner"));
+                    .andExpect(jsonPath("$.detail").value(containsString("member must already be in the group")));
         }
 
         @Test

@@ -1,6 +1,8 @@
 package com.klabis.finance.domain;
 
-public class TransactionAlreadyReversedException extends RuntimeException {
+import com.klabis.common.exceptions.ConflictException;
+
+public class TransactionAlreadyReversedException extends ConflictException {
 
     private final TransactionId transactionId;
 
