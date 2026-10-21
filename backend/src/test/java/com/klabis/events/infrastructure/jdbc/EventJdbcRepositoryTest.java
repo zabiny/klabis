@@ -21,6 +21,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
@@ -364,6 +365,27 @@ class EventJdbcRepositoryTest {
             assertThat(page.getTotalElements()).isEqualTo(5);
             assertThat(page.getTotalPages()).isEqualTo(3);
             assertThat(page.getNumber()).isEqualTo(0);
+        }
+
+        @Test
+        @DisplayName("should sort by domain property names")
+        void shouldSortByDomainPropertyNames() {
+            int[] deadlineDays = {1, 3, 2};
+            for (int i = 0; i < 3; i++) {
+                eventRepository.save(Event.create(EventCreateEventBuilder.builder()
+                        .name("Event " + i)
+                        .eventDate(LocalDate.of(2026, 6, 10 - i))
+                        .registrationDeadlines(RegistrationDeadlines.single(LocalDate.of(2026, 5, deadlineDays[i])))
+                        .location("Location").organizer("OOB").build()));
+            }
+
+            Page<Event> byDate = eventRepository.findAll(EventFilter.none(),
+                    PageRequest.of(0, 10, Sort.by("eventDate")));
+            Page<Event> byDeadlineDesc = eventRepository.findAll(EventFilter.none(),
+                    PageRequest.of(0, 10, Sort.by("registrationDeadline").descending()));
+
+            assertThat(byDate.getContent()).extracting(Event::getName).containsExactly("Event 2", "Event 1", "Event 0");
+            assertThat(byDeadlineDesc.getContent()).extracting(Event::getName).containsExactly("Event 1", "Event 2", "Event 0");
         }
 
         @Test
