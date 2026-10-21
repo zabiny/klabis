@@ -14,6 +14,7 @@ import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +31,7 @@ import java.util.UUID;
 
 import static com.klabis.members.MemberTestDataBuilder.aMember;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("Member JDBC Repository Tests")
 @DataJdbcTest(includeFilters = @ComponentScan.Filter(
@@ -363,6 +365,18 @@ class MemberRepositoryTest {
     @Nested
     @DisplayName("findByRegistrationNumber() method")
     class FindByRegistrationIdMethod {
+
+        @Test
+        @DisplayName("should reject saving a second member with an already used registration number")
+        void shouldRejectDuplicateRegistrationNumber() {
+            RegistrationNumber regNum = new RegistrationNumber("ZBM0502");
+            memberRepository.save(aMember().withRegistrationNumber(regNum).withEmail("first.dup@example.com").build());
+
+            Member duplicate = aMember().withRegistrationNumber(regNum).withEmail("second.dup@example.com").build();
+
+            assertThatThrownBy(() -> memberRepository.save(duplicate))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+        }
 
         @Test
         @DisplayName("should find member by registration number")

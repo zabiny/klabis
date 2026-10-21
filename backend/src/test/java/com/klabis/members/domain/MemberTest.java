@@ -428,6 +428,18 @@ class MemberTest {
         }
 
         @Test
+        @DisplayName("should reject suspension without a reason and keep member active")
+        void shouldRejectSuspensionWithoutReason() {
+            Member activeMember = createActiveMember();
+            Member.SuspendMembership command = new Member.SuspendMembership(new UserId(UUID.randomUUID()), null, "note");
+
+            assertThatThrownBy(() -> activeMember.suspend(command))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("reason");
+            assertThat(activeMember.isActive()).isTrue();
+        }
+
+        @Test
         @DisplayName("should allow suspension with all reason types")
         void shouldAllowSuspensionWithAllReasonTypes() {
             // Arrange

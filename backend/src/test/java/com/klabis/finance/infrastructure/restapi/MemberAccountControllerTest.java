@@ -113,6 +113,18 @@ class MemberAccountControllerTest {
                     .andExpect(header().string("Location",
                             containsString("/api/members/" + MEMBER_UUID + "/account/transactions/" + TX_UUID)));
         }
+
+        @Test
+        @DisplayName("returns 400 when the deposit amount is rejected as non-positive")
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
+        void shouldReturn400WhenDepositAmountNotPositive() throws Exception {
+            when(depositPort.deposit(any())).thenThrow(new IllegalArgumentException("amount must be positive"));
+
+            mockMvc.perform(post("/api/members/{id}/account/transactions", MEMBER_UUID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(validDepositBody().replace("200.00", "0")))
+                    .andExpect(status().isBadRequest());
+        }
     }
 
     @Nested
@@ -132,6 +144,18 @@ class MemberAccountControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(header().string("Location",
                             containsString("/api/members/" + MEMBER_UUID + "/account/transactions/" + TX_UUID)));
+        }
+
+        @Test
+        @DisplayName("returns 400 when the charge amount is rejected as non-positive")
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
+        void shouldReturn400WhenChargeAmountNotPositive() throws Exception {
+            when(chargePort.charge(any())).thenThrow(new IllegalArgumentException("amount must be positive"));
+
+            mockMvc.perform(post("/api/members/{id}/account/transactions/charge", MEMBER_UUID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(validChargeBody().replace("100.00", "-1")))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
