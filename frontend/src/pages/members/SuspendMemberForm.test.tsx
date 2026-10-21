@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {describe, expect, it, vi} from 'vitest';
 import type {HalFormsTemplate} from '../../api';
 import {HalFormsForm} from '../../components/HalNavigator2/halforms/HalFormsForm.tsx';
+import {withTemplateFieldPrompts} from '../../localization';
 import {klabisFieldsFactory} from '../../components/KlabisFieldsFactory';
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
@@ -25,7 +26,7 @@ const suspendTemplate: HalFormsTemplate = {
 
 const renderForm = () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
-    render(<HalFormsForm data={{}} template={suspendTemplate} onSubmit={onSubmit} fieldsFactory={klabisFieldsFactory}/>);
+    render(<HalFormsForm data={{}} template={withTemplateFieldPrompts(suspendTemplate, 'suspendMember')} onSubmit={onSubmit} fieldsFactory={klabisFieldsFactory}/>);
     return onSubmit;
 };
 
@@ -53,19 +54,19 @@ describe('suspendMember form', () => {
         expect(screen.getByText('*')).toBeInTheDocument();
     });
 
-    // Without a server prompt the label falls back to labels.fields; 'reason' maps to the cancellation-specific
-    // "(volitelné)" text and 'note' has no mapping. Once the fallback is fixed, switch these to `it`.
     describe('field labels used when the server sends no prompt', () => {
-        it.fails('does not label the mandatory reason as optional', () => {
+        it('does not label the mandatory reason as optional', () => {
             renderForm();
 
             expect(screen.queryByText(/volitelné/i)).not.toBeInTheDocument();
+            expect(screen.getByText('Důvod')).toBeInTheDocument();
         });
 
-        it.fails('has a localized label for note instead of the raw property name', () => {
+        it('has a localized label for note instead of the raw property name', () => {
             renderForm();
 
             expect(screen.queryByText('note')).not.toBeInTheDocument();
+            expect(screen.getByText('Poznámka')).toBeInTheDocument();
         });
     });
 });

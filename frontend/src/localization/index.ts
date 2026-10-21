@@ -3,6 +3,7 @@ export {
     t,
     getFieldLabel,
     getTemplateLabel,
+    withTemplateFieldPrompts,
     getDialogTitleLabel,
     getNavLabel,
     getEnumLabel,

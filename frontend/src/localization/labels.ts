@@ -813,6 +813,22 @@ export function getFieldLabel(fieldName: string, formOverrides?: Record<string, 
     return fieldLabels[fieldName] ?? fieldName;
 }
 
+const templateFieldPrompts: Record<string, Record<string, string>> = {
+    suspendMember: {reason: 'Důvod', note: 'Poznámka'},
+};
+
+export function withTemplateFieldPrompts<T extends {properties: Array<{name: string; prompt?: string}>}>(
+    template: T,
+    templateName: string,
+): T {
+    const prompts = templateFieldPrompts[templateName];
+    if (!prompts) return template;
+    return {
+        ...template,
+        properties: template.properties.map(p => (!p.prompt && prompts[p.name] ? {...p, prompt: prompts[p.name]} : p)),
+    };
+}
+
 export function getTemplateLabel(templateName: string): string | undefined {
     const templateLabels = labels.templates as Record<string, string>;
     return templateLabels[templateName];
