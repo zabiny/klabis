@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 export function useDefaultSearchParam(
@@ -7,13 +7,10 @@ export function useDefaultSearchParam(
     shouldApply?: () => boolean,
 ): void {
     const [searchParams, setSearchParams] = useSearchParams();
-    const appliedRef = useRef(false);
+    const present = searchParams.has(paramName);
 
     useEffect(() => {
-        if (appliedRef.current) return;
-        appliedRef.current = true;
-
-        if (searchParams.has(paramName)) return;
+        if (present) return;
         if (shouldApply && !shouldApply()) return;
 
         setSearchParams(
@@ -24,5 +21,5 @@ export function useDefaultSearchParam(
             },
             { replace: true },
         );
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [present]); // eslint-disable-line react-hooks/exhaustive-deps
 }
