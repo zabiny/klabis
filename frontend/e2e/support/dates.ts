@@ -11,3 +11,10 @@ export const toDisplayDate = (iso: string) => {
     const [year, month, day] = iso.split('-').map(Number);
     return `${day}. ${month}. ${year}`;
 };
+
+// A twelve-year-old is a minor on every day of the run.
+export const minorDateOfBirth = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - 12);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
