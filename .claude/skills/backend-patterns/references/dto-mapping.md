@@ -38,6 +38,30 @@ conversionService.convert(source,
     TypeDescriptor.collection(Set.class, TypeDescriptor.valueOf(Authority.class)));
 ```
 
+### Rule: no `expression =` in mappers
+
+Never write `@Mapping(expression = "java(...)")` (or `defaultExpression`) — it is untyped code in a string that the compiler cannot check. Use instead:
+
+- **Nested source paths** for value-object unwraps — MapStruct generates the null checks: `source = "id.value"`, `source = "email.value"`, `source = "currency.currencyCode"`, `source = "suspendedBy.uuid"` (UUID→String is built in).
+- **Default methods** on the interface for what paths cannot express: a generic `default <T> T unwrap(Optional<T> v) { return v == null ? null : v.orElse(null); }` for `Optional` properties, `default MemberId toMemberId(UUID id)` for element conversions, and a `@Named` default method with `source = "."` for fluent accessors MapStruct does not see as properties (a non-component method of a record). When most target properties need that, write the whole method as a default method with the generated `XyzBuilder` instead (`BulkSyncResultConverter`).
+- **Native iterable mapping** — declare the element methods and let MapStruct map `Set<UUID>` ↔ `Set<DisciplineId>` (also into a concrete `LinkedHashSet`). Add `nullValueIterableMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT` on `@Mapper` where null must become an empty collection.
+- Helpers shared by several converters go on a small package-private interface the converters extend (`DisciplineIdMapping`, `EntryFeeDtoMapping`) — inherited default methods are picked up, and unlike `uses =` it adds no bean.
+
+```java
+@Mapper(config = MapstructSpringMapperConfig.class,
+        nullValueIterableMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT)
+interface EventTypeDtoConverter extends Converter<EventType, EventTypeDto>, DisciplineIdMapping {
+
+    @Override
+    @Mapping(target = "id", source = "id.value")
+    EventTypeDto convert(EventType eventType);
+
+    default <T> T unwrap(Optional<T> value) {
+        return value == null ? null : value.orElse(null);
+    }
+}
+```
+
 ### Pitfall: never `uses = <OtherMapper>` on a `Converter`
 
 A `Converter`'s `@Mapper` annotation must never declare `uses = SomeInternalMapper.class` to reach nested/shared mapping logic. Because `Converter` beans are visible to **every** `@WebMvcTest` slice app-wide (not just tests for their own controller), a `uses=` dependency on a plain, non-`Converter` `@Mapper` forces every unrelated slice in the whole app to additionally provide that mapper's generated `...Impl` bean (`@Import(SomeInternalMapperImpl.class)`), or the slice fails with `NoSuchBeanDefinitionException` at `mvcConversionService` construction time — a failure with no connection to the controller actually under test.

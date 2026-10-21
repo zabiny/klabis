@@ -16,10 +16,9 @@ import org.springframework.core.convert.converter.Converter;
 interface MemberSummaryConverter extends Converter<Member, MemberSummaryResponse> {
 
     @Override
-    @Mapping(target = "id", expression = "java(member.getId().value())")
+    @Mapping(target = "id", source = "id.value")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
-    @Mapping(target = "email", expression = "java(member.getEmail() != null ? member.getEmail().value() : null)")
-    @Mapping(target = "dataIncomplete", expression = "java(member.isDataIncomplete())")
+    @Mapping(target = "email", source = "email.value")
     @Mapping(target = "displayContact", ignore = true)
     MemberSummaryResponse convert(Member member);
 }

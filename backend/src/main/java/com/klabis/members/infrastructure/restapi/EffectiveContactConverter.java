@@ -4,6 +4,7 @@ import com.klabis.common.mapping.MapstructSpringMapperConfig;
 import com.klabis.members.application.EffectiveContact;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 import org.springframework.core.convert.converter.Converter;
 
 /**
@@ -15,6 +16,11 @@ interface EffectiveContactConverter extends Converter<EffectiveContact, DisplayC
     @Override
     DisplayContact convert(EffectiveContact contact);
 
-    @Mapping(target = "fromGuardian", expression = "java(value.fromGuardian())")
+    @Mapping(target = "fromGuardian", source = ".", qualifiedByName = "fromGuardian")
     DisplayContactValue valueToDto(EffectiveContact.Value value);
+
+    @Named("fromGuardian")
+    default boolean fromGuardian(EffectiveContact.Value value) {
+        return value.fromGuardian();
+    }
 }

@@ -6,6 +6,8 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ValueMapping;
 import org.springframework.core.convert.converter.Converter;
 
+import java.util.List;
+
 /**
  * Implements Spring's {@link Converter} (rather than a plain {@code @Mapper}) so {@code @WebMvcTest}
  * slices pick it up automatically — {@code WebMvcTypeExcludeFilter} always lets {@link Converter}
@@ -21,17 +23,24 @@ import org.springframework.core.convert.converter.Converter;
 interface BulkSyncResultConverter extends Converter<com.klabis.events.application.BulkSyncResult, BulkSyncResult> {
 
     /**
-     * The four count fields are derived accessors on the domain record, not record
-     * components, so MapStruct's record-component-based auto-mapping does not see
-     * them as mapping sources — they must be wired explicitly via
-     * {@code expression}.
+     * The counts are derived accessors on the domain record, not record components, so MapStruct
+     * does not see them as properties.
      */
     @Override
-    @Mapping(target = "successCount", expression = "java(source.successCount())")
-    @Mapping(target = "failureCount", expression = "java(source.failureCount())")
-    @Mapping(target = "awaitingDecisionCount", expression = "java(source.awaitingDecisionCount())")
-    @Mapping(target = "stoppedByFailureCount", expression = "java(source.stoppedByFailureCount())")
-    BulkSyncResult convert(com.klabis.events.application.BulkSyncResult source);
+    default BulkSyncResult convert(com.klabis.events.application.BulkSyncResult source) {
+        return BulkSyncResultBuilder.builder()
+                .totalProcessed(source.totalProcessed())
+                .successCount(source.successCount())
+                .failureCount(source.failureCount())
+                .awaitingDecisionCount(source.awaitingDecisionCount())
+                .stoppedByFailureCount(source.stoppedByFailureCount())
+                .results(toDtos(source.results()))
+                .awaitingDecision(toDtos(source.awaitingDecision()))
+                .stoppedByFailure(toDtos(source.stoppedByFailure()))
+                .build();
+    }
+
+    List<EventSyncEntry> toDtos(List<com.klabis.events.application.BulkSyncResult.EventSyncEntry> entries);
 
     @Mapping(target = "eventId", source = "eventId.value")
     EventSyncEntry toDto(com.klabis.events.application.BulkSyncResult.EventSyncEntry entry);
