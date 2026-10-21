@@ -884,7 +884,7 @@ class MemberTest {
         @DisplayName("should allow unrelated update on existing minor already missing guardian (never-worsen)")
         void shouldAllowUnrelatedUpdateOnExistingMinorAlreadyMissingGuardian() {
             // Minor reconstructed without guardian (data integrity gap from legacy import) — an
-            // incomplete member (design.md D5) may still be saved with unrelated changes.
+            // incomplete member may still be saved with unrelated changes.
             Member minorWithoutGuardian = aMember()
                     .withRegistrationNumber("ZBM1001")
                     .withName("Jana", "Malá")
@@ -1205,7 +1205,7 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("accepts ORIS removing the member's only phone or birth number, leaving them incomplete (design.md D5)")
+        @DisplayName("accepts ORIS removing the member's only phone or birth number, leaving them incomplete")
         void acceptsLosingPhoneOrBirthNumberAndBecomesIncomplete() {
             Member member = createAdultMemberWithAllOptionalFieldsSet();
 

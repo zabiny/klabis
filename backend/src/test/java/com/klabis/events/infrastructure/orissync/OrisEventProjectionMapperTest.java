@@ -132,7 +132,7 @@ class OrisEventProjectionMapperTest {
     }
 
     @Test
-    @DisplayName("resolvedEventTypeId is Klabis-owned (design.md D3) and never affects the hash")
+    @DisplayName("resolvedEventTypeId is Klabis-owned and never affects the hash")
     void resolvedEventTypeId_isExcludedFromHash() {
         OrisEventProjection withoutResolvedType = orisSide(null, 1234);
         OrisEventProjection withResolvedType = orisSide(new EventTypeId(UUID.randomUUID()), 1234);
@@ -141,7 +141,7 @@ class OrisEventProjectionMapperTest {
     }
 
     @Test
-    @DisplayName("orisId is Klabis-owned pairing identity (design.md D2), not a synchronised field, and never affects the hash")
+    @DisplayName("orisId is Klabis-owned pairing identity, not a synchronised field, and never affects the hash")
     void orisId_isExcludedFromHash() {
         OrisEventProjection withOneOrisId = orisSide(null, 1234);
         OrisEventProjection withAnotherOrisId = orisSide(null, 5678);

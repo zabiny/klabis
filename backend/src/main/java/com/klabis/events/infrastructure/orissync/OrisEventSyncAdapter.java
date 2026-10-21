@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * The ORIS event {@link SynchronizationAdapter} (design.md D2, D3): inward-only,
+ * The ORIS event {@link SynchronizationAdapter}: inward-only,
  * reaching {@code events} as a module-internal collaborator rather than through a
  * primary port that existed only to cross a package boundary.
  * <p>
@@ -37,17 +37,17 @@ import java.util.stream.Collectors;
  * local side, {@link OrisEventDetailsReader} to read the external side, and
  * {@link EventRepository} together with {@code Event.syncFromOris} to write inward —
  * this class now lives inside {@code events.infrastructure}, so these are
- * module-internal dependencies rather than a cross-module port (design.md D2, D4).
+ * module-internal dependencies rather than a cross-module port.
  * <p>
  * Declares no outward write, no create on either side, and no sensitive data: ORIS
  * event data is public, and Klabis has no way to push event changes back to ORIS.
  * A local edit to an ORIS-owned field therefore always surfaces as a conflict rather
- * than being silently overwritten or silently sent onward (design.md D6).
+ * than being silently overwritten or silently sent onward.
  * <p>
  * {@link #readExternal} resolves the ORIS discipline mapping once and carries it on
  * the returned {@link OrisEventProjection#resolvedEventTypeId()} itself, so
  * {@link #applyToLocal} reads it straight off the projection it was given rather than
- * from separate call-order-dependent state — no second ORIS read (task 8.10), and no
+ * from separate call-order-dependent state — no second ORIS read, and no
  * risk of one record's resolution leaking onto another's write.
  * <p>
  * Classified as {@link Application}, not as a hexagonal adapter: this class holds two
@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
  * both on one class, since {@code @PrimaryAdapter} and {@code @SecondaryAdapter} are
  * mutually exclusive in the library's own layer predicates, and a
  * {@code @SecondaryAdapter} may never reach a primary port. {@code Application} is the
- * classification that permits the primary-port access D2 prescribes. The D2 dependency
+ * classification that permits the primary-port access this adapter needs. The dependency
  * direction is unchanged and still correct.
  */
 @OrisIntegrationComponent
@@ -117,8 +117,7 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
      * signal today. {@code getEventList} returns no version field, and
      * {@code EventDetails.version()} is only available after the full read this token
      * exists to avoid — reading it would not save anything. The engine falls back to a
-     * full read on every pass, as it does for any adapter without a token
-     * (design.md D3).
+     * full read on every pass, as it does for any adapter without a token.
      */
     @Override
     public Optional<ExternalVersionToken> externalVersion(String externalId) {
@@ -193,8 +192,8 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
     /**
      * Builds a new {@link Event} from the ORIS projection {@code readExternal} already
      * produced, applies the auto-mapped event type, and saves it — the "no pairing"
-     * branch of {@code pullAndEnroll} (design.md "Domain Changes", D2). Moved out of
-     * {@code OrisEventImportService.importEventFromOris} (Migration Plan step 3);
+     * branch of {@code pullAndEnroll}. Moved out of
+     * {@code OrisEventImportService.importEventFromOris};
      * {@code orisId} and {@code resolvedEventTypeId} travel on the projection itself
      * because the engine hands this method only the projection, not the external id.
      */

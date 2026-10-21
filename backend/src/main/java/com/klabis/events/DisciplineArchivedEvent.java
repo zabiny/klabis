@@ -11,7 +11,7 @@ import java.util.UUID;
  * Domain event published when a Discipline is archived.
  *
  * <p>Consumed by {@code DisciplineSyncListener} to retire the discipline's sync
- * pairing with ORIS (design.md D8 of {@code sync-oris-disciplines}) — a no-op when
+ * pairing with ORIS — a no-op when
  * the discipline was never paired (manually created).
  *
  * <p>Domain events are immutable and represent facts that have already occurred.

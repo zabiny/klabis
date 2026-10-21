@@ -3,7 +3,7 @@ package com.klabis.members.infrastructure.orissync;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Operational configuration for {@link MemberDiscoveryJob} (design.md D7). Kept
+ * Operational configuration for {@link MemberDiscoveryJob}. Kept
  * separate from {@code com.klabis.sync.application.SyncProperties} and from
  * {@code com.klabis.events.infrastructure.orissync.DisciplinesProperties} deliberately
  * — member discovery runs on its own schedule, independent of both, following the same

@@ -85,7 +85,7 @@ class MemberOrisImportEnabledApiTest {
     }
 
     @Nested
-    @DisplayName("importFromOris affordance on GET /api/members (design.md D11)")
+    @DisplayName("importFromOris affordance on GET /api/members")
     class ImportFromOrisAffordanceTests {
 
         private void givenEmptyMemberList() {

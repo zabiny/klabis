@@ -10,11 +10,6 @@ import com.klabis.events.EventId;
  */
 public class EventNotFoundException extends ResourceNotFoundException {
 
-    /**
-     * Creates a new EventNotFoundException.
-     *
-     * @param eventId the ID of the event that was not found
-     */
     public EventNotFoundException(EventId eventId) {
         super("Event not found with ID: " + eventId);
     }

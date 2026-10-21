@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 /**
  * Discovers ORIS disciplines Klabis has never seen and enrols them for
- * synchronisation (design.md D4). The only mechanism able to bring in a
+ * synchronisation. The only mechanism able to bring in a
  * {@code Discipline} nobody has named explicitly: unlike an ORIS event, which is
  * always imported by an admin naming a specific ORIS id, nobody names "ORIS
  * discipline 7" — the engine has no built-in "list the external system and enrol
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * <p>
  * Runs on its own {@code klabis.disciplines.discovery-cron} schedule
  * ({@link DisciplinesProperties}), independent of the sync engine's own
- * {@code klabis.sync.scan-cron}/{@code due-scan-interval} (design.md D4): disciplines
+ * {@code klabis.sync.scan-cron}/{@code due-scan-interval}: disciplines
  * change far less often than events, and an already-discovered (paired) discipline is
  * kept current by the engine's existing scan regardless — this job only ever handles
  * ids it has never paired before.

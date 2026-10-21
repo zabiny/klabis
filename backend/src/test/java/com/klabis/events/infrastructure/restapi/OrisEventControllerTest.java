@@ -131,7 +131,7 @@ class OrisEventControllerTest {
         }
 
         @Test
-        @DisplayName("should return 201 with Location header on repeated import instead of 409 (design.md D10, task 9.5)")
+        @DisplayName("should return 201 with Location header on repeated import instead of 409")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn201OnRepeatedImport() throws Exception {
             Event existingEvent = EventTestDataBuilder.anEvent().withName("Already Imported Race").build();
@@ -148,7 +148,7 @@ class OrisEventControllerTest {
         }
 
         @Test
-        @DisplayName("should return 409 pointing at the synchronisation resource when the event awaits a decision (design.md D10, task 9.3)")
+        @DisplayName("should return 409 pointing at the synchronisation resource when the event awaits a decision")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn409WhenImportedEventNeedsResolution() throws Exception {
             when(orisEventImportPort.importEventFromOris(9876))
@@ -260,7 +260,7 @@ class OrisEventControllerTest {
         }
 
         @Test
-        @DisplayName("should report CONFLICT and FAILED records separately from failureCount (design.md D18)")
+        @DisplayName("should report CONFLICT and FAILED records separately from failureCount")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_MANAGE})
         void shouldReportAwaitingDecisionAndStoppedByFailureSeparately() throws Exception {
             EventId conflictedId = EventId.generate();

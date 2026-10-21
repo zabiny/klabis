@@ -1,7 +1,7 @@
 package com.klabis.members.application;
 
 /**
- * Lets a primary adapter trigger an ORIS member discovery pass (design.md D11) without
+ * Lets a primary adapter trigger an ORIS member discovery pass without
  * depending on {@code MemberDiscoveryJob} directly, which is classified
  * {@code @Application}. The only implementation is profile-gated to {@code oris}
  * ({@code @OrisIntegrationComponent}), so callers hold it as {@code Optional}.

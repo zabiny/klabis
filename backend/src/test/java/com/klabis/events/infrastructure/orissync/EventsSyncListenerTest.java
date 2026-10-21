@@ -41,7 +41,7 @@ class EventsSyncListenerTest {
     }
 
     @Test
-    @DisplayName("marks the record dirty on EventUpdatedEvent with MANUAL origin (task 8.2)")
+    @DisplayName("marks the record dirty on EventUpdatedEvent with MANUAL origin")
     void marksDirtyOnEventUpdated() {
         listener.handle(eventUpdatedEvent(UpdateOrigin.MANUAL));
 
@@ -61,7 +61,7 @@ class EventsSyncListenerTest {
     }
 
     @Test
-    @DisplayName("retires the record on EventFinishedEvent (task 8.1)")
+    @DisplayName("retires the record on EventFinishedEvent")
     void retiresOnEventFinished() {
         EventFinishedEvent event = new EventFinishedEvent(UUID.randomUUID(), eventId, Instant.now());
         SyncRecordId recordId = SyncRecordId.newId();
@@ -74,7 +74,7 @@ class EventsSyncListenerTest {
     }
 
     @Test
-    @DisplayName("retires the record on EventCancelledEvent (task 8.1)")
+    @DisplayName("retires the record on EventCancelledEvent")
     void retiresOnEventCancelled() {
         EventCancelledEvent event = new EventCancelledEvent(UUID.randomUUID(), eventId, Instant.now());
         SyncRecordId recordId = SyncRecordId.newId();

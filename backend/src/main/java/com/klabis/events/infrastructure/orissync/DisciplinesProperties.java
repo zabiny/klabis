@@ -3,7 +3,7 @@ package com.klabis.events.infrastructure.orissync;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Operational configuration for {@link DisciplineDiscoveryJob} (design.md D4). Kept
+ * Operational configuration for {@link DisciplineDiscoveryJob}. Kept
  * separate from {@code com.klabis.sync.application.SyncProperties} deliberately —
  * discipline discovery runs on its own schedule, independent of the sync engine's
  * {@code klabis.sync.scan-cron}/{@code due-scan-interval} — following the same

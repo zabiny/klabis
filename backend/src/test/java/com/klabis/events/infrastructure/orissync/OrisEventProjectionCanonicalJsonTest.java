@@ -13,8 +13,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Regression pin for {@link OrisEventProjection}'s canonical JSON form (design.md,
- * first Risk under "Risks / Trade-offs"). This test must NOT be edited to match new
+ * Regression pin for {@link OrisEventProjection}'s canonical JSON form. This test must NOT be edited to match new
  * output produced by a future change — if it fails, the projection's serialised shape
  * has drifted and that is the change being caught, not a fixture to update.
  */

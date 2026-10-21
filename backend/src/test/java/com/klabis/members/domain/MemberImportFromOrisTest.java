@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Unit tests for {@link Member#importFromOris(Member.RegisterMember)} (design.md D5, tasks.md 5.1):
+ * Unit tests for {@link Member#importFromOris(Member.RegisterMember)}:
  * unlike {@link Member#register(Member.RegisterMember)}, completeness rules are not enforced — a
  * member may be created missing any combination of {@link MissingDataItem} — but the birth-number
  * consistency rule (never allowed for a non-Czech national) still holds, since it is a consistency

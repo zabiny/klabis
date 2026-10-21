@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 /**
- * End-to-end scenarios for events on the synchronisation engine (tasks.md 8.7, 8.8):
+ * End-to-end scenarios for events on the synchronisation engine:
  * conflict raise/resolve/accept-divergence, field-ownership blindness to Klabis-owned
  * data, bulk sync skipping non-attemptable records, and retirement on finish.
  */
@@ -117,8 +117,8 @@ class OrisEventSyncScenarioIntegrationTest {
          * OrisEventImportService.importEventFromOris} was annotated {@code
          * @Transactional}, which — now that it delegates to {@code
          * SynchronizationPort#pullAndEnroll} — kept a Spring transaction open across the
-         * blocking external ORIS HTTP call, defeating design.md D8 ("no transaction
-         * spans an external call"; see {@code SynchronizationService} javadoc). Captures
+         * blocking external ORIS HTTP call, defeating the rule that "no transaction
+         * spans an external call" (see {@code SynchronizationService} javadoc). Captures
          * whether a real transaction is active from inside the mocked
          * {@code orisApiClient.getEventDetails} call, which is where {@code
          * OrisEventSyncAdapter.readExternal} performs the "external" read that
@@ -155,7 +155,7 @@ class OrisEventSyncScenarioIntegrationTest {
     }
 
     @Nested
-    @DisplayName("Pull and enrol end-to-end (task 10.1, 10.2)")
+    @DisplayName("Pull and enrol end-to-end")
     class PullAndEnrollEndToEnd {
 
         @Test
@@ -166,9 +166,8 @@ class OrisEventSyncScenarioIntegrationTest {
             stubOrisEventDetails(freshOrisId, "Autumn Classic", null);
 
             // No synchronizeNow call here, unlike setUp() — the import itself must
-            // establish the baseline and leave the pairing IN_SYNC (design.md D3,
-            // spec.md "An entity brought in from an external system is in step
-            // straight away").
+            // establish the baseline and leave the pairing IN_SYNC,
+            // as an entity brought in from an external system is in step straight away.
             Event imported = orisEventImportPort.importEventFromOris(freshOrisId);
 
             SyncRecord record = synchronizationPort.findByTarget(
@@ -199,15 +198,15 @@ class OrisEventSyncScenarioIntegrationTest {
         }
 
         @Test
-        @DisplayName("a club's own change survives a repeated import — the event ends up awaiting a decision (spec.md events, task 10.4)")
+        @DisplayName("a club's own change survives a repeated import — the event ends up awaiting a decision")
         void clubsOwnChangeSurvivesRepeatedImport() {
             editNameLocally("Manager's Correction");
             stubOrisEventDetails("ORIS Renamed It Too", null);
 
             // Calling importEventFromOris a second time — not synchronizeNow — is the
-            // exact path spec.md's "A club's own change survives a repeated import"
+            // exact path the "A club's own change survives a repeated import"
             // scenario describes: a manager re-running the import must not discard the
-            // local edit (design.md D5).
+            // local edit.
             Event reimported = orisEventImportPort.importEventFromOris(orisId);
 
             assertThat(reimported.getName()).isEqualTo("Manager's Correction");
@@ -225,7 +224,7 @@ class OrisEventSyncScenarioIntegrationTest {
     }
 
     @Nested
-    @DisplayName("Conflict lifecycle (task 8.7)")
+    @DisplayName("Conflict lifecycle")
     class ConflictLifecycle {
 
         @Test
@@ -276,7 +275,7 @@ class OrisEventSyncScenarioIntegrationTest {
 
             // The accepted divergence is a standing baseline, not a one-time pass: an
             // unrelated further ORIS change must surface a conflict again rather than
-            // silently overwriting the accepted local edit (design.md D6, D7).
+            // silently overwriting the accepted local edit.
             stubOrisEventDetails("ORIS Renamed It Yet Again", null);
             SyncRecord afterNextChange = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
@@ -295,7 +294,7 @@ class OrisEventSyncScenarioIntegrationTest {
     }
 
     @Nested
-    @DisplayName("Field ownership (task 8.7): Klabis-owned data never causes a conflict")
+    @DisplayName("Field ownership: Klabis-owned data never causes a conflict")
     class FieldOwnership {
 
         @Test
@@ -346,7 +345,7 @@ class OrisEventSyncScenarioIntegrationTest {
     }
 
     @Nested
-    @DisplayName("Bulk sync (task 8.8)")
+    @DisplayName("Bulk sync")
     class BulkSync {
 
         @Test
@@ -387,7 +386,7 @@ class OrisEventSyncScenarioIntegrationTest {
     }
 
     @Nested
-    @DisplayName("Retirement (task 8.8)")
+    @DisplayName("Retirement")
     class Retirement {
 
         @Test
@@ -417,7 +416,7 @@ class OrisEventSyncScenarioIntegrationTest {
     }
 
     @Nested
-    @DisplayName("Self-inflicted dirty marker suppression (openspec sync-skip-self-inflicted-dirty-marker, tasks 4.1-4.3)")
+    @DisplayName("Self-inflicted dirty marker suppression")
     class SelfInflictedDirtyMarkerSuppression {
 
         @Autowired

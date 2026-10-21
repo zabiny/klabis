@@ -30,10 +30,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 /**
- * Covers tasks.md 5.4 / design.md D7: bringing a member in from ORIS never sends an e-mail and
+ * Bringing a member in from ORIS never sends an e-mail and
  * always creates a {@code PENDING_ACTIVATION} user — even for a member who has no e-mail address
- * at all (no guardian, so the "at least one e-mail" completeness rule design.md D5 exempts import
- * from does not apply here).
+ * at all (no guardian, so the "at least one e-mail" completeness rule is exempted for import
+ * and does not apply here).
  */
 @SpringBootTest
 @ActiveProfiles({"test", "oris"})
@@ -85,7 +85,7 @@ class MemberOrisImportNoEmailIntegrationTest {
                 .satisfies(user -> assertThat(user.getAccountStatus()).isEqualTo(AccountStatus.PENDING_ACTIVATION));
 
         assertThat(loggingEmailService().getLastEmailSent())
-                .as("importing a member must not trigger any e-mail (design.md D7)")
+                .as("importing a member must not trigger any e-mail")
                 .isEqualTo(lastEmailBefore);
     }
 

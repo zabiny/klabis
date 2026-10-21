@@ -85,7 +85,7 @@ class MemberDiscoveryJobTest {
     }
 
     @Test
-    @DisplayName("never enrols a new member whose ORIS club membership has lapsed (D5)")
+    @DisplayName("never enrols a new member whose ORIS club membership has lapsed")
     void skipsNewMemberWithLapsedMembership() {
         stubOrisMembers(clubMember(1, "ZBM0001", false), clubMember(2, "ZBM0002", true));
         when(synchronizationPort.findByExternalReferences(
@@ -101,7 +101,7 @@ class MemberDiscoveryJobTest {
     }
 
     @Test
-    @DisplayName("never checks pairing for a lapsed member — the validity filter runs before pairing is even considered (D5)")
+    @DisplayName("never checks pairing for a lapsed member — the validity filter runs before pairing is even considered")
     void neverChecksPairingForALapsedMember() {
         stubOrisMembers(clubMember(1, "ZBM0001", false));
 
@@ -112,7 +112,7 @@ class MemberDiscoveryJobTest {
     }
 
     @Test
-    @DisplayName("does nothing and makes no ORIS call when no club key is held (D9)")
+    @DisplayName("does nothing and makes no ORIS call when no club key is held")
     void doesNothingWhenNoClubKeyHeld() {
         when(orisClubMembers.listClubMembers()).thenThrow(new ClubKeyNotSetException());
 

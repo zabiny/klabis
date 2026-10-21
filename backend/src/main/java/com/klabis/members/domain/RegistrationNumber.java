@@ -33,8 +33,6 @@ public final class RegistrationNumber {
     }
 
     /**
-     * Creates a new RegistrationNumber.
-     *
      * @param value registration number string in format XXXYYDD
      * @throws IllegalArgumentException if value is invalid
      */
@@ -68,9 +66,6 @@ public final class RegistrationNumber {
         return new RegistrationNumber(value);
     }
 
-    /**
-     * Gets the registration number value.
-     */
     public String getValue() {
         return value;
     }

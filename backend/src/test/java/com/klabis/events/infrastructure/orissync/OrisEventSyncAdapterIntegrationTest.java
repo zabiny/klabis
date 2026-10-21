@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Integration tests for {@link OrisEventSyncAdapter} wired into the real
- * synchronisation engine against a stubbed ORIS client (tasks.md 7.6).
+ * synchronisation engine against a stubbed ORIS client.
  */
 @SpringBootTest
 @ActiveProfiles({"test", "oris"})
@@ -77,7 +77,7 @@ class OrisEventSyncAdapterIntegrationTest {
         Event imported = orisEventImportPort.importEventFromOris(orisId);
         eventId = imported.getId();
 
-        // importEventFromOris already enrols the event with the engine (task 8.1) —
+        // importEventFromOris already enrols the event with the engine —
         // look up that enrolment rather than enrolling a second time, which collides
         // on the sync_record unique constraint.
         enrolled = synchronizationPort.findByTarget(

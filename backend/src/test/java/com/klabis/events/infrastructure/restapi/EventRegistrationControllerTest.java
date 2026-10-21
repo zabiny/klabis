@@ -645,7 +645,7 @@ class EventRegistrationControllerTest {
     }
 
     @Nested
-    @DisplayName("Registration Deadline Enforcement (task 4.3)")
+    @DisplayName("Registration Deadline Enforcement")
     class RegistrationDeadlineEnforcementTests {
 
         @Test

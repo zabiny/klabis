@@ -18,20 +18,16 @@ import java.util.List;
 
 /**
  * CRUD + archive/restore application service for {@link Discipline}, mirroring {@code
- * EventTypeManagementService} (design.md D7 of {@code sync-oris-disciplines}).
+ * EventTypeManagementService}.
  * <p>
  * {@link #restore} reactivates the sync pairing itself, via {@link SynchronizationPort}
  * calls inlined here, rather than calling {@code DisciplineSyncListener#reactivate}: that
  * method lives on a {@code @PrimaryAdapter} in {@code events.infrastructure.orissync},
  * and this application service must not depend on an infrastructure adapter class — only
  * on another module's primary port, exactly the same rule that already lets {@code
- * DisciplineSyncListener} itself depend on {@link SynchronizationPort} directly. Design.md
- * D8's own wording assigns this call sequence to "the controller", written before the
- * task breakdown moved CRUD orchestration into this service ahead of the REST layer
- * (task 9 vs. 9.2/9.3); keeping it here instead means the future {@code
- * DisciplineController} only needs to call {@code restore}, with no sync-specific logic
- * of its own — consistent with every other business rule in this service, not split
- * across layers.
+ * DisciplineSyncListener} itself depend on {@link SynchronizationPort} directly.
+ * Keeping the call sequence here means a controller only needs to call {@code restore},
+ * with no sync-specific logic of its own.
  */
 @Service
 class DisciplineManagementService implements DisciplineManagementPort {
@@ -78,7 +74,7 @@ class DisciplineManagementService implements DisciplineManagementPort {
                 .orElseThrow(() -> new DisciplineNotFoundException(id));
 
         // No EventType-reference guard here, unlike EventTypeManagementService.deleteEventType —
-        // archiving a Discipline never breaks a reference (D8): the FK is untouched.
+        // archiving a Discipline never breaks a reference: the FK is untouched.
         discipline.archive();
         disciplineRepository.save(discipline);
     }

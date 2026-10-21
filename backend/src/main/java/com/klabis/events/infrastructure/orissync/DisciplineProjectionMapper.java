@@ -5,7 +5,7 @@ import com.klabis.events.domain.Discipline;
 
 /**
  * Maps both sides of a {@code Discipline} synchronisation into the canonical
- * {@link DisciplineProjection} shape (design.md D3): the local
+ * {@link DisciplineProjection} shape: the local
  * {@link Discipline} aggregate, and ORIS's {@link DisciplineListEntry} (the only
  * shape {@code OrisApiClient.listDisciplines()} offers — ORIS has no
  * get-one-discipline endpoint, so {@link DisciplineSyncAdapter#readExternal} finds

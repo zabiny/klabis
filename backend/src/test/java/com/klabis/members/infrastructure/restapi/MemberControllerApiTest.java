@@ -1938,7 +1938,7 @@ class MemberControllerApiTest {
     }
 
     @Nested
-    @DisplayName("GET /api/members — list row sync link (design.md D4)")
+    @DisplayName("GET /api/members — list row sync link")
     class ListRowSyncLinkTests {
 
         private static String link(String name) {

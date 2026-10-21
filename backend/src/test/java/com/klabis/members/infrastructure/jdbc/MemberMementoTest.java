@@ -276,7 +276,7 @@ class MemberMementoTest {
         }
 
         @Test
-        @DisplayName("should preserve a null address in round-trip conversion (design.md ADDRESS)")
+        @DisplayName("should preserve a null address in round-trip conversion")
         void shouldPreserveNullAddressInRoundTripConversion() {
             // Arrange - an ORIS-imported member whose address was incomplete has no address at all
             Member original = MemberTestDataBuilder.aMember()

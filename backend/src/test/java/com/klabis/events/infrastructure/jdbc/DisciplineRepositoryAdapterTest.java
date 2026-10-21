@@ -121,7 +121,7 @@ class DisciplineRepositoryAdapterTest {
     }
 
     @Nested
-    @DisplayName("findAll(Pageable) — paginated listing (D10)")
+    @DisplayName("findAll(Pageable) — paginated listing")
     class FindAllPaged {
 
         @Test

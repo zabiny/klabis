@@ -178,7 +178,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     /**
      * Command carrying an inward write from ORIS synchronisation.
      * <p>
-     * Carries exactly the fields ORIS owns — see design.md D2/D3. Licences, bank account,
+     * Carries exactly the fields ORIS owns. Licences, bank account,
      * dietary requirements and the suspension block are not expressible here, so a synchronisation
      * cannot touch them even by mistake. Each field is written unconditionally by
      * {@link #syncFromOris(SyncFromOris)}, including when it is {@code null}: protecting a
@@ -340,7 +340,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     }
 
     /**
-     * Registers a hand-filled member, which must be complete (design.md D5). Contacts and legal guardians of
+     * Registers a hand-filled member, which must be complete. Contacts and legal guardians of
      * a minor are not known yet at this point - they are set on the legal guardian group afterwards - so for
      * a minor the e-mail, telephone and guardian requirements are the caller's to enforce, while an adult's
      * own contacts are enforced here.
@@ -371,8 +371,8 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     }
 
     /**
-     * Registers a member whose data comes from ORIS rather than a hand-filled form (design.md
-     * D5), used only by {@code RegistrationPort.importMember}. Unlike {@link #register}, no
+     * Registers a member whose data comes from ORIS rather than a hand-filled form, used only by {@code
+     * RegistrationPort.importMember}. Unlike {@link #register}, no
      * completeness rule is enforced here: ORIS never holds a legal guardian and often lacks contact
      * details, and the goal is to bring every current club member in regardless. The consistency
      * rule — a birth number is never accepted for a non-Czech national — still holds, since it is
@@ -381,7 +381,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     public static Member importFromOris(RegisterMember command) {
         validateStructure(command);
 
-        // Consistency rule: always enforced, even when completeness is not (design.md D5)
+        // Consistency rule: always enforced, even when completeness is not
         validateBirthNumberConsistency(command.personalInformation().getNationalityCode(), command.birthNumber());
 
         return buildFrom(command, GuardianContacts.NONE);
@@ -391,8 +391,8 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         Assert.notNull(command.id(), "Member ID is required");
         Assert.notNull(command.registrationNumber(), "Registration number is required");
         Assert.notNull(command.personalInformation(), "Personal information is required");
-        // Address is no longer required here: an ORIS import may bring a member in without one
-        // (design.md D5/ADDRESS), and register() enforces it separately through
+        // Address is no longer required here: an ORIS import may bring a member in without one, and
+        // register() enforces it separately through
         // enforceCompleteness so the exception type/message a hand registration sees is unchanged.
     }
 
@@ -434,7 +434,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
 
     /**
      * Validates birth number/nationality consistency: a birth number is forbidden for non-Czech
-     * nationals. This rule always holds, independent of completeness (design.md D3/D5) — unlike
+     * nationals. This rule always holds, independent of completeness — unlike
      * the requirement that a Czech national *have* a birth number, which is a completeness rule
      * (see {@link MissingDataItem#BIRTH_NUMBER}).
      *
@@ -466,7 +466,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     }
 
     /**
-     * Enforces full completeness (design.md D5) — used by {@link #register(RegisterMember)}, where
+     * Enforces full completeness — used by {@link #register(RegisterMember)}, where
      * every missing item is a violation. Exception types and messages match the pre-completeness
      * validation methods this replaced, so the registration form's behaviour is unchanged.
      */
@@ -492,7 +492,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     }
 
     /**
-     * Enforces the never-worsen rule (design.md D5) — used by {@link #update(UpdateMember)}. Only
+     * Enforces the never-worsen rule — used by {@link #update(UpdateMember)}. Only
      * an item that becomes missing as a result of the edit is a violation; an item that was already
      * missing before the edit may remain missing (an incomplete member may be saved with unrelated
      * changes, or with only some missing items filled in).
@@ -648,7 +648,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         // Consistency rule: always enforced, regardless of completeness
         validateBirthNumberConsistency(newPersonalInfo.getNationalityCode(), newBirthNumber);
 
-        // Never-worsen rule: an edit may only fill in missing data, never add to it (design.md D5). The one
+        // Never-worsen rule: an edit may only fill in missing data, never add to it. The one
         // exception is a corrected date of birth turning an adult into a minor, who then lacks a guardian.
         Set<MissingDataItem> missingBefore = MemberCompleteness.missingData(this, guardians);
         Set<MissingDataItem> missingAfter = MemberCompleteness.missingData(command.email(), command.phone(),
@@ -681,7 +681,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     /**
      * Applies an inward write from ORIS synchronisation, overwriting every ORIS-owned field.
      * <p>
-     * Distinct from {@link #update(UpdateMember)} on purpose (design.md D3): a synchronisation has
+     * Distinct from {@link #update(UpdateMember)} on purpose: a synchronisation has
      * no {@link UserId} to attribute a birth-number access to, so this method does not publish
      * {@link BirthNumberAccessedEvent} even when the birth number changes. It also cannot touch
      * licences, bank account, dietary requirements or the suspension block — those fields
@@ -699,7 +699,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
                 command.nationality() != null ? command.nationality().code() : null,
                 command.gender());
 
-        // Completeness rules are dropped for ORIS-owned fields (design.md D5): ORIS is the
+        // Completeness rules are dropped for ORIS-owned fields: ORIS is the
         // authority, so a synchronisation may leave the member incomplete rather than being
         // refused or holding on to a stale value. Only the consistency rule survives — a birth
         // number is never accepted for a non-Czech national.

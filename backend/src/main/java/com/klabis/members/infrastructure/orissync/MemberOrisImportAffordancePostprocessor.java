@@ -18,7 +18,7 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 /**
  * Adds the importFromOris affordance to the member list's self link, but only while a club key
- * is held (design.md D11) — without one the action could not do anything, so it must not be
+ * is held — without one the action could not do anything, so it must not be
  * offered even to a caller holding SYNC:MANAGE. {@code klabisAfford} already withholds the
  * affordance from a caller lacking SYNC:MANAGE, so this postprocessor only adds the second,
  * state-dependent condition.

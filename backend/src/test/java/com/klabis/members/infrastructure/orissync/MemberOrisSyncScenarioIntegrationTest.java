@@ -35,11 +35,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 /**
- * End-to-end scenario for tasks.md 12.1: a club key is supplied, discovery brings in a
+ * End-to-end scenario: a club key is supplied, discovery brings in a
  * valid ORIS member, the member appears in Klabis with the ORIS registration number,
  * and a later ORIS change reaches the member record — mirroring
  * {@link com.klabis.events.infrastructure.orissync.OrisEventSyncScenarioIntegrationTest}'s
- * shape for the members module (design.md D1, D4, D6, D7).
+ * shape for the members module.
  */
 @SpringBootTest
 @ActiveProfiles({"test", "oris"})
@@ -126,7 +126,7 @@ class MemberOrisSyncScenarioIntegrationTest {
     }
 
     @Test
-    @DisplayName("a complete member loses their phone in ORIS and becomes incomplete without failing the sync pass (design.md D5/6.2)")
+    @DisplayName("a complete member loses their phone in ORIS and becomes incomplete without failing the sync pass")
     void losingPhoneInOrisMakesTheMemberIncompleteWithoutFailingSync() {
         stubClubMembers(orisClubMember(orisId, regNum, "Jan", "Novák", "700000001"));
         memberDiscoveryJob.discoverNewMembers();
@@ -145,7 +145,7 @@ class MemberOrisSyncScenarioIntegrationTest {
     }
 
     @Test
-    @DisplayName("ORIS supplying a previously missing birth number makes the member complete again (design.md D5/6.2)")
+    @DisplayName("ORIS supplying a previously missing birth number makes the member complete again")
     void orisSupplyingMissingBirthNumberMakesTheMemberComplete() {
         stubClubMembers(orisClubMemberWithoutBirthNumber(orisId, regNum, "Jan", "Novák"));
         memberDiscoveryJob.discoverNewMembers();

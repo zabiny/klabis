@@ -17,7 +17,7 @@ class AccommodationListCsvRendererTest {
         renderer = new AccommodationListCsvRenderer();
     }
 
-    // --- Task 1.2 + 1.3: delimiter, header row, one row per member, combined address ---
+    // --- delimiter, header row, one row per member, combined address ---
 
     @Test
     void shouldRenderCsvWithSemicolonDelimiter() {
@@ -90,7 +90,7 @@ class AccommodationListCsvRendererTest {
         assertThat(dataRow).endsWith(";10000 Praha");
     }
 
-    // --- Task 1.4 + 1.5: null values produce empty cells ---
+    // --- null values produce empty cells ---
 
     @Test
     void shouldRenderEmptyCellForMissingIdentityCardNumber() {
@@ -126,7 +126,7 @@ class AccommodationListCsvRendererTest {
         assertThat(csv).doesNotContain("neuvedeno");
     }
 
-    // --- Task 1.6: UTF-8 BOM prefix ---
+    // --- UTF-8 BOM prefix ---
 
     @Test
     void shouldStartWithUtf8Bom() {

@@ -1221,7 +1221,7 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("should include sync link when the event is enrolled in synchronisation (task 8.6)")
+        @DisplayName("should include sync link when the event is enrolled in synchronisation")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE, Authority.SYNC_MANAGE})
         void shouldIncludeSyncLinkWhenEnrolled() throws Exception {
             UUID eventId = UUID.randomUUID();
@@ -2334,7 +2334,7 @@ class EventControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/events — list item extended fields and links (tasks 3.6, 3.7)")
+    @DisplayName("GET /api/events — list item extended fields and links")
     class ListEventsExtendedFieldsTests {
 
         @Test
@@ -2497,7 +2497,7 @@ class EventControllerTest {
         }
 
         @Test
-        @DisplayName("status field returned for regular users without EVENTS:MANAGE — ungated since D4")
+        @DisplayName("status field returned for regular users without EVENTS:MANAGE — ungated")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ})
         void shouldShowStatusFieldForRegularUsers() throws Exception {
             Event event = EventTestDataBuilder.anEvent().buildPublished();
@@ -2511,7 +2511,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList[0].status").value("ACTIVE"))
                     // The ungated status field must not change the list envelope, and the frontend
-                    // still needs an authority signal to gate the status column (design D5).
+                    // still needs an authority signal to gate the status column.
                     .andExpect(jsonPath("$._embedded.eventSummaryDtoList").isArray())
                     .andExpect(jsonPath("$.page").exists())
                     .andExpect(jsonPath("$._links.self.href").exists())
@@ -2538,7 +2538,7 @@ class EventControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/events — filter parameter wiring (tasks 3.1-3.7)")
+    @DisplayName("GET /api/events — filter parameter wiring")
     class ListEventsFilterParamTests {
 
         @Test
@@ -2828,7 +2828,7 @@ class EventControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /api/events — list row sync link (design.md D4)")
+    @DisplayName("GET /api/events — list row sync link")
     class ListRowSyncLinkTests {
 
         private static String link(String name) {

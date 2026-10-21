@@ -71,7 +71,7 @@ public class Discipline extends KlabisAggregateRoot<Discipline, DisciplineId> {
     }
 
     /**
-     * Soft-deletes the discipline (design.md D8 of {@code sync-oris-disciplines}).
+     * Soft-deletes the discipline.
      * Unlike {@code EventType.delete}, this never refuses regardless of how many
      * {@code EventType}s still reference this discipline's id — the FK is never
      * touched by archiving, so every existing reference stays valid.
@@ -83,7 +83,7 @@ public class Discipline extends KlabisAggregateRoot<Discipline, DisciplineId> {
 
     /**
      * Reverses {@link #archive()}. Reactivating the sync pairing (if any) is the
-     * sync engine's responsibility, not the aggregate's (D8) — this only flips the flag.
+     * sync engine's responsibility, not the aggregate's — this only flips the flag.
      */
     public void restore() {
         this.archived = false;
@@ -91,10 +91,10 @@ public class Discipline extends KlabisAggregateRoot<Discipline, DisciplineId> {
 
     /**
      * Overwrites {@code code}/{@code name} from the paired ORIS record
-     * ({@code DisciplineSyncAdapter.applyToLocal}, design.md D3). Both fields are
+     * ({@code DisciplineSyncAdapter.applyToLocal}). Both fields are
      * ORIS-owned once a discipline is paired, so this is the only way they change
      * after creation — there is no independent manual-edit path for a paired
-     * discipline (D7).
+     * discipline.
      */
     public void update(String code, String name) {
         validateCode(code);

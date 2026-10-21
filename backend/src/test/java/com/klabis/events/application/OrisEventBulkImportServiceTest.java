@@ -38,7 +38,7 @@ class OrisEventBulkImportServiceTest {
     class ImportEventsFromOris {
 
         @Test
-        @DisplayName("should count a previously-imported event as imported, not failed (design.md D10, task 9.6)")
+        @DisplayName("should count a previously-imported event as imported, not failed")
         void shouldCountRepeatedImportAsImportedNotFailed() {
             int orisId1 = 101;
             int orisId2 = 102;
