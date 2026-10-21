@@ -7,7 +7,6 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.BirthNumberAccessedEvent;
 import com.klabis.members.MemberCreatedEvent;
 import com.klabis.members.MemberId;
-import com.klabis.members.MemberResumedEvent;
 import com.klabis.members.MemberSuspendedEvent;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -740,7 +739,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.suspensionNote = command.note();
         this.suspendedBy = command.suspendedBy();
 
-        registerEvent(MemberSuspendedEvent.fromAggregate(this, command));
+        registerEvent(MemberSuspendedEvent.fromAggregate(this));
     }
 
     /**
@@ -768,8 +767,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         this.suspendedAt = null;
         this.suspensionNote = null;
         this.suspendedBy = null;
-
-        registerEvent(MemberResumedEvent.fromAggregate(this, command));
     }
 
     /**

@@ -6,7 +6,6 @@ import com.klabis.members.MemberId;
 import com.klabis.members.MemberAssert;
 import com.klabis.members.BirthNumberAccessedEvent;
 import com.klabis.members.MemberCreatedEvent;
-import com.klabis.members.MemberResumedEvent;
 import com.klabis.members.MemberSuspendedEvent;
 import com.klabis.members.domain.MemberResumeMembershipBuilder;
 import com.klabis.members.domain.MemberSuspendMembershipBuilder;
@@ -92,17 +91,7 @@ class MemberTest {
             MemberCreatedEvent event = (MemberCreatedEvent) member.getDomainEvents().get(0);
             assertThat(event.eventId()).isNotNull();
             assertThat(event.memberId()).isEqualTo(member.getId());
-            assertThat(event.registrationNumber()).isEqualTo(registrationNumber);
-            assertThat(event.firstName()).isEqualTo("Jan");
-            assertThat(event.lastName()).isEqualTo("Novák");
             assertThat(event.dateOfBirth()).isEqualTo(dateOfBirth);
-            assertThat(event.nationality()).isEqualTo("CZ");
-            assertThat(event.gender()).isEqualTo(Gender.MALE);
-            assertThat(event.address()).isEqualTo(address);
-            assertThat(event.emailAsOptional()).isPresent().contains(email);
-            assertThat(event.phoneAsOptional()).isPresent().contains(phone);
-            assertThat(event.isMinor()).isFalse();
-            assertThat(event.getPrimaryEmail()).isEqualTo("jan.novak@example.com");
             assertThat(event.occurredAt()).isNotNull();
 
         }
@@ -126,11 +115,6 @@ class MemberTest {
                     .build());
 
             MemberAssert.assertThat(member).hasRegistrationNumber(registrationNumber);
-            MemberCreatedEvent event = (MemberCreatedEvent) member.getDomainEvents().get(0);
-            assertThat(event.isMinor()).isTrue();
-            assertThat(event.emailAsOptional()).isEmpty();
-            assertThat(event.phoneAsOptional()).isEmpty();
-            assertThat(event.getPrimaryEmail()).isNull();
         }
 
         @Test
@@ -539,25 +523,6 @@ class MemberTest {
         }
 
         @Test
-        @DisplayName("should publish MemberResumedEvent when resuming")
-        void shouldPublishEventWhenResuming() {
-            // Arrange
-            Member suspendedMember = createSuspendedMember();
-            UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.ResumeMembership command = MemberResumeMembershipBuilder.builder()
-                    .resumedBy(adminUserId).build();
-
-            // Act - clear creation event first, then resume
-            suspendedMember.clearDomainEvents();
-            suspendedMember.resume(command);
-
-            // Assert - should have MemberResumedEvent
-            assertThat(suspendedMember.getDomainEvents())
-                    .hasSize(1)
-                    .allMatch(event -> event instanceof MemberResumedEvent);
-        }
-
-        @Test
         @DisplayName("should reject resume of already active member")
         void shouldRejectResumeOfAlreadyActiveMember() {
             // Arrange
@@ -570,35 +535,6 @@ class MemberTest {
             assertThatThrownBy(() -> activeMember.resume(command))
                     .isInstanceOf(BusinessRuleViolationException.class)
                     .hasMessageContaining("already active");
-        }
-
-        @Test
-        @DisplayName("should record resume timestamp in event")
-        void shouldRecordResumeTimestampInEvent() {
-            // Arrange
-            Member suspendedMember = createSuspendedMember();
-            UserId adminUserId = new UserId(UUID.randomUUID());
-            Member.ResumeMembership command = MemberResumeMembershipBuilder.builder()
-                    .resumedBy(adminUserId).build();
-
-            var beforeResume = System.currentTimeMillis();
-
-            // Act
-            suspendedMember.clearDomainEvents();
-            suspendedMember.resume(command);
-
-            var afterResume = System.currentTimeMillis();
-
-            // Assert
-            assertThat(suspendedMember.getDomainEvents())
-                    .hasSize(1)
-                    .allMatch(event -> event instanceof MemberResumedEvent);
-
-            MemberResumedEvent event = (MemberResumedEvent) suspendedMember.getDomainEvents().get(0);
-            assertThat(event.resumedAt()).isNotNull();
-            assertThat(event.resumedAt().toEpochMilli())
-                    .isGreaterThanOrEqualTo(beforeResume)
-                    .isLessThanOrEqualTo(afterResume);
         }
     }
 

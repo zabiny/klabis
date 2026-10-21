@@ -119,18 +119,7 @@ class CalendarEventSyncIntegrationTest {
                 "https://new-url.com",
                 null
         ));
-        scenario.publish(new EventUpdatedEvent(
-                        java.util.UUID.randomUUID(),
-                        eventId,
-                        "Updated Workshop",
-                        LocalDate.of(2024, 5, 21),
-                        "New Loc",
-                        "NewOrg",
-                        WebsiteUrl.of("https://new-url.com"),
-                        java.util.List.of(),
-                        java.time.Instant.now(),
-                        UpdateOrigin.MANUAL
-                ))
+        scenario.publish(new EventUpdatedEvent(java.util.UUID.randomUUID(), eventId, java.time.Instant.now(), UpdateOrigin.MANUAL))
                 .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).stream()
                                 .filter(EventCalendarItem.class::isInstance)
                                 .findFirst().orElse(null),
@@ -243,9 +232,7 @@ class CalendarEventSyncIntegrationTest {
                     DEADLINE_DATE
             ));
 
-            scenario.publish(new EventUpdatedEvent(
-                            UUID.randomUUID(), eventId, "Jarní sprint", EVENT_DATE,
-                            "Les Brdy", "OOB", null, List.of(), java.time.Instant.now(), UpdateOrigin.MANUAL))
+            scenario.publish(new EventUpdatedEvent(UUID.randomUUID(), eventId, java.time.Instant.now(), UpdateOrigin.MANUAL))
                     .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).size() >= 2)
                     .andVerify(ignored -> {
                         List<EventCalendarItem> items = findEventItems(eventId);
@@ -289,9 +276,7 @@ class CalendarEventSyncIntegrationTest {
                     null
             ));
 
-            scenario.publish(new EventUpdatedEvent(
-                            UUID.randomUUID(), eventId, "Jarní sprint", EVENT_DATE,
-                            "Les Brdy", "OOB", null, List.of(), java.time.Instant.now(), UpdateOrigin.MANUAL))
+            scenario.publish(new EventUpdatedEvent(UUID.randomUUID(), eventId, java.time.Instant.now(), UpdateOrigin.MANUAL))
                     .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).size() == 1)
                     .andVerify(ignored -> {
                         List<EventCalendarItem> items = findEventItems(eventId);
@@ -323,9 +308,7 @@ class CalendarEventSyncIntegrationTest {
                     DEADLINE_DATE
             ));
 
-            scenario.publish(new EventUpdatedEvent(
-                            UUID.randomUUID(), eventId, newName, EVENT_DATE,
-                            "Les Brdy", "OOB", null, List.of(), java.time.Instant.now(), UpdateOrigin.MANUAL))
+            scenario.publish(new EventUpdatedEvent(UUID.randomUUID(), eventId, java.time.Instant.now(), UpdateOrigin.MANUAL))
                     .andWaitForStateChange(() -> {
                         List<EventCalendarItem> items = findEventItems(eventId);
                         return items.stream().anyMatch(i -> i.getKind() == CalendarItemKind.EVENT_DATE

@@ -4,7 +4,6 @@ import com.klabis.events.EventTestDataBuilder;
 import com.klabis.calendar.application.CalendarEventSyncPort;
 import com.klabis.events.*;
 import com.klabis.events.domain.Event;
-import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.EventStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -54,18 +53,7 @@ class EventsEventListenerTest {
     void shouldDelegateToServiceWhenEventIsUpdated() {
         // Given
         EventId eventId = EventId.of(UUID.randomUUID());
-        EventUpdatedEvent event = new EventUpdatedEvent(
-                UUID.randomUUID(),
-                eventId,
-                "Updated Spring Boot Workshop",
-                LocalDate.of(2024, 3, 15),
-                "New Prague Center",
-                "OOB",
-                WebsiteUrl.of("https://example.com/updated"),
-                List.of(),
-                Instant.now(),
-                UpdateOrigin.MANUAL
-        );
+        EventUpdatedEvent event = new EventUpdatedEvent(UUID.randomUUID(), eventId, Instant.now(), UpdateOrigin.MANUAL);
 
         // When
         testedSubject.handle(event);
@@ -79,18 +67,7 @@ class EventsEventListenerTest {
     void shouldDelegateToServiceWithNullWebsiteUrl() {
         // Given
         EventId eventId = EventId.of(UUID.randomUUID());
-        EventUpdatedEvent event = new EventUpdatedEvent(
-                UUID.randomUUID(),
-                eventId,
-                "Java Meetup",
-                LocalDate.of(2024, 4, 20),
-                "Brno Tech Hub",
-                "OOB",
-                null,
-                List.of(),
-                Instant.now(),
-                UpdateOrigin.MANUAL
-        );
+        EventUpdatedEvent event = new EventUpdatedEvent(UUID.randomUUID(), eventId, Instant.now(), UpdateOrigin.MANUAL);
 
         // When
         testedSubject.handle(event);

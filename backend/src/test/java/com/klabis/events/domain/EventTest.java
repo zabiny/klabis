@@ -16,7 +16,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -1882,55 +1881,11 @@ class EventTest {
     class DomainEvents {
 
         @Test
-        @DisplayName("should register EventCreatedEvent when event is created")
-        void shouldRegisterEventCreatedEventWhenCreated() {
-            String name = "Test Event";
-            LocalDate eventDate = LocalDate.of(2025, 7, 10);
-            MemberId coordinatorId = new MemberId(UUID.randomUUID());
+        @DisplayName("should not register any domain event when event is created")
+        void shouldNotRegisterDomainEventWhenCreated() {
+            Event event = Event.create(defaultCreateEvent());
 
-            Event event = Event.create(EventCreateEventBuilder.builder()
-                    .name(name)
-                    .eventDate(eventDate)
-                    .location("Test Location")
-                    .organizer("Test Organizer")
-                    .websiteUrl("https://test.com")
-                    .coordinators(new LinkedHashSet<>(List.of(coordinatorId)))
-                    .build());
-
-            List<Object> domainEvents = event.getDomainEvents();
-            assertThat(domainEvents)
-                    .hasSize(1)
-                    .first()
-                    .isInstanceOf(EventCreatedEvent.class);
-
-            EventCreatedEvent createdEvent = (EventCreatedEvent) domainEvents.get(0);
-            assertThat(createdEvent.eventId()).isEqualTo(event.getId());
-            assertThat(createdEvent.name()).isEqualTo(name);
-            assertThat(createdEvent.eventDate()).isEqualTo(eventDate);
-            assertThat(createdEvent.location()).isEqualTo("Test Location");
-            assertThat(createdEvent.organizer()).isEqualTo("Test Organizer");
-        }
-
-        @Test
-        @DisplayName("should carry structured categories in EventCreatedEvent")
-        void shouldCarryStructuredCategoriesInCreatedEvent() {
-            EventCategory m21 = EventCategory.create("M21");
-            EventCategory w35 = EventCategory.create("W35");
-
-            Event event = Event.create(EventCreateEventBuilder.builder()
-                    .name("Test Event")
-                    .eventDate(DEFAULT_DATE)
-                    .location("Test Location")
-                    .organizer("Test Organizer")
-                    .categories(List.of(m21, w35))
-                    .build());
-
-            EventCreatedEvent createdEvent = (EventCreatedEvent) event.getDomainEvents().get(0);
-            assertThat(createdEvent.categories())
-                    .extracting(EventCategory::id, EventCategory::name)
-                    .containsExactly(
-                            org.assertj.core.groups.Tuple.tuple(m21.id(), "M21"),
-                            org.assertj.core.groups.Tuple.tuple(w35.id(), "W35"));
+            assertThat(event.getDomainEvents()).isEmpty();
         }
 
         @Test
@@ -1992,6 +1947,7 @@ class EventTest {
         @DisplayName("should clear domain events after clearDomainEvents is called")
         void shouldClearDomainEventsAfterClear() {
             Event event = Event.create(defaultCreateEvent());
+            event.publish();
             assertThat(event.getDomainEvents()).hasSize(1);
 
             event.clearDomainEvents();
@@ -2027,55 +1983,8 @@ class EventTest {
 
             EventUpdatedEvent updatedEvent = (EventUpdatedEvent) domainEvents.get(0);
             assertThat(updatedEvent.eventId()).isEqualTo(event.getId());
-            assertThat(updatedEvent.name()).isEqualTo("Updated Event");
-            assertThat(updatedEvent.eventDate()).isEqualTo(LocalDate.of(2025, 7, 15));
-            assertThat(updatedEvent.location()).isEqualTo("Updated Location");
-            assertThat(updatedEvent.organizer()).isEqualTo("Updated Organizer");
-            assertThat(updatedEvent.websiteUrl()).isEqualTo(WebsiteUrl.of("https://updated.com"));
             assertThat(updatedEvent.occurredAt()).isNotNull();
             assertThat(updatedEvent.origin()).isEqualTo(com.klabis.events.UpdateOrigin.MANUAL);
-        }
-
-        @Test
-        @DisplayName("should carry structured categories in EventUpdatedEvent")
-        void shouldCarryStructuredCategoriesInUpdatedEvent() {
-            Event event = Event.create(defaultCreateEvent());
-            event.clearDomainEvents();
-
-            EventCategory m10 = EventCategory.create("M10");
-            event.update(EventUpdateEventBuilder.builder()
-                    .name("Updated Event")
-                    .eventDate(DEFAULT_DATE)
-                    .location("Updated Location")
-                    .organizer("Updated Organizer")
-                    .categories(List.of(m10))
-                    .build());
-
-            EventUpdatedEvent updatedEvent = (EventUpdatedEvent) event.getDomainEvents().get(0);
-            assertThat(updatedEvent.categories())
-                    .extracting(EventCategory::id, EventCategory::name)
-                    .containsExactly(org.assertj.core.groups.Tuple.tuple(m10.id(), "M10"));
-        }
-
-        @Test
-        @DisplayName("should register EventUpdatedEvent with null websiteUrl")
-        void shouldRegisterEventUpdatedEventWithNullWebsiteUrl() {
-            Event event = Event.create(EventCreateEventBuilder.builder()
-                    .name("Test Event")
-                    .eventDate(LocalDate.of(2025, 7, 10))
-                    .location("Test Location")
-                    .organizer("Test Organizer")
-                    .websiteUrl("https://test.com")
-                    .build());
-            event.clearDomainEvents();
-
-            event.update(EventUpdateEventBuilder.builder()
-                    .name("Updated Event").eventDate(LocalDate.of(2025, 7, 15))
-                    .location("Updated Location").organizer("Updated Organizer").build());
-
-            List<Object> domainEvents = event.getDomainEvents();
-            EventUpdatedEvent updatedEvent = (EventUpdatedEvent) domainEvents.get(0);
-            assertThat(updatedEvent.websiteUrl()).isNull();
         }
 
         @Test
@@ -2086,9 +1995,8 @@ class EventTest {
             event.publish(); // Adds EventPublishedEvent
 
             List<Object> domainEvents = event.getDomainEvents();
-            assertThat(domainEvents).hasSize(2);
-            assertThat(domainEvents.get(0)).isInstanceOf(EventCreatedEvent.class);
-            assertThat(domainEvents.get(1)).isInstanceOf(EventPublishedEvent.class);
+            assertThat(domainEvents).hasSize(1);
+            assertThat(domainEvents.get(0)).isInstanceOf(EventPublishedEvent.class);
         }
     }
 
@@ -2120,21 +2028,6 @@ class EventTest {
             assertThat(event.getOrganizer()).isEqualTo(organizer);
             assertThat(event.getWebsiteUrl()).isEqualTo(websiteUrl);
             assertThat(event.getStatus()).isEqualTo(EventStatus.DRAFT);
-        }
-
-        @Test
-        @DisplayName("should register EventCreatedEvent on creation")
-        void shouldRegisterEventCreatedEvent() {
-            Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
-                    .name("Test ORIS Event")
-                    .eventDate(LocalDate.of(2026, 9, 5))
-                    .location("Prague Forest")
-                    .organizer("PRG")
-                    .websiteUrl(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"))
-                    .build());
-
-            assertThat(event.getDomainEvents()).hasSize(1);
-            assertThat(event.getDomainEvents().get(0)).isInstanceOf(EventCreatedEvent.class);
         }
 
         @Test
@@ -2201,7 +2094,7 @@ class EventTest {
             assertThat(event.getOrganizer()).isEqualTo("SYN");
             assertThat(event.getWebsiteUrl()).isEqualTo(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=100"));
             assertThat(event.getCategories()).extracting(EventCategory::name).containsExactlyInAnyOrder("M21", "W35");
-            assertThat(event.getDomainEvents()).hasSize(2); // create + sync
+            assertThat(event.getDomainEvents()).hasSize(1);
             assertThat(event.getDomainEvents())
                     .anyMatch(e -> e instanceof com.klabis.events.EventUpdatedEvent);
 
@@ -2431,7 +2324,7 @@ class EventTest {
         }
 
         @Test
-        @DisplayName("should emit RegistrationEditedEvent with old and new snapshots")
+        @DisplayName("should emit RegistrationEditedEvent for the edited member")
         void shouldEmitRegistrationEditedEvent() {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber originalSiCard = SiCardNumber.of("123456");
@@ -2449,10 +2342,6 @@ class EventTest {
             RegistrationEditedEvent emitted = (RegistrationEditedEvent) domainEvents.get(0);
             assertThat(emitted.eventId()).isEqualTo(event.getId());
             assertThat(emitted.memberId()).isEqualTo(memberId);
-            assertThat(emitted.oldSiCardNumber()).isEqualTo(originalSiCard);
-            assertThat(emitted.newSiCardNumber()).isEqualTo(newSiCard);
-            assertThat(emitted.oldCategoryId()).isNull();
-            assertThat(emitted.newCategoryId()).isNull();
         }
     }
 

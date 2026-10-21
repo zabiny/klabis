@@ -1,6 +1,5 @@
 package com.klabis.groups.freegroup.infrastructure.listeners;
 
-import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.groups.freegroup.FreeGroupId;
 import com.klabis.groups.freegroup.domain.FreeGroup;
 import com.klabis.groups.freegroup.domain.FreeGroupFilter;
@@ -8,8 +7,6 @@ import com.klabis.groups.freegroup.domain.FreeGroupRepository;
 import com.klabis.groups.freegroup.domain.Invitation;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberSuspendedEvent;
-import com.klabis.members.domain.DeactivationReason;
-import com.klabis.members.domain.RegistrationNumber;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -48,14 +45,7 @@ class MemberSuspendedListenerTest {
     }
 
     private MemberSuspendedEvent suspendedEvent(MemberId memberId) {
-        return new MemberSuspendedEvent(
-                memberId,
-                new RegistrationNumber("ZBM9000"),
-                DeactivationReason.OTHER,
-                Instant.now(),
-                OWNER.toUserId(),
-                null
-        );
+        return new MemberSuspendedEvent(memberId, Instant.now());
     }
 
     @Nested
