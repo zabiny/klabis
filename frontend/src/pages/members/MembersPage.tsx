@@ -92,7 +92,7 @@ export const MembersPage = (): ReactElement => {
 
     const extraParams = useMemo((): Record<string, string> => {
         const params: Record<string, string> = {};
-        if (urlStatus) params.status = urlStatus;
+        params.status = urlStatus ?? DEFAULT_MEMBER_STATUS;
         if (urlQ && urlQ.length >= 2) params.q = urlQ;
         if (urlIncomplete) params.incomplete = 'true';
         return params;
