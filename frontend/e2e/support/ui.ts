@@ -73,6 +73,21 @@ export const section = (page: Page, name: string) => heading(page, name).locator
 
 export const displayedDate = (scope: Page | Locator, iso: string) => scope.getByText(toDisplayDate(iso), {exact: true});
 
-// Matches an amount rendered by Intl.NumberFormat('cs-CZ'), which groups thousands with a (narrow) no-break space.
-export const czechAmount = (amount: number) =>
-    new RegExp('(^|[^\\d\\s\\u00a0\\u202f])' + String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, '[\\s\\u00a0\\u202f]?') + ',00');
+// Matches an amount rendered by Intl.NumberFormat('cs-CZ'), which groups thousands with a (narrow) no-break space
+// and writes a negative amount with a minus sign (hyphen-minus or U+2212); a positive pattern also matches the
+// absolute value of a negative amount, which transaction history rows (a charge shows as a negative amount) rely on.
+export const czechAmount = (amount: number) => {
+    const grouped = String(Math.abs(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, '[\\s\\u00a0\\u202f]?');
+    return amount < 0
+        ? new RegExp(`[-\\u2212]\\s?${grouped},00`)
+        : new RegExp(`(^|[^\\d\\s\\u00a0\\u202f])${grouped},00`);
+};
+
+// Closes every open modal (warnings stay open over the page they belong to).
+export const dismissDialogs = async (page: Page) => {
+    const dialog = page.getByRole('dialog');
+    for (let open = await dialog.count(); open > 0; open = await dialog.count()) {
+        await dialog.last().getByRole('button', {name: /^(Close modal|Zavřít)$/}).first().click();
+        await expect.poll(() => dialog.count()).toBeLessThan(open);
+    }
+};
