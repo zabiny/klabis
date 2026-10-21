@@ -41,7 +41,7 @@ Feature: Member financial accounts
     Scenario: Deposit with non-positive amount is rejected
       Given member "Nulovy" is registered
       When Jan attempts to record a deposit of 0 CZK for member "Nulovy"
-      Then the transaction is refused
+      Then the transaction cannot be confirmed
       And the account of member "Nulovy" shows the balance 0 CZK
 
   Rule: A finance manager records a charge that decreases the balance
@@ -57,7 +57,7 @@ Feature: Member financial accounts
       Given member "Nulty" is registered
       And the account of member "Nulty" holds 100 CZK
       When Jan attempts to record a charge of 0 CZK for member "Nulty"
-      Then the transaction is refused
+      Then the transaction cannot be confirmed
       And the account of member "Nulty" shows the balance 100 CZK
 
   Rule: A finance manager charge is not constrained by the overdraft limit
