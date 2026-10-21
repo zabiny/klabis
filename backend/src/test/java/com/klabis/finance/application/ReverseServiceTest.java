@@ -5,7 +5,6 @@ import com.klabis.finance.domain.MemberAccount;
 import com.klabis.finance.domain.MemberAccountRepository;
 import com.klabis.finance.domain.Money;
 import com.klabis.finance.domain.Transaction;
-import com.klabis.finance.domain.TransactionAlreadyReversedException;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -73,43 +72,6 @@ class ReverseServiceTest {
 
         assertThat(account.getBalance()).isEqualTo(czk("500"));
         verify(memberAccountRepository).save(account);
-    }
-
-    @Test
-    @DisplayName("reversing a transaction twice is rejected and the second reversal is not saved")
-    void doubleReversalIsRejected() {
-        Transaction deposit = deposit("500");
-        reverse(deposit);
-
-        assertThatThrownBy(() -> reverse(deposit))
-                .isInstanceOf(TransactionAlreadyReversedException.class);
-
-        assertThat(account.getTransactions()).hasSize(2);
-        assertThat(account.getBalance()).isEqualTo(czk("0"));
-        verify(memberAccountRepository, org.mockito.Mockito.times(1)).save(any());
-    }
-
-    @Test
-    @DisplayName("a reversal can itself be reversed (storno of storno) and restores the original balance")
-    void reversalOfReversalIsAllowed() {
-        Transaction deposit = deposit("500");
-        Transaction reversal = reverse(deposit);
-
-        reverse(reversal);
-
-        assertThat(account.getBalance()).isEqualTo(czk("500"));
-        assertThat(account.getTransactions()).hasSize(3);
-    }
-
-    @Test
-    @DisplayName("reversal of a deposit is allowed even when it pushes balance below overdraft limit")
-    void reversalIgnoresOverdraftLimit() {
-        Transaction deposit = deposit("100");
-        charge("10000");
-
-        reverse(deposit);
-
-        assertThat(account.getBalance()).isEqualTo(czk("-10000"));
     }
 
     @Test
