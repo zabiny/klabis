@@ -10,13 +10,15 @@ let sequence = 0;
 const birthNumber = (dateOfBirth: string) => {
     const [year, month, day] = dateOfBirth.split('-');
     const datePart = `${year.slice(2)}${month}${day}`;
-    const serial = String((Date.now() + sequence++) % 1000).padStart(3, '0');
+    const serial = String((Math.floor(Math.random() * 1000) + sequence++) % 1000).padStart(3, '0');
     return `${datePart}/${serial}${Number(`${datePart}${serial}`) % 11 % 10}`;
 };
 
-export const ADULT_DATE_OF_BIRTH = '1990-05-17';
+// Registration numbers allow 100 members per birth year and nothing is cleaned up, so adults are spread over
+// birth years 1954-2005 (ten-digit birth numbers, always adult).
+export const adultDateOfBirth = () => `${1954 + Math.floor(Math.random() * 52)}-05-17`;
 
-export const registrationBody = (lastName: string, dateOfBirth = ADULT_DATE_OF_BIRTH) => ({
+export const registrationBody = (lastName: string, dateOfBirth = adultDateOfBirth()) => ({
     firstName: REGISTERED_FIRST_NAME,
     lastName,
     dateOfBirth,
