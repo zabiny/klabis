@@ -454,6 +454,44 @@ class EventAffordanceSupport {
         return selfLink;
     }
 
+    static Link addRegistrationAffordances(Link selfLink, RepresentationModel<?> dtoModel, Event event,
+                                           @Nullable MemberId currentMemberId,
+                                           MemberRegistrationSanctionPort sanctionPort) {
+        if (!shouldOfferRegistration(event)) {
+            return selfLink;
+        }
+        UUID eventId = event.getId().value();
+        Map<String, HalFormsOptionsDef> categoryOptions =
+                Map.of("categoryId", new HalFormsOptionsDef.Inline(categoryInlineOptions(event)));
+
+        boolean isRegistered = currentMemberId != null && event.findRegistration(currentMemberId).isPresent();
+        if (isRegistered) {
+            selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, currentMemberId.value())));
+            selfLink = selfLink.andAffordances(klabisAffordWithOptions(
+                    methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
+                    categoryOptions));
+        } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
+            selfLink = selfLink.andAffordances(klabisAffordWithOptions(
+                    methodOn(EventRegistrationsApi.class).registerForEvent(eventId, null, null),
+                    categoryOptions));
+            if (currentMemberId != null) {
+                klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(currentMemberId.value(), eventId, true))
+                        .ifPresent(link -> dtoModel.add(link.withRel("newRegistration")));
+            }
+        }
+        return selfLink;
+    }
+
+    static void addCoordinatorAndEventTypeLinks(RepresentationModel<?> dtoModel, Event event) {
+        event.getCoordinators().forEach(coordinatorId ->
+                klabisLinkTo(methodOn(MembersApi.class).getMember(coordinatorId.value(), null))
+                        .ifPresent(link -> dtoModel.add(link.withRel("coordinator"))));
+
+        event.getEventTypeId().ifPresent(eventTypeId ->
+                klabisLinkTo(methodOn(EventTypesApi.class).getEventType(eventTypeId.value()))
+                        .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
+    }
+
     @Nullable
     static MemberId resolveMemberId(Authentication auth) {
         if (auth instanceof KlabisJwtAuthenticationToken token) {
@@ -512,26 +550,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
             var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event);
 
-            if (EventAffordanceSupport.shouldOfferRegistration(event)) {
-                boolean isRegistered = currentMemberId != null
-                        && event.findRegistration(currentMemberId).isPresent();
-                if (isRegistered) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, currentMemberId.value())));
-                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
-                            methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
-                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
-                    ));
-                } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
-                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
-                            methodOn(EventRegistrationsApi.class).registerForEvent(eventId, null, null),
-                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
-                    ));
-                    if (currentMemberId != null) {
-                        klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(currentMemberId.value(), eventId, true))
-                                .ifPresent(link -> dtoModel.add(link.withRel("newRegistration")));
-                    }
-                }
-            }
+            selfLink = EventAffordanceSupport.addRegistrationAffordances(selfLink, dtoModel, event, currentMemberId, sanctionPort);
 
             if (offersOrisRegistrationDiscovery(event, syncRecord)) {
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).discoverOrisRegistrations(eventId, null)));
@@ -548,13 +567,7 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     .ifPresent(link -> dtoModel.add(link.withRel("registrations").expand()));
         }
 
-        event.getCoordinators().forEach(coordinatorId ->
-                klabisLinkTo(methodOn(MembersApi.class).getMember(coordinatorId.value(), null))
-                        .ifPresent(link -> dtoModel.add(link.withRel("coordinator"))));
-
-        event.getEventTypeId().ifPresent(eventTypeId ->
-                klabisLinkTo(methodOn(EventTypesApi.class).getEventType(eventTypeId.value()))
-                        .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
+        EventAffordanceSupport.addCoordinatorAndEventTypeLinks(dtoModel, event);
 
         if (event.isSharedAccommodationEnabled()
                 && readAccess.canReadRegistrations(event.getId().value())) {
@@ -592,37 +605,12 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
             var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event);
 
-            if (EventAffordanceSupport.shouldOfferRegistration(event)) {
-                boolean isRegistered = currentMemberId != null
-                        && event.findRegistration(currentMemberId).isPresent();
-                if (isRegistered) {
-                    selfLink = selfLink.andAffordances(klabisAfford(methodOn(EventRegistrationsApi.class).unregisterFromEvent(eventId, currentMemberId.value())));
-                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
-                            methodOn(EventRegistrationsApi.class).editRegistration(eventId, currentMemberId.value(), null),
-                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
-                    ));
-                } else if (currentMemberId == null || !sanctionPort.isMemberBlocked(currentMemberId)) {
-                    selfLink = selfLink.andAffordances(klabisAffordWithOptions(
-                            methodOn(EventRegistrationsApi.class).registerForEvent(eventId, null, null),
-                            Map.of("categoryId", new HalFormsOptionsDef.Inline(EventAffordanceSupport.categoryInlineOptions(event)))
-                    ));
-                    if (currentMemberId != null) {
-                        klabisLinkTo(methodOn(EventRegistrationsApi.class).getRegistration(currentMemberId.value(), eventId, true))
-                                .ifPresent(link -> dtoModel.add(link.withRel("newRegistration")));
-                    }
-                }
-            }
+            selfLink = EventAffordanceSupport.addRegistrationAffordances(selfLink, dtoModel, event, currentMemberId, sanctionPort);
 
             dtoModel.add(selfLink);
         });
 
-        event.getCoordinators().forEach(coordinatorId ->
-                klabisLinkTo(methodOn(MembersApi.class).getMember(coordinatorId.value(), null))
-                        .ifPresent(link -> dtoModel.add(link.withRel("coordinator"))));
-
-        event.getEventTypeId().ifPresent(eventTypeId ->
-                klabisLinkTo(methodOn(EventTypesApi.class).getEventType(eventTypeId.value()))
-                        .ifPresent(link -> dtoModel.add(link.withRel("event-type"))));
+        EventAffordanceSupport.addCoordinatorAndEventTypeLinks(dtoModel, event);
 
         boolean enrolled = HalResponseContext.findContext(EnrolledEventIds.class)
                 .map(ids -> ids.contains(eventId))

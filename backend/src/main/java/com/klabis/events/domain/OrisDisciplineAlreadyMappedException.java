@@ -1,9 +1,9 @@
 package com.klabis.events.domain;
 
-import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.exceptions.ConflictException;
 import com.klabis.events.DisciplineId;
 
-public class OrisDisciplineAlreadyMappedException extends BusinessRuleViolationException {
+public class OrisDisciplineAlreadyMappedException extends ConflictException {
 
     public OrisDisciplineAlreadyMappedException(DisciplineId disciplineId) {
         super("Discipline " + disciplineId + " is already mapped to another event type");
