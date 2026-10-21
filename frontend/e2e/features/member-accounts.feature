@@ -36,7 +36,7 @@ Feature: Member financial accounts
       Given member "Horak" is registered
       When Jan records a deposit of 300 CZK for member "Horak"
       Then the account of member "Horak" shows the balance 300 CZK
-      And the history of member "Horak" lists the transaction of 300 CZK
+      And the history of member "Horak" lists the deposit of 300 CZK
 
     Scenario: Deposit with non-positive amount is rejected
       Given member "Nulovy" is registered
@@ -51,7 +51,7 @@ Feature: Member financial accounts
       And the account of member "Benes" holds 500 CZK
       When Jan records a charge of 200 CZK for member "Benes"
       Then the account of member "Benes" shows the balance 300 CZK
-      And the history of member "Benes" lists the transaction of 200 CZK
+      And the history of member "Benes" lists the charge of 200 CZK
 
     Scenario: Charge with non-positive amount is rejected
       Given member "Nulty" is registered

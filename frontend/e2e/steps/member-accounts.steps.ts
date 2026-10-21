@@ -2,7 +2,7 @@ import {expect, type Page} from '@playwright/test';
 import {createBdd} from 'playwright-bdd';
 import {test} from '../support/fixtures';
 import {memberIdentity} from '../support/halApi';
-import {chargeFrom, depositTo, findMemberPath} from '../support/membersApi';
+import {chargeFrom, depositTo, findMemberPath, REGISTERED_FIRST_NAME} from '../support/membersApi';
 import {expectActing, personas, type Persona} from '../support/personas';
 import {action, click, czechAmount, heading, openFromMenu} from '../support/ui';
 import {memberRow, openMemberDetail, searchMembers} from './members.steps';
@@ -16,6 +16,9 @@ const openMemberAccount = async (page: Page, lastName: string) => {
     await click(page, 'Účet');
     await expect(heading(page, 'Historie transakcí')).toBeVisible();
 };
+
+const expectAccountOwner = (page: Page, lastName: string) =>
+    expect(page.getByText(`${REGISTERED_FIRST_NAME} ${lastName}`).first()).toBeVisible();
 
 const openTransactionDialog = async (page: Page, lastName: string, tab: string, amount: number) => {
     await searchMembers(page, lastName);
@@ -96,8 +99,9 @@ Then('the transaction is refused', async ({page}) => {
     await expect(page.getByRole('dialog').getByRole('button', {name: /^(Připsání vkladu|Stržení částky)$/}).last()).toBeDisabled();
 });
 
-Then('{persona} is not offered to open the account of member {name}', async ({page, currentRole}, persona: Persona, _lastName: string) => {
+Then('{persona} is not offered to open the account of member {name}', async ({page, currentRole}, persona: Persona, lastName: string) => {
     expectActing(currentRole, persona);
+    await expect(heading(page, `${REGISTERED_FIRST_NAME} ${lastName}`)).toBeVisible();
     await expect(page.getByRole('button', {name: 'Účet', exact: true})).toHaveCount(0);
 });
 
@@ -119,11 +123,21 @@ Then('the account of member {name} shows the balance {int} CZK', async ({page}, 
     await expect(balanceCard(page).getByText(czechAmount(amount))).toBeVisible();
 });
 
-Then('the history of member {name} lists the transaction of {int} CZK', async ({page}, _lastName: string, amount: number) => {
-    await expect(page.getByRole('row').filter({hasText: czechAmount(amount)}).first()).toBeVisible();
+const expectHistoryRow = async (page: Page, lastName: string, type: string, amount: number) => {
+    await expectAccountOwner(page, lastName);
+    await expect(page.getByRole('row').filter({hasText: type}).filter({hasText: czechAmount(amount)}).first()).toBeVisible();
+};
+
+Then('the history of member {name} lists the deposit of {int} CZK', async ({page}, lastName: string, amount: number) => {
+    await expectHistoryRow(page, lastName, 'Vklad', amount);
 });
 
-Then('the history of member {name} marks the reversal of the deposit of {int} CZK', async ({page}, _lastName: string, amount: number) => {
+Then('the history of member {name} lists the charge of {int} CZK', async ({page}, lastName: string, amount: number) => {
+    await expectHistoryRow(page, lastName, 'Výdaj', amount);
+});
+
+Then('the history of member {name} marks the reversal of the deposit of {int} CZK', async ({page}, lastName: string, amount: number) => {
+    await expectAccountOwner(page, lastName);
     await expect(page.getByRole('row').filter({hasText: /Storno(?!vá)/}).filter({hasText: czechAmount(amount)})).toBeVisible();
     await expect(page.getByRole('row').filter({hasText: 'Stornováno'}).filter({hasText: czechAmount(amount)})).toBeVisible();
 });
