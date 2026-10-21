@@ -57,9 +57,7 @@ class EventsSyncListenerTest {
     }
 
     private EventUpdatedEvent eventUpdatedEvent(UpdateOrigin origin) {
-        return new EventUpdatedEvent(
-                UUID.randomUUID(), eventId, "Sprint", java.time.LocalDate.now(),
-                "Location", "Organizer", null, java.util.List.of(), Instant.now(), origin);
+        return new EventUpdatedEvent(UUID.randomUUID(), eventId, Instant.now(), origin);
     }
 
     @Test

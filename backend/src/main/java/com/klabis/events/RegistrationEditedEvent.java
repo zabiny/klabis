@@ -1,8 +1,6 @@
 package com.klabis.events;
 
 import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventRegistration;
-import com.klabis.events.domain.SiCardNumber;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.event.annotation.DomainEvent;
@@ -17,10 +15,6 @@ public record RegistrationEditedEvent(
         UUID occurrenceId,
         EventId eventId,
         MemberId memberId,
-        SiCardNumber oldSiCardNumber,
-        EventCategoryId oldCategoryId,
-        SiCardNumber newSiCardNumber,
-        EventCategoryId newCategoryId,
         Instant occurredAt,
         UpdateOrigin origin
 ) {
@@ -33,20 +27,7 @@ public record RegistrationEditedEvent(
         Objects.requireNonNull(origin, "Update origin is required");
     }
 
-    public static RegistrationEditedEvent fromAggregate(Event event, MemberId memberId,
-                                                         EventRegistration oldRegistration,
-                                                         EventRegistration newRegistration,
-                                                         UpdateOrigin origin) {
-        return new RegistrationEditedEvent(
-                UUID.randomUUID(),
-                event.getId(),
-                memberId,
-                oldRegistration.siCardNumber(),
-                oldRegistration.categoryId(),
-                newRegistration.siCardNumber(),
-                newRegistration.categoryId(),
-                Instant.now(),
-                origin
-        );
+    public static RegistrationEditedEvent fromAggregate(Event event, MemberId memberId, UpdateOrigin origin) {
+        return new RegistrationEditedEvent(UUID.randomUUID(), event.getId(), memberId, Instant.now(), origin);
     }
 }

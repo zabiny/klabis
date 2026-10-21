@@ -62,8 +62,7 @@ class EventRegistrationsSyncListenerTest {
     }
 
     private RegistrationEditedEvent edited(UpdateOrigin origin) {
-        return new RegistrationEditedEvent(UUID.randomUUID(), eventId, memberId, null, null, null, null,
-                Instant.now(), origin);
+        return new RegistrationEditedEvent(UUID.randomUUID(), eventId, memberId, Instant.now(), origin);
     }
 
     private MemberUnregisteredFromEventEvent unregistered(UpdateOrigin origin) {

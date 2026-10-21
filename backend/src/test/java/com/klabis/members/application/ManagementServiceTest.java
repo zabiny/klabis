@@ -260,9 +260,6 @@ class ManagementServiceTest {
 
                 MemberSuspendedEvent suspensionEvent = (MemberSuspendedEvent) event;
                 assertThat(suspensionEvent.memberId()).isEqualTo(new MemberId(testMemberId));
-                assertThat(suspensionEvent.reason()).isEqualTo(DeactivationReason.OTHER);
-                assertThat(suspensionEvent.suspendedBy()).isEqualTo(new UserId(adminUserId));
-                assertThat(suspensionEvent.note()).isEqualTo("Administrative decision");
             }
         }
 
@@ -806,29 +803,6 @@ class ManagementServiceTest {
             verify(userService).resumeUser(testSuspendedMember.getId().toUserId());
         }
 
-        @Test
-        @DisplayName("should publish MemberResumedEvent on successful resume")
-        void shouldPublishMemberResumedEventOnSuccessfulResume() {
-            when(memberRepository.findById(new MemberId(testMemberId))).thenReturn(Optional.of(testSuspendedMember));
-            when(memberRepository.save(any(Member.class))).thenAnswer(inv -> inv.getArgument(0));
-
-            var command = MemberResumeMembershipBuilder.builder().resumedBy(new UserId(adminUserId)).build();
-            testedSubject.resumeMember(new MemberId(testMemberId), command);
-
-            ArgumentCaptor<Member> captor = ArgumentCaptor.forClass(Member.class);
-            verify(memberRepository).save(captor.capture());
-
-            Member saved = captor.getValue();
-            assertThat(saved.getDomainEvents()).hasSize(1);
-
-            Object event = saved.getDomainEvents().get(0);
-            assertThat(event).isInstanceOf(MemberResumedEvent.class);
-
-            MemberResumedEvent resumeEvent = (MemberResumedEvent) event;
-            assertThat(resumeEvent.memberId()).isEqualTo(new MemberId(testMemberId));
-            assertThat(resumeEvent.resumedBy()).isEqualTo(new UserId(adminUserId));
-            assertThat(resumeEvent.registrationNumber()).isEqualTo(testSuspendedMember.getRegistrationNumber());
-        }
     }
 
     @Nested

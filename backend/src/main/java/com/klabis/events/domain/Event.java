@@ -413,8 +413,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 null
         );
 
-        event.registerEvent(EventCreatedEvent.fromAggregate(event));
-
         return event;
     }
 
@@ -455,8 +453,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 SiPolicy.defaultPolicy(),
                 null
         );
-
-        event.registerEvent(EventCreatedEvent.fromAggregate(event));
 
         return event;
     }
@@ -848,8 +844,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
                 .build());
         registrations.remove(current);
         registrations.add(updated);
-        registerEvent(RegistrationEditedEvent.fromAggregate(this, memberId, current, updated,
-                UpdateOrigin.SYNCHRONISATION));
+        registerEvent(RegistrationEditedEvent.fromAggregate(this, memberId, UpdateOrigin.SYNCHRONISATION));
     }
 
     /**
@@ -939,7 +934,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         registrations.remove(current);
         registrations.add(updated);
 
-        registerEvent(RegistrationEditedEvent.fromAggregate(this, memberId, current, updated, UpdateOrigin.MANUAL));
+        registerEvent(RegistrationEditedEvent.fromAggregate(this, memberId, UpdateOrigin.MANUAL));
     }
 
     private void assertRegistrationsOpen() {

@@ -147,7 +147,7 @@ class MemberRegistrationE2ETest {
 class CalendarUpdateOnEventChangeTest {
     @Test
     void event_change_creates_calendar_item(Scenario scenario) {
-        scenario.publish(new EventCreatedEvent(...))
+        scenario.publish(new EventPublishedEvent(...))
                 .andWaitForStateChange(() -&gt; calendarRepo.findByEventId(...))
                 .andVerify(item -&gt; assertThat(item).isPresent());
     }

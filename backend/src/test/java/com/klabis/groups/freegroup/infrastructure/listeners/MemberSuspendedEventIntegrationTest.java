@@ -10,8 +10,6 @@ import com.klabis.members.ActiveMembersByAgeProvider;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberSuspendedEvent;
 import com.klabis.members.Members;
-import com.klabis.members.domain.DeactivationReason;
-import com.klabis.members.domain.RegistrationNumber;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,14 +48,7 @@ class MemberSuspendedEventIntegrationTest {
         group.invite(OWNER, INVITEE);
         FreeGroup saved = freeGroupRepository.save(group);
 
-        MemberSuspendedEvent suspendedEvent = new MemberSuspendedEvent(
-                INVITEE,
-                new RegistrationNumber("ZBM9000"),
-                DeactivationReason.OTHER,
-                Instant.now(),
-                OWNER.toUserId(),
-                null
-        );
+        MemberSuspendedEvent suspendedEvent = new MemberSuspendedEvent(INVITEE, Instant.now());
 
         scenario.publish(suspendedEvent)
                 .andWaitForStateChange(() -> freeGroupRepository
@@ -90,14 +81,7 @@ class MemberSuspendedEventIntegrationTest {
         group.invite(OWNER, INVITEE);
         FreeGroup saved = freeGroupRepository.save(group);
 
-        MemberSuspendedEvent suspendedEvent = new MemberSuspendedEvent(
-                INVITEE,
-                new RegistrationNumber("ZBM9000"),
-                DeactivationReason.OTHER,
-                Instant.now(),
-                OWNER.toUserId(),
-                null
-        );
+        MemberSuspendedEvent suspendedEvent = new MemberSuspendedEvent(INVITEE, Instant.now());
 
         scenario.publish(suspendedEvent)
                 .andWaitForStateChange(() -> {
