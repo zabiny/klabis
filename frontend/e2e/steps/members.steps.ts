@@ -191,7 +191,8 @@ Then('member {name} is suspended', async ({page}, lastName: string) => {
     await expect(page.getByText('Neaktivní', {exact: true}).first()).toBeVisible();
 });
 
-Then('the detail of member {name} shows the suspension with note {string}', async ({page}, _lastName: string, note: string) => {
+Then('the detail of member {name} shows the suspension with note {string}', async ({page}, lastName: string, note: string) => {
+    await expect(heading(page, `${REGISTERED_FIRST_NAME} ${lastName}`)).toBeVisible();
     await expect(heading(page, 'DEAKTIVACE')).toBeVisible();
     await expect(page.getByText(note, {exact: true})).toBeVisible();
 });
@@ -212,12 +213,14 @@ Then('the detail of member {name} lists {name} as legal guardian', async ({page}
     await expect(page.getByText(guardian).first()).toBeVisible();
 });
 
-Then('{persona} is not offered to edit the profile of member {name}', async ({page, currentRole}, persona: Persona, _lastName: string) => {
+Then('{persona} is not offered to edit the profile of member {name}', async ({page, currentRole}, persona: Persona, lastName: string) => {
     expectActing(currentRole, persona);
+    await expect(heading(page, `${REGISTERED_FIRST_NAME} ${lastName}`)).toBeVisible();
     await expect(page.getByRole('button', {name: /^Upravit/})).toHaveCount(0);
 });
 
-Then('the suspension is blocked because member {name} is the last owner of training group {name}', async ({page}, _lastName: string, groupName: string) => {
+Then('the suspension is blocked because member {name} is the last owner of training group {name}', async ({page}, lastName: string, groupName: string) => {
+    await expect(heading(page, `${REGISTERED_FIRST_NAME} ${lastName}`)).toBeVisible();
     const warning = page.getByRole('dialog', {name: 'Varování: Správce skupin'});
     await expect(warning.getByText(groupName)).toBeVisible();
 });
