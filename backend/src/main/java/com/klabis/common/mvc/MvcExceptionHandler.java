@@ -2,6 +2,7 @@ package com.klabis.common.mvc;
 
 import com.klabis.common.exceptions.AuthorizationException;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.exceptions.ConflictException;
 import com.klabis.common.exceptions.InvalidDataException;
 import com.klabis.common.exceptions.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -66,6 +67,19 @@ class MvcExceptionHandler extends ResponseEntityExceptionHandler {
     )
     public ErrorResponse handleBusinessRuleViolationException(BusinessRuleViolationException ex) {
         return ErrorResponse.builder(ex, HttpStatus.BAD_REQUEST, ex.getMessage()).build();
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    @ApiResponse(
+            responseCode = "409",
+            description = "Conflict - request conflicts with the current state of the resource",
+            content = @Content(
+                    mediaType = "application/problem+json",
+                    schema = @Schema(implementation = ProblemDetail.class)
+            )
+    )
+    public ErrorResponse handleConflictException(ConflictException ex) {
+        return ErrorResponse.builder(ex, HttpStatus.CONFLICT, ex.getMessage()).build();
     }
 
     @ExceptionHandler(InvalidDataException.class)

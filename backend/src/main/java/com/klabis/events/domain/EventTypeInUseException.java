@@ -1,11 +1,11 @@
 package com.klabis.events.domain;
 
-import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.exceptions.ConflictException;
 import com.klabis.events.EventTypeId;
 
 import java.util.List;
 
-public class EventTypeInUseException extends BusinessRuleViolationException {
+public class EventTypeInUseException extends ConflictException {
 
     private final EventTypeId eventTypeId;
     private final List<String> affectedEventNames;

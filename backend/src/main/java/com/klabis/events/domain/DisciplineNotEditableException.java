@@ -1,6 +1,6 @@
 package com.klabis.events.domain;
 
-import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.exceptions.ConflictException;
 import com.klabis.events.DisciplineId;
 
 /**
@@ -9,7 +9,7 @@ import com.klabis.events.DisciplineId;
  * sole source of truth for {@code code}/{@code name} once paired, so a manual edit is
  * refused outright rather than merely discouraged.
  */
-public class DisciplineNotEditableException extends BusinessRuleViolationException {
+public class DisciplineNotEditableException extends ConflictException {
 
     public DisciplineNotEditableException(DisciplineId disciplineId) {
         super("Discipline " + disciplineId + " is paired to ORIS and cannot be edited manually");

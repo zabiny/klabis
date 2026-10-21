@@ -119,11 +119,14 @@ Key rules:
 
 ## Exception Hierarchy
 
-Two unchecked base classes in `com.klabis.common.exceptions`, each mapped globally by `MvcExceptionHandler`:
+Unchecked base classes in `com.klabis.common.exceptions`, each mapped globally by `MvcExceptionHandler` (ProblemDetail `detail` = exception message):
 
 | Base class | HTTP | Example |
 |---|---|---|
-| `BusinessRuleViolationException` | 400 (subclasses may get their own handler, e.g. 409) | `DuplicateRegistrationException` |
-| `ResourceNotFoundException` | 404 | `MemberNotFoundException` |
+| `BusinessRuleViolationException` | 400 | `CannotRemoveLastOwnerException` |
+| `ConflictException` (extends `BusinessRuleViolationException`) | 409 | `EventTypeInUseException`, `DisciplineNotEditableException` |
+| `ResourceNotFoundException` | 404 | `MemberNotFoundException`, `EventTypeNotFoundException` |
+
+Pick the base class matching the wanted status; do not add a module-level `@RestControllerAdvice` for it. A module-level advice is only for non-standard bodies (e.g. `SuspensionBlockedException` returning a structured warning, or `DuplicateRegistrationException` with an intentionally empty detail) and needs `@Order(Ordered.HIGHEST_PRECEDENCE)` to win over the global handler.
 
 No manual conversion in the service layer — exceptions propagate to the handler.
