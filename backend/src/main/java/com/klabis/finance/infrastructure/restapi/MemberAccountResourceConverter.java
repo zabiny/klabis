@@ -10,14 +10,13 @@ import org.springframework.core.convert.converter.Converter;
 // public: the generated cross-mapper KlabisConversionServiceAdapter (common.mapping) references
 // this interface and its nested MemberBalance record from outside this package.
 @Mapper(config = MapstructSpringMapperConfig.class)
-public interface MemberAccountResourceConverter extends Converter<MemberAccountResourceConverter.MemberBalance, MemberAccountResource> {
+public interface MemberAccountResourceConverter extends MoneyMapping, Converter<MemberAccountResourceConverter.MemberBalance, MemberAccountResource> {
 
     record MemberBalance(MemberId memberId, Money balance) {
     }
 
     @Override
-    @Mapping(target = "memberId", expression = "java(source.memberId().uuid())")
-    @Mapping(target = "balance", expression = "java(source.balance().amount())")
-    @Mapping(target = "currency", expression = "java(source.balance().currency().getCurrencyCode())")
+    @Mapping(target = "memberId", source = "memberId.value")
+    @Mapping(target = "currency", source = "balance", qualifiedByName = "currencyCode")
     MemberAccountResource convert(MemberBalance source);
 }
