@@ -37,8 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * End-to-end scenarios for specs/disciplines' "archiving and restoring reuse the sync
- * engine's existing retire/reactivate lifecycle" requirement (design.md D8, tasks.md
- * 8.3), mirroring {@link DisciplineDiscoverySyncScenarioIntegrationTest}'s structure:
+ * engine's existing retire/reactivate lifecycle" requirement, mirroring {@link
+ * DisciplineDiscoverySyncScenarioIntegrationTest}'s structure:
  * real {@link SynchronizationPort}/database, only {@code OrisApiClient} mocked.
  * <p>
  * Group 9 ({@code DisciplineManagementService}/{@code DisciplineController}) does not
@@ -89,8 +89,8 @@ class DisciplineArchiveRestoreSyncScenarioIntegrationTest {
         discipline.archive();
         disciplineRepository.save(discipline);
 
-        // "any EventType already referencing it keeps working, unchanged" (design.md
-        // D8/Glossary) — archiving never touches event_type_disciplines.
+        // "any EventType already referencing it keeps working, unchanged" — archiving never touches
+        // event_type_disciplines.
         EventType reloaded = eventTypeManagementPort.getEventType(eventType.getId());
         assertThat(reloaded.getDisciplineIds()).contains(discipline.getId());
 

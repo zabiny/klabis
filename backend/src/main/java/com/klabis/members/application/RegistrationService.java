@@ -130,7 +130,7 @@ public class RegistrationService implements RegistrationPort {
      * generated for a hand registration, adopted from ORIS for an import. Everything below this
      * point (user creation and the shared-id invariant) is identical for both; only the domain
      * factory differs — {@code importing} routes to {@link Member#importFromOris}, which tolerates
-     * incomplete data, instead of {@link Member#register}, which does not (design.md D5).
+     * incomplete data, instead of {@link Member#register}, which does not.
      */
     private Member register(RegisterNewMember command, RegistrationNumber registrationNumber,
                             GuardianContacts guardianContacts, boolean importing) {
@@ -169,7 +169,7 @@ public class RegistrationService implements RegistrationPort {
             // The UNIQUE constraint on members.registration_number (and, since the registration
             // number doubles as the username, on common.users.user_name) is what enforces
             // "already in use" - no existence check is made beforehand, since that would just be
-            // a race between the check and this save. See design.md D4.
+            // a race between the check and this save.
             throw new RegistrationNumberAlreadyInUseException(registrationNumber, e);
         }
     }

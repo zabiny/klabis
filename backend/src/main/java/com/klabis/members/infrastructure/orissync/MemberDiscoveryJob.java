@@ -19,18 +19,18 @@ import java.util.stream.Collectors;
 
 /**
  * Discovers ORIS club members Klabis has never seen and enrols them for
- * synchronisation (design.md D7), mirroring {@code DisciplineDiscoveryJob} exactly:
+ * synchronisation, mirroring {@code DisciplineDiscoveryJob} exactly:
  * read the whole club once, subtract already-paired external ids via
  * {@link SynchronizationPort#findByExternalReferences}, call {@code pullAndEnroll} per
  * new id, catching per-member failures so one bad record cannot stop the run.
  * <p>
- * Two differences from the discipline job (design.md D7):
+ * Two differences from the discipline job:
  * <ul>
  *     <li>It filters candidates on {@link ClubMember#valid()} before enrolling
- *     (design.md D5) — an already-paired member's validity is never even looked at,
+ *     — an already-paired member's validity is never even looked at,
  *     since the engine keeps it current regardless of ORIS membership lapsing.</li>
  *     <li>It does nothing at all, logging rather than surfacing a failure, when no
- *     club key is held (design.md D9) — {@link OrisClubMembers#listClubMembers()}
+ *     club key is held — {@link OrisClubMembers#listClubMembers()}
  *     throws {@link ClubKeyNotSetException} before ORIS is ever contacted.</li>
  * </ul>
  * Runs on its own {@code klabis.members.oris-discovery-cron} schedule
@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  * calling {@link SynchronizationPort}, {@code sync}'s primary port.
  * <p>
  * Public (rather than package-private) solely so {@code discoverNewMembers()} can be invoked
- * from {@code MembersApi#importFromOris} (design.md D11, tasks.md section 9): the manual
+ * from {@code MembersApi#importFromOris}: the manual
  * trigger runs the exact same discovery pass the scheduler runs, rather than reimplementing it.
  * Implements {@link MemberDiscoveryPort} so {@code MemberController} (a primary adapter) can
  * depend on that port instead of on this {@code @Application}-classified class directly.

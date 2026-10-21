@@ -4,7 +4,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Derives which required details a member currently lacks (design.md D7 of {@code legal-guardians-via-groups}).
+ * Derives which required details a member currently lacks.
  * <p>
  * An adult needs their own e-mail and telephone and never misses a guardian. A minor's e-mail and
  * telephone are covered by their own or by those of any legal guardian, and a minor without a guardian

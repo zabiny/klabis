@@ -33,7 +33,7 @@ class MemberProjectionTest {
     }
 
     @Test
-    @DisplayName("carries exactly the ORIS-owned fields declared in design.md D2 — no Klabis-owned field is expressible")
+    @DisplayName("carries exactly the ORIS-owned fields — no Klabis-owned field is expressible")
     void carriesOnlyOrisOwnedFields() {
         List<String> expectedComponents = List.of(
                 "registrationNumber", "firstName", "lastName",

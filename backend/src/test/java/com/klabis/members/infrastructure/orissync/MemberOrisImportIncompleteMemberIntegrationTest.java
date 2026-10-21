@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Mirrors {@link MemberOrisSyncScenarioIntegrationTest}'s discovery scenario for an ORIS member
- * with incomplete data (tasks.md 5.3, design.md D5): a minor with neither a phone nor a birth
+ * with incomplete data: a minor with neither a phone nor a birth
  * number is still brought into Klabis, paired for synchronisation, and reported incomplete with
  * exactly the missing items ORIS itself cannot supply.
  */
@@ -156,7 +156,7 @@ class MemberOrisImportIncompleteMemberIntegrationTest {
 
     /**
      * A complete adult with an e-mail, phone and birth number - only the postal code is missing
-     * from ORIS's address, so the whole address is dropped (design.md ADDRESS: all-or-nothing)
+     * from ORIS's address, so the whole address is dropped (all-or-nothing)
      * and nothing else is missing.
      */
     private static ClubMember adultWithIncompleteAddressClubMember(int id, String regNum) {

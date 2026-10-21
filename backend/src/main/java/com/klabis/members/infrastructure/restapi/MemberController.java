@@ -94,7 +94,7 @@ public class MemberController implements MembersApi {
 
     /**
      * Runs the exact same discovery pass {@link MemberDiscoveryJob}'s own cron runs
-     * (design.md D11) — this only lets a human start it once, deliberately, before the
+     * — this only lets a human start it once, deliberately, before the
      * schedule is relied upon. Running it twice brings nobody in twice: already-paired
      * members are skipped identically either way.
      * <p>

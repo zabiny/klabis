@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * End-to-end scenarios for specs/disciplines' "Local Discipline Catalog Kept In Step
- * With ORIS" requirement (tasks.md 5.3), mirroring
+ * With ORIS" requirement, mirroring
  * {@link OrisEventSyncScenarioIntegrationTest}'s structure: real
  * {@link SynchronizationPort}/database, only {@code OrisApiClient} mocked.
  */
@@ -72,8 +72,8 @@ class DisciplineDiscoverySyncScenarioIntegrationTest {
         assertThat(discovered.getCode()).isEqualTo("OB");
         assertThat(discovered.getName()).isEqualTo("Orientační běh");
 
-        // "available for a manager to assign to an event type" (spec.md): the picklist
-        // (D5) reads this same unpaged, non-archived catalog.
+        // "available for a manager to assign to an event type": the picklist
+        // reads this same unpaged, non-archived catalog.
         assertThat(disciplineRepository.findAllSorted())
                 .extracting(Discipline::getId)
                 .contains(discovered.getId());
@@ -98,7 +98,7 @@ class DisciplineDiscoverySyncScenarioIntegrationTest {
                 .orElseThrow();
 
         // ORIS renames the discipline. The discipline is already paired at this point,
-        // so the discovery job (which only ever handles undiscovered ids, design.md D4)
+        // so the discovery job (which only ever handles undiscovered ids)
         // would skip it entirely — it is the engine's existing scan that must pick this
         // up, exercised here directly via synchronizeNow rather than waiting for
         // SyncScheduler's cron.

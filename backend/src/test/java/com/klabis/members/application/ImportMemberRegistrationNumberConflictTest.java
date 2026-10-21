@@ -16,11 +16,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Verifies the spec scenario "A registration number already in use is refused" (see
- * openspec/changes/import-oris-members/specs/members/spec.md).
+ * Verifies the spec scenario "A registration number already in use is refused".
  * <p>
  * The `members.registration_number` UNIQUE constraint is what enforces this - no extra
- * existence check is added in the service, since that would just be a race (see design.md D4).
+ * existence check is added in the service, since that would just be a race.
  * This test proves the DB-level violation surfaces as a domain-meaningful exception rather than
  * a raw {@link org.springframework.dao.DataIntegrityViolationException}.
  * <p>

@@ -13,11 +13,10 @@ public interface DisciplineRepository {
 
     Optional<Discipline> findById(DisciplineId id);
 
-    // Not archived-filtered yet: Discipline has no `archived` field until task 7.1/7.2 adds it.
     List<Discipline> findAllSorted();
 
     /**
-     * Paginated listing backing the future {@code GET /api/disciplines} (design.md D10)
+     * Paginated listing backing the future {@code GET /api/disciplines}
      * — a separate method from {@link #findAllSorted()}, which stays unpaged for the
      * {@code EventType} discipline picklist. Lists every discipline, active and
      * archived alike, in the order given by {@code pageable}'s sort.

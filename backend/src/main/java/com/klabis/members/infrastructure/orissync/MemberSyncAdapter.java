@@ -28,11 +28,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The ORIS member {@link SynchronizationAdapter} (design.md D1, D3, D4, D6, D13):
+ * The ORIS member {@link SynchronizationAdapter}:
  * pull-only, creating the local side but never writing outward — a Klabis member's
  * membership-fee tier, roles, licences and guardian are Klabis-owned and stay
  * invisible to synchronisation because {@link MemberProjection} omits them by
- * construction (design.md D3), not because this adapter special-cases them.
+ * construction, not because this adapter special-cases them.
  * <p>
  * Reaches {@code members} through {@link ManagementPort} (read/write the local side)
  * and {@link RegistrationPort} (create the local side from an ORIS import), and
@@ -40,7 +40,7 @@ import java.util.UUID;
  * and {@code OrisEventSyncAdapter}'s "load the whole list, find by id" pattern for the
  * external read — {@code oris-client}'s club member listing offers no per-id lookup.
  * <p>
- * Declares {@code containsSensitiveData = true} (design.md D13): a birth number and a
+ * Declares {@code containsSensitiveData = true}: a birth number and a
  * name are personal data, unlike the public event/discipline data the two existing
  * adapters synchronise.
  * <p>
@@ -55,7 +55,7 @@ class MemberSyncAdapter implements SynchronizationAdapter {
 
     /**
      * {@code pullOnlyCreating()}'s six flags with {@code containsSensitiveData} flipped to
-     * {@code true} (design.md D13) — no factory overload exists for that combination, so this
+     * {@code true} — no factory overload exists for that combination, so this
      * is spelled out positionally: readsLocal, readsExternal, writesLocal, writesExternal,
      * createsLocal, createsExternal, containsSensitiveData.
      */
@@ -111,8 +111,7 @@ class MemberSyncAdapter implements SynchronizationAdapter {
     /**
      * Always empty: {@code oris-client}'s club member listing carries no per-record or
      * per-list version signal, mirroring {@code DisciplineSyncAdapter} and
-     * {@code OrisEventSyncAdapter}. The engine falls back to a full read on every pass
-     * (design.md D3).
+     * {@code OrisEventSyncAdapter}. The engine falls back to a full read on every pass.
      */
     @Override
     public Optional<ExternalVersionToken> externalVersion(String externalId) {
@@ -189,8 +188,8 @@ class MemberSyncAdapter implements SynchronizationAdapter {
     }
 
     /**
-     * {@link MemberProjectionMapper} already normalises a partial ORIS address to fully absent
-     * (design.md ADDRESS), so a {@code null} street here means all four components are null —
+     * {@link MemberProjectionMapper} already normalises a partial ORIS address to fully absent, so a {@code
+     * null} street here means all four components are null —
      * never a partial set that would blow up {@link Address}'s all-or-nothing constructor.
      */
     private static Address addressOf(MemberProjection projection) {

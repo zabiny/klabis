@@ -8,7 +8,7 @@ import java.time.LocalDate;
 
 /**
  * The ORIS-owned fields of a {@code Member}, in the shape shared by both the Klabis
- * {@code Member} side and the ORIS {@code ClubMember} side (design.md D2).
+ * {@code Member} side and the ORIS {@code ClubMember} side.
  * <p>
  * Everything else {@code Member} holds — licences, guardian, bank account, dietary
  * restrictions and the whole suspension block — is deliberately absent: per

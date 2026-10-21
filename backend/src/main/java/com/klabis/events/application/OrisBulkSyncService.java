@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Runs a manual pass over every active event synchronisation record (design.md D18,
- * task 8.5) instead of looping over upcoming ORIS events and re-importing each one —
+ * Runs a manual pass over every active event synchronisation record instead of looping over upcoming ORIS
+ * events and re-importing each one —
  * the engine, not this service, now owns direction resolution and conflict detection.
  * Records already {@code CONFLICT} or {@code FAILED} are not attempted; they are
  * counted and listed separately, since only a decision on their synchronisation

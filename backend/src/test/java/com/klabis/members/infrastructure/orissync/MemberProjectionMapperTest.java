@@ -84,7 +84,7 @@ class MemberProjectionMapperTest {
     class FromOrisClubMember {
 
         @Test
-        @DisplayName("maps ORIS-owned fields into the projection (design.md D6)")
+        @DisplayName("maps ORIS-owned fields into the projection")
         void mapsOrisFields() {
             MemberProjection projection = MemberProjectionMapper.fromOrisClubMember(referenceClubMember());
 
@@ -199,7 +199,7 @@ class MemberProjectionMapperTest {
         }
 
         @Test
-        @DisplayName("a malformed birth number is dropped, logging the ORIS id and field but not the value (design.md D6)")
+        @DisplayName("a malformed birth number is dropped, logging the ORIS id and field but not the value")
         void malformedBirthNumberIsDroppedAndLogged(CapturedOutput output) {
             var clubMember = referenceClubMember(b -> b.id(33630).persNum("not-a-birth-number"));
 
@@ -211,7 +211,7 @@ class MemberProjectionMapperTest {
         }
 
         @Test
-        @DisplayName("a birth number for a non-Czech national is dropped, logging the ORIS id and field but not the value (design.md D6)")
+        @DisplayName("a birth number for a non-Czech national is dropped, logging the ORIS id and field but not the value")
         void birthNumberForNonCzechNationalIsDroppedAndLogged(CapturedOutput output) {
             var clubMember = referenceClubMember(b -> b.id(33630).nationality("SK").persNum("900115/0000"));
 
@@ -223,7 +223,7 @@ class MemberProjectionMapperTest {
         }
 
         @Test
-        @DisplayName("an unparsable ORIS phone number is dropped, logging the ORIS id and field but not the value (design.md D6)")
+        @DisplayName("an unparsable ORIS phone number is dropped, logging the ORIS id and field but not the value")
         void invalidPhoneIsDroppedAndLogged(CapturedOutput output) {
             var clubMember = referenceClubMember(b -> b.id(33630).phone("+420abc123"));
 
@@ -235,7 +235,7 @@ class MemberProjectionMapperTest {
         }
 
         @Test
-        @DisplayName("a malformed ORIS e-mail is dropped, logging the ORIS id and field but not the value (design.md D6)")
+        @DisplayName("a malformed ORIS e-mail is dropped, logging the ORIS id and field but not the value")
         void invalidEmailIsDroppedAndLogged(CapturedOutput output) {
             var clubMember = referenceClubMember(b -> b.id(33630).email("not-an-email"));
 

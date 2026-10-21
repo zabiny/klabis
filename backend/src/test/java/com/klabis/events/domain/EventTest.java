@@ -2124,7 +2124,7 @@ class EventTest {
         }
 
         @Test
-        @DisplayName("overwrites fields for a FINISHED event without reopening it (design.md D7)")
+        @DisplayName("overwrites fields for a FINISHED event without reopening it")
         void shouldOverwriteFieldsForFinishedEventWithoutReopeningIt() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .name("Old Name")
@@ -2142,7 +2142,7 @@ class EventTest {
         }
 
         @Test
-        @DisplayName("overwrites fields for a CANCELLED event without reopening it (design.md D7)")
+        @DisplayName("overwrites fields for a CANCELLED event without reopening it")
         void shouldOverwriteFieldsForCancelledEventWithoutReopeningIt() {
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
                     .name("Old Name")

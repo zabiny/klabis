@@ -26,12 +26,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Verifies the spec scenario "Registering brings its usual consequences" (see
- * openspec/changes/import-oris-members/specs/member-synchronization/spec.md): a member brought
+ * Verifies the spec scenario "Registering brings its usual consequences": a member brought
  * in via {@link RegistrationPort#importMember} gets a {@link User}, a financial account and
  * age-based training-group assignment identically to a hand-registered member.
  * <p>
- * This is provable by construction per design.md D4 - {@code importMember} converges onto the
+ * This is provable by construction - {@code importMember} converges onto the
  * same {@code register(...)} path as {@code registerMember} immediately after the registration
  * number is decided, so every listener that reacts to {@code MemberCreatedEvent} fires exactly
  * as it would for a hand registration. This test confirms those listeners actually fire end to

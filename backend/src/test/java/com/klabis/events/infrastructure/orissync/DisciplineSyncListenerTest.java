@@ -38,7 +38,7 @@ class DisciplineSyncListenerTest {
     }
 
     @Test
-    @DisplayName("retires the paired record on DisciplineArchivedEvent (task 8.1)")
+    @DisplayName("retires the paired record on DisciplineArchivedEvent")
     void retiresOnDisciplineArchived() {
         DisciplineArchivedEvent event = new DisciplineArchivedEvent(UUID.randomUUID(), disciplineId, Instant.now());
         SyncRecordId recordId = SyncRecordId.newId();
@@ -51,7 +51,7 @@ class DisciplineSyncListenerTest {
     }
 
     @Test
-    @DisplayName("does nothing when the archived discipline was never paired to ORIS (task 8.1)")
+    @DisplayName("does nothing when the archived discipline was never paired to ORIS")
     void doesNothingWhenNotEnrolled() {
         DisciplineArchivedEvent event = new DisciplineArchivedEvent(UUID.randomUUID(), disciplineId, Instant.now());
         when(synchronizationPort.findByTarget(target)).thenReturn(Optional.empty());
@@ -63,7 +63,7 @@ class DisciplineSyncListenerTest {
     }
 
     @Test
-    @DisplayName("reactivating a paired discipline re-enrols it, starting over from ORIS's current values (task 8.2)")
+    @DisplayName("reactivating a paired discipline re-enrols it, starting over from ORIS's current values")
     void reactivatesPairedDiscipline() {
         ExternalReference externalReference = new ExternalReference(ExternalSystem.ORIS, "100");
         SyncRecord retired = SyncRecord.enroll(SyncRecordId.newId(), target, externalReference);
@@ -75,7 +75,7 @@ class DisciplineSyncListenerTest {
     }
 
     @Test
-    @DisplayName("reactivating a discipline that was never paired is a pure domain-only flag flip — pullAndEnroll is never called (task 8.2)")
+    @DisplayName("reactivating a discipline that was never paired is a pure domain-only flag flip — pullAndEnroll is never called")
     void doesNotReactivateUnpairedDiscipline() {
         when(synchronizationPort.findByTarget(target)).thenReturn(Optional.empty());
 

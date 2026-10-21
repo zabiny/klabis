@@ -20,7 +20,7 @@ public interface DisciplineManagementPort {
     void archive(DisciplineId id);
 
     /**
-     * Restores an archived discipline (design.md D8) and, if it was ORIS-paired,
+     * Restores an archived discipline and, if it was ORIS-paired,
      * reactivates the sync pairing.
      *
      * @param actingUser opaque identifier of the restoring user (mirrors {@code
@@ -33,8 +33,8 @@ public interface DisciplineManagementPort {
     Page<Discipline> list(Pageable pageable);
 
     /**
-     * Active (non-archived) disciplines for lightweight option pickers (design.md D3 of
-     * app-review-fixes-2026-09) — backs {@code GET /api/disciplines/options}, mirroring {@code
+     * Active (non-archived) disciplines for lightweight option pickers — backs {@code GET
+     * /api/disciplines/options}, mirroring {@code
      * MemberController#listMemberOptions}. Archived disciplines are excluded: they should not be
      * offered for assignment to new/updated event types.
      */

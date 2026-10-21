@@ -37,7 +37,7 @@ class MemberActivationContactVerifier implements ActivationContactVerifier {
                         .orElse(false));
     }
 
-    // A minor never activates their account by themself; an admin does it for them (design D9).
+    // A minor never activates their account by themself; an admin does it for them.
     private boolean matchesMember(Member member, String candidate) {
         return !member.getPersonalInformation().isMinor() && matches(member.getEmail(), candidate);
     }

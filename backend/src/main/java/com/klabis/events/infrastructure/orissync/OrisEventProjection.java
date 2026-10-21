@@ -11,7 +11,7 @@ import java.util.List;
 
 /**
  * The ORIS-owned event fields, in the shape shared by both the Klabis {@code Event}
- * side and the ORIS {@code EventDetails} side (design.md D3).
+ * side and the ORIS {@code EventDetails} side.
  * <p>
  * Klabis-owned fields — a category fee override, a manually added category, the event
  * type — are deliberately absent from comparison: they are invisible to
@@ -27,13 +27,13 @@ import java.util.List;
  * <p>
  * {@code resolvedEventTypeId} is the one exception to "plain JSON-friendly types":
  * it is {@link JsonIgnore}d so {@link com.klabis.sync.infrastructure.SyncProjectionCodec}
- * never serialises it — the event type is Klabis-owned (design.md D3) and must not
+ * never serialises it — the event type is Klabis-owned and must not
  * participate in hashing, persistence or field-level divergence, exactly like every
  * other Klabis-owned field. It carries the ORIS discipline resolution from
  * {@link OrisEventSyncAdapter#readExternal} to {@link OrisEventSyncAdapter#applyToLocal}
  * on the external projection itself, so the value travels with the exact projection it
- * was resolved from instead of through thread-local state keyed by call order (task
- * 8.10's follow-up fix). Always {@code null} on the local-side projection
+ * was resolved from instead of through thread-local state keyed by call order. Always {@code null} on the
+ * local-side projection
  * ({@link OrisEventProjectionMapper#fromEvent}): the event type is never read back out
  * of a local {@code Event} for synchronisation purposes.
  * <p>
@@ -41,8 +41,8 @@ import java.util.List;
  * pairing, not an ORIS-owned field — and carries the external record's ORIS id from
  * {@link OrisEventSyncAdapter#readExternal} through to
  * {@link OrisEventSyncAdapter#createLocal}, which has no other way to learn it: the
- * engine hands {@code createLocal} only the projection {@code readExternal} produced
- * (design.md "Domain Changes", D2). Boxed as {@link Integer}, not a primitive: a
+ * engine hands {@code createLocal} only the projection {@code readExternal} produced.
+ * Boxed as {@link Integer}, not a primitive: a
  * projection read back out of storage via {@code SyncProjectionCodec.fromCanonicalJson}
  * carries no {@code orisId} at all (it was never serialised), and Jackson cannot bind a
  * missing value into a primitive {@code int}. Always {@code null} on the local-side

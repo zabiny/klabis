@@ -5,8 +5,8 @@ import com.klabis.events.EventId;
 import java.util.List;
 
 /**
- * Result of a manual pass over every active event synchronisation record (design.md
- * D18, tasks 8.4/8.5). {@code totalProcessed} counts every active record considered,
+ * Result of a manual pass over every active event synchronisation record. {@code totalProcessed} counts every
+ * active record considered,
  * including the ones awaiting a decision or stopped by failure; {@code successCount}
  * and {@code failureCount} cover only records actually attempted this pass — a record
  * already {@code CONFLICT} or {@code FAILED} is reported separately, never lumped into

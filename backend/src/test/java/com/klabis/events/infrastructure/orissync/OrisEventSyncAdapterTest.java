@@ -148,9 +148,9 @@ class OrisEventSyncAdapterTest {
         void writesInwardViaSyncFromOris() {
             when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null));
             // The engine always calls readExternal before applyToLocal within one pass
-            // (design.md "How a pass runs") and passes the very projection readExternal
+            // and passes the very projection readExternal
             // returned — that is what now carries the resolved event type across
-            // without a second ORIS read (task 8.10).
+            // without a second ORIS read.
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
@@ -180,7 +180,7 @@ class OrisEventSyncAdapterTest {
         }
 
         @Test
-        @DisplayName("carries the event type resolved by readExternal, without reading ORIS a second time (task 8.10)")
+        @DisplayName("carries the event type resolved by readExternal, without reading ORIS a second time")
         void carriesResolvedEventTypeWithoutSecondOrisRead() {
             EventTypeId resolvedType = EventTypeId.generate();
             when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", resolvedType));
@@ -234,7 +234,7 @@ class OrisEventSyncAdapterTest {
             when(orisEventDetailsReader.read(otherOrisId)).thenReturn(projection("Second event", LocalDate.of(2026, 6, 1), "Praha Park", "POB", null));
 
             // Two records processed in sequence on the same thread, exactly as the
-            // engine does (D16 — one record at a time): reading the second record's
+            // engine does (one record at a time): reading the second record's
             // external side must not carry the first record's resolved event type
             // forward to the second record's inward write.
             adapter.readExternal(String.valueOf(ORIS_ID));
@@ -369,7 +369,7 @@ class OrisEventSyncAdapterTest {
         }
 
         @Test
-        @DisplayName("logs a warning when the sync removes categories that still have registrations (design.md D2)")
+        @DisplayName("logs a warning when the sync removes categories that still have registrations")
         void logsWarningWhenSyncRemovesCategoriesWithRegistrations() {
             EventCategory m21 = new EventCategory(EventCategoryId.generate(), "M21", "M21", null);
             EventCategory w21 = new EventCategory(EventCategoryId.generate(), "W21", "W21", null);

@@ -27,14 +27,12 @@ class OrisEventImportService implements OrisEventImportPort {
     }
 
     /**
-     * Delegates to the synchronisation engine's {@code pullAndEnroll} (design.md D10,
-     * task 9.2) instead of building the event and enrolling it by hand: creation,
+     * Delegates to the synchronisation engine's {@code pullAndEnroll} instead of building the event and
+     * enrolling it by hand: creation,
      * pairing and the initial pass all now live in the engine, with
-     * {@code OrisEventSyncAdapter.createLocal} supplying the ORIS-specific build
-     * (design.md D2, D3). A repeated import synchronises the existing pairing and
-     * returns the existing event rather than failing with a duplicate (design.md D5) —
-     * the old {@code DuplicateOrisImportException} is unreachable from this path and
-     * has been removed (design.md Open Questions, task 9.8).
+     * {@code OrisEventSyncAdapter.createLocal} supplying the ORIS-specific build. A repeated import
+     * synchronises the existing pairing and
+     * returns the existing event rather than failing with a duplicate —
      * <p>
      * A pairing already awaiting a decision (CONFLICT or FAILED) is refused by the
      * engine with {@link SyncRecordNeedsResolutionException}, translated here into
@@ -44,7 +42,7 @@ class OrisEventImportService implements OrisEventImportPort {
      * Deliberately NOT {@code @Transactional}: {@code pullAndEnroll} performs a
      * blocking external ORIS HTTP call and relies on {@code SyncRecordCreator} and the
      * engine's claim/pass steps being genuine cross-bean calls with their own short
-     * transactions (design.md D8). Wrapping this method in a transaction would keep it
+     * transactions. Wrapping this method in a transaction would keep it
      * open across the external call, defeating that design — see
      * {@link com.klabis.sync.application.SynchronizationService} javadoc.
      */

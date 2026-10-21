@@ -9,7 +9,7 @@ import org.jmolecules.architecture.hexagonal.Application;
 import java.util.Map;
 
 /**
- * The only implementation of {@link OrisClubMembers} (design.md D9): reads the key
+ * The only implementation of {@link OrisClubMembers}: reads the key
  * from the shared {@link OrisClubKeyAccessor} itself — never taking it as a parameter —
  * so a caller has no way to obtain it and no way to leak it.
  */

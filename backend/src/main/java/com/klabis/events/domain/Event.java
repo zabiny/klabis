@@ -694,8 +694,8 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * engine retires the pairing for those the moment the event reaches the end of
      * its life (see {@code EventsSyncListener}), so a scheduled pass never reaches
      * this method for them — the only way it does is a manager deliberately
-     * reactivating the pairing by importing the same ORIS event again (design.md D7,
-     * D6). Reactivation resumes synchronisation of data only; it does not reopen the
+     * reactivating the pairing by importing the same ORIS event again. Reactivation resumes synchronisation
+     * of data only; it does not reopen the
      * event, so a FINISHED or CANCELLED event keeps its status.
      * <p>
      * Whether an event should be synced from ORIS at all is decided by the {@code sync}

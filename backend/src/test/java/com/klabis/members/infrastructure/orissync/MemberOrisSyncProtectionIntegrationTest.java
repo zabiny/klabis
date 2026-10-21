@@ -31,8 +31,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 /**
- * End-to-end scenarios for tasks.md 12.2: what {@link Member#syncFromOris} and the
- * engine's own change-detection protect (design.md D3, D6). Mirrors
+ * End-to-end scenarios for what {@link Member#syncFromOris} and the
+ * engine's own change-detection protect. Mirrors
  * {@code OrisEventSyncScenarioIntegrationTest}'s "field ownership" and "conflict
  * lifecycle" nested scenarios, adapted for the members module.
  */

@@ -66,8 +66,7 @@ class MemberMemento implements Persistable<UUID> {
 
     /**
      * Materialisation of the member's completeness as of the last save, for the member list and its filter
-     * (design.md D7 of legal-guardians-via-groups). Completeness depends on legal guardians, which the member
-     * detail evaluates live.
+     * Completeness depends on legal guardians, which the member detail evaluates live.
      */
     @Column("data_incomplete")
     private boolean dataIncomplete;

@@ -5,7 +5,7 @@ import com.dpolach.api.orisclient.dto.ClubMember;
 import java.util.Map;
 
 /**
- * Narrow facade over the ORIS operations that need the club key (design.md D9).
+ * Narrow facade over the ORIS operations that need the club key.
  * Callers never see the key itself — they cannot leak it or be tempted to log it —
  * and a missing key fails with {@link ClubKeyNotSetException} before ORIS is ever
  * contacted, rather than surfacing as an ORIS-side rejection.

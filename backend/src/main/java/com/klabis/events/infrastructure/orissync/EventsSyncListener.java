@@ -14,13 +14,11 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.modulith.events.ApplicationModuleListener;
 
 /**
- * Self-listener on the {@code events} module's own domain events (design.md D9, D17,
- * task 8.1, 8.2): marks a record dirty on a {@code MANUAL}-origin
+ * Self-listener on the {@code events} module's own domain events: marks a record dirty on a {@code MANUAL}-origin
  * {@link EventUpdatedEvent}, and retires it once the event reaches the end of its life
  * ({@link EventFinishedEvent}, {@link EventCancelledEvent}). A {@code SYNCHRONISATION}-origin
  * update is the engine's own write reconciling the record and is ignored, so the engine
- * never wakes itself back up (see openspec change
- * {@code sync-skip-self-inflicted-dirty-marker}).
+ * never wakes itself back up.
  * <p>
  * A {@code @PrimaryAdapter} event listener is permitted to call a foreign module's
  * primary port ({@link SynchronizationPort}, in {@code sync.application}) — the same

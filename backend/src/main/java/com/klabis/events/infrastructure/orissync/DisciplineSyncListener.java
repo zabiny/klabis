@@ -11,8 +11,7 @@ import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.modulith.events.ApplicationModuleListener;
 
 /**
- * Self-listener on the {@code events} module's own domain events (design.md D8 of
- * {@code sync-oris-disciplines}, tasks 8.1, 8.2), mirroring {@link EventsSyncListener}
+ * Self-listener on the {@code events} module's own domain events, mirroring {@link EventsSyncListener}
  * exactly: retires the {@code Discipline}'s {@code SyncRecord} once it reaches the end
  * of its life ({@link DisciplineArchivedEvent}) — a no-op if the discipline was never
  * paired to ORIS (manually created; {@link SynchronizationPort#findByTarget} then
@@ -27,15 +26,8 @@ import org.springframework.modulith.events.ApplicationModuleListener;
  * exactly the same reasoning that already lets {@code EventsSyncListener} depend on
  * {@link SynchronizationPort} directly.
  * <p>
- * {@link #reactivate} additionally provides the restore-side half of design.md D8's
- * lifecycle ("archiving/restoring reuse the sync engine's existing retire/reactivate
- * lifecycle", task 8.2). Design.md's own wording assigns that call sequence to "the
- * controller" — the not-yet-existing {@code DisciplineManagementService} (task 9) —
- * rather than to this class; it is added here, package-private for now, purely so the
- * capability exists and is tested ahead of that service landing. Task 9 may either
- * widen this method's visibility to call it directly, or inline the same two
- * {@link SynchronizationPort} calls itself — either is a straightforward follow-up,
- * not a design change.
+ * {@link #reactivate} additionally provides the restore-side half of the sync engine's
+ * existing retire/reactivate lifecycle.
  */
 @OrisIntegrationComponent
 @PrimaryAdapter
@@ -55,12 +47,11 @@ class DisciplineSyncListener {
     }
 
     /**
-     * Reactivates a restored discipline's sync pairing (design.md D8): re-runs
+     * Reactivates a restored discipline's sync pairing: re-runs
      * {@link SynchronizationPort#pullAndEnroll} against the pairing's existing
      * {@code ExternalReference}, which reactivates a retired record — discarding its
-     * stale baseline and starting over from ORIS's current values (D8, and the
-     * generic retire/reactivate lifecycle {@code data-synchronization} already
-     * specifies) — exactly as {@code pullAndEnroll} already does for any adapter's
+     * stale baseline and starting over from ORIS's current values — exactly as {@code pullAndEnroll} already
+     * does for any adapter's
      * retired pairing. A no-op when the discipline was never paired: {@code
      * findByTarget} then returns empty, and {@code Discipline.restore()}'s own
      * domain-only flag flip is all that happens.

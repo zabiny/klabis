@@ -158,7 +158,7 @@ class MemberLifecycleE2ETest {
 
         // ========================================================================
         // STEP 4: Request an activation link (no e-mail is sent on registration any
-        // more - design.md D7) and read the token from the email (LoggingEmailService)
+        // more) and read the token from the email (LoggingEmailService)
         // ========================================================================
         String registrationNumber = registeredMemberUserData.userName();
 

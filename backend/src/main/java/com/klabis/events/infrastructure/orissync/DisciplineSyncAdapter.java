@@ -19,14 +19,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * The ORIS discipline {@link SynchronizationAdapter} (design.md D3): pull-only,
+ * The ORIS discipline {@link SynchronizationAdapter}: pull-only,
  * creating the local side but never writing outward — ORIS is the sole owner of a
  * discipline's {@code code}/{@code name} once paired, matching
  * {@code OrisEventSyncAdapter}'s shape exactly.
  * <p>
  * Reaches {@code events} through {@link DisciplineRepository} directly, both for the
  * local read and for the write side — unlike {@code OrisEventSyncAdapter}, there is
- * no {@code DisciplineManagementPort} yet (it is added later, task 7/D7), so this
+ * no {@code DisciplineManagementPort} dependency, so this
  * class is a plain module-internal collaborator of {@code events.domain} rather than
  * a caller of any primary port.
  * <p>
@@ -91,7 +91,7 @@ class DisciplineSyncAdapter implements SynchronizationAdapter {
      * Always empty: {@code oris-client} offers no cheap per-discipline or per-list
      * version signal — {@code listDisciplines()} carries no version field, mirroring
      * {@code OrisEventSyncAdapter#externalVersion}. The engine falls back to a full
-     * read on every pass, as it does for any adapter without a token (design.md D3).
+     * read on every pass, as it does for any adapter without a token.
      */
     @Override
     public Optional<ExternalVersionToken> externalVersion(String externalId) {

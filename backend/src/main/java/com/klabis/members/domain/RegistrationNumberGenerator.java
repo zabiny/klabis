@@ -21,8 +21,6 @@ public class RegistrationNumberGenerator {
     private final MemberRepository memberRepository;
 
     /**
-     * Creates a new RegistrationNumberGenerator.
-     *
      * @param clubCode         club code (exactly 3 characters)
      * @param memberRepository repository for querying existing members
      * @throws IllegalArgumentException if club code is invalid

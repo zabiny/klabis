@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Tests {@link MembersOrisDiscoveryProperties} defaults/overrides and confirms
  * {@link MemberDiscoveryJob#discoverNewMembers()} is scheduled off its own property
- * key (design.md D7, tasks.md 8.5) — independent of both
+ * key — independent of both
  * {@code com.klabis.sync.application.SyncProperties}'s {@code scan-cron}/
  * {@code due-scan-interval} and {@code events.infrastructure.orissync.DisciplinesProperties}'s
  * {@code discovery-cron}.
@@ -39,7 +39,7 @@ class MembersOrisDiscoveryPropertiesTest {
     class Defaults {
 
         @Test
-        @DisplayName("applies the D7 default")
+        @DisplayName("applies the default")
         void appliesDefault() {
             contextRunner.run(context ->
                     assertThat(context.getBean(MembersOrisDiscoveryProperties.class).getOrisDiscoveryCron()).isEqualTo("0 30 3 * * *"));

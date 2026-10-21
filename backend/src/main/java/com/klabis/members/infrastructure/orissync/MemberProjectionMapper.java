@@ -13,10 +13,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Maps both sides of a {@code Member} synchronisation into the canonical
- * {@link MemberProjection} shape (design.md D2, D6).
+ * {@link MemberProjection} shape.
  * <p>
  * Blank strings from either side are normalised to {@code null}, so that "absent" has
- * one representation on both sides of the hash (design.md D6). {@code si == 0} maps to
+ * one representation on both sides of the hash. {@code si == 0} maps to
  * {@code null}, not {@code "0"}: chip number zero does not exist, and treating it as a
  * value would make "no chip" and "chip 0" hash differently.
  */
@@ -63,7 +63,7 @@ final class MemberProjectionMapper {
     }
 
     /**
-     * Klabis's {@link Address} is all-or-nothing (design.md ADDRESS): a member either has a
+     * Klabis's {@link Address} is all-or-nothing: a member either has a
      * complete postal address or none at all. An ORIS record with some but not all of the four
      * components is treated the same as one with none, since a half-built {@link Address} cannot
      * be constructed anyway.
@@ -95,8 +95,8 @@ final class MemberProjectionMapper {
     }
 
     /**
-     * Leaves out a birth number Klabis cannot accept, rather than refusing the whole member
-     * (design.md D6): a value for a non-Czech national, or one in an invalid format. Each drop is
+     * Leaves out a birth number Klabis cannot accept, rather than refusing the whole member: a value for a
+     * non-Czech national, or one in an invalid format. Each drop is
      * logged at WARN with the ORIS id and the field name only — never the value, since it is
      * personal data.
      */
@@ -121,7 +121,7 @@ final class MemberProjectionMapper {
     }
 
     /**
-     * Leaves out an ORIS phone number Klabis cannot accept (design.md D6), validating through
+     * Leaves out an ORIS phone number Klabis cannot accept, validating through
      * {@link PhoneNumber} itself rather than duplicating its format rules here. Logged at WARN
      * with the ORIS id and the field name only — never the value.
      */
@@ -139,7 +139,7 @@ final class MemberProjectionMapper {
     }
 
     /**
-     * Leaves out an ORIS e-mail address Klabis cannot accept (design.md D6), validating through
+     * Leaves out an ORIS e-mail address Klabis cannot accept, validating through
      * {@link EmailAddress} itself rather than duplicating its format rules here. Logged at WARN
      * with the ORIS id and the field name only — never the value.
      */

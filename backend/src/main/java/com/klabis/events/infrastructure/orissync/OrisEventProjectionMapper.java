@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * Maps the ORIS-owned fields of a Klabis {@link Event} into the canonical
- * {@link OrisEventProjection} shape (design.md D3).
+ * {@link OrisEventProjection} shape.
  * <p>
  * The external ({@code EventDetails}) side is mapped into this same projection shape by
  * {@link OrisEventDetailsReader}, so both sides of a comparison go through one

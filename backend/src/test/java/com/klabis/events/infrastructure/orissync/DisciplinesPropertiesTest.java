@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Tests {@link DisciplinesProperties} defaults/overrides and confirms
  * {@link DisciplineDiscoveryJob#discoverNewDisciplines()} is scheduled off the same
- * property key (design.md D4, tasks.md 5.2) — independent of
+ * property key — independent of
  * {@code com.klabis.sync.application.SyncProperties}'s own {@code scan-cron}/
  * {@code due-scan-interval}.
  * <p>
@@ -39,7 +39,7 @@ class DisciplinesPropertiesTest {
     class Defaults {
 
         @Test
-        @DisplayName("applies the D4 default: nightly, offset from klabis.sync.scan-cron")
+        @DisplayName("applies the default: nightly, offset from klabis.sync.scan-cron")
         void appliesDefault() {
             contextRunner.run(context ->
                     assertThat(context.getBean(DisciplinesProperties.class).getDiscoveryCron()).isEqualTo("0 0 3 * * *"));

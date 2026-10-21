@@ -54,7 +54,7 @@ class OrisEventImportServiceTest {
     class ImportEventFromOrisMethod {
 
         @Test
-        @DisplayName("should delegate to the synchronisation engine's pullAndEnroll and return the resulting event (task 9.2)")
+        @DisplayName("should delegate to the synchronisation engine's pullAndEnroll and return the resulting event")
         void shouldDelegateToPullAndEnroll() {
             int orisId = 9877;
             EventId eventId = EventId.generate();
@@ -76,7 +76,7 @@ class OrisEventImportServiceTest {
         }
 
         @Test
-        @DisplayName("should synchronise and return the existing event on a repeated import (design.md D5, D10)")
+        @DisplayName("should synchronise and return the existing event on a repeated import")
         void shouldReturnExistingEventOnRepeatedImport() {
             int orisId = 1111;
             EventId eventId = EventId.generate();
@@ -96,7 +96,7 @@ class OrisEventImportServiceTest {
         }
 
         @Test
-        @DisplayName("should refuse with EventSyncNeedsResolutionException when the pairing awaits a decision (design.md D5, D10)")
+        @DisplayName("should refuse with EventSyncNeedsResolutionException when the pairing awaits a decision")
         void shouldRefuseWhenPairingNeedsResolution() {
             int orisId = 2222;
             ExternalReference reference = new ExternalReference(ExternalSystem.ORIS, String.valueOf(orisId));
