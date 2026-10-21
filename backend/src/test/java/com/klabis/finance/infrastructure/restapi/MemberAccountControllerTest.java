@@ -648,7 +648,7 @@ class MemberAccountControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(validReverseBody()))
                     .andExpect(status().is(409))
-                    .andExpect(jsonPath("$.type").value(containsString("TRANSACTION_ALREADY_REVERSED")));
+                    .andExpect(jsonPath("$.detail").value(containsString("has already been reversed")));
         }
     }
 

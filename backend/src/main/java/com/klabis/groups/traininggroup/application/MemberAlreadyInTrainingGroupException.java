@@ -1,10 +1,10 @@
 package com.klabis.groups.traininggroup.application;
 
-import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.exceptions.ConflictException;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.members.MemberId;
 
-public class MemberAlreadyInTrainingGroupException extends BusinessRuleViolationException {
+public class MemberAlreadyInTrainingGroupException extends ConflictException {
 
     private final MemberId memberId;
     private final TrainingGroupId conflictingGroupId;
