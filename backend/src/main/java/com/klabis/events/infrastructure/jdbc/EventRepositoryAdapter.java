@@ -1,6 +1,6 @@
 package com.klabis.events.infrastructure.jdbc;
 
-import com.klabis.common.pagination.TranslatedPageable;
+import com.klabis.common.jdbc.FulltextSearch;
 import com.klabis.events.EventId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.domain.Event;
@@ -23,11 +23,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 
 /**
@@ -46,36 +44,12 @@ class EventRepositoryAdapter implements EventRepository {
     private final JdbcAggregateTemplate jdbcAggregateTemplate;
     private final NamedParameterJdbcTemplate namedJdbc;
 
-    /**
-     * Maps domain property names to database column names for sorting.
-     */
-    private static final Map<String, String> DOMAIN_TO_DB_COLUMN = Map.of(
-            "eventDate", "event_date",
-            "id", "id",
-            "name", "name",
-            "location", "location",
-            "organizer", "organizer",
-            "status", "status",
-            "registrationDeadline", "registration_deadline"
-    );
-
     public EventRepositoryAdapter(EventJdbcRepository jdbcRepository,
                                    JdbcAggregateTemplate jdbcAggregateTemplate,
                                    NamedParameterJdbcTemplate namedJdbc) {
         this.jdbcRepository = jdbcRepository;
         this.jdbcAggregateTemplate = jdbcAggregateTemplate;
         this.namedJdbc = namedJdbc;
-    }
-
-    /**
-     * Translates Pageable with domain property names to Pageable with database column names.
-     * Unpaged requests are returned as-is — there are no sort properties to translate.
-     */
-    private Pageable translateDomainToDbColumn(Pageable pageable) {
-        if (pageable.isUnpaged()) {
-            return pageable;
-        }
-        return TranslatedPageable.translate(pageable, DOMAIN_TO_DB_COLUMN);
     }
 
     @Override
@@ -96,68 +70,72 @@ class EventRepositoryAdapter implements EventRepository {
             return new PageImpl<>(List.of(), pageable, 0);
         }
 
-        List<UUID> preFilteredIds = resolvePreFilteredIds(filter);
-
-        if (preFilteredIds != null && preFilteredIds.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, 0);
+        List<Criteria> conditions = new ArrayList<>();
+        List<UUID> matchingIds = resolveMatchingIds(filter);
+        if (matchingIds != null) {
+            if (matchingIds.isEmpty()) {
+                return new PageImpl<>(List.of(), pageable, 0);
+            }
+            conditions.add(Criteria.where("id").in(matchingIds));
         }
 
-        List<UUID> cancelledRegisteredIds = resolveCancelledRegisteredIds(filter);
-
-        if (preFilteredIds != null) {
-            return findAllWithMatchingIds(filter, pageable, preFilteredIds, cancelledRegisteredIds);
+        if (filter.statuses().size() < EventStatus.values().length) {
+            conditions.add(Criteria.where("status").in(filter.statuses().stream().map(EventStatus::name).toList()));
+        }
+        if (filter.organizer() != null) {
+            conditions.add(Criteria.where("organizer").is(filter.organizer()));
+        }
+        if (filter.dateFrom() != null) {
+            conditions.add(Criteria.where("eventDate").greaterThanOrEquals(filter.dateFrom()));
+        }
+        if (filter.dateTo() != null) {
+            conditions.add(Criteria.where("eventDate").lessThanOrEquals(filter.dateTo()));
+        }
+        if (!filter.eventTypeIds().isEmpty()) {
+            conditions.add(Criteria.where("eventTypeId").in(filter.eventTypeIds().stream().map(EventTypeId::value).toList()));
+        }
+        if (filter.notRegisteredBy() != null) {
+            List<UUID> registeredIds = findIdsByRegisteredMember(filter.notRegisteredBy());
+            if (!registeredIds.isEmpty()) {
+                conditions.add(Criteria.where("id").notIn(registeredIds));
+            }
+        }
+        if (filter.cancelledVisibleTo() != null && !filter.excludesStatus(EventStatus.CANCELLED)) {
+            Criteria notCancelled = Criteria.where("status").not(EventStatus.CANCELLED.name());
+            List<UUID> registeredIds = findIdsByRegisteredMember(filter.cancelledVisibleTo());
+            conditions.add(registeredIds.isEmpty()
+                    ? notCancelled
+                    : notCancelled.or(Criteria.where("id").in(registeredIds)));
         }
 
-        return executeQuery(buildCriteriaQuery(filter, cancelledRegisteredIds), pageable);
+        Query query = conditions.stream().reduce(Criteria::and).map(Query::query).orElseGet(Query::empty);
+
+        List<Event> results = jdbcAggregateTemplate.findAll(query.with(pageable), EventMemento.class)
+                .stream()
+                .map(EventMemento::toEvent)
+                .toList();
+        long total = pageable.isUnpaged() ? results.size() : jdbcAggregateTemplate.count(query, EventMemento.class);
+        return new PageImpl<>(results, pageable, total);
     }
 
     /**
-     * Returns null when the visibility rule does not apply.
+     * Intersection of the id sets of all active id-based constraints, or null when none is active.
      */
-    private List<UUID> resolveCancelledRegisteredIds(EventFilter filter) {
-        if (filter.cancelledVisibleTo() == null || filter.excludesStatus(EventStatus.CANCELLED)) {
-            return null;
-        }
-        return findIdsByCancelledAndRegistered(filter.cancelledVisibleTo());
-    }
-
-    /**
-     * Returns the intersection of IDs that satisfy the fulltext, registeredBy,
-     * deadlineWithin, and/or notRegisteredBy constraints,
-     * or null if none of those constraints is active (meaning no pre-filtering is needed).
-     */
-    private List<UUID> resolvePreFilteredIds(EventFilter filter) {
-        List<UUID> fulltextIds = filter.fulltextQuery() != null
-                ? findIdsByFulltext(filter.fulltextQuery())
-                : null;
-
-        List<UUID> registeredByIds = filter.registeredBy() != null
-                ? findIdsByRegisteredMember(filter.registeredBy())
-                : null;
-
-        LocalDate today = LocalDate.now();
-
-        List<UUID> deadlineWithinIds = filter.deadlineWithin() != null
-                ? findIdsByDeadlineWithin(today, today.plus(filter.deadlineWithin()))
-                : null;
-
-        List<UUID> notRegisteredByIds = filter.notRegisteredBy() != null
-                ? findIdsByNotRegisteredMember(filter.notRegisteredBy())
-                : null;
-
-        List<UUID> coordinatorIds = filter.coordinator() != null
-                ? findIdsCoordinatedBy(filter.coordinator()).stream().map(EventId::value).toList()
-                : null;
-
+    private List<UUID> resolveMatchingIds(EventFilter filter) {
         List<List<UUID>> activeSets = new ArrayList<>();
-        if (fulltextIds != null) activeSets.add(fulltextIds);
-        if (registeredByIds != null) activeSets.add(registeredByIds);
-        if (deadlineWithinIds != null) activeSets.add(deadlineWithinIds);
-        if (notRegisteredByIds != null) activeSets.add(notRegisteredByIds);
-        if (coordinatorIds != null) activeSets.add(coordinatorIds);
-
-        if (activeSets.isEmpty()) {
-            return null;
+        if (filter.fulltextQuery() != null) {
+            activeSets.add(FulltextSearch.findIds(namedJdbc, "events.events", filter.fulltextQuery(),
+                    "name", "coalesce(location, '')"));
+        }
+        if (filter.registeredBy() != null) {
+            activeSets.add(findIdsByRegisteredMember(filter.registeredBy()));
+        }
+        if (filter.deadlineWithin() != null) {
+            LocalDate today = LocalDate.now();
+            activeSets.add(findIdsByDeadlineWithin(today, today.plus(filter.deadlineWithin())));
+        }
+        if (filter.coordinator() != null) {
+            activeSets.add(findIdsCoordinatedBy(filter.coordinator()).stream().map(EventId::value).toList());
         }
 
         return activeSets.stream()
@@ -165,135 +143,11 @@ class EventRepositoryAdapter implements EventRepository {
                     Set<UUID> bSet = Set.copyOf(b);
                     return a.stream().filter(bSet::contains).toList();
                 })
-                .orElse(List.of());
-    }
-
-    private Page<Event> findAllWithMatchingIds(EventFilter filter, Pageable pageable, List<UUID> matchingIds,
-                                              List<UUID> cancelledRegisteredIds) {
-        List<Criteria> conditions = new ArrayList<>();
-        conditions.add(Criteria.where("id").in(matchingIds));
-        conditions.addAll(buildNonFulltextConditions(filter, cancelledRegisteredIds));
-
-        Criteria combined = conditions.stream().reduce(Criteria::and).orElseThrow();
-        return executeQuery(Query.query(combined), pageable);
-    }
-
-    private Page<Event> executeQuery(Query criteriaQuery, Pageable pageable) {
-        Pageable dbPageable = translateDomainToDbColumn(pageable);
-
-        List<Event> results = jdbcAggregateTemplate.findAll(criteriaQuery.with(dbPageable), EventMemento.class)
-                .stream()
-                .map(EventMemento::toEvent)
-                .toList();
-
-        long total = pageable.isUnpaged() ? results.size() : jdbcAggregateTemplate.count(criteriaQuery, EventMemento.class);
-
-        return new PageImpl<>(results, pageable, total);
+                .orElse(null);
     }
 
     /**
-     * Builds a Criteria-based query from EventFilter (excluding fulltext — handled separately).
-     * Pagination is applied separately so the same query can be reused for counting.
-     */
-    private Query buildCriteriaQuery(EventFilter filter, List<UUID> cancelledRegisteredIds) {
-        List<Criteria> conditions = buildNonFulltextConditions(filter, cancelledRegisteredIds);
-
-        if (conditions.isEmpty()) {
-            return Query.empty();
-        }
-
-        Criteria combined = conditions.stream().reduce(Criteria::and).orElseThrow();
-        return Query.query(combined);
-    }
-
-    /**
-     * Returns the Criteria conditions for filter dimensions handled by the Spring Data Criteria API.
-     * Fulltext and registeredBy cannot be expressed via Criteria (require raw SQL) and are
-     * resolved separately via a pre-fetch of matching IDs. The CANCELLED-visibility rule is added
-     * here so no query path can forget it.
-     */
-    private List<Criteria> buildNonFulltextConditions(EventFilter filter, List<UUID> cancelledRegisteredIds) {
-        List<Criteria> conditions = new ArrayList<>();
-
-        Set<EventStatus> statuses = filter.statuses();
-        if (statuses.size() < EventStatus.values().length) {
-            List<String> statusNames = statuses.stream().map(EventStatus::name).toList();
-            conditions.add(Criteria.where("status").in(statusNames));
-        }
-
-        if (filter.organizer() != null) {
-            conditions.add(Criteria.where("organizer").is(filter.organizer()));
-        }
-
-        if (filter.dateFrom() != null) {
-            conditions.add(Criteria.where("event_date").greaterThanOrEquals(filter.dateFrom()));
-        }
-
-        if (filter.dateTo() != null) {
-            conditions.add(Criteria.where("event_date").lessThanOrEquals(filter.dateTo()));
-        }
-
-        if (!filter.eventTypeIds().isEmpty()) {
-            List<UUID> typeIdValues = filter.eventTypeIds().stream()
-                    .map(EventTypeId::value)
-                    .toList();
-            conditions.add(Criteria.where("event_type_id").in(typeIdValues));
-        }
-
-        addCancelledVisibilityCondition(conditions, cancelledRegisteredIds);
-
-        return conditions;
-    }
-
-    /**
-     * A disjunction, so it cannot join the pre-filtered id intersection.
-     */
-    private void addCancelledVisibilityCondition(List<Criteria> conditions, List<UUID> cancelledRegisteredIds) {
-        if (cancelledRegisteredIds == null) {
-            return;
-        }
-        // An empty id list would produce invalid `id IN ()`, so it degenerates to the status-only branch.
-        conditions.add(cancelledRegisteredIds.isEmpty()
-                ? Criteria.where("status").not(EventStatus.CANCELLED.name())
-                : Criteria.where("status").not(EventStatus.CANCELLED.name())
-                        .or(Criteria.where("id").in(cancelledRegisteredIds)));
-    }
-
-    /**
-     * Returns the IDs of events whose {@code name} or {@code location} contains every
-     * whitespace-separated token from {@code query}, after stripping diacritics and
-     * lowercasing both sides (using the {@code unaccent} function).
-     * <p>
-     * Each token must match at least one of the two columns (OR across columns).
-     * Multiple tokens are ANDed together.
-     */
-    private List<UUID> findIdsByFulltext(String query) {
-        // fulltextQuery is already trimmed and non-blank per EventFilter compact constructor invariant
-        String[] tokens = query.split("\\s+");
-
-        StringBuilder sql = new StringBuilder("SELECT id FROM events.events WHERE ");
-        MapSqlParameterSource params = new MapSqlParameterSource();
-
-        List<String> tokenClauses = new ArrayList<>();
-        for (int i = 0; i < tokens.length; i++) {
-            String paramName = "token" + i;
-            String likePattern = "%" + tokens[i].toLowerCase() + "%";
-            params.addValue(paramName, likePattern);
-            tokenClauses.add(
-                    "unaccent(lower(name)) LIKE unaccent(:" + paramName + ")"
-                            + " OR unaccent(lower(coalesce(location, ''))) LIKE unaccent(:" + paramName + ")"
-            );
-        }
-
-        sql.append(tokenClauses.stream()
-                .map(clause -> "(" + clause + ")")
-                .collect(Collectors.joining(" AND ")));
-
-        return namedJdbc.query(sql.toString(), params, (rs, rowNum) -> rs.getObject(1, UUID.class));
-    }
-
-    /**
-     * Returns the IDs of events that have a registration for the given member.
+     * Ids of events the member has a registration for.
      * Event status is intentionally not filtered — cancelled and finished events
      * with a live registration are included (spec requirement).
      */
@@ -301,19 +155,6 @@ class EventRepositoryAdapter implements EventRepository {
         String sql = """
                 SELECT id FROM events.events e
                 WHERE EXISTS (
-                    SELECT 1 FROM events.event_registrations er
-                    WHERE er.event_id = e.id AND er.member_id = :memberId
-                )
-                """;
-        MapSqlParameterSource params = new MapSqlParameterSource("memberId", memberId.uuid());
-        return namedJdbc.query(sql, params, (rs, rowNum) -> rs.getObject(1, UUID.class));
-    }
-
-    private List<UUID> findIdsByCancelledAndRegistered(MemberId memberId) {
-        String sql = """
-                SELECT id FROM events.events e
-                WHERE e.status = 'CANCELLED'
-                  AND EXISTS (
                     SELECT 1 FROM events.event_registrations er
                     WHERE er.event_id = e.id AND er.member_id = :memberId
                 )
@@ -366,24 +207,5 @@ class EventRepositoryAdapter implements EventRepository {
         String sql = "SELECT event_id FROM events.event_coordinators WHERE member_id = :memberId";
         MapSqlParameterSource params = new MapSqlParameterSource("memberId", memberId.uuid());
         return namedJdbc.query(sql, params, (rs, rowNum) -> new EventId(rs.getObject(1, UUID.class)));
-    }
-
-    /**
-     * Returns IDs of events where the given member does NOT have a registration.
-     * <p>
-     * Scalability note: this scans all events rows. For members with few registrations the
-     * result set can be large; in future consider adding a status/event_date pre-filter in SQL
-     * rather than intersecting the large list in Java.
-     */
-    private List<UUID> findIdsByNotRegisteredMember(MemberId memberId) {
-        String sql = """
-                SELECT id FROM events.events e
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM events.event_registrations er
-                    WHERE er.event_id = e.id AND er.member_id = :memberId
-                )
-                """;
-        MapSqlParameterSource params = new MapSqlParameterSource("memberId", memberId.uuid());
-        return namedJdbc.query(sql, params, (rs, rowNum) -> rs.getObject(1, UUID.class));
     }
 }
