@@ -42,8 +42,8 @@ class MemberSuspendedEventIntegrationTest {
     private FreeGroupRepository freeGroupRepository;
 
     @Test
-    @DisplayName("should cancel pending invitation and publish FreeGroupInvitationCancelledEvent when MemberSuspendedEvent is received")
-    void shouldCancelPendingInvitationAndPublishCancelledEvent(Scenario scenario) {
+    @DisplayName("should cancel pending invitation when MemberSuspendedEvent is received")
+    void shouldCancelPendingInvitation(Scenario scenario) {
         FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Hiking Club", OWNER, Set.of()));
         group.invite(OWNER, INVITEE);
         FreeGroup saved = freeGroupRepository.save(group);

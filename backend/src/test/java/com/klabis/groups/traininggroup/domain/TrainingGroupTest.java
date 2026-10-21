@@ -2,7 +2,6 @@ package com.klabis.groups.traininggroup.domain;
 
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.OwnerCannotBeMemberException;
-import com.klabis.groups.MemberAssignedToTrainingGroupEvent;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
@@ -247,38 +246,6 @@ class TrainingGroupTest {
     }
 
     @Nested
-    @DisplayName("assignEligibleMember() — domain event registration")
-    class MemberEventRegistration {
-
-        private TrainingGroup group;
-
-        @BeforeEach
-        void setUp() {
-            group = TrainingGroup.reconstruct(
-                    new TrainingGroupId(UUID.randomUUID()), "Juniors", Set.of(TRAINER), Set.of(),
-                    new AgeRange(10, 18), null);
-        }
-
-        @Test
-        @DisplayName("assignEligibleMember() should register MemberAssignedToTrainingGroupEvent")
-        void shouldRegisterEventOnAssignEligibleMember() {
-            group.assignEligibleMember(REGULAR_MEMBER);
-
-            assertThat(group.getDomainEvents())
-                    .hasSize(1)
-                    .first()
-                    .isInstanceOf(MemberAssignedToTrainingGroupEvent.class);
-
-            MemberAssignedToTrainingGroupEvent event =
-                    (MemberAssignedToTrainingGroupEvent) group.getDomainEvents().get(0);
-            assertThat(event.memberId()).isEqualTo(REGULAR_MEMBER);
-            assertThat(event.groupId()).isEqualTo(group.getId());
-            assertThat(event.groupName()).isEqualTo("Juniors");
-            assertThat(event.occurredAt()).isNotNull();
-        }
-    }
-
-    @Nested
     @DisplayName("removeMember()")
     class RemoveMemberMethod {
 
@@ -299,14 +266,6 @@ class TrainingGroupTest {
             group.removeMember(REGULAR_MEMBER);
 
             assertThat(group.hasMember(REGULAR_MEMBER)).isFalse();
-        }
-
-        @Test
-        @DisplayName("should not register any domain event on removal")
-        void shouldNotRegisterEventOnRemoval() {
-            group.removeMember(REGULAR_MEMBER);
-
-            assertThat(group.getDomainEvents()).isEmpty();
         }
 
         @Test
@@ -446,19 +405,18 @@ class TrainingGroupTest {
         }
 
         @Test
-        @DisplayName("addTrainee() adds the trainee and publishes the assignment event")
-        void shouldAddTraineeAndPublishEvent() {
+        @DisplayName("addTrainee() adds the trainee")
+        void shouldAddTrainee() {
             TrainingGroup group = TrainingGroup.create(
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
 
             group.addTrainee(REGULAR_MEMBER);
 
             assertThat(group.hasMember(REGULAR_MEMBER)).isTrue();
-            assertThat(group.getDomainEvents()).hasSize(1);
         }
 
         @Test
-        @DisplayName("assignEligibleMember() skips the group's own trainer and publishes no event")
+        @DisplayName("assignEligibleMember() skips the group's own trainer")
         void shouldSkipGroupsOwnTrainer() {
             TrainingGroup group = TrainingGroup.create(
                     new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
@@ -467,7 +425,6 @@ class TrainingGroupTest {
 
             assertThat(group.hasMember(TRAINER)).isFalse();
             assertThat(group.getMembers()).isEmpty();
-            assertThat(group.getDomainEvents()).isEmpty();
         }
 
         @Test

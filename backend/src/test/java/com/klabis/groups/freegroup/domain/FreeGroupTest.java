@@ -6,7 +6,6 @@ import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.groups.domain.MemberNotInGroupException;
 import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.FreeGroupId;
-import com.klabis.groups.freegroup.FreeGroupInvitationCancelledEvent;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -835,52 +834,6 @@ class FreeGroupTest {
             List<Invitation> pending = group.getPendingInvitations();
             assertThat(pending).hasSize(1);
             assertThat(pending.get(0).getInvitedMember()).isEqualTo(OTHER_MEMBER);
-        }
-    }
-
-    @Nested
-    @DisplayName("cancelInvitation() — domain event")
-    class CancelInvitationDomainEvent {
-
-        @Test
-        @DisplayName("should emit FreeGroupInvitationCancelledEvent with recipientOwnerIds excluding the actor")
-        void shouldEmitEventExcludingActor() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
-            addMemberViaInvitation(group, OTHER_MEMBER);
-            group.addOwner(OTHER_MEMBER, CREATOR);
-            group.invite(CREATOR, ANOTHER_MEMBER);
-            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
-
-            group.cancelInvitation(invitationId, Optional.of(CREATOR), "No longer needed");
-
-            List<Object> events = group.getDomainEvents();
-            assertThat(events).hasSize(1);
-            FreeGroupInvitationCancelledEvent event = (FreeGroupInvitationCancelledEvent) events.get(0);
-            assertThat(event.groupId()).isEqualTo(group.getId());
-            assertThat(event.invitationId()).isEqualTo(invitationId);
-            assertThat(event.inviteeMemberId()).isEqualTo(ANOTHER_MEMBER);
-            assertThat(event.actor()).contains(CREATOR);
-            assertThat(event.reason()).contains("No longer needed");
-            assertThat(event.recipientOwnerIds()).containsExactly(OTHER_MEMBER);
-            assertThat(event.cancelledAt()).isNotNull();
-        }
-
-        @Test
-        @DisplayName("should emit FreeGroupInvitationCancelledEvent with all owners as recipients for SYSTEM actor")
-        void shouldEmitEventWithAllOwnersForSystemActor() {
-            FreeGroup group = FreeGroup.create(new FreeGroup.CreateFreeGroup("Test Group", CREATOR, Set.of()));
-            addMemberViaInvitation(group, OTHER_MEMBER);
-            group.addOwner(OTHER_MEMBER, CREATOR);
-            group.invite(CREATOR, ANOTHER_MEMBER);
-            InvitationId invitationId = group.getPendingInvitations().get(0).getId();
-
-            group.cancelInvitation(invitationId, Optional.empty(), "Member deactivated");
-
-            List<Object> events = group.getDomainEvents();
-            assertThat(events).hasSize(1);
-            FreeGroupInvitationCancelledEvent event = (FreeGroupInvitationCancelledEvent) events.get(0);
-            assertThat(event.actor()).isEmpty();
-            assertThat(event.recipientOwnerIds()).containsExactlyInAnyOrder(CREATOR, OTHER_MEMBER);
         }
     }
 

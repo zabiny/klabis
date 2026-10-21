@@ -5,7 +5,6 @@ import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.MemberGroup;
 import com.klabis.common.users.Authority;
-import com.klabis.groups.MemberAssignedToTrainingGroupEvent;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
@@ -114,7 +113,6 @@ public class TrainingGroup extends MemberGroup<TrainingGroup, TrainingGroupId, M
      */
     public void addTrainee(MemberId memberId) {
         addMember(memberId);
-        registerEvent(new MemberAssignedToTrainingGroupEvent(memberId, id, getName(), Instant.now()));
     }
 
     /**
