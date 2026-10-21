@@ -7,15 +7,12 @@ import org.mapstruct.Mapping;
 import org.springframework.core.convert.converter.Converter;
 
 @Mapper(config = MapstructSpringMapperConfig.class)
-interface TransactionResourceConverter extends Converter<Transaction, TransactionResource> {
+interface TransactionResourceConverter extends MoneyMapping, Converter<Transaction, TransactionResource> {
 
     @Override
-    @Mapping(target = "id", expression = "java(tx.getId().value())")
-    @Mapping(target = "type", expression = "java(tx.getType().name())")
-    @Mapping(target = "amount", expression = "java(tx.getAmount().amount())")
-    @Mapping(target = "currency", expression = "java(tx.getAmount().currency().getCurrencyCode())")
-    @Mapping(target = "recordedBy", expression = "java(tx.getRecordedBy().uuid())")
-    @Mapping(target = "reversesTransactionId",
-            expression = "java(tx.getReversesTransactionId() != null ? tx.getReversesTransactionId().value() : null)")
-    TransactionResource convert(Transaction tx);
+    @Mapping(target = "id", source = "id.value")
+    @Mapping(target = "currency", source = "amount", qualifiedByName = "currencyCode")
+    @Mapping(target = "recordedBy", source = "recordedBy.uuid")
+    @Mapping(target = "reversesTransactionId", source = "reversesTransactionId.value")
+    TransactionResource convert(Transaction source);
 }
