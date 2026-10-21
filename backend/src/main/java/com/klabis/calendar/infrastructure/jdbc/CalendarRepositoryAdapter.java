@@ -14,7 +14,6 @@ import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -24,15 +23,7 @@ import java.util.stream.Collectors;
 @Repository
 class CalendarRepositoryAdapter implements CalendarRepository {
 
-    private static final Sort DEFAULT_SORT = Sort.by(Sort.Order.asc("start_date"), Sort.Order.asc("name"));
-
-    private static final Map<String, String> DOMAIN_TO_DB_COLUMN = Map.of(
-            "startDate", "start_date",
-            "endDate", "end_date",
-            "name", "name",
-            "kind", "kind",
-            "eventId", "event_id"
-    );
+    private static final Sort DEFAULT_SORT = Sort.by(Sort.Order.asc("startDate"), Sort.Order.asc("name"));
 
     private final CalendarJdbcRepository jdbcRepository;
     private final JdbcAggregateTemplate jdbcAggregateTemplate;
@@ -64,10 +55,10 @@ class CalendarRepositoryAdapter implements CalendarRepository {
         }
 
         if (!filter.eventIds().isEmpty()) {
-            criteria = criteria.and("event_id").in(toUuids(filter.eventIds()));
+            criteria = criteria.and("eventId").in(toUuids(filter.eventIds()));
         }
 
-        Sort effectiveSort = sort.isUnsorted() ? DEFAULT_SORT : withNameTiebreaker(translateSort(sort));
+        Sort effectiveSort = sort.isUnsorted() ? DEFAULT_SORT : withNameTiebreaker(sort);
         Query query = Query.query(criteria).sort(effectiveSort);
 
         return jdbcAggregateTemplate.findAll(query, CalendarMemento.class).stream()
@@ -77,7 +68,7 @@ class CalendarRepositoryAdapter implements CalendarRepository {
 
     @Override
     public List<CalendarItem> findByEventId(EventId eventId) {
-        Criteria criteria = Criteria.where("event_id").is(eventId.value());
+        Criteria criteria = Criteria.where("eventId").is(eventId.value());
         return jdbcAggregateTemplate.findAll(Query.query(criteria), CalendarMemento.class).stream()
                 .map(CalendarMemento::toCalendarItem)
                 .toList();
@@ -89,18 +80,8 @@ class CalendarRepositoryAdapter implements CalendarRepository {
     }
 
     private static Criteria buildDateRangeCriteria(CalendarFilter filter) {
-        return Criteria.where("start_date").lessThanOrEquals(filter.endDate())
-                .and("end_date").greaterThanOrEquals(filter.startDate());
-    }
-
-    private static Sort translateSort(Sort sort) {
-        List<Sort.Order> orders = sort.stream()
-                .map(order -> new Sort.Order(
-                        order.getDirection(),
-                        DOMAIN_TO_DB_COLUMN.getOrDefault(order.getProperty(), order.getProperty()),
-                        order.getNullHandling()))
-                .toList();
-        return Sort.by(orders);
+        return Criteria.where("startDate").lessThanOrEquals(filter.endDate())
+                .and("endDate").greaterThanOrEquals(filter.startDate());
     }
 
     /**
