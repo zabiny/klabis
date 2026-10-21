@@ -6,7 +6,6 @@ import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventRanking;
-import com.klabis.events.domain.Money;
 import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.members.MemberId;
 import org.mapstruct.Mapper;
@@ -27,7 +26,7 @@ import java.util.stream.Stream;
  * {@link EventSummaryDtoConverter} duplicates the shared steps by design for the same reason.
  */
 @Mapper(config = MapstructSpringMapperConfig.class)
-interface EventDtoConverter extends Converter<Event, EventDto> {
+interface EventDtoConverter extends Converter<Event, EventDto>, EntryFeeDtoMapping {
 
     @Override
     @Mapping(target = "id", source = "id.value")
@@ -63,10 +62,6 @@ interface EventDtoConverter extends Converter<Event, EventDto> {
     @Mapping(target = "id", source = "id.value")
     @Mapping(target = "fee", source = "feeOverride")
     EventCategoryDto toCategoryDto(EventCategory category);
-
-    @Mapping(target = "amount", expression = "java(fee.amount())")
-    @Mapping(target = "currency", expression = "java(fee.currency().getCurrencyCode())")
-    EntryFeeDto toEntryFeeDto(Money fee);
 
     RankingDto toRankingDto(EventRanking ranking);
 

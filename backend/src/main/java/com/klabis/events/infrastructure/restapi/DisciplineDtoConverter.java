@@ -10,6 +10,6 @@ import org.springframework.core.convert.converter.Converter;
 interface DisciplineDtoConverter extends Converter<Discipline, DisciplineDto> {
 
     @Override
-    @Mapping(target = "id", expression = "java(discipline.getId().value())")
+    @Mapping(target = "id", source = "id.value")
     DisciplineDto convert(Discipline discipline);
 }

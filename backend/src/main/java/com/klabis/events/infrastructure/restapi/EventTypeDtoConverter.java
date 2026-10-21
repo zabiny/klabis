@@ -4,14 +4,20 @@ import com.klabis.common.mapping.MapstructSpringMapperConfig;
 import com.klabis.events.domain.EventType;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.NullValueMappingStrategy;
 import org.springframework.core.convert.converter.Converter;
 
-@Mapper(config = MapstructSpringMapperConfig.class)
-interface EventTypeDtoConverter extends Converter<EventType, EventTypeDto> {
+import java.util.Optional;
+
+@Mapper(config = MapstructSpringMapperConfig.class,
+        nullValueIterableMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT)
+interface EventTypeDtoConverter extends Converter<EventType, EventTypeDto>, DisciplineIdMapping {
 
     @Override
-    @Mapping(target = "id", expression = "java(eventType.getId().value())")
-    @Mapping(target = "color", expression = "java(eventType.getColor().orElse(null))")
-    @Mapping(target = "disciplineIds", expression = "java(EventTypeRequestConversions.toDisciplineUuids(eventType.getDisciplineIds()))")
+    @Mapping(target = "id", source = "id.value")
     EventTypeDto convert(EventType eventType);
+
+    default <T> T unwrap(Optional<T> value) {
+        return value == null ? null : value.orElse(null);
+    }
 }

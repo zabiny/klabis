@@ -10,6 +10,6 @@ import org.springframework.core.convert.converter.Converter;
 interface CategoryPresetDtoConverter extends Converter<CategoryPreset, CategoryPresetDto> {
 
     @Override
-    @Mapping(target = "id", expression = "java(preset.getId().value())")
+    @Mapping(target = "id", source = "id.value")
     CategoryPresetDto convert(CategoryPreset preset);
 }

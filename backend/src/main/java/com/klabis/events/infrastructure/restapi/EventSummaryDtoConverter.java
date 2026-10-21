@@ -5,7 +5,6 @@ import com.klabis.events.EventCategory;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.domain.Event;
-import com.klabis.events.domain.Money;
 import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.members.MemberId;
 import org.mapstruct.Mapper;
@@ -25,7 +24,7 @@ import java.util.stream.Stream;
  * (see backend-patterns "never uses= on a Converter").
  */
 @Mapper(config = MapstructSpringMapperConfig.class)
-interface EventSummaryDtoConverter extends Converter<Event, EventSummaryDto> {
+interface EventSummaryDtoConverter extends Converter<Event, EventSummaryDto>, EntryFeeDtoMapping {
 
     @Override
     @Mapping(target = "id", source = "id.value")
@@ -54,10 +53,6 @@ interface EventSummaryDtoConverter extends Converter<Event, EventSummaryDto> {
     @Mapping(target = "id", source = "id.value")
     @Mapping(target = "fee", source = "feeOverride")
     EventCategoryDto toCategoryDto(EventCategory category);
-
-    @Mapping(target = "amount", expression = "java(fee.amount())")
-    @Mapping(target = "currency", expression = "java(fee.currency().getCurrencyCode())")
-    EntryFeeDto toEntryFeeDto(Money fee);
 
     default List<LocalDate> toDeadlineList(RegistrationDeadlines deadlines) {
         if (deadlines == null || deadlines.isEmpty()) {

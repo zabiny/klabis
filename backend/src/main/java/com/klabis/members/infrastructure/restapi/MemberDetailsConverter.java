@@ -13,6 +13,8 @@ import org.mapstruct.NullValueCheckStrategy;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import org.springframework.core.convert.converter.Converter;
 
+import java.util.Optional;
+
 /**
  * Implements Spring's {@link Converter} (rather than a plain {@code @Mapper}) so {@code @WebMvcTest}
  * slices pick it up automatically — {@code WebMvcTypeExcludeFilter} always lets {@link Converter}
@@ -33,14 +35,14 @@ import org.springframework.core.convert.converter.Converter;
 interface MemberDetailsConverter extends Converter<Member, MemberDetailsResponse> {
 
     @Override
-    @Mapping(target = "id", expression = "java(member.getId().value())")
+    @Mapping(target = "id", source = "id.value")
     @Mapping(target = "registrationNumber", source = "registrationNumber.value")
     @Mapping(target = "address", source = "address")
-    @Mapping(target = "email", expression = "java(member.getEmail() != null ? member.getEmail().value() : null)")
-    @Mapping(target = "phone", expression = "java(member.getPhone() != null ? member.getPhone().value() : null)")
-    @Mapping(target = "birthNumber", expression = "java(member.getBirthNumber() != null ? member.getBirthNumber().value() : null)")
-    @Mapping(target = "bankAccountNumber", expression = "java(member.getBankAccountNumber() != null ? member.getBankAccountNumber().value() : null)")
-    @Mapping(target = "suspendedBy", expression = "java(member.getSuspendedBy() != null ? member.getSuspendedBy().uuid().toString() : null)")
+    @Mapping(target = "email", source = "email.value")
+    @Mapping(target = "phone", source = "phone.value")
+    @Mapping(target = "birthNumber", source = "birthNumber.value")
+    @Mapping(target = "bankAccountNumber", source = "bankAccountNumber.value")
+    @Mapping(target = "suspendedBy", source = "suspendedBy.uuid")
     @Mapping(target = "gender", source = "gender")
     @Mapping(target = "drivingLicenseGroup", source = "drivingLicenseGroup")
     @Mapping(target = "suspensionReason", source = "suspensionReason")
@@ -56,8 +58,11 @@ interface MemberDetailsConverter extends Converter<Member, MemberDetailsResponse
 
     IdentityCardDto identityCardToDto(IdentityCard identityCard);
 
-    @Mapping(target = "validityDate", expression = "java(medicalCourse.validityDate() != null ? medicalCourse.validityDate().orElse(null) : null)")
     MedicalCourseDto medicalCourseToDto(MedicalCourse medicalCourse);
+
+    default <T> T unwrap(Optional<T> value) {
+        return value == null ? null : value.orElse(null);
+    }
 
     TrainerLicenseDto trainerLicenseToDto(TrainerLicense trainerLicense);
 
