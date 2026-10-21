@@ -197,6 +197,28 @@ public class EventTestDataBuilder {
                 .build());
     }
 
+    public static Event reconstructed(
+            EventId id,
+            String name,
+            LocalDate eventDate,
+            String location,
+            String organizer,
+            WebsiteUrl websiteUrl,
+            LinkedHashSet<MemberId> coordinators,
+            EventTypeId eventTypeId,
+            RegistrationDeadlines registrationDeadlines,
+            EventStatus status,
+            String cancellationReason,
+            List<EventCategory> categories,
+            EventRanking ranking,
+            Money baseEntryFee,
+            List<EventRegistration> registrations,
+            AuditMetadata auditMetadata) {
+        return Event.reconstruct(id, name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId,
+                registrationDeadlines, status, cancellationReason, categories, ranking, baseEntryFee,
+                false, false, SiPolicy.defaultPolicy(), registrations, auditMetadata);
+    }
+
     public Event build() {
         return Event.reconstruct(eventId,
                 name,

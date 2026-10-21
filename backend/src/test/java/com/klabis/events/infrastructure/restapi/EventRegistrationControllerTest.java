@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import java.time.LocalDateTime;
 import com.klabis.common.TargetGrant;
 import com.klabis.common.authorization.TargetType;
 import com.klabis.common.WithKlabisMockUser;
@@ -377,8 +378,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(closedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -411,7 +412,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(closedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -443,7 +444,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(closedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -473,7 +474,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(closedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -509,8 +510,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    ownId, new MemberDto(ownId.value(), "John", "Doe", "john@example.com"),
-                    otherId, new MemberDto(otherId.value(), "Jane", "Smith", "jane@example.com")
+                    ownId, new MemberDto(ownId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null),
+                    otherId, new MemberDto(otherId.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -538,7 +539,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -571,7 +572,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -600,7 +601,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -631,7 +632,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -999,8 +1000,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "Alice", "Zeta", "alice@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Bob", "Alpha", "bob@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "Alice", "Zeta", "alice@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Bob", "Alpha", "bob@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1028,8 +1029,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "Zdeněk", "Smith", "z@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Adam", "Jones", "a@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "Zdeněk", "Smith", "z@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Adam", "Jones", "a@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1058,8 +1059,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "John", "Žák", "j@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Jane", "Beneš", "ja@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "John", "Žák", "j@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Beneš", "ja@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1090,8 +1091,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1122,8 +1123,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1154,8 +1155,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1187,8 +1188,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "Alice", "Smith", "a@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Bob", "Jones", "b@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1227,8 +1228,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1261,7 +1262,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(finishedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1293,8 +1294,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1330,8 +1331,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(finishedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1364,7 +1365,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -1397,7 +1398,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(activeEvent);
             when(membersMock.findById(targetMemberId)).thenReturn(Optional.of(
-                    new MemberDto(targetMemberId.value(), "Jane", "Smith", "jane@example.com")));
+                    new MemberDto(targetMemberId.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -1423,7 +1424,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), true)).thenReturn(activeEvent);
             when(membersMock.findById(targetMemberId)).thenReturn(Optional.of(
-                    new MemberDto(targetMemberId.value(), "Jane", "Smith", "jane@example.com")));
+                    new MemberDto(targetMemberId.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -1463,7 +1464,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
             when(membersMock.findById(targetMemberId)).thenReturn(Optional.of(
-                    new MemberDto(targetMemberId.value(), "Jane", "Smith", "jane@example.com")));
+                    new MemberDto(targetMemberId.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -1485,7 +1486,7 @@ class EventRegistrationControllerTest {
             Event event = eventWithNotedRegistration(null, memberId);
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -1505,7 +1506,7 @@ class EventRegistrationControllerTest {
             Event event = eventWithNotedRegistration(null, memberId);
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -1525,7 +1526,7 @@ class EventRegistrationControllerTest {
             Event event = eventWithNotedRegistration(new EventId(eventId), memberId);
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "Jane", "Smith", "jane@example.com")));
+                    new MemberDto(memberId.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -1586,7 +1587,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -1615,7 +1616,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -1820,7 +1821,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(activeEvent);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(
                             get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -1857,8 +1858,8 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(publishedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com"),
-                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null),
+                    member2Id, new MemberDto(member2Id.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -1890,7 +1891,7 @@ class EventRegistrationControllerTest {
 
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(publishedEvent);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com")
+                    member1Id, new MemberDto(member1Id.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)
             ));
 
             mockMvc.perform(
@@ -2002,7 +2003,7 @@ class EventRegistrationControllerTest {
             event.publish();
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -2056,7 +2057,7 @@ class EventRegistrationControllerTest {
         private void stubListing(Event event, MemberId memberId) {
             when(eventManagementServiceMock.getEvent(event.getId(), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+                    memberId, new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
         }
 
         @Test
@@ -2110,7 +2111,7 @@ class EventRegistrationControllerTest {
             Event event = eventWithMissingRegistration(new EventId(eventId), memberId);
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "Jane", "Smith", "jane@example.com")));
+                    new MemberDto(memberId.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -2130,7 +2131,7 @@ class EventRegistrationControllerTest {
             event.publish();
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "Jane", "Smith", "jane@example.com")));
+                    new MemberDto(memberId.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)));
 
             mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -2175,7 +2176,7 @@ class EventRegistrationControllerTest {
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false))
                     .thenReturn(eventWithRegistration(eventId, memberId));
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
             enroll(eventId, memberId);
 
             mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -2194,7 +2195,7 @@ class EventRegistrationControllerTest {
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false))
                     .thenReturn(eventWithRegistration(eventId, memberId));
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "Jane", "Smith", "jane@example.com")));
+                    new MemberDto(memberId.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)));
             enroll(eventId, memberId);
 
             mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -2212,7 +2213,7 @@ class EventRegistrationControllerTest {
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false))
                     .thenReturn(eventWithRegistration(eventId, memberId));
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
             when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
 
             mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -2232,7 +2233,7 @@ class EventRegistrationControllerTest {
             event.publish();
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
-                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com")));
+                    new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
             enroll(eventId, memberId);
 
             mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
@@ -2258,8 +2259,8 @@ class EventRegistrationControllerTest {
             event.publish();
             when(eventManagementServiceMock.getEvent(new EventId(eventId), false)).thenReturn(event);
             when(membersMock.findByIds(any())).thenReturn(Map.of(
-                    enrolledMember, new MemberDto(enrolledMember.value(), "John", "Doe", "john@example.com"),
-                    otherMember, new MemberDto(otherMember.value(), "Jane", "Smith", "jane@example.com")));
+                    enrolledMember, new MemberDto(enrolledMember.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null),
+                    otherMember, new MemberDto(otherMember.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)));
             var record = newSyncRecord(eventId, enrolledMember);
             when(synchronizationPort.findByTarget(any())).thenAnswer(inv -> {
                 SyncTarget target = inv.getArgument(0);

@@ -93,7 +93,7 @@ class KlabisAuthorizationServerCustomizerTest {
         @Test
         @DisplayName("should add member_id claim when member exists for authorization_code grant")
         void shouldAddMemberIdClaimWhenMemberExists() {
-            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", TEST_MODIFIED_AT);
+            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", null, TEST_MODIFIED_AT, null);
             stubUserDetails();
             when(members.findById(testMemberId())).thenReturn(Optional.of(memberDto));
             customizer = new KlabisAuthorizationServerCustomizer(members, legalGuardians, klabisUserDetailsService);
@@ -113,7 +113,7 @@ class KlabisAuthorizationServerCustomizerTest {
             UserPermissions mockPermissions = UserPermissions.empty(mockUser.getId());
             KlabisUserDetailsService.KlabisUserDetails userDetails =
                     new KlabisUserDetailsService.KlabisUserDetails(mockUser, mockPermissions);
-            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", TEST_MODIFIED_AT);
+            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", null, TEST_MODIFIED_AT, null);
 
             when(klabisUserDetailsService.loadKlabisUserDetails(TEST_USERNAME)).thenReturn(Optional.of(userDetails));
             stubUserDetails();
@@ -191,7 +191,7 @@ class KlabisAuthorizationServerCustomizerTest {
             UserPermissions mockPermissions = UserPermissions.empty(mockUser.getId());
             KlabisUserDetailsService.KlabisUserDetails userDetails =
                     new KlabisUserDetailsService.KlabisUserDetails(mockUser, mockPermissions);
-            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", TEST_MODIFIED_AT);
+            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", null, TEST_MODIFIED_AT, null);
 
             when(klabisUserDetailsService.loadKlabisUserDetails(TEST_USERNAME)).thenReturn(Optional.of(userDetails));
             stubUserDetails();
@@ -262,7 +262,7 @@ class KlabisAuthorizationServerCustomizerTest {
         @Test
         @DisplayName("should add is_member=true and profile claims with profile scope")
         void shouldAddIsMemberTrueAndProfileClaims() {
-            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", TEST_MODIFIED_AT);
+            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", null, TEST_MODIFIED_AT, null);
             stubUserDetails();
             when(members.findById(testMemberId())).thenReturn(Optional.of(memberDto));
             customizer = new KlabisAuthorizationServerCustomizer(members, legalGuardians, klabisUserDetailsService);
@@ -281,7 +281,7 @@ class KlabisAuthorizationServerCustomizerTest {
         @Test
         @DisplayName("should add email claims with email scope when member has email")
         void shouldAddEmailClaimsWhenMemberHasEmail() {
-            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", TEST_MODIFIED_AT);
+            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", null, TEST_MODIFIED_AT, null);
             stubUserDetails();
             when(members.findById(testMemberId())).thenReturn(Optional.of(memberDto));
             customizer = new KlabisAuthorizationServerCustomizer(members, legalGuardians, klabisUserDetailsService);
@@ -299,7 +299,7 @@ class KlabisAuthorizationServerCustomizerTest {
         @Test
         @DisplayName("should not add email claims when member has no email")
         void shouldNotAddEmailClaimsWhenMemberHasNoEmail() {
-            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", null, TEST_MODIFIED_AT);
+            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", null, null, TEST_MODIFIED_AT, null);
             stubUserDetails();
             when(members.findById(testMemberId())).thenReturn(Optional.of(memberDto));
             customizer = new KlabisAuthorizationServerCustomizer(members, legalGuardians, klabisUserDetailsService);
@@ -317,7 +317,7 @@ class KlabisAuthorizationServerCustomizerTest {
         @Test
         @DisplayName("should add all claims with both profile and email scopes")
         void shouldAddAllClaimsWithBothScopes() {
-            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", TEST_MODIFIED_AT);
+            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", null, TEST_MODIFIED_AT, null);
             stubUserDetails();
             when(members.findById(testMemberId())).thenReturn(Optional.of(memberDto));
             customizer = new KlabisAuthorizationServerCustomizer(members, legalGuardians, klabisUserDetailsService);
@@ -356,7 +356,7 @@ class KlabisAuthorizationServerCustomizerTest {
         @Test
         @DisplayName("should not add profile claims without profile scope")
         void shouldNotAddProfileClaimsWithoutProfileScope() {
-            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", TEST_MODIFIED_AT);
+            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", null, TEST_MODIFIED_AT, null);
             stubUserDetails();
             when(members.findById(testMemberId())).thenReturn(Optional.of(memberDto));
             customizer = new KlabisAuthorizationServerCustomizer(members, legalGuardians, klabisUserDetailsService);
@@ -375,7 +375,7 @@ class KlabisAuthorizationServerCustomizerTest {
         @Test
         @DisplayName("should not add email claims without email scope")
         void shouldNotAddEmailClaimsWithoutEmailScope() {
-            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", TEST_MODIFIED_AT);
+            MemberDto memberDto = new MemberDto(TEST_MEMBER_ID, "Jan", "Novák", "jan@example.com", null, TEST_MODIFIED_AT, null);
             stubUserDetails();
             when(members.findById(testMemberId())).thenReturn(Optional.of(memberDto));
             customizer = new KlabisAuthorizationServerCustomizer(members, legalGuardians, klabisUserDetailsService);
@@ -454,7 +454,7 @@ class KlabisAuthorizationServerCustomizerTest {
             when(klabisUserDetailsService.loadKlabisUserDetails(GUARDIAN_LOGIN)).thenReturn(Optional.of(
                     new KlabisUserDetailsService.KlabisUserDetails(promoted, UserPermissions.empty(promoted.getId()))));
             when(members.findById(MemberId.fromUserId(promoted.getId())))
-                    .thenReturn(Optional.of(new MemberDto(promoted.getId().uuid(), "Petr", "Rodič", "petr@example.com", TEST_MODIFIED_AT)));
+                    .thenReturn(Optional.of(new MemberDto(promoted.getId().uuid(), "Petr", "Rodič", "petr@example.com", null, TEST_MODIFIED_AT, null)));
             customizer = new KlabisAuthorizationServerCustomizer(members, legalGuardians, klabisUserDetailsService);
 
             OidcUserInfo.Builder builder = OidcUserInfo.builder();

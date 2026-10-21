@@ -1,5 +1,6 @@
 package com.klabis.calendar.application;
 
+import com.klabis.events.EventTestDataBuilder;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventScheduleQuery;
 import com.klabis.events.domain.Event;
@@ -56,7 +57,7 @@ class IcalFeedServiceTest {
     private Event eventWithCoordinator(EventId id, MemberId coordinatorId) {
         LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
         if (coordinatorId != null) coordinators.add(coordinatorId);
-        return Event.reconstruct(
+        return EventTestDataBuilder.reconstructed(
                 id,
                 "Test Event",
                 NOW.plusDays(10),

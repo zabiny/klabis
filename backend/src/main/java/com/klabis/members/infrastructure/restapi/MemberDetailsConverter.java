@@ -20,10 +20,10 @@ import org.springframework.core.convert.converter.Converter;
  * for the precedent.
  * <p>
  * Nested field mapping (address, guardian, identity card, medical course, licenses) is declared
- * directly on this interface rather than shared via {@code uses = MemberMapper.class} — {@code
- * Converter} beans are visible to every {@code @WebMvcTest} slice in the app regardless of its
- * {@code controllers} filter, so a {@code uses} dependency on a plain, non-Converter {@code @Mapper}
- * would force every unrelated slice to import that mapper's generated impl too.
+ * directly on this interface rather than shared via {@code uses =} — {@code Converter} beans are
+ * visible to every {@code @WebMvcTest} slice in the app regardless of its {@code controllers}
+ * filter, so a {@code uses} dependency on a plain, non-Converter {@code @Mapper} would force every
+ * unrelated slice to import that mapper's generated impl too.
  */
 @Mapper(
         config = MapstructSpringMapperConfig.class,

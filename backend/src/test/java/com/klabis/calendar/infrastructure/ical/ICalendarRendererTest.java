@@ -1,5 +1,6 @@
 package com.klabis.calendar.infrastructure.ical;
 
+import com.klabis.events.EventTestDataBuilder;
 import com.klabis.calendar.application.IcalFeedPort.EventScheduleEntry;
 import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;
@@ -41,7 +42,7 @@ class ICalendarRendererTest {
                               EventStatus status) {
         LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
         if (coordinatorId != null) coordinators.add(coordinatorId);
-        return Event.reconstruct(
+        return EventTestDataBuilder.reconstructed(
                 new EventId(id),
                 name,
                 date,

@@ -84,19 +84,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             BankAccountNumber bankAccountNumber,
             UserId registeredBy
     ) {
-        public static RegisterMember from(Member member) {
-            return new RegisterMember(
-                    member.id,
-                    member.registrationNumber,
-                    member.personalInformation,
-                    member.address,
-                    member.email,
-                    member.phone,
-                    member.birthNumber,
-                    member.bankAccountNumber,
-                    null
-            );
-        }
     }
 
     /**
@@ -175,9 +162,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
             DeactivationReason reason,
             String note
     ) {
-        public static SuspendMembership from(Member member) {
-            return new SuspendMembership(member.suspendedBy, member.suspensionReason, member.suspensionNote);
-        }
     }
 
     /**
@@ -190,9 +174,6 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     public record ResumeMembership(
             UserId resumedBy
     ) {
-        public static ResumeMembership from(Member member) {
-            return new ResumeMembership(null);
-        }
     }
 
     /**

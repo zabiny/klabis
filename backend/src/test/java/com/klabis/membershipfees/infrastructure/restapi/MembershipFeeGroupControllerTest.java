@@ -150,7 +150,7 @@ class MembershipFeeGroupControllerTest {
         @WithKlabisMockUser
         void shouldReturnEmbeddedMembersWithDetails() throws Exception {
             MembershipFeeGroup group = buildFrozenGroupWithMember();
-            MemberDto memberDto = new MemberDto(MEMBER_UUID, "Jan", "Novák", "jan@example.com", "ZBM1234", LocalDateTime.of(2025, 1, 1, 0, 0));
+            MemberDto memberDto = new MemberDto(MEMBER_UUID, "Jan", "Novák", "jan@example.com", "ZBM1234", LocalDateTime.of(2025, 1, 1, 0, 0), null);
             when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
             when(members.findByIds(Set.of(new MemberId(MEMBER_UUID)))).thenReturn(Map.of(new MemberId(MEMBER_UUID), memberDto));
 

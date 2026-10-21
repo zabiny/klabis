@@ -67,7 +67,7 @@ class LegalGuardianGroupControllerTest {
     @BeforeEach
     void stubMinorDetails() {
         when(members.findByIds(anyCollection())).thenReturn(Map.of(new MemberId(UUID.fromString(MINOR_ID)),
-                new MemberDto(UUID.fromString(MINOR_ID), "Tomáš", "Novák", null, "ZBM1501", LocalDateTime.now())));
+                new MemberDto(UUID.fromString(MINOR_ID), "Tomáš", "Novák", null, "ZBM1501", LocalDateTime.now(), null)));
     }
 
     private static LegalGuardianGroup groupOfMinor(UUID groupUuid, String name, String guardianId, String minorId) {
