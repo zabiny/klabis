@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  * that are not plain field-to-field mappings. Implemented as a plain {@link Converter} bean so
  * {@code @WebMvcTest} slices pick it up automatically, consistent with the other converters here.
  * <p>
- * No dependency on {@code MemberMapper} — a {@code Converter} bean is visible to every
+ * No dependency on a plain {@code @Mapper} bean — a {@code Converter} bean is visible to every
  * {@code @WebMvcTest} slice regardless of its {@code controllers} filter, so depending on a plain,
  * non-Converter {@code @Mapper} bean would force every unrelated slice to import it too.
  */

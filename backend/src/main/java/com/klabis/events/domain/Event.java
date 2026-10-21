@@ -119,23 +119,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             this(name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId, registrationDeadlines,
                     categories, sharedTransportEnabled, sharedAccommodationEnabled, null);
         }
-
-        public static CreateEvent from(Event event) {
-            return new CreateEvent(
-                    event.name,
-                    event.eventDate,
-                    event.location,
-                    event.organizer,
-                    event.websiteUrl != null ? event.websiteUrl.value() : null,
-                    new LinkedHashSet<>(event.coordinators),
-                    event.eventTypeId,
-                    event.registrationDeadlines,
-                    event.categories,
-                    event.sharedTransportEnabled,
-                    event.sharedAccommodationEnabled,
-                    event.siPolicy
-            );
-        }
     }
 
     @RecordBuilder
@@ -225,9 +208,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     public record UnregisterMember(
             MemberId memberId
     ) {
-        public static UnregisterMember from(Event event) {
-            return new UnregisterMember(null);
-        }
     }
 
     @RecordBuilder
@@ -242,19 +222,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             EventRanking ranking,
             Money baseEntryFee
     ) {
-        public static SyncFromOris from(Event event) {
-            return new SyncFromOris(
-                    event.name,
-                    event.eventDate,
-                    event.location,
-                    event.organizer,
-                    event.websiteUrl,
-                    event.registrationDeadlines,
-                    event.categories,
-                    event.ranking,
-                    event.baseEntryFee
-            );
-        }
     }
 
     @RecordBuilder
@@ -361,53 +328,6 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      * @param status             event status
      * @return reconstructed Event instance
      */
-    public static Event reconstruct(
-            EventId id,
-            String name,
-            LocalDate eventDate,
-            String location,
-            String organizer,
-            WebsiteUrl websiteUrl,
-            LinkedHashSet<MemberId> coordinators,
-            EventTypeId eventTypeId,
-            RegistrationDeadlines registrationDeadlines,
-            EventStatus status,
-            String cancellationReason,
-            List<EventCategory> categories,
-            EventRanking ranking,
-            Money baseEntryFee,
-            List<EventRegistration> registrations,
-            AuditMetadata auditMetadata) {
-        return reconstruct(id, name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId,
-                registrationDeadlines, status, cancellationReason, categories, ranking, baseEntryFee,
-                false, false, registrations, auditMetadata);
-    }
-
-    public static Event reconstruct(
-            EventId id,
-            String name,
-            LocalDate eventDate,
-            String location,
-            String organizer,
-            WebsiteUrl websiteUrl,
-            LinkedHashSet<MemberId> coordinators,
-            EventTypeId eventTypeId,
-            RegistrationDeadlines registrationDeadlines,
-            EventStatus status,
-            String cancellationReason,
-            List<EventCategory> categories,
-            EventRanking ranking,
-            Money baseEntryFee,
-            boolean sharedTransportEnabled,
-            boolean sharedAccommodationEnabled,
-            List<EventRegistration> registrations,
-            AuditMetadata auditMetadata) {
-        return reconstruct(id, name, eventDate, location, organizer, websiteUrl, coordinators, eventTypeId,
-                registrationDeadlines, status, cancellationReason, categories, ranking, baseEntryFee,
-                sharedTransportEnabled, sharedAccommodationEnabled, SiPolicy.defaultPolicy(), registrations,
-                auditMetadata);
-    }
-
     public static Event reconstruct(
             EventId id,
             String name,

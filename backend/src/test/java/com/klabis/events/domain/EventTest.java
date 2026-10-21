@@ -1250,7 +1250,7 @@ class EventTest {
         @DisplayName("editRegistration() is refused after the registration deadline")
         void editRegistrationRefusedAfterDeadline() {
             MemberId memberId = new MemberId(UUID.randomUUID());
-            Event event = Event.reconstruct(
+            Event event = EventTestDataBuilder.reconstructed(
                     EventId.generate(), "Test Event", LocalDate.now().plusDays(10),
                     "Location", "Organizer",
                     null, null, null,
@@ -1275,7 +1275,7 @@ class EventTest {
         @DisplayName("editRegistration() is refused on or after the event date")
         void editRegistrationRefusedOnEventDate() {
             MemberId memberId = new MemberId(UUID.randomUUID());
-            Event event = Event.reconstruct(
+            Event event = EventTestDataBuilder.reconstructed(
                     EventId.generate(), "Test Event", LocalDate.now(),
                     "Location", "Organizer",
                     null, null, null, null, EventStatus.ACTIVE, null,
@@ -1524,7 +1524,7 @@ class EventTest {
         @DisplayName("should fail to unregister member on event date")
         void shouldFailToUnregisterMemberOnEventDate() {
             MemberId memberId = new MemberId(UUID.randomUUID());
-            Event event = Event.reconstruct(
+            Event event = EventTestDataBuilder.reconstructed(
                     EventId.generate(), "Test Event", LocalDate.now(),
                     "Test Location", "Test Organizer",
                     null, null, null, null, EventStatus.ACTIVE, null,
@@ -1544,7 +1544,7 @@ class EventTest {
         @DisplayName("should fail to unregister member after event date")
         void shouldFailToUnregisterMemberAfterEventDate() {
             MemberId memberId = new MemberId(UUID.randomUUID());
-            Event event = Event.reconstruct(
+            Event event = EventTestDataBuilder.reconstructed(
                     EventId.generate(), "Test Event", LocalDate.now().minusDays(1),
                     "Test Location", "Test Organizer",
                     null, null, null, null, EventStatus.ACTIVE, null,
@@ -2364,7 +2364,7 @@ class EventTest {
         void shouldThrowWhenDeadlinePassed() {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCard = SiCardNumber.of("123456");
-            Event event = Event.reconstruct(
+            Event event = EventTestDataBuilder.reconstructed(
                     EventId.generate(), "Test Event", LocalDate.now().plusDays(10),
                     "Location", "Organizer",
                     null, null, null,
@@ -2389,7 +2389,7 @@ class EventTest {
         void shouldThrowWhenEditingOnEventDate() {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCard = SiCardNumber.of("123456");
-            Event event = Event.reconstruct(
+            Event event = EventTestDataBuilder.reconstructed(
                     EventId.generate(), "Test Event", LocalDate.now(),
                     "Location", "Organizer",
                     null, null, null, null, EventStatus.ACTIVE, null,
@@ -2412,7 +2412,7 @@ class EventTest {
         void shouldThrowWhenEditingAfterEventDate() {
             MemberId memberId = new MemberId(UUID.randomUUID());
             SiCardNumber siCard = SiCardNumber.of("123456");
-            Event event = Event.reconstruct(
+            Event event = EventTestDataBuilder.reconstructed(
                     EventId.generate(), "Test Event", LocalDate.now().minusDays(1),
                     "Location", "Organizer",
                     null, null, null, null, EventStatus.ACTIVE, null,

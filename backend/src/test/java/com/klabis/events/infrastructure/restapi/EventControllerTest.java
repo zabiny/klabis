@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import java.time.LocalDateTime;
 import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.authorization.TargetType;
@@ -1493,7 +1494,7 @@ class EventControllerTest {
             EventRegistration registration = EventRegistration.create(
                     EventRegistrationCreateEventRegistrationBuilder.builder()
                             .memberId(memberId).siCardNumber(new SiCardNumber("12345")).build());
-            MemberDto memberDto = new MemberDto(memberId.value(), "Jan", "Novak", "jan@example.com");
+            MemberDto memberDto = new MemberDto(memberId.value(), "Jan", "Novak", "jan@example.com", null, LocalDateTime.now(), null);
 
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of(registration));
@@ -1945,7 +1946,7 @@ class EventControllerTest {
 
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(activeEvent);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of(registration));
-            when(members.findByIds(any())).thenReturn(Map.of(registeredMember, new MemberDto(registeredMember.value(), "Jan", "Novak", null)));
+            when(members.findByIds(any())).thenReturn(Map.of(registeredMember, new MemberDto(registeredMember.value(), "Jan", "Novak", null, null, LocalDateTime.now(), null)));
 
             mockMvc.perform(
                             get("/api/events/{id}", eventId)
@@ -2109,7 +2110,7 @@ class EventControllerTest {
         private void mockRegisteredMember() {
             MemberId memberId = new MemberId(UUID.fromString(REGISTERED_MEMBER_ID));
             when(members.findByIds(any())).thenReturn(Map.of(memberId,
-                    new MemberDto(memberId.value(), "Petr", "Zeleny", null)));
+                    new MemberDto(memberId.value(), "Petr", "Zeleny", null, null, LocalDateTime.now(), null)));
         }
 
         @Test
@@ -3588,7 +3589,7 @@ class EventControllerTest {
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
             when(eventRegistrationService.listRegistrations(any())).thenReturn(List.of(registration));
             when(members.findByIds(any())).thenReturn(
-                    Map.of(registeredMember, new MemberDto(registeredMember.value(), "Jan", "Novak", null)));
+                    Map.of(registeredMember, new MemberDto(registeredMember.value(), "Jan", "Novak", null, null, LocalDateTime.now(), null)));
         }
 
         private void assertNothingOfferedOnDetail() throws Exception {

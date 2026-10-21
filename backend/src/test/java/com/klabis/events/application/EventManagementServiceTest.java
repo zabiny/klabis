@@ -1,5 +1,6 @@
 package com.klabis.events.application;
 
+import java.time.LocalDateTime;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventId;
 import com.klabis.events.domain.*;
@@ -849,7 +850,7 @@ class EventManagementServiceTest {
     }
 
     private MemberDto aCoordinatorDto(MemberId memberId) {
-        return new MemberDto(memberId.value(), "Test", "Coordinator", "coordinator@example.com");
+        return new MemberDto(memberId.value(), "Test", "Coordinator", "coordinator@example.com", null, LocalDateTime.now(), null);
     }
 
 }

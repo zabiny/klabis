@@ -1,5 +1,6 @@
 package com.klabis.events.application;
 
+import com.klabis.events.EventTestDataBuilder;
 import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.events.EventCategory;
@@ -271,7 +272,7 @@ class EventRegistrationServiceTest {
         @DisplayName("should reject unregistration on event date")
         void shouldRejectUnregistrationOnEventDate() {
             // Given — event date is today so unregistration is not allowed
-            Event eventOnToday = Event.reconstruct(
+            Event eventOnToday = EventTestDataBuilder.reconstructed(
                     EventId.generate(), "Today Event", LocalDate.now(),
                     "Test Location", "OOB",
                     null, null, null, null, EventStatus.ACTIVE, null,
@@ -295,7 +296,7 @@ class EventRegistrationServiceTest {
         @DisplayName("should reject unregistration after event date")
         void shouldRejectUnregistrationAfterEventDate() {
             // Given — event date is in the past so unregistration is not allowed
-            Event pastEvent = Event.reconstruct(
+            Event pastEvent = EventTestDataBuilder.reconstructed(
                     EventId.generate(), "Past Event", LocalDate.now().minusDays(1),
                     "Test Location", "OOB",
                     null, null, null, null, EventStatus.ACTIVE, null,
@@ -319,7 +320,7 @@ class EventRegistrationServiceTest {
         @DisplayName("should reject unregistration when registration deadline has passed")
         void shouldRejectUnregistrationWhenDeadlinePassed() {
             // Given — deadline is in the past; reconstruct() bypasses domain validation to set up this state
-            Event eventWithPastDeadline = Event.reconstruct(
+            Event eventWithPastDeadline = EventTestDataBuilder.reconstructed(
                     EventId.generate(),
                     "Deadline Event",
                     LocalDate.now().plusDays(30),

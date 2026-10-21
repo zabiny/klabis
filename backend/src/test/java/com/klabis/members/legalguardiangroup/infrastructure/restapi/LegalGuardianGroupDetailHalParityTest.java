@@ -50,7 +50,7 @@ class LegalGuardianGroupDetailHalParityTest {
 
     private String getGroupBody() throws Exception {
         when(members.findByIds(anyCollection())).thenReturn(Map.of(new MemberId(UUID.fromString(MINOR_ID)),
-                new MemberDto(UUID.fromString(MINOR_ID), "Tomáš", "Novák", null, "ZBM1501", LocalDateTime.now())));
+                new MemberDto(UUID.fromString(MINOR_ID), "Tomáš", "Novák", null, "ZBM1501", LocalDateTime.now(), null)));
         when(legalGuardianGroupService.getGroup(new LegalGuardianGroupId(GROUP_UUID)))
                 .thenReturn(LegalGuardianGroup.reconstruct(new LegalGuardianGroupId(GROUP_UUID), "Novák",
                         Set.of(new UserId(UUID.fromString(GUARDIAN_ID))),

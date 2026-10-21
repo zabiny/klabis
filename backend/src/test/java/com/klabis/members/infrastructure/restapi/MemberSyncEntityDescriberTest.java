@@ -1,5 +1,6 @@
 package com.klabis.members.infrastructure.restapi;
 
+import java.time.LocalDateTime;
 import com.klabis.common.users.Authority;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
@@ -42,7 +43,7 @@ class MemberSyncEntityDescriberTest {
     void describesMember() {
         UUID id = UUID.randomUUID();
         when(members.findById(new MemberId(id)))
-                .thenReturn(Optional.of(new MemberDto(id, "Jan", "Novák", "jan@example.com", "ZBM9500", java.time.LocalDateTime.now())));
+                .thenReturn(Optional.of(new MemberDto(id, "Jan", "Novák", "jan@example.com", "ZBM9500", java.time.LocalDateTime.now(), null)));
 
         var description = describer.describe(id.toString());
 

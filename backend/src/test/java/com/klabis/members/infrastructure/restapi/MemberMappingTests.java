@@ -27,11 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @DisplayName("Member Controller Mapping Tests")
 @ExtendWith(SpringExtension.class)
-@Import({MemberMapperImpl.class, MemberSummaryConverterImpl.class, MemberDetailsConverterImpl.class})
+@Import({MemberSummaryConverterImpl.class, MemberDetailsConverterImpl.class})
 class MemberMappingTests {
-
-    @Autowired
-    private MemberMapper testedSubject;
 
     @Autowired
     private MemberSummaryConverter summaryConverter;
@@ -47,7 +44,7 @@ class MemberMappingTests {
         @DisplayName("should map valid identity card correctly")
         void shouldMapValidIdentityCardCorrectly() {
             IdentityCard card = new IdentityCard("ABC123", LocalDate.of(2026, 12, 31));
-            IdentityCardDto dto = testedSubject.identityCardToDto(card);
+            IdentityCardDto dto = detailsConverter.identityCardToDto(card);
 
             assertThat(dto).isNotNull();
             assertThat(dto.cardNumber()).isEqualTo("ABC123");
@@ -57,7 +54,7 @@ class MemberMappingTests {
         @Test
         @DisplayName("should return null when identity card is null")
         void shouldReturnNullWhenIdentityCardIsNull() {
-            IdentityCardDto dto = testedSubject.identityCardToDto(null);
+            IdentityCardDto dto = detailsConverter.identityCardToDto(null);
             assertThat(dto).isNull();
         }
 
@@ -67,7 +64,7 @@ class MemberMappingTests {
         @DisplayName("should map identity card with past validity date")
         void shouldMapIdentityCardWithPastValidityDate() {
             IdentityCard card = new IdentityCard("XYZ789", LocalDate.of(2020, 1, 1));
-            IdentityCardDto dto = testedSubject.identityCardToDto(card);
+            IdentityCardDto dto = detailsConverter.identityCardToDto(card);
 
             assertThat(dto.validityDate()).isEqualTo(LocalDate.of(2020, 1, 1));
         }
@@ -77,7 +74,7 @@ class MemberMappingTests {
         void shouldMapIdentityCardWithTodayValidityDate() {
             LocalDate today = LocalDate.now();
             IdentityCard card = new IdentityCard("TODAY01", today);
-            IdentityCardDto dto = testedSubject.identityCardToDto(card);
+            IdentityCardDto dto = detailsConverter.identityCardToDto(card);
 
             assertThat(dto.validityDate()).isEqualTo(today);
         }
@@ -94,7 +91,7 @@ class MemberMappingTests {
                     LocalDate.of(2024, 6, 15),
                     Optional.of(LocalDate.of(2026, 6, 15))
             );
-            MedicalCourseDto dto = testedSubject.medicalCourseToDto(course);
+            MedicalCourseDto dto = detailsConverter.medicalCourseToDto(course);
 
 
             assertThat(dto).isNotNull();
@@ -105,7 +102,7 @@ class MemberMappingTests {
         @Test
         @DisplayName("should return null when medical course is null")
         void shouldReturnNullWhenMedicalCourseIsNull() {
-            MedicalCourseDto dto = testedSubject.medicalCourseToDto(null);
+            MedicalCourseDto dto = detailsConverter.medicalCourseToDto(null);
 
             assertThat(dto).isNull();
         }
@@ -114,7 +111,7 @@ class MemberMappingTests {
         @DisplayName("should map medical course with null validity date (indefinite)")
         void shouldMapMedicalCourseWithNullValidityDate() {
             MedicalCourse course = new MedicalCourse(LocalDate.of(2024, 6, 15), null);
-            MedicalCourseDto dto = testedSubject.medicalCourseToDto(course);
+            MedicalCourseDto dto = detailsConverter.medicalCourseToDto(course);
 
             assertThat(dto.completionDate()).isEqualTo(LocalDate.of(2024, 6, 15));
             assertThat(dto.validityDate()).isNull();
@@ -127,7 +124,7 @@ class MemberMappingTests {
                     LocalDate.of(2020, 1, 1),
                     Optional.of(LocalDate.of(2025, 1, 1))
             );
-            MedicalCourseDto dto = testedSubject.medicalCourseToDto(course);
+            MedicalCourseDto dto = detailsConverter.medicalCourseToDto(course);
 
             assertThat(dto.completionDate()).isEqualTo(LocalDate.of(2020, 1, 1));
         }
@@ -141,7 +138,7 @@ class MemberMappingTests {
         @DisplayName("should map valid trainer license correctly")
         void shouldMapValidTrainerLicenseCorrectly() {
             TrainerLicense license = new TrainerLicense(TrainerLevel.T1, LocalDate.of(2026, 12, 31));
-            TrainerLicenseDto dto = testedSubject.trainerLicenseToDto(license);
+            TrainerLicenseDto dto = detailsConverter.trainerLicenseToDto(license);
 
             assertThat(dto).isNotNull();
             assertThat(dto.level()).isEqualTo(TrainerLicenseDtoLevel.T1);
@@ -151,7 +148,7 @@ class MemberMappingTests {
         @Test
         @DisplayName("should return null when trainer license is null")
         void shouldReturnNullWhenTrainerLicenseIsNull() {
-            TrainerLicenseDto dto = testedSubject.trainerLicenseToDto(null);
+            TrainerLicenseDto dto = detailsConverter.trainerLicenseToDto(null);
             assertThat(dto).isNull();
         }
 
@@ -160,7 +157,7 @@ class MemberMappingTests {
         void shouldMapTrainerLicenseWithTodayValidityDate() {
             LocalDate today = LocalDate.now();
             TrainerLicense license = new TrainerLicense(TrainerLevel.T3, today);
-            TrainerLicenseDto dto = testedSubject.trainerLicenseToDto(license);
+            TrainerLicenseDto dto = detailsConverter.trainerLicenseToDto(license);
 
             assertThat(dto.level()).isEqualTo(TrainerLicenseDtoLevel.T3);
             assertThat(dto.validityDate()).isEqualTo(today);
@@ -175,7 +172,7 @@ class MemberMappingTests {
         @DisplayName("should map valid referee license correctly")
         void shouldMapValidRefereeLicenseCorrectly() {
             RefereeLicense license = new RefereeLicense(RefereeLevel.R2, LocalDate.of(2026, 12, 31));
-            RefereeLicenseDto dto = testedSubject.refereeLicenseToDto(license);
+            RefereeLicenseDto dto = detailsConverter.refereeLicenseToDto(license);
 
             assertThat(dto).isNotNull();
             assertThat(dto.level()).isEqualTo(RefereeLicenseDtoLevel.R2);
@@ -185,7 +182,7 @@ class MemberMappingTests {
         @Test
         @DisplayName("should return null when referee license is null")
         void shouldReturnNullWhenRefereeLicenseIsNull() {
-            RefereeLicenseDto dto = testedSubject.refereeLicenseToDto(null);
+            RefereeLicenseDto dto = detailsConverter.refereeLicenseToDto(null);
             assertThat(dto).isNull();
         }
     }

@@ -1,5 +1,6 @@
 package com.klabis.events.infrastructure.restapi;
 
+import java.time.LocalDateTime;
 import com.klabis.common.HalShape;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.users.Authority;
@@ -71,7 +72,7 @@ class EventDetailEmbeddedRegistrationsHalParityTest {
                 .memberId(memberId).siCardNumber(new SiCardNumber("12345")).build());
         when(eventManagement.getEvent(any(), anyBoolean())).thenReturn(event);
         when(eventRegistration.listRegistrations(any())).thenReturn(List.of(registration));
-        when(members.findByIds(any())).thenReturn(Map.of(memberId, new MemberDto(MEMBER_UUID, "Jan", "Novak", "jan@example.com")));
+        when(members.findByIds(any())).thenReturn(Map.of(memberId, new MemberDto(MEMBER_UUID, "Jan", "Novak", "jan@example.com", null, LocalDateTime.now(), null)));
         return mockMvc.perform(get("/api/events/{id}", UUID.randomUUID()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();

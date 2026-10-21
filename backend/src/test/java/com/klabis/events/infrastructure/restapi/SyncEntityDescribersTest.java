@@ -109,7 +109,7 @@ class SyncEntityDescribersTest {
         MemberId memberId = new MemberId(UUID.randomUUID());
         when(eventManagement.getEvent(event.getId(), true)).thenReturn(event);
         when(members.findById(memberId)).thenReturn(Optional.of(
-                new MemberDto(memberId.value(), "Jan", "Novák", "jan@example.com", "ZBM9500", LocalDateTime.now())));
+                new MemberDto(memberId.value(), "Jan", "Novák", "jan@example.com", "ZBM9500", LocalDateTime.now(), null)));
 
         var description = new RegistrationSyncEntityDescriber(eventManagement, members)
                 .describe(new RegistrationSyncId(event.getId(), memberId).format());
@@ -131,7 +131,7 @@ class SyncEntityDescribersTest {
         assertThat(describer.describe(entityId)).isEmpty();
 
         when(members.findById(memberId)).thenReturn(Optional.of(
-                new MemberDto(memberId.value(), "Jan", "Novák", "jan@example.com", "ZBM9500", LocalDateTime.now())));
+                new MemberDto(memberId.value(), "Jan", "Novák", "jan@example.com", "ZBM9500", LocalDateTime.now(), null)));
         when(eventManagement.getEvent(any(), org.mockito.ArgumentMatchers.anyBoolean()))
                 .thenThrow(new EventNotFoundException(event.getId()));
         assertThat(describer.describe(entityId)).isEmpty();

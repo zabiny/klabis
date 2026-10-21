@@ -65,7 +65,7 @@ class MembershipFeeGroupDetailHalParityTest {
                 Money.ofCzk(new BigDecimal("1200.00")), PublishedLevelStatus.FROZEN, List.of(), Set.of(membership), null);
         when(managementPort.getGroup(new MembershipFeeGroupId(GROUP_UUID))).thenReturn(group);
         when(members.findByIds(any())).thenReturn(Map.of(new MemberId(MEMBER_UUID),
-                new MemberDto(MEMBER_UUID, "Jan", "Novák", "jan@example.com", "ZBM1234", LocalDateTime.of(2025, 1, 1, 0, 0))));
+                new MemberDto(MEMBER_UUID, "Jan", "Novák", "jan@example.com", "ZBM1234", LocalDateTime.of(2025, 1, 1, 0, 0), null)));
         return mockMvc.perform(get("/api/membership-fee-groups/{id}", GROUP_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
