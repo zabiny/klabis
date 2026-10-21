@@ -7,7 +7,6 @@ import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.MemberGroup;
 import com.klabis.common.users.Authority;
 import com.klabis.groups.freegroup.FreeGroupId;
-import com.klabis.groups.freegroup.FreeGroupInvitationCancelledEvent;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.jmolecules.ddd.annotation.AggregateRoot;
@@ -199,18 +198,6 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
                 .findFirst()
                 .orElseThrow(() -> new InvitationNotFoundException(invitationId));
         invitation.cancel(actor, reason);
-
-        Set<MemberId> recipientOwnerIds = new HashSet<>(getOwners());
-        actor.ifPresent(recipientOwnerIds::remove);
-        registerEvent(new FreeGroupInvitationCancelledEvent(
-                UUID.randomUUID(),
-                id,
-                invitationId,
-                invitation.getInvitedMember(),
-                actor,
-                Optional.ofNullable(reason),
-                Collections.unmodifiableSet(recipientOwnerIds),
-                Instant.now()));
     }
 
     @Override

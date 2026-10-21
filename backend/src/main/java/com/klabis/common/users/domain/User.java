@@ -156,7 +156,6 @@ public class User extends KlabisAggregateRoot<User, UserId> {
 
         User updated = new User(this.id, this.username, newPasswordHash, this.accountStatus);
         updated.updateAuditMetadata(this.getAuditMetadata());
-        updated.registerEvent(PasswordChangedEvent.fromUser(updated));
 
         return updated;
     }

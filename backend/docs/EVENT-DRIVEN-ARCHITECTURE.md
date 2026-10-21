@@ -34,7 +34,6 @@ sequenceDiagram
 | `MemberSuspendedEvent` | `members` | `members` listeners | Audit / downstream cleanup |
 | `MemberResumedEvent` | `members` | `members` listeners | Audit |
 | `BirthNumberAccessedEvent` | `members` (when admin reads sensitive field) | `members.BirthNumberAuditService` | GDPR audit log |
-| `MemberAssignedToTrainingGroupEvent` | `members` (TrainingGroup aggregate) | `members` listeners | Cross-aggregate sync |
 | `EventPublishedEvent` | `events` (when Event → ACTIVE) | `calendar.EventPublishedEventHandler` | Create CalendarItem (idempotent: skip if exists) |
 | `EventUpdatedEvent` | `events` (on detail change) | `calendar.EventUpdatedEventHandler` | Update CalendarItem (warn-and-ignore if missing) |
 | `EventCancelledEvent` | `events` (on cancel) | `calendar.EventCancelledEventHandler` | Delete CalendarItem (warn-and-ignore if missing) |

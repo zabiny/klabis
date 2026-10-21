@@ -1,7 +1,6 @@
 package com.klabis.groups.traininggroup.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
-import com.klabis.groups.MemberAssignedToTrainingGroupEvent;
 import com.klabis.groups.traininggroup.TrainingGroupId;
 import com.klabis.groups.traininggroup.domain.*;
 import com.klabis.members.MemberId;
@@ -15,8 +14,6 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.event.ApplicationEvents;
-import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.util.List;
@@ -33,7 +30,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
 @CleanupTestData
-@RecordApplicationEvents
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, statements = {
         "INSERT INTO members.members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) VALUES ('11111111-1111-1111-1111-111111111111', 'TEST001', 'Trainer', 'Member', '1985-01-01', 'CZ', 'MALE', 'trainer@example.com', '+420111111111', 'Street 1', 'City', '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)",
         "INSERT INTO members.members (id, registration_number, first_name, last_name, date_of_birth, nationality, gender, email, phone, street, city, postal_code, country, is_active, created_at, created_by, modified_at, modified_by, version) VALUES ('22222222-2222-2222-2222-222222222222', 'TEST002', 'Regular', 'Member', '2010-01-01', 'CZ', 'MALE', 'regular@example.com', '+420222222222', 'Street 2', 'City', '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)"
@@ -42,9 +38,6 @@ class TrainingGroupPersistenceTest {
 
     @Autowired
     private TrainingGroupRepository trainingGroupRepository;
-
-    @Autowired
-    private ApplicationEvents applicationEvents;
 
     private static final MemberId TRAINER = new MemberId(UUID.fromString("11111111-1111-1111-1111-111111111111"));
     private static final MemberId REGULAR_MEMBER = new MemberId(UUID.fromString("22222222-2222-2222-2222-222222222222"));
@@ -288,39 +281,6 @@ class TrainingGroupPersistenceTest {
             trainingGroupRepository.delete(id);
 
             assertThat(trainingGroupRepository.findById(id)).isEmpty();
-        }
-    }
-
-    @Nested
-    @DisplayName("Domain event publication")
-    class DomainEventPublication {
-
-        @Test
-        @DisplayName("should publish MemberAssignedToTrainingGroupEvent when saving group after assignEligibleMember")
-        void shouldPublishEventWhenSavingTrainingGroupAfterAssignEligibleMember() {
-            TrainingGroup group = TrainingGroup.create(
-                    new TrainingGroup.CreateTrainingGroup("Juniors", TRAINER, new AgeRange(10, 18)));
-            group.assignEligibleMember(REGULAR_MEMBER);
-
-            trainingGroupRepository.save(group);
-
-            List<MemberAssignedToTrainingGroupEvent> events =
-                    applicationEvents.stream(MemberAssignedToTrainingGroupEvent.class).toList();
-            assertThat(events).hasSize(1);
-            MemberAssignedToTrainingGroupEvent event = events.get(0);
-            assertThat(event.memberId()).isEqualTo(REGULAR_MEMBER);
-            assertThat(event.groupName()).isEqualTo("Juniors");
-        }
-
-        @Test
-        @DisplayName("should not publish any event when saving group without member changes")
-        void shouldNotPublishEventWhenNoMemberChanges() {
-            TrainingGroup group = TrainingGroup.create(
-                    new TrainingGroup.CreateTrainingGroup("Seniors", TRAINER, new AgeRange(18, 40)));
-
-            trainingGroupRepository.save(group);
-
-            assertThat(applicationEvents.stream(MemberAssignedToTrainingGroupEvent.class)).isEmpty();
         }
     }
 

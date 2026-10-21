@@ -1,7 +1,6 @@
 package com.klabis.common.users;
 
 import com.klabis.common.users.domain.AccountStatus;
-import com.klabis.common.users.domain.PasswordChangedEvent;
 import com.klabis.common.users.domain.User;
 import com.klabis.common.users.domain.UserCreatedEvent;
 import com.klabis.common.users.testdata.UserTestDataBuilder;
@@ -352,18 +351,6 @@ class UserTest {
 
             assertThat(updated).isNotSameAs(user);
             UserAssert.assertThat(user).hasPasswordHash(originalHash);
-        }
-
-        @Test
-        @DisplayName("should register PasswordChangedEvent")
-        void shouldRegisterPasswordChangedEvent() {
-            User user = UserTestDataBuilder.anAdminUser().build();
-
-            User updated = user.changePassword("$2a$10$newHash...");
-
-            assertThat(updated.getDomainEvents()).hasSize(1)
-                    .first()
-                    .isInstanceOf(PasswordChangedEvent.class);
         }
 
         @Test
