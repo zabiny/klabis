@@ -32,6 +32,7 @@ export function FulltextSearchInput({
 
     useEffect(() => {
         setInputValue(value);
+        if (value === '') lastEmittedRef.current = null;
     }, [value]);
 
     const handleChange = useCallback(
