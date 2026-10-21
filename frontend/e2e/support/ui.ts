@@ -7,7 +7,7 @@ const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&
 // Required fields append "*" to the accessible label.
 const field = (page: Page, label: string) =>
     page.getByLabel(new RegExp(`^${escapeRegExp(label)}\\*?$`))
-        .or(page.locator('dt', {hasText: new RegExp(`^${escapeRegExp(label)}$`)}).locator('xpath=following-sibling::dd').locator('input, select, textarea'))
+        .or(page.locator('dt', {hasText: new RegExp(`^${escapeRegExp(label)}( \\*)?$`)}).locator('xpath=following-sibling::dd').locator('input, select, textarea'))
         .first();
 
 // Action buttons may carry the aria-label "Select <label> form" (HalFormTemplateButton; a11y follow-up).

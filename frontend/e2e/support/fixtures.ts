@@ -14,6 +14,7 @@ export type ApiClient = {
     root: () => Promise<HalResource>;
     get: (path: string) => Promise<HalResource>;
     post: (path: string, body: unknown) => Promise<HalResource>;
+    patch: (path: string, body: unknown) => Promise<HalResource>;
     // Returns the path of the created resource from the Location header.
     create: (path: string, body: unknown) => Promise<string>;
     delete: (path: string) => Promise<HalResource>;
@@ -94,7 +95,7 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
                 return context;
             };
 
-            const send = async (method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown): Promise<APIResponse> => {
+            const send = async (method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown): Promise<APIResponse> => {
                 const response = await (await getContext()).fetch(toPath(path), {method, data: body});
                 if (!response.ok()) {
                     throw new Error(`API ${method} ${path} failed with ${response.status()}: ${await response.text()}`);
@@ -102,7 +103,7 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
                 return response;
             };
 
-            const call = async (method: 'GET' | 'POST' | 'DELETE', path: string, body?: unknown) => {
+            const call = async (method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, body?: unknown) => {
                 const text = await (await send(method, path, body)).text();
                 return text ? JSON.parse(text) : {};
             };
@@ -113,6 +114,7 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
                 root: async () => (apiRoot ??= await call('GET', '/api')),
                 get: (path) => call('GET', path),
                 post: (path, body) => call('POST', path, body),
+                patch: (path, body) => call('PATCH', path, body),
                 create: async (path, body) => {
                     const location = (await send('POST', path, body)).headers().location;
                     if (!location) throw new Error(`api fixture: POST ${path} returned no Location header`);
