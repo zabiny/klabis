@@ -70,18 +70,13 @@ When('{persona} records a charge of {int} CZK for member {name}', async ({page, 
     await recordTransaction(page, lastName, 'Stržení částky', amount);
 });
 
-When('{persona} attempts to record a deposit of {int} CZK for member {name}', async ({page, actAs}, persona: Persona, amount: number, lastName: string) => {
-    await actAs(persona);
-    const dialog = await openTransactionDialog(page, lastName, 'Připsání vkladu', amount);
-    const confirm = dialog.getByRole('button', {name: 'Připsání vkladu'}).last();
-    if (await confirm.isEnabled()) await confirm.click();
-});
+const transactionTabs: Record<string, string> = {deposit: 'Připsání vkladu', charge: 'Stržení částky'};
 
-When('{persona} attempts to record a charge of {int} CZK for member {name}', async ({page, actAs}, persona: Persona, amount: number, lastName: string) => {
+When('{persona} attempts to record a {word} of {int} CZK for member {name}', async ({page, actAs}, persona: Persona, kind: string, amount: number, lastName: string) => {
+    const tab = transactionTabs[kind];
+    if (!tab) throw new Error(`Unknown transaction kind "${kind}"`);
     await actAs(persona);
-    const dialog = await openTransactionDialog(page, lastName, 'Stržení částky', amount);
-    const confirm = dialog.getByRole('button', {name: 'Stržení částky'}).last();
-    if (await confirm.isEnabled()) await confirm.click();
+    await openTransactionDialog(page, lastName, tab, amount);
 });
 
 When('{persona} reverses the deposit of {int} CZK on the account of member {name}', async ({page, actAs}, persona: Persona, amount: number, lastName: string) => {
@@ -95,7 +90,7 @@ When('{persona} reverses the deposit of {int} CZK on the account of member {name
 });
 
 // The dialog does not let a non-positive amount be confirmed.
-Then('the transaction is refused', async ({page}) => {
+Then('the transaction cannot be confirmed', async ({page}) => {
     await expect(page.getByRole('dialog').getByRole('button', {name: /^(Připsání vkladu|Stržení částky)$/}).last()).toBeDisabled();
 });
 
