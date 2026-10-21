@@ -10,6 +10,6 @@ import org.springframework.core.convert.converter.Converter;
 interface FeeSelectionCampaignResponseConverter extends Converter<FeeSelectionCampaign, FeeSelectionCampaignResponse> {
 
     @Override
-    @Mapping(target = "id", expression = "java(publication.getId().value())")
-    FeeSelectionCampaignResponse convert(FeeSelectionCampaign publication);
+    @Mapping(target = "id", source = "id.value")
+    FeeSelectionCampaignResponse convert(FeeSelectionCampaign source);
 }
