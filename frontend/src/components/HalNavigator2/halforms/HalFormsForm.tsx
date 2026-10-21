@@ -156,10 +156,12 @@ function renderFieldInternal(
     prop: HalFormsProperty,
     errors: Record<string, unknown>,
     touched: Record<string, unknown>,
+    submitted: boolean,
     fieldFactory?: HalFormFieldFactory,
     renderMode: RenderMode = 'field'
 ): ReactNode {
-    const error = touched[prop.name] && errors[prop.name];
+    // Formik leaves empty values untouched on submit, so a submit attempt must reveal their errors explicitly.
+    const error = (submitted || touched[prop.name]) && errors[prop.name];
     const errorText: string = typeof error === 'string' ? error : '';
 
     if (prop.readOnly === true && SIMPLE_FIELD_TYPES.has(prop.type)) {
@@ -243,8 +245,9 @@ const HalFormsFormContent: React.FC<HalFormsFormContentProps> = ({
     renderForm,
     children,
 }) => {
-    const {isSubmitting: formikIsSubmitting, errors, touched} = useFormikContext<Record<string, unknown>>();
+    const {isSubmitting: formikIsSubmitting, errors, touched, submitCount} = useFormikContext<Record<string, unknown>>();
     const isFormProcessing = formikIsSubmitting || externalIsSubmitting;
+    const submitted = submitCount > 0;
 
     const renderPseudoField = (fieldName: string): ReactElement | null => {
         if (fieldName === "submit") {
@@ -281,7 +284,7 @@ const HalFormsFormContent: React.FC<HalFormsFormContentProps> = ({
             if (!prop) {
                 return <Alert severity="error">Field '{fieldName}' not found in template</Alert>;
             }
-            return renderFieldInternal(prop, errors, touched, fieldsFactory) as ReactElement;
+            return renderFieldInternal(prop, errors, touched, submitted, fieldsFactory) as ReactElement;
         };
 
         const renderInputCallback = (fieldName: string): ReactElement => {
@@ -291,7 +294,7 @@ const HalFormsFormContent: React.FC<HalFormsFormContentProps> = ({
             if (!prop) {
                 return <Alert severity="error">Field '{fieldName}' not found in template</Alert>;
             }
-            return renderFieldInternal(prop, errors, touched, fieldsFactory, 'input') as ReactElement;
+            return renderFieldInternal(prop, errors, touched, submitted, fieldsFactory, 'input') as ReactElement;
         };
 
         const renderLabelCallback = (fieldName: string): string | undefined => {
@@ -309,7 +312,7 @@ const HalFormsFormContent: React.FC<HalFormsFormContentProps> = ({
     const contextValue: HalFormsFormContextType = useMemo(
         () => createFormHelpers(),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [template, errors, touched, fieldsFactory, formikIsSubmitting, externalIsSubmitting]
+        [template, errors, touched, submitted, fieldsFactory, formikIsSubmitting, externalIsSubmitting]
     );
 
     let formContent: ReactElement;
@@ -327,7 +330,7 @@ const HalFormsFormContent: React.FC<HalFormsFormContentProps> = ({
             {template.properties.map((prop) => (
                 <div key={prop.name}
                      className={`transition-all duration-200 ${isFormProcessing ? 'opacity-60 pointer-events-none' : ''}`}>
-                    {renderFieldInternal(prop, errors, touched, fieldsFactory)}
+                    {renderFieldInternal(prop, errors, touched, submitted, fieldsFactory)}
                 </div>
             ))}
 
@@ -339,7 +342,7 @@ const HalFormsFormContent: React.FC<HalFormsFormContentProps> = ({
     }
 
     return (
-        <Form className="space-y-4">
+        <Form className="space-y-4" noValidate>
             {formContent}
         </Form>
     );

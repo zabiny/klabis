@@ -229,8 +229,7 @@ describe('member registration form validation', () => {
         expect(await screen.findByText(labels.validation.requiredField)).toBeInTheDocument();
     });
 
-    // Formik marks only non-empty fields as touched on submit, so untouched empty required fields get no message.
-    it.fails('shows required-field errors for every empty mandatory field after a submit attempt', async () => {
+    it('shows required-field errors for every empty mandatory field after a submit attempt', async () => {
         renderRequired();
 
         await userEvent.click(screen.getByRole('button', {name: 'Odeslat'}));
