@@ -5,6 +5,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {HalFormsTemplate} from '../../api';
 import {HalFormsForm} from '../../components/HalNavigator2/halforms/HalFormsForm.tsx';
 import {klabisFieldsFactory} from '../../components/KlabisFieldsFactory';
+import {labels} from '../../localization';
 import {RegistrationContactSection, RegistrationGuardianSections} from './RegistrationGuardianSections.tsx';
 
 const guardianProfiles = vi.hoisted(() => ({current: undefined as Record<string, unknown> | undefined}));
@@ -160,5 +161,115 @@ describe('member registration form sections', () => {
 
         await waitFor(() => expect(onSubmit).toHaveBeenCalled());
         expect(onSubmit.mock.calls[0][0].legalGuardianUserId).toBeFalsy();
+    });
+});
+
+describe('member registration form validation', () => {
+    const requiredTemplate: HalFormsTemplate = {
+        ...template,
+        properties: template.properties.map(p =>
+            ['firstName', 'lastName', 'dateOfBirth'].includes(p.name) ? prop({...p, required: true}) : p),
+    };
+
+    const renderRequired = () => {
+        const onSubmit = vi.fn().mockResolvedValue(undefined);
+        render(
+            <HalFormsForm
+                data={{}}
+                template={requiredTemplate}
+                onSubmit={onSubmit}
+                fieldsFactory={klabisFieldsFactory}
+                renderForm={({renderInput, renderField}) => {
+                    const hasField = (n: string) => requiredTemplate.properties.some(p => p.name === n);
+                    return (
+                        <div>
+                            {renderField('firstName')}
+                            {renderField('lastName')}
+                            {renderField('dateOfBirth')}
+                            <RegistrationContactSection renderInput={renderInput} hasField={hasField}/>
+                            <RegistrationGuardianSections renderInput={renderInput} hasField={hasField}/>
+                            {renderField('submit')}
+                        </div>
+                    );
+                }}
+            />,
+        );
+        return onSubmit;
+    };
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        guardianProfiles.current = undefined;
+    });
+
+    it('blocks submit when mandatory fields are empty', async () => {
+        const onSubmit = renderRequired();
+
+        await userEvent.click(screen.getByRole('button', {name: 'Odeslat'}));
+
+        expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('blocks submit when only some mandatory fields are filled', async () => {
+        const onSubmit = renderRequired();
+        await userEvent.type(input('firstName'), 'Karel');
+        await userEvent.type(input('dateOfBirth'), '1985-01-01');
+
+        await userEvent.click(screen.getByRole('button', {name: 'Odeslat'}));
+
+        expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('shows a required-field error under a mandatory field left empty after leaving it', async () => {
+        renderRequired();
+
+        await userEvent.click(input('firstName'));
+        await userEvent.tab();
+
+        expect(await screen.findByText(labels.validation.requiredField)).toBeInTheDocument();
+    });
+
+    // Formik marks only non-empty fields as touched on submit, so untouched empty required fields get no message.
+    it.fails('shows required-field errors for every empty mandatory field after a submit attempt', async () => {
+        renderRequired();
+
+        await userEvent.click(screen.getByRole('button', {name: 'Odeslat'}));
+
+        expect(await screen.findAllByText(labels.validation.requiredField)).toHaveLength(3);
+    });
+
+    it('rejects a malformed e-mail', async () => {
+        const onSubmit = renderRequired();
+        await userEvent.type(input('firstName'), 'Karel');
+        await userEvent.type(input('lastName'), 'Malý');
+        await userEvent.type(input('dateOfBirth'), '1985-01-01');
+        await userEvent.type(input('email'), 'not-an-email');
+
+        await userEvent.click(screen.getByRole('button', {name: 'Odeslat'}));
+
+        expect(await screen.findByText(labels.validation.invalidEmail)).toBeInTheDocument();
+        expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('submits once all mandatory fields are filled', async () => {
+        const onSubmit = renderRequired();
+        await userEvent.type(input('firstName'), 'Karel');
+        await userEvent.type(input('lastName'), 'Malý');
+        await userEvent.type(input('dateOfBirth'), '1985-01-01');
+
+        await userEvent.click(screen.getByRole('button', {name: 'Odeslat'}));
+
+        await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    });
+
+    it('does not show guardian sections for an adult and shows them for a minor', async () => {
+        renderRequired();
+
+        await userEvent.type(input('dateOfBirth'), '1985-01-01');
+        expect(screen.queryByText('ZÁKONNÍ ZÁSTUPCI')).not.toBeInTheDocument();
+
+        await userEvent.clear(input('dateOfBirth'));
+        await userEvent.type(input('dateOfBirth'), '2015-05-05');
+        expect(await screen.findByText('ZÁKONNÍ ZÁSTUPCI')).toBeInTheDocument();
     });
 });

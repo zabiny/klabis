@@ -246,6 +246,30 @@ describe('FulltextSearchInput', () => {
             expect(screen.getByRole('textbox')).toHaveValue('xyz');
         });
 
+        it.fails('emits again when the same text is retyped after the value was reset externally', () => {
+            vi.useFakeTimers();
+            try {
+                const onChange = vi.fn();
+                const props = {onChange, placeholder: 'Hledat...', ariaLabel: 'Fulltext hledání'};
+                const { rerender } = render(<FulltextSearchInput value="" {...props} />);
+                const input = screen.getByRole('textbox');
+
+                typeInto(input, 'abc');
+                act(() => { vi.advanceTimersByTime(300); });
+                expect(onChange).toHaveBeenCalledTimes(1);
+
+                rerender(<FulltextSearchInput value="abc" {...props} />);
+                rerender(<FulltextSearchInput value="" {...props} />);
+                expect(input).toHaveValue('');
+
+                typeInto(input, 'abc');
+                act(() => { vi.advanceTimersByTime(300); });
+                expect(onChange).toHaveBeenCalledTimes(2);
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
         it('clears visible input when value prop is reset to empty', () => {
             const { rerender } = renderInput({ value: 'hello' });
 

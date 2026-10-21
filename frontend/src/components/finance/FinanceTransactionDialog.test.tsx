@@ -194,6 +194,47 @@ describe('FinanceTransactionDialog', () => {
         expect(screen.getByLabelText(/Poznámka/i)).toHaveValue('Test note');
     });
 
+    describe('amount validation', () => {
+        const confirmButton = () => screen.getByRole('button', {name: /Připsání vkladu/i});
+
+        it.each([
+            ['empty', ''],
+            ['zero', '0'],
+            ['negative', '-5'],
+        ])('keeps confirm disabled when amount is %s', async (_label, value) => {
+            setupFetch(mockAccountDepositOnly);
+            renderDialog();
+            const amountInput = await screen.findByLabelText(/Částka/i);
+
+            if (value) await userEvent.type(amountInput, value);
+
+            expect(confirmButton()).toBeDisabled();
+        });
+
+        it('enables confirm for a positive amount and disables it again when changed to non-positive', async () => {
+            setupFetch(mockAccountDepositOnly);
+            renderDialog();
+            const amountInput = await screen.findByLabelText(/Částka/i);
+
+            await userEvent.type(amountInput, '100');
+            expect(confirmButton()).toBeEnabled();
+
+            await userEvent.clear(amountInput);
+            await userEvent.type(amountInput, '-1');
+            expect(confirmButton()).toBeDisabled();
+        });
+
+        it('does not submit anything when confirm is blocked by a non-positive amount', async () => {
+            setupFetch(mockAccountDepositOnly);
+            renderDialog();
+            await userEvent.type(await screen.findByLabelText(/Částka/i), '-10');
+
+            await userEvent.click(confirmButton());
+
+            expect(fetchSpy.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+        });
+    });
+
     // 3.3: localStorage persistence of active tab
     it('3.3: restores last selected tab from localStorage on open', async () => {
         localStorage.setItem('klabis.financeDialog.lastTab', 'charge');

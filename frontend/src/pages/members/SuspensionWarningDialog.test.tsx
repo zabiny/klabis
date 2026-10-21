@@ -106,4 +106,8 @@ describe('SuspensionWarningDialog (task 6.7)', () => {
         render(<SuspensionWarningDialog {...baseProps} isOpen={false}/>);
         expect(screen.queryByText('Varování: Správce skupin')).not.toBeInTheDocument();
     });
+
+    // Buttons render but have no onClick handler yet.
+    it.todo('"Určit nástupce" starts designating a successor for the group');
+    it.todo('"Rozpustit skupinu" dissolves the group');
 });
