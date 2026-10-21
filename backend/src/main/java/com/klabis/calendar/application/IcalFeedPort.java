@@ -1,6 +1,6 @@
 package com.klabis.calendar.application;
 
-import com.klabis.events.domain.Event;
+import com.klabis.events.EventData;
 import com.klabis.members.MemberId;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
@@ -20,5 +20,5 @@ public interface IcalFeedPort {
      */
     List<EventScheduleEntry> getMySchedule(MemberId memberId, LocalDate now);
 
-    record EventScheduleEntry(Event event, boolean isCoordinator) {}
+    record EventScheduleEntry(EventData event, boolean isCoordinator) {}
 }

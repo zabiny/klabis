@@ -4,6 +4,9 @@ import com.klabis.events.EventId;
 import com.klabis.members.MemberId;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 /**
@@ -11,14 +14,19 @@ import org.jmolecules.architecture.hexagonal.SecondaryPort;
  * <p>
  * Defines persistence operations for the Events bounded context.
  * Implementation will be provided in the infrastructure layer.
- * <p>
- * Extends {@link Events} public API with write operations (save).
  *
  * @apiNote This is internal API for use within the events module only.
- * Other modules should use {@link Events} interface for querying events.
+ * Other modules should use {@link com.klabis.events.application.EventDataProvider}.
  */
 @SecondaryPort
-public interface EventRepository extends Events {
+public interface EventRepository {
+
+    Optional<Event> findById(EventId eventId);
+
+    /**
+     * @param filter   use {@link EventFilter#none()} for unfiltered results
+     */
+    Page<Event> findAll(EventFilter filter, Pageable pageable);
 
     /**
      * Saves an event to the repository.
@@ -39,7 +47,4 @@ public interface EventRepository extends Events {
      */
     List<EventId> findActiveIds(Collection<EventId> eventIds);
 
-    // Read methods inherited from Events public API:
-    // - Optional<Event> findById(EventId id)
-    // - Page<Event> findAll(EventFilter filter, Pageable pageable)
 }

@@ -2,27 +2,24 @@ package com.klabis.events.application;
 
 import com.klabis.events.EventData;
 import com.klabis.events.EventId;
-import org.jmolecules.architecture.hexagonal.SecondaryPort;
+import org.jmolecules.architecture.hexagonal.PrimaryPort;
+
+import java.util.Collection;
+import java.util.List;
 
 /**
- * Secondary port for fetching event data from the events module.
- * <p>
- * This port decouples the calendar module from direct dependencies on the events
- * module repositories. The implementation will query the events module through
- * its public API.
- * <p>
- * This is used by event handlers to fetch event details when processing
- * EventPublishedEvent (which only contains event ID).
+ * Port for reading event data from other modules (calendar).
  */
-@SecondaryPort
+@PrimaryPort
 public interface EventDataProvider {
 
     /**
-     * Fetches event data for the specified event ID.
-     *
-     * @param eventId the event ID
-     * @return event data
      * @throws IllegalArgumentException if event not found
      */
     EventData getEventData(EventId eventId);
+
+    /**
+     * Event data for the given ids; ids of nonexistent events are skipped.
+     */
+    List<EventData> getEventData(Collection<EventId> eventIds);
 }

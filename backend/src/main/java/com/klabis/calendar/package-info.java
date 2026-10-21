@@ -14,7 +14,7 @@
  * <ul>
  *   <li>Domain events (EventPublishedEvent, EventUpdatedEvent, EventCancelledEvent)</li>
  *   <li>Cross-module query port (EventScheduleQuery)</li>
- *   <li>Event aggregate read access (Events, Event) via the events.domain named interface</li>
+ *   <li>Cross-module read port (EventDataProvider) returning EventData</li>
  * </ul>
  */
 @org.springframework.modulith.ApplicationModule(displayName = "Kalendář")

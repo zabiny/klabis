@@ -2,8 +2,7 @@ package com.klabis.calendar.infrastructure.ical;
 
 import com.klabis.calendar.application.IcalFeedPort.EventScheduleEntry;
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventStatus;
+import com.klabis.events.EventData;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -50,21 +49,21 @@ public class ICalendarRenderer {
         return sb.toString();
     }
 
-    private void appendVEvent(StringBuilder sb, Event event, boolean isCoordinator, String baseUrl, Instant dtstamp) {
-        String eventDetailUrl = baseUrl + "/events/" + event.getId().value();
-        String dtstart = DATE_FORMAT.format(event.getEventDate());
-        String dtend = DATE_FORMAT.format(event.getEventDate().plusDays(1));
-        String uid = event.getId().value() + "@klabis";
+    private void appendVEvent(StringBuilder sb, EventData event, boolean isCoordinator, String baseUrl, Instant dtstamp) {
+        String eventDetailUrl = baseUrl + "/events/" + event.id().value();
+        String dtstart = DATE_FORMAT.format(event.eventDate());
+        String dtend = DATE_FORMAT.format(event.eventDate().plusDays(1));
+        String uid = event.id().value() + "@klabis";
 
         appendLine(sb, "BEGIN:VEVENT");
         appendLine(sb, "UID:" + uid);
         appendLine(sb, "DTSTAMP:" + DTSTAMP_FORMAT.format(dtstamp));
         appendLine(sb, "DTSTART;VALUE=DATE:" + dtstart);
         appendLine(sb, "DTEND;VALUE=DATE:" + dtend);
-        appendLine(sb, "SUMMARY:" + escapeText(event.getName()));
+        appendLine(sb, "SUMMARY:" + escapeText(event.name()));
 
-        if (event.getLocation() != null && !event.getLocation().isBlank()) {
-            appendLine(sb, "LOCATION:" + escapeText(event.getLocation()));
+        if (event.location() != null && !event.location().isBlank()) {
+            appendLine(sb, "LOCATION:" + escapeText(event.location()));
         }
 
         appendLine(sb, "URL:" + eventDetailUrl);
@@ -72,7 +71,7 @@ public class ICalendarRenderer {
         String description = buildDescription(event, eventDetailUrl, isCoordinator);
         appendLine(sb, "DESCRIPTION:" + escapeText(description));
 
-        if (event.getStatus() == EventStatus.CANCELLED) {
+        if (event.cancelled()) {
             appendLine(sb, "STATUS:CANCELLED");
         } else {
             appendLine(sb, "STATUS:CONFIRMED");
@@ -115,13 +114,13 @@ public class ICalendarRenderer {
         }
     }
 
-    private String buildDescription(Event event, String eventDetailUrl, boolean isCoordinator) {
+    private String buildDescription(EventData event, String eventDetailUrl, boolean isCoordinator) {
         StringBuilder desc = new StringBuilder();
-        desc.append("Pořadatel: ").append(event.getOrganizer());
+        desc.append("Pořadatel: ").append(event.organizer());
         desc.append("\n\nDetail v Klabisu: ").append(eventDetailUrl);
 
-        if (event.getWebsiteUrl() != null) {
-            desc.append("\nWeb akce: ").append(event.getWebsiteUrl().value());
+        if (event.websiteUrl() != null) {
+            desc.append("\nWeb akce: ").append(event.websiteUrl());
         }
 
         if (isCoordinator) {

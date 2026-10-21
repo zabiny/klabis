@@ -1,10 +1,7 @@
 package com.klabis.calendar.infrastructure.listeners;
 
-import com.klabis.events.EventTestDataBuilder;
 import com.klabis.calendar.application.CalendarEventSyncPort;
 import com.klabis.events.*;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,8 +35,7 @@ class EventsEventListenerTest {
     void shouldDelegateToServiceWhenEventIsPublished() {
         // Given
         EventId eventId = EventId.of(UUID.randomUUID());
-        Event aggregate = EventTestDataBuilder.reconstructed(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, null, null, EventStatus.ACTIVE, null, List.of(), null, null, List.of(), null);
-        EventPublishedEvent event = EventPublishedEvent.fromAggregate(aggregate);
+        EventPublishedEvent event = new EventPublishedEvent(UUID.randomUUID(), eventId, Instant.now());
 
         // When
         testedSubject.handle(event);
@@ -81,8 +77,7 @@ class EventsEventListenerTest {
     void shouldDelegateToServiceWhenEventIsCancelled() {
         // Given
         EventId eventId = EventId.of(UUID.randomUUID());
-        Event aggregate = EventTestDataBuilder.reconstructed(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, null, null, EventStatus.CANCELLED, null, List.of(), null, null, List.of(), null);
-        EventCancelledEvent event = EventCancelledEvent.fromAggregate(aggregate);
+        EventCancelledEvent event = new EventCancelledEvent(UUID.randomUUID(), eventId, Instant.now());
 
         // When
         testedSubject.handle(event);

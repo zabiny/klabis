@@ -1,11 +1,8 @@
 package com.klabis.calendar.infrastructure.ical;
 
-import com.klabis.events.EventTestDataBuilder;
 import com.klabis.calendar.application.IcalFeedPort.EventScheduleEntry;
 import com.klabis.events.EventId;
-import com.klabis.events.WebsiteUrl;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventStatus;
+import com.klabis.events.EventData;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,8 +11,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,29 +34,11 @@ class ICalendarRendererTest {
         renderer = new ICalendarRenderer();
     }
 
-    private Event buildEvent(UUID id, String name, LocalDate date, String location,
+    private EventData buildEvent(UUID id, String name, LocalDate date, String location,
                               String organizer, String websiteUrl, MemberId coordinatorId,
-                              EventStatus status) {
-        LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
-        if (coordinatorId != null) coordinators.add(coordinatorId);
-        return EventTestDataBuilder.reconstructed(
-                new EventId(id),
-                name,
-                date,
-                location,
-                organizer,
-                websiteUrl != null ? WebsiteUrl.of(websiteUrl) : null,
-                coordinators,
-                null,
-                null,
-                status,
-                null,
-                List.of(),
-                null,
-                null,
-                List.of(),
-                null
-        );
+                              boolean cancelled) {
+        Set<MemberId> coordinators = coordinatorId != null ? Set.of(coordinatorId) : Set.of();
+        return new EventData(new EventId(id), name, date, location, organizer, websiteUrl, null, cancelled, coordinators);
     }
 
     @Nested
@@ -82,8 +61,8 @@ class ICalendarRendererTest {
         @Test
         @DisplayName("should render VEVENT for a registered participant (not coordinator)")
         void shouldRenderParticipantEvent() {
-            Event event = buildEvent(FIXED_UUID, "Jarní Závod", LocalDate.of(2026, 6, 15),
-                    "Praha", "ORG", null, COORDINATOR_ID, EventStatus.ACTIVE);
+            EventData event = buildEvent(FIXED_UUID, "Jarní Závod", LocalDate.of(2026, 6, 15),
+                    "Praha", "ORG", null, COORDINATOR_ID, false);
 
             String result = renderer.render(
                     List.of(new EventScheduleEntry(event, false)),
@@ -106,8 +85,8 @@ class ICalendarRendererTest {
         @Test
         @DisplayName("should render VEVENT for a coordinator with 'Role: koordinátor' in DESCRIPTION")
         void shouldRenderCoordinatorEvent() {
-            Event event = buildEvent(FIXED_UUID, "Letní Sprint", LocalDate.of(2026, 7, 10),
-                    "Brno", "MKO", null, COORDINATOR_ID, EventStatus.ACTIVE);
+            EventData event = buildEvent(FIXED_UUID, "Letní Sprint", LocalDate.of(2026, 7, 10),
+                    "Brno", "MKO", null, COORDINATOR_ID, false);
 
             String result = renderer.render(
                     List.of(new EventScheduleEntry(event, true)),
@@ -121,8 +100,8 @@ class ICalendarRendererTest {
         @Test
         @DisplayName("should render STATUS:CANCELLED for a cancelled event")
         void shouldRenderCancelledEvent() {
-            Event event = buildEvent(FIXED_UUID, "Zrušená Akce", LocalDate.of(2026, 8, 1),
-                    null, "ORG", null, null, EventStatus.CANCELLED);
+            EventData event = buildEvent(FIXED_UUID, "Zrušená Akce", LocalDate.of(2026, 8, 1),
+                    null, "ORG", null, null, true);
 
             String result = renderer.render(
                     List.of(new EventScheduleEntry(event, false)),
@@ -136,8 +115,8 @@ class ICalendarRendererTest {
         @Test
         @DisplayName("should omit LOCATION when location is null")
         void shouldOmitLocationWhenNull() {
-            Event event = buildEvent(FIXED_UUID, "Bez Lokace", LocalDate.of(2026, 6, 1),
-                    null, "ORG", null, null, EventStatus.ACTIVE);
+            EventData event = buildEvent(FIXED_UUID, "Bez Lokace", LocalDate.of(2026, 6, 1),
+                    null, "ORG", null, null, false);
 
             String result = renderer.render(
                     List.of(new EventScheduleEntry(event, false)),
@@ -150,8 +129,8 @@ class ICalendarRendererTest {
         @Test
         @DisplayName("should include website URL in DESCRIPTION when event has websiteUrl")
         void shouldIncludeWebsiteUrlInDescription() {
-            Event event = buildEvent(FIXED_UUID, "Web Akce", LocalDate.of(2026, 9, 1),
-                    "Olomouc", "KOB", "https://event.example.com", null, EventStatus.ACTIVE);
+            EventData event = buildEvent(FIXED_UUID, "Web Akce", LocalDate.of(2026, 9, 1),
+                    "Olomouc", "KOB", "https://event.example.com", null, false);
 
             String result = renderer.render(
                     List.of(new EventScheduleEntry(event, false)),
@@ -166,8 +145,8 @@ class ICalendarRendererTest {
         @Test
         @DisplayName("should escape commas and semicolons in SUMMARY")
         void shouldEscapeSpecialCharactersInSummary() {
-            Event event = buildEvent(FIXED_UUID, "Závod; Praha, 2026", LocalDate.of(2026, 6, 1),
-                    null, "ORG", null, null, EventStatus.ACTIVE);
+            EventData event = buildEvent(FIXED_UUID, "Závod; Praha, 2026", LocalDate.of(2026, 6, 1),
+                    null, "ORG", null, null, false);
 
             String result = renderer.render(
                     List.of(new EventScheduleEntry(event, false)),
@@ -180,8 +159,8 @@ class ICalendarRendererTest {
         @Test
         @DisplayName("should escape backslash in text fields")
         void shouldEscapeBackslashInTextFields() {
-            Event event = buildEvent(FIXED_UUID, "Path\\To\\Event", LocalDate.of(2026, 6, 1),
-                    null, "ORG", null, null, EventStatus.ACTIVE);
+            EventData event = buildEvent(FIXED_UUID, "Path\\To\\Event", LocalDate.of(2026, 6, 1),
+                    null, "ORG", null, null, false);
 
             String result = renderer.render(
                     List.of(new EventScheduleEntry(event, false)),
@@ -195,8 +174,8 @@ class ICalendarRendererTest {
         @DisplayName("should fold DESCRIPTION lines exceeding 75 octets per RFC 5545 §3.1")
         void shouldFoldLongDescriptionLines() {
             String longOrganizer = "A".repeat(80);
-            Event event = buildEvent(FIXED_UUID, "Akce", LocalDate.of(2026, 6, 15),
-                    null, longOrganizer, null, COORDINATOR_ID, EventStatus.ACTIVE);
+            EventData event = buildEvent(FIXED_UUID, "Akce", LocalDate.of(2026, 6, 15),
+                    null, longOrganizer, null, COORDINATOR_ID, false);
 
             String result = renderer.render(
                     List.of(new EventScheduleEntry(event, false)),
@@ -231,10 +210,10 @@ class ICalendarRendererTest {
             UUID uuid1 = UUID.fromString("00000000-0000-0000-0000-000000000001");
             UUID uuid2 = UUID.fromString("00000000-0000-0000-0000-000000000002");
 
-            Event participantEvent = buildEvent(uuid1, "Participant Event", LocalDate.of(2026, 6, 10),
-                    null, "ORG1", null, COORDINATOR_ID, EventStatus.ACTIVE);
-            Event coordinatorEvent = buildEvent(uuid2, "Coordinator Event", LocalDate.of(2026, 7, 5),
-                    null, "ORG2", null, COORDINATOR_ID, EventStatus.ACTIVE);
+            EventData participantEvent = buildEvent(uuid1, "Participant Event", LocalDate.of(2026, 6, 10),
+                    null, "ORG1", null, COORDINATOR_ID, false);
+            EventData coordinatorEvent = buildEvent(uuid2, "Coordinator Event", LocalDate.of(2026, 7, 5),
+                    null, "ORG2", null, COORDINATOR_ID, false);
 
             String result = renderer.render(
                     List.of(

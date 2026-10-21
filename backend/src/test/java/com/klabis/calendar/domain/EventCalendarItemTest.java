@@ -1,5 +1,7 @@
 package com.klabis.calendar.domain;
 
+import static com.klabis.calendar.EventDataFixture.eventData;
+
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.CalendarItemKind;
 import com.klabis.events.EventData;
@@ -143,7 +145,7 @@ class EventCalendarItemTest {
                             "Old", "OldLoc", "OldOrg", null,
                             LocalDate.of(2026, 5, 10), eventId));
 
-            EventData event = new EventData(
+            EventData event = eventData(
                     "New Name", LocalDate.of(2026, 7, 20),
                     "New Loc", "New Org", "https://new.com",
                     LocalDate.of(2026, 7, 1));
@@ -164,7 +166,7 @@ class EventCalendarItemTest {
             EventCalendarItem item = EventCalendarItem.createForRegistrationDeadline(
                     "Old Event", eventId, LocalDate.of(2026, 5, 10));
 
-            EventData event = new EventData(
+            EventData event = eventData(
                     "New Name", LocalDate.of(2026, 7, 20),
                     "New Loc", "New Org", "https://new.com",
                     LocalDate.of(2026, 6, 30));
@@ -187,7 +189,7 @@ class EventCalendarItemTest {
                             "Old", null, null, null,
                             LocalDate.of(2026, 5, 10), eventId));
 
-            EventData event = new EventData(
+            EventData event = eventData(
                     "   ", LocalDate.of(2026, 7, 20),
                     null, null, null, null);
 
@@ -203,7 +205,7 @@ class EventCalendarItemTest {
             EventCalendarItem item = EventCalendarItem.createForRegistrationDeadline(
                     "Old Event", eventId, LocalDate.of(2026, 5, 10));
 
-            EventData event = new EventData(
+            EventData event = eventData(
                     "New Name", LocalDate.of(2026, 7, 20),
                     null, null, null, null);
 
