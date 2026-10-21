@@ -1,10 +1,11 @@
-package com.klabis.events.application;
+package com.klabis.events.infrastructure.orissync;
 
 import com.dpolach.api.orisclient.OrisWebUrls;
 import com.dpolach.api.orisclient.dto.EventClass;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Level;
 import com.dpolach.api.orisclient.dto.Organizer;
+import com.klabis.events.domain.Money;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,17 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-/**
- * Field-mapping coverage for {@link OrisEventDetailsMapper}, relocated from
- * {@code OrisEventImportServiceTest} (task 9.1/9.2): {@code importEventFromOris} no
- * longer builds the {@link com.klabis.events.domain.Event} itself — that moved to
- * {@code OrisEventSyncAdapter.createLocal} (design.md D2) — so this mapping is
- * exercised directly against {@link OrisEventDetailsMapper#map} rather than through
- * the import service.
- */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("OrisEventDetailsMapper")
-class OrisEventDetailsMapperTest {
+@DisplayName("OrisEventDetailsReader — ORIS EventDetails mapping")
+class OrisEventDetailsReaderMappingTest {
 
     @Mock
     private OrisWebUrls orisWebUrls;
@@ -51,7 +44,7 @@ class OrisEventDetailsMapperTest {
             EventDetails details = buildEventDetails("Prague Race", LocalDate.of(2026, 9, 1), "Prague", org1, org2);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
             assertThat(result.organizer()).isEqualTo("PRG");
         }
@@ -64,7 +57,7 @@ class OrisEventDetailsMapperTest {
             EventDetails details = buildEventDetails("Unnamed Race", LocalDate.of(2026, 10, 1), "Somewhere", org1, null);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
             assertThat(result.organizer()).isEqualTo("---");
         }
@@ -79,7 +72,7 @@ class OrisEventDetailsMapperTest {
                 org1, null, Map.of("100", mockClass("100", "M21")));
         when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-        OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+        OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
         assertThat(result.categories()).hasSize(1);
         assertThat(result.categories().get(0).orisId()).isEqualTo("100");
@@ -110,11 +103,11 @@ class OrisEventDetailsMapperTest {
             Mockito.lenient().when(details.currency()).thenReturn(null);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
-            assertThat(result.registrationDeadlines().deadline1()).contains(d1);
-            assertThat(result.registrationDeadlines().deadline2()).isEmpty();
-            assertThat(result.registrationDeadlines().deadline3()).isEmpty();
+            assertThat(result.registrationDeadline1()).isEqualTo(d1);
+            assertThat(result.registrationDeadline2()).isNull();
+            assertThat(result.registrationDeadline3()).isNull();
         }
 
         @Test
@@ -139,11 +132,11 @@ class OrisEventDetailsMapperTest {
             Mockito.lenient().when(details.currency()).thenReturn(null);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
-            assertThat(result.registrationDeadlines().deadline1()).contains(d1);
-            assertThat(result.registrationDeadlines().deadline2()).contains(d2);
-            assertThat(result.registrationDeadlines().deadline3()).contains(d3);
+            assertThat(result.registrationDeadline1()).isEqualTo(d1);
+            assertThat(result.registrationDeadline2()).isEqualTo(d2);
+            assertThat(result.registrationDeadline3()).isEqualTo(d3);
         }
 
         @Test
@@ -167,7 +160,7 @@ class OrisEventDetailsMapperTest {
             Mockito.lenient().when(details.currency()).thenReturn(null);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            assertThatThrownBy(() -> OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null))
+            assertThatThrownBy(() -> OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null))
                     .isInstanceOf(com.klabis.common.exceptions.BusinessRuleViolationException.class)
                     .hasMessageContaining("invalid registration deadlines");
         }
@@ -186,12 +179,11 @@ class OrisEventDetailsMapperTest {
             EventDetails details = buildEventDetailsWithLevel("MČR 2026", LocalDate.of(2026, 9, 1), "Forest", org1, level);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
-            assertThat(result.ranking()).isNotNull();
-            assertThat(result.ranking().levelId()).isEqualTo(3);
-            assertThat(result.ranking().shortName()).isEqualTo("MČR");
-            assertThat(result.ranking().name()).isEqualTo("Mistrovství ČR");
+            assertThat(result.rankingLevelId()).isEqualTo(3);
+            assertThat(result.rankingShortName()).isEqualTo("MČR");
+            assertThat(result.rankingName()).isEqualTo("Mistrovství ČR");
         }
 
         @Test
@@ -202,9 +194,9 @@ class OrisEventDetailsMapperTest {
             EventDetails details = buildEventDetailsWithLevel("Local Race", LocalDate.of(2026, 9, 1), "Forest", org1, null);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
-            assertThat(result.ranking()).isNull();
+            assertThat(result.rankingLevelId()).isNull();
         }
     }
 
@@ -226,11 +218,26 @@ class OrisEventDetailsMapperTest {
                     "Forest", org1, classes, "CZK");
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
-            assertThat(result.baseEntryFee()).isNotNull();
-            assertThat(result.baseEntryFee().amount()).isEqualByComparingTo(new BigDecimal("250"));
-            assertThat(result.baseEntryFee().currency()).isEqualTo(Currency.getInstance("CZK"));
+            assertThat(result.baseEntryFeeAmount()).isEqualByComparingTo(new BigDecimal("250"));
+            assertThat(result.baseEntryFeeCurrency()).isEqualTo("CZK");
+        }
+
+        @Test
+        @DisplayName("should normalise fee scale like Klabis Money so both sync sides hash equally")
+        void shouldNormaliseFeeScaleLikeKlabisMoney() {
+            int orisId = 3005;
+            Organizer org1 = new Organizer(205, "OOB", "Orel Brno");
+            Map<String, EventClass> classes = Map.of("M21", mockClassWithFee("M21", "100.00"));
+            EventDetails details = buildEventDetailsWithClassesAndCurrency("Scale Race", LocalDate.of(2026, 9, 1),
+                    "Forest", org1, classes, "CZK");
+            when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
+
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
+
+            assertThat(result.baseEntryFeeAmount())
+                    .isEqualTo(Money.of(new BigDecimal("100"), Currency.getInstance("CZK")).amount());
         }
 
         @Test
@@ -247,10 +254,9 @@ class OrisEventDetailsMapperTest {
                     "Forest", org1, classes, "CZK");
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
-            assertThat(result.baseEntryFee()).isNotNull();
-            assertThat(result.baseEntryFee().amount()).isEqualByComparingTo(new BigDecimal("300"));
+            assertThat(result.baseEntryFeeAmount()).isEqualByComparingTo(new BigDecimal("300"));
         }
 
         @Test
@@ -266,9 +272,9 @@ class OrisEventDetailsMapperTest {
                     "Forest", org1, classes, "CZK");
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
-            assertThat(result.baseEntryFee()).isNull();
+            assertThat(result.baseEntryFeeAmount()).isNull();
         }
 
         @Test
@@ -279,9 +285,9 @@ class OrisEventDetailsMapperTest {
             EventDetails details = buildEventDetails("No Classes Race", LocalDate.of(2026, 9, 1), "Forest", org1, null);
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
-            assertThat(result.baseEntryFee()).isNull();
+            assertThat(result.baseEntryFeeAmount()).isNull();
         }
 
         @Test
@@ -294,10 +300,9 @@ class OrisEventDetailsMapperTest {
                     "Forest", org1, classes, "");
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
-            assertThat(result.baseEntryFee()).isNotNull();
-            assertThat(result.baseEntryFee().currency()).isEqualTo(Currency.getInstance("CZK"));
+            assertThat(result.baseEntryFeeCurrency()).isEqualTo("CZK");
         }
 
         @Test
@@ -310,10 +315,9 @@ class OrisEventDetailsMapperTest {
                     "Forest", org1, classes, "INVALID");
             when(orisWebUrls.eventUrl(orisId)).thenReturn("https://oris.ceskyorientak.cz/Zavod?id=" + orisId);
 
-            OrisEventFields result = OrisEventDetailsMapper.map(details, orisId, orisWebUrls, null);
+            OrisEventProjection result = OrisEventDetailsReader.toProjection(details, orisId, orisWebUrls, null);
 
-            assertThat(result.baseEntryFee()).isNotNull();
-            assertThat(result.baseEntryFee().currency()).isEqualTo(Currency.getInstance("CZK"));
+            assertThat(result.baseEntryFeeCurrency()).isEqualTo("CZK");
         }
     }
 

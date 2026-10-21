@@ -12,11 +12,9 @@ import java.util.List;
  * Maps the ORIS-owned fields of a Klabis {@link Event} into the canonical
  * {@link OrisEventProjection} shape (design.md D3).
  * <p>
- * The external ({@code EventDetails}) side is mapped by
- * {@code OrisEventFields}/{@code OrisEventDetailsMapper} in {@code events.application}
- * — the same mapping {@code OrisEventImportService} already uses — and then adapted
- * into this same projection shape by {@link OrisEventSyncAdapter}, so both sides of a
- * comparison go through one field-ownership rule.
+ * The external ({@code EventDetails}) side is mapped into this same projection shape by
+ * {@link OrisEventDetailsReader}, so both sides of a comparison go through one
+ * field-ownership rule.
  */
 final class OrisEventProjectionMapper {
 

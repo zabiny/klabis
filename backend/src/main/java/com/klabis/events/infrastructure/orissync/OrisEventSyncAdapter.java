@@ -5,7 +5,6 @@ import com.klabis.events.EventId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
-import com.klabis.events.application.OrisEventFieldsReader;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
 import com.klabis.events.domain.EventRanking;
@@ -35,7 +34,7 @@ import java.util.stream.Collectors;
  * primary port that existed only to cross a package boundary.
  * <p>
  * Reaches the {@code events} module through {@link EventManagementPort} to read the
- * local side, {@link OrisEventFieldsReader} to read the external side, and
+ * local side, {@link OrisEventDetailsReader} to read the external side, and
  * {@link EventRepository} together with {@code Event.syncFromOris} to write inward —
  * this class now lives inside {@code events.infrastructure}, so these are
  * module-internal dependencies rather than a cross-module port (design.md D2, D4).
@@ -71,14 +70,14 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
             SyncCapabilities.pullOnlyCreating();
 
     private final EventManagementPort eventManagementPort;
-    private final OrisEventFieldsReader orisEventFieldsReader;
+    private final OrisEventDetailsReader orisEventDetailsReader;
     private final EventRepository eventRepository;
 
     OrisEventSyncAdapter(EventManagementPort eventManagementPort,
-                          OrisEventFieldsReader orisEventFieldsReader,
+                          OrisEventDetailsReader orisEventDetailsReader,
                           EventRepository eventRepository) {
         this.eventManagementPort = eventManagementPort;
-        this.orisEventFieldsReader = orisEventFieldsReader;
+        this.orisEventDetailsReader = orisEventDetailsReader;
         this.eventRepository = eventRepository;
     }
 
@@ -110,9 +109,7 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
 
     @Override
     public SyncProjection readExternal(String externalId) {
-        int orisId = toOrisId(externalId);
-        return OrisEventFieldsToProjectionMapper.fromOrisFields(
-                orisEventFieldsReader.readOrisFields(orisId), orisId);
+        return orisEventDetailsReader.read(toOrisId(externalId));
     }
 
     /**
@@ -171,10 +168,8 @@ class OrisEventSyncAdapter implements SynchronizationAdapter {
 
     /**
      * Logs when an inward ORIS sync would drop categories that still carry
-     * registrations. Carried verbatim from the deleted
-     * {@code OrisEventFieldsGatewayService.warnIfSyncRemovesCategoriesWithRegistrations}
-     * (design.md D2) — it is the only diagnostic on this path, and its loss is
-     * invisible until an event silently drops a category that had registrations.
+     * registrations — the only diagnostic on this path, otherwise an event silently
+     * drops a category that had registrations.
      */
     private void warnIfSyncRemovesCategoriesWithRegistrations(Event event, List<EventCategory> incomingCategories) {
         if (event.getRegistrations().isEmpty()) {

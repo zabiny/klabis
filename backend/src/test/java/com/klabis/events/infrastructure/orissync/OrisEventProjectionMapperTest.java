@@ -1,7 +1,8 @@
 package com.klabis.events.infrastructure.orissync;
 
+import com.klabis.events.EventCategory;
+import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
-import com.klabis.events.application.OrisEventFields;
 import com.klabis.events.domain.*;
 import com.klabis.sync.infrastructure.SyncProjectionCodec;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Currency;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,7 +30,7 @@ class OrisEventProjectionMapperTest {
                 .websiteUrl(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"))
                 .registrationDeadlines(RegistrationDeadlines.of(
                         LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 15), null))
-                .categories(List.of(com.klabis.events.EventCategory.createFromOris("101", "M21")))
+                .categories(List.of(EventCategory.createFromOris("101", "M21")))
                 .ranking(EventRanking.of(1, "A", "Mistrovství republiky"))
                 .baseEntryFee(Money.of(new BigDecimal("100.00"), Currency.getInstance("CZK")))
                 .build());
@@ -61,8 +63,8 @@ class OrisEventProjectionMapperTest {
                 .organizer("OOB")
                 .websiteUrl(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"))
                 .categories(List.of(
-                        com.klabis.events.EventCategory.createFromOris("101", "M21"),
-                        com.klabis.events.EventCategory.create("Custom category")))
+                        EventCategory.createFromOris("101", "M21"),
+                        EventCategory.create("Custom category")))
                 .build());
 
         OrisEventProjection projection = OrisEventProjectionMapper.fromEvent(event);
@@ -81,27 +83,20 @@ class OrisEventProjectionMapperTest {
                 .websiteUrl(WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"))
                 .registrationDeadlines(RegistrationDeadlines.of(
                         LocalDate.of(2026, 4, 1), null, null))
-                .categories(List.of(com.klabis.events.EventCategory.createFromOris("101", "M21")))
+                .categories(List.of(EventCategory.createFromOris("101", "M21")))
                 .ranking(EventRanking.of(1, "A", "Mistrovství republiky"))
                 .baseEntryFee(Money.of(new BigDecimal("100"), Currency.getInstance("CZK")))
                 .build());
 
-        OrisEventFields orisFields = new OrisEventFields(
-                "Spring Sprint",
-                LocalDate.of(2026, 5, 1),
-                "Brno Park",
-                "OOB",
-                WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"),
-                RegistrationDeadlines.of(LocalDate.of(2026, 4, 1), null, null),
-                List.of(com.klabis.events.EventCategory.createFromOris("101", "M21")),
-                EventRanking.of(1, "A", "Mistrovství republiky"),
-                // Different scale from the Event side's Money("100") — must still hash equally.
-                Money.of(new BigDecimal("100.00"), Currency.getInstance("CZK")),
-                null
-        );
+        OrisEventProjection fromOrisSide = new OrisEventProjection(
+                "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
+                "https://oris.ceskyorientak.cz/Zavod?id=1234",
+                LocalDate.of(2026, 4, 1), null, null,
+                List.of(new OrisEventProjection.Category("101", "M21")),
+                1, "A", "Mistrovství republiky",
+                new BigDecimal("100"), "CZK", null, 1234);
 
         OrisEventProjection fromEventSide = OrisEventProjectionMapper.fromEvent(event);
-        OrisEventProjection fromOrisSide = OrisEventFieldsToProjectionMapper.fromOrisFields(orisFields, 1234);
 
         assertThat(SyncProjectionCodec.hash(fromEventSide)).isEqualTo(SyncProjectionCodec.hash(fromOrisSide));
     }
@@ -118,40 +113,29 @@ class OrisEventProjectionMapperTest {
                 .baseEntryFee(Money.of(new BigDecimal("100"), Currency.getInstance("CZK")))
                 .build());
 
-        OrisEventFields orisFields = new OrisEventFields(
-                "Spring Sprint",
-                LocalDate.of(2026, 5, 1),
-                "Brno Park",
-                "OOB",
-                WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"),
-                RegistrationDeadlines.none(),
-                List.of(),
-                null,
-                Money.of(new BigDecimal("150.00"), Currency.getInstance("CZK")),
-                null
-        );
+        OrisEventProjection fromOrisSide = new OrisEventProjection(
+                "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
+                "https://oris.ceskyorientak.cz/Zavod?id=1234",
+                null, null, null, List.of(), null, null, null,
+                new BigDecimal("150"), "CZK", null, 1234);
 
         OrisEventProjection fromEventSide = OrisEventProjectionMapper.fromEvent(event);
-        OrisEventProjection fromOrisSide = OrisEventFieldsToProjectionMapper.fromOrisFields(orisFields, 1234);
 
         assertThat(SyncProjectionCodec.hash(fromEventSide)).isNotEqualTo(SyncProjectionCodec.hash(fromOrisSide));
+    }
+
+    private static OrisEventProjection orisSide(EventTypeId resolvedEventTypeId, int orisId) {
+        return new OrisEventProjection(
+                "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
+                "https://oris.ceskyorientak.cz/Zavod?id=1234",
+                null, null, null, List.of(), null, null, null, null, null, resolvedEventTypeId, orisId);
     }
 
     @Test
     @DisplayName("resolvedEventTypeId is Klabis-owned (design.md D3) and never affects the hash")
     void resolvedEventTypeId_isExcludedFromHash() {
-        OrisEventFields fieldsWithoutResolvedType = new OrisEventFields(
-                "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
-                WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"),
-                RegistrationDeadlines.none(), List.of(), null, null, null);
-        OrisEventFields fieldsWithResolvedType = new OrisEventFields(
-                "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
-                WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"),
-                RegistrationDeadlines.none(), List.of(), null, null,
-                new com.klabis.events.EventTypeId(java.util.UUID.randomUUID()));
-
-        OrisEventProjection withoutResolvedType = OrisEventFieldsToProjectionMapper.fromOrisFields(fieldsWithoutResolvedType, 1234);
-        OrisEventProjection withResolvedType = OrisEventFieldsToProjectionMapper.fromOrisFields(fieldsWithResolvedType, 1234);
+        OrisEventProjection withoutResolvedType = orisSide(null, 1234);
+        OrisEventProjection withResolvedType = orisSide(new EventTypeId(UUID.randomUUID()), 1234);
 
         assertThat(SyncProjectionCodec.hash(withoutResolvedType)).isEqualTo(SyncProjectionCodec.hash(withResolvedType));
     }
@@ -159,13 +143,8 @@ class OrisEventProjectionMapperTest {
     @Test
     @DisplayName("orisId is Klabis-owned pairing identity (design.md D2), not a synchronised field, and never affects the hash")
     void orisId_isExcludedFromHash() {
-        OrisEventFields fields = new OrisEventFields(
-                "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
-                WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=1234"),
-                RegistrationDeadlines.none(), List.of(), null, null, null);
-
-        OrisEventProjection withOneOrisId = OrisEventFieldsToProjectionMapper.fromOrisFields(fields, 1234);
-        OrisEventProjection withAnotherOrisId = OrisEventFieldsToProjectionMapper.fromOrisFields(fields, 5678);
+        OrisEventProjection withOneOrisId = orisSide(null, 1234);
+        OrisEventProjection withAnotherOrisId = orisSide(null, 5678);
 
         assertThat(SyncProjectionCodec.hash(withOneOrisId)).isEqualTo(SyncProjectionCodec.hash(withAnotherOrisId));
     }

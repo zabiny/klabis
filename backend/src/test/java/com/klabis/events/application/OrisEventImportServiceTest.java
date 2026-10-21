@@ -29,13 +29,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * ORIS field-mapping coverage (organizer fallback, deadlines, ranking, base entry fee,
- * category orisId) lives in {@link OrisEventDetailsMapperTest} — {@code
- * importEventFromOris} no longer builds the {@link Event} itself, that moved to {@code
- * OrisEventSyncAdapter.createLocal} via the synchronisation engine's {@code
- * pullAndEnroll} (design.md D2, "ORIS import path delegates to the engine").
- */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrisEventImportService")
 class OrisEventImportServiceTest {

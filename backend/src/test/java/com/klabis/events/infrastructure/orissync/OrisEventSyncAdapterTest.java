@@ -7,12 +7,9 @@ import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
 import com.klabis.events.application.EventManagementPort;
 import com.klabis.events.application.EventNotFoundException;
-import com.klabis.events.application.OrisEventFields;
-import com.klabis.events.application.OrisEventFieldsReader;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventCreateEventFromOrisBuilder;
 import com.klabis.events.domain.EventRepository;
-import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.events.domain.SiCardNumber;
 import com.klabis.members.MemberId;
 import com.klabis.sync.domain.SyncEntityType;
@@ -48,7 +45,7 @@ class OrisEventSyncAdapterTest {
     private EventManagementPort eventManagementPort;
 
     @Mock
-    private OrisEventFieldsReader orisEventFieldsReader;
+    private OrisEventDetailsReader orisEventDetailsReader;
 
     @Mock
     private EventRepository eventRepository;
@@ -61,7 +58,13 @@ class OrisEventSyncAdapterTest {
 
     @BeforeEach
     void setUp() {
-        adapter = new OrisEventSyncAdapter(eventManagementPort, orisEventFieldsReader, eventRepository);
+        adapter = new OrisEventSyncAdapter(eventManagementPort, orisEventDetailsReader, eventRepository);
+    }
+
+    private static OrisEventProjection projection(String name, LocalDate date, String location, String organizer,
+                                                  EventTypeId resolvedEventTypeId) {
+        return new OrisEventProjection(name, date, location, organizer, null,
+                null, null, null, List.of(), null, null, null, null, null, resolvedEventTypeId, ORIS_ID);
     }
 
     @Test
@@ -101,13 +104,10 @@ class OrisEventSyncAdapterTest {
     class ReadExternalMethod {
 
         @Test
-        @DisplayName("maps the ORIS fields read through OrisEventFieldsReader into the canonical projection")
+        @DisplayName("returns the projection read through OrisEventDetailsReader")
         void mapsOrisFieldsIntoProjection() {
-            OrisEventFields fields = new OrisEventFields(
-                    "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
-                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"),
-                    RegistrationDeadlines.none(), List.of(), null, null, null);
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(fields);
+            OrisEventProjection fields = projection("Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null);
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(fields);
 
             SyncProjection projection = adapter.readExternal(String.valueOf(ORIS_ID));
 
@@ -146,10 +146,7 @@ class OrisEventSyncAdapterTest {
         @Test
         @DisplayName("writes the projection inward via Event.syncFromOris and saves through EventRepository")
         void writesInwardViaSyncFromOris() {
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
-                    "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
-                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"),
-                    RegistrationDeadlines.none(), List.of(), null, null, null));
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null));
             // The engine always calls readExternal before applyToLocal within one pass
             // (design.md "How a pass runs") and passes the very projection readExternal
             // returned — that is what now carries the resolved event type across
@@ -174,9 +171,7 @@ class OrisEventSyncAdapterTest {
         @Test
         @DisplayName("throws EventNotFoundException when the event does not exist")
         void throwsWhenEventNotFound() {
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
-                    "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null,
-                    RegistrationDeadlines.none(), List.of(), null, null, null));
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null));
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
             when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.empty());
 
@@ -188,10 +183,7 @@ class OrisEventSyncAdapterTest {
         @DisplayName("carries the event type resolved by readExternal, without reading ORIS a second time (task 8.10)")
         void carriesResolvedEventTypeWithoutSecondOrisRead() {
             EventTypeId resolvedType = EventTypeId.generate();
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
-                    "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
-                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=4242"),
-                    RegistrationDeadlines.none(), List.of(), null, null, resolvedType));
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", resolvedType));
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
@@ -206,9 +198,9 @@ class OrisEventSyncAdapterTest {
             adapter.applyToLocal(EVENT_UUID.toString(), incoming);
 
             assertThat(event.getEventTypeId()).contains(resolvedType);
-            // readOrisFields must have been called exactly once — by readExternal — not
+            // read must have been called exactly once — by readExternal — not
             // again inside applyToLocal.
-            verify(orisEventFieldsReader, Mockito.times(1)).readOrisFields(ORIS_ID);
+            verify(orisEventDetailsReader, Mockito.times(1)).read(ORIS_ID);
         }
 
         @Test
@@ -216,9 +208,7 @@ class OrisEventSyncAdapterTest {
         void preservesExistingEventTypeOnSync() {
             EventTypeId existingTypeId = EventTypeId.generate();
             EventTypeId differentResolvedType = EventTypeId.generate();
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
-                    "New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null,
-                    RegistrationDeadlines.none(), List.of(), null, null, differentResolvedType));
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("New name", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", differentResolvedType));
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = com.klabis.events.EventTestDataBuilder.anEvent()
@@ -240,14 +230,8 @@ class OrisEventSyncAdapterTest {
             EventId otherEventId = new EventId(UUID.randomUUID());
             EventTypeId firstResolvedType = EventTypeId.generate();
 
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
-                    "First event", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
-                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=" + ORIS_ID),
-                    RegistrationDeadlines.none(), List.of(), null, null, firstResolvedType));
-            when(orisEventFieldsReader.readOrisFields(otherOrisId)).thenReturn(new OrisEventFields(
-                    "Second event", LocalDate.of(2026, 6, 1), "Praha Park", "POB",
-                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=" + otherOrisId),
-                    RegistrationDeadlines.none(), List.of(), null, null, null));
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("First event", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", firstResolvedType));
+            when(orisEventDetailsReader.read(otherOrisId)).thenReturn(projection("Second event", LocalDate.of(2026, 6, 1), "Praha Park", "POB", null));
 
             // Two records processed in sequence on the same thread, exactly as the
             // engine does (D16 — one record at a time): reading the second record's
@@ -274,9 +258,7 @@ class OrisEventSyncAdapterTest {
         @DisplayName("fills eventTypeId when event has none and the resolved discipline matched (moved from OrisEventTypeAutoMappingTest.SyncAutoMapping)")
         void fillsEventTypeIdOnSyncWhenEmpty() {
             EventTypeId matchedType = EventTypeId.generate();
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
-                    "Klasická závod", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null,
-                    RegistrationDeadlines.none(), List.of(), null, null, matchedType));
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("Klasická závod", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", matchedType));
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = com.klabis.events.EventTestDataBuilder.anEvent()
@@ -294,9 +276,7 @@ class OrisEventSyncAdapterTest {
         @DisplayName("does not overwrite existing eventTypeId when discipline has no catalog match (moved from OrisEventTypeAutoMappingTest.SyncAutoMapping)")
         void preservesExistingEventTypeWhenNoDisciplineMatch() {
             EventTypeId existingTypeId = EventTypeId.generate();
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
-                    "Strange Resync", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null,
-                    RegistrationDeadlines.none(), List.of(), null, null, null));
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("Strange Resync", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null));
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = com.klabis.events.EventTestDataBuilder.anEvent()
@@ -315,9 +295,7 @@ class OrisEventSyncAdapterTest {
         @DisplayName("preserves existing eventTypeId when discipline is null (moved from OrisEventTypeAutoMappingTest.SyncAutoMapping)")
         void preservesExistingEventTypeWhenDisciplineIsNull() {
             EventTypeId existingTypeId = EventTypeId.generate();
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
-                    "No Discipline Resync", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null,
-                    RegistrationDeadlines.none(), List.of(), null, null, null));
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("No Discipline Resync", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", null));
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = com.klabis.events.EventTestDataBuilder.anEvent()
@@ -335,10 +313,9 @@ class OrisEventSyncAdapterTest {
         @Test
         @DisplayName("maps ORIS ranking level into EventRanking on sync (moved from OrisEventImportServiceTest.RankingMapping)")
         void mapsLevelToRankingOnSync() {
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(new OrisEventProjection(
                     "Updated Race", LocalDate.of(2026, 9, 1), "Forest", "OOB", null,
-                    RegistrationDeadlines.none(), List.of(),
-                    com.klabis.events.domain.EventRanking.of(5, "ŽB", "Žebříček B"), null, null));
+                    null, null, null, List.of(), 5, "ŽB", "Žebříček B", null, null, null, ORIS_ID));
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
@@ -357,9 +334,7 @@ class OrisEventSyncAdapterTest {
         @Test
         @DisplayName("sets ranking to null when the projection carries no ranking (moved from OrisEventImportServiceTest.RankingMapping)")
         void setsRankingNullWhenAbsentOnSync() {
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
-                    "Updated Race", LocalDate.of(2026, 9, 1), "Forest", "OOB", null,
-                    RegistrationDeadlines.none(), List.of(), null, null, null));
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("Updated Race", LocalDate.of(2026, 9, 1), "Forest", "OOB", null));
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
@@ -376,11 +351,9 @@ class OrisEventSyncAdapterTest {
         @Test
         @DisplayName("derives baseEntryFee from the projection's amount and currency on sync (moved from OrisEventImportServiceTest.BaseEntryFeeMapping)")
         void derivesBaseEntryFeeOnSync() {
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(new OrisEventProjection(
                     "Sync Fee Race", LocalDate.of(2026, 9, 1), "Forest", "OOB", null,
-                    RegistrationDeadlines.none(), List.of(), null,
-                    com.klabis.events.domain.Money.of(new java.math.BigDecimal("400"), java.util.Currency.getInstance("CZK")),
-                    null));
+                    null, null, null, List.of(), null, null, null, new java.math.BigDecimal("400"), "CZK", null, ORIS_ID));
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
@@ -412,11 +385,10 @@ class OrisEventSyncAdapterTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
             register(event, memberId, new SiCardNumber("12345"), m21.id());
 
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(new OrisEventProjection(
                     "Race Updated", eventDate.plusDays(14), "Forest", "OOB", null,
-                    RegistrationDeadlines.none(),
-                    List.of(EventCategory.createFromOris("W21", "W21")),
-                    null, null, null));
+                    null, null, null, List.of(new OrisEventProjection.Category("W21", "W21")),
+                    null, null, null, null, null, null, ORIS_ID));
             SyncProjection incoming = adapter.readExternal(String.valueOf(ORIS_ID));
 
             when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
@@ -438,10 +410,7 @@ class OrisEventSyncAdapterTest {
         @DisplayName("builds an event from the ORIS projection, applies the auto-mapped event type, and returns its identifier")
         void buildsEventFromProjectionAndReturnsId() {
             EventTypeId resolvedType = EventTypeId.generate();
-            when(orisEventFieldsReader.readOrisFields(ORIS_ID)).thenReturn(new OrisEventFields(
-                    "Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB",
-                    WebsiteUrl.of("https://oris.ceskyorientak.cz/Zavod?id=" + ORIS_ID),
-                    RegistrationDeadlines.none(), List.of(), null, null, resolvedType));
+            when(orisEventDetailsReader.read(ORIS_ID)).thenReturn(projection("Spring Sprint", LocalDate.of(2026, 5, 1), "Brno Park", "OOB", resolvedType));
             SyncProjection externalProjection = adapter.readExternal(String.valueOf(ORIS_ID));
 
             ArgumentCaptor<Event> savedEventCaptor = ArgumentCaptor.forClass(Event.class);

@@ -29,8 +29,7 @@ import java.util.List;
  * it is {@link JsonIgnore}d so {@link com.klabis.sync.infrastructure.SyncProjectionCodec}
  * never serialises it — the event type is Klabis-owned (design.md D3) and must not
  * participate in hashing, persistence or field-level divergence, exactly like every
- * other Klabis-owned field. It carries the ORIS discipline resolution
- * ({@code events.application.OrisEventFields#resolvedEventTypeId}) from
+ * other Klabis-owned field. It carries the ORIS discipline resolution from
  * {@link OrisEventSyncAdapter#readExternal} to {@link OrisEventSyncAdapter#applyToLocal}
  * on the external projection itself, so the value travels with the exact projection it
  * was resolved from instead of through thread-local state keyed by call order (task
