@@ -252,7 +252,7 @@ class CalendarRepositoryAdapterTest {
         }
 
         @Test
-        @DisplayName("should apply default sort (start_date ASC, name ASC) when Sort is unsorted")
+        @DisplayName("should apply default sort (startDate ASC, name ASC) when Sort is unsorted")
         void shouldApplyDefaultSortWhenSortIsUnsorted() {
             LocalDate startDate = LocalDate.of(2026, 6, 1);
             LocalDate endDate = LocalDate.of(2026, 6, 30);
@@ -269,15 +269,15 @@ class CalendarRepositoryAdapterTest {
             assertThat(sort.isSorted()).isTrue();
             List<Sort.Order> orders = sort.toList();
             assertThat(orders).hasSize(2);
-            assertThat(orders.get(0).getProperty()).isEqualTo("start_date");
+            assertThat(orders.get(0).getProperty()).isEqualTo("startDate");
             assertThat(orders.get(0).getDirection()).isEqualTo(Sort.Direction.ASC);
             assertThat(orders.get(1).getProperty()).isEqualTo("name");
             assertThat(orders.get(1).getDirection()).isEqualTo(Sort.Direction.ASC);
         }
 
         @Test
-        @DisplayName("should translate domain property names to column names in sort")
-        void shouldTranslateDomainPropertyNamesToColumnNamesInSort() {
+        @DisplayName("should keep the requested sort and append name as tiebreaker")
+        void shouldAppendNameTiebreakerToRequestedSort() {
             LocalDate startDate = LocalDate.of(2026, 6, 1);
             LocalDate endDate = LocalDate.of(2026, 6, 30);
             when(jdbcAggregateTemplateMock.findAll(any(Query.class), eq(CalendarMemento.class)))
@@ -286,12 +286,11 @@ class CalendarRepositoryAdapterTest {
             ArgumentCaptor<Query> queryCaptor = ArgumentCaptor.forClass(Query.class);
 
             CalendarFilter filter = CalendarFilter.dateRange(startDate, endDate);
-            testedSubject.findByFilter(filter, Sort.by("startDate").ascending().and(Sort.by("name")));
+            testedSubject.findByFilter(filter, Sort.by("endDate"));
 
             verify(jdbcAggregateTemplateMock).findAll(queryCaptor.capture(), eq(CalendarMemento.class));
             Sort sort = queryCaptor.getValue().getSort();
-            List<Sort.Order> orders = sort.toList();
-            assertThat(orders.get(0).getProperty()).isEqualTo("start_date");
+            assertThat(sort.stream().map(Sort.Order::getProperty)).containsExactly("endDate", "name");
         }
     }
 
