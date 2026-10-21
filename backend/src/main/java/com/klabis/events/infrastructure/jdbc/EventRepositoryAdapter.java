@@ -33,13 +33,6 @@ import java.util.stream.Collectors;
 /**
  * Adapter that bridges between EventRepository domain interface and EventJdbcRepository.
  * <p>
- * This adapter implements:
- * <ul>
- *   <li>{@link EventRepository EventRepository} - domain repository interface</li>
- * </ul>
- * <p>
- * EventRepository extends {@link com.klabis.events.domain.Events Events} public API, so this adapter indirectly implements both.
- * <p>
  * It handles conversion between Event entities and EventMemento persistence objects.
  * <p>
  * Event publishing is handled automatically by Spring Modulith via the outbox pattern.

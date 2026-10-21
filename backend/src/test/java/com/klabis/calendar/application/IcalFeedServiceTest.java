@@ -1,11 +1,9 @@
 package com.klabis.calendar.application;
 
-import com.klabis.events.EventTestDataBuilder;
+import com.klabis.events.EventData;
 import com.klabis.events.EventId;
 import com.klabis.events.application.EventScheduleQuery;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventStatus;
-import com.klabis.events.domain.Events;
+import com.klabis.events.application.EventDataProvider;
 import com.klabis.members.MemberId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,7 +17,6 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -38,7 +35,7 @@ class IcalFeedServiceTest {
     private EventScheduleQuery eventScheduleQuery;
 
     @Mock
-    private Events events;
+    private EventDataProvider eventDataProvider;
 
     private IcalWindowProperties windowProperties;
     private IcalFeedService service;
@@ -51,30 +48,12 @@ class IcalFeedServiceTest {
         windowProperties = new IcalWindowProperties();
         windowProperties.setPast(Period.ofDays(30));
         windowProperties.setFuture(Period.ofMonths(12));
-        service = new IcalFeedService(eventScheduleQuery, events, windowProperties);
+        service = new IcalFeedService(eventScheduleQuery, eventDataProvider, windowProperties);
     }
 
-    private Event eventWithCoordinator(EventId id, MemberId coordinatorId) {
-        LinkedHashSet<MemberId> coordinators = new LinkedHashSet<>();
-        if (coordinatorId != null) coordinators.add(coordinatorId);
-        return EventTestDataBuilder.reconstructed(
-                id,
-                "Test Event",
-                NOW.plusDays(10),
-                "Praha",
-                "ORG",
-                null,
-                coordinators,
-                null,
-                null,
-                EventStatus.ACTIVE,
-                null,
-                List.of(),
-                null,
-                null,
-                List.of(),
-                null
-        );
+    private EventData eventWithCoordinator(EventId id, MemberId coordinatorId) {
+        Set<MemberId> coordinators = coordinatorId != null ? Set.of(coordinatorId) : Set.of();
+        return new EventData(id, "Test Event", NOW.plusDays(10), "Praha", "ORG", null, null, false, coordinators);
     }
 
     @Nested
@@ -90,18 +69,18 @@ class IcalFeedServiceTest {
             List<IcalFeedPort.EventScheduleEntry> result = service.getMySchedule(MEMBER_ID, NOW);
 
             assertThat(result).isEmpty();
-            verifyNoInteractions(events);
+            verifyNoInteractions(eventDataProvider);
         }
 
         @Test
         @DisplayName("should return entries as participant when member is registered but not coordinator")
         void shouldReturnParticipantEntriesWhenRegistered() {
             EventId eventId = EventId.generate();
-            Event event = eventWithCoordinator(eventId, new MemberId(UUID.randomUUID()));
+            EventData event = eventWithCoordinator(eventId, new MemberId(UUID.randomUUID()));
 
             when(eventScheduleQuery.findEventIdsForMemberSchedule(eq(MEMBER_ID), any(), any()))
                     .thenReturn(Set.of(eventId));
-            when(events.findById(eventId)).thenReturn(Optional.of(event));
+            when(eventDataProvider.getEventData(Set.of(eventId))).thenReturn(List.of(event));
 
             List<IcalFeedPort.EventScheduleEntry> result = service.getMySchedule(MEMBER_ID, NOW);
 
@@ -114,11 +93,11 @@ class IcalFeedServiceTest {
         @DisplayName("should return entry as coordinator when member is the event coordinator")
         void shouldReturnCoordinatorEntryWhenMemberIsCoordinator() {
             EventId eventId = EventId.generate();
-            Event event = eventWithCoordinator(eventId, MEMBER_ID);
+            EventData event = eventWithCoordinator(eventId, MEMBER_ID);
 
             when(eventScheduleQuery.findEventIdsForMemberSchedule(eq(MEMBER_ID), any(), any()))
                     .thenReturn(Set.of(eventId));
-            when(events.findById(eventId)).thenReturn(Optional.of(event));
+            when(eventDataProvider.getEventData(Set.of(eventId))).thenReturn(List.of(event));
 
             List<IcalFeedPort.EventScheduleEntry> result = service.getMySchedule(MEMBER_ID, NOW);
 
@@ -133,13 +112,13 @@ class IcalFeedServiceTest {
             EventId participantEventId = EventId.generate();
             EventId coordinatorEventId = EventId.generate();
 
-            Event participantEvent = eventWithCoordinator(participantEventId, new MemberId(UUID.randomUUID()));
-            Event coordinatorEvent = eventWithCoordinator(coordinatorEventId, MEMBER_ID);
+            EventData participantEvent = eventWithCoordinator(participantEventId, new MemberId(UUID.randomUUID()));
+            EventData coordinatorEvent = eventWithCoordinator(coordinatorEventId, MEMBER_ID);
 
             when(eventScheduleQuery.findEventIdsForMemberSchedule(eq(MEMBER_ID), any(), any()))
                     .thenReturn(Set.of(participantEventId, coordinatorEventId));
-            when(events.findById(participantEventId)).thenReturn(Optional.of(participantEvent));
-            when(events.findById(coordinatorEventId)).thenReturn(Optional.of(coordinatorEvent));
+            when(eventDataProvider.getEventData(Set.of(participantEventId, coordinatorEventId)))
+                    .thenReturn(List.of(participantEvent, coordinatorEvent));
 
             List<IcalFeedPort.EventScheduleEntry> result = service.getMySchedule(MEMBER_ID, NOW);
 
@@ -155,17 +134,16 @@ class IcalFeedServiceTest {
         }
 
         @Test
-        @DisplayName("should skip events not found in Events repository")
+        @DisplayName("should skip events not found by event data provider")
         void shouldSkipEventsNotFoundInRepository() {
             EventId existingId = EventId.generate();
             EventId missingId = EventId.generate();
 
-            Event existingEvent = eventWithCoordinator(existingId, new MemberId(UUID.randomUUID()));
+            EventData existingEvent = eventWithCoordinator(existingId, new MemberId(UUID.randomUUID()));
 
             when(eventScheduleQuery.findEventIdsForMemberSchedule(eq(MEMBER_ID), any(), any()))
                     .thenReturn(Set.of(existingId, missingId));
-            when(events.findById(existingId)).thenReturn(Optional.of(existingEvent));
-            when(events.findById(missingId)).thenReturn(Optional.empty());
+            when(eventDataProvider.getEventData(Set.of(existingId, missingId))).thenReturn(List.of(existingEvent));
 
             List<IcalFeedPort.EventScheduleEntry> result = service.getMySchedule(MEMBER_ID, NOW);
 

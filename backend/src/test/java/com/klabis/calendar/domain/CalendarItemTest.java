@@ -1,5 +1,7 @@
 package com.klabis.calendar.domain;
 
+import static com.klabis.calendar.EventDataFixture.eventData;
+
 import com.klabis.calendar.CalendarItemAssert;
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.CalendarItemKind;
@@ -496,7 +498,7 @@ class CalendarItemTest {
 
             LocalDate newDate = LocalDate.of(2026, 7, 20);
 
-            calendarItem.synchronizeFromEvent(new EventData(
+            calendarItem.synchronizeFromEvent(eventData(
                     "New Name", newDate, "City Park", "OOB", null, null));
 
             CalendarItemAssert.assertThat(calendarItem)
@@ -522,7 +524,7 @@ class CalendarItemTest {
                     null
             );
 
-            calendarItem.synchronizeFromEvent(new EventData(
+            calendarItem.synchronizeFromEvent(eventData(
                     "New Name", LocalDate.of(2026, 7, 20), "City Park", "OOB", "https://example.com", null));
 
             CalendarItemAssert.assertThat(calendarItem)
@@ -545,7 +547,7 @@ class CalendarItemTest {
             );
 
             assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
-                    new EventData("   ", LocalDate.of(2026, 7, 20), "Location", "OOB", null, null)))
+                    eventData("   ", LocalDate.of(2026, 7, 20), "Location", "OOB", null, null)))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name");
         }
@@ -565,7 +567,7 @@ class CalendarItemTest {
                     null
             );
 
-            calendarItem.synchronizeFromEvent(new EventData(
+            calendarItem.synchronizeFromEvent(eventData(
                     "New Name", LocalDate.of(2026, 7, 20), null, "OOB", null, null));
 
             CalendarItemAssert.assertThat(calendarItem)
@@ -587,7 +589,7 @@ class CalendarItemTest {
                     null
             );
 
-            calendarItem.synchronizeFromEvent(new EventData(
+            calendarItem.synchronizeFromEvent(eventData(
                     "New Name", LocalDate.of(2026, 7, 20), "   ", "OOB", null, null));
 
             CalendarItemAssert.assertThat(calendarItem)
@@ -610,7 +612,7 @@ class CalendarItemTest {
             );
 
             assertThatThrownBy(() -> calendarItem.synchronizeFromEvent(
-                    new EventData("Name", null, "Location", "OOB", null, null)))
+                    eventData("Name", null, "Location", "OOB", null, null)))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("Start date");
         }

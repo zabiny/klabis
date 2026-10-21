@@ -1,6 +1,7 @@
 package com.klabis.calendar.application;
 
-import com.klabis.events.EventTestDataBuilder;
+import static com.klabis.calendar.EventDataFixture.eventData;
+
 import com.klabis.CleanupTestData;
 import com.klabis.KlabisModuleTest;
 import com.klabis.calendar.CalendarItemId;
@@ -10,10 +11,6 @@ import com.klabis.calendar.domain.EventCalendarItem;
 import com.klabis.events.*;
 import com.klabis.events.application.EventDataProvider;
 import com.klabis.events.application.EventScheduleQuery;
-import com.klabis.events.domain.Event;
-import com.klabis.events.domain.EventStatus;
-import com.klabis.events.domain.Events;
-import com.klabis.events.domain.RegistrationDeadlines;
 import com.klabis.members.infrastructure.restapi.MemberIdMixin;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -66,9 +63,6 @@ class CalendarEventSyncIntegrationTest {
     @MockitoBean
     private EventScheduleQuery eventScheduleQuery;
 
-    @MockitoBean
-    private Events events;
-
     @Test
     @DisplayName("should create calendar item when EventPublishedEvent arrives")
     @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, statements = "delete from calendar.calendar_items")
@@ -76,7 +70,7 @@ class CalendarEventSyncIntegrationTest {
         // Given: Event data
         final EventId eventId = EVENT_ID;
 
-        when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData(
                 "Spring Boot Workshop",
                 LocalDate.of(2024, 3, 15),
                 "Prague CC",
@@ -86,7 +80,7 @@ class CalendarEventSyncIntegrationTest {
         ));
 
         // When & Then: CalendarItem should be created automatically
-        scenario.publish(EventPublishedEvent.fromAggregate(EventTestDataBuilder.reconstructed(eventId, "Spring Boot Workshop", LocalDate.of(2024, 3, 15), "Prague CC", "OOB", WebsiteUrl.of("https://example.com/workshop"), null, null, null, EventStatus.ACTIVE, null, List.of(), null, null, List.of(), null)))
+        scenario.publish(new EventPublishedEvent(java.util.UUID.randomUUID(), eventId, java.time.Instant.now()))
                 .andWaitForStateChange(() -> !calendarRepository.findByEventId(eventId).isEmpty())
                 .andVerify(isPresent -> {
                     EventCalendarItem calendarItem = calendarRepository.findByEventId(eventId).stream()
@@ -111,7 +105,7 @@ class CalendarEventSyncIntegrationTest {
         final EventId eventId = EVENT_ID;
 
         // When: Event is updated
-        when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
+        when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData(
                 "Updated Workshop",
                 LocalDate.of(2024, 5, 21),
                 "New Loc",
@@ -146,7 +140,7 @@ class CalendarEventSyncIntegrationTest {
                 .findFirst().orElseThrow().getId();
 
         // When: Event is cancelled
-        scenario.publish(EventCancelledEvent.fromAggregate(EventTestDataBuilder.reconstructed(eventId, "Test", LocalDate.now(), "Location", "OOB", null, null, null, null, EventStatus.CANCELLED, null, List.of(), null, null, List.of(), null)))
+        scenario.publish(new EventCancelledEvent(java.util.UUID.randomUUID(), eventId, java.time.Instant.now()))
                 .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).isEmpty())
                 .andVerify(calendarItemIsGone -> {
                     assertThat(calendarRepository.findById(calendarItemId)).isEmpty();
@@ -166,7 +160,7 @@ class CalendarEventSyncIntegrationTest {
         void publishWithoutDeadlineCreatesOneEventDateItem(Scenario scenario) {
             final EventId eventId = EVENT_ID;
 
-            when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData(
                     "Jarní sprint",
                     EVENT_DATE,
                     "Les Brdy",
@@ -175,9 +169,7 @@ class CalendarEventSyncIntegrationTest {
                     null
             ));
 
-            scenario.publish(EventPublishedEvent.fromAggregate(EventTestDataBuilder.reconstructed(
-                            eventId, "Jarní sprint", EVENT_DATE, "Les Brdy", "OOB",
-                            null, null, null, null, EventStatus.ACTIVE, null, List.of(), null, null, List.of(), null)))
+            scenario.publish(new EventPublishedEvent(java.util.UUID.randomUUID(), eventId, java.time.Instant.now()))
                     .andWaitForStateChange(() -> !calendarRepository.findByEventId(eventId).isEmpty())
                     .andVerify(ignored -> {
                         List<EventCalendarItem> items = findEventItems(eventId);
@@ -192,7 +184,7 @@ class CalendarEventSyncIntegrationTest {
         void publishWithDeadlineCreatesTwoItems(Scenario scenario) {
             final EventId eventId = EVENT_ID;
 
-            when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData(
                     "Jarní sprint",
                     EVENT_DATE,
                     "Les Brdy",
@@ -201,9 +193,7 @@ class CalendarEventSyncIntegrationTest {
                     DEADLINE_DATE
             ));
 
-            scenario.publish(EventPublishedEvent.fromAggregate(EventTestDataBuilder.reconstructed(
-                            eventId, "Jarní sprint", EVENT_DATE, "Les Brdy", "OOB",
-                            null, null, null, RegistrationDeadlines.single(DEADLINE_DATE), EventStatus.ACTIVE, null, List.of(), null, null, List.of(), null)))
+            scenario.publish(new EventPublishedEvent(java.util.UUID.randomUUID(), eventId, java.time.Instant.now()))
                     .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).size() >= 2)
                     .andVerify(ignored -> {
                         List<EventCalendarItem> items = findEventItems(eventId);
@@ -223,7 +213,7 @@ class CalendarEventSyncIntegrationTest {
         void updateToAddDeadlineCreatesTwoItems(Scenario scenario) {
             final EventId eventId = EVENT_ID;
 
-            when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData(
                     "Jarní sprint",
                     EVENT_DATE,
                     "Les Brdy",
@@ -267,7 +257,7 @@ class CalendarEventSyncIntegrationTest {
 
             assertThat(calendarRepository.findByEventId(eventId)).hasSize(2);
 
-            when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData(
                     "Jarní sprint",
                     EVENT_DATE,
                     "Les Brdy",
@@ -299,7 +289,7 @@ class CalendarEventSyncIntegrationTest {
             final EventId eventId = EVENT_ID;
             final String newName = "Jarní sprint 2025";
 
-            when(eventDataProviderMock.getEventData(eventId)).thenReturn(new EventData(
+            when(eventDataProviderMock.getEventData(eventId)).thenReturn(eventData(
                     newName,
                     EVENT_DATE,
                     "Les Brdy",
@@ -344,9 +334,7 @@ class CalendarEventSyncIntegrationTest {
 
             assertThat(calendarRepository.findByEventId(eventId)).hasSize(2);
 
-            scenario.publish(EventCancelledEvent.fromAggregate(EventTestDataBuilder.reconstructed(
-                            eventId, "Jarní sprint", EVENT_DATE, "Les Brdy", "OOB",
-                            null, null, null, null, EventStatus.CANCELLED, null, List.of(), null, null, List.of(), null)))
+            scenario.publish(new EventCancelledEvent(java.util.UUID.randomUUID(), eventId, java.time.Instant.now()))
                     .andWaitForStateChange(() -> calendarRepository.findByEventId(eventId).isEmpty())
                     .andVerify(ignored -> assertThat(calendarRepository.findByEventId(eventId)).isEmpty());
         }

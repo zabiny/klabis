@@ -1,5 +1,7 @@
 package com.klabis.calendar.application;
 
+import static com.klabis.calendar.EventDataFixture.eventData;
+
 import com.klabis.calendar.CalendarItemId;
 import com.klabis.calendar.CalendarItemKind;
 import com.klabis.calendar.domain.CalendarItem;
@@ -50,11 +52,11 @@ class CalendarEventSyncServiceTest {
     }
 
     private EventData eventDataWithoutDeadline(String name) {
-        return new EventData(name, EVENT_DATE, "Prague", "OOB", "https://example.com", null);
+        return eventData(name, EVENT_DATE, "Prague", "OOB", "https://example.com", null);
     }
 
     private EventData eventDataWithDeadline(String name) {
-        return new EventData(name, EVENT_DATE, "Prague", "OOB", "https://example.com", DEADLINE_DATE);
+        return eventData(name, EVENT_DATE, "Prague", "OOB", "https://example.com", DEADLINE_DATE);
     }
 
     private EventCalendarItem existingEventDateItem(EventId eventId) {
@@ -149,7 +151,7 @@ class CalendarEventSyncServiceTest {
         @DisplayName("should create calendar item without website URL when not present")
         void shouldCreateCalendarItemWithoutWebsiteUrl() {
             EventId eventId = newEventId();
-            EventData eventData = new EventData("Java Meetup", LocalDate.of(2024, 4, 20),
+            EventData eventData = eventData("Java Meetup", LocalDate.of(2024, 4, 20),
                     "Brno Tech Hub", "OOB", null, null);
 
             when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
@@ -168,7 +170,7 @@ class CalendarEventSyncServiceTest {
         @DisplayName("should create calendar item with organizer-only description when event has no location")
         void shouldCreateCalendarItemWithOrganizerOnlyWhenEventHasNoLocation() {
             EventId eventId = newEventId();
-            EventData eventData = new EventData("ORIS Event", LocalDate.of(2024, 5, 10),
+            EventData eventData = eventData("ORIS Event", LocalDate.of(2024, 5, 10),
                     null, "OOB", null, null);
 
             when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
@@ -187,7 +189,7 @@ class CalendarEventSyncServiceTest {
         @DisplayName("should create calendar item with null description when all optional fields missing")
         void shouldCreateCalendarItemWithNullDescriptionWhenAllFieldsMissing() {
             EventId eventId = newEventId();
-            EventData eventData = new EventData("Minimal Event", LocalDate.of(2024, 6, 1),
+            EventData eventData = eventData("Minimal Event", LocalDate.of(2024, 6, 1),
                     null, null, null, null);
 
             when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of());
@@ -219,7 +221,7 @@ class CalendarEventSyncServiceTest {
                     LocalDate.of(2024, 3, 10), LocalDate.of(2024, 3, 10),
                     eventId, CalendarItemKind.EVENT_DATE, null);
 
-            EventData eventData = new EventData("Updated Spring Boot Workshop",
+            EventData eventData = eventData("Updated Spring Boot Workshop",
                     LocalDate.of(2024, 3, 15), "New Prague Center", "OOB",
                     "https://example.com/updated", null);
 
@@ -347,7 +349,7 @@ class CalendarEventSyncServiceTest {
                     LocalDate.of(2024, 4, 15), LocalDate.of(2024, 4, 15),
                     eventId, CalendarItemKind.EVENT_DATE, null);
 
-            EventData eventData = new EventData("Updated Java Meetup", LocalDate.of(2024, 4, 20),
+            EventData eventData = eventData("Updated Java Meetup", LocalDate.of(2024, 4, 20),
                     "Brno Tech Hub", "OOB", null, null);
 
             when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));
@@ -373,7 +375,7 @@ class CalendarEventSyncServiceTest {
                     LocalDate.of(2024, 4, 15), LocalDate.of(2024, 4, 15),
                     eventId, CalendarItemKind.EVENT_DATE, null);
 
-            EventData eventData = new EventData("Updated Event No Location", LocalDate.of(2024, 5, 10),
+            EventData eventData = eventData("Updated Event No Location", LocalDate.of(2024, 5, 10),
                     null, "OOB", null, null);
 
             when(calendarRepositoryMock.findByEventId(eventId)).thenReturn(List.of(existingItem));

@@ -1,8 +1,9 @@
 package com.klabis.calendar.application;
 
+import com.klabis.events.EventData;
 import com.klabis.events.EventId;
+import com.klabis.events.application.EventDataProvider;
 import com.klabis.events.application.EventScheduleQuery;
-import com.klabis.events.domain.Events;
 import com.klabis.members.MemberId;
 import org.jmolecules.ddd.annotation.Service;
 import org.springframework.util.Assert;
@@ -15,12 +16,12 @@ import java.util.Set;
 class IcalFeedService implements IcalFeedPort {
 
     private final EventScheduleQuery eventScheduleQuery;
-    private final Events events;
+    private final EventDataProvider eventDataProvider;
     private final IcalWindowProperties windowProperties;
 
-    IcalFeedService(EventScheduleQuery eventScheduleQuery, Events events, IcalWindowProperties windowProperties) {
+    IcalFeedService(EventScheduleQuery eventScheduleQuery, EventDataProvider eventDataProvider, IcalWindowProperties windowProperties) {
         this.eventScheduleQuery = eventScheduleQuery;
-        this.events = events;
+        this.eventDataProvider = eventDataProvider;
         this.windowProperties = windowProperties;
     }
 
@@ -34,13 +35,12 @@ class IcalFeedService implements IcalFeedPort {
 
         Set<EventId> eventIds = eventScheduleQuery.findEventIdsForMemberSchedule(memberId, from, to);
 
-        return eventIds.stream()
-                .map(events::findById)
-                .flatMap(java.util.Optional::stream)
-                .map(event -> {
-                    boolean isCoordinator = event.isCoordinator(memberId);
-                    return new EventScheduleEntry(event, isCoordinator);
-                })
+        if (eventIds.isEmpty()) {
+            return List.of();
+        }
+
+        return eventDataProvider.getEventData(eventIds).stream()
+                .map(event -> new EventScheduleEntry(event, event.isCoordinator(memberId)))
                 .toList();
     }
 }
