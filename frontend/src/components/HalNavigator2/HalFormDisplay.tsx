@@ -14,6 +14,7 @@ import {containerStyles} from '../../theme/designTokens';
 import {useToast} from '../../contexts/toastContext';
 import {useNavigate} from 'react-router-dom';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {withTemplateFieldPrompts} from '../../localization';
 import {normalizeKlabisApiPath} from '../../utils/halFormsUtils.ts';
 
 /**
@@ -74,7 +75,8 @@ export interface HalFormDisplayProps {
  * Pure form component — no modal wrapper. Wrap in Modal for modal presentation.
  */
 export const HalFormDisplay = ({
-                                   template,
+                                   template: rawTemplate,
+                                   templateName,
                                    resourceData,
                                    pathname,
                                    onClose,
@@ -93,6 +95,7 @@ export const HalFormDisplay = ({
                                    refineValidationSchema,
                                }: HalFormDisplayProps): ReactElement => {
     const {route} = useHalPageData();
+    const template = useMemo(() => withTemplateFieldPrompts(rawTemplate, templateName), [rawTemplate, templateName]);
 
     const effectiveFieldsFactory = useMemo(() => {
         if (fieldsFactory) return fieldsFactory;

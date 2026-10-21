@@ -160,7 +160,7 @@ When('{persona} suspends member {name}', async ({page, actAs}, persona: Persona,
     await actAs(persona);
     await openMemberDetail(page, lastName);
     await click(page, 'Ukončit členství');
-    await select(page, 'Důvod zrušení (volitelné)', 'Odhlášení');
+    await select(page, 'Důvod', 'Odhlášení');
     await submit(page);
 });
 
