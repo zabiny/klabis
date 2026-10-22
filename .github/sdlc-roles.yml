@@ -1,0 +1,20 @@
+# Who may do what in the SDLC. Read from the default branch only.
+#
+# Supported format (a strict YAML subset, so the SDLC needs no YAML library):
+# - exactly the keys stakeholders, developers and agents, each at the start of a line;
+# - each a list of GitHub logins without @, either as indented "- login" lines or as
+#   [login, login] on one line; [] for an empty list;
+# - comments start with "#"; no other YAML (no nesting, anchors or multi-line values).
+# One person may be both a Stakeholder and a Developer. The agent account (the machine
+# user the SDLC agents act as) must be listed under agents and may hold no other role.
+# Anything outside this format makes the SDLC refuse to act until it is fixed.
+
+# Approve the specs gate (the specs PR).
+stakeholders:
+  - dapolach
+# Approve the design gate (the design PR) and review code PRs.
+developers:
+  - dapolach
+# Accounts the SDLC agents act as.
+agents:
+  - dapogen

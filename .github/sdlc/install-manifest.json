@@ -1,0 +1,30 @@
+{
+  "version": "0.2.4",
+  "files": {
+    ".claude/hooks/sdlc-openspec.sh": "ecddb60e4c731b6c0691b0c6e517a349e4597c2dffaac6fa297ddd448386ca1d",
+    ".claude/settings.json": "2398551a5bc4b921530be7913882e03c08c2ca3c82f186784958f41a36c97257",
+    ".github/ISSUE_TEMPLATE/change-request.yml": "ffcf9216bb90ecf3d810d78c3d0665a2704300fa6a1d5da3017670d8d88714dd",
+    ".github/pull_request_template.md": "20ae193c55d26561c0f27aa3331b085eaa761396b552d61ca7e770a912a02435",
+    ".github/sdlc-always-human.txt": "ed6111aaf712f35577e395bd7ab3030a6978994c451afd01830ecfc99386a9d6",
+    ".github/sdlc-roles.yml": "7311804a0a2c70b54a01353ee5923a2223a4fdea5d89ed0aeca3583d7ab8f2e4",
+    ".github/sdlc.yml": "0ffe00b3a0562917a2ffa05c448162fb5b8435f84afed95b6e642b8da2445c72",
+    ".github/sdlc/automation.py": "f8c658218ea7770c2b814188a01464974361c569581c54b468bcd647719dcb51",
+    ".github/sdlc/naming.py": "55b70573203c1f2609b07440c16d855a9396c29cda33f63116164f726dad9fa5",
+    ".github/sdlc/roles.py": "770a60329a4b13ca43899b1c46750214ecdbdd04167de02585c1aca339cb2d07",
+    ".github/sdlc/yamlsubset.py": "683679328ac3276d9ae40309f857243efc11060677eddd520e9e829459a3b69d",
+    ".github/workflows/sdlc-always-human.yml": "76e80ef465a83a0fa9f429e787e87b4ffddd2b00af025ce977d73c7769e37d15",
+    ".github/workflows/sdlc-ci.yml": "39101397a40189d334999459e84958c2c43e50426876eade37591480d71c3fc5",
+    ".github/workflows/sdlc-guard.yml": "c1d13fe60552d4865789c0fbbec32af5adc6a798d7aa844daacb30cc301d90fa",
+    ".github/workflows/sdlc-mention.yml": "c90fe399316217f38da0f9b19a299bffee96b73accd5a178d9c3cb3af6239529",
+    ".github/workflows/sdlc-review-mirror.yml": "4ed9333240ec6bb9994090818e8c1aec42a0121163b716a97939f763cd3c7c4d",
+    "openspec/schemas/sdlc-feature/schema.yaml": "a0effafe5eeeabd5d25ff96a2fb310b17abf1f930a02fb6defa40a2d8d5ba95a",
+    "openspec/schemas/sdlc-feature/templates/design.md": "6ccc87f5017fb190e69e8759dd4e20d5ac3320cc4dabf152708bf8f2aa5205f8",
+    "openspec/schemas/sdlc-feature/templates/proposal.md": "0dd70e35db5c696ba8ac3cc3a53e2d6561865c1e4e7d49db5a1eaa3e4a6ad86e",
+    "openspec/schemas/sdlc-feature/templates/spec.md": "1cccfb573f031c6352bed2a879b7035ff710bc909112fc23d10bdcfcdd8d4318",
+    "openspec/schemas/sdlc-feature/templates/tasks.md": "fa67d99fb4a93b12d702f89ea83e1838219d1cad1c90a4192c402278001cd30e",
+    "openspec/schemas/sdlc-small/schema.yaml": "8525ac7ef124a452711082cf7f39d0754aaf9f24dd855b40ffd79737f9995160",
+    "openspec/schemas/sdlc-small/templates/design.md": "3251f08057d142f6e3c26f65f5f100ab602ee7ce880d5503bfaa45668ba19f59",
+    "openspec/schemas/sdlc-small/templates/proposal.md": "26c8aa6c0d0591c07c6a2df6ff4fe56485b0296ca1f6bef1d1dcb019b95ff395",
+    "openspec/schemas/sdlc-small/templates/tasks.md": "b2a6a4c08c15f347a1d8c3e2d43e0c8fb066dc5cc0feb795f47555f176f9c421"
+  }
+}
