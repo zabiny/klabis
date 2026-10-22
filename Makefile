@@ -1,16 +1,20 @@
-.PHONY: lint test build
+.PHONY: lint test build frontend-deps
 
 ifdef JAVA_HOME_21_X64
 export JAVA_HOME := $(JAVA_HOME_21_X64)
 endif
 
-lint:
-	cd frontend && npm ci && npm run lint
+frontend-deps:
+	cd tools/openapi-bundle && npm ci
+	cd frontend && npm ci
 
-test:
+lint: frontend-deps
+	cd frontend && npm run lint
+
+test: frontend-deps
 	cd backend && ./gradlew test
-	cd frontend && npm ci && npm test
+	cd frontend && npm test
 
-build:
+build: frontend-deps
 	cd backend && ./gradlew build -x test
-	cd frontend && npm ci && npm run build
+	cd frontend && npm run build
