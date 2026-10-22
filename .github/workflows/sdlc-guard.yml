@@ -1,0 +1,20 @@
+# Installed by the agentic-sdlc install skill. Undoes opt-in (the agent account's assignment), won't-do and approval label changes by accounts not allowed to make them.
+# Runs the default branch's .github/sdlc/automation.py, never code from a pull request.
+name: sdlc-guard
+on:
+  issues:
+    types: [labeled, unlabeled, assigned, unassigned]
+permissions:
+  contents: read
+  issues: write
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - run: python3 .github/sdlc/automation.py guard
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,17 @@
+# SDLC settings. Every key is commented out at its default; uncomment a line to change it.
+# The run schedule is not set here: it lives in the cloud routine or the local /loop that
+# runs /agentic-sdlc:run.
+
+# Minutes after which another run may take over an issue whose lock was not released.
+# lock_stale_minutes: 120
+
+# Model per agent: one of the aliases sonnet, opus or haiku.
+# model_coordinator: sonnet
+# model_triager: sonnet
+# model_spec-writer: opus
+# model_designer: opus
+# model_implementer: sonnet
+# model_tester: sonnet
+# model_reviewer: opus
+# model_pr-steward: sonnet
+# model_archiver: haiku
