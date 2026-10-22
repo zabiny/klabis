@@ -1,12 +1,16 @@
-# SDLC placeholder targets, added by the agentic-sdlc install skill. CI runs lint, test
-# and build; it stays red until each placeholder is replaced by the real command.
 .PHONY: lint test build
 
+ifdef JAVA_HOME_21_X64
+export JAVA_HOME := $(JAVA_HOME_21_X64)
+endif
+
 lint:
-	@echo "SDLC: lint is not configured" >&2; exit 1
+	cd frontend && npm ci && npm run lint
 
 test:
-	@echo "SDLC: test is not configured" >&2; exit 1
+	cd backend && ./gradlew test
+	cd frontend && npm ci && npm test
 
 build:
-	@echo "SDLC: build is not configured" >&2; exit 1
+	cd backend && ./gradlew build -x test
+	cd frontend && npm ci && npm run build
