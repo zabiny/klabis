@@ -3,6 +3,7 @@ package com.klabis.sync.application;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
+import com.klabis.sync.domain.SyncTarget;
 import com.klabis.sync.domain.SyncedEntityReference;
 import org.jmolecules.architecture.hexagonal.PrimaryPort;
 
@@ -16,6 +17,8 @@ import java.util.List;
  */
 @PrimaryPort
 public interface SyncPairingLookup {
+
+    SyncPairing pairingOf(SyncTarget target);
 
     /**
      * Which of these external ids already have any record, {@code RETIRED} included, for this entity type and system.

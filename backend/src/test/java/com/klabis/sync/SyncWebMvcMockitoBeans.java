@@ -1,6 +1,7 @@
 package com.klabis.sync;
 
 import com.klabis.sync.application.SyncHistoryQuery;
+import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.application.SyncProjectionFieldsPort;
 import com.klabis.sync.application.SynchronizationPort;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -22,7 +23,8 @@ import java.lang.annotation.Target;
 @MockitoBean(types = {
         SynchronizationPort.class,
         SyncProjectionFieldsPort.class,
-        SyncHistoryQuery.class
+        SyncHistoryQuery.class,
+        SyncPairingLookup.class
 })
 public @interface SyncWebMvcMockitoBeans {
 }

@@ -1,6 +1,7 @@
 package com.klabis.sync.domain;
 
 import com.klabis.sync.SyncRecordId;
+import com.klabis.sync.application.SyncPairing;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 import java.time.Instant;
@@ -98,4 +99,9 @@ public interface SyncRecordRepository {
      * external id ever paired".
      */
     List<SyncedEntityReference> findActiveByTargets(SyncEntityType entityType, Collection<String> entityIds);
+
+    /**
+     * Reads only {@code retired_at}, across all external systems, so no aggregate is loaded.
+     */
+    SyncPairing pairingOf(SyncTarget target);
 }

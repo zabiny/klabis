@@ -1,12 +1,12 @@
 ## 1. Pairing query and sync link module (`sync`)
 
-- [ ] 1.1 Add `SyncPairing` enum (`NONE`, `ACTIVE`, `RETIRED`) to `sync.application`
-- [ ] 1.2 Write a JDBC integration test for `SyncRecordRepository.pairingOf(SyncTarget)` covering no record → `NONE`, non-retired record → `ACTIVE`, retired record → `RETIRED`, and a target with records for two systems where one is not retired → `ACTIVE`; confirm it fails
-- [ ] 1.3 Implement `SyncRecordRepository.pairingOf` in `SyncRecordRepositoryAdapter` / `SyncRecordJdbcRepository`, reading only `retired_at` by `entity_type` + `entity_id` (no aggregate load, no system resolution); 1.2 passes
-- [ ] 1.4 Add `pairingOf(SyncTarget)` to `SyncPairingLookup` and `SyncPairingLookupService` (`@Transactional(readOnly = true)`), with no dependency on `SynchronizationAdapterRegistry`
-- [ ] 1.5 Write `SyncLinksTest`: for every `SyncEntityType`, `ACTIVE` and `RETIRED` add rel `sync` with href `/api/{pathSegment}/{id}/sync`; `NONE` adds nothing; confirm it fails
-- [ ] 1.6 Implement `SyncLinks` (`@MvcComponent`, public, `sync.infrastructure.restapi`) with `addTo(RepresentationModel<?>, SyncTarget)`, using `SyncEntityTypeResolver.toParam` and `klabisLinkTo(methodOn(SyncApi.class).getSyncState(...))`; 1.5 passes
-- [ ] 1.7 Run sync module tests
+- [x] 1.1 Add `SyncPairing` enum (`NONE`, `ACTIVE`, `RETIRED`) to `sync.application`
+- [x] 1.2 Write a JDBC integration test for `SyncRecordRepository.pairingOf(SyncTarget)` covering no record → `NONE`, non-retired record → `ACTIVE`, retired record → `RETIRED`, and a target with records for two systems where one is not retired → `ACTIVE`; confirm it fails
+- [x] 1.3 Implement `SyncRecordRepository.pairingOf` in `SyncRecordRepositoryAdapter` / `SyncRecordJdbcRepository`, reading only `retired_at` by `entity_type` + `entity_id` (no aggregate load, no system resolution); 1.2 passes
+- [x] 1.4 Add `pairingOf(SyncTarget)` to `SyncPairingLookup` and `SyncPairingLookupService` (`@Transactional(readOnly = true)`), with no dependency on `SynchronizationAdapterRegistry`
+- [x] 1.5 Write `SyncLinksTest`: for every `SyncEntityType`, `ACTIVE` and `RETIRED` add rel `sync` with href `/api/{pathSegment}/{id}/sync`; `NONE` adds nothing; confirm it fails
+- [x] 1.6 Implement `SyncLinks` (`@MvcComponent`, public, `sync.infrastructure.restapi`) with `addTo(RepresentationModel<?>, SyncTarget)`, using `SyncEntityTypeResolver.toParam` and `klabisLinkTo(methodOn(SyncApi.class).getSyncState(...))`; 1.5 passes
+- [x] 1.7 Run sync module tests
 
 ## 2. Disciplines slice (`events`)
 

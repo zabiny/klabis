@@ -143,6 +143,13 @@ interface SyncRecordJdbcRepository extends CrudRepository<SyncRecordMemento, UUI
     List<TargetMatch> findActiveByEntityTypeAndEntityIdIn(
             @Param("entityType") String entityType, @Param("entityIds") Collection<String> entityIds);
 
+    @Query("""
+            SELECT retired_at FROM sync.sync_record
+            WHERE entity_type = :entityType AND entity_id = :entityId
+            """)
+    List<Instant> findRetiredAtByEntityTypeAndEntityId(
+            @Param("entityType") String entityType, @Param("entityId") String entityId);
+
     record ExternalReferenceMatch(String externalId, String entityId) {
     }
 

@@ -3,6 +3,7 @@ package com.klabis.sync.application;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncRecord;
+import com.klabis.sync.domain.SyncTarget;
 import com.klabis.sync.domain.SyncRecordRepository;
 import com.klabis.sync.domain.SyncedEntityReference;
 import org.jmolecules.ddd.annotation.Service;
@@ -18,6 +19,12 @@ class SyncPairingLookupService implements SyncPairingLookup {
 
     SyncPairingLookupService(SyncRecordRepository syncRecordRepository) {
         this.syncRecordRepository = syncRecordRepository;
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public SyncPairing pairingOf(SyncTarget target) {
+        return syncRecordRepository.pairingOf(target);
     }
 
     @Transactional(readOnly = true)

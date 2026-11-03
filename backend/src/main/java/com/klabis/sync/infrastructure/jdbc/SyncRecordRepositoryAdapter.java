@@ -1,6 +1,7 @@
 package com.klabis.sync.infrastructure.jdbc;
 
 import com.klabis.sync.SyncRecordId;
+import com.klabis.sync.application.SyncPairing;
 import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
@@ -118,6 +119,16 @@ class SyncRecordRepositoryAdapter implements SyncRecordRepository {
                         new SyncTarget(entityType, match.entityId()),
                         new ExternalReference(ExternalSystem.valueOf(match.externalSystem()), match.externalId())))
                 .toList();
+    }
+
+    @Override
+    public SyncPairing pairingOf(SyncTarget target) {
+        List<Instant> retiredAts = jdbcRepository.findRetiredAtByEntityTypeAndEntityId(
+                target.entityType().name(), target.entityId());
+        if (retiredAts.isEmpty()) {
+            return SyncPairing.NONE;
+        }
+        return retiredAts.stream().anyMatch(java.util.Objects::isNull) ? SyncPairing.ACTIVE : SyncPairing.RETIRED;
     }
 
     private SyncRecord toSyncRecord(SyncRecordMemento memento) {
