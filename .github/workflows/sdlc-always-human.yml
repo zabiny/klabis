@@ -1,0 +1,25 @@
+# Installed by the agentic-sdlc install skill. Flags pull requests that touch always-human paths with risk:human-required.
+# Runs the default branch's .github/sdlc/automation.py, never code from a pull request.
+name: sdlc-always-human
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+# Each run recomputes from the PR's current state, so a superseded pending run may be dropped.
+concurrency:
+  group: sdlc-always-human-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+jobs:
+  always-human:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - run: python3 .github/sdlc/automation.py always-human
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,46 @@
+# Paths that always need a person's review: a PR touching any of them gets the
+# risk:human-required label. One glob per line: `**/` matches any directories,
+# `*` and `?` stay within one path segment. Edit this list for your repository.
+
+# Database migrations
+**/migrations/**
+**/migrate/**
+**/db/migrate/**
+
+# Authentication and security code
+**/auth/**
+**/security/**
+
+# Dependency manifests and lockfiles
+**/package.json
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+**/requirements*.txt
+**/pyproject.toml
+**/poetry.lock
+**/uv.lock
+**/Pipfile
+**/Pipfile.lock
+**/go.mod
+**/go.sum
+**/Cargo.toml
+**/Cargo.lock
+**/Gemfile
+**/Gemfile.lock
+**/pom.xml
+**/build.gradle
+**/build.gradle.kts
+**/gradle.lockfile
+**/composer.json
+**/composer.lock
+**/*.csproj
+**/packages.lock.json
+
+# CI configuration, the Makefile CI runs, and the SDLC's own control files
+.github/workflows/**
+Makefile
+.github/sdlc/**
+.github/sdlc-roles.yml
+.github/sdlc.yml
+.github/sdlc-always-human.txt

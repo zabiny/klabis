@@ -1,0 +1,78 @@
+# Installed by the agentic-sdlc install skill. Runs the Makefile's lint, test and build
+# targets as three required checks. The token is read-only: nothing a Makefile runs can
+# write labels, comments or code. Add toolchain setup inside the Makefile targets.
+name: sdlc-ci
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  lint:
+    name: sdlc-ci / lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Check the lint target
+        run: |
+          if [ ! -f Makefile ]; then
+            echo "::error::SDLC: the Makefile is missing; CI runs its lint, test and build targets"
+            exit 1
+          fi
+          if ! plan="$(make -n lint 2>&1)"; then
+            echo "::error::SDLC: the Makefile has no lint target"
+            exit 1
+          fi
+          if printf '%s' "$plan" | grep -q "SDLC: lint is not configured"; then
+            echo "::error::SDLC: the lint target is not configured (still the install's placeholder)"
+            exit 1
+          fi
+      - run: make lint
+  test:
+    name: sdlc-ci / test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Check the test target
+        run: |
+          if [ ! -f Makefile ]; then
+            echo "::error::SDLC: the Makefile is missing; CI runs its lint, test and build targets"
+            exit 1
+          fi
+          if ! plan="$(make -n test 2>&1)"; then
+            echo "::error::SDLC: the Makefile has no test target"
+            exit 1
+          fi
+          if printf '%s' "$plan" | grep -q "SDLC: test is not configured"; then
+            echo "::error::SDLC: the test target is not configured (still the install's placeholder)"
+            exit 1
+          fi
+      - run: make test
+  build:
+    name: sdlc-ci / build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Check the build target
+        run: |
+          if [ ! -f Makefile ]; then
+            echo "::error::SDLC: the Makefile is missing; CI runs its lint, test and build targets"
+            exit 1
+          fi
+          if ! plan="$(make -n build 2>&1)"; then
+            echo "::error::SDLC: the Makefile has no build target"
+            exit 1
+          fi
+          if printf '%s' "$plan" | grep -q "SDLC: build is not configured"; then
+            echo "::error::SDLC: the build target is not configured (still the install's placeholder)"
+            exit 1
+          fi
+      - run: make build
