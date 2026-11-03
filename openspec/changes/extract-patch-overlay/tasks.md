@@ -27,11 +27,11 @@
 
 ## 3. Documentation
 
-- [ ] 3.1 `.claude/skills/backend-patterns/references/rest-controller.md` (PATCH section):
+- [x] 3.1 `.claude/skills/backend-patterns/references/rest-controller.md` (PATCH section):
   - the overlay example calls `PatchOverlay.overlay` / `overlayNonNull`;
   - replace the two private helper snippets with a pointer to `common.patch.PatchOverlay`;
   - state that a mapper never declares its own helpers.
-- [ ] 3.2 `.claude/skills/backend-patterns/references/aggregate-checklist.md`: the PATCH mapper item names `PatchOverlay`.
+- [x] 3.2 `.claude/skills/backend-patterns/references/aggregate-checklist.md`: the PATCH mapper item names `PatchOverlay`.
 
 ## 4. Verification
 

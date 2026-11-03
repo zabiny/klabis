@@ -99,21 +99,13 @@ A PATCH request has three states per field: **undefined** (absent → leave alon
        var b = MemberUpdateMemberBuilder.builder(prefilled).updatedBy(updatedBy);
        overlay(request.email(), v -> b.email(v == null ? null : EmailAddress.of(v)));      // clearable: present-null clears
        overlay(request.chipNumber(), b::chipNumber);
-       overlayValue(request.firstName(), b::firstName);                                     // no cleared state: present-null retains
+       overlayNonNull(request.firstName(), b::firstName);                                   // no cleared state: present-null retains
        // … one line per field
        return b.build();
    }
-
-   /** present (incl. present-null) → apply; undefined → leave the baseline value. */
-   private static <T> void overlay(JsonNullable<T> field, Consumer<T> apply) {
-       if (field.isPresent()) apply.accept(field.get());
-   }
-
-   /** For fields with no cleared state: only a present non-null value overrides the baseline. */
-   private static <T> void overlayValue(JsonNullable<T> field, Consumer<T> apply) {
-       field.ifPresent(v -> { if (v != null) apply.accept(v); });
-   }
    ```
+
+   `overlay` and `overlayNonNull` are static imports from `com.klabis.common.patch.PatchOverlay`, whose javadoc is the single definition of both rules. A mapper never declares its own overlay helpers; its javadoc only lists the fields without a cleared state.
 
 3. **Apply** — the domain method applies the full snapshot unconditionally (`this.email = command.email()`), with no per-field "was it set?" branching. Validation runs over the resolved end-state values.
 
