@@ -173,4 +173,41 @@ describe('useTableSort', () => {
             expect(localStorage.getItem('klabis.table.members.sort')).toBe('lastName,asc');
         });
     });
+
+    describe('tableId change', () => {
+        const renderChangingTableId = (initialUrl: string, initialTableId: string) =>
+            renderHook(({tableId}) => useTableSort(tableId, DEFAULT_SORT), {
+                wrapper: makeWrapper(initialUrl),
+                initialProps: {tableId: initialTableId},
+            });
+
+        it('re-resolves sort from localStorage of the new tableId', () => {
+            localStorage.setItem('klabis.table.second.sort', 'date,desc');
+            const {result, rerender} = renderChangingTableId('/', 'first');
+            expect(result.current.sort).toEqual(DEFAULT_SORT);
+
+            rerender({tableId: 'second'});
+
+            expect(result.current.sort).toEqual({by: 'date', direction: 'desc'});
+        });
+
+        it('falls back to defaultSort when the new tableId has nothing stored', () => {
+            localStorage.setItem('klabis.table.first.sort', 'email,desc');
+            const {result, rerender} = renderChangingTableId('/', 'first');
+            expect(result.current.sort).toEqual({by: 'email', direction: 'desc'});
+
+            rerender({tableId: 'second'});
+
+            expect(result.current.sort).toEqual(DEFAULT_SORT);
+        });
+
+        it('prefers URL sort over localStorage of the new tableId', () => {
+            localStorage.setItem('klabis.table.second.sort', 'email,asc');
+            const {result, rerender} = renderChangingTableId('/?sort=date,desc', 'first');
+
+            rerender({tableId: 'second'});
+
+            expect(result.current.sort).toEqual({by: 'date', direction: 'desc'});
+        });
+    });
 });

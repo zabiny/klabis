@@ -13,8 +13,8 @@
 
 ## 2. Sort follows the table id
 
-- [ ] 2.1 In `hooks/useTableSort.test.tsx`, add a test that a new `tableId` re-resolves the sort (URL → localStorage → default). Confirm that it fails.
-- [ ] 2.2 Re-resolve the sort in `useTableSort` during render when `tableId` changes. 2.1 passes.
+- [x] 2.1 In `hooks/useTableSort.test.tsx`, add a test that a new `tableId` re-resolves the sort (URL → localStorage → default). Confirm that it fails.
+- [x] 2.2 Re-resolve the sort in `useTableSort` during render when `tableId` changes. 2.1 passes.
 
 ## 3. URL filters, members slice
 

@@ -50,6 +50,14 @@ export function useTableSort(
     const [sort, setSortState] = useState<SortState>(() =>
         resolveInitialSort(searchParams.get('sort'), tableId, defaultSort),
     );
+    const [previousTableId, setPreviousTableId] = useState(tableId);
+
+    let currentSort = sort;
+    if (previousTableId !== tableId) {
+        currentSort = resolveInitialSort(searchParams.get('sort'), tableId, defaultSort);
+        setPreviousTableId(tableId);
+        setSortState(currentSort);
+    }
 
     const setSort = (next: SortState) => {
         const sortValue = `${next.by},${next.direction}`;
@@ -78,5 +86,5 @@ export function useTableSort(
         setSortState(defaultSort);
     };
 
-    return { sort, setSort, reset };
+    return { sort: currentSort, setSort, reset };
 }
