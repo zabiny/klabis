@@ -12,6 +12,7 @@ const {Given, When, Then} = createBdd(test);
 
 const openEventList = async (page: Page, name: string) => {
     await openFromMenu(page, 'Akce');
+    await select(page, 'Rok', '—');
     await fill(page, 'Hledat', name);
 };
 
