@@ -11,10 +11,12 @@ import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.common.settings.OrisClubKeyManagementPort;
-import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.members.domain.*;
 import com.klabis.members.domain.Gender;
 import com.klabis.members.domain.DrivingLicenseGroup;
+import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.application.SyncPairingLookup;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -79,7 +81,12 @@ class UpdateMemberApiTest {
     private OrisClubKeyManagementPort orisClubKeyManagementPort;
 
     @Autowired
-    private SynchronizationPort synchronizationPort;
+    private SyncPairingLookup pairingLookup;
+
+    @BeforeEach
+    void stubPairingNoneByDefault() {
+        when(pairingLookup.pairingOf(any())).thenReturn(SyncPairing.NONE);
+    }
 
     private final UUID testMemberId = UUID.randomUUID();
 

@@ -31,8 +31,8 @@
 
 ## 5. Members slice (`members`)
 
-- [ ] 5.1 `MemberDetailsPostprocessor` / `MemberSummaryPostprocessor`: link via `SyncLinks.addTo`; delete `EnrolledMemberIds`, `MemberSelfLinkSupport.addSyncLinkIfEnrolled` and the `setDeferredContext` block in `listMembers`; `MemberController` no longer injects `SynchronizationPort`
-- [ ] 5.2 Retarget `MemberControllerApiTest`, `UpdateMemberApiTest`, `BirthNumberAuditControllerTest` mocks; run members module tests
+- [x] 5.1 `MemberDetailsPostprocessor` / `MemberSummaryPostprocessor`: link via `SyncLinks.addTo`; delete `EnrolledMemberIds`, `MemberSelfLinkSupport.addSyncLinkIfEnrolled` and the `setDeferredContext` block in `listMembers`; `MemberController` no longer injects `SynchronizationPort`
+- [x] 5.2 Retarget `MemberControllerApiTest`, `UpdateMemberApiTest`, `BirthNumberAuditControllerTest` mocks; run members module tests
 
 ## 6. Cleanup and documentation
 
