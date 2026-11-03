@@ -2,7 +2,7 @@ import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type {ReactNode} from 'react';
 import React from 'react';
-import {useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
+import {invalidateAuthorizedQueries, useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
 import {createMockResponse} from '../__mocks__/mockFetch';
 import {FetchError} from '../api/authorizedFetch';
 import {type Mock, vi} from 'vitest';
@@ -432,11 +432,11 @@ describe('useAuthorizedMutation', () => {
 
             const onSuccess = vi.fn();
             const {result} = renderHook(
-                () => useAuthorizedMutation({method: 'POST', onSuccess}),
+                () => useAuthorizedMutation({method: 'POST'}),
                 {wrapper: createWrapper()}
             );
 
-            result.current.mutate({url: '/api/items', data: {name: 'New Item'}});
+            result.current.mutate({url: '/api/items', data: {name: 'New Item'}}, {onSuccess});
 
             await waitFor(() => {
                 expect(result.current.isPending).toBe(false);
@@ -457,11 +457,11 @@ describe('useAuthorizedMutation', () => {
 
             const onError = vi.fn();
             const {result} = renderHook(
-                () => useAuthorizedMutation({method: 'POST', onError}),
+                () => useAuthorizedMutation({method: 'POST'}),
                 {wrapper: createWrapper()}
             );
 
-            result.current.mutate({url: '/api/items', data: {name: 'Test'}});
+            result.current.mutate({url: '/api/items', data: {name: 'Test'}}, {onError});
 
             await waitFor(() => {
                 expect(result.current.error).toBeDefined();
@@ -503,31 +503,6 @@ describe('useAuthorizedMutation', () => {
                 })
             );
         });
-
-        it('should allow custom headers in mutation', async () => {
-            fetchSpy.mockResolvedValueOnce(createMockResponse({}));
-
-            const {result} = renderHook(
-                () => useAuthorizedMutation({
-                    method: 'POST',
-                    headers: {'X-Custom': 'value'},
-                }),
-                {wrapper: createWrapper()}
-            );
-
-            result.current.mutate({url: '/api/items', data: {}});
-
-            await waitFor(() => {
-                expect(result.current.isPending).toBe(false);
-            });
-
-            expect(fetchSpy).toHaveBeenCalledWith(
-                '/api/items',
-                expect.objectContaining({
-                    headers: expect.objectContaining({'X-Custom': 'value'}),
-                })
-            );
-        });
     });
 
     describe('Loading States', () => {
@@ -559,11 +534,11 @@ describe('useAuthorizedMutation', () => {
 
             const onSuccess = vi.fn();
             const {result} = renderHook(
-                () => useAuthorizedMutation({method: 'POST', onSuccess}),
+                () => useAuthorizedMutation({method: 'POST'}),
                 {wrapper: createWrapper()}
             );
 
-            result.current.mutate({url: '/api/legal-guardian-groups', data: {}});
+            result.current.mutate({url: '/api/legal-guardian-groups', data: {}}, {onSuccess});
 
             await waitFor(() => expect(result.current.isPending).toBe(false));
 
@@ -582,11 +557,11 @@ describe('useAuthorizedMutation', () => {
 
             const onSuccess = vi.fn();
             const {result} = renderHook(
-                () => useAuthorizedMutation({method: 'PUT', onSuccess}),
+                () => useAuthorizedMutation({method: 'PUT'}),
                 {wrapper: createWrapper()}
             );
 
-            result.current.mutate({url: '/api/items/1', data: {}});
+            result.current.mutate({url: '/api/items/1', data: {}}, {onSuccess});
 
             await waitFor(() => expect(result.current.isPending).toBe(false));
 
@@ -606,11 +581,11 @@ describe('useAuthorizedMutation', () => {
 
             const onSuccess = vi.fn();
             const {result} = renderHook(
-                () => useAuthorizedMutation({method: 'POST', onSuccess}),
+                () => useAuthorizedMutation({method: 'POST'}),
                 {wrapper: createWrapper()}
             );
 
-            result.current.mutate({url: '/api/legal-guardian-groups', data: {}});
+            result.current.mutate({url: '/api/legal-guardian-groups', data: {}}, {onSuccess});
 
             await waitFor(() => expect(result.current.isPending).toBe(false));
 
@@ -621,5 +596,113 @@ describe('useAuthorizedMutation', () => {
                 expect.any(Object)
             );
         });
+    });
+});
+
+describe('cache invalidation after mutation', () => {
+    const {setup, teardown, createWrapper, getFetchSpy, getQueryClient} = createTestHookSetup();
+    let fetchSpy: Mock;
+
+    beforeEach(() => {
+        setup();
+        fetchSpy = getFetchSpy();
+    });
+
+    afterEach(() => {
+        teardown();
+    });
+
+    const renderQueryAndMutation = () => renderHook(() => ({
+        query: useAuthorizedQuery<{ v: number }>('/api/items/1'),
+        mutation: useAuthorizedMutation({method: 'POST'}),
+    }), {wrapper: createWrapper()});
+
+    it('refetches active authorized queries before per-call onSuccess runs', async () => {
+        fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) =>
+            init?.method === 'POST' ? createMockResponse({}) : createMockResponse({v: fetchSpy.mock.calls.length}));
+        const {result} = renderQueryAndMutation();
+        await waitFor(() => expect(result.current.query.data).toBeDefined());
+        const before = result.current.query.data;
+
+        let dataSeenInOnSuccess: unknown;
+        const onSuccess = vi.fn(() => {
+            dataSeenInOnSuccess = getQueryClient().getQueryData(['authorized', '/api/items/1', '']);
+        });
+        result.current.mutation.mutate({url: '/api/items/1', data: {}}, {onSuccess});
+
+        await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+        expect(dataSeenInOnSuccess).not.toEqual(before);
+    });
+
+    it('keeps isPending true until the refetch has finished', async () => {
+        let releaseRefetch: () => void = () => {};
+        let getCount = 0;
+        fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
+            if (init?.method === 'POST') return createMockResponse({});
+            getCount++;
+            if (getCount > 1) {
+                await new Promise<void>(resolve => { releaseRefetch = resolve; });
+            }
+            return createMockResponse({v: getCount});
+        });
+        const {result} = renderQueryAndMutation();
+        await waitFor(() => expect(result.current.query.data).toBeDefined());
+
+        result.current.mutation.mutate({url: '/api/items/1', data: {}});
+        await waitFor(() => expect(getCount).toBe(2));
+        expect(result.current.mutation.isPending).toBe(true);
+
+        releaseRefetch();
+        await waitFor(() => expect(result.current.mutation.isPending).toBe(false));
+        expect(result.current.mutation.isSuccess).toBe(true);
+    });
+
+    it('does not refetch when the mutation fails', async () => {
+        fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
+            if (init?.method === 'POST') throw new Error('boom');
+            return createMockResponse({v: 1});
+        });
+        const {result} = renderQueryAndMutation();
+        await waitFor(() => expect(result.current.query.data).toBeDefined());
+        const getCallsBefore = fetchSpy.mock.calls.length;
+
+        result.current.mutation.mutate({url: '/api/items/1', data: {}});
+        await waitFor(() => expect(result.current.mutation.isError).toBe(true));
+
+        expect(fetchSpy.mock.calls.length).toBe(getCallsBefore + 1);
+    });
+
+    it('still succeeds and calls onSuccess when the refetch fails', async () => {
+        let getCount = 0;
+        fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
+            if (init?.method === 'POST') return createMockResponse({ok: true});
+            getCount++;
+            if (getCount > 1) throw new Error('refetch failed');
+            return createMockResponse({v: 1});
+        });
+        const {result} = renderHook(() => ({
+            query: useAuthorizedQuery<{ v: number }>('/api/items/1', {retry: false}),
+            mutation: useAuthorizedMutation({method: 'POST'}),
+        }), {wrapper: createWrapper()});
+        await waitFor(() => expect(result.current.query.data).toBeDefined());
+
+        const onSuccess = vi.fn();
+        result.current.mutation.mutate({url: '/api/items/1', data: {}}, {onSuccess});
+
+        await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+        expect(result.current.mutation.isError).toBe(false);
+    });
+
+    it('invalidateAuthorizedQueries refetches active authorized queries', async () => {
+        fetchSpy.mockImplementation(async () => createMockResponse({v: fetchSpy.mock.calls.length}));
+        const {result} = renderHook(() => useAuthorizedQuery<{ v: number }>('/api/items/1'), {
+            wrapper: createWrapper(),
+        });
+        await waitFor(() => expect(result.current.data).toBeDefined());
+        const before = result.current.data;
+
+        await invalidateAuthorizedQueries(getQueryClient());
+
+        await waitFor(() => expect(result.current.data).not.toEqual(before));
     });
 });

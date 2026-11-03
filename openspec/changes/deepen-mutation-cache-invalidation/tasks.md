@@ -1,6 +1,6 @@
 ## 1. Invalidation inside the mutation module
 
-- [ ] 1.1 In `hooks/useAuthorizedFetch.test.ts`, with a real `QueryClient` and a stubbed `authorizedFetch` (as in `useLegalGuardians.test.tsx`), write tests showing that:
+- [x] 1.1 In `hooks/useAuthorizedFetch.test.ts`, with a real `QueryClient` and a stubbed `authorizedFetch` (as in `useLegalGuardians.test.tsx`), write tests showing that:
   - after a successful `mutate`, an active `authorized` query is refetched before the per-call `onSuccess` runs;
   - `isPending` stays `true` until that refetch has finished;
   - a failed mutation triggers no refetch;
@@ -8,8 +8,8 @@
   - `invalidateAuthorizedQueries(queryClient)` refetches the active `authorized` queries.
 
   Confirm that the tests fail.
-- [ ] 1.2 Implement `invalidateAuthorizedQueries(queryClient)` in `useAuthorizedFetch.ts`, using the same `['authorized']` key as `useAuthorizedQuery`. Make the `mutationFn` of `useAuthorizedMutation` await it after a successful response. Narrow `UseAuthorizedMutationOptions` to `{method}` (drop `onSuccess`, `onError`, `headers`) and update the JSDoc example. 1.1 passes.
-- [ ] 1.3 Rewrite `useLegalGuardians.test.tsx` so that the guardians refetch is triggered by a successful `useAuthorizedMutation` call instead of `useFormCacheInvalidation`. Keep the assertion unchanged.
+- [x] 1.2 Implement `invalidateAuthorizedQueries(queryClient)` in `useAuthorizedFetch.ts`, using the same `['authorized']` key as `useAuthorizedQuery`. Make the `mutationFn` of `useAuthorizedMutation` await it after a successful response. Narrow `UseAuthorizedMutationOptions` to `{method}` (drop `onSuccess`, `onError`, `headers`) and update the JSDoc example. 1.1 passes.
+- [x] 1.3 Rewrite `useLegalGuardians.test.tsx` so that the guardians refetch is triggered by a successful `useAuthorizedMutation` call instead of `useFormCacheInvalidation`. Keep the assertion unchanged.
 
 ## 2. Callers
 
