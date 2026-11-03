@@ -1,7 +1,7 @@
 ## 1. `PatchOverlay` (`common.patch`)
 
-- [ ] 1.1 Write `PatchOverlayTest` in `backend/src/test/java/com/klabis/common/patch`. It covers `overlay` and `overlayNonNull` against an undefined field, a present null and a present value (6 cases). It asserts whether the consumer ran and with which value.
-- [ ] 1.2 Implement `PatchOverlay` (final, private constructor) with `overlay(JsonNullable<T>, Consumer<T>)` delegating to `field.ifPresent(apply)`, and `overlayNonNull(JsonNullable<T>, Consumer<T>)`. Write the class javadoc that states the three PATCH states and both rules (design decision 2). 1.1 passes.
+- [x] 1.1 Write `PatchOverlayTest` in `backend/src/test/java/com/klabis/common/patch`. It covers `overlay` and `overlayNonNull` against an undefined field, a present null and a present value (6 cases). It asserts whether the consumer ran and with which value.
+- [x] 1.2 Implement `PatchOverlay` (final, private constructor) with `overlay(JsonNullable<T>, Consumer<T>)` delegating to `field.ifPresent(apply)`, and `overlayNonNull(JsonNullable<T>, Consumer<T>)`. Write the class javadoc that states the three PATCH states and both rules (design decision 2). 1.1 passes.
 
 ## 2. Mappers
 
