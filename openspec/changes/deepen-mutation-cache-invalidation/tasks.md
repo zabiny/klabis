@@ -34,9 +34,9 @@
 
 ## 3. Verification
 
-- [ ] 3.1 Confirm with `grep` in `frontend/src`:
+- [x] 3.1 Confirm with `grep` in `frontend/src`:
   - no `useFormCacheInvalidation` and no `invalidateAllCaches` remain;
   - no `queryKey: ['authorized'` remains outside `hooks/useAuthorizedFetch.ts`.
-- [ ] 3.2 Run the frontend unit tests (test-runner agent) and `npm run build`. Both must pass.
-- [ ] 3.3 In the browser at `http://localhost:3000`, submit a HAL form (for example, editing a member) and reverse a finance transaction. Confirm in the network tab that the route resource is fetched once after the mutation, not twice, and that the page shows the updated data.
-- [ ] 3.4 Run `npm run refresh-backend-server-resources` before the commit.
+- [x] 3.2 Run the frontend unit tests (test-runner agent) and `npm run build`. Both must pass.
+- [x] 3.3 In the browser at `http://localhost:3000`, submit a HAL form (for example, editing a member) and reverse a finance transaction. Confirm in the network tab that the route resource is fetched once after the mutation, not twice, and that the page shows the updated data.
+- [x] 3.4 Run `npm run refresh-backend-server-resources` before the commit.
