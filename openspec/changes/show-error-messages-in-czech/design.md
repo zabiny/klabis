@@ -35,6 +35,7 @@ See proposal.md, section Why, for the motivation. This section describes the cur
 - `HalFormsForm` passes server errors to Formik as `initialErrors`. Formik reads that only when the form mounts, so after a failed submit the errors most likely never appear at the fields. Phase 1 verifies this.
 - About 20 pages render `<Alert>{error.message}</Alert>`, which shows the technical `HTTP 404 (Not Found)` text.
 - `ChangePasswordDialog` matches the English substring `'Current password is incorrect'`. `usePermissionsEditor` maps status 409 to a Czech label.
+- Four places parse the error body themselves: `toFormValidationError`, `ChangePasswordDialog`, `parseSuspensionBlockedWarning409` (`groups`/`debt` of the suspension 409) and, by status only, `usePermissionsEditor`, `ErrorPage` and `LegalGuardianGroupDetailPage` through `FetchError.responseStatus`.
 - `localization/labels.ts` is the central Czech text store. Client-side Yup validation already uses it.
 
 ### Constraints
@@ -197,10 +198,10 @@ flowchart TD
 
 - **Internal checks.** `Assert` and `IllegalArgumentException`/`IllegalStateException` produce `/errors/invalid-request`. Their message is logged at WARN and never sent.
 - **User-reachable checks.** During each module phase, invariants that users can realistically trigger become typed domain errors with their own type and Czech text. This applies, for example, to a form value that the frontend validation does not catch.
-- **Frontend helper.** One helper, `describeError(error)`, turns any thrown error into Czech:
-  1. a known `type` gives its template from `labels.errorTypes`;
-  2. otherwise a status-based generic text (400, 401, 403, 404, 409, 5xx);
-  3. otherwise `labels.errors.unexpectedError`.
+- **Frontend helper.** One helper, `describeError(error)`, turns any thrown error into Czech. It reads the parsed `ApiError` (D9) and never the response body:
+  1. an `ApiError` with a known `type` gives its template from `labels.errorTypes`, filled from `params`;
+  2. otherwise an `ApiError` gives a status-based generic text (400, 401, 403, 404, 409, 5xx);
+  3. anything else, for example a network failure, gives `labels.errors.unexpectedError`.
 
   All `<Alert>{error.message}</Alert>` sites use this helper.
 
@@ -213,7 +214,7 @@ flowchart TD
 
 ### D7: Field-level rendering in the frontend
 
-- `toFormValidationError` keeps `type`, the parameters, `field`, `fieldErrors` and `errors` separately, and drops the English `'Form validation errors'` literal.
+- `toFormValidationError` is removed, together with the English `'Form validation errors'` literal. `HalFormsForm` and `ErrorDisplay` read `type`, `params`, `field`, `fieldErrors` and `errors` from the `ApiError` (D9).
 - **Field assignment.**
   - A typed error with `field` puts its Czech template text on that field.
   - Bean-validation `fieldErrors` put their Czech texts on their fields.
@@ -223,7 +224,75 @@ flowchart TD
   - the `errors` texts;
   - `labels.errors.formValidationErrors` as a heading when only field errors exist;
   - field errors whose key matches no rendered field, labelled with that property's `prompt` from the HAL-FORMS template. Never with the raw key.
-- **Special handling by type.** `ChangePasswordDialog` switches from English substring matching to `type === '/errors/incorrect-current-password'`.
+- **Special handling by type.**
+  - `ChangePasswordDialog` switches from English substring matching to `type === '/errors/incorrect-current-password'`.
+  - `usePermissionsEditor` switches from status 409 to `type === '/errors/cannot-remove-last-permission-manager'`.
+
+### D9: ProblemDetail is parsed once, at the fetch seam
+
+`authorizedFetch` parses every non-OK response into one typed `ApiError`. It is the only frontend code that knows the ProblemDetail wire format. `describeError`, `HalFormsForm`, `ErrorDisplay` and the special cases read the parsed fields and never parse a response body.
+
+| Option considered | Verdict |
+|---|---|
+| (a) Each consumer parses the body (`toFormValidationError`, `ChangePasswordDialog`, `parseSuspensionBlockedWarning409`, and the `describeError` from D5) | Rejected. Four parsers with their own fallbacks, and knowledge of the wire format spread across the UI. |
+| (b) Parse in `useAuthorizedMutation` | Rejected. Query errors, which feed most `<Alert>` sites, would keep the raw shape, so there would be two error shapes. |
+| **(c) Parse in `buildFetchError`** | **Chosen.** One parser serves both queries and mutations. |
+
+**Target shape** (`api/authorizedFetch.ts`, replaces `FetchError`):
+
+```ts
+export class ApiError extends Error {
+  readonly status: number;
+  readonly type?: ErrorType | string;            // undefined when the body is not problem+json
+  readonly detail?: string;                      // English, developer-facing, never rendered
+  readonly field?: string;                       // field-bound typed error (D3)
+  readonly fieldErrors: Record<string, string>;  // bean validation (D6); {} when absent
+  readonly errors: string[];                     // errors + parameterErrors; [] when absent
+  readonly params: Record<string, unknown>;      // every other extension property (D3); {} when absent
+}
+```
+
+- **Mapping.**
+  - `type`, `detail`, `field`, `fieldErrors`, `errors` and `parameterErrors` map to their own properties. `parameterErrors` is merged into `errors`, because both are form-level texts (D6, D7).
+  - `title` and `instance` are dropped.
+  - Every other top-level property goes to `params`, for example `deadline`, `eventTypeName`, or `groups` and `debt` of the suspension 409.
+- **`message`** is `HTTP {status}`, followed by `: {detail}` when `detail` is present. It is for logs and the developer console only. The UI never renders it.
+- **Unparsable bodies.** A body that is not `application/problem+json`, or is not valid JSON, gives an `ApiError` with only `status` set and empty collections. The parser never throws.
+- **Network errors.** Network failures and aborts never reach `buildFetchError`, so they are not `ApiError`. `describeError` gives them `labels.errors.unexpectedError`.
+- **Hook typing.** `useAuthorizedQuery` and `useAuthorizedMutation` declare `ApiError` as their error type, so callers read `error.type`, `error.fieldErrors` and `error.params` without casts.
+- **Removed:** `FetchError`, `toFormValidationError`, `FormValidationError` and `isFormValidationError`. `ApiError` has no `responseBody`, `responseHeaders` or `responseStatusText`, so new code cannot start parsing the body again.
+
+**Consumers in the target state:**
+
+| Consumer | Today | Target |
+|---|---|---|
+| `describeError` (D5) | — | `ApiError` with a known `type` → template with `params`; other `ApiError` → generic text by `status`; anything else → `unexpectedError` |
+| `HalFormDisplay` → `HalFormsForm` | `toFormValidationError` → `validationErrors` → `initialErrors` | passes the `ApiError`; `HalFormsForm` applies `fieldErrors` and `field` with `setErrors`/touched (D7) |
+| `ErrorDisplay` | `isFormValidationError` → `field: message` lines with raw keys | `instanceof ApiError` → form-level texts (D7) |
+| `EventRegistrationDialog` | `toFormValidationError` → `setServerFieldErrors` | `error.fieldErrors` |
+| `ReverseConfirmModal`, `FinanceTransactionDialog` | `toFormValidationError().message`, or raw `error.message` (shows `HTTP 409 (Conflict)`) | `describeError(error)` |
+| `ChangePasswordDialog` | substring of `JSON.parse(responseBody).detail` | `error.type === '/errors/incorrect-current-password'` |
+| `usePermissionsEditor` | `instanceof FetchError && responseStatus === 409` | `error.type === '/errors/cannot-remove-last-permission-manager'` |
+| `parseSuspensionBlockedWarning409` | `JSON.parse(responseBody)` → `groups`, `debt` | `error.params.groups`, `error.params.debt` |
+| `ErrorPage`, `LegalGuardianGroupDetailPage` | `responseStatus` | `status` |
+
+```mermaid
+flowchart LR
+    R[non-OK response] --> B[buildFetchError]
+    B --> E[ApiError]
+    E --> Q[useAuthorizedQuery error]
+    E --> M[useAuthorizedMutation error]
+    Q --> D[describeError]
+    M --> D
+    M --> F[HalFormsForm<br/>fieldErrors and field at the fields]
+    M --> X[ErrorDisplay<br/>form-level texts]
+    M --> S[special cases<br/>error.type or error.params]
+```
+
+**Transition.** `ApiError` lands in phase 1, and the switch of the existing `FetchError` consumers is mechanical, with no behaviour change. Until the common/users phase migrates its types:
+
+- `ChangePasswordDialog` keeps matching the English `detail`;
+- `usePermissionsEditor` keeps checking `status === 409`.
 
 ### D8: Phasing
 
@@ -232,6 +301,7 @@ flowchart TD
   - the generic types and the security type migration (D2);
   - the fixed locale (D6);
   - the spec enum and completeness test (D4);
+  - the `ApiError` parser (D9);
   - the frontend mapping and field rendering (D7);
   - the `describeError` helper (D5).
 - **Phase 2:** module by module, in this order: members, events (with event types, disciplines and registrations), calendar, finance (type migration), groups, common/users (permission type migration, `ChangePasswordDialog`), sync/oris and notifications. Each module is a vertical slice covering exceptions, handler, spec enum, `labels.ts`, tests and E2E.
@@ -309,10 +379,11 @@ errorTypes: {
 - **[Risk] Relative type URIs that someone dereferences end on the SPA fallback page.** → RFC 9457 does not require dereferenceable types, and no client dereferences them.
 - **[Risk] Hibernate Validator's generic Czech texts read awkwardly.** → They are shown under the labelled field. Override an individual constraint text in the annotation only when feedback asks for it.
 - **[Risk] A name lookup fails on the error path.** → The parameter is left out, and the template has a wording without it.
+- **[Risk] `ApiError` drifts from the extensions documented in `problem.yaml`.** → The parser test covers each documented extension. An undocumented one still reaches the UI through `params`.
 
 ## Migration Plan
 
 - There is no data migration. The backend and the frontend ship in one artifact, so each phase deploys atomically.
 - `describeError` handles both old responses (`about:blank`, English `detail`) and new ones through the status fallback. A partially migrated codebase therefore never shows raw English to users. It shows a generic Czech text until the module is migrated.
 - Rollback means reverting the phase's commits.
-- Record the decision as a new ADR (ADR-011) in `docs/design-decisions.md` when phase 1 lands. The ADR records that the backend identifies errors by RFC 9457 `type` URIs `/errors/{name}` with named parameters, that the frontend owns the Czech wording in `labels.ts`, and that the spec `ErrorType` enum is the shared list enforced on both sides. It also records why bean validation is the exception (fixed Czech locale).
+- Record the decision as a new ADR (ADR-011) in `docs/design-decisions.md` when phase 1 lands. The ADR records that the backend identifies errors by RFC 9457 `type` URIs `/errors/{name}` with named parameters, that the frontend owns the Czech wording in `labels.ts`, that the spec `ErrorType` enum is the shared list enforced on both sides, and that the frontend parses ProblemDetail once, into `ApiError` (D9). It also records why bean validation is the exception (fixed Czech locale).

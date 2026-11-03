@@ -75,7 +75,8 @@ None.
   - `_shared/problem.yaml` gains the `ErrorType` enum and documents the extension properties. The backend codegen maps `ErrorType` to `String`.
   - The Klabis SPA is the only API client.
 - **Frontend:**
-  - `api/hateoas.ts`, `ErrorDisplay` and `HalFormsForm` (field errors applied after submit);
+  - `api/authorizedFetch.ts`: `ApiError` replaces `FetchError`, and ProblemDetail is parsed only there;
+  - `api/hateoas.ts` (`toFormValidationError` removed), `ErrorDisplay` and `HalFormsForm` (field errors applied after submit);
   - a new `describeError` helper replacing about 20 `error.message` renders;
   - `labels.ts` (`errorTypes`);
   - `ChangePasswordDialog` (type instead of English substring matching).
