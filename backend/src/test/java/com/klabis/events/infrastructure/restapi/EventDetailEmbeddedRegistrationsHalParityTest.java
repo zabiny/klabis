@@ -15,7 +15,8 @@ import com.klabis.events.domain.SiCardNumber;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
-import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.application.SyncPairingLookup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -57,12 +58,11 @@ class EventDetailEmbeddedRegistrationsHalParityTest {
     private Members members;
 
     @Autowired
-    private SynchronizationPort synchronizationPort;
+    private SyncPairingLookup pairingLookup;
 
     @BeforeEach
-    void stubSynchronizationPortAbsent() {
-        when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
-        when(synchronizationPort.findActiveByTargets(any(), any())).thenReturn(List.of());
+    void stubPairingNone() {
+        when(pairingLookup.pairingOf(any())).thenReturn(SyncPairing.NONE);
     }
 
     private String getEventBody() throws Exception {

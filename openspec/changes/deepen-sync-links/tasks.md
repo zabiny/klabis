@@ -18,16 +18,16 @@
 
 ## 3. Events slice (`events`)
 
-- [ ] 3.1 `EventSummaryPostprocessor`: call `SyncLinks.addTo` only for DRAFT/ACTIVE events; delete `EnrolledEventIds` and the `setDeferredContext` block in `listEvents`
-- [ ] 3.2 `EventDetailsPostprocessor`: link via `SyncLinks.addTo`; ORIS registration discovery = `pairingOf == ACTIVE` (no `SyncStatus`/`ExternalSystem` check); delete `EventAffordanceSupport.addSyncLinkIfEnrolled`
-- [ ] 3.3 `EventController.java` no longer imports `SynchronizationPort`, `SyncRecord`, `SyncStatus`, `ExternalSystem`, `SyncApi`
-- [ ] 3.4 Retarget `EventControllerTest`, `EventDetailEmbeddedRegistrationsHalParityTest`, `OrisEventControllerTest` mocks to `SyncPairingLookup`; make sure existing scenarios for FINISHED/CANCELLED rows (no indicator) and ACTIVE detail discovery still pass with unchanged assertions
-- [ ] 3.5 Run events module tests
+- [x] 3.1 `EventSummaryPostprocessor`: call `SyncLinks.addTo` only for DRAFT/ACTIVE events; delete `EnrolledEventIds` and the `setDeferredContext` block in `listEvents`
+- [x] 3.2 `EventDetailsPostprocessor`: link via `SyncLinks.addTo`; ORIS registration discovery = `pairingOf == ACTIVE` (no `SyncStatus`/`ExternalSystem` check); delete `EventAffordanceSupport.addSyncLinkIfEnrolled`
+- [x] 3.3 `EventController.java` no longer imports `SynchronizationPort`, `SyncRecord`, `SyncStatus`, `ExternalSystem`, `SyncApi`
+- [x] 3.4 Retarget `EventControllerTest`, `EventDetailEmbeddedRegistrationsHalParityTest`, `OrisEventControllerTest` mocks to `SyncPairingLookup`; make sure existing scenarios for FINISHED/CANCELLED rows (no indicator) and ACTIVE detail discovery still pass with unchanged assertions
+- [x] 3.5 Run events module tests
 
 ## 4. Event registrations slice (`events`)
 
-- [ ] 4.1 `RegistrationSummaryPostprocessor` / `RegistrationDetailsPostprocessor`: link via `SyncLinks.addTo(new SyncTarget(EVENT_REGISTRATION, RegistrationSyncId.format()))`; delete `RegistrationSyncLinks`
-- [ ] 4.2 Retarget `EventRegistrationControllerTest` mocks; run events module tests
+- [x] 4.1 `RegistrationSummaryPostprocessor` / `RegistrationDetailsPostprocessor`: link via `SyncLinks.addTo(new SyncTarget(EVENT_REGISTRATION, RegistrationSyncId.format()))`; delete `RegistrationSyncLinks`
+- [x] 4.2 Retarget `EventRegistrationControllerTest` mocks; run events module tests
 
 ## 5. Members slice (`members`)
 

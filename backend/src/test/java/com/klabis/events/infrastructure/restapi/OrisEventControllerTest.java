@@ -18,7 +18,8 @@ import com.klabis.events.application.OrisEventRegistrationDiscoveryPort;
 import com.klabis.events.domain.Event;
 import com.klabis.events.domain.EventFilter;
 import com.klabis.members.Members;
-import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.application.SyncPairingLookup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -86,12 +87,11 @@ class OrisEventControllerTest {
     private OrisEventRegistrationDiscoveryPort registrationDiscoveryPort;
 
     @Autowired
-    private SynchronizationPort synchronizationPort;
+    private SyncPairingLookup pairingLookup;
 
     @BeforeEach
-    void stubSynchronizationPortAbsentByDefault() {
-        when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
-        when(synchronizationPort.findActiveByTargets(any(), any())).thenReturn(List.of());
+    void stubPairingNoneByDefault() {
+        when(pairingLookup.pairingOf(any())).thenReturn(SyncPairing.NONE);
     }
 
     @Nested
@@ -513,12 +513,8 @@ class OrisEventControllerTest {
             return EventTestDataBuilder.anEvent().withDate(LocalDate.now().plusDays(30)).build();
         }
 
-        private void pairedWith(Event event, com.klabis.sync.domain.ExternalSystem system) {
-            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.of(
-                    com.klabis.sync.domain.SyncRecord.enroll(com.klabis.sync.SyncRecordId.newId(),
-                            new com.klabis.sync.domain.SyncTarget(com.klabis.sync.domain.SyncEntityType.EVENT,
-                                    event.getId().value().toString()),
-                            new com.klabis.sync.domain.ExternalReference(system, "101"))));
+        private void pairedWith(Event event) {
+            when(pairingLookup.pairingOf(any())).thenReturn(SyncPairing.ACTIVE);
         }
 
         private org.springframework.test.web.servlet.ResultActions getEvent(Event event) throws Exception {
@@ -532,7 +528,7 @@ class OrisEventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.SYNC_MANAGE})
         void offeredToSyncManage() throws Exception {
             Event event = activeEvent();
-            pairedWith(event, com.klabis.sync.domain.ExternalSystem.ORIS);
+            pairedWith(event);
 
             getEvent(event)
                     .andExpect(status().isOk())
@@ -544,7 +540,7 @@ class OrisEventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void notOfferedWithoutSyncManage() throws Exception {
             Event event = activeEvent();
-            pairedWith(event, com.klabis.sync.domain.ExternalSystem.ORIS);
+            pairedWith(event);
 
             getEvent(event)
                     .andExpect(status().isOk())
@@ -556,7 +552,7 @@ class OrisEventControllerTest {
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.EVENTS_READ, Authority.SYNC_MANAGE})
         void notOfferedForDraft() throws Exception {
             Event event = draftEvent();
-            pairedWith(event, com.klabis.sync.domain.ExternalSystem.ORIS);
+            pairedWith(event);
 
             getEvent(event)
                     .andExpect(status().isOk())
