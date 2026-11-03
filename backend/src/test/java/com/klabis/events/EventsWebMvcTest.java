@@ -18,7 +18,7 @@ import java.lang.annotation.*;
  * <p>
  * STANDALONE slicing loads events and shared {@code common}; {@code members} is included because the
  * {@code Members} lookup and the {@code @ActingMember} argument resolver live there, {@code sync} because
- * the event and discipline controllers inject {@code SynchronizationPort}, and {@code finance} because
+ * the event and discipline postprocessors use the {@code SyncLinks} bean, which depends on {@code SyncPairingLookup}, and {@code finance} because
  * {@code RegistrationRecordTransactionLinkProcessor} uses the real {@code FinanceAccountLinkSupport}.
  * Every collaborator is a primary port mocked through the per-module {@code *WebMvcMockitoBeans}.
  * <p>

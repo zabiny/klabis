@@ -1,6 +1,7 @@
 package com.klabis.sync.infrastructure.jdbc;
 
 import com.klabis.sync.SyncRecordId;
+import com.klabis.sync.domain.SyncPairing;
 import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
@@ -20,6 +21,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects;
 
 /**
  * {@code SyncProjectionType} is resolved lazily via {@link ObjectProvider} rather than
@@ -118,6 +120,16 @@ class SyncRecordRepositoryAdapter implements SyncRecordRepository {
                         new SyncTarget(entityType, match.entityId()),
                         new ExternalReference(ExternalSystem.valueOf(match.externalSystem()), match.externalId())))
                 .toList();
+    }
+
+    @Override
+    public SyncPairing pairingOf(SyncTarget target) {
+        List<Instant> retiredAts = jdbcRepository.findRetiredAtByEntityTypeAndEntityId(
+                target.entityType().name(), target.entityId());
+        if (retiredAts.isEmpty()) {
+            return SyncPairing.NONE;
+        }
+        return retiredAts.stream().anyMatch(Objects::isNull) ? SyncPairing.ACTIVE : SyncPairing.RETIRED;
     }
 
     private SyncRecord toSyncRecord(SyncRecordMemento memento) {

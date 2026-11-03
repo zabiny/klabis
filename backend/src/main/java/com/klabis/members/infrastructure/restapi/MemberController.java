@@ -22,11 +22,9 @@ import com.klabis.members.domain.MemberFilter;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.infrastructure.restapi.MemberLegalGuardianGroup;
-import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncTarget;
-import com.klabis.sync.infrastructure.restapi.SyncApi;
-import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
+import com.klabis.sync.infrastructure.restapi.SyncLinks;
 import jakarta.validation.Valid;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
@@ -50,7 +48,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.klabisAfford;
 import static com.klabis.common.ui.HalFormsSupport.klabisAffordWithOptions;
@@ -67,7 +64,6 @@ public class MemberController implements MembersApi {
     private final ManagementPort managementService;
     private final ConversionService conversionService;
     private final Optional<MemberDiscoveryPort> memberDiscoveryPort;
-    private final SynchronizationPort synchronizationPort;
     private final MemberCompletenessPort memberCompletenessPort;
     private final LegalGuardianGroupPort legalGuardianGroupPort;
     private final AuthorizationEvaluator authorizationEvaluator;
@@ -77,7 +73,6 @@ public class MemberController implements MembersApi {
             ManagementPort managementService,
             ConversionService conversionService,
             Optional<MemberDiscoveryPort> memberDiscoveryPort,
-            SynchronizationPort synchronizationPort,
             MemberCompletenessPort memberCompletenessPort,
             LegalGuardianGroupPort legalGuardianGroupPort,
             AuthorizationEvaluator authorizationEvaluator,
@@ -89,7 +84,6 @@ public class MemberController implements MembersApi {
         this.managementService = managementService;
         this.conversionService = conversionService;
         this.memberDiscoveryPort = memberDiscoveryPort;
-        this.synchronizationPort = synchronizationPort;
     }
 
     /**
@@ -186,15 +180,6 @@ public class MemberController implements MembersApi {
         MemberFilter filter = buildFilter(q, status, incomplete);
 
         Page<Member> memberPage = managementService.listMembers(filter, pageable);
-
-        // One batch lookup per page, read by MemberSummaryPostprocessor.
-        List<String> pageMemberIds = memberPage.getContent().stream().map(m -> m.getId().uuid().toString()).toList();
-        HalResponseContext.setDeferredContext(EnrolledMemberIds.class, () -> new EnrolledMemberIds(
-                pageMemberIds.isEmpty()
-                        ? Set.of()
-                        : synchronizationPort.findActiveByTargets(SyncEntityType.MEMBER, pageMemberIds).stream()
-                                .map(reference -> reference.target().entityId())
-                                .collect(Collectors.toSet())));
 
         HalResponseContext.setDomainList(memberPage.getContent());
 
@@ -297,29 +282,17 @@ public class MemberController implements MembersApi {
 
 }
 
-/**
- * Carries which members of the listed page are paired for synchronisation, from
- * {@code MemberController#listMembers} to {@code MemberSummaryPostprocessor} (one batch lookup per page).
- */
-record EnrolledMemberIds(Set<String> memberIds) {
-
-    boolean contains(UUID memberId) {
-        return memberIds.contains(memberId.toString());
-    }
-}
-
 // Runs before MemberLegalGuardianGroupLinkProcessor, which extends the self link created here.
 @MvcComponent
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDetailsResponse, Member> {
 
     private final MemberAccountActivationPort accountActivationPort;
-    private final SynchronizationPort synchronizationPort;
+    private final SyncLinks syncLinks;
 
-    MemberDetailsPostprocessor(MemberAccountActivationPort accountActivationPort,
-                               SynchronizationPort synchronizationPort) {
+    MemberDetailsPostprocessor(MemberAccountActivationPort accountActivationPort, SyncLinks syncLinks) {
         this.accountActivationPort = accountActivationPort;
-        this.synchronizationPort = synchronizationPort;
+        this.syncLinks = syncLinks;
     }
 
     @Override
@@ -335,28 +308,23 @@ class MemberDetailsPostprocessor extends ModelWithDomainPostprocessor<MemberDeta
         klabisLinkTo(methodOn(MembersApi.class).listMembers(null, null, null, Pageable.unpaged(), null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
 
-        UUID memberId = member.getId().uuid();
-        boolean enrolled = synchronizationPort.findByTarget(
-                new SyncTarget(SyncEntityType.MEMBER, memberId.toString())).isPresent();
-        MemberSelfLinkSupport.addSyncLinkIfEnrolled(dtoModel, memberId, enrolled);
+        syncLinks.addTo(dtoModel, new SyncTarget(SyncEntityType.MEMBER, member.getId().uuid().toString()));
     }
 }
 
 @MvcComponent
 class MemberSummaryPostprocessor extends ModelWithDomainPostprocessor<MemberSummaryResponse, Member> {
 
+    private final SyncLinks syncLinks;
+
+    MemberSummaryPostprocessor(SyncLinks syncLinks) {
+        this.syncLinks = syncLinks;
+    }
+
     @Override
     public void process(EntityModel<MemberSummaryResponse> dtoModel, Member member) {
         MemberSelfLinkSupport.addSelfLinkWithAffordances(dtoModel, member);
-
-        UUID memberId = member.getId().uuid();
-        MemberSelfLinkSupport.addSyncLinkIfEnrolled(dtoModel, memberId, isEnrolledInList(memberId));
-    }
-
-    private static boolean isEnrolledInList(UUID memberId) {
-        return HalResponseContext.findContext(EnrolledMemberIds.class)
-                .map(enrolled -> enrolled.contains(memberId))
-                .orElse(false);
+        syncLinks.addTo(dtoModel, new SyncTarget(SyncEntityType.MEMBER, member.getId().uuid().toString()));
     }
 }
 
@@ -384,13 +352,6 @@ final class MemberSelfLinkSupport {
             }
             return (Link) self;
         }).ifPresent(dtoModel::add);
-    }
-
-    static void addSyncLinkIfEnrolled(RepresentationModel<?> dtoModel, UUID memberId, boolean enrolled) {
-        if (enrolled) {
-            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.MEMBERS, memberId.toString()))
-                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
-        }
     }
 }
 

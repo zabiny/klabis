@@ -52,7 +52,7 @@ The change moves the pairing question into one module and removes duplicates. No
 
 ## Impact
 
-- `backend/.../sync/application` (`SyncPairingLookup`, `SyncPairingLookupService`, new `SyncPairing`), `sync/domain/SyncRecordRepository`, `sync/infrastructure/jdbc`, `sync/infrastructure/restapi` (new `SyncLinks`).
+- `backend/.../sync/application` (`SyncPairingLookup`, `SyncPairingLookupService`), `sync/domain` (`SyncRecordRepository`, new `SyncPairing`), `sync/infrastructure/jdbc`, `sync/infrastructure/restapi` (new `SyncLinks`).
 - `backend/.../events/infrastructure/restapi` (`EventController`, `DisciplineController`, `EventRegistrationController` and their postprocessors), `events/application/DisciplineManagementService`.
 - `backend/.../members/infrastructure/restapi/MemberController`.
 - Tests: controller tests retarget mocks from `SynchronizationPort` to `SyncPairingLookup`. New tests cover `SyncLinks` and the `pairingOf` query.

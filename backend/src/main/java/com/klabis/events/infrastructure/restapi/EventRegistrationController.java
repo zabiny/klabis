@@ -22,11 +22,9 @@ import com.klabis.members.ActingMember;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
-import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncTarget;
-import com.klabis.sync.infrastructure.restapi.SyncApi;
-import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
+import com.klabis.sync.infrastructure.restapi.SyncLinks;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
@@ -45,7 +43,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
@@ -231,14 +228,22 @@ class EventRegistrationController implements EventRegistrationsApi {
 record RegistrationsCollectionContext(UUID eventId) {
 }
 
+class RegistrationSyncTargets {
+
+    static void addSyncLink(SyncLinks syncLinks, EntityModel<?> model, EventId eventId, MemberId memberId) {
+        syncLinks.addTo(model, new SyncTarget(SyncEntityType.EVENT_REGISTRATION,
+                new RegistrationSyncId(eventId, memberId).format()));
+    }
+}
+
 @MvcComponent
 class RegistrationSummaryPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationSummaryDto, EventRegistrationController.RegistrationView> {
 
     private final RegistrationReadAccess readAccess;
-    private final RegistrationSyncLinks syncLinks;
+    private final SyncLinks syncLinks;
 
-    RegistrationSummaryPostprocessor(RegistrationReadAccess readAccess, RegistrationSyncLinks syncLinks) {
+    RegistrationSummaryPostprocessor(RegistrationReadAccess readAccess, SyncLinks syncLinks) {
         this.readAccess = readAccess;
         this.syncLinks = syncLinks;
     }
@@ -261,25 +266,7 @@ class RegistrationSummaryPostprocessor
                     }
                 });
 
-        syncLinks.linkFor(event.getId(), view.memberId()).ifPresent(dtoModel::add);
-    }
-}
-
-@MvcComponent
-class RegistrationSyncLinks {
-
-    private final SynchronizationPort synchronizationPort;
-
-    RegistrationSyncLinks(SynchronizationPort synchronizationPort) {
-        this.synchronizationPort = synchronizationPort;
-    }
-
-    Optional<Link> linkFor(EventId eventId, MemberId memberId) {
-        String entityId = new RegistrationSyncId(eventId, memberId).format();
-        return synchronizationPort.findByTarget(new SyncTarget(SyncEntityType.EVENT_REGISTRATION, entityId))
-                .flatMap(record -> klabisLinkTo(
-                        methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENT_REGISTRATIONS, entityId)))
-                .map(link -> link.withRel("sync"));
+        RegistrationSyncTargets.addSyncLink(syncLinks, dtoModel, event.getId(), view.memberId());
     }
 }
 
@@ -310,9 +297,9 @@ class RegistrationDetailsPostprocessor
         extends ModelWithDomainPostprocessor<RegistrationDto, EventRegistrationController.RegistrationView> {
 
     private final MemberRegistrationSanctionPort sanctionPort;
-    private final RegistrationSyncLinks syncLinks;
+    private final SyncLinks syncLinks;
 
-    RegistrationDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, RegistrationSyncLinks syncLinks) {
+    RegistrationDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, SyncLinks syncLinks) {
         this.sanctionPort = sanctionPort;
         this.syncLinks = syncLinks;
     }
@@ -338,7 +325,7 @@ class RegistrationDetailsPostprocessor
                 .ifPresent(dtoModel::add);
 
         if (!view.prefill()) {
-            syncLinks.linkFor(event.getId(), memberId).ifPresent(dtoModel::add);
+            RegistrationSyncTargets.addSyncLink(syncLinks, dtoModel, event.getId(), memberId);
         }
     }
 

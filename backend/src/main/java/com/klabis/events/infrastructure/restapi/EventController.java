@@ -17,15 +17,12 @@ import com.klabis.members.MemberAccommodationDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
 import com.klabis.members.infrastructure.restapi.MembersApi;
-import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.events.application.OrisEventRegistrationDiscoveryPort;
-import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
-import com.klabis.sync.domain.SyncRecord;
-import com.klabis.sync.domain.SyncStatus;
+import com.klabis.sync.domain.SyncPairing;
+import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.domain.SyncTarget;
-import com.klabis.sync.infrastructure.restapi.SyncApi;
-import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
+import com.klabis.sync.infrastructure.restapi.SyncLinks;
 import jakarta.annotation.Nullable;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
@@ -49,7 +46,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -73,7 +69,6 @@ public class EventController implements EventsApi {
     private final AccommodationListPort accommodationListService;
     private final AccommodationListCsvRenderer csvRenderer;
     private final ConversionService conversionService;
-    private final SynchronizationPort synchronizationPort;
     private final AuthorizationEvaluator authorizationEvaluator;
     private final RegistrationReadAccess readAccess;
 
@@ -85,7 +80,6 @@ public class EventController implements EventsApi {
             java.util.Optional<OrisEventImportPort> orisEventImportPort,
             AccommodationListCsvRenderer csvRenderer,
             ConversionService conversionService,
-            SynchronizationPort synchronizationPort,
             AuthorizationEvaluator authorizationEvaluator,
             RegistrationReadAccess readAccess) {
         this.authorizationEvaluator = authorizationEvaluator;
@@ -96,7 +90,6 @@ public class EventController implements EventsApi {
         this.accommodationListService = accommodationListService;
         this.csvRenderer = csvRenderer;
         this.conversionService = conversionService;
-        this.synchronizationPort = synchronizationPort;
     }
 
     @Override
@@ -203,14 +196,6 @@ public class EventController implements EventsApi {
         }
         Page<Event> page = eventManagementService.listEvents(filter, pageable,
                 authorizationEvaluator.has(Authority.EVENTS_MANAGE), currentUser.memberId());
-
-        List<String> pageEventIds = page.getContent().stream().map(e -> e.getId().value().toString()).toList();
-        HalResponseContext.setDeferredContext(EnrolledEventIds.class, () -> new EnrolledEventIds(
-                pageEventIds.isEmpty()
-                        ? Set.of()
-                        : synchronizationPort.findActiveByTargets(SyncEntityType.EVENT, pageEventIds).stream()
-                                .map(reference -> reference.target().entityId())
-                                .collect(Collectors.toSet())));
 
         HalResponseContext.setDomainList(page.getContent());
         return ResponseEntity.ok(page.map(e -> conversionService.convert(e, EventSummaryDto.class)));
@@ -413,17 +398,6 @@ public class EventController implements EventsApi {
 
 }
 
-/**
- * Carries which events of the listed page are enrolled for synchronisation, from
- * {@code EventController#listEvents} to {@code EventSummaryPostprocessor} (one batch lookup per page).
- */
-record EnrolledEventIds(Set<String> eventIds) {
-
-    boolean contains(UUID eventId) {
-        return eventIds.contains(eventId.toString());
-    }
-}
-
 class EventAffordanceSupport {
 
     static Link addManagementAffordances(Link selfLink, Event event) {
@@ -511,13 +485,6 @@ class EventAffordanceSupport {
                 .map(category -> new HalFormsInlineOption(category.id().toString(), category.name()))
                 .toList();
     }
-
-    static void addSyncLinkIfEnrolled(RepresentationModel<?> dtoModel, UUID eventId, boolean enrolled) {
-        if (enrolled) {
-            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.EVENTS, eventId.toString()))
-                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
-        }
-    }
 }
 
 @MvcComponent
@@ -525,15 +492,18 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
 
     private final MemberRegistrationSanctionPort sanctionPort;
     private final RegistrationReadAccess readAccess;
-    private final SynchronizationPort synchronizationPort;
+    private final SyncPairingLookup pairingLookup;
+    private final SyncLinks syncLinks;
     private final boolean orisRegistrationDiscoveryAvailable;
 
-    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, SynchronizationPort synchronizationPort,
+    EventDetailsPostprocessor(MemberRegistrationSanctionPort sanctionPort, SyncPairingLookup pairingLookup,
+                              SyncLinks syncLinks,
                               RegistrationReadAccess readAccess,
                               Optional<OrisEventRegistrationDiscoveryPort> orisRegistrationDiscoveryPort) {
         this.sanctionPort = sanctionPort;
         this.readAccess = readAccess;
-        this.synchronizationPort = synchronizationPort;
+        this.pairingLookup = pairingLookup;
+        this.syncLinks = syncLinks;
         this.orisRegistrationDiscoveryAvailable = orisRegistrationDiscoveryPort.isPresent();
     }
 
@@ -544,15 +514,14 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         MemberId currentMemberId = EventAffordanceSupport.resolveMemberId(auth);
 
-        Optional<SyncRecord> syncRecord = synchronizationPort.findByTarget(
-                new SyncTarget(SyncEntityType.EVENT, eventId.toString()));
+        SyncTarget syncTarget = new SyncTarget(SyncEntityType.EVENT, eventId.toString());
 
         klabisLinkTo(methodOn(EventsApi.class).getEvent(eventId, null)).ifPresent(selfLinkBuilder -> {
             var selfLink = EventAffordanceSupport.addManagementAffordances(selfLinkBuilder.withSelfRel(), event);
 
             selfLink = EventAffordanceSupport.addRegistrationAffordances(selfLink, dtoModel, event, currentMemberId, sanctionPort);
 
-            if (offersOrisRegistrationDiscovery(event, syncRecord)) {
+            if (offersOrisRegistrationDiscovery(event, syncTarget)) {
                 selfLink = selfLink.andAffordances(klabisAfford(methodOn(OrisEventsApi.class).discoverOrisRegistrations(eventId, null)));
             }
 
@@ -575,14 +544,13 @@ class EventDetailsPostprocessor extends ModelWithDomainPostprocessor<EventDto, E
                     .ifPresent(link -> dtoModel.add(link.withRel("accommodation-list")));
         }
 
-        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId, syncRecord.isPresent());
+        syncLinks.addTo(dtoModel, syncTarget);
     }
 
-    private boolean offersOrisRegistrationDiscovery(Event event, Optional<SyncRecord> syncRecord) {
+    private boolean offersOrisRegistrationDiscovery(Event event, SyncTarget syncTarget) {
         return orisRegistrationDiscoveryAvailable
                 && event.getStatus() == com.klabis.events.domain.EventStatus.ACTIVE
-                && syncRecord.filter(record -> record.getStatus() != SyncStatus.RETIRED
-                        && record.getExternalReference().system() == ExternalSystem.ORIS).isPresent();
+                && pairingLookup.pairingOf(syncTarget) == SyncPairing.ACTIVE;
     }
 }
 
@@ -591,8 +559,11 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
 
     private final MemberRegistrationSanctionPort sanctionPort;
 
-    EventSummaryPostprocessor(MemberRegistrationSanctionPort sanctionPort) {
+    private final SyncLinks syncLinks;
+
+    EventSummaryPostprocessor(MemberRegistrationSanctionPort sanctionPort, SyncLinks syncLinks) {
         this.sanctionPort = sanctionPort;
+        this.syncLinks = syncLinks;
     }
 
     @Override
@@ -612,10 +583,10 @@ class EventSummaryPostprocessor extends ModelWithDomainPostprocessor<EventSummar
 
         EventAffordanceSupport.addCoordinatorAndEventTypeLinks(dtoModel, event);
 
-        boolean enrolled = HalResponseContext.findContext(EnrolledEventIds.class)
-                .map(ids -> ids.contains(eventId))
-                .orElse(false);
-        EventAffordanceSupport.addSyncLinkIfEnrolled(dtoModel, eventId, enrolled);
+        if (event.getStatus() == com.klabis.events.domain.EventStatus.DRAFT
+                || event.getStatus() == com.klabis.events.domain.EventStatus.ACTIVE) {
+            syncLinks.addTo(dtoModel, new SyncTarget(SyncEntityType.EVENT, eventId.toString()));
+        }
     }
 }
 

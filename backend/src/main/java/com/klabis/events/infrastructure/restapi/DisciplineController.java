@@ -9,11 +9,11 @@ import com.klabis.events.application.DisciplineManagementPort;
 import com.klabis.events.domain.Discipline;
 import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
-import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncPairing;
+import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.domain.SyncTarget;
-import com.klabis.sync.infrastructure.restapi.SyncApi;
-import com.klabis.sync.infrastructure.restapi.SyncEntityTypeParam;
+import com.klabis.sync.infrastructure.restapi.SyncLinks;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.core.convert.ConversionService;
@@ -33,9 +33,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.klabis.common.ui.HalFormsSupport.*;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
@@ -49,13 +47,10 @@ public class DisciplineController implements DisciplinesApi {
 
     private final DisciplineManagementPort disciplineManagementService;
     private final ConversionService conversionService;
-    private final SynchronizationPort synchronizationPort;
 
-    DisciplineController(DisciplineManagementPort disciplineManagementService, ConversionService conversionService,
-                          SynchronizationPort synchronizationPort) {
+    DisciplineController(DisciplineManagementPort disciplineManagementService, ConversionService conversionService) {
         this.disciplineManagementService = disciplineManagementService;
         this.conversionService = conversionService;
-        this.synchronizationPort = synchronizationPort;
     }
 
     @Override
@@ -63,16 +58,6 @@ public class DisciplineController implements DisciplinesApi {
             @PageableDefault(size = 10) @ParameterObject Pageable pageable) {
 
         Page<Discipline> page = disciplineManagementService.list(pageable);
-
-        List<String> pageDisciplineIds = page.getContent().stream()
-                .map(discipline -> discipline.getId().value().toString())
-                .toList();
-        HalResponseContext.setDeferredContext(EnrolledDisciplineIds.class, () -> new EnrolledDisciplineIds(
-                pageDisciplineIds.isEmpty()
-                        ? Set.of()
-                        : synchronizationPort.findActiveByTargets(SyncEntityType.DISCIPLINE, pageDisciplineIds).stream()
-                                .map(reference -> reference.target().entityId())
-                                .collect(Collectors.toSet())));
 
         HalResponseContext.setDomainList(page.getContent());
         return ResponseEntity.ok(page.map(discipline -> conversionService.convert(discipline, DisciplineDto.class)));
@@ -157,34 +142,26 @@ class DisciplinesRootPostprocessor implements RepresentationModelProcessor<Entit
     }
 }
 
-/**
- * Carries which disciplines of the listed page are paired for synchronisation, from
- * {@code DisciplineController#listDisciplines} to {@code DisciplineDetailsPostprocessor} (one batch lookup per page).
- */
-record EnrolledDisciplineIds(Set<String> disciplineIds) {
-
-    boolean contains(UUID disciplineId) {
-        return disciplineIds.contains(disciplineId.toString());
-    }
-}
-
 @MvcComponent
 class DisciplineDetailsPostprocessor extends ModelWithDomainPostprocessor<DisciplineDto, Discipline> {
 
-    private final SynchronizationPort synchronizationPort;
+    private final SyncPairingLookup pairingLookup;
+    private final SyncLinks syncLinks;
 
-    DisciplineDetailsPostprocessor(SynchronizationPort synchronizationPort) {
-        this.synchronizationPort = synchronizationPort;
+    DisciplineDetailsPostprocessor(SyncPairingLookup pairingLookup, SyncLinks syncLinks) {
+        this.pairingLookup = pairingLookup;
+        this.syncLinks = syncLinks;
     }
 
     @Override
     public void process(EntityModel<DisciplineDto> dtoModel, Discipline discipline) {
         UUID id = discipline.getId().value();
-        boolean orisPaired = isEnrolled(id);
+        SyncTarget syncTarget = new SyncTarget(SyncEntityType.DISCIPLINE, id.toString());
+        boolean locked = pairingLookup.pairingOf(syncTarget) != SyncPairing.NONE;
 
         klabisLinkTo(methodOn(DisciplinesApi.class).getDiscipline(id)).ifPresent(link -> {
             var self = link.withSelfRel();
-            if (!orisPaired) {
+            if (!locked) {
                 self = self.andAffordances(klabisAfford(methodOn(DisciplinesApi.class).updateDiscipline(id, null)));
             }
             if (discipline.isArchived()) {
@@ -198,19 +175,7 @@ class DisciplineDetailsPostprocessor extends ModelWithDomainPostprocessor<Discip
         klabisLinkTo(methodOn(DisciplinesApi.class).listDisciplines(null))
                 .ifPresent(link -> dtoModel.add(link.withRel("collection")));
 
-        if (orisPaired) {
-            klabisLinkTo(methodOn(SyncApi.class).getSyncState(SyncEntityTypeParam.DISCIPLINES, id.toString()))
-                    .ifPresent(link -> dtoModel.add(link.withRel("sync")));
-        }
-    }
-
-    // List rows share this postprocessor with the detail: the page's batch context is used when present,
-    // otherwise (detail) the pairing is looked up for the single discipline.
-    private boolean isEnrolled(UUID disciplineId) {
-        return HalResponseContext.findContext(EnrolledDisciplineIds.class)
-                .map(enrolled -> enrolled.contains(disciplineId))
-                .orElseGet(() -> synchronizationPort.findByTarget(
-                        new SyncTarget(SyncEntityType.DISCIPLINE, disciplineId.toString())).isPresent());
+        syncLinks.addTo(dtoModel, syncTarget);
     }
 }
 

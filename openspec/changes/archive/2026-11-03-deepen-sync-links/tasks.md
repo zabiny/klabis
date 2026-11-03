@@ -1,0 +1,43 @@
+## 1. Pairing query and sync link module (`sync`)
+
+- [x] 1.1 Add `SyncPairing` enum (`NONE`, `ACTIVE`, `RETIRED`) to `sync.domain`
+- [x] 1.2 Write a JDBC integration test for `SyncRecordRepository.pairingOf(SyncTarget)` covering no record → `NONE`, non-retired record → `ACTIVE`, retired record → `RETIRED`, and a target with records for two systems where one is not retired → `ACTIVE`; confirm it fails
+- [x] 1.3 Implement `SyncRecordRepository.pairingOf` in `SyncRecordRepositoryAdapter` / `SyncRecordJdbcRepository`, reading only `retired_at` by `entity_type` + `entity_id` (no aggregate load, no system resolution); 1.2 passes
+- [x] 1.4 Add `pairingOf(SyncTarget)` to `SyncPairingLookup` and `SyncPairingLookupService` (`@Transactional(readOnly = true)`), with no dependency on `SynchronizationAdapterRegistry`
+- [x] 1.5 Write `SyncLinksTest`: for every `SyncEntityType`, `ACTIVE` and `RETIRED` add rel `sync` with href `/api/{pathSegment}/{id}/sync`; `NONE` adds nothing; confirm it fails
+- [x] 1.6 Implement `SyncLinks` (`@MvcComponent`, public, `sync.infrastructure.restapi`) with `addTo(RepresentationModel<?>, SyncTarget)`, using `SyncEntityTypeResolver.toParam` and `klabisLinkTo(methodOn(SyncApi.class).getSyncState(...))`; 1.5 passes
+- [x] 1.7 Run sync module tests
+
+## 2. Disciplines slice (`events`)
+
+- [x] 2.1 Write a regression test in `DisciplineControllerTest`: a list row of an archived ORIS discipline (pairing `RETIRED`) offers no `updateDiscipline` affordance and carries a `sync` link; confirm it fails on the current code
+- [x] 2.2 `DisciplineDetailsPostprocessor`: lock = `pairingOf != NONE`, link via `SyncLinks.addTo`; delete `EnrolledDisciplineIds` and the `setDeferredContext` block in `listDisciplines`; `DisciplineController` no longer injects `SynchronizationPort`
+- [x] 2.3 `DisciplineManagementService.update`: lock via `SyncPairingLookup.pairingOf != NONE`; `restore` keeps `findByTarget`; retarget `DisciplineManagementServiceTest` stubs
+- [x] 2.4 Retarget remaining `DisciplineControllerTest` mocks from `SynchronizationPort` to `SyncPairingLookup` (assertions unchanged); 2.1 passes
+- [x] 2.5 Run events module tests
+
+## 3. Events slice (`events`)
+
+- [x] 3.1 `EventSummaryPostprocessor`: call `SyncLinks.addTo` only for DRAFT/ACTIVE events; delete `EnrolledEventIds` and the `setDeferredContext` block in `listEvents`
+- [x] 3.2 `EventDetailsPostprocessor`: link via `SyncLinks.addTo`; ORIS registration discovery = `pairingOf == ACTIVE` (no `SyncStatus`/`ExternalSystem` check); delete `EventAffordanceSupport.addSyncLinkIfEnrolled`
+- [x] 3.3 `EventController.java` no longer imports `SynchronizationPort`, `SyncRecord`, `SyncStatus`, `ExternalSystem`, `SyncApi`
+- [x] 3.4 Retarget `EventControllerTest`, `EventDetailEmbeddedRegistrationsHalParityTest`, `OrisEventControllerTest` mocks to `SyncPairingLookup`; make sure existing scenarios for FINISHED/CANCELLED rows (no indicator) and ACTIVE detail discovery still pass with unchanged assertions
+- [x] 3.5 Run events module tests
+
+## 4. Event registrations slice (`events`)
+
+- [x] 4.1 `RegistrationSummaryPostprocessor` / `RegistrationDetailsPostprocessor`: link via `SyncLinks.addTo(new SyncTarget(EVENT_REGISTRATION, RegistrationSyncId.format()))`; delete `RegistrationSyncLinks`
+- [x] 4.2 Retarget `EventRegistrationControllerTest` mocks; run events module tests
+
+## 5. Members slice (`members`)
+
+- [x] 5.1 `MemberDetailsPostprocessor` / `MemberSummaryPostprocessor`: link via `SyncLinks.addTo`; delete `EnrolledMemberIds`, `MemberSelfLinkSupport.addSyncLinkIfEnrolled` and the `setDeferredContext` block in `listMembers`; `MemberController` no longer injects `SynchronizationPort`
+- [x] 5.2 Retarget `MemberControllerApiTest`, `UpdateMemberApiTest`, `BirthNumberAuditControllerTest` mocks; run members module tests
+
+## 6. Cleanup and documentation
+
+- [x] 6.1 Remove `SynchronizationPort.findActiveByTargets` and its `SynchronizationService` delegate if `grep` shows no remaining callers; keep `SyncPairingLookup.findActiveByTargets` (`OrisEventRegistrationDiscoveryJob`)
+- [x] 6.2 `grep` confirms no `Enrolled*Ids`, `addSyncLinkIfEnrolled` or `SynchronizationPort` import left in `events/infrastructure/restapi` and `members/infrastructure/restapi`
+- [x] 6.3 Update `.claude/skills/backend-patterns/references/synchronization-adapter.md` (the "Add a `sync` link" bullet): use `SyncLinks.addTo`, express pairing rules via `SyncPairingLookup.pairingOf`, and note that discovery-style rules assume one external system per entity type (design.md decision 4)
+- [x] 6.4 `ModuleStructureVerificationTest`, `JMoleculesArchitectureTest` and `AffordanceRoutingArchitectureTest` pass
+- [x] 6.5 Full backend test suite passes

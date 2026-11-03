@@ -17,7 +17,8 @@ import com.klabis.members.MemberAccommodationDto;
 import com.klabis.members.MemberDto;
 import com.klabis.members.MemberId;
 import com.klabis.members.Members;
-import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.domain.SyncPairing;
+import com.klabis.sync.application.SyncPairingLookup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,7 +30,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -71,7 +71,7 @@ class EventControllerTest {
     private AccommodationListPort accommodationListService;
 
     @Autowired
-    private SynchronizationPort synchronizationPort;
+    private SyncPairingLookup pairingLookup;
 
     @Autowired
     private MemberRegistrationSanctionPort memberRegistrationSanctionPort;
@@ -94,9 +94,8 @@ class EventControllerTest {
     }
 
     @BeforeEach
-    void stubSynchronizationPortAbsentByDefault() {
-        when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
-        when(synchronizationPort.findActiveByTargets(any(), any())).thenReturn(List.of());
+    void stubPairingNoneByDefault() {
+        when(pairingLookup.pairingOf(any())).thenReturn(SyncPairing.NONE);
     }
 
     @Nested
@@ -1228,11 +1227,7 @@ class EventControllerTest {
             Event event = EventTestDataBuilder.anEvent().build();
 
             when(eventManagementService.getEvent(any(), anyBoolean())).thenReturn(event);
-            com.klabis.sync.domain.SyncRecord record = com.klabis.sync.domain.SyncRecord.enroll(
-                    com.klabis.sync.SyncRecordId.newId(),
-                    new com.klabis.sync.domain.SyncTarget(com.klabis.sync.domain.SyncEntityType.EVENT, event.getId().value().toString()),
-                    new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, "101"));
-            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.of(record));
+            when(pairingLookup.pairingOf(any())).thenReturn(SyncPairing.ACTIVE);
 
             mockMvc.perform(
                             get("/api/events/{id}", eventId)
@@ -1241,7 +1236,7 @@ class EventControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.sync.href").exists());
 
-            verify(synchronizationPort, times(1)).findByTarget(any());
+            verify(pairingLookup, times(1)).pairingOf(any());
         }
 
         @Test
@@ -2845,19 +2840,15 @@ class EventControllerTest {
             when(eventManagementService.listEvents(any(EventFilter.class), any(), anyBoolean(), any()))
                     .thenReturn(new PageImpl<>(List.of(orisEvent), PageRequest.of(0, 10), 1));
 
-            com.klabis.sync.domain.SyncTarget target = new com.klabis.sync.domain.SyncTarget(
-                    com.klabis.sync.domain.SyncEntityType.EVENT, eventId.value().toString());
-            com.klabis.sync.domain.SyncedEntityReference syncedReference = new com.klabis.sync.domain.SyncedEntityReference(
-                    target, new com.klabis.sync.domain.ExternalReference(com.klabis.sync.domain.ExternalSystem.ORIS, "42"));
-            when(synchronizationPort.findActiveByTargets(eq(com.klabis.sync.domain.SyncEntityType.EVENT), any()))
-                    .thenReturn(List.of(syncedReference));
+            when(pairingLookup.pairingOf(new com.klabis.sync.domain.SyncTarget(
+                    com.klabis.sync.domain.SyncEntityType.EVENT, eventId.value().toString())))
+                    .thenReturn(SyncPairing.ACTIVE);
 
             mockMvc.perform(get("/api/events").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(link("sync")).exists());
 
-            verify(synchronizationPort, times(1))
-                    .findActiveByTargets(eq(com.klabis.sync.domain.SyncEntityType.EVENT), any());
+            verify(pairingLookup, times(1)).pairingOf(any());
         }
 
         @Test

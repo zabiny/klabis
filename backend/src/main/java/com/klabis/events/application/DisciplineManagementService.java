@@ -6,6 +6,8 @@ import com.klabis.events.domain.DisciplineNotArchivedException;
 import com.klabis.events.domain.DisciplineNotEditableException;
 import com.klabis.events.domain.DisciplineNotFoundException;
 import com.klabis.events.domain.DisciplineRepository;
+import com.klabis.sync.domain.SyncPairing;
+import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.domain.SyncTarget;
@@ -34,10 +36,13 @@ class DisciplineManagementService implements DisciplineManagementPort {
 
     private final DisciplineRepository disciplineRepository;
     private final SynchronizationPort synchronizationPort;
+    private final SyncPairingLookup pairingLookup;
 
-    DisciplineManagementService(DisciplineRepository disciplineRepository, SynchronizationPort synchronizationPort) {
+    DisciplineManagementService(DisciplineRepository disciplineRepository, SynchronizationPort synchronizationPort,
+                                SyncPairingLookup pairingLookup) {
         this.disciplineRepository = disciplineRepository;
         this.synchronizationPort = synchronizationPort;
+        this.pairingLookup = pairingLookup;
     }
 
     @Transactional
@@ -59,7 +64,7 @@ class DisciplineManagementService implements DisciplineManagementPort {
         Discipline discipline = disciplineRepository.findById(id)
                 .orElseThrow(() -> new DisciplineNotFoundException(id));
 
-        if (synchronizationPort.findByTarget(targetFor(id)).isPresent()) {
+        if (pairingLookup.pairingOf(targetFor(id)) != SyncPairing.NONE) {
             throw new DisciplineNotEditableException(id);
         }
 

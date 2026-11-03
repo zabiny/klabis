@@ -182,11 +182,6 @@ class SynchronizationService implements SynchronizationPort {
         return pairingLookup.findByExternalReferences(entityType, system, externalIds);
     }
 
-    @Override
-    public List<SyncedEntityReference> findActiveByTargets(SyncEntityType entityType, Collection<String> entityIds) {
-        return pairingLookup.findActiveByTargets(entityType, entityIds);
-    }
-
     @Transactional
     @Override
     public void markDirty(SyncTarget target) {

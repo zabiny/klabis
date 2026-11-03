@@ -18,8 +18,8 @@ import com.klabis.members.domain.Gender;
 import com.klabis.members.legalguardiangroup.LegalGuardianGroupId;
 import com.klabis.members.legalguardiangroup.domain.LegalGuardianGroup;
 import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
-import com.klabis.sync.SyncRecordId;
-import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.domain.SyncPairing;
+import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.domain.*;
 import org.junit.jupiter.api.*;
 import org.mockito.Mockito;
@@ -90,11 +90,11 @@ class MemberControllerApiTest {
     private OrisClubKeyManagementPort orisClubKeyManagementPort;
 
     @Autowired
-    private SynchronizationPort synchronizationPort;
+    private SyncPairingLookup pairingLookup;
 
     @BeforeEach
-    void stubSynchronizationPortAbsentByDefault() {
-        when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
+    void stubPairingNoneByDefault() {
+        when(pairingLookup.pairingOf(any())).thenReturn(SyncPairing.NONE);
     }
 
     @Autowired
@@ -894,16 +894,14 @@ class MemberControllerApiTest {
             Member member = MemberTestDataBuilder.aMemberWithId(memberId).build();
             when(managementService.getMemberAndRecordView(any(MemberId.class), any(UserId.class), any(MemberViewAccess.class)))
                     .thenReturn(member);
-            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), targetFor(new MemberId(memberId)),
-                    new ExternalReference(ExternalSystem.ORIS, "100"));
-            when(synchronizationPort.findByTarget(targetFor(new MemberId(memberId)))).thenReturn(Optional.of(record));
+            when(pairingLookup.pairingOf(targetFor(new MemberId(memberId)))).thenReturn(SyncPairing.ACTIVE);
 
             mockMvc.perform(getMemberById(memberId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._links.sync.href").exists());
 
-            org.mockito.Mockito.verify(synchronizationPort, org.mockito.Mockito.times(1))
-                    .findByTarget(targetFor(new MemberId(memberId)));
+            org.mockito.Mockito.verify(pairingLookup, org.mockito.Mockito.times(1))
+                    .pairingOf(targetFor(new MemberId(memberId)));
         }
 
         @Test
@@ -1956,17 +1954,13 @@ class MemberControllerApiTest {
                     .thenReturn(new PageImpl<>(List.of(orisMember), PageRequest.of(0, 10), 1));
 
             SyncTarget target = new SyncTarget(SyncEntityType.MEMBER, memberId.toString());
-            com.klabis.sync.domain.SyncedEntityReference syncedReference = new com.klabis.sync.domain.SyncedEntityReference(
-                    target, new ExternalReference(ExternalSystem.ORIS, "42"));
-            when(synchronizationPort.findActiveByTargets(eq(SyncEntityType.MEMBER), any()))
-                    .thenReturn(List.of(syncedReference));
+            when(pairingLookup.pairingOf(target)).thenReturn(SyncPairing.ACTIVE);
 
             mockMvc.perform(get("/api/members").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(link("sync")).exists());
 
-            org.mockito.Mockito.verify(synchronizationPort, org.mockito.Mockito.times(1))
-                    .findActiveByTargets(eq(SyncEntityType.MEMBER), any());
+            org.mockito.Mockito.verify(pairingLookup, org.mockito.Mockito.times(1)).pairingOf(target);
         }
 
         @Test

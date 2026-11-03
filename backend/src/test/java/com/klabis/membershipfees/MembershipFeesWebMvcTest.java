@@ -17,8 +17,8 @@ import java.lang.annotation.*;
  * <p>
  * STANDALONE slicing loads membershipfees and shared {@code common}; {@code members} is included because
  * {@code MemberFeeSummaryLinkProcessor} adds the {@code feeSummary} link to member responses and the
- * {@code @ActingMember} argument resolver lives there. {@code sync} is included because the members controller
- * injects {@code SynchronizationPort}. Every collaborator is a primary port mocked through the per-module
+ * {@code @ActingMember} argument resolver lives there. {@code sync} is included because the members postprocessors
+ * use the {@code SyncLinks} bean. Every collaborator is a primary port mocked through the per-module
  * {@code *WebMvcMockitoBeans}.
  * <p>
  * Tests must stub mocks via {@code @Autowired} fields; a {@code @MockitoBean} declared in a test class

@@ -18,7 +18,7 @@ import java.lang.annotation.*;
  * Single shared {@code @WebMvcTest} context for REST adapter tests of the notifications module.
  * <p>
  * {@code members} is included because its {@code @ActingUser} argument resolver is used by the controller, and
- * {@code sync} because members web beans inject {@code SynchronizationPort}.
+ * {@code sync} because members web beans use the {@code SyncLinks} bean.
  * <p>
  * Tests must stub mocks via {@code @Autowired} fields; a {@code @MockitoBean} declared in a test class
  * creates a new context and defeats the sharing.

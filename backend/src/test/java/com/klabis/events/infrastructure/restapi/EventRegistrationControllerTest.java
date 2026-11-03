@@ -30,12 +30,8 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import com.klabis.sync.SyncRecordId;
-import com.klabis.sync.application.SynchronizationPort;
-import com.klabis.sync.domain.ExternalReference;
-import com.klabis.sync.domain.ExternalSystem;
-import com.klabis.sync.domain.SyncEntityType;
-import com.klabis.sync.domain.SyncRecord;
+import com.klabis.sync.domain.SyncPairing;
+import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.domain.SyncTarget;
 
 import java.util.List;
@@ -59,6 +55,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Event Registration Controller API Tests")
 @EventsWebMvcTest
 class EventRegistrationControllerTest {
+
+    @Autowired
+    private SyncPairingLookup pairingLookup;
+
+    @org.junit.jupiter.api.BeforeEach
+    void stubPairingNoneByDefault() {
+        when(pairingLookup.pairingOf(any())).thenReturn(SyncPairing.NONE);
+    }
 
     private static final String MEMBER_1_ID = "11111111-1111-1111-1111-111111111111";
     private static final String COORDINATOR_ID = "cccccccc-cccc-cccc-cccc-cccccccccccc";
@@ -2144,9 +2148,6 @@ class EventRegistrationControllerTest {
     @DisplayName("GET registration - sync link")
     class SyncLinkTests {
 
-        @Autowired
-        private SynchronizationPort synchronizationPort;
-
         private Event eventWithRegistration(UUID eventId, MemberId memberId) {
             Event event = EventTestDataBuilder.anEventWithId(new EventId(eventId))
                     .withDate(LocalDate.now().plusDays(30))
@@ -2156,15 +2157,8 @@ class EventRegistrationControllerTest {
             return event;
         }
 
-        private SyncRecord newSyncRecord(UUID eventId, MemberId memberId) {
-            return SyncRecord.enroll(
-                    SyncRecordId.newId(),
-                    new SyncTarget(SyncEntityType.EVENT_REGISTRATION, eventId + ":" + memberId.value()),
-                    new ExternalReference(ExternalSystem.ORIS, "101:7"));
-        }
-
         private void enroll(UUID eventId, MemberId memberId) {
-            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.of(newSyncRecord(eventId, memberId)));
+            when(pairingLookup.pairingOf(any())).thenReturn(SyncPairing.ACTIVE);
         }
 
         @Test
@@ -2214,7 +2208,7 @@ class EventRegistrationControllerTest {
                     .thenReturn(eventWithRegistration(eventId, memberId));
             when(membersMock.findById(memberId)).thenReturn(Optional.of(
                     new MemberDto(memberId.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null)));
-            when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
+            when(pairingLookup.pairingOf(any())).thenReturn(SyncPairing.NONE);
 
             mockMvc.perform(get("/api/events/{eventId}/registrations/{memberId}", eventId, MEMBER_1_ID)
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -2261,11 +2255,10 @@ class EventRegistrationControllerTest {
             when(membersMock.findByIds(any())).thenReturn(Map.of(
                     enrolledMember, new MemberDto(enrolledMember.value(), "John", "Doe", "john@example.com", null, LocalDateTime.now(), null),
                     otherMember, new MemberDto(otherMember.value(), "Jane", "Smith", "jane@example.com", null, LocalDateTime.now(), null)));
-            var record = newSyncRecord(eventId, enrolledMember);
-            when(synchronizationPort.findByTarget(any())).thenAnswer(inv -> {
+            when(pairingLookup.pairingOf(any())).thenAnswer(inv -> {
                 SyncTarget target = inv.getArgument(0);
                 return target.entityId().contains(enrolledMember.value().toString())
-                        ? Optional.of(record) : Optional.empty();
+                        ? SyncPairing.ACTIVE : SyncPairing.NONE;
             });
 
             mockMvc.perform(get("/api/events/{eventId}/registrations", eventId)
