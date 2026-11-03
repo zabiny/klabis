@@ -12,7 +12,7 @@ import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.Member;
 import com.klabis.common.settings.OrisClubKeyManagementPort;
-import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.domain.SyncPairing;
 import com.klabis.sync.application.SyncPairingLookup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

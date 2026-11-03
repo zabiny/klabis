@@ -2,7 +2,7 @@ package com.klabis.sync.infrastructure.jdbc;
 
 import com.klabis.CleanupTestData;
 import com.klabis.sync.SyncRecordId;
-import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.domain.SyncPairing;
 import com.klabis.sync.domain.*;
 import com.klabis.sync.fixtures.TestSyncProjection;
 import org.jmolecules.ddd.annotation.Repository;

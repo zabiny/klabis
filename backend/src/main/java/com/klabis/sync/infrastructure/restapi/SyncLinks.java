@@ -1,7 +1,7 @@
 package com.klabis.sync.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.domain.SyncPairing;
 import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.domain.SyncTarget;
 import org.springframework.hateoas.RepresentationModel;

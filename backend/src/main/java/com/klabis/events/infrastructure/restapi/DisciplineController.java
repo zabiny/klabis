@@ -10,7 +10,7 @@ import com.klabis.events.domain.Discipline;
 import com.klabis.common.users.ActingUser;
 import com.klabis.members.CurrentUserData;
 import com.klabis.sync.domain.SyncEntityType;
-import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.domain.SyncPairing;
 import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.domain.SyncTarget;
 import com.klabis.sync.infrastructure.restapi.SyncLinks;

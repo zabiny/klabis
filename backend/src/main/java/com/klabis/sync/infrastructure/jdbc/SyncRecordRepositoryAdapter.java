@@ -1,7 +1,7 @@
 package com.klabis.sync.infrastructure.jdbc;
 
 import com.klabis.sync.SyncRecordId;
-import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.domain.SyncPairing;
 import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;

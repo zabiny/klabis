@@ -24,7 +24,7 @@ import java.lang.annotation.Target;
  * feature flag. ORIS-gated controllers are not part of the test profile.
  * <p>
  * Also requires {@code Members} (see members annotation), {@code FinanceAccountLinkSupport} (real bean,
- * loaded by adding {@code finance} to {@code extraIncludes}) and {@code SynchronizationPort} (see sync annotation).
+ * loaded by adding {@code finance} to {@code extraIncludes}) and {@code SyncPairingLookup} (see sync annotation).
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

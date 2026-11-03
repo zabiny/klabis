@@ -1,6 +1,6 @@
 ## 1. Pairing query and sync link module (`sync`)
 
-- [x] 1.1 Add `SyncPairing` enum (`NONE`, `ACTIVE`, `RETIRED`) to `sync.application`
+- [x] 1.1 Add `SyncPairing` enum (`NONE`, `ACTIVE`, `RETIRED`) to `sync.domain`
 - [x] 1.2 Write a JDBC integration test for `SyncRecordRepository.pairingOf(SyncTarget)` covering no record → `NONE`, non-retired record → `ACTIVE`, retired record → `RETIRED`, and a target with records for two systems where one is not retired → `ACTIVE`; confirm it fails
 - [x] 1.3 Implement `SyncRecordRepository.pairingOf` in `SyncRecordRepositoryAdapter` / `SyncRecordJdbcRepository`, reading only `retired_at` by `entity_type` + `entity_id` (no aggregate load, no system resolution); 1.2 passes
 - [x] 1.4 Add `pairingOf(SyncTarget)` to `SyncPairingLookup` and `SyncPairingLookupService` (`@Transactional(readOnly = true)`), with no dependency on `SynchronizationAdapterRegistry`
@@ -36,8 +36,8 @@
 
 ## 6. Cleanup and documentation
 
-- [ ] 6.1 Remove `SynchronizationPort.findActiveByTargets` and its `SynchronizationService` delegate if `grep` shows no remaining callers; keep `SyncPairingLookup.findActiveByTargets` (`OrisEventRegistrationDiscoveryJob`)
-- [ ] 6.2 `grep` confirms no `Enrolled*Ids`, `addSyncLinkIfEnrolled` or `SynchronizationPort` import left in `events/infrastructure/restapi` and `members/infrastructure/restapi`
-- [ ] 6.3 Update `.claude/skills/backend-patterns/references/synchronization-adapter.md` (the "Add a `sync` link" bullet): use `SyncLinks.addTo`, express pairing rules via `SyncPairingLookup.pairingOf`, and note that discovery-style rules assume one external system per entity type (design.md decision 4)
-- [ ] 6.4 `ModuleStructureVerificationTest`, `JMoleculesArchitectureTest` and `AffordanceRoutingArchitectureTest` pass
-- [ ] 6.5 Full backend test suite passes
+- [x] 6.1 Remove `SynchronizationPort.findActiveByTargets` and its `SynchronizationService` delegate if `grep` shows no remaining callers; keep `SyncPairingLookup.findActiveByTargets` (`OrisEventRegistrationDiscoveryJob`)
+- [x] 6.2 `grep` confirms no `Enrolled*Ids`, `addSyncLinkIfEnrolled` or `SynchronizationPort` import left in `events/infrastructure/restapi` and `members/infrastructure/restapi`
+- [x] 6.3 Update `.claude/skills/backend-patterns/references/synchronization-adapter.md` (the "Add a `sync` link" bullet): use `SyncLinks.addTo`, express pairing rules via `SyncPairingLookup.pairingOf`, and note that discovery-style rules assume one external system per entity type (design.md decision 4)
+- [x] 6.4 `ModuleStructureVerificationTest`, `JMoleculesArchitectureTest` and `AffordanceRoutingArchitectureTest` pass
+- [x] 6.5 Full backend test suite passes

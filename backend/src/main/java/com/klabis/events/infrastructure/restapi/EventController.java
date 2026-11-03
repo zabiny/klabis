@@ -19,7 +19,7 @@ import com.klabis.members.Members;
 import com.klabis.members.infrastructure.restapi.MembersApi;
 import com.klabis.events.application.OrisEventRegistrationDiscoveryPort;
 import com.klabis.sync.domain.SyncEntityType;
-import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.domain.SyncPairing;
 import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.domain.SyncTarget;
 import com.klabis.sync.infrastructure.restapi.SyncLinks;

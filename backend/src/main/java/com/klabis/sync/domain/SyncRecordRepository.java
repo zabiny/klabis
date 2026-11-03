@@ -1,7 +1,7 @@
 package com.klabis.sync.domain;
 
 import com.klabis.sync.SyncRecordId;
-import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.domain.SyncPairing;
 import org.jmolecules.architecture.hexagonal.SecondaryPort;
 
 import java.time.Instant;

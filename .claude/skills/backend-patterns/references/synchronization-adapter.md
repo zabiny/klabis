@@ -126,7 +126,7 @@ Call `synchronizationPort.markDirty(target)` from a listener on the owning modul
 The `sync` controller already serves every entity type at `/api/{entityType}/{id}/sync…` — no new endpoint code.
 
 - Add the wire value to `SyncEntityTypeParam` in `sync.yaml` (step 1).
-- Add a `sync` link on the entity's own resource when enrolled: the owning module's postprocessor asks `SynchronizationPort` about enrolment (see `EventController`'s postprocessor).
+- Add a `sync` link on the entity's own resource when paired: the owning module's postprocessor calls `SyncLinks.addTo(model, target)` (`sync.infrastructure.restapi`), which adds the link unless `pairingOf` is `NONE`. Express rules that depend on pairing via `SyncPairingLookup.pairingOf` (`NONE`/`ACTIVE`/`RETIRED`), not by querying records. Discovery-style rules (`== ACTIVE`) assume one external system per entity type; revisit them if a second adapter is added for the same type.
 - Keep response mappers with sync-specific dependencies out of the `Converter` bean pool — `SyncStateResponseConverter` is a plain class for this reason (`dto-mapping.md`).
 
 ## 7. Test it

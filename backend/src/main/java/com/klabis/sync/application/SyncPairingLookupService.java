@@ -2,6 +2,7 @@ package com.klabis.sync.application;
 
 import com.klabis.sync.domain.ExternalSystem;
 import com.klabis.sync.domain.SyncEntityType;
+import com.klabis.sync.domain.SyncPairing;
 import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncTarget;
 import com.klabis.sync.domain.SyncRecordRepository;

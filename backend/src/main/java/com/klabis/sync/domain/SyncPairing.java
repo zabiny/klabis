@@ -1,4 +1,4 @@
-package com.klabis.sync.application;
+package com.klabis.sync.domain;
 
 /**
  * How an entity is paired with an external system, across all systems: {@code ACTIVE} if any record is

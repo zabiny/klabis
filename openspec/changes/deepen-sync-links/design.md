@@ -27,7 +27,7 @@ Four REST call sites ask the sync module whether an entity is paired and then bu
 
 ## Decisions
 
-1. **`SyncPairing` enum with `NONE`, `ACTIVE`, `RETIRED`**, returned by `SyncPairingLookup.pairingOf(SyncTarget)` and placed next to the port in `sync.application`.
+1. **`SyncPairing` enum with `NONE`, `ACTIVE`, `RETIRED`**, returned by `SyncPairingLookup.pairingOf(SyncTarget)` and placed in `sync.domain`, next to `SyncRecordRepository`.
    The query matches on `entity_type` + `entity_id` across all external systems and returns:
    - `ACTIVE` if any record is not retired;
    - otherwise `RETIRED` if any record exists;

@@ -7,7 +7,7 @@ import com.klabis.events.domain.DisciplineNotEditableException;
 import com.klabis.events.domain.DisciplineNotFoundException;
 import com.klabis.events.domain.DisciplineRepository;
 import com.klabis.sync.SyncRecordId;
-import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.domain.SyncPairing;
 import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.ExternalReference;
