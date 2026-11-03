@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Objects;
 
 /**
  * {@code SyncProjectionType} is resolved lazily via {@link ObjectProvider} rather than
@@ -128,7 +129,7 @@ class SyncRecordRepositoryAdapter implements SyncRecordRepository {
         if (retiredAts.isEmpty()) {
             return SyncPairing.NONE;
         }
-        return retiredAts.stream().anyMatch(java.util.Objects::isNull) ? SyncPairing.ACTIVE : SyncPairing.RETIRED;
+        return retiredAts.stream().anyMatch(Objects::isNull) ? SyncPairing.ACTIVE : SyncPairing.RETIRED;
     }
 
     private SyncRecord toSyncRecord(SyncRecordMemento memento) {
