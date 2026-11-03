@@ -34,8 +34,8 @@
 
 ## 4. Account transactions slice
 
-- [ ] 4.1 Replace `useTransactionFilters` in `MemberAccountManagePage` with `useUrlFilters` (`type`, `dateFrom`→`occurredAtFrom`, `dateTo`→`occurredAtTo`). The `extraParams` become the values under their URL names.
-- [ ] 4.2 Rewrite the `useTransactionFilters` block of `TransactionHistory.test.tsx` as page-level assertions on the request URL, keeping its three cases. Delete `pages/finances/useTransactionFilters.ts`. Tests pass.
+- [x] 4.1 Replace `useTransactionFilters` in `MemberAccountManagePage` with `useUrlFilters` (`type`, `dateFrom`→`occurredAtFrom`, `dateTo`→`occurredAtTo`). The `extraParams` become the values under their URL names.
+- [x] 4.2 Rewrite the `useTransactionFilters` block of `TransactionHistory.test.tsx` as page-level assertions on the request URL, keeping its three cases. Delete `pages/finances/useTransactionFilters.ts`. Tests pass.
 
 ## 5. Sync attempts slice
 
