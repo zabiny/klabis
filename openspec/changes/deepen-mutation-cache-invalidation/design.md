@@ -90,6 +90,7 @@ sequenceDiagram
 ## Risks / Trade-offs
 
 - **[Risk] A failed refetch turns a successful write into a reported failure.** → `invalidateQueries` does not reject when a refetch fails, because `refetchQueries` defaults to `throwOnError: false`. A seam test pins that a successful mutation still resolves when the refetch returns an error.
+- **[Risk] A failing refetch keeps `isPending` `true` through query retries.** `useAuthorizedQuery` passed `retry: options?.retry`, so an explicit `undefined` overrode the `QueryClient` default (`retry: 1`) and fell back to the library default of 3 retries with backoff (about 7 s). → `useAuthorizedQuery` passes `retry` only when the caller sets it (task 1.4).
 - **[Trade-off] `isPending` lasts longer**, by one round of GETs for the screen's active queries. → Buttons stay disabled until the data is consistent, which is the intended effect. With the expected load the delay is a single request round.
 - **[Trade-off] Callers that refreshed nothing now trigger extra GETs:** `MemberFeeChoicePage`, `NotificationSettingsPage`, `CalendarFeedSection` and `ChangePasswordDialog`. → Bounded by the active queries of one screen. It is accepted in the proposal as non-functional.
 - **[Risk] Caller tests that mock `useAuthorizedMutation` cannot see the invalidation.** → Intended. The rule is tested once at the seam, and the browser check in tasks 3.3 confirms the route is fetched once per mutation.

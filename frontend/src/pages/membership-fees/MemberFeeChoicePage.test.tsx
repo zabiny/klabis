@@ -239,7 +239,6 @@ describe('MemberFeeChoicePage', () => {
             fireEvent.click(screen.getByText(/Zvolit tier/i));
             expect(mutate).toHaveBeenCalledWith(
                 {url: '/api/members/member-1/fee-choice/2026', data: {membershipFeeGroupId: 'group-2'}},
-                expect.anything(),
             );
         });
 
@@ -260,7 +259,7 @@ describe('MemberFeeChoicePage', () => {
             renderPage();
 
             fireEvent.click(screen.getByText('Zrušit volbu'));
-            expect(mutate).toHaveBeenCalledWith({url: '/api/members/member-1/fee-choice/2026'}, expect.anything());
+            expect(mutate).toHaveBeenCalledWith({url: '/api/members/member-1/fee-choice/2026'});
         });
     });
 });

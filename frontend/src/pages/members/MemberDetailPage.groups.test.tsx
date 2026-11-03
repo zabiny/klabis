@@ -31,12 +31,6 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     })),
 }));
 
-vi.mock('../../hooks/useFormCacheInvalidation', () => ({
-    useFormCacheInvalidation: vi.fn(() => ({
-        invalidateAllCaches: vi.fn().mockResolvedValue(undefined),
-    })),
-}));
-
 vi.mock('../../contexts/ToastContext', () => ({
     ToastProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
 }));

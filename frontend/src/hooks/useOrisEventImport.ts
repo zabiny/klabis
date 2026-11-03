@@ -3,7 +3,6 @@ import {type BulkImportResult, type OrisEvent, ORIS_REGION_KEYS} from '../api/or
 import type {HalFormsTemplate} from '../api/types';
 import {labels} from '../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
-import {useFormCacheInvalidation} from './useFormCacheInvalidation';
 import {isMultipleProperty} from '../components/HalNavigator2/halforms/utils';
 
 export type OrisImportFetchState = 'loading' | 'success' | 'error';
@@ -45,9 +44,6 @@ export function useOrisEventImport(
     const [importResult, setImportResult] = useState<BulkImportResult | null>(null);
     const onImportedRef = useRef(options.onImported);
     onImportedRef.current = options.onImported;
-    const {invalidateAllCaches} = useFormCacheInvalidation();
-    const invalidateAllCachesRef = useRef(invalidateAllCaches);
-    invalidateAllCachesRef.current = invalidateAllCaches;
 
     const batchImportHref = template?.target;
     const submitMethod = template?.method ?? 'POST';
@@ -123,7 +119,7 @@ export function useOrisEventImport(
         mutate(
             {url: batchImportHref, data: {[bodyKey]: Array.from(selectedIds)}},
             {
-                onSuccess: async ({data: responseData}) => {
+                onSuccess: ({data: responseData}) => {
                     setIsSubmitting(false);
                     const rawResult = responseData as BulkImportResult;
                     const result: BulkImportResult = {
@@ -134,7 +130,6 @@ export function useOrisEventImport(
                         })),
                     };
                     setImportResult(result);
-                    await invalidateAllCachesRef.current();
                     onImportedRef.current?.();
                 },
                 onError: () => {

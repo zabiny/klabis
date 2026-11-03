@@ -133,12 +133,6 @@ vi.mock('../../api/authorizedFetch', () => {
     };
 });
 
-vi.mock('../../hooks/useFormCacheInvalidation', () => ({
-    useFormCacheInvalidation: vi.fn(() => ({
-        invalidateAllCaches: vi.fn().mockResolvedValue(undefined),
-    })),
-}));
-
 // HalFormDisplay pulls prefill data via useHalFormData (OPTIONS probe + a query
 // keyed on the template target). The blanket useAuthorizedQuery mock would answer
 // that query with an empty registrations list, so pin useHalFormData to the

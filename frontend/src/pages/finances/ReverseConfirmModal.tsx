@@ -2,8 +2,6 @@ import {type ReactElement, useState} from 'react';
 import {Button, Modal} from '../../components/UI';
 import {labels} from '../../localization';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
-import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';
-import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useToast} from '../../contexts/toastContext';
 import type {TransactionReverseRequest} from './FinancesPage.tsx';
 import {toFormValidationError} from '../../api/hateoas.ts';
@@ -33,8 +31,6 @@ export const ReverseConfirmModal = ({isOpen, transaction, onClose}: ReverseConfi
     const [occurredAt, setOccurredAt] = useState('');
     const [submitError, setSubmitError] = useState<string | null>(null);
 
-    const {route} = useHalPageData();
-    const {invalidateAllCaches} = useFormCacheInvalidation();
     const {addToast} = useToast();
 
     const {mutate: submitReverse, isPending} = useAuthorizedMutation({method: 'POST'});
@@ -56,9 +52,7 @@ export const ReverseConfirmModal = ({isOpen, transaction, onClose}: ReverseConfi
         if (occurredAt) data.occurredAt = occurredAt;
 
         submitReverse({url, data}, {
-            onSuccess: async () => {
-                await invalidateAllCaches();
-                await route.refetch();
+            onSuccess: () => {
                 addToast(labels.finance.reversal + ' — úspěšně uloženo', 'success');
                 handleClose();
             },

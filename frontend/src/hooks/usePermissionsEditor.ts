@@ -4,7 +4,6 @@ import {FetchError} from '../api/authorizedFetch';
 import {toHref} from '../api/hateoas';
 import type {GetUserPermissionsResource} from '../api';
 import {labels} from '../localization';
-import {useFormCacheInvalidation} from './useFormCacheInvalidation';
 
 export interface UsePermissionsEditorResult {
     permissions: string[] | undefined;
@@ -38,7 +37,6 @@ export function usePermissionsEditor(
     options?: UsePermissionsEditorOptions,
 ): UsePermissionsEditorResult {
     const {addToast} = useToast();
-    const {invalidateAllCaches} = useFormCacheInvalidation();
 
     const {data, isLoading} = useAuthorizedQuery<GetUserPermissionsResource>(permissionsUrl ?? '', {
         enabled: (options?.enabled ?? true) && !!permissionsUrl,
@@ -56,8 +54,7 @@ export function usePermissionsEditor(
         mutate(
             {url: putUrl, data: {authorities}},
             {
-                onSuccess: async () => {
-                    await invalidateAllCaches();
+                onSuccess: () => {
                     addToast(labels.ui.permissionsSaved, 'success');
                     options?.onSaved?.();
                 },

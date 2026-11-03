@@ -1,7 +1,6 @@
 import {type ReactElement, type ReactNode, useMemo} from 'react';
 import type * as Yup from 'yup';
 import type {HalFormsTemplate} from '../../api';
-import {useHalPageData} from '../../hooks/useHalPageData';
 import {ErrorDisplay, Spinner} from '../UI';
 import {type HalFormFieldFactory, HalFormsForm, type RenderFormCallback} from './halforms';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
@@ -9,7 +8,6 @@ import {UI_MESSAGES} from '../../constants/messages.ts';
 import {createMemberFilteredFactory, klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
-import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation.ts';
 import {containerStyles} from '../../theme/designTokens';
 import {useToast} from '../../contexts/toastContext';
 import {useNavigate} from 'react-router-dom';
@@ -94,7 +92,6 @@ export const HalFormDisplay = ({
                                    navigateOnSuccess = true,
                                    refineValidationSchema,
                                }: HalFormDisplayProps): ReactElement => {
-    const {route} = useHalPageData();
     const template = useMemo(() => withTemplateFieldPrompts(rawTemplate, templateName), [rawTemplate, templateName]);
 
     const effectiveFieldsFactory = useMemo(() => {
@@ -104,7 +101,6 @@ export const HalFormDisplay = ({
         }
         return klabisFieldsFactory;
     }, [fieldsFactory, excludeMemberIds, includeOnlyMemberIds]);
-    const {invalidateAllCaches} = useFormCacheInvalidation();
     const {addToast} = useToast();
     const navigate = useNavigate();
 
@@ -135,8 +131,6 @@ export const HalFormDisplay = ({
         const url = template.target || resolvedResourceUrl || '/api' + normalizeKlabisApiPath(pathname);
         submitForm({url, data: processed}, {
             onSuccess: async ({data: responseData, location}) => {
-                await invalidateAllCaches();
-                await route.refetch();
                 const toastMessage = successMessage ?? (template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo');
                 addToast(toastMessage, 'success');
                 onSubmitSuccess?.(responseData);
