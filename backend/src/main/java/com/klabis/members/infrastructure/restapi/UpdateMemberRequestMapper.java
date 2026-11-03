@@ -6,7 +6,9 @@ import com.klabis.members.domain.*;
 import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.util.Optional;
-import java.util.function.Consumer;
+
+import static com.klabis.common.patch.PatchOverlay.overlay;
+import static com.klabis.common.patch.PatchOverlay.overlayNonNull;
 
 /**
  * Applies a PATCH {@link UpdateMemberRequest} onto a fully pre-filled {@link Member.UpdateMember}
@@ -14,8 +16,8 @@ import java.util.function.Consumer;
  * <p>
  * This is where the three PATCH states are resolved, so the domain never sees {@link JsonNullable}:
  * an <em>undefined</em> field leaves the baseline value in place, a <em>present-null</em> field
- * clears it, and a <em>present</em> value sets it. Fields of {@link PersonalInformation} have no
- * cleared state, so a present-null there also just retains the baseline.
+ * clears it, and a <em>present</em> value sets it, as defined by {@link com.klabis.common.patch.PatchOverlay}.
+ * Fields of {@link PersonalInformation} have no cleared state, so a present-null there retains the baseline.
  */
 class UpdateMemberRequestMapper {
 
@@ -38,11 +40,11 @@ class UpdateMemberRequestMapper {
             overlay(request.dietaryRestrictions(), b::dietaryRestrictions);
             overlay(request.birthNumber(), v -> b.birthNumber(toBirthNumber(v)));
 
-            overlayValue(request.nationality(), b::nationality);
-            overlayValue(request.firstName(), b::firstName);
-            overlayValue(request.lastName(), b::lastName);
-            overlayValue(request.dateOfBirth(), b::dateOfBirth);
-            overlayValue(request.gender(), v -> b.gender(toGender(v)));
+            overlayNonNull(request.nationality(), b::nationality);
+            overlayNonNull(request.firstName(), b::firstName);
+            overlayNonNull(request.lastName(), b::lastName);
+            overlayNonNull(request.dateOfBirth(), b::dateOfBirth);
+            overlayNonNull(request.gender(), v -> b.gender(toGender(v)));
 
             return b.build();
         } catch (IllegalArgumentException e) {
@@ -50,27 +52,7 @@ class UpdateMemberRequestMapper {
         }
     }
 
-    /**
-     * Runs {@code apply} for a present field (including a present null, which means "clear"); an
-     * undefined field is left alone so the pre-filled baseline value stands.
-     */
-    private static <T> void overlay(JsonNullable<T> field, Consumer<T> apply) {
-        if (field.isPresent()) {
-            apply.accept(field.get());
-        }
-    }
 
-    /**
-     * For {@link PersonalInformation} fields, which have no cleared state: only a present non-null
-     * value overrides the baseline; a present null retains it, matching the pre-refactor contract.
-     */
-    private static <T> void overlayValue(JsonNullable<T> field, Consumer<T> apply) {
-        field.ifPresent(value -> {
-            if (value != null) {
-                apply.accept(value);
-            }
-        });
-    }
 
     private static Address toAddress(AddressRequest a) {
         return Address.of(a.street(), a.city(), a.postalCode(), a.country());

@@ -5,20 +5,20 @@
 
 ## 2. Mappers
 
-- [ ] 2.1 `UpdateMemberRequestMapper`:
+- [x] 2.1 `UpdateMemberRequestMapper`:
   - replace `overlay` with `PatchOverlay.overlay` and `overlayValue` with `PatchOverlay.overlayNonNull` (static imports), with no other change per line;
   - delete both private helpers;
   - shorten the class javadoc to the fields without a cleared state (`PersonalInformation`), referring to `PatchOverlay`;
   - keep the `IllegalArgumentException` wrapping.
-- [ ] 2.2 `UpdateEventRequestMapper`:
+- [x] 2.2 `UpdateEventRequestMapper`:
   - replace the helpers the same way and delete both;
   - shorten the class javadoc to the fields without a cleared state (`name`, `eventDate`, `organizer`);
   - leave the body of `overlaySiPolicy` unchanged, and in its javadoc refer to `PatchOverlay.overlayNonNull` as the rule it follows.
-- [ ] 2.3 `UpdateTrainingGroupRequestMapper`:
+- [x] 2.3 `UpdateTrainingGroupRequestMapper`:
   - replace `overlayValue` with `PatchOverlay.overlayNonNull` and delete the helper;
   - rewrite the class javadoc: none of the three fields has a cleared state, so a present null keeps the baseline. This removes the stale "surfaces as a 400" sentence.
-- [ ] 2.4 Confirm with `grep` that no `overlayValue` remains in `backend/src/main` and that no `private static .* overlay` remains outside `PatchOverlay`.
-- [ ] 2.5 Run the tests (test-runner agent):
+- [x] 2.4 Confirm with `grep` that no `overlayValue` remains in `backend/src/main` and that no `private static .* overlay` remains outside `PatchOverlay`.
+- [x] 2.5 Run the tests (test-runner agent):
   - `PatchOverlayTest`;
   - `UpdateMemberApiTest`, `EventControllerTest`, `TrainingGroupControllerTest`;
   - `PatchRequestWrapperArchitectureTest`.
