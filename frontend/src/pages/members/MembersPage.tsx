@@ -1,5 +1,4 @@
-import {type ReactElement, useCallback, useMemo, useState} from "react";
-import {useSearchParams} from "react-router-dom";
+import {type ReactElement, useMemo, useState} from "react";
 import type {HalFormsTemplate, Link} from "../../api";
 import type {components} from "../../api/klabisApi";
 import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
@@ -28,7 +27,8 @@ import {
     MembersFilterBar,
     type MembersFilterValue
 } from "../../components/members/MembersFilterBar.tsx";
-import {useDefaultSearchParam} from "../../hooks/useDefaultSearchParam.ts";
+import {useUrlFilters} from "../../hooks/useUrlFilters.ts";
+import {toQuery} from "./membersQuery.ts";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 
 type MemberSummaryData = components['schemas']['EntityModelMemberSummaryResponse'] & {
@@ -48,7 +48,6 @@ interface MemberPermissionsDialogState {
 
 export const MembersPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
-    const [searchParams, setSearchParams] = useSearchParams();
     const [actionModal, setActionModal] = useState<MemberActionModalState | null>(null);
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
     const [transactionDialogAccount, setTransactionDialogAccount] = useState<Link | null>(null);
@@ -68,35 +67,13 @@ export const MembersPage = (): ReactElement => {
 
     const hasManageAuthority = resourceData?._templates?.registerMember !== undefined;
 
-    const urlStatus = searchParams.get('status');
-    const urlQ = searchParams.get('q') ?? '';
-    const urlIncomplete = searchParams.get('incomplete') === 'true';
-
-    useDefaultSearchParam('status', DEFAULT_MEMBER_STATUS);
-
-    const filterValue: MembersFilterValue = useMemo(() => ({
-        q: urlQ,
-        status: (urlStatus ?? DEFAULT_MEMBER_STATUS) as MembersFilterValue['status'],
-        incomplete: urlIncomplete,
-    }), [urlQ, urlStatus, urlIncomplete]);
-
-    const handleFilterChange = useCallback((next: MembersFilterValue) => {
-        setSearchParams((prev) => {
-            const params = new URLSearchParams(prev);
-            params.set('status', next.status);
-            if (next.q) { params.set('q', next.q); } else { params.delete('q'); }
-            if (next.incomplete) { params.set('incomplete', 'true'); } else { params.delete('incomplete'); }
-            return params;
-        });
-    }, [setSearchParams]);
-
-    const extraParams = useMemo((): Record<string, string> => {
-        const params: Record<string, string> = {};
-        params.status = urlStatus ?? DEFAULT_MEMBER_STATUS;
-        if (urlQ && urlQ.length >= 2) params.q = urlQ;
-        if (urlIncomplete) params.incomplete = 'true';
-        return params;
-    }, [urlStatus, urlQ, urlIncomplete]);
+    const {values, setValues} = useUrlFilters({
+        status: {type: 'string', default: DEFAULT_MEMBER_STATUS},
+        q: {type: 'string'},
+        incomplete: {type: 'boolean'},
+    });
+    const filterValue = values as MembersFilterValue;
+    const extraParams = useMemo(() => toQuery(filterValue), [filterValue]);
 
     const openActionModal = (member: MemberSummaryData, templateName: string) => {
         const template = member._templates?.[templateName];
@@ -319,7 +296,7 @@ export const MembersPage = (): ReactElement => {
                 </div>
                 <MembersFilterBar
                     value={filterValue}
-                    onChange={handleFilterChange}
+                    onChange={setValues}
                     hasManageAuthority={hasManageAuthority}
                 />
                 <HalEmbeddedTable<MemberSummaryData> collectionName={"memberSummaryResponseList"}

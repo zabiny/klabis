@@ -402,11 +402,11 @@ describe('MembersPage — filter bar integration', () => {
         vi.mocked(useAuthorizedQuery).mockReturnValue({data: null, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
     });
 
-    it('auto-injects ?status=ACTIVE when no status param is present on mount', async () => {
-        const pageData = createMockPageData(null);
-        renderPageWithSearchReader('/members', pageData);
-        // useEffect fires after mount; wait for DOM update
-        expect(await screen.findByTestId('search-string')).toHaveTextContent('status=ACTIVE');
+    it('leaves a bare URL bare while requesting the active-only default', () => {
+        renderPageWithSearchReader('/members', createMockPageData(null));
+
+        expect(screen.getByTestId('search-string')).toHaveTextContent('(none)');
+        expect(vi.mocked(useAuthorizedQuery).mock.calls.every(([url]) => String(url).includes('status=ACTIVE'))).toBe(true);
     });
 
     it('does NOT overwrite an existing status param on mount', () => {
@@ -720,3 +720,31 @@ describe('MembersPage — search text and URL state', () => {
         expect(urls.every(u => u.includes('status=ACTIVE'))).toBe(true);
     });
 });
+
+describe('MembersPage — page reset on filter change', () => {
+    it('on page 2, a status change requests page=0', async () => {
+        const resource: HalResponse = {
+            _links: {self: {href: 'http://localhost/api/members'}},
+            _templates: {
+                default: mockHalFormsTemplate({title: 'Get Members', method: 'PATCH'}),
+                registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
+            },
+            _embedded: {memberSummaryResponseList: []},
+            page: {size: 10, totalElements: 30, totalPages: 3, number: 0},
+        };
+        vi.clearAllMocks();
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: resource, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
+        renderPage(createMockPageData(resource));
+
+        await userEvent.click(screen.getByRole('button', {name: /Další/}));
+        expect(requestedUrlsOf().at(-1)).toContain('page=1');
+
+        await userEvent.click(screen.getByRole('button', {name: labels.membersFilter.statusInactive}));
+
+        const last = requestedUrlsOf().at(-1)!;
+        expect(last).toContain('status=INACTIVE');
+        expect(last).toContain('page=0');
+    });
+});
+
+const requestedUrlsOf = () => vi.mocked(useAuthorizedQuery).mock.calls.map(([url]) => String(url));

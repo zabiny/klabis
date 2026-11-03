@@ -18,7 +18,7 @@
 
 ## 3. URL filters, members slice
 
-- [ ] 3.1 Write `hooks/useUrlFilters.test.tsx` with `MemoryRouter`. It covers:
+- [x] 3.1 Write `hooks/useUrlFilters.test.tsx` with `MemoryRouter`. It covers:
   - reading `string`, `boolean` (including `trueValue`) and `string[]`, with `param` renames;
   - a missing parameter gives the default and writes nothing to the URL;
   - `setValues` writes a key with a default even when empty (`''`), deletes an empty key without a default, appends `string[]` values, and keeps parameters outside the schema;
@@ -26,11 +26,11 @@
   - `values` keeps its identity when unrelated parameters change.
 
   Confirm that the tests fail.
-- [ ] 3.2 Implement `useUrlFilters(schema)` → `{values, setValues}` (design decision 1). 3.1 passes.
-- [ ] 3.3 Add a members `toQuery(values)` (`status` always, `q` only with ≥ 2 characters, `incomplete`) with pure tests.
-- [ ] 3.4 Replace the inline filter code in `MembersPage` with `useUrlFilters` and `toQuery`. Remove `useDefaultSearchParam` from it.
-- [ ] 3.5 Add a `MembersPage` test: on page 2, a status change requests `page=0`. All `MembersPage` tests pass, including "keeps the default active-only filter … after returning via the menu link".
-- [ ] 3.6 Delete `hooks/useDefaultSearchParam.ts` and `hooks/useDefaultSearchParam.test.tsx`.
+- [x] 3.2 Implement `useUrlFilters(schema)` → `{values, setValues}` (design decision 1). 3.1 passes.
+- [x] 3.3 Add a members `toQuery(values)` (`status` always, `q` only with ≥ 2 characters, `incomplete`) with pure tests.
+- [x] 3.4 Replace the inline filter code in `MembersPage` with `useUrlFilters` and `toQuery`. Remove `useDefaultSearchParam` from it.
+- [x] 3.5 Add a `MembersPage` test: on page 2, a status change requests `page=0`. All `MembersPage` tests pass, including "keeps the default active-only filter … after returning via the menu link".
+- [x] 3.6 Delete `hooks/useDefaultSearchParam.ts` and `hooks/useDefaultSearchParam.test.tsx`.
 
 ## 4. Account transactions slice
 
