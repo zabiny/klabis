@@ -9,14 +9,10 @@ import com.klabis.events.domain.Discipline;
 import com.klabis.events.domain.DisciplineNotArchivedException;
 import com.klabis.events.domain.DisciplineNotEditableException;
 import com.klabis.events.domain.DisciplineNotFoundException;
-import com.klabis.sync.SyncRecordId;
-import com.klabis.sync.application.SynchronizationPort;
-import com.klabis.sync.domain.ExternalReference;
-import com.klabis.sync.domain.ExternalSystem;
+import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.domain.SyncEntityType;
-import com.klabis.sync.domain.SyncRecord;
 import com.klabis.sync.domain.SyncTarget;
-import com.klabis.sync.domain.SyncedEntityReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,7 +24,6 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -50,12 +45,11 @@ class DisciplineControllerTest {
     private DisciplineManagementPort disciplineManagementService;
 
     @Autowired
-    private SynchronizationPort synchronizationPort;
+    private SyncPairingLookup pairingLookup;
 
     @BeforeEach
-    void stubSynchronizationPortAbsentByDefault() {
-        when(synchronizationPort.findByTarget(any())).thenReturn(Optional.empty());
-        when(synchronizationPort.findActiveByTargets(any(), any())).thenReturn(List.of());
+    void stubPairingNoneByDefault() {
+        when(pairingLookup.pairingOf(any())).thenReturn(SyncPairing.NONE);
     }
 
     private static SyncTarget targetFor(DisciplineId id) {
@@ -153,16 +147,28 @@ class DisciplineControllerTest {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
             when(disciplineManagementService.list(any())).thenReturn(
                     new PageImpl<>(List.of(discipline), PageRequest.of(0, 10), 1));
-            when(synchronizationPort.findActiveByTargets(SyncEntityType.DISCIPLINE, List.of(discipline.getId().value().toString())))
-                    .thenReturn(List.of(new SyncedEntityReference(
-                            targetFor(discipline.getId()), new ExternalReference(ExternalSystem.ORIS, "100"))));
+            when(pairingLookup.pairingOf(targetFor(discipline.getId()))).thenReturn(SyncPairing.ACTIVE);
 
             mockMvc.perform(get("/api/disciplines").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.disciplineDtoList[0]._links.sync.href").exists());
+        }
 
-            verify(synchronizationPort, org.mockito.Mockito.times(1))
-                    .findActiveByTargets(any(), any());
+        @Test
+        @DisplayName("archived ORIS discipline row (retired pairing): no updateDiscipline template, sync link kept")
+        @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
+        void shouldLockAndLinkRowOfArchivedPairedDiscipline() throws Exception {
+            Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
+            discipline.archive();
+            when(disciplineManagementService.list(any())).thenReturn(
+                    new PageImpl<>(List.of(discipline), PageRequest.of(0, 10), 1));
+            when(pairingLookup.pairingOf(targetFor(discipline.getId()))).thenReturn(SyncPairing.RETIRED);
+
+            mockMvc.perform(get("/api/disciplines").accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._embedded.disciplineDtoList[0]._templates.updateDiscipline").doesNotExist())
+                    .andExpect(jsonPath("$._embedded.disciplineDtoList[0]._templates.restoreDiscipline.method").value("POST"))
+                    .andExpect(jsonPath("$._embedded.disciplineDtoList[0]._links.sync.href").exists());
         }
 
         @Test
@@ -251,7 +257,6 @@ class DisciplineControllerTest {
         void shouldExposeUpdateAndArchiveForManuallyCreatedActiveDiscipline() throws Exception {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
             when(disciplineManagementService.get(discipline.getId())).thenReturn(discipline);
-            when(synchronizationPort.findByTarget(targetFor(discipline.getId()))).thenReturn(Optional.empty());
 
             mockMvc.perform(get("/api/disciplines/{id}", discipline.getId().value())
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -274,7 +279,6 @@ class DisciplineControllerTest {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
             discipline.archive();
             when(disciplineManagementService.get(discipline.getId())).thenReturn(discipline);
-            when(synchronizationPort.findByTarget(targetFor(discipline.getId()))).thenReturn(Optional.empty());
 
             mockMvc.perform(get("/api/disciplines/{id}", discipline.getId().value())
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -291,10 +295,8 @@ class DisciplineControllerTest {
         @WithKlabisMockUser(authorities = {Authority.EVENTS_READ, Authority.EVENTS_MANAGE})
         void shouldHideUpdateTemplateForOrisPairedDiscipline() throws Exception {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
-            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), targetFor(discipline.getId()),
-                    new ExternalReference(ExternalSystem.ORIS, "100"));
             when(disciplineManagementService.get(discipline.getId())).thenReturn(discipline);
-            when(synchronizationPort.findByTarget(targetFor(discipline.getId()))).thenReturn(Optional.of(record));
+            when(pairingLookup.pairingOf(targetFor(discipline.getId()))).thenReturn(SyncPairing.ACTIVE);
 
             mockMvc.perform(get("/api/disciplines/{id}", discipline.getId().value())
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
@@ -311,7 +313,6 @@ class DisciplineControllerTest {
         void shouldNotExposeManagementTemplatesWithoutManageAuthority() throws Exception {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
             when(disciplineManagementService.get(discipline.getId())).thenReturn(discipline);
-            when(synchronizationPort.findByTarget(targetFor(discipline.getId()))).thenReturn(Optional.empty());
 
             mockMvc.perform(get("/api/disciplines/{id}", discipline.getId().value())
                             .accept(MediaTypes.HAL_FORMS_JSON_VALUE))

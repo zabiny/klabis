@@ -7,6 +7,8 @@ import com.klabis.events.domain.DisciplineNotEditableException;
 import com.klabis.events.domain.DisciplineNotFoundException;
 import com.klabis.events.domain.DisciplineRepository;
 import com.klabis.sync.SyncRecordId;
+import com.klabis.sync.application.SyncPairing;
+import com.klabis.sync.application.SyncPairingLookup;
 import com.klabis.sync.application.SynchronizationPort;
 import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
@@ -24,7 +26,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,11 +48,14 @@ class DisciplineManagementServiceTest {
     @Mock
     private SynchronizationPort synchronizationPort;
 
+    @Mock
+    private SyncPairingLookup pairingLookup;
+
     private DisciplineManagementService service;
 
     @BeforeEach
     void setUp() {
-        service = new DisciplineManagementService(disciplineRepository, synchronizationPort);
+        service = new DisciplineManagementService(disciplineRepository, synchronizationPort, pairingLookup);
     }
 
     private static SyncTarget targetFor(DisciplineId id) {
@@ -111,7 +115,7 @@ class DisciplineManagementServiceTest {
         void shouldUpdateManuallyCreatedDiscipline() {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
             when(disciplineRepository.findById(discipline.getId())).thenReturn(Optional.of(discipline));
-            when(synchronizationPort.findByTarget(targetFor(discipline.getId()))).thenReturn(Optional.empty());
+            when(pairingLookup.pairingOf(targetFor(discipline.getId()))).thenReturn(SyncPairing.NONE);
             when(disciplineRepository.save(any(Discipline.class))).thenAnswer(inv -> inv.getArgument(0));
 
             Discipline updated = service.update(discipline.getId(), "OB2", "Orientační běh 2");
@@ -125,10 +129,8 @@ class DisciplineManagementServiceTest {
         @DisplayName("update is refused for an ORIS-paired discipline (active pairing)")
         void shouldRefuseUpdateForActivelyPairedDiscipline() {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
-            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), targetFor(discipline.getId()),
-                    new ExternalReference(ExternalSystem.ORIS, "100"));
             when(disciplineRepository.findById(discipline.getId())).thenReturn(Optional.of(discipline));
-            when(synchronizationPort.findByTarget(targetFor(discipline.getId()))).thenReturn(Optional.of(record));
+            when(pairingLookup.pairingOf(targetFor(discipline.getId()))).thenReturn(SyncPairing.ACTIVE);
 
             assertThatThrownBy(() -> service.update(discipline.getId(), "X", "Y"))
                     .isInstanceOf(DisciplineNotEditableException.class);
@@ -140,11 +142,8 @@ class DisciplineManagementServiceTest {
         @DisplayName("update is refused for an ORIS-paired discipline even when the pairing is retired")
         void shouldRefuseUpdateForRetiredlyPairedDiscipline() {
             Discipline discipline = Discipline.create(new Discipline.CreateDiscipline("OB", "Orientační běh"));
-            SyncRecord record = SyncRecord.enroll(SyncRecordId.newId(), targetFor(discipline.getId()),
-                    new ExternalReference(ExternalSystem.ORIS, "100"));
-            record.retire(Instant.now());
             when(disciplineRepository.findById(discipline.getId())).thenReturn(Optional.of(discipline));
-            when(synchronizationPort.findByTarget(targetFor(discipline.getId()))).thenReturn(Optional.of(record));
+            when(pairingLookup.pairingOf(targetFor(discipline.getId()))).thenReturn(SyncPairing.RETIRED);
 
             assertThatThrownBy(() -> service.update(discipline.getId(), "X", "Y"))
                     .isInstanceOf(DisciplineNotEditableException.class);

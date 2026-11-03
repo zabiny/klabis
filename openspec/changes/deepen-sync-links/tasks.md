@@ -10,11 +10,11 @@
 
 ## 2. Disciplines slice (`events`)
 
-- [ ] 2.1 Write a regression test in `DisciplineControllerTest`: a list row of an archived ORIS discipline (pairing `RETIRED`) offers no `updateDiscipline` affordance and carries a `sync` link; confirm it fails on the current code
-- [ ] 2.2 `DisciplineDetailsPostprocessor`: lock = `pairingOf != NONE`, link via `SyncLinks.addTo`; delete `EnrolledDisciplineIds` and the `setDeferredContext` block in `listDisciplines`; `DisciplineController` no longer injects `SynchronizationPort`
-- [ ] 2.3 `DisciplineManagementService.update`: lock via `SyncPairingLookup.pairingOf != NONE`; `restore` keeps `findByTarget`; retarget `DisciplineManagementServiceTest` stubs
-- [ ] 2.4 Retarget remaining `DisciplineControllerTest` mocks from `SynchronizationPort` to `SyncPairingLookup` (assertions unchanged); 2.1 passes
-- [ ] 2.5 Run events module tests
+- [x] 2.1 Write a regression test in `DisciplineControllerTest`: a list row of an archived ORIS discipline (pairing `RETIRED`) offers no `updateDiscipline` affordance and carries a `sync` link; confirm it fails on the current code
+- [x] 2.2 `DisciplineDetailsPostprocessor`: lock = `pairingOf != NONE`, link via `SyncLinks.addTo`; delete `EnrolledDisciplineIds` and the `setDeferredContext` block in `listDisciplines`; `DisciplineController` no longer injects `SynchronizationPort`
+- [x] 2.3 `DisciplineManagementService.update`: lock via `SyncPairingLookup.pairingOf != NONE`; `restore` keeps `findByTarget`; retarget `DisciplineManagementServiceTest` stubs
+- [x] 2.4 Retarget remaining `DisciplineControllerTest` mocks from `SynchronizationPort` to `SyncPairingLookup` (assertions unchanged); 2.1 passes
+- [x] 2.5 Run events module tests
 
 ## 3. Events slice (`events`)
 
