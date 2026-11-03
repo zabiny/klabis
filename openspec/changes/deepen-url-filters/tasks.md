@@ -44,9 +44,9 @@
 
 ## 6. Events slice
 
-- [ ] 6.1 Reimplement `useEventsFilterState` over `useUrlFilters` (`year` with the current year as default, `when` with `DEFAULT_TIME_WINDOW`, `q`, `registeredByMe` with `trueValue: 'me'`, `eventTypeIds`). Keep its interface and event rules. Remove the write-once default effect, the `dateFrom`/`dateTo` cleanup, the `eslint-disable` lines and the `join(',')` dependencies.
-- [ ] 6.2 In `useEventsFilterState.test.ts`, drop only the "URL normalised" assertion for a coerced time window. Every other assertion stays and passes.
-- [ ] 6.3 Remove `key={selectedYear ?? timeWindow}` from `EventsPage`. Add `EventsPage` tests showing that:
+- [x] 6.1 Reimplement `useEventsFilterState` over `useUrlFilters` (`year` with the current year as default, `when` with `DEFAULT_TIME_WINDOW`, `q`, `registeredByMe` with `trueValue: 'me'`, `eventTypeIds`). Keep its interface and event rules. Remove the write-once default effect, the `dateFrom`/`dateTo` cleanup, the `eslint-disable` lines and the `join(',')` dependencies.
+- [x] 6.2 In `useEventsFilterState.test.ts`, drop only the "URL normalised" assertion for a coerced time window. Every other assertion stays and passes.
+- [x] 6.3 Remove `key={selectedYear ?? timeWindow}` from `EventsPage`. Add `EventsPage` tests showing that:
   - with a year selected, switching the time window applies that window's default sort;
   - a search change on page 2 requests `page=0`.
 
