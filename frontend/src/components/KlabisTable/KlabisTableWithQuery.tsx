@@ -5,14 +5,11 @@
  * building query parameters, and passing everything to the pure UI component.
  */
 
-import {type ReactElement, useMemo, useState} from 'react'
-import type {HalCollectionResponse, SortDirection} from '../../api'
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch'
-import {parseHalHref, serializeHalHref} from '../../api/hateoas'
-import {usePersistedState} from '../../hooks/usePersistedState'
+import {type ReactElement, useState} from 'react'
+import type {SortDirection} from '../../api'
+import {useHalCollectionQuery} from '../../hooks/useHalCollectionQuery'
 import {useTableSort, type SortState} from '../../hooks/useTableSort'
 import {KlabisTable} from './KlabisTable'
-import type {TablePageData} from './types'
 
 /**
  * HAL Link object from API responses
@@ -82,42 +79,8 @@ function KlabisTableCore<T extends Record<string, unknown> = Record<string, unkn
     onSortChange,
     onSortReset,
 }: KlabisTableCoreProps<T>): ReactElement {
-    const [page, setPage] = useState(0)
-    const [rowsPerPage, setRowsPerPage] = usePersistedState('klabis-table-rows-per-page', defaultRowsPerPage)
-
-    const queryUrl = useMemo(() => {
-        const url = parseHalHref(link.href)
-        url.searchParams.set('page', `${page}`)
-        url.searchParams.set('size', `${rowsPerPage}`)
-
-        url.searchParams.delete('sort')
-        if (sort) {
-            url.searchParams.append('sort', `${sort.by},${sort.direction}`)
-        }
-
-        return serializeHalHref(url)
-    }, [link.href, page, rowsPerPage, sort])
-
-    const {data: response, error} = useAuthorizedQuery<HalCollectionResponse>(queryUrl, {
-        staleTime: 30000,
-        gcTime: 1000 * 60 * 5,
-        retry: 1,
-    })
-
-    const tableData = useMemo(() => {
-        if (!response) return []
-
-        if (collectionName && response._embedded) {
-            return (response._embedded[collectionName] as T[]) || []
-        }
-
-        return (response.content as T[]) || (response.data as T[]) || []
-    }, [response, collectionName])
-
-    const pageData: TablePageData | undefined = useMemo(() => {
-        if (!response?.page) return undefined
-        return response.page as TablePageData
-    }, [response?.page])
+    const {rows, pageData, error, page, setPage, rowsPerPage, setRowsPerPage} =
+        useHalCollectionQuery<T>(link, sort, collectionName, defaultRowsPerPage)
 
     const handleSortChange = (column: string, direction: SortDirection) => {
         onSortChange(column, direction)
@@ -126,16 +89,13 @@ function KlabisTableCore<T extends Record<string, unknown> = Record<string, unkn
 
     return (
         <KlabisTable<T>
-            data={tableData}
+            data={rows}
             page={pageData}
             error={error}
             onSortChange={handleSortChange}
             onSortReset={onSortReset}
             onPageChange={setPage}
-            onRowsPerPageChange={(newRowsPerPage) => {
-                setRowsPerPage(newRowsPerPage)
-                setPage(0)
-            }}
+            onRowsPerPageChange={setRowsPerPage}
             onRowClick={onRowClick}
             currentPage={page}
             rowsPerPage={rowsPerPage}

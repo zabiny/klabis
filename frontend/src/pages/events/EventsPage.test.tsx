@@ -789,6 +789,73 @@ describe('EventsPage', () => {
         });
     });
 
+    describe('table state follows filters', () => {
+        const mockPagedEvents = () => {
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => {
+                if (url === '/api/event-types') {
+                    return {data: {_embedded: {eventTypeDtoList: []}}, isLoading: false, error: null};
+                }
+                return {
+                    data: {
+                        _links: {self: {href: '/api/events'}},
+                        _embedded: {eventSummaryDtoList: [{
+                            id: 'evt-1',
+                            name: 'Jarní závod',
+                            eventDate: '2026-04-15',
+                            status: 'ACTIVE',
+                            _links: {self: {href: '/api/events/evt-1'}},
+                        }]},
+                        page: {totalElements: 30, totalPages: 3, size: 10, number: 0},
+                    },
+                    isLoading: false,
+                    error: null,
+                };
+            }) as unknown as typeof useAuthorizedQuery);
+        };
+
+        const requestedUrls = () =>
+            vi.mocked(useAuthorizedQuery).mock.calls
+                .map(([url]) => String(url))
+                .filter((url) => url.includes('page='));
+
+        beforeEach(() => {
+            localStorage.clear();
+        });
+
+        it('applies the default sort of the new time window while a year is selected', async () => {
+            const user = userEvent.setup();
+            mockPagedEvents();
+            renderPage(createMockPageData(null), `/events?year=${new Date().getFullYear()}&when=budouci`);
+
+            expect(requestedUrls().at(-1)).toContain('sort=eventDate%2Casc');
+
+            await user.click(screen.getByRole('button', {name: labels.eventsFilter.probehle}));
+
+            await waitFor(() => {
+                expect(requestedUrls().at(-1)).toContain('sort=eventDate%2Cdesc');
+            });
+        });
+
+        it('requests the first page when the search changes on a later page', async () => {
+            const user = userEvent.setup();
+            mockPagedEvents();
+            renderPage(createMockPageData(null));
+
+            await user.click(screen.getByRole('button', {name: /Další/}));
+            await waitFor(() => {
+                expect(requestedUrls().at(-1)).toContain('page=1');
+            });
+
+            await user.type(screen.getByPlaceholderText(labels.eventsFilter.searchPlaceholder), 'jihlava');
+
+            await waitFor(() => {
+                expect(requestedUrls().at(-1)).toContain('q=jihlava');
+            });
+            const searchRequests = requestedUrls().filter((url) => url.includes('q=jihlava'));
+            expect(searchRequests.every((url) => url.includes('page=0'))).toBe(true);
+        });
+    });
+
     describe('"Synchronizovat všechny budoucí z ORIS" button (A2.1)', () => {
         it('shows button when syncAllUpcomingFromOris template exists in HAL response', () => {
             const resourceData: HalResponse = {

@@ -6,6 +6,7 @@ import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
+import {useUrlFilters} from '../../hooks/useUrlFilters.ts';
 import {labels} from '../../localization';
 import {Filter} from 'lucide-react';
 
@@ -29,21 +30,11 @@ interface CalendarItem {
 const CalendarPage = () => {
     const {resourceData, isLoading, error} = useHalPageData();
     const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
 
-    const myScheduleActive = searchParams.get('mySchedule') === 'true';
+    const {values: {mySchedule: myScheduleActive}, setValues} = useUrlFilters({mySchedule: {type: 'boolean'}});
 
-    const handleMyScheduleToggle = () => {
-        setSearchParams(prev => {
-            const next = new URLSearchParams(prev);
-            if (myScheduleActive) {
-                next.delete('mySchedule');
-            } else {
-                next.set('mySchedule', 'true');
-            }
-            return next;
-        });
-    };
+    const handleMyScheduleToggle = () => setValues({mySchedule: !myScheduleActive});
 
     const currentDate = useMemo(() => {
         // Primary: use startDate from self link (reflects actual fetched month)

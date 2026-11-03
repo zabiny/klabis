@@ -1,11 +1,10 @@
-import {type ReactElement, useCallback, useMemo, useState} from "react";
-import type {HalFormsTemplate, ListTransactionsResource} from "../../api";
+import {type ReactElement, useCallback, useMemo} from "react";
+import type {HalFormsTemplate} from "../../api";
 import type {components} from "../../api/klabisApi";
 import {KlabisTable, TableCell} from "../../components/KlabisTable";
 import {Card, Spinner} from "../../components/UI";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {useAuthorizedQuery} from "../../hooks/useAuthorizedFetch.ts";
-import {usePersistedState} from "../../hooks/usePersistedState.ts";
+import {useHalCollectionQuery} from "../../hooks/useHalCollectionQuery.ts";
 import {useTableSort} from "../../hooks/useTableSort.ts";
 import {labels} from "../../localization";
 import {ArrowLeftRight, ArrowUpCircle, ArrowDownCircle, RotateCcw} from "lucide-react";
@@ -95,39 +94,21 @@ const TransactionsTableContent = ({
     extraParams?: Record<string, string>;
     onReverseRequest?: (tx: TransactionReverseRequest) => void;
 }): ReactElement => {
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = usePersistedState('klabis-table-rows-per-page', 10);
     const defaultSort = useMemo(() => ({by: 'occurredAt', direction: 'desc' as const}), []);
     const {sort, setSort, reset} = useTableSort(TRANSACTIONS_TABLE_ID, defaultSort);
 
-    const queryUrl = useMemo(() => {
+    const link = useMemo(() => {
         const url = parseHalHref(selfHref);
-        url.searchParams.set('page', String(page));
-        url.searchParams.set('size', String(rowsPerPage));
-        url.searchParams.delete('sort');
-        if (sort) {
-            url.searchParams.append('sort', `${sort.by},${sort.direction}`);
-        }
         if (extraParams) {
             Object.entries(extraParams).forEach(([key, value]) => {
                 url.searchParams.set(key, value);
             });
         }
-        return serializeHalHref(url);
-    }, [selfHref, page, rowsPerPage, sort, extraParams]);
+        return {href: serializeHalHref(url)};
+    }, [selfHref, extraParams]);
 
-    const {data: response, error} = useAuthorizedQuery<ListTransactionsResource>(queryUrl, {
-        staleTime: 30000,
-        gcTime: 1000 * 60 * 5,
-        retry: 1,
-    });
-
-    const tableData: TransactionItem[] = useMemo(() => {
-        if (!response?._embedded?.transactions) return [];
-        return response._embedded.transactions as TransactionItem[];
-    }, [response]);
-
-    const pageData = useMemo(() => response?.page, [response?.page]);
+    const {rows: tableData, pageData, error, page, setPage, rowsPerPage, setRowsPerPage} =
+        useHalCollectionQuery<TransactionItem>(link, sort, 'transactions');
 
     // Build a set of transaction IDs that have been reversed (i.e. another tx on this page targets them).
     // The list endpoint does not include per-item _links.reversedBy, so we derive it from
@@ -238,10 +219,7 @@ const TransactionsTableContent = ({
             }}
             onSortReset={reset}
             onPageChange={setPage}
-            onRowsPerPageChange={(newRowsPerPage) => {
-                setRowsPerPage(newRowsPerPage);
-                setPage(0);
-            }}
+            onRowsPerPageChange={setRowsPerPage}
             currentPage={page}
             rowsPerPage={rowsPerPage}
             currentSort={sort}

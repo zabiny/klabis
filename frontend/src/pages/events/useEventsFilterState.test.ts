@@ -256,7 +256,7 @@ describe('useEventsFilterState — AND semantics (year + time window independent
             expect(result.current.extraParams.dateTo).toBe('2024-12-31');
         });
 
-        it('?year=2027&when=probehle (future year): coerces timeWindow to vse, URL normalised', () => {
+        it('?year=2027&when=probehle (future year): coerces timeWindow to vse', () => {
             const {result} = renderHook(() => useEventsFilterState(), {
                 wrapper: wrapper('/?year=2027&when=probehle'),
             });

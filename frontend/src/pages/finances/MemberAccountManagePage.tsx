@@ -1,6 +1,6 @@
-import {type ReactElement, useCallback, useState} from "react";
+import {type ReactElement, useCallback, useMemo, useState} from "react";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {useTransactionFilters} from "./useTransactionFilters.ts";
+import {useUrlFilters} from "../../hooks/useUrlFilters.ts";
 import {Button, Skeleton} from "../../components/UI";
 import {labels} from "../../localization";
 import {HalSubresourceProvider} from "../../contexts/HalRouteContext.tsx";
@@ -21,9 +21,19 @@ import {AccountOwnerHeader} from "./AccountOwnerHeader.tsx";
  * Reverse action per transaction row is driven by the transaction's reverse
  * HAL affordance, which the backend exposes only on reversible transactions.
  */
+const TRANSACTION_FILTERS = {
+    type: {type: 'string'},
+    occurredAtFrom: {type: 'string'},
+    occurredAtTo: {type: 'string'},
+} as const;
+
 export const MemberAccountManagePage = (): ReactElement => {
     const {isLoading, resourceData} = useHalPageData();
-    const {filters, extraParams, handleFilterChange} = useTransactionFilters();
+    const {values, setValues} = useUrlFilters(TRANSACTION_FILTERS);
+    const extraParams = useMemo(
+        () => Object.fromEntries(Object.entries(values).filter(([, value]) => value !== '')),
+        [values],
+    );
     const [reverseTarget, setReverseTarget] = useState<TransactionReverseRequest | null>(null);
     const [isTransactionDialogOpen, setIsTransactionDialogOpen] = useState(false);
 
@@ -76,8 +86,12 @@ export const MemberAccountManagePage = (): ReactElement => {
                     <h2 className="text-xl font-bold text-text-primary">{labels.finance.transactionHistory}</h2>
 
                     <TransactionFilterBar
-                        value={filters}
-                        onChange={handleFilterChange}
+                        value={{type: values.type, dateFrom: values.occurredAtFrom, dateTo: values.occurredAtTo}}
+                        onChange={(next) => setValues({
+                            type: next.type,
+                            occurredAtFrom: next.dateFrom,
+                            occurredAtTo: next.dateTo,
+                        })}
                     />
 
                     <HalSubresourceProvider subresourceLinkName="transactions">

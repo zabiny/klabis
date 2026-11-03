@@ -271,7 +271,6 @@ export const EventsPage = (): ReactElement => {
             />
 
             <HalEmbeddedTable<EventListData>
-                key={filterValue.selectedYear ?? filterValue.timeWindow}
                 tableId={`events.${filterValue.timeWindow}`}
                 collectionName={"eventSummaryDtoList"}
                 defaultOrderBy={defaultSort.by}

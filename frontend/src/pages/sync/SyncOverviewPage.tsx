@@ -1,4 +1,4 @@
-import {type ReactElement} from 'react';
+import {type ReactElement, useMemo} from 'react';
 import {Link, useSearchParams} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.tsx';
@@ -13,7 +13,8 @@ import {formatDateTimeSeconds} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
 import {attemptColumns, enumCell} from '../../components/sync/syncAttemptColumns.tsx';
 import {SyncAttemptFilterBar} from './SyncAttemptFilterBar.tsx';
-import {useSyncAttemptFilters} from './useSyncAttemptFilters.ts';
+import {toQuery, type SyncAttemptFilters} from './syncAttemptsQuery.ts';
+import {useUrlFilters} from '../../hooks/useUrlFilters.ts';
 
 type SyncRecordItem = components['schemas']['SyncRecordSummaryResponse'];
 type SyncAttemptItem = components['schemas']['EntityModelSyncAttemptResponse'];
@@ -39,14 +40,20 @@ const entityLabelCell = ({value, item}: {value: unknown; item: {_links?: unknown
 };
 
 const AttemptsTab = (): ReactElement => {
-    const {filters, extraParams, handleFilterChange} = useSyncAttemptFilters();
+    const {values, setValues} = useUrlFilters({
+        entityType: {type: 'string'},
+        outcome: {type: 'string'},
+        dateFrom: {type: 'string'},
+        dateTo: {type: 'string'},
+        includeUnchanged: {type: 'boolean'},
+    });
+    const filters = values as SyncAttemptFilters;
+    const extraParams = useMemo(() => toQuery(filters), [filters]);
 
     return (
         <>
-            <SyncAttemptFilterBar value={filters} onChange={handleFilterChange}/>
-            {/* remount on filter change so the table's internal page state returns to the first page */}
+            <SyncAttemptFilterBar value={filters} onChange={setValues}/>
             <HalEmbeddedTable<SyncAttemptItem>
-                key={JSON.stringify(extraParams)}
                 collectionName="syncAttempts"
                 tableId="sync.attempts"
                 emptyMessage={Object.keys(extraParams).length > 0

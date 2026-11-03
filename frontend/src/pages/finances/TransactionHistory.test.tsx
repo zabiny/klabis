@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {act, fireEvent, render, renderHook, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter, useLocation} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -10,7 +10,7 @@ import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {HalFormProvider} from '../../contexts/HalFormContext.tsx';
 import {TransactionsTable} from './FinancesPage.tsx';
 import {TransactionFilterBar} from './TransactionFilterBar.tsx';
-import {useTransactionFilters} from './useTransactionFilters.ts';
+import {MemberAccountManagePage} from './MemberAccountManagePage.tsx';
 import {labels} from '../../localization';
 
 const TX_URL = 'https://test.com/api/members/456/account/transactions';
@@ -179,35 +179,89 @@ describe('TransactionFilterBar', () => {
     });
 });
 
-describe('useTransactionFilters', () => {
-    const wrapperAt = (url: string) => ({children}: {children: React.ReactNode}) => (
-        <MemoryRouter initialEntries={[url]}>{children}</MemoryRouter>
-    );
+describe('transaction filters on the member account page', () => {
+    let fetchSpy: Mock;
 
-    it('reads filters from the URL and exposes only non-empty ones as request params', () => {
-        const {result} = renderHook(() => useTransactionFilters(), {wrapper: wrapperAt('/a?type=OTHER&occurredAtFrom=2025-01-01')});
-
-        expect(result.current.filters).toEqual({type: 'OTHER', dateFrom: '2025-01-01', dateTo: ''});
-        expect(result.current.extraParams).toEqual({type: 'OTHER', occurredAtFrom: '2025-01-01'});
+    beforeEach(() => {
+        fetchSpy = vi.fn() as Mock;
+        (globalThis as typeof globalThis & Record<string, unknown>).fetch = fetchSpy;
+        fetchSpy.mockImplementation((url: string) => {
+            const path = String(url).split('?')[0];
+            if (path.endsWith('/transactions')) {
+                return Promise.resolve(createMockResponse(txPage([tx('t1')])));
+            }
+            return Promise.resolve(createMockResponse({
+                balance: 750,
+                currency: 'CZK',
+                _links: {
+                    self: {href: 'https://test.com/api/members/456/account'},
+                    transactions: {href: TX_URL},
+                },
+            }));
+        });
     });
 
-    it('is empty without URL params', () => {
-        const {result} = renderHook(() => useTransactionFilters(), {wrapper: wrapperAt('/a')});
-
-        expect(result.current.extraParams).toEqual({});
+    afterEach(() => {
+        Reflect.deleteProperty(globalThis, 'fetch');
     });
 
-    it('writes changes to the URL and removes cleared filters while keeping unrelated params', () => {
-        const Wrapper = ({children}: {children: React.ReactNode}) => (
-            <MemoryRouter initialEntries={['/a?type=OTHER&foo=bar']}>{children}</MemoryRouter>
+    const lastTransactionsRequest = () => fetchSpy.mock.calls
+        .map(([url]) => new URL(String(url), 'https://test.com'))
+        .filter(u => u.pathname.endsWith('/transactions'))
+        .at(-1)!;
+
+    const renderPage = (initialUrl: string) => {
+        const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+        const LocationProbe = () => <output data-testid="search">{useLocation().search}</output>;
+        return render(
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter initialEntries={[initialUrl]}>
+                    <HalFormProvider>
+                        <HalRouteProvider>
+                            <MemberAccountManagePage/>
+                            <LocationProbe/>
+                        </HalRouteProvider>
+                    </HalFormProvider>
+                </MemoryRouter>
+            </QueryClientProvider>
         );
-        const {result} = renderHook(() => ({filters: useTransactionFilters(), location: useLocation()}), {wrapper: Wrapper});
+    };
 
-        act(() => result.current.filters.handleFilterChange({type: '', dateFrom: '2025-02-01', dateTo: ''}));
+    it('requests the transactions filtered by the URL and omits empty filters', async () => {
+        renderPage('/members/456/account?type=OTHER&occurredAtFrom=2025-01-01');
 
-        const params = new URLSearchParams(result.current.location.search);
-        expect(params.get('type')).toBeNull();
+        await screen.findByText('note-t1');
+
+        const url = lastTransactionsRequest();
+        expect(url.searchParams.get('type')).toBe('OTHER');
+        expect(url.searchParams.get('occurredAtFrom')).toBe('2025-01-01');
+        expect(url.searchParams.has('occurredAtTo')).toBe(false);
+    });
+
+    it('requests the transactions without filters when the URL has none', async () => {
+        renderPage('/members/456/account');
+
+        await screen.findByText('note-t1');
+
+        const url = lastTransactionsRequest();
+        expect(url.searchParams.has('type')).toBe(false);
+        expect(url.searchParams.has('occurredAtFrom')).toBe(false);
+        expect(url.searchParams.has('occurredAtTo')).toBe(false);
+    });
+
+    it('writes a changed filter to the URL, drops cleared ones and keeps unrelated params', async () => {
+        const {container} = renderPage('/members/456/account?type=OTHER&foo=bar');
+        await screen.findByText('note-t1');
+
+        fireEvent.click(screen.getByRole('button', {name: labels.finance.filterTypeAll}));
+        await waitFor(() => expect(container.querySelector('input[type="date"]')).not.toBeNull());
+        fireEvent.change(container.querySelector('input[type="date"]')!, {target: {value: '2025-02-01'}});
+
+        await waitFor(() => expect(lastTransactionsRequest().searchParams.get('occurredAtFrom')).toBe('2025-02-01'));
+        const params = new URLSearchParams(screen.getByTestId('search').textContent ?? '');
+        expect(params.has('type')).toBe(false);
         expect(params.get('occurredAtFrom')).toBe('2025-02-01');
         expect(params.get('foo')).toBe('bar');
+        expect(lastTransactionsRequest().searchParams.has('type')).toBe(false);
     });
 });
