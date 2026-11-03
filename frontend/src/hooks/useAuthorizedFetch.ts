@@ -98,7 +98,7 @@ export function useAuthorizedQuery<T = unknown>(
         },
         select: options?.select,
         gcTime: options?.gcTime,
-        retry: options?.retry,
+        ...(options?.retry !== undefined && {retry: options.retry}),
         enabled: options?.enabled !== false,
         staleTime: options?.staleTime ?? 0,
     });

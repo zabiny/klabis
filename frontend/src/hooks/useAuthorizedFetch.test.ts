@@ -681,7 +681,7 @@ describe('cache invalidation after mutation', () => {
             return createMockResponse({v: 1});
         });
         const {result} = renderHook(() => ({
-            query: useAuthorizedQuery<{ v: number }>('/api/items/1', {retry: false}),
+            query: useAuthorizedQuery<{ v: number }>('/api/items/1'),
             mutation: useAuthorizedMutation({method: 'POST'}),
         }), {wrapper: createWrapper()});
         await waitFor(() => expect(result.current.query.data).toBeDefined());
@@ -704,5 +704,19 @@ describe('cache invalidation after mutation', () => {
         await invalidateAuthorizedQueries(getQueryClient());
 
         await waitFor(() => expect(result.current.data).not.toEqual(before));
+    });
+
+    it('uses QueryClient default retry when query has no retry option', async () => {
+        const client = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+        fetchSpy.mockImplementation(async () => {
+            throw new Error('boom');
+        });
+        const {result} = renderHook(() => useAuthorizedQuery('/api/items/1'), {
+            wrapper: ({children}: { children: ReactNode }) =>
+                React.createElement(QueryClientProvider, {client}, children),
+        });
+
+        await waitFor(() => expect(result.current.isError).toBe(true));
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
     });
 });
