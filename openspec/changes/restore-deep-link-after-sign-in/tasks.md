@@ -7,10 +7,10 @@
 
 ## 2. Remember and restore the requested page (spec: Return to the Originally Requested Page After Sign-In)
 
-- [ ] 2.1 Add failing tests to `frontend/src/contexts/AuthContext2.test.tsx`: `login()` on `/events/42?x=1#y` calls `signinRedirect` with `state` holding that return path; `login()` on `/auth/callback` passes `/`; `login()` during logout still does not call `signinRedirect`. Verify they fail (except the existing guard test).
-- [ ] 2.2 Add failing tests for the callback branch: `signinRedirectCallback` resolving a user with `state.returnTo = '/membership-fee-tiers'` navigates there with `replace`; missing state, `//evil.example` and `/auth/callback` navigate to `/`. Verify they fail.
-- [ ] 2.3 Change `login()` to pass `{state: {returnTo: toSafeReturnPath(current location)}}` to `signinRedirect`, and the callback branch to `navigate(toSafeReturnPath(user.state?.returnTo), {replace: true})`. Keep the `logoutInProgress` guard and the StrictMode `initialized` ref unchanged. Verify all `AuthContext2.test.tsx` and `klabisUserManager.test.ts` tests pass.
-- [ ] 2.4 Run `npm run lint` and `npm run build` in `frontend/` and verify both succeed (tsc alone misses some CI failures).
+- [x] 2.1 Add failing tests to `frontend/src/contexts/AuthContext2.test.tsx`: `login()` on `/events/42?x=1#y` calls `signinRedirect` with `state` holding that return path; `login()` on `/auth/callback` passes `/`; `login()` during logout still does not call `signinRedirect`. Verify they fail (except the existing guard test).
+- [x] 2.2 Add failing tests for the callback branch: `signinRedirectCallback` resolving a user with `state.returnTo = '/membership-fee-tiers'` navigates there with `replace`; missing state, `//evil.example` and `/auth/callback` navigate to `/`. Verify they fail.
+- [x] 2.3 Change `login()` to pass `{state: {returnTo: toSafeReturnPath(current location)}}` to `signinRedirect`, and the callback branch to `navigate(toSafeReturnPath(user.state?.returnTo), {replace: true})`. Keep the `logoutInProgress` guard and the StrictMode `initialized` ref unchanged. Verify all `AuthContext2.test.tsx` and `klabisUserManager.test.ts` tests pass.
+- [x] 2.4 Run `npm run lint` and `npm run build` in `frontend/` and verify both succeed (tsc alone misses some CI failures).
 
 ## 3. E2E: real deep links instead of the router-push workaround
 

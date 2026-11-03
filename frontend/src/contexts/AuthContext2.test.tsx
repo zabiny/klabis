@@ -6,6 +6,12 @@ import {AuthProvider} from './AuthContext2';
 import {useAuth} from './authContext';
 import type {User, UserManager} from 'oidc-client-ts';
 
+const navigate = vi.fn();
+vi.mock('react-router-dom', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('react-router-dom')>()),
+    useNavigate: () => navigate,
+}));
+
 const callOrder: string[] = [];
 const signoutRedirect = vi.fn(async () => {
     callOrder.push('signoutRedirect');
@@ -175,5 +181,59 @@ describe('AuthProvider logout', () => {
         act(() => result.current.login());
 
         expect(userManager.signinRedirect).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('AuthProvider return path', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+        window.history.replaceState(null, '', '/');
+    });
+
+    it('passes the current location as return path when starting sign-in', async () => {
+        window.history.replaceState(null, '', '/events/42?x=1#y');
+        const {result} = await renderAuth();
+
+        act(() => result.current.login());
+
+        expect(userManager.signinRedirect).toHaveBeenCalledWith({state: {returnTo: '/events/42?x=1#y'}});
+    });
+
+    it('passes the home page as return path when sign-in starts on the callback route', async () => {
+        window.history.replaceState(null, '', '/auth/callback?code=x');
+        vi.mocked(userManager.signinRedirectCallback).mockResolvedValue({expired: false, profile: {sub: '1'}} as User);
+        const {result} = await renderAuth();
+
+        act(() => result.current.login());
+
+        expect(userManager.signinRedirect).toHaveBeenCalledWith({state: {returnTo: '/'}});
+    });
+
+    describe('after sign-in callback', () => {
+        const renderCallback = async (state: unknown) => {
+            window.history.replaceState(null, '', '/callback?code=x');
+            vi.mocked(userManager.signinRedirectCallback).mockResolvedValue(
+                {expired: false, profile: {sub: '1'}, state} as unknown as User);
+            await renderAuth();
+        };
+
+        it('navigates to the remembered page', async () => {
+            await renderCallback({returnTo: '/membership-fee-tiers'});
+
+            expect(navigate).toHaveBeenCalledWith('/membership-fee-tiers', {replace: true});
+        });
+
+        it.each([
+            ['missing state', undefined],
+            ['foreign target', {returnTo: '//evil.example'}],
+            ['callback route', {returnTo: '/auth/callback'}],
+        ])('navigates to the home page for %s', async (_name, state) => {
+            await renderCallback(state);
+
+            expect(navigate).toHaveBeenCalledWith('/', {replace: true});
+        });
     });
 });
