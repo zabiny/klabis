@@ -1,6 +1,6 @@
 import {type ReactElement} from 'react';
 import {getEnumLabel, labels} from '../../localization';
-import type {SyncAttemptFilters} from './useSyncAttemptFilters.ts';
+import type {SyncAttemptFilters} from './syncAttemptsQuery.ts';
 
 const ENTITY_TYPES = Object.keys(labels.enums.syncEntityType);
 const OUTCOMES = Object.keys(labels.enums.syncOutcome);

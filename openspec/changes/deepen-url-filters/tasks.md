@@ -39,8 +39,8 @@
 
 ## 5. Sync attempts slice
 
-- [ ] 5.1 Add a sync attempts `toQuery(values)` (dates → instants `from`, `to`) with pure tests.
-- [ ] 5.2 Make the attempts tab of `SyncOverviewPage` use `useUrlFilters` and `toQuery`. Remove `key={JSON.stringify(extraParams)}` and delete `pages/sync/useSyncAttemptFilters.ts`. `SyncOverviewPage.test.tsx` passes.
+- [x] 5.1 Add a sync attempts `toQuery(values)` (dates → instants `from`, `to`) with pure tests.
+- [x] 5.2 Make the attempts tab of `SyncOverviewPage` use `useUrlFilters` and `toQuery`. Remove `key={JSON.stringify(extraParams)}` and delete `pages/sync/useSyncAttemptFilters.ts`. `SyncOverviewPage.test.tsx` passes.
 
 ## 6. Events slice
 
