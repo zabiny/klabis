@@ -54,11 +54,11 @@
 
 ## 7. Calendar slice
 
-- [ ] 7.1 Make `CalendarPage` read and toggle `mySchedule` through `useUrlFilters` (`{mySchedule: {type: 'boolean'}}`). `CalendarPage.test.tsx` passes.
+- [x] 7.1 Make `CalendarPage` read and toggle `mySchedule` through `useUrlFilters` (`{mySchedule: {type: 'boolean'}}`). `CalendarPage.test.tsx` passes.
 
 ## 8. Verification
 
-- [ ] 8.1 Confirm with `grep` in `frontend/src`:
+- [x] 8.1 Confirm with `grep` in `frontend/src`:
   - no `useDefaultSearchParam`, `useTransactionFilters` or `useSyncAttemptFilters` remain;
   - `setSearchParams` appears only in `useUrlFilters`, `useTableSort` and the `tab` switch of `SyncOverviewPage`;
   - no table `key` built from filter values remains.
