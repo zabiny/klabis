@@ -35,5 +35,5 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run the backend module tests of `members`, `events`, `groups` and `common` (test-runner agent). All pass.
-- [ ] 4.2 Review the mapper diffs: every call site keeps its rule (`overlay` stays `overlay`, `overlayValue` becomes `overlayNonNull`). Run the code review before the commit.
+- [x] 4.1 Run the backend module tests of `members`, `events`, `groups` and `common` (test-runner agent). All pass.
+- [x] 4.2 Review the mapper diffs: every call site keeps its rule (`overlay` stays `overlay`, `overlayValue` becomes `overlayNonNull`). Run the code review before the commit.
