@@ -1,15 +1,15 @@
 ## 1. Collection query owns the page (table slice)
 
-- [ ] 1.1 Write `hooks/useHalCollectionQuery.test.tsx` with a real `QueryClient` and a stubbed `authorizedFetch` (as in `useLegalGuardians.test.tsx`). It covers:
+- [x] 1.1 Write `hooks/useHalCollectionQuery.test.tsx` with a real `QueryClient` and a stubbed `authorizedFetch` (as in `useLegalGuardians.test.tsx`). It covers:
   - the request URL carries `page`, `size` and `sort` on top of `link.href`;
   - `rows` come from `_embedded[collectionName]`;
   - after `setPage(2)`, a new `link.href` produces a request with `page=0` and no request for page 2;
   - a page-size change resets the page.
 
   Confirm that the tests fail.
-- [ ] 1.2 Implement `useHalCollectionQuery(link, sort, collectionName)` by extracting page, persisted page size, request URL and `useAuthorizedQuery` from `KlabisTableCore`. Reset `page` to 0 during render when `link.href` changes (store the previous `href` in state). 1.1 passes.
-- [ ] 1.3 Make `KlabisTableCore` use the hook. Existing `KlabisTableWithQuery.test.tsx` passes unchanged.
-- [ ] 1.4 Make `TransactionsTableContent` (`FinancesPage`) use the hook and derive `reversedIds` from `rows`. Delete its own page, page-size and URL code. `FinancesPage.test.tsx` and `MemberAccountManagePage.test.tsx` pass.
+- [x] 1.2 Implement `useHalCollectionQuery(link, sort, collectionName)` by extracting page, persisted page size, request URL and `useAuthorizedQuery` from `KlabisTableCore`. Reset `page` to 0 during render when `link.href` changes (store the previous `href` in state). 1.1 passes.
+- [x] 1.3 Make `KlabisTableCore` use the hook. Existing `KlabisTableWithQuery.test.tsx` passes unchanged.
+- [x] 1.4 Make `TransactionsTableContent` (`FinancesPage`) use the hook and derive `reversedIds` from `rows`. Delete its own page, page-size and URL code. `FinancesPage.test.tsx` and `MemberAccountManagePage.test.tsx` pass.
 
 ## 2. Sort follows the table id
 
