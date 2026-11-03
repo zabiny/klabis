@@ -31,7 +31,7 @@ Walk the layers in order when adding a new aggregate or Spring Modulith module. 
 ## 4. REST Adapter
 
 - [ ] Controller `implements <X>Api` — only the annotations listed in "Spec-First" (`rest-controller.md`)
-- [ ] PATCH: hand-written `toCommand(request, prefilled, …)` overlay mapper (`rest-controller.md`)
+- [ ] PATCH: hand-written `toCommand(request, prefilled, …)` overlay mapper using `common.patch.PatchOverlay` (`rest-controller.md`)
 - [ ] `Converter<S,T>` per DTO↔domain conversion (`dto-mapping.md`)
 - [ ] `HalResponseContext.setDomain(...)` + `ModelWithDomainPostprocessor` with state-driven affordances (`hateoas.md`)
 - [ ] Collection-level affordances / root navigation postprocessors, if needed (`hateoas.md`)

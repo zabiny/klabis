@@ -12,8 +12,10 @@ import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static com.klabis.common.patch.PatchOverlay.overlay;
+import static com.klabis.common.patch.PatchOverlay.overlayNonNull;
 
 /**
  * Applies a PATCH {@link UpdateEventRequest} onto a fully pre-filled {@link Event.UpdateEvent}
@@ -22,8 +24,9 @@ import java.util.stream.Collectors;
  * <p>
  * The three PATCH states are resolved here so the domain command never sees {@link JsonNullable}:
  * an <em>undefined</em> field leaves the baseline value in place, a <em>present-null</em> field
- * clears the (optional) target, and a <em>present</em> value sets it. {@code name}, {@code eventDate}
- * and {@code organizer} have no cleared state, so a present-null there retains the baseline.
+ * clears the (optional) target, and a <em>present</em> value sets it, as defined by
+ * {@link com.klabis.common.patch.PatchOverlay}. {@code name}, {@code eventDate} and {@code organizer}
+ * have no cleared state, so a present-null there retains the baseline.
  */
 class UpdateEventRequestMapper {
 
@@ -32,9 +35,9 @@ class UpdateEventRequestMapper {
     static Event.UpdateEvent toCommand(UpdateEventRequest request, Event.UpdateEvent prefilled) {
         var b = EventUpdateEventBuilder.builder(prefilled);
 
-        overlayValue(request.name(), b::name);
-        overlayValue(request.eventDate(), b::eventDate);
-        overlayValue(request.organizer(), b::organizer);
+        overlayNonNull(request.name(), b::name);
+        overlayNonNull(request.eventDate(), b::eventDate);
+        overlayNonNull(request.organizer(), b::organizer);
 
         overlay(request.location(), b::location);
         overlay(request.websiteUrl(), b::websiteUrl);
@@ -57,7 +60,7 @@ class UpdateEventRequestMapper {
     /**
      * Usage and rental are independent in the request but form one value object in the domain, so
      * each is resolved against the baseline before the policy is rebuilt. A present-null usage
-     * keeps the current one, like {@code name}.
+     * keeps the current one, the rule of {@link com.klabis.common.patch.PatchOverlay#overlayNonNull}.
      */
     private static void overlaySiPolicy(UpdateEventRequest request, SiPolicy baseline,
                                         EventUpdateEventBuilder b) {
@@ -68,21 +71,7 @@ class UpdateEventRequestMapper {
         b.siPolicy(SiPolicy.of(usage, rentalAllowed));
     }
 
-    /** present (incl. present-null) → apply; undefined → leave the baseline value. */
-    private static <T> void overlay(JsonNullable<T> field, Consumer<T> apply) {
-        if (field.isPresent()) {
-            apply.accept(field.get());
-        }
-    }
 
-    /** For fields with no cleared state: only a present non-null value overrides the baseline. */
-    private static <T> void overlayValue(JsonNullable<T> field, Consumer<T> apply) {
-        field.ifPresent(value -> {
-            if (value != null) {
-                apply.accept(value);
-            }
-        });
-    }
 
     /**
      * id / no-id / missing-id semantics: a request category carrying an {@code id} must reference

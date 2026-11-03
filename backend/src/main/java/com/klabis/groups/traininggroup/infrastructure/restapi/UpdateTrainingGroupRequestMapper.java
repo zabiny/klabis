@@ -10,8 +10,9 @@ import org.openapitools.jackson.nullable.JsonNullable;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static com.klabis.common.patch.PatchOverlay.overlayNonNull;
 
 /**
  * Applies a PATCH {@link UpdateTrainingGroupRequest} onto a fully pre-filled
@@ -20,8 +21,8 @@ import java.util.stream.Collectors;
  * <p>
  * The three PATCH states are resolved here so the application command never sees {@link JsonNullable}:
  * an <em>undefined</em> field leaves the baseline value in place; a <em>present</em> value overrides
- * it. None of the three fields has a cleared state, so a present-null falls through to the command's
- * own {@code Assert} and surfaces as a 400.
+ * it, as defined by {@link com.klabis.common.patch.PatchOverlay}. None of the three fields has a
+ * cleared state, so a present-null retains the baseline.
  */
 class UpdateTrainingGroupRequestMapper {
 
@@ -29,20 +30,12 @@ class UpdateTrainingGroupRequestMapper {
 
     static UpdateTrainingGroupCommand toCommand(UpdateTrainingGroupRequest request, UpdateTrainingGroupCommand prefilled) {
         var b = UpdateTrainingGroupCommandBuilder.builder(prefilled);
-        overlayValue(request.name(), b::name);
-        overlayValue(request.ageRange(), v -> b.ageRange(toAgeRange(v)));
-        overlayValue(request.trainers(), v -> b.trainers(toMemberIds(v)));
+        overlayNonNull(request.name(), b::name);
+        overlayNonNull(request.ageRange(), v -> b.ageRange(toAgeRange(v)));
+        overlayNonNull(request.trainers(), v -> b.trainers(toMemberIds(v)));
         return b.build();
     }
 
-    /** Present non-null → override the baseline; undefined or present-null → leave the baseline. */
-    private static <T> void overlayValue(JsonNullable<T> field, Consumer<T> apply) {
-        field.ifPresent(value -> {
-            if (value != null) {
-                apply.accept(value);
-            }
-        });
-    }
 
     private static AgeRange toAgeRange(AgeRangeRequest request) {
         return new AgeRange(request.minAge(), request.maxAge());
