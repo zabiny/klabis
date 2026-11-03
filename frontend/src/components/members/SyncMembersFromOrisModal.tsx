@@ -3,7 +3,6 @@ import {Modal} from '../UI/Modal';
 import {Button} from '../UI/Button';
 import {Spinner} from '../UI/Spinner';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
-import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';
 import {labels} from '../../localization';
 
 export interface SyncMembersFromOrisModalProps {
@@ -17,14 +16,12 @@ export const SyncMembersFromOrisModal = ({
     isOpen, onClose, targetUrl, onSyncComplete,
 }: SyncMembersFromOrisModalProps): ReactElement | null => {
     const {mutate, reset, isPending, isSuccess, isError} = useAuthorizedMutation({method: 'POST'});
-    const {invalidateAllCaches} = useFormCacheInvalidation();
 
     useEffect(() => {
         if (isOpen && targetUrl) {
             reset();
             mutate({url: targetUrl}, {
-                onSuccess: async () => {
-                    await invalidateAllCaches();
+                onSuccess: () => {
                     onSyncComplete();
                 },
             });

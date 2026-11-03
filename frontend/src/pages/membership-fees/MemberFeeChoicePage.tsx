@@ -90,7 +90,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
 
     const feeSummaryUrl = `/api/members/${memberId}/fee-summary/${year}`;
 
-    const {data: summary, isLoading, error, refetch} = useAuthorizedQuery<FeeSummaryData>(feeSummaryUrl);
+    const {data: summary, isLoading, error} = useAuthorizedQuery<FeeSummaryData>(feeSummaryUrl);
 
     const {mutate: submitChoice, isPending: isChoosing} = useAuthorizedMutation({method: 'POST'});
     const {mutate: cancelChoice, isPending: isCancelling} = useAuthorizedMutation({method: 'DELETE'});
@@ -125,11 +125,6 @@ export const MemberFeeChoicePage = (): ReactElement => {
         }
         submitChoice(
             {url: chooseLevelTemplate.target, data: {membershipFeeGroupId: effectiveGroupId}},
-            {
-                onSuccess: async () => {
-                    await refetch();
-                },
-            },
         );
     };
 
@@ -139,11 +134,6 @@ export const MemberFeeChoicePage = (): ReactElement => {
         }
         cancelChoice(
             {url: removeChoiceTemplate.target},
-            {
-                onSuccess: async () => {
-                    await refetch();
-                },
-            },
         );
     };
 

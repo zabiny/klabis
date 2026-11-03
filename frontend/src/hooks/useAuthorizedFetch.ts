@@ -1,5 +1,5 @@
 import type {UseMutationResult, UseQueryResult} from '@tanstack/react-query';
-import {useMutation, useQuery} from '@tanstack/react-query';
+import {type QueryClient, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {authorizedFetch} from '../api/authorizedFetch';
 import type {Path} from "react-router-dom";
 
@@ -30,6 +30,16 @@ export interface UseAuthorizedQueryOptions<T = unknown> {
      * Transform function to process fetched data
      */
     select?: (data: unknown) => T;
+}
+
+const AUTHORIZED_QUERY_KEY = ['authorized'] as const;
+
+/**
+ * Marks every authorized query stale and refetches the active ones.
+ * Use it after a mutation done outside useAuthorizedMutation.
+ */
+export function invalidateAuthorizedQueries(queryClient: QueryClient): Promise<void> {
+    return queryClient.invalidateQueries({queryKey: AUTHORIZED_QUERY_KEY});
 }
 
 const toPath = (url: string): Path => {
@@ -77,7 +87,7 @@ export function useAuthorizedQuery<T = unknown>(
     const urlPath = toPath(url);
 
     return useQuery({
-        queryKey: ['authorized', urlPath.pathname, urlPath.search || ''],
+        queryKey: [...AUTHORIZED_QUERY_KEY, urlPath.pathname, urlPath.search || ''],
         queryFn: async () => {
             const response = await authorizedFetch(
                 url,
@@ -88,7 +98,7 @@ export function useAuthorizedQuery<T = unknown>(
         },
         select: options?.select,
         gcTime: options?.gcTime,
-        retry: options?.retry,
+        ...(options?.retry !== undefined && {retry: options.retry}),
         enabled: options?.enabled !== false,
         staleTime: options?.staleTime ?? 0,
     });
@@ -111,22 +121,6 @@ export interface UseAuthorizedMutationOptions {
      * HTTP method for the mutation (POST, PUT, DELETE, etc.)
      */
     method: string;
-
-    /**
-     * Custom headers to include in all requests
-     */
-    headers?: Record<string, string>;
-
-    /**
-     * Called when mutation succeeds
-     */
-    onSuccess?: (result: MutationResult) => void;
-
-    /**
-     * Called when mutation fails
-     */
-    onError?: (error: Error) => void;
-
 }
 
 /**
@@ -151,27 +145,28 @@ export interface UseAuthorizedMutationVariables {
  * - Authorization headers (via authorizedFetch)
  * - Loading/error states
  * - Request serialization (JSON by default)
- * - Success/error/settled callbacks
+ * - Refetching of active authorized queries after a successful response, before
+ *   the per-call onSuccess runs (isPending stays true meanwhile)
  *
  * @param options - Configuration options
  * @returns Mutation result with mutate function and state
  *
  * @example
- * const { mutate, isPending } = useAuthorizedMutation({
- *   method: 'POST',
- *   onSuccess: (data) => console.log('Success', data),
- *   onError: (error) => console.error('Error', error),
- * });
+ * const { mutate, isPending } = useAuthorizedMutation({method: 'POST'});
  *
- * mutate({ url: '/api/members', data: { name: 'John' } });
+ * mutate(
+ *   { url: '/api/members', data: { name: 'John' } },
+ *   { onSuccess: (result) => console.log('Success', result), onError: (error) => console.error(error) },
+ * );
  */
 export function useAuthorizedMutation(
     options: UseAuthorizedMutationOptions
 ): UseMutationResult<MutationResult, Error, UseAuthorizedMutationVariables> {
+    const queryClient = useQueryClient();
+
     return useMutation({
         mutationFn: async ({url, data}: UseAuthorizedMutationVariables): Promise<MutationResult> => {
             const headers: Record<string, string> = {
-                ...options.headers,
                 'Content-Type': 'application/json',
             };
 
@@ -195,9 +190,9 @@ export function useAuthorizedMutation(
                 // No JSON body — leave as null
             }
 
+            await invalidateAuthorizedQueries(queryClient);
+
             return {data: parsedData, location};
         },
-        onSuccess: options.onSuccess,
-        onError: options.onError,
     });
 }

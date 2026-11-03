@@ -10,10 +10,6 @@ vi.mock('./useAuthorizedFetch', () => ({
     useAuthorizedMutation: vi.fn().mockReturnValue({mutate: vi.fn()}),
 }));
 
-vi.mock('./useFormCacheInvalidation', () => ({
-    useFormCacheInvalidation: vi.fn().mockReturnValue({invalidateAllCaches: vi.fn()}),
-}));
-
 import {useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
 
 const makeTemplate = (overrides: Partial<HalFormsTemplate> = {}): HalFormsTemplate => ({

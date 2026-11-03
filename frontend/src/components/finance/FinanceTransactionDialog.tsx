@@ -5,7 +5,6 @@ import {labels} from '../../localization';
 import {Alert, Button, Modal, Skeleton, TabButton} from '../UI';
 import {authorizedFetch} from '../../api/authorizedFetch';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
-import {useFormCacheInvalidation} from '../../hooks/useFormCacheInvalidation';
 import type {HalFormsTemplate, Link} from '../../api/types';
 import type {GetAccountResource} from '../../api';
 import type {components} from '../../api/klabisApi';
@@ -42,7 +41,6 @@ export const FinanceTransactionDialog = ({
     onClose,
     defaultNote,
 }: FinanceTransactionDialogProps): ReactElement | null => {
-    const {invalidateAllCaches} = useFormCacheInvalidation();
 
     const [activeTab, setActiveTab] = useState<TabId>('deposit');
     const [amount, setAmount] = useState('');
@@ -130,8 +128,7 @@ export const FinanceTransactionDialog = ({
         submitTransaction(
             {url: template.target, data},
             {
-                onSuccess: async () => {
-                    await invalidateAllCaches();
+                onSuccess: () => {
                     handleClose();
                 },
                 onError: (error: unknown) => {

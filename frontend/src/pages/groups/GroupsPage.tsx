@@ -8,7 +8,6 @@ import type {GetPendingInvitationsResource} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
-import {useQueryClient} from '@tanstack/react-query';
 import {toHref} from '../../api/hateoas.ts';
 import {Check, X} from 'lucide-react';
 import type {PendingInvitation} from './types.ts';
@@ -26,9 +25,6 @@ type PendingInvitationsData = Omit<GetPendingInvitationsResource, '_embedded'> &
 };
 
 const PendingInvitationsSection = (): ReactElement | null => {
-    const queryClient = useQueryClient();
-    const {route} = useHalPageData();
-
     const {data} = useAuthorizedQuery<PendingInvitationsData>('/api/invitations/pending');
 
     const {mutate} = useAuthorizedMutation({
@@ -42,13 +38,7 @@ const PendingInvitationsSection = (): ReactElement | null => {
     }
 
     const handleAction = (url: string) => {
-        mutate({url}, {
-            onSuccess: async () => {
-                await queryClient.invalidateQueries({queryKey: ['authorized', '/api/invitations/pending']});
-                await queryClient.invalidateQueries({queryKey: ['authorized', '/api/groups']});
-                await route.refetch();
-            },
-        });
+        mutate({url});
     };
 
     return (

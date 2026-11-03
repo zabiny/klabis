@@ -246,7 +246,6 @@ describe('GroupsPage', () => {
             await waitFor(() => {
                 expect(mockMutate).toHaveBeenCalledWith(
                     expect.objectContaining({url: '/api/groups/group-1/invitations/inv-1/accept'}),
-                    expect.any(Object)
                 );
             });
         });
@@ -263,7 +262,6 @@ describe('GroupsPage', () => {
             await waitFor(() => {
                 expect(mockMutate).toHaveBeenCalledWith(
                     expect.objectContaining({url: '/api/groups/group-1/invitations/inv-1/reject'}),
-                    expect.any(Object)
                 );
             });
         });

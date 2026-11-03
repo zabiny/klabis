@@ -28,7 +28,7 @@ const BROWSER_STATE_MESSAGES: Record<Exclude<BrowserNotificationState, 'loading'
 };
 
 export const NotificationSettingsPage = (): ReactElement => {
-    const {resourceData, isLoading, route} = useHalPageData<NotificationSettings & HalEnvelope>();
+    const {resourceData, isLoading} = useHalPageData<NotificationSettings & HalEnvelope>();
     const devices = resourceData?.devices ?? [];
     const {state, browserEndpoint, refresh} = useDeviceNotificationState();
     const [feedback, setFeedback] = useState<Feedback>(null);
@@ -63,7 +63,6 @@ export const NotificationSettingsPage = (): ReactElement => {
                     await unsubscribeCurrentDevice();
                     refresh();
                 }
-                void route.refetch();
             },
             onError: () => setFeedback({
                 severity: 'error',
@@ -97,7 +96,6 @@ export const NotificationSettingsPage = (): ReactElement => {
                 onSuccess: () => {
                     setRegisteredEndpoint(subscription.endpoint);
                     refresh();
-                    void route.refetch();
                 },
                 onError: enableFailed,
             });

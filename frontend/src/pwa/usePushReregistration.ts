@@ -1,8 +1,9 @@
 import {useQueryClient} from '@tanstack/react-query';
 import {useEffect} from 'react';
 import {authorizedFetch} from '../api/authorizedFetch';
-import {parseHalHref, templateTarget} from '../api/hateoas';
+import {templateTarget} from '../api/hateoas';
 import type {components} from '../api/klabisApi';
+import {invalidateAuthorizedQueries} from '../hooks/useAuthorizedFetch';
 import {PUSH_SUBSCRIPTION_CHANGED} from './pushHandlers';
 import {getCurrentPushSubscription, toRegisterDeviceRequest} from './pushSubscription';
 import {getRegisteredEndpoint, setRegisteredEndpoint} from './pushSubscriptionStore';
@@ -47,7 +48,7 @@ export function usePushReregistration(settingsHref: string | undefined): void {
             reregisterIfEndpointChanged(settingsHref)
                 .then(changed => {
                     if (changed) {
-                        void queryClient.invalidateQueries({queryKey: ['authorized', parseHalHref(settingsHref).pathname]});
+                        void invalidateAuthorizedQueries(queryClient);
                     }
                 })
                 .catch(() => undefined);

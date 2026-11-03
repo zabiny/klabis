@@ -13,7 +13,6 @@ vi.mock('../../hooks/useHalPageData', () => ({useHalPageData: vi.fn()}));
 vi.mock('../../pwa/registerServiceWorker', () => ({getServiceWorkerRegistration: vi.fn()}));
 vi.mock('../../hooks/useAuthorizedFetch', () => ({useAuthorizedMutation: vi.fn()}));
 
-const refetch = vi.fn();
 const mutate = vi.fn();
 
 const CURRENT_ENDPOINT = 'https://push.example/current';
@@ -66,7 +65,6 @@ const renderPage = (resourceData: unknown = settings) => {
         resourceData,
         isLoading: false,
         error: null,
-        route: {refetch},
     } as unknown as UseHalPageDataReturn);
     return render(<NotificationSettingsPage/>);
 };
@@ -211,7 +209,6 @@ describe('NotificationSettingsPage', () => {
                 url: TEMPLATE_TARGET,
                 data: {endpoint: 'https://push.example/new', p256dh: 'p256dh-key', auth: 'auth-key'},
             });
-            await waitFor(() => expect(refetch).toHaveBeenCalled());
         });
 
         it('shows an error when subscribing fails', async () => {
@@ -254,7 +251,6 @@ describe('NotificationSettingsPage', () => {
             expect(mutate.mock.calls[0][0]).toEqual({url: '/api/notifications/devices/1'});
             await waitFor(() => expect(unsubscribe).toHaveBeenCalled());
             expect(getRegisteredEndpoint()).toBeNull();
-            await waitFor(() => expect(refetch).toHaveBeenCalled());
         });
 
         it('offers removal only for other devices', async () => {
@@ -265,7 +261,6 @@ describe('NotificationSettingsPage', () => {
 
             expect(mutate.mock.calls[0][0]).toEqual({url: '/api/notifications/devices/2'});
             expect(unsubscribe).not.toHaveBeenCalled();
-            await waitFor(() => expect(refetch).toHaveBeenCalled());
         });
 
         it('hides buttons without the item template', async () => {
