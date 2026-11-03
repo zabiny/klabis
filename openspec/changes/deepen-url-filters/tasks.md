@@ -62,13 +62,13 @@
   - no `useDefaultSearchParam`, `useTransactionFilters` or `useSyncAttemptFilters` remain;
   - `setSearchParams` appears only in `useUrlFilters`, `useTableSort` and the `tab` switch of `SyncOverviewPage`;
   - no table `key` built from filter values remains.
-- [ ] 8.2 Run the frontend unit tests (test-runner agent) and `npm run build`. Both must pass.
-- [ ] 8.3 In the browser at `http://localhost:3000`, check the following:
+- [x] 8.2 Run the frontend unit tests (test-runner agent) and `npm run build`. Both must pass.
+- [x] 8.3 In the browser at `http://localhost:3000`, check the following:
   - members: go to page 2, type a search, and see the first page of results;
   - events: select a past year, switch time windows, and check that the sort follows the window;
   - account transactions: filter by type from page 2;
   - sync attempts and calendar "Můj rozvrh": the filters still work;
   - a bare `/members` stays bare and shows active members;
   - reload keeps the filters.
-- [ ] 8.4 Run the E2E features `members`, `events` and `member-accounts` against `./runLocalEnvironment.sh`.
-- [ ] 8.5 Run `npm run refresh-backend-server-resources` before the commit.
+- [x] 8.4 Run the E2E features `members`, `events` and `member-accounts` against `./runLocalEnvironment.sh`.
+- [x] 8.5 Run `npm run refresh-backend-server-resources` before the commit.
