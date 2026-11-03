@@ -2,8 +2,8 @@
 
 ## 1. Safe return path (design D3)
 
-- [ ] 1.1 Write failing Vitest tests for a pure `toSafeReturnPath(value: unknown): string` helper (e.g. `frontend/src/api/returnPath.ts`): accepts `/events/42`, `/members?q=x#top`; returns `/` for `undefined`, non-strings, `''`, `events`, `//evil.example`, `/\evil.example`, `https://evil.example/x`, `javascript:alert(1)`, values with control characters, over-long values, `/auth/callback?code=x` and `/login`. Verify they fail.
-- [ ] 1.2 Implement the helper (same-origin check via `new URL(value, window.location.origin)`, returns `pathname + search + hash`, `/` on any failure) and verify the 1.1 tests pass.
+- [x] 1.1 Write failing Vitest tests for a pure `toSafeReturnPath(value: unknown): string` helper (e.g. `frontend/src/api/returnPath.ts`): accepts `/events/42`, `/members?q=x#top`; returns `/` for `undefined`, non-strings, `''`, `events`, `//evil.example`, `/\evil.example`, `https://evil.example/x`, `javascript:alert(1)`, values with control characters, over-long values, `/auth/callback?code=x` and `/login`. Verify they fail.
+- [x] 1.2 Implement the helper (same-origin check via `new URL(value, window.location.origin)`, returns `pathname + search + hash`, `/` on any failure) and verify the 1.1 tests pass.
 
 ## 2. Remember and restore the requested page (spec: Return to the Originally Requested Page After Sign-In)
 
