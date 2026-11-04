@@ -126,7 +126,7 @@ describe('useHalFormData Hook', () => {
     describe('Target Equals Current Path with cached raw response', () => {
         it('should prefer the supplied resource data over the cached response of the same URL', () => {
             const rawServerResponse = {id: 1, category: {id: 'cat-2'}};
-            queryClient.setQueryData(['authorized', '/members/123', ''], rawServerResponse);
+            queryClient.setQueryData(['authorized', '/api/members/123'], rawServerResponse);
             const template = mockHalFormsTemplate({target: '/api/members/123'});
 
             const {result} = renderHook(
