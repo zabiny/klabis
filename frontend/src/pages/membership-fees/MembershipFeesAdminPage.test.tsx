@@ -21,10 +21,6 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     }),
 }));
 
-vi.mock('../../components/HalNavigator2/HalFormModal', () => ({
-    HalFormModal: ({title}: {title: string}) => <div data-testid="hal-form-modal">{title}</div>,
-}));
-
 vi.mock('../../contexts/HalFormContext.tsx', () => ({
     HalFormProvider: ({children}: {children: React.ReactNode}) => children,
 }));

@@ -36,8 +36,8 @@
 
 ## 5. Cleanup
 
-- [ ] 5.1 Delete `components/HalNavigator2/HalFormModal.tsx`. Confirm there are no remaining imports.
-- [ ] 5.2 Remove `excludeMemberIds` / `includeOnlyMemberIds` and their branch from `HalFormDisplay` (D6). Confirm that no page outside the out-of-scope inline cases and `EventRegistrationDialog` imports `HalFormDisplay` for a modal.
-- [ ] 5.3 Update `.claude/skills/hal-navigator-patterns/references/component-api.md` where it describes opening `HalFormDisplay` in a modal, so it points to `useTemplateDialog`.
+- [x] 5.1 Delete `components/HalNavigator2/HalFormModal.tsx`. Confirm there are no remaining imports.
+- [x] 5.2 Remove `excludeMemberIds` / `includeOnlyMemberIds` and their branch from `HalFormDisplay` (D6). Confirm that no page outside the out-of-scope inline cases and `EventRegistrationDialog` imports `HalFormDisplay` for a modal.
+- [x] 5.3 Update `.claude/skills/hal-navigator-patterns/references/component-api.md` where it describes opening `HalFormDisplay` in a modal, so it points to `useTemplateDialog`.
 - [ ] 5.4 Run `npm run build` and the full frontend test suite. Run `npm run refresh-backend-server-resources`.
 - [ ] 5.5 Run the E2E scenarios touching groups, members, events and membership fees against a local instance. All pass.
