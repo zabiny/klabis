@@ -1,21 +1,27 @@
 import '@testing-library/jest-dom';
-import {render, screen} from '@testing-library/react';
+import {render as rtlRender, screen, waitFor} from '@testing-library/react';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import type {ReactElement} from 'react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {LegalGuardianGroupDetailPage} from './LegalGuardianGroupDetailPage';
+import {ToastProvider} from '../../contexts/ToastContext.tsx';
+import {stubFetch} from '../../__mocks__/halDialogTest.tsx';
 import {FetchError} from '../../api/authorizedFetch';
 
 vi.mock('../../hooks/useHalPageData', () => ({useHalPageData: vi.fn()}));
 
-const modalSpy = vi.fn();
-vi.mock('../../components/HalNavigator2/HalFormModal.tsx', () => ({
-    HalFormModal: (props: Record<string, unknown>) => {
-        modalSpy(props);
-        return <div data-testid="form-modal"/>;
+vi.mock('../../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: vi.fn().mockReturnValue({access_token: 'test-token', token_type: 'Bearer'}),
     },
+}));
+
+vi.mock('../../hooks/useRootNavigation', () => ({
+    useRootNavigation: vi.fn().mockReturnValue({data: [], isLoading: false, error: null}),
 }));
 
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
@@ -36,6 +42,22 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 }));
 
 const navigateToResource = vi.fn();
+
+const render = (ui: ReactElement) => rtlRender(
+    <QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}})}>
+        <ToastProvider>{ui}</ToastProvider>
+    </QueryClientProvider>
+);
+
+let writeCalls: ReturnType<typeof stubFetch>['writeCalls'];
+
+beforeEach(() => {
+    ({writeCalls} = stubFetch());
+});
+
+afterEach(() => {
+    vi.unstubAllGlobals();
+});
 
 const renderPage = (resourceData: Record<string, unknown>) => {
     vi.mocked(useHalPageData).mockReturnValue({
@@ -118,21 +140,21 @@ describe('LegalGuardianGroupDetailPage', () => {
         expect(screen.queryByRole('button', {name: 'Upravit zástupce'})).not.toBeInTheDocument();
     });
 
-    it('opens the guardians form prefilled with current guardians', async () => {
+    it('opens the guardians form and submits it to the template target', async () => {
         renderPage(buildGroup({
             _templates: {
                 setLegalGuardianGroupGuardians: mockHalFormsTemplate({
                     method: 'PUT',
                     target: '/api/legal-guardian-groups/g-1/guardians',
+                    properties: [],
                 }),
             },
         }));
         await userEvent.click(screen.getByRole('button', {name: 'Upravit zástupce'}));
-        expect(screen.getByTestId('form-modal')).toBeInTheDocument();
-        expect(modalSpy).toHaveBeenCalledWith(expect.objectContaining({
-            templateName: 'setLegalGuardianGroupGuardians',
-            resourceData: {legalGuardians: [{userId: 'u-1'}]},
-        }));
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Upravit zástupce');
+        await userEvent.click(await screen.findByRole('button', {name: /odeslat/i}));
+        await waitFor(() => expect(writeCalls()).toHaveLength(1));
+        expect(writeCalls()[0][0]).toBe('/api/legal-guardian-groups/g-1/guardians');
     });
 
     it('leaves the detail for the list with a message when the group was merged away', async () => {
@@ -153,7 +175,7 @@ describe('LegalGuardianGroupDetailPage', () => {
             error: new FetchError('HTTP 404 (Not Found)', 404, 'Not Found', new Headers()),
             route: {pathname: '/legal-guardian-groups/g-1', navigateToResource, refetch: async () => {}},
         } as unknown as ReturnType<typeof useHalPageData>);
-        rerender(<MemoryRouter><LegalGuardianGroupDetailPage/></MemoryRouter>);
+        rerender(<QueryClientProvider client={new QueryClient()}><ToastProvider><MemoryRouter><LegalGuardianGroupDetailPage/></MemoryRouter></ToastProvider></QueryClientProvider>);
 
         expect(navigate).toHaveBeenCalledWith('/legal-guardian-groups', {replace: true});
         expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();

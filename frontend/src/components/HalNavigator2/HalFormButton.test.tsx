@@ -10,6 +10,7 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
 import type {HalResponse} from '../../api';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
+import {HalRouteContext} from '../../contexts/halRouteContext.ts';
 import {vi} from 'vitest';
 import type {HalFormDisplayProps} from './HalFormDisplay.tsx';
 import type {HalFormPanelProps} from './HalFormPanel.tsx';
@@ -128,11 +129,16 @@ describe('HalFormButton Component', () => {
         return render(
             <QueryClientProvider client={queryClient}>
                 <MemoryRouter initialEntries={initialEntries}>
-                    <HalFormProvider>
-                        <HalFormsPageLayout>
-                            {ui}
-                        </HalFormsPageLayout>
-                    </HalFormProvider>
+                    <HalRouteContext.Provider value={{
+                        resourceData: pageData.resourceData,
+                        pathname: pageData.route.pathname,
+                    } as unknown as React.ContextType<typeof HalRouteContext>}>
+                        <HalFormProvider>
+                            <HalFormsPageLayout>
+                                {ui}
+                            </HalFormsPageLayout>
+                        </HalFormProvider>
+                    </HalRouteContext.Provider>
                 </MemoryRouter>
             </QueryClientProvider>
         );

@@ -26,9 +26,8 @@ export interface HalFormPanelProps {
     successMessage?: string;
     /**
      * Optional template override. When provided, the panel skips its own collection
-     * query and uses this template directly. Used by HalFormsPageLayout when the
-     * originating HalFormButton was rendered inside a nested provider (e.g. sync
-     * sub-resource) and captured the template via HalFormRequest.resourceContext.
+     * query and uses this template directly. Used by HalFormsPageLayout, which
+     * already resolved the template from the page resource.
      */
     template?: HalFormsTemplate;
     children: HalFormPanelChildren;

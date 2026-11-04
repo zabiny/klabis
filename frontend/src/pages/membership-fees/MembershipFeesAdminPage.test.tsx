@@ -21,10 +21,6 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
     }),
 }));
 
-vi.mock('../../components/HalNavigator2/HalFormModal', () => ({
-    HalFormModal: ({title}: {title: string}) => <div data-testid="hal-form-modal">{title}</div>,
-}));
-
 vi.mock('../../contexts/HalFormContext.tsx', () => ({
     HalFormProvider: ({children}: {children: React.ReactNode}) => children,
 }));
@@ -207,9 +203,7 @@ describe('MembershipFeesAdminPage', () => {
             const user = userEvent.setup();
             renderPage(createMockPageData(tierCatalogResourceWithPublishYear));
             await user.click(screen.getByRole('button', {name: /vypsat kampaň/i}));
-            expect(mockDisplayHalForm).toHaveBeenCalledWith(
-                expect.objectContaining({templateName: 'publishYear', modal: true}),
-            );
+            expect(await screen.findByRole('dialog')).toBeInTheDocument();
         });
     });
 

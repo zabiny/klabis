@@ -47,7 +47,6 @@ describe('HalFormContext', () => {
 
             const formRequest: HalFormRequest = {
                 templateName: 'edit',
-                modal: true,
             };
 
             act(() => {
@@ -62,7 +61,6 @@ describe('HalFormContext', () => {
 
             const inlineRequest: HalFormRequest = {
                 templateName: 'create',
-                modal: false,
             };
 
             act(() => {
@@ -70,7 +68,6 @@ describe('HalFormContext', () => {
             });
 
             expect(result.current.currentFormRequest).toEqual(inlineRequest);
-            expect(result.current.currentFormRequest?.modal).toBe(false);
         });
 
         it('should allow multiple requestForm calls (last request wins)', () => {
@@ -78,12 +75,10 @@ describe('HalFormContext', () => {
 
             const formRequest1: HalFormRequest = {
                 templateName: 'edit',
-                modal: true,
             };
 
             const formRequest2: HalFormRequest = {
                 templateName: 'delete',
-                modal: true,
             };
 
             act(() => {
@@ -106,7 +101,6 @@ describe('HalFormContext', () => {
 
             const formRequest: HalFormRequest = {
                 templateName: 'edit',
-                modal: true,
             };
 
             act(() => {
@@ -138,10 +132,9 @@ describe('HalFormContext', () => {
             const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
 
             act(() => {
-                result.current.displayHalForm({templateName: 'create', modal: false});
+                result.current.displayHalForm({templateName: 'create'});
             });
 
-            expect(result.current.currentFormRequest?.modal).toBe(false);
 
             act(() => {
                 result.current.closeForm();
@@ -164,7 +157,6 @@ describe('HalFormContext', () => {
 
             const formRequest: HalFormRequest = {
                 templateName: 'edit',
-                modal: true,
             };
 
             act(() => {
@@ -202,7 +194,7 @@ describe('HalFormContext', () => {
             const {getByTestId} = render(<TestApp/>);
 
             act(() => {
-                ctx.displayHalForm({templateName: 'createEvent', modal: false});
+                ctx.displayHalForm({templateName: 'createEvent'});
             });
             expect(ctx.currentFormRequest?.templateName).toBe('createEvent');
 
@@ -237,7 +229,6 @@ describe('HalFormContext', () => {
 
             const formRequest: HalFormRequest = {
                 templateName: 'testTemplate',
-                modal: true,
             };
 
             act(() => {
@@ -247,28 +238,12 @@ describe('HalFormContext', () => {
             expect(result.current.currentFormRequest?.templateName).toBe('testTemplate');
         });
 
-        it('should contain modal flag in form request', () => {
-            const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
-
-            const formRequest: HalFormRequest = {
-                templateName: 'test',
-                modal: true,
-            };
-
-            act(() => {
-                result.current.displayHalForm(formRequest);
-            });
-
-            expect(result.current.currentFormRequest?.modal).toBe(true);
-        });
-
         it('should optionally contain children in form request', () => {
             const {result} = renderHook(() => useHalForm(), {wrapper: createWrapper()});
 
             const children = () => <div>Custom</div>;
             const formRequest: HalFormRequest = {
                 templateName: 'test',
-                modal: false,
                 children,
             };
 

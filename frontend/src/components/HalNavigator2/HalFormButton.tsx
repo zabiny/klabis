@@ -2,20 +2,20 @@
  * Component for rendering a single HAL Forms template button
  * Shows a button that opens a form either in modal or inline on the current page.
  *
- * - Modal mode: Requests form display via HalFormContext; HalFormsPageLayout renders the modal
+ * - Modal mode: opens the dialog locally through useTemplateDialog
  * - Inline mode: Requests inline form via HalFormContext; HalFormsPageLayout replaces page content
  *   with HalFormPanel, which receives the children render-props for custom layout
  *
- * Form rendering is delegated to HalFormsPageLayout
+ * Inline form rendering is delegated to HalFormsPageLayout
  */
 
 import {type ReactElement, type ReactNode} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {type HalFormResourceContext, useHalForm} from '../../contexts/halFormContext.ts';
+import {useHalForm} from '../../contexts/halFormContext.ts';
+import {defaultDialogTitle, useTemplateDialog} from './useTemplateDialog.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
 import type {HalFormFieldFactory} from './halforms';
 import type {HalFormPanelChildren} from './HalFormPanel';
-import {getDialogTitleLabel, getTemplateLabel} from '../../localization';
 import type {HalFormsTemplate} from '../../api';
 
 /**
@@ -73,19 +73,12 @@ export interface HalFormButtonProps {
  * Component to display a button for a specific HAL Forms template
  *
  * Checks if a template with the given name exists in the current resource.
- * If it exists, renders a button. When clicked, requests form display via HalFormContext.
- * HalFormsPageLayout handles rendering (modal overlay or inline via HalFormPanel).
- *
- * The button snapshots the current resource context (templates/pathname/self-link) into the
- * form request so HalFormsPageLayout can resolve the template and render the form even when
- * it sits outside the nested provider where the button was rendered (e.g. inside a sync
- * sub-resource fetched via HalSubresourceProvider).
- *
- * Note: Forms always display on the current resource page (which contains the _templates).
- * The template's target URL is only used as the submission endpoint.
+ * If it exists, renders a button. In modal mode the dialog is rendered by the button itself
+ * (so it sees the nearest HalRouteProvider resource); inline mode requests the form via
+ * HalFormContext and HalFormsPageLayout renders it with HalFormPanel.
  *
  * @example
- * // Modal mode (requires HalFormsPageLayout and HalFormProvider in parent tree)
+ * // Modal mode
  * <HalFormButton name="create" modal={true} />
  *
  * @example
@@ -100,52 +93,49 @@ export interface HalFormButtonProps {
  * </HalFormButton>
  */
 export function HalFormButton({name, modal = true, label, children, fieldsFactory, className, variant, icon, dialogTitle, navigateOnSuccess, hideLabel}: HalFormButtonProps): ReactElement | null {
-    const {resourceData, route} = useHalPageData();
+    const {resourceData} = useHalPageData();
     const {displayHalForm} = useHalForm();
+    const templateDialog = useTemplateDialog(name, {
+        resource: resourceData,
+        title: dialogTitle,
+        size: '2xl',
+        navigateOnSuccess,
+        fieldsFactory,
+    });
 
-    // Check if template exists
     if (!resourceData?._templates?.[name]) {
         return null;
     }
 
     const template: HalFormsTemplate = resourceData._templates[name];
 
-    const resolvedDialogTitle = dialogTitle ?? getDialogTitleLabel(name) ?? getTemplateLabel(name) ?? template.title;
-
     const handleButtonClick = () => {
-        const resourceContext: HalFormResourceContext = {
-            templates: resourceData._templates as Record<string, HalFormsTemplate>,
-            resourceData: resourceData as Record<string, unknown>,
-            pathname: route.pathname,
-        };
-        const selfLink = resourceData._links?.self;
-        if (selfLink && !Array.isArray(selfLink) && typeof selfLink.href === 'string') {
-            resourceContext.resourceUrl = selfLink.href;
-        } else if (selfLink && Array.isArray(selfLink) && selfLink.length > 0) {
-            resourceContext.resourceUrl = selfLink[0].href;
+        if (modal) {
+            templateDialog.open();
+            return;
         }
-
         displayHalForm({
             templateName: name,
-            modal: modal,
             children,
             fieldsFactory,
-            dialogTitle: resolvedDialogTitle,
+            dialogTitle: dialogTitle ?? defaultDialogTitle(name, template),
             navigateOnSuccess,
-            resourceContext,
         });
     };
 
     return (
-        <HalFormTemplateButton
-            template={template}
-            templateName={name}
-            label={label}
-            onClick={handleButtonClick}
-            className={className}
-            variant={variant}
-            icon={icon}
-            hideLabel={hideLabel}
-        />
+        <>
+            <HalFormTemplateButton
+                template={template}
+                templateName={name}
+                label={label}
+                onClick={handleButtonClick}
+                className={className}
+                variant={variant}
+                icon={icon}
+                hideLabel={hideLabel}
+            />
+            {modal && templateDialog.dialog}
+        </>
     );
 }

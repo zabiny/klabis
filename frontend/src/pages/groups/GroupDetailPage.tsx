@@ -3,11 +3,10 @@ import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
-import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
+import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
+import {createMemberFilteredFactory} from '../../components/KlabisFieldsFactory.tsx';
 import type {GetGroupResource, HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
 import type {PendingInvitation} from './types.ts';
-import {toHref} from '../../api/hateoas.ts';
-import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {labels} from '../../localization';
 import {Ban, Crown, LogOut, Pencil, Trash2, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
@@ -17,10 +16,11 @@ import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import {DelegatedAuthoritiesNotice, DelegatedAuthoritiesReadOnly} from '../../components/groups/DelegatedAuthorities.tsx';
 import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
 
-interface GroupOwner {
+interface GroupOwner extends HalResponse {
     memberId: string;
     _links: {
         member: HalResourceLinks;
+        self?: HalResourceLinks;
     };
 }
 
@@ -44,19 +44,6 @@ type GroupDetail = Omit<GetGroupResource, 'owners' | 'members' | 'pendingInvitat
     pendingInvitations?: PendingInvitation[];
 };
 
-interface MemberActionModalState {
-    member: GroupMember;
-    templateName: string;
-    template: HalFormsTemplate;
-}
-
-interface RemoveOwnerModalState {
-    template: HalFormsTemplate;
-    ownerSelfHref: string;
-    /** Giving up your own ownership removes you from the group, so the detail page stops being readable. */
-    isSelf: boolean;
-}
-
 // Spring HATEOAS does not emit properties for DELETE affordances. The backend does
 // accept a reason body — inject the property client-side so the form renders the field.
 const withReasonProperty = (template: HalFormsTemplate): HalFormsTemplate => {
@@ -75,31 +62,9 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
     const {route} = useHalPageData<GroupDetail>();
     const navigate = useNavigate();
     const [isEditingName, setIsEditingName] = useState(false);
-    const [addMemberModal, setAddMemberModal] = useState(false);
-    const [inviteMemberModal, setInviteMemberModal] = useState(false);
-    const [deleteModal, setDeleteModal] = useState(false);
-    const [leaveGroupModal, setLeaveGroupModal] = useState(false);
-    const [removeMemberModal, setRemoveMemberModal] = useState<MemberActionModalState | null>(null);
-    const [addOwnerModal, setAddOwnerModal] = useState(false);
-    const [removeOwnerModal, setRemoveOwnerModal] = useState<RemoveOwnerModalState | null>(null);
-    const [cancelInvitationModal, setCancelInvitationModal] = useState<{invitation: PendingInvitation; template: HalFormsTemplate} | null>(null);
-
     const currentMemberId = useAuth().getUser()?.memberId ?? null;
 
     const editTemplate = resourceData._templates?.updateGroup ?? null;
-    const deleteTemplate = resourceData._templates?.deleteGroup ?? null;
-    const addMemberTemplate = resourceData._templates?.addGroupMember ?? null;
-    const inviteMemberTemplate = resourceData._templates?.inviteMember ?? null;
-    const addOwnerTemplate = resourceData._templates?.addGroupOwner ?? null;
-    // The backend sends the caller's own removeGroupMember here when the caller is a member but not
-    // an owner. It means "leave this group", so it is rendered under its own label.
-    const leaveGroupTemplate = resourceData._templates?.removeGroupMember ?? null;
-
-    const handleRemoveMember = (member: GroupMember) => {
-        const template = member._templates?.removeGroupMember;
-        if (!template) return;
-        setRemoveMemberModal({member, templateName: 'removeGroupMember', template});
-    };
 
     const pendingInvitations = resourceData.pendingInvitations ?? [];
 
@@ -107,6 +72,76 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
         () => (resourceData.members ?? []).map(m => m.memberId),
         [resourceData.members]
     );
+    const addMemberFactory = useMemo(() => createMemberFilteredFactory(currentMemberIds), [currentMemberIds]);
+    const addOwnerFactory = useMemo(() => createMemberFilteredFactory(undefined, currentMemberIds), [currentMemberIds]);
+
+    const group = resourceData;
+
+    const addMemberDialog = useTemplateDialog('addGroupMember', {
+        resource: group,
+        title: labels.templates.addGroupMember,
+        successMessage: labels.ui.savedSuccessfully,
+        fieldsFactory: addMemberFactory,
+    });
+    const inviteMemberDialog = useTemplateDialog('inviteMember', {
+        resource: group,
+        title: labels.templates.inviteMember,
+        successMessage: labels.ui.savedSuccessfully,
+        fieldsFactory: addMemberFactory,
+    });
+    const addOwnerDialog = useTemplateDialog('addGroupOwner', {
+        resource: group,
+        title: labels.templates.addGroupOwner,
+        successMessage: labels.ui.savedSuccessfully,
+        fieldsFactory: addOwnerFactory,
+    });
+    const removeMemberDialog = useTemplateDialog('removeGroupMember', {
+        title: (template) => template.title ?? labels.templates.removeGroupMember,
+        successMessage: labels.ui.savedSuccessfully,
+    });
+    const removeOwnerDialog = useTemplateDialog('removeGroupOwner', {
+        title: labels.templates.removeGroupOwner,
+        successMessage: labels.ui.savedSuccessfully,
+    });
+    const deleteDialog = useTemplateDialog('deleteGroup', {
+        resource: group,
+        title: (template) => template.title ?? labels.templates.deleteGroup,
+        onSubmitSuccess: () => navigate('/groups'),
+    });
+    const cancelInvitationDialog = useTemplateDialog('cancelInvitation', {
+        title: (template) => template.title ?? labels.templates.cancelInvitation,
+        successMessage: labels.ui.savedSuccessfully,
+        navigateOnSuccess: false,
+    });
+
+    const openRemoveOwner = (owner: GroupOwner) => {
+        const isSelf = owner.memberId === currentMemberId;
+        removeOwnerDialog.open(owner, undefined, {
+            note: <span className="text-sm text-text-secondary">
+                {isSelf ? labels.templates.removeSelfAsOwnerLeavesGroup : labels.templates.removeGroupOwnerLeavesGroup}
+            </span>,
+            onSubmitSuccess: isSelf ? () => navigate('/groups') : undefined,
+        });
+    };
+
+    // The backend sends the caller's own removeGroupMember on the group when the caller is a member but not
+    // an owner. It means "leave this group", so it is rendered under its own label.
+    const openLeaveGroup = () => removeMemberDialog.open(group, undefined, {
+        title: labels.templates.leaveGroup,
+        note: <span className="text-sm text-text-secondary">{labels.templates.leaveGroupConfirm}</span>,
+        successMessage: undefined,
+        navigateOnSuccess: false,
+        onSubmitSuccess: () => navigate('/groups'),
+    });
+
+    const openCancelInvitation = (invitation: PendingInvitation) => {
+        const template = invitation._templates?.cancelInvitation;
+        if (!template) return;
+        cancelInvitationDialog.open({
+            ...invitation,
+            _templates: {...invitation._templates, cancelInvitation: withReasonProperty(template)},
+        });
+    };
 
     return (
         <div className="flex flex-col gap-8">
@@ -132,19 +167,19 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                             {labels.templates.updateGroup}
                         </Button>
                     )}
-                    {deleteTemplate && (
+                    {deleteDialog.available && (
                         <Button
                             variant="danger"
-                            onClick={() => setDeleteModal(true)}
+                            onClick={() => deleteDialog.open()}
                             startIcon={<Trash2 className="w-4 h-4"/>}
                         >
                             {labels.templates.deleteGroup}
                         </Button>
                     )}
-                    {leaveGroupTemplate && (
+                    {removeMemberDialog.availableOn(group) && (
                         <Button
                             variant="secondary"
-                            onClick={() => setLeaveGroupModal(true)}
+                            onClick={openLeaveGroup}
                             startIcon={<LogOut className="w-4 h-4"/>}
                         >
                             {labels.templates.leaveGroup}
@@ -170,17 +205,17 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
 
             <hr className="border-border"/>
 
-            {(resourceData.owners && resourceData.owners.length > 0 || addOwnerTemplate) && (
+            {(resourceData.owners && resourceData.owners.length > 0 || addOwnerDialog.available) && (
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xs uppercase font-semibold text-text-secondary">
                             {labels.sections.groupOwners}
                         </h3>
-                        {addOwnerTemplate && (
+                        {addOwnerDialog.available && (
                             <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => setAddOwnerModal(true)}
+                                onClick={() => addOwnerDialog.open()}
                                 startIcon={<Crown className="w-4 h-4"/>}
                             >
                                 {labels.templates.addOwner}
@@ -188,26 +223,15 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         )}
                     </div>
                     <dl>
-                        {(resourceData.owners ?? []).map((owner) => {
-                            const ownerWithTemplates = owner as typeof owner & {_templates?: Record<string, HalFormsTemplate>; _links: typeof owner._links & {self?: {href: string}}};
-                            const removeOwnerTpl = ownerWithTemplates._templates?.removeGroupOwner;
-                            const selfHref = ownerWithTemplates._links?.self?.href ?? '';
-                            return (
-                                <MemberRowWithRemove
-                                    key={owner.memberId}
-                                    memberId={owner.memberId}
-                                    memberLink={owner._links.member}
-                                    removeAriaLabel={labels.templates.removeOwner}
-                                    onRemove={removeOwnerTpl
-                                    ? () => setRemoveOwnerModal({
-                                        template: removeOwnerTpl,
-                                        ownerSelfHref: selfHref,
-                                        isSelf: owner.memberId === currentMemberId,
-                                    })
-                                    : undefined}
-                                />
-                            );
-                        })}
+                        {(resourceData.owners ?? []).map((owner) => (
+                            <MemberRowWithRemove
+                                key={owner.memberId}
+                                memberId={owner.memberId}
+                                memberLink={owner._links.member}
+                                removeAriaLabel={labels.templates.removeOwner}
+                                onRemove={removeOwnerDialog.availableOn(owner) ? () => openRemoveOwner(owner) : undefined}
+                            />
+                        ))}
                     </dl>
                 </Card>
             )}
@@ -219,7 +243,6 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                     </h3>
                     <ul className="flex flex-col gap-2">
                         {pendingInvitations.map((invitation) => {
-                            const cancelTemplate = invitation._templates?.cancelInvitation;
                             return (
                                 <li key={invitation.invitationId} className="flex items-center justify-between text-sm text-text-primary">
                                     <span>
@@ -229,13 +252,13 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                                             </HalRouteProvider>
                                         ) : invitation.invitationId}
                                     </span>
-                                    {cancelTemplate && (
+                                    {cancelInvitationDialog.availableOn(invitation) && (
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             className="text-red-600"
                                             aria-label={labels.templates.cancelInvitation}
-                                            onClick={() => setCancelInvitationModal({invitation, template: cancelTemplate})}
+                                            onClick={() => openCancelInvitation(invitation)}
                                         >
                                             <Ban className="w-4 h-4"/>
                                             <span className="ml-1">{labels.templates.cancelInvitation}</span>
@@ -252,19 +275,19 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">{labels.sections.groupMembers}</h2>
                     <div className="flex gap-2">
-                        {inviteMemberTemplate && (
+                        {inviteMemberDialog.available && (
                             <Button
                                 variant="secondary"
-                                onClick={() => setInviteMemberModal(true)}
+                                onClick={() => inviteMemberDialog.open()}
                                 startIcon={<UserPlus className="w-4 h-4"/>}
                             >
                                 {labels.templates.inviteMember}
                             </Button>
                         )}
-                        {addMemberTemplate && (
+                        {addMemberDialog.available && (
                             <Button
                                 variant="primary"
-                                onClick={() => setAddMemberModal(true)}
+                                onClick={() => addMemberDialog.open()}
                                 startIcon={<UserPlus className="w-4 h-4"/>}
                             >
                                 {labels.templates.addGroupMember}
@@ -280,129 +303,18 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         joinedAt: member.joinedAt,
                         memberLink: member._links.member,
                         removeAriaLabel: labels.templates.removeGroupMember,
-                        onRemove: member._templates?.removeGroupMember ? () => handleRemoveMember(member) : undefined,
+                        onRemove: removeMemberDialog.availableOn(member) ? () => removeMemberDialog.open(member) : undefined,
                     }))}
                 />
             </div>
 
-            {addMemberTemplate && addMemberModal && (
-                <HalFormModal
-                    title={labels.templates.addGroupMember}
-                    template={addMemberTemplate}
-                    templateName="addGroupMember"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => setAddMemberModal(false)}
-                    successMessage={labels.ui.savedSuccessfully}
-                    excludeMemberIds={currentMemberIds}
-                />
-            )}
-
-            {inviteMemberTemplate && inviteMemberModal && (
-                <HalFormModal
-                    title={labels.templates.inviteMember}
-                    template={inviteMemberTemplate}
-                    templateName="inviteMember"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => setInviteMemberModal(false)}
-                    successMessage={labels.ui.savedSuccessfully}
-                    excludeMemberIds={currentMemberIds}
-                />
-            )}
-
-            {removeMemberModal && (
-                <HalFormModal
-                    title={removeMemberModal.template.title ?? labels.templates.removeGroupMember}
-                    template={removeMemberModal.template}
-                    templateName={removeMemberModal.templateName}
-                    resourceData={removeMemberModal.member as unknown as Record<string, unknown>}
-                    pathname={extractNavigationPath(toHref(removeMemberModal.member._links.self))}
-                    onClose={() => setRemoveMemberModal(null)}
-                    successMessage={labels.ui.savedSuccessfully}
-                />
-            )}
-
-            {addOwnerTemplate && addOwnerModal && (
-                <HalFormModal
-                    title={labels.templates.addGroupOwner}
-                    template={addOwnerTemplate}
-                    templateName="addGroupOwner"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => { setAddOwnerModal(false); void route.refetch(); }}
-                    successMessage={labels.ui.savedSuccessfully}
-                    includeOnlyMemberIds={currentMemberIds}
-                />
-            )}
-
-            {removeOwnerModal && (
-                <HalFormModal
-                    title={labels.templates.removeGroupOwner}
-                    note={<span className="text-sm text-text-secondary">
-                        {removeOwnerModal.isSelf
-                            ? labels.templates.removeSelfAsOwnerLeavesGroup
-                            : labels.templates.removeGroupOwnerLeavesGroup}
-                    </span>}
-                    template={removeOwnerModal.template}
-                    templateName="removeGroupOwner"
-                    resourceData={{}}
-                    pathname={removeOwnerModal.ownerSelfHref ? '/groups/' + removeOwnerModal.ownerSelfHref.split('/groups/')[1] : route.pathname}
-                    onClose={() => {
-                        setRemoveOwnerModal(null);
-                        // Refetching is only valid while the caller is still in the group; giving up
-                        // your own ownership removes you from it and getGroup would then deny access.
-                        if (!removeOwnerModal.isSelf) void route.refetch();
-                    }}
-                    onSubmitSuccess={() => {
-                        if (removeOwnerModal.isSelf) navigate('/groups');
-                    }}
-                    successMessage={labels.ui.savedSuccessfully}
-                />
-            )}
-
-            {leaveGroupTemplate && leaveGroupModal && (
-                <HalFormModal
-                    title={labels.templates.leaveGroup}
-                    note={<span className="text-sm text-text-secondary">{labels.templates.leaveGroupConfirm}</span>}
-                    template={leaveGroupTemplate}
-                    templateName="removeGroupMember"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => setLeaveGroupModal(false)}
-                    onSubmitSuccess={() => navigate('/groups')}
-                    navigateOnSuccess={false}
-                />
-            )}
-
-            {deleteTemplate && deleteModal && (
-                <HalFormModal
-                    title={deleteTemplate.title ?? labels.templates.deleteGroup}
-                    template={deleteTemplate}
-                    templateName="deleteGroup"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => setDeleteModal(false)}
-                    onSubmitSuccess={() => navigate('/groups')}
-                />
-            )}
-
-            {cancelInvitationModal && (
-                <HalFormModal
-                    title={cancelInvitationModal.template.title ?? labels.templates.cancelInvitation}
-                    template={withReasonProperty(cancelInvitationModal.template)}
-                    templateName="cancelInvitation"
-                    resourceData={cancelInvitationModal.invitation as unknown as Record<string, unknown>}
-                    pathname={extractNavigationPath(toHref(cancelInvitationModal.invitation._links.self ?? {href: ''}))}
-                    onClose={() => setCancelInvitationModal(null)}
-                    onSubmitSuccess={() => {
-                        setCancelInvitationModal(null);
-                        void route.refetch();
-                    }}
-                    successMessage={labels.ui.savedSuccessfully}
-                    navigateOnSuccess={false}
-                />
-            )}
+            {addMemberDialog.dialog}
+            {inviteMemberDialog.dialog}
+            {addOwnerDialog.dialog}
+            {removeMemberDialog.dialog}
+            {removeOwnerDialog.dialog}
+            {deleteDialog.dialog}
+            {cancelInvitationDialog.dialog}
         </div>
     );
 };

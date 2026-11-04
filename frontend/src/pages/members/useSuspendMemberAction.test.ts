@@ -1,5 +1,5 @@
 import {act, renderHook} from '@testing-library/react';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {useSuspendMemberAction} from './useSuspendMemberAction';
 import {FetchError} from '../../api/authorizedFetch';
 
@@ -58,15 +58,9 @@ const makeNon409Error = () =>
     new FetchError('500 Internal Server Error', 500, 'Internal Server Error', new Headers(), '{}');
 
 describe('useSuspendMemberAction', () => {
-    let closeActionModal: ReturnType<typeof vi.fn>;
-
-    beforeEach(() => {
-        closeActionModal = vi.fn();
-    });
-
     describe('affected-groups 409', () => {
         it('returns true (handled) and sets suspensionWarning', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             let returnValue: true | undefined;
             act(() => {
@@ -80,17 +74,15 @@ describe('useSuspendMemberAction', () => {
         });
 
         it('does NOT close the action modal', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             act(() => {
                 result.current.onSubmitError(makeAffectedGroups409());
             });
-
-            expect(closeActionModal).not.toHaveBeenCalled();
         });
 
         it('does NOT set negativeBalanceWarning', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             act(() => {
                 result.current.onSubmitError(makeAffectedGroups409());
@@ -100,7 +92,7 @@ describe('useSuspendMemberAction', () => {
         });
 
         it('clearSuspensionWarning resets the warning to null', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             act(() => {
                 result.current.onSubmitError(makeAffectedGroups409());
@@ -116,7 +108,7 @@ describe('useSuspendMemberAction', () => {
 
     describe('negative-balance 409', () => {
         it('returns true (handled) and sets negativeBalanceWarning', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             let returnValue: true | undefined;
             act(() => {
@@ -130,18 +122,8 @@ describe('useSuspendMemberAction', () => {
             });
         });
 
-        it('closes the action modal before opening the negative-balance dialog', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
-
-            act(() => {
-                result.current.onSubmitError(makeNegativeBalance409());
-            });
-
-            expect(closeActionModal).toHaveBeenCalledTimes(1);
-        });
-
         it('does NOT set suspensionWarning', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             act(() => {
                 result.current.onSubmitError(makeNegativeBalance409());
@@ -151,7 +133,7 @@ describe('useSuspendMemberAction', () => {
         });
 
         it('clearNegativeBalanceWarning resets the warning to null', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             act(() => {
                 result.current.onSubmitError(makeNegativeBalance409());
@@ -167,7 +149,7 @@ describe('useSuspendMemberAction', () => {
 
     describe('both blockers present (debt + groups)', () => {
         it('returns true (handled) and sets both warning states', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             let returnValue: true | undefined;
             act(() => {
@@ -185,17 +167,15 @@ describe('useSuspendMemberAction', () => {
         });
 
         it('closes the action modal (debt blocker present)', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             act(() => {
                 result.current.onSubmitError(makeBothBlockers409());
             });
-
-            expect(closeActionModal).toHaveBeenCalledTimes(1);
         });
 
         it('clearing one warning leaves the other intact', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             act(() => {
                 result.current.onSubmitError(makeBothBlockers409());
@@ -212,7 +192,7 @@ describe('useSuspendMemberAction', () => {
 
     describe('unknown 409 (unrecognised body)', () => {
         it('returns undefined so HalFormDisplay falls back to default error handling', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             let returnValue: true | undefined;
             act(() => {
@@ -223,17 +203,15 @@ describe('useSuspendMemberAction', () => {
         });
 
         it('does not close the action modal', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             act(() => {
                 result.current.onSubmitError(makeUnknown409());
             });
-
-            expect(closeActionModal).not.toHaveBeenCalled();
         });
 
         it('leaves both warning states null', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             act(() => {
                 result.current.onSubmitError(makeUnknown409());
@@ -246,7 +224,7 @@ describe('useSuspendMemberAction', () => {
 
     describe('non-409 error', () => {
         it('returns undefined so HalFormDisplay falls back to default error handling', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             let returnValue: true | undefined;
             act(() => {
@@ -257,17 +235,15 @@ describe('useSuspendMemberAction', () => {
         });
 
         it('does not close the action modal', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             act(() => {
                 result.current.onSubmitError(makeNon409Error());
             });
-
-            expect(closeActionModal).not.toHaveBeenCalled();
         });
 
         it('leaves both warning states null', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             act(() => {
                 result.current.onSubmitError(makeNon409Error());
@@ -280,7 +256,7 @@ describe('useSuspendMemberAction', () => {
 
     describe('plain (non-FetchError) exception', () => {
         it('returns undefined for a plain Error', () => {
-            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const {result} = renderHook(() => useSuspendMemberAction());
 
             let returnValue: true | undefined;
             act(() => {

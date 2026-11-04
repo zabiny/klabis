@@ -1,6 +1,6 @@
-import {type ReactElement, useState} from 'react';
+import type {ReactElement} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import {HalFormModal} from '../HalNavigator2/HalFormModal.tsx';
+import {useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
 import type {HalFormsTemplate, ListGroupRulesResource, OptionItem} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
@@ -17,15 +17,13 @@ type PaymentRuleItem = components['schemas']['PaymentRuleResponse'] & {
 
 type RulesCollection = ListGroupRulesResource;
 
-const RuleRow = ({rule, getRankingLabel, getEventTypeById}: {
+const RuleRow = ({rule, getRankingLabel, getEventTypeById, onEdit, onRemove}: {
     rule: PaymentRuleItem;
     getRankingLabel: (code: string) => string;
     getEventTypeById: (id: string | null | undefined) => EventTypeCatalogItem | undefined;
+    onEdit?: () => void;
+    onRemove?: () => void;
 }): ReactElement => {
-    const [editOpen, setEditOpen] = useState(false);
-    const [deleteOpen, setDeleteOpen] = useState(false);
-    const selfHref = (rule._links?.self as {href: string} | undefined)?.href ?? '';
-
     return (
         <tr className="border-t border-border-subtle" style={{height: '52px'}}>
             <td className="px-5 text-text-primary">{getEventTypeById(rule.eventTypeId)?.name ?? rule.eventTypeId}</td>
@@ -40,53 +38,25 @@ const RuleRow = ({rule, getRankingLabel, getEventTypeById}: {
             </td>
             <td className="px-3">
                 <div className="flex items-center gap-1">
-                    {rule._templates?.editRule && (
-                        <>
-                            <button
-                                type="button"
-                                aria-label="Upravit pravidlo"
-                                onClick={() => setEditOpen(true)}
-                                className="w-8 h-8 flex items-center justify-center rounded-md text-text-secondary bg-bg-subtle hover:bg-bg-subtle transition-colors"
-                            >
-                                <Pencil className="w-4 h-4"/>
-                            </button>
-                            {editOpen && (
-                                <HalFormModal
-                                    title="Upravit pravidlo"
-                                    template={rule._templates.editRule as HalFormsTemplate}
-                                    templateName="editRule"
-                                    resourceData={rule as unknown as Record<string, unknown>}
-                                    pathname={selfHref}
-                                    resourceUrl={selfHref}
-                                    onClose={() => setEditOpen(false)}
-                                    navigateOnSuccess={false}
-                                />
-                            )}
-                        </>
+                    {onEdit && (
+                        <button
+                            type="button"
+                            aria-label="Upravit pravidlo"
+                            onClick={onEdit}
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-text-secondary bg-bg-subtle hover:bg-bg-subtle transition-colors"
+                        >
+                            <Pencil className="w-4 h-4"/>
+                        </button>
                     )}
-                    {rule._templates?.removeRule && (
-                        <>
-                            <button
-                                type="button"
-                                aria-label="Smazat pravidlo"
-                                onClick={() => setDeleteOpen(true)}
-                                className="w-8 h-8 flex items-center justify-center rounded-md text-error bg-error-bg hover:opacity-80 transition-colors"
-                            >
-                                <X className="w-4 h-4"/>
-                            </button>
-                            {deleteOpen && (
-                                <HalFormModal
-                                    title="Smazat pravidlo"
-                                    template={rule._templates.removeRule as HalFormsTemplate}
-                                    templateName="removeRule"
-                                    resourceData={rule as unknown as Record<string, unknown>}
-                                    pathname={selfHref}
-                                    resourceUrl={selfHref}
-                                    onClose={() => setDeleteOpen(false)}
-                                    navigateOnSuccess={false}
-                                />
-                            )}
-                        </>
+                    {onRemove && (
+                        <button
+                            type="button"
+                            aria-label="Smazat pravidlo"
+                            onClick={onRemove}
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-error bg-error-bg hover:opacity-80 transition-colors"
+                        >
+                            <X className="w-4 h-4"/>
+                        </button>
                     )}
                 </div>
             </td>
@@ -107,12 +77,24 @@ const buildRankingLabelLookup = (addRuleTemplate: HalFormsTemplate | null): Map<
 export const RulesTable = (): ReactElement => {
     const {resourceData} = useHalPageData<RulesCollection>();
     const {getById: getEventTypeById} = useEventTypes();
-    const [addRuleModal, setAddRuleModal] = useState(false);
 
     const rules = resourceData?._embedded?.paymentRuleResponseList ?? [];
     const addRuleTemplate = (resourceData?._templates?.addRule ?? null) as HalFormsTemplate | null;
     const rankingLabelLookup = buildRankingLabelLookup(addRuleTemplate);
     const getRankingLabel = (code: string): string => rankingLabelLookup.get(code) ?? code;
+    const addRuleDialog = useTemplateDialog('addRule', {
+        resource: resourceData,
+        title: (template) => template.title ?? 'Přidat pravidlo',
+        navigateOnSuccess: false,
+    });
+    const editRuleDialog = useTemplateDialog('editRule', {
+        title: 'Upravit pravidlo',
+        navigateOnSuccess: false,
+    });
+    const removeRuleDialog = useTemplateDialog('removeRule', {
+        title: 'Smazat pravidlo',
+        navigateOnSuccess: false,
+    });
 
     return (
         <div className="bg-surface rounded-xl border border-border-subtle overflow-hidden">
@@ -146,37 +128,31 @@ export const RulesTable = (): ReactElement => {
                                 rule={rule}
                                 getRankingLabel={getRankingLabel}
                                 getEventTypeById={getEventTypeById}
+                                onEdit={editRuleDialog.availableOn(rule) ? () => editRuleDialog.open(rule) : undefined}
+                                onRemove={removeRuleDialog.availableOn(rule) ? () => removeRuleDialog.open(rule) : undefined}
                             />
                         ))
                     )}
                 </tbody>
             </table>
 
-            {addRuleTemplate && (
+            {addRuleDialog.available && (
                 <>
                     <div className="border-t border-border-subtle"/>
                     <button
                         type="button"
-                        onClick={() => setAddRuleModal(true)}
+                        onClick={() => addRuleDialog.open()}
                         className="w-full flex items-center gap-2 px-5 bg-bg-subtle hover:bg-bg-subtle transition-colors text-primary font-bold text-sm"
                         style={{height: '48px'}}
                     >
                         <Plus className="w-4 h-4 text-primary"/>
                         Přidat pravidlo…
                     </button>
-                    {addRuleModal && (
-                        <HalFormModal
-                            title={addRuleTemplate.title ?? 'Přidat pravidlo'}
-                            template={addRuleTemplate}
-                            templateName="addRule"
-                            resourceData={resourceData as unknown as Record<string, unknown>}
-                            pathname={(resourceData?._links?.self as {href: string} | undefined)?.href ?? ''}
-                            onClose={() => setAddRuleModal(false)}
-                            navigateOnSuccess={false}
-                        />
-                    )}
                 </>
             )}
+            {addRuleDialog.dialog}
+            {editRuleDialog.dialog}
+            {removeRuleDialog.dialog}
         </div>
     );
 };

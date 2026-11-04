@@ -1,4 +1,4 @@
-import type {GetTrainingGroupResource, HalFormsTemplate, HalResourceLinks} from '../../api';
+import type {GetTrainingGroupResource, HalResourceLinks, HalResponse} from '../../api';
 
 export interface TrainingGroupSummary {
     id: string;
@@ -9,17 +9,15 @@ export interface TrainingGroupSummary {
     _links: { self: { href: string } };
 }
 
-export interface TrainingGroupMember {
+export interface TrainingGroupMember extends HalResponse {
     memberId: string;
     joinedAt: string;
     _links: { member?: HalResourceLinks; self?: HalResourceLinks };
-    _templates?: { [name: string]: HalFormsTemplate };
 }
 
-export interface TrainingGroupTrainer {
+export interface TrainingGroupTrainer extends HalResponse {
     memberId: string;
     _links: { member?: HalResourceLinks; self?: HalResourceLinks };
-    _templates?: { [name: string]: HalFormsTemplate };
 }
 
 // GetTrainingGroupResource types name / ageRange / _templates from the spec. Its
