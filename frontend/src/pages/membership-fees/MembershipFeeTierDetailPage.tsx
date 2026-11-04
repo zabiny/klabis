@@ -13,7 +13,7 @@ import {RulesTable} from '../../components/membership-fees/RulesTable.tsx';
 type FeeTierDetail = GetTierResource;
 
 const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): ReactElement => {
-    const {route} = useHalPageData<FeeTierDetail>();
+    const {pathname} = useHalPageData<FeeTierDetail>();
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
     const deleteDialog = useTemplateDialog('deleteTier', {
@@ -88,7 +88,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                             template={editTemplate}
                             templateName="editTier"
                             resourceData={resourceData as unknown as Record<string, unknown>}
-                            pathname={route.pathname}
+                            pathname={pathname}
                             onClose={() => setIsEditing(false)}
                             successMessage={labels.ui.savedSuccessfully}
                             submitButtonLabel={labels.buttons.saveChanges}

@@ -58,7 +58,7 @@ const selfHref = (resource: TemplateResource): string | undefined => {
 };
 
 export function useTemplateDialog(name?: string, options: TemplateDialogOptions = {}): TemplateDialog {
-    const {route: {pathname}} = useHalPageData();
+    const {pathname} = useHalPageData();
     const [opened, setOpened] = useState<OpenDialog | null>(null);
     const {resource: defaultResource} = options;
 

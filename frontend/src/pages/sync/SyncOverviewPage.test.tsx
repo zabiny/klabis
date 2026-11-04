@@ -38,24 +38,10 @@ const pageData = (resourceData: HalResponse | null) => ({
     resourceData,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/sync/attempts',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/sync/attempts'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    pathname: '/sync/attempts',
+    navigateToResource: vi.fn(),
+    refetch: async () => {},
+    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/sync/attempts'}),
 });
 
 const renderPage = (items: unknown[], page = {size: 10, totalElements: items.length, totalPages: 1, number: 0}, initialEntry = '/sync/attempts') => {

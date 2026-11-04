@@ -64,7 +64,7 @@ const renderPage = (resourceData: Record<string, unknown>) => {
         resourceData,
         isLoading: false,
         error: null,
-        route: {pathname: '/legal-guardian-groups/g-1', navigateToResource, refetch: async () => {}},
+        pathname: '/legal-guardian-groups/g-1', navigateToResource, refetch: async () => {},
     } as unknown as ReturnType<typeof useHalPageData>);
     return render(
         <MemoryRouter>
@@ -173,7 +173,7 @@ describe('LegalGuardianGroupDetailPage', () => {
             resourceData: undefined,
             isLoading: false,
             error: new FetchError('HTTP 404 (Not Found)', 404, 'Not Found', new Headers()),
-            route: {pathname: '/legal-guardian-groups/g-1', navigateToResource, refetch: async () => {}},
+            pathname: '/legal-guardian-groups/g-1', navigateToResource, refetch: async () => {},
         } as unknown as ReturnType<typeof useHalPageData>);
         rerender(<QueryClientProvider client={new QueryClient()}><ToastProvider><MemoryRouter><LegalGuardianGroupDetailPage/></MemoryRouter></ToastProvider></QueryClientProvider>);
 
@@ -186,7 +186,7 @@ describe('LegalGuardianGroupDetailPage', () => {
             resourceData: undefined,
             isLoading: false,
             error: new FetchError('HTTP 404 (Not Found)', 404, 'Not Found', new Headers()),
-            route: {pathname: '/legal-guardian-groups/g-1', navigateToResource, refetch: async () => {}},
+            pathname: '/legal-guardian-groups/g-1', navigateToResource, refetch: async () => {},
         } as unknown as ReturnType<typeof useHalPageData>);
         render(<MemoryRouter><LegalGuardianGroupDetailPage/></MemoryRouter>);
 

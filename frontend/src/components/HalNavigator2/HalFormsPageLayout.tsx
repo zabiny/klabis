@@ -17,7 +17,7 @@ interface HalFormsPageLayoutProps {
 }
 
 export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactElement {
-    const {resourceData: pageResource, route} = useHalPageData();
+    const {resourceData: pageResource, pathname} = useHalPageData();
     const {currentFormRequest, closeForm} = useHalForm();
 
     const pageTemplates = pageResource?._templates as Record<string, HalFormsTemplate> | undefined;
@@ -32,7 +32,7 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
 
     const formPanel = currentFormRequest.children ? (
         <HalFormPanel
-            collectionUrl={resourceUrl ?? route.pathname}
+            collectionUrl={resourceUrl ?? pathname}
             templateName={currentFormRequest.templateName}
             template={template}
             fieldsFactory={currentFormRequest.fieldsFactory}
@@ -47,7 +47,7 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
             template={template}
             templateName={currentFormRequest.templateName}
             resourceData={(pageResource ?? {}) as Record<string, unknown>}
-            pathname={route.pathname}
+            pathname={pathname}
             resourceUrl={resourceUrl}
             onClose={closeForm}
             onSubmitSuccess={closeForm}

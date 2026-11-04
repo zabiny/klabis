@@ -26,7 +26,7 @@ describe('LegalGuardianGroupsPage', () => {
         vi.mocked(useHalPageData).mockReturnValue({
             isLoading: false,
             error: null,
-            route: {navigateToResource: vi.fn()},
+            navigateToResource: vi.fn(),
         } as unknown as ReturnType<typeof useHalPageData>);
         render(<LegalGuardianGroupsPage/>);
         expect(screen.getByRole('heading', {name: 'Zákonní zástupci'})).toBeInTheDocument();
@@ -38,7 +38,7 @@ describe('LegalGuardianGroupsPage', () => {
         vi.mocked(useHalPageData).mockReturnValue({
             isLoading: false,
             error: null,
-            route: {navigateToResource: vi.fn()},
+            navigateToResource: vi.fn(),
         } as unknown as ReturnType<typeof useHalPageData>);
         render(<LegalGuardianGroupsPage/>);
         expect(screen.getByText('Zástupci')).toBeInTheDocument();

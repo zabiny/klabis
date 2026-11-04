@@ -121,24 +121,10 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/events',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/events'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    pathname: '/events',
+    navigateToResource: vi.fn(),
+    refetch: async () => {},
+    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/events'}),
     ...overrides,
 });
 
@@ -1126,13 +1112,12 @@ describe('EventsPage', () => {
             });
             renderPage(createMockPageData(
                 {_links: {self: {href: '/api/events'}}},
-                {route: {
+                {
                     pathname: '/events',
                     navigateToResource,
                     refetch: async () => {},
-                    queryState: 'success' as const,
                     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/events'}),
-                }},
+                },
             ));
 
             const badge = await screen.findByTestId('sync-status-IN_SYNC');

@@ -93,7 +93,7 @@ const PendingInvitationsSection = (): ReactElement | null => {
 };
 
 export const GroupsPage = (): ReactElement => {
-    const {isLoading, error, route} = useHalPageData();
+    const {isLoading, error, navigateToResource} = useHalPageData();
 
     if (isLoading) {
         return <Skeleton/>;
@@ -118,7 +118,7 @@ export const GroupsPage = (): ReactElement => {
                     collectionName="groupSummaryResponseList"
                     tableId="groups.free"
                     defaultOrderBy="name"
-                    onRowClick={route.navigateToResource}
+                    onRowClick={navigateToResource}
                     emptyMessage="Nejste členem žádné skupiny."
                 >
                     <TableCell sortable column="name">{labels.fields.name}</TableCell>

@@ -103,26 +103,12 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/members/123e4567-e89b-12d3-a456-426614174000',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockImplementation((rel: string) =>
-            resourceData?._links?.[rel as keyof typeof resourceData._links] ?? null
-        ),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn((rel: string) => !!(resourceData?._links?.[rel as keyof typeof resourceData._links])),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    pathname: '/members/123e4567-e89b-12d3-a456-426614174000',
+    navigateToResource: vi.fn(),
+    refetch: async () => {},
+    getResourceLink: vi.fn().mockImplementation((rel: string) =>
+        resourceData?._links?.[rel as keyof typeof resourceData._links] ?? null
+    ),
     ...overrides,
 });
 
@@ -171,15 +157,12 @@ describe('MemberDetailPage — group navigation buttons', () => {
             _templates: {updateMember: adminEditTemplate},
         });
         const pageData = createMockPageData(data, {
-            route: {
-                pathname: '/members/123',
-                navigateToResource,
-                refetch: async () => {},
-                queryState: 'success' as const,
-                getResourceLink: vi.fn().mockImplementation((rel: string) =>
-                    rel === 'trainingGroup' ? trainingGroupLink : null
-                ),
-            },
+            pathname: '/members/123',
+            navigateToResource,
+            refetch: async () => {},
+            getResourceLink: vi.fn().mockImplementation((rel: string) =>
+                rel === 'trainingGroup' ? trainingGroupLink : null
+            ),
         });
         renderPage(pageData);
 
@@ -212,15 +195,12 @@ describe('MemberDetailPage — group navigation buttons', () => {
             _templates: {updateMember: adminEditTemplate},
         });
         const pageData = createMockPageData(data, {
-            route: {
-                pathname: '/members/123',
-                navigateToResource,
-                refetch: async () => {},
-                queryState: 'success' as const,
-                getResourceLink: vi.fn().mockImplementation((rel: string) =>
-                    rel === 'legalGuardianGroup' ? legalGuardianGroupLink : null
-                ),
-            },
+            pathname: '/members/123',
+            navigateToResource,
+            refetch: async () => {},
+            getResourceLink: vi.fn().mockImplementation((rel: string) =>
+                rel === 'legalGuardianGroup' ? legalGuardianGroupLink : null
+            ),
         });
         renderPage(pageData);
 

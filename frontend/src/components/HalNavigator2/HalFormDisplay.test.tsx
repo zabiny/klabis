@@ -71,26 +71,10 @@ describe('HalFormDisplay Component', () => {
         resourceData: resourceData || {id: 1, name: 'Test Resource'},
         isLoading: false,
         error: null,
-        isAdmin: false,
-        route: {
-            pathname: '/test/123',
-            navigateToResource: vi.fn(),
-            refetch: vi.fn(),
-            queryState: 'success',
-            getResourceLink: vi.fn(),
-        },
-        actions: {
-            handleNavigateToItem: vi.fn(),
-        },
-        getLinks: vi.fn(() => undefined),
-        getTemplates: vi.fn(() => undefined),
-        hasEmbedded: vi.fn(() => false),
-        getEmbeddedItems: vi.fn(() => []),
-        isCollection: vi.fn(() => false),
-        hasLink: vi.fn(() => false),
-        hasTemplate: vi.fn(() => false),
-        hasForms: vi.fn(() => false),
-        getPageMetadata: vi.fn(() => undefined),
+        pathname: '/test/123',
+        navigateToResource: vi.fn(),
+        refetch: vi.fn(),
+        getResourceLink: vi.fn(),
     });
 
     const createWrapper = (pageData: ReturnType<typeof createMockPageData>) => {

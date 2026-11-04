@@ -73,10 +73,10 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = Record<stri
                                                                               extraParams,
                                                                               children,
                                                                           }: HalEmbeddedTableProps<T>): ReactElement {
-    const {route, isLoading} = useHalPageData()
+    const {getResourceLink, isLoading} = useHalPageData()
 
     // Extract self link from HAL resource
-    const selfLink = route.getResourceLink();
+    const selfLink = getResourceLink();
 
     if (isLoading) {
         return (

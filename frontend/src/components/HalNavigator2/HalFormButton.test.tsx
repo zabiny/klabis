@@ -23,27 +23,11 @@ const createMockPageData = (resourceData: HalResponse | null, pathname: string =
     resourceData,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname,
-        navigateToResource: vi.fn(),
-        refetch: async () => {
-        },
-        queryState: 'success',
-        getResourceLink: vi.fn(),
+    pathname,
+    navigateToResource: vi.fn(),
+    refetch: async () => {
     },
-    actions: {
-        handleNavigateToItem: vi.fn(),
-    },
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    getResourceLink: vi.fn(),
 });
 
 beforeEach(() => {
@@ -131,7 +115,7 @@ describe('HalFormButton Component', () => {
                 <MemoryRouter initialEntries={initialEntries}>
                     <HalRouteContext.Provider value={{
                         resourceData: pageData.resourceData,
-                        pathname: pageData.route.pathname,
+                        pathname: pageData.pathname,
                     } as unknown as React.ContextType<typeof HalRouteContext>}>
                         <HalFormProvider>
                             <HalFormsPageLayout>

@@ -81,24 +81,10 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/members',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    pathname: '/members',
+    navigateToResource: vi.fn(),
+    refetch: async () => {},
+    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
     ...overrides,
 });
 
@@ -392,13 +378,10 @@ describe('MembersPage — row data rendering', () => {
             _templates: {updateMember: mockHalFormsTemplate({method: 'PUT'})},
         });
         renderPageWithMembers([member], {
-            route: {
-                pathname: '/members',
-                navigateToResource,
-                refetch: async () => {},
-                queryState: 'success' as const,
-                getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
-            },
+            pathname: '/members',
+            navigateToResource,
+            refetch: async () => {},
+            getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
         });
 
         const editButton = screen.getByRole('button', {name: /upravit/i});
@@ -431,13 +414,10 @@ describe('MembersPage — row data rendering', () => {
             },
         });
         renderPageWithMembers([member], {
-            route: {
-                pathname: '/members',
-                navigateToResource,
-                refetch: async () => {},
-                queryState: 'success' as const,
-                getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
-            },
+            pathname: '/members',
+            navigateToResource,
+            refetch: async () => {},
+            getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
         });
 
         const shieldButton = screen.getByRole('button', {name: /oprávnění/i});
@@ -640,13 +620,10 @@ describe('MembersPage — Banknote (finance transaction) action', () => {
             },
         });
         renderPageWithMembers([member], {
-            route: {
-                pathname: '/members',
-                navigateToResource,
-                refetch: async () => {},
-                queryState: 'success' as const,
-                getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
-            },
+            pathname: '/members',
+            navigateToResource,
+            refetch: async () => {},
+            getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
         });
 
         fireEvent.click(screen.getByRole('button', {name: labels.finance.openTransactionDialogAriaLabel}));
