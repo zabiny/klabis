@@ -62,7 +62,7 @@ export interface UseHalFormDataReturn {
  *
  * @param selectedTemplate - The currently selected HAL Forms template (null if no template selected)
  * @param currentResourceData - The current resource data to use as fallback
- * @param currentPathname - The current resource pathname to compare with template target
+ * @param currentResourceUrl - The current resource URL to compare with template target
  * @returns Form state with data, loading flag, error, and refetch function
  *
  * @example
@@ -83,7 +83,7 @@ export interface UseHalFormDataReturn {
 export function useHalFormData(
     selectedTemplate: HalFormsTemplate | null,
     currentResourceData: Record<string, unknown>,
-    currentPathname: string
+    currentResourceUrl: string
 ): UseHalFormDataReturn {
     // Validate template structure
     if (selectedTemplate && !selectedTemplate.properties) {
@@ -93,8 +93,8 @@ export function useHalFormData(
     // Determine if we need to fetch from target
     const shouldFetch = useMemo(() => {
         if (!selectedTemplate) return false;
-        return shouldFetchTargetData(selectedTemplate.target, currentPathname);
-    }, [selectedTemplate, currentPathname]);
+        return shouldFetchTargetData(selectedTemplate.target, currentResourceUrl);
+    }, [selectedTemplate, currentResourceUrl]);
 
     const targetUrl = selectedTemplate?.target;
 

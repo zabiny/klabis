@@ -28,7 +28,6 @@ vi.mock('../../hooks/useHalPageData', () => ({
         resourceData: null,
         isLoading: false,
         error: null,
-        pathname: '/test',
         navigateToResource: vi.fn(),
         refetch: vi.fn(),
         getResourceLink: vi.fn(),
@@ -335,7 +334,7 @@ describe('HalFormPanel', () => {
             expect(screen.getByTestId('render-input-bar')).toBeInTheDocument();
         });
 
-        it('should derive pathname from collectionUrl by stripping /api prefix', () => {
+        it('should render the form display for a collection URL', () => {
             mockUseAuthorizedQuery.mockReturnValue({
                 data: buildCollectionData(),
                 isLoading: false,
@@ -361,29 +360,6 @@ describe('HalFormPanel', () => {
                 <Wrapper>
                     <HalFormPanel collectionUrl="/api/events" templateName="createEvent">
                         {() => <div>content</div>}
-                    </HalFormPanel>
-                </Wrapper>
-            );
-
-            expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
-        });
-
-        it('should use explicit pathname prop when provided', () => {
-            mockUseAuthorizedQuery.mockReturnValue({
-                data: buildCollectionData(),
-                isLoading: false,
-                error: null,
-            } as unknown as ReturnType<typeof useAuthorizedQuery>);
-
-            const Wrapper = createWrapper();
-            render(
-                <Wrapper>
-                    <HalFormPanel
-                        collectionUrl="/api/events"
-                        templateName="createEvent"
-                        pathname="/custom-path"
-                    >
-                        {() => <div data-testid="children">content</div>}
                     </HalFormPanel>
                 </Wrapper>
             );

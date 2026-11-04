@@ -67,7 +67,6 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/category-presets',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/category-presets'}),
@@ -151,7 +150,7 @@ describe('CategoryPresetsPage', () => {
                 page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
             };
             vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-            renderPage(createMockPageData(resourceData, {pathname: '/category-presets', navigateToResource, refetch: async () => {}, getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/category-presets'})}));
+            renderPage(createMockPageData(resourceData, {navigateToResource, refetch: async () => {}, getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/category-presets'})}));
 
             fireEvent.click(screen.getByText('Základní šablona'));
 

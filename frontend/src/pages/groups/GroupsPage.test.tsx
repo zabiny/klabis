@@ -38,7 +38,6 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/groups',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/groups'}),

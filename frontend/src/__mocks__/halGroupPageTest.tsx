@@ -45,7 +45,6 @@ export const renderDetailPage = (
         resourceData,
         isLoading: options.isLoading ?? false,
         error: options.error ?? null,
-        pathname: options.pathname,
         navigateToResource: vi.fn(),
         refetch: options.refetch ?? (async () => {}),
         getResourceLink: vi.fn(),

@@ -30,7 +30,8 @@ vi.mock('../../contexts/authContext.ts', () => ({
     useAuth: () => ({getUser: () => ({memberId: null})}),
 }));
 
-vi.mock('../../contexts/halRouteContext.ts', () => ({
+vi.mock('../../contexts/halRouteContext.ts', async (importOriginal) => ({
+    ...(await importOriginal<object>()),
     useHalRoute: vi.fn(() => ({
         resourceData: {firstName: 'Jana', lastName: 'Nováková', registrationNumber: 'ZBM9500', _links: {self: {href: '/api/members/member-1'}}},
         navigateToResource: vi.fn(),

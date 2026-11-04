@@ -165,7 +165,8 @@ vi.mock('../../api/klabisUserManager', () => ({
     },
 }));
 
-vi.mock('../../api/hateoas', () => ({
+vi.mock('../../api/hateoas', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../api/hateoas')>()),
     submitHalFormsData: vi.fn(),
     isFormValidationError: vi.fn((error) => {
         return error && typeof error === 'object' && 'validationErrors' in error;
@@ -213,7 +214,8 @@ vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     ),
 }));
 
-vi.mock('../../contexts/halRouteContext.ts', () => ({
+vi.mock('../../contexts/halRouteContext.ts', async (importOriginal) => ({
+    ...(await importOriginal<object>()),
     useHalRoute: vi.fn(() => ({
         resourceData: {firstName: 'Jan', lastName: 'Novák', _links: {self: {href: '/api/members/42'}}},
         navigateToResource: vi.fn(),
@@ -250,7 +252,6 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/events/1',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost:8443/api/events/1'}),

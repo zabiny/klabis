@@ -61,7 +61,6 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/administration/fee-selection-campaigns/campaign-1',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/fee-selection-campaigns/campaign-1'}),

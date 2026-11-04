@@ -81,7 +81,6 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/members',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
@@ -378,7 +377,6 @@ describe('MembersPage — row data rendering', () => {
             _templates: {updateMember: mockHalFormsTemplate({method: 'PUT'})},
         });
         renderPageWithMembers([member], {
-            pathname: '/members',
             navigateToResource,
             refetch: async () => {},
             getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
@@ -414,7 +412,6 @@ describe('MembersPage — row data rendering', () => {
             },
         });
         renderPageWithMembers([member], {
-            pathname: '/members',
             navigateToResource,
             refetch: async () => {},
             getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),
@@ -620,7 +617,6 @@ describe('MembersPage — Banknote (finance transaction) action', () => {
             },
         });
         renderPageWithMembers([member], {
-            pathname: '/members',
             navigateToResource,
             refetch: async () => {},
             getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/members'}),

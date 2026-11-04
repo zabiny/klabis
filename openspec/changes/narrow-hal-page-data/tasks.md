@@ -10,18 +10,18 @@
 
 ## 2. `HalFormDisplay` without `pathname`
 
-- [ ] 2.1 Add `HalFormDisplay` tests:
+- [x] 2.1 Add `HalFormDisplay` tests:
   - with no `pathname` prop, the submit URL falls back to the resource's self link, then to the current route;
   - an explicit `resourceUrl` wins;
   - the target-data fetch is skipped when the target equals the current-resource URL.
 
   Confirm the tests fail.
-- [ ] 2.2 Implement D2 in `HalFormDisplay` and `useHalFormData`. Remove the `pathname` prop and its passing from `useTemplateDialog`, `HalFormsPageLayout`, `HalFormPanel` and the inline-edit pages:
+- [x] 2.2 Implement D2 in `HalFormDisplay` and `useHalFormData`. Remove the `pathname` prop and its passing from `useTemplateDialog`, `HalFormsPageLayout`, `HalFormPanel` and the inline-edit pages:
   - `EventDetailPage`, `MemberDetailPage`, `GroupDetailPage`, `TrainingGroupDetailPage`;
   - `MembershipFeeGroupDetailPage`, `MembershipFeeTierDetailPage`.
 
   Check `EventRegistrationDialog` for a render outside `HalRouteProvider`, and pass `resourceUrl` there if needed.
-- [ ] 2.3 `EventDetailPage` links to the accommodation list through `resourceData._links['accommodation-list']`. Remove `pathname` from `useHalPageData`. Update the affected tests mechanically and run the frontend test suite.
+- [x] 2.3 `EventDetailPage` links to the accommodation list through `resourceData._links['accommodation-list']`. Remove `pathname` from `useHalPageData`. Update the affected tests mechanically and run the frontend test suite.
 
 ## 3. Row relation extensions in the tooling
 

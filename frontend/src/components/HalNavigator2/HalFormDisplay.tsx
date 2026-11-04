@@ -1,9 +1,9 @@
-import {type ReactElement, type ReactNode, useMemo} from 'react';
+import {type ReactElement, type ReactNode, useContext, useMemo} from 'react';
 import type * as Yup from 'yup';
 import type {HalFormsTemplate} from '../../api';
 import {ErrorDisplay, Spinner} from '../UI';
 import {type HalFormFieldFactory, HalFormsForm, type RenderFormCallback} from './halforms';
-import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
+import {isFormValidationError, selfHref, toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
@@ -13,6 +13,7 @@ import {useToast} from '../../contexts/toastContext';
 import {useNavigate} from 'react-router-dom';
 import {toRoutePath} from '../../api/apiPath';
 import {withTemplateFieldPrompts} from '../../localization';
+import {HalRouteContext} from '../../contexts/halRouteContext';
 
 /**
  * Props for HalFormDisplay component
@@ -24,8 +25,6 @@ export interface HalFormDisplayProps {
     templateName: string;
     /** Current resource data */
     resourceData: Record<string, unknown>;
-    /** Current pathname */
-    pathname: string;
     /** Callback when form should be closed */
     onClose: () => void;
     /** Optional callback when submission succeeds — receives response data */
@@ -45,7 +44,7 @@ export interface HalFormDisplayProps {
     /** Optional icon for the submit button */
     submitIcon?: ReactNode;
     /**
-     * URL of the specific resource item being acted on.
+     * URL of the resource being acted on; wins over the self link of resourceData and the current route.
      * Used as submission URL fallback when template.target is absent (e.g. embedded item affordances).
      * Absolute URLs are stripped to path so requests go through the Vite dev proxy.
      */
@@ -69,7 +68,6 @@ export const HalFormDisplay = ({
                                    template: rawTemplate,
                                    templateName,
                                    resourceData,
-                                   pathname,
                                    onClose,
                                    onSubmitSuccess,
                                    onSubmitError,
@@ -95,15 +93,18 @@ export const HalFormDisplay = ({
 
     const submitError = rawError ? toFormValidationError(rawError) : null;
 
+    const routePathname = useContext(HalRouteContext)?.pathname;
+    const currentResourceUrl = resourceUrl || selfHref(resourceData) || routePathname || '';
+
     const {formData, isLoadingTargetData, targetFetchError, refetchTargetData} = useHalFormData(
         template,
         resourceData,
-        pathname
+        currentResourceUrl
     );
 
     const handleSubmit = async (data: Record<string, unknown>) => {
         const processed = postprocessPayload ? postprocessPayload(data, template) : data;
-        const url = template.target || resourceUrl || pathname;
+        const url = template.target || currentResourceUrl;
         submitForm({url, data: processed}, {
             onSuccess: async ({data: responseData, location}) => {
                 const toastMessage = successMessage ?? (template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo');

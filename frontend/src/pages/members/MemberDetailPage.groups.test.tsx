@@ -50,7 +50,8 @@ vi.mock('../../api/klabisUserManager', () => ({
     },
 }));
 
-vi.mock('../../api/hateoas', () => ({
+vi.mock('../../api/hateoas', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../api/hateoas')>()),
     submitHalFormsData: vi.fn(),
     isFormValidationError: vi.fn((error) => {
         return error && typeof error === 'object' && 'validationErrors' in error;
@@ -103,7 +104,6 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/members/123e4567-e89b-12d3-a456-426614174000',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockImplementation((rel: string) =>
@@ -157,7 +157,6 @@ describe('MemberDetailPage — group navigation buttons', () => {
             _templates: {updateMember: adminEditTemplate},
         });
         const pageData = createMockPageData(data, {
-            pathname: '/members/123',
             navigateToResource,
             refetch: async () => {},
             getResourceLink: vi.fn().mockImplementation((rel: string) =>
@@ -195,7 +194,6 @@ describe('MemberDetailPage — group navigation buttons', () => {
             _templates: {updateMember: adminEditTemplate},
         });
         const pageData = createMockPageData(data, {
-            pathname: '/members/123',
             navigateToResource,
             refetch: async () => {},
             getResourceLink: vi.fn().mockImplementation((rel: string) =>

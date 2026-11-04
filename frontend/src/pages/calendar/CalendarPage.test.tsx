@@ -96,7 +96,6 @@ describe('CalendarPage Component', () => {
         resourceData,
         isLoading: false,
         error: null,
-        pathname: '/calendar',
         navigateToResource: vi.fn(),
         refetch: vi.fn(),
         getResourceLink: vi.fn(),

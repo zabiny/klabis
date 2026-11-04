@@ -83,7 +83,7 @@ interface MemberDetailContentProps {
 }
 
 const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetailContentProps) => {
-    const {navigateToResource, getResourceLink, pathname} = useHalPageData();
+    const {navigateToResource, getResourceLink} = useHalPageData();
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
     const accountActivationDialog = useTemplateDialog('sendMemberAccountActivation', {
         resource: resourceData,
@@ -491,7 +491,6 @@ const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetai
                     template={enrichedTemplate}
                     templateName="updateMember"
                     resourceData={resourceData as Record<string, unknown>}
-                    pathname={pathname}
                     onClose={cancelEditing}
                     postprocessPayload={postprocessPayload}
                     successMessage={labels.ui.savedSuccessfully}
