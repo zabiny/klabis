@@ -11,7 +11,7 @@ import {labels} from "../localization/labels";
 import {formatDate} from "../utils/dateUtils";
 import {useDashboard} from "../hooks/useDashboard";
 import {useMyUpcomingRegistrations} from "../hooks/useMyUpcomingRegistrations";
-import {extractNavigationPath} from "../utils/navigationPath";
+import {toRoutePath} from '../api/apiPath';
 import {UpcomingDeadlinesWidget} from "../components/dashboard/UpcomingDeadlinesWidget";
 
 const containsRel = (menuItems: { rel: string }[], rel: string) => menuItems.some(item => item.rel === rel)
@@ -97,7 +97,7 @@ const UserDashboard = ({profileHref, menuItems}: {
                                         return (
                                         <RouterLink
                                             key={event.selfHref}
-                                            to={extractNavigationPath(event.selfHref)}
+                                            to={toRoutePath(event.selfHref)}
                                             className="flex items-center justify-between p-4 hover:bg-surface-hover transition-colors"
                                         >
                                             <div className="flex items-center gap-4 flex-1 min-w-0">

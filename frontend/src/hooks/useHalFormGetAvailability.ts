@@ -1,6 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import {authorizedFetch} from '../api/authorizedFetch';
-import {normalizeKlabisApiPath} from '../utils/halFormsUtils';
+import {toApiHref} from '../api/apiPath';
 
 const STALE_TIME = 10 * 60 * 1000;
 const GC_TIME = 10 * 60 * 1000;
@@ -28,13 +28,12 @@ export function useHalFormGetAvailability(
     targetUrl: string | undefined,
     enabled: boolean
 ): UseHalFormGetAvailabilityReturn {
-    const normalizedUrl = targetUrl ? normalizeKlabisApiPath(targetUrl) : undefined;
-    const shouldProbe = enabled && !!normalizedUrl;
+    const shouldProbe = enabled && !!targetUrl;
 
     const {data, isLoading, error} = useQuery<boolean>({
-        queryKey: ['hal-options', normalizedUrl],
+        queryKey: ['hal-options', targetUrl ? toApiHref(targetUrl) : undefined],
         queryFn: async () => {
-            const response = await authorizedFetch(normalizedUrl!, {method: 'OPTIONS'});
+            const response = await authorizedFetch(targetUrl!, {method: 'OPTIONS'});
             const allowHeader = response.headers.get('Allow');
             if (!allowHeader) {
                 // Conservative: no Allow header on a 2xx response is treated as GET not supported

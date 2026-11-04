@@ -16,7 +16,7 @@
 
 import {useMemo} from 'react';
 import type {HalFormsTemplate} from '../api';
-import {normalizeKlabisApiPath, shouldFetchTargetData} from '../utils/halFormsUtils';
+import {shouldFetchTargetData} from '../utils/halFormsUtils';
 import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
 import {useHalFormGetAvailability} from "./useHalFormGetAvailability.ts";
 
@@ -96,7 +96,7 @@ export function useHalFormData(
         return shouldFetchTargetData(selectedTemplate.target, currentPathname);
     }, [selectedTemplate, currentPathname]);
 
-    const targetUrl = selectedTemplate?.target ? normalizeKlabisApiPath(selectedTemplate.target) : '';
+    const targetUrl = selectedTemplate?.target ?? '';
 
     // Phase 1: Probe the target via OPTIONS to determine whether GET is supported.
     // Only fires when shouldFetch is true so we don't probe same-resource targets.

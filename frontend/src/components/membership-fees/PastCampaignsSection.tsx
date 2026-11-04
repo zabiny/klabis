@@ -2,7 +2,7 @@ import {type ReactElement} from 'react';
 import {Link} from 'react-router-dom';
 import {ArrowRight} from 'lucide-react';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
-import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {toRoutePath} from '../../api/apiPath';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
 
@@ -27,7 +27,7 @@ interface PastCampaignsSectionProps {
 
 export const PastCampaignsSection = ({pastCampaignsHref}: PastCampaignsSectionProps): ReactElement | null => {
     const {data: campaignsData, isLoading} = useAuthorizedQuery<CampaignsCollection>(
-        pastCampaignsHref ? extractNavigationPath(pastCampaignsHref) : '',
+        pastCampaignsHref ?? '',
         {enabled: !!pastCampaignsHref}
     );
 
@@ -66,7 +66,7 @@ export const PastCampaignsSection = ({pastCampaignsHref}: PastCampaignsSectionPr
                                 >
                                     <td className="px-5 text-text-primary font-medium">
                                         <Link
-                                            to={extractNavigationPath(campaign._links.self.href)}
+                                            to={toRoutePath(campaign._links.self.href)}
                                             className="hover:text-primary"
                                         >
                                             {campaign.year}
@@ -77,7 +77,7 @@ export const PastCampaignsSection = ({pastCampaignsHref}: PastCampaignsSectionPr
                                     </td>
                                     <td className="px-5">
                                         <Link
-                                            to={extractNavigationPath(campaign._links.self.href)}
+                                            to={toRoutePath(campaign._links.self.href)}
                                             className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-bg-subtle text-text-secondary hover:bg-bg-subtle"
                                             aria-label="Otevřít detail kampaně"
                                         >

@@ -1,9 +1,8 @@
 import React, {type PropsWithChildren} from 'react';
 import {type Path, useLocation, useNavigate} from 'react-router-dom';
 import type {HalResourceLinks, HalResponse, Link} from '../api';
-import {extractNavigationPath} from "../utils/navigationPath.ts";
+import {toRoutePath} from '../api/apiPath';
 import {isHalResponse} from "../components/HalNavigator2/halforms/utils.ts";
-import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
 import {useAuthorizedQuery} from "../hooks/useAuthorizedFetch.ts";
 import {toHref} from "../api/hateoas.ts";
 import {HalRouteContext, useHalRoute} from './halRouteContext';
@@ -67,7 +66,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
         error,
         refetch,
         status
-    } = useAuthorizedQuery<HalResponse>(normalizeKlabisApiPath(resourceUrl), {
+    } = useAuthorizedQuery<HalResponse>(resourceUrl, {
         enabled: shouldFetch,
         staleTime: 5 * 60 * 1000,
         gcTime: 5 * 60 * 1000,
@@ -103,7 +102,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
             throw new Error('Self link href is empty')
         }
 
-        const targetPath = extractNavigationPath(toHref(href));
+        const targetPath = toRoutePath(toHref(href));
         navigate(targetPath, options);
     }
 

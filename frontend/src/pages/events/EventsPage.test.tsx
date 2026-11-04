@@ -574,7 +574,7 @@ describe('EventsPage', () => {
             });
         });
 
-        it('submits new registration to the normalized registerForEvent target, not the prefill URL', async () => {
+        it('submits new registration to the registerForEvent target, not the prefill URL', async () => {
             const user = userEvent.setup();
             const mutateMock = withMutateMock();
             renderWithEventHavingNewRegistrationLink({siCardNumber: '12345'});
@@ -587,7 +587,7 @@ describe('EventsPage', () => {
 
             await waitFor(() => {
                 expect(mutateMock).toHaveBeenCalledWith(
-                    expect.objectContaining({url: '/events/evt-1/registrations'}),
+                    expect.objectContaining({url: '/api/events/evt-1/registrations'}),
                     expect.anything(),
                 );
             });
@@ -642,7 +642,7 @@ describe('EventsPage', () => {
             expect(screen.queryByTitle(labels.templates.editRegistration)).not.toBeInTheDocument();
         });
 
-        it('opens registration dialog loading the normalized template target', async () => {
+        it('opens registration dialog loading the template target', async () => {
             const user = userEvent.setup();
             renderWithEventTemplates({
                 editRegistration: mockHalFormsTemplate({method: 'PUT', target: editTarget}),
@@ -652,7 +652,7 @@ describe('EventsPage', () => {
 
             await waitFor(() => {
                 expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith(
-                    '/events/evt-edit/registrations/M001',
+                    '/api/events/evt-edit/registrations/M001',
                     expect.anything(),
                 );
             });

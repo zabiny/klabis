@@ -11,9 +11,8 @@ import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {containerStyles} from '../../theme/designTokens';
 import {useToast} from '../../contexts/toastContext';
 import {useNavigate} from 'react-router-dom';
-import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {toRoutePath} from '../../api/apiPath';
 import {withTemplateFieldPrompts} from '../../localization';
-import {normalizeKlabisApiPath} from '../../utils/halFormsUtils.ts';
 
 /**
  * Props for HalFormDisplay component
@@ -114,7 +113,7 @@ export const HalFormDisplay = ({
                 }
             })()
             : undefined;
-        const url = template.target || resolvedResourceUrl || '/api' + normalizeKlabisApiPath(pathname);
+        const url = template.target || resolvedResourceUrl || pathname;
         submitForm({url, data: processed}, {
             onSuccess: async ({data: responseData, location}) => {
                 const toastMessage = successMessage ?? (template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo');
@@ -122,7 +121,7 @@ export const HalFormDisplay = ({
                 onSubmitSuccess?.(responseData);
                 const willNavigate = navigateOnSuccess && template.method?.toUpperCase() === 'POST' && location != null;
                 if (willNavigate) {
-                    navigate(extractNavigationPath(location));
+                    navigate(toRoutePath(location));
                 } else {
                     onClose();
                 }

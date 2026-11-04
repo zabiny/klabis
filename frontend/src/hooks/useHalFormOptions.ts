@@ -1,7 +1,6 @@
 import type {SelectOption} from '../components/UI/forms';
 import type {HalFormsOption, HalFormsOptionType} from '../api';
 import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
-import {normalizeKlabisApiPath, stripUriTemplate} from "../utils/halFormsUtils.ts";
 import {getPermissionInfo, labels} from '../localization';
 
 /**
@@ -82,7 +81,7 @@ export function useHalFormOptions(
     optionDef: HalFormsOption | undefined,
     prop?: EnumOptionContext
 ): UseHalFormOptionsResult {
-    const optionsHref = (optionDef?.link?.href && normalizeKlabisApiPath(stripUriTemplate(optionDef.link.href))) ?? '';
+    const optionsHref = optionDef?.link?.href ?? '';
 
     const linkOptions = useAuthorizedQuery(optionsHref, {
         enabled: !!optionsHref,

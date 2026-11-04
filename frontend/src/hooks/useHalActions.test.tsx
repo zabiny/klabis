@@ -4,7 +4,7 @@ import {useHalActions} from './useHalActions';
 import * as ReactRouterDom from 'react-router-dom';
 import {BrowserRouter} from 'react-router-dom';
 import {type Mock, vi} from 'vitest';
-import * as NavigationPathModule from '../utils/navigationPath';
+import * as ApiPathModule from '../api/apiPath';
 
 // Mock dependencies
 vi.mock('react-router-dom', async () => ({
@@ -22,13 +22,13 @@ vi.mock('../api/hateoas', async () => ({
     submitHalFormsData: vi.fn(),
 }));
 
-vi.mock('../utils/navigationPath', async () => ({
-    ...(await vi.importActual('../utils/navigationPath')),
-    extractNavigationPath: vi.fn((href) => href),
+vi.mock('../api/apiPath', async () => ({
+    ...(await vi.importActual('../api/apiPath')),
+    toRoutePath: vi.fn((href) => href),
 }));
 
 const useNavigate = vi.mocked(ReactRouterDom.useNavigate);
-const extractNavigationPath = vi.mocked(NavigationPathModule.extractNavigationPath);
+const toRoutePath = vi.mocked(ApiPathModule.toRoutePath);
 
 describe('useHalActions Hook', () => {
     let mockNavigate: Mock;
@@ -81,7 +81,7 @@ describe('useHalActions Hook', () => {
                 result.current.handleNavigateToItem('/api/items/123');
             });
 
-            expect(extractNavigationPath).toHaveBeenCalledWith('/api/items/123');
+            expect(toRoutePath).toHaveBeenCalledWith('/api/items/123');
             expect(mockNavigate).toHaveBeenCalled();
         });
 
@@ -96,7 +96,7 @@ describe('useHalActions Hook', () => {
                 result.current.handleNavigateToItem(complexUrl);
             });
 
-            expect(extractNavigationPath).toHaveBeenCalledWith(complexUrl);
+            expect(toRoutePath).toHaveBeenCalledWith(complexUrl);
         });
     });
 

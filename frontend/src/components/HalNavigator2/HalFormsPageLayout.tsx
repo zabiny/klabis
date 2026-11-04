@@ -11,7 +11,6 @@ import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {HalFormPanel} from './HalFormPanel.tsx';
 import type {HalFormsTemplate} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
-import {normalizeKlabisApiPath} from '../../utils/halFormsUtils.ts';
 
 interface HalFormsPageLayoutProps {
     children: ReactNode;
@@ -33,7 +32,7 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
 
     const formPanel = currentFormRequest.children ? (
         <HalFormPanel
-            collectionUrl={resourceUrl ?? `/api${normalizeKlabisApiPath(route.pathname)}`}
+            collectionUrl={resourceUrl ?? route.pathname}
             templateName={currentFormRequest.templateName}
             template={template}
             fieldsFactory={currentFormRequest.fieldsFactory}

@@ -62,8 +62,8 @@ describe('stripUriTemplate', () => {
 });
 
 describe('toRegistrationLink', () => {
-    it('returns link with normalized href for a template target', () => {
-        expect(toRegistrationLink('/api/events/e1/registrations/me')).toEqual({href: '/events/e1/registrations/me'});
+    it('returns link with the raw template target', () => {
+        expect(toRegistrationLink('/api/events/e1/registrations/me')).toEqual({href: '/api/events/e1/registrations/me'});
     });
 
     it('returns undefined for missing or empty target', () => {
