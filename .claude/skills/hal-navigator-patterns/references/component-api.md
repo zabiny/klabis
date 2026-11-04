@@ -113,10 +113,49 @@ interface HalFormButtonProps {
 
 **Form flow:**
 1. Checks `resourceData._templates[name]` exists
-2. On click (modal mode): calls `requestForm()` from `HalFormContext`
-3. `HalFormsPageLayout` detects request, renders `HalFormDisplay`
-4. `HalFormDisplay` fetches initial values from `template.target`, submits to same URL
-5. On success: invalidates all query caches, refetches current resource, closes form
+2. Modal mode: opens the dialog locally through `useTemplateDialog`. Inline mode (`modal={false}`): calls `requestForm()` from `HalFormContext` and `HalFormsPageLayout` renders `HalFormDisplay`
+3. `HalFormDisplay` fetches initial values from `template.target`, submits to same URL
+4. On success: invalidates all query caches, refetches current resource, closes form
+
+## useTemplateDialog
+
+Location: `frontend/src/components/HalNavigator2/useTemplateDialog.tsx`
+
+The way to open a HAL-FORMS template in a modal (embedded rows, member pickers, confirm-style dialogs, any template not tied to a plain `HalFormButton`). Do not hand-roll `Modal` + `HalFormDisplay` for modals; `HalFormDisplay` is rendered directly only for inline editing.
+
+```typescript
+const dialog = useTemplateDialog(name?: string, options?: TemplateDialogOptions)
+// dialog: { available, availableOn(resource, name?), label, open(resource?, name?), dialog }
+
+interface TemplateDialogOptions {
+  resource?: HalResponse | null   // default target resource
+  title?: string | ((template, name) => string)  // default: localized dialog title, then template label/title
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl'   // default 'md'
+  note?: ReactNode
+  submitLabel?: string
+  successMessage?: string
+  onSubmitSuccess?: (responseData?) => void
+  onSubmitError?: (error) => boolean | void   // true = handled, dialog closes
+  navigateOnSuccess?: boolean
+  fieldsFactory?: HalFormFieldFactory
+  postprocessPayload?: (payload, template) => Record<string, unknown>
+}
+```
+
+- `open(resource?, name?)` opens the dialog for `resource` (default `options.resource`) and template `name` (default the hook argument). No-op when the template is missing on that resource.
+- `availableOn(resource, name?)` / `available` tell whether the template exists; use them to show or hide the trigger (e.g. per table row). `label` is the localized template label.
+- Render `{dialog.dialog}` once; it is a portal (`createPortal` to `document.body`) of `Modal` + `HalFormDisplay`.
+- Submit URL falls back to the opened resource self link when `template.target` is absent.
+- Member filtering goes through `fieldsFactory` with `createMemberFilteredFactory(excludeIds?, includeOnlyIds?)` from `KlabisFieldsFactory.tsx` (memoize it); `HalFormDisplay` has no member-filter props.
+
+```tsx
+const addMember = useTemplateDialog('addMember', {
+  fieldsFactory: useMemo(() => createMemberFilteredFactory(currentMemberIds), [currentMemberIds]),
+});
+
+{addMember.available && <Button onClick={() => addMember.open()}>{addMember.label}</Button>}
+{addMember.dialog}
+```
 
 ## HalFormsForm
 
