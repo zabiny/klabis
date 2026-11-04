@@ -243,7 +243,7 @@ describe('EventTypesPage', () => {
             fireEvent.click(screen.getByRole('button', {name: 'Upravit'}));
             fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /uložit|odeslat|potvrdit/i}));
 
-            return waitFor(() => expect(mutate).toHaveBeenCalledWith(expect.objectContaining({url: '/api/event-types/type-1'}), expect.anything()));
+            return waitFor(() => expect(mutate).toHaveBeenCalledWith(expect.objectContaining({url: expect.stringMatching(/\/api\/event-types\/type-1$/)}), expect.anything()));
         });
     });
 

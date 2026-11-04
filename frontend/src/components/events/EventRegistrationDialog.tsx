@@ -79,10 +79,9 @@ export const EventRegistrationDialog = ({
         return null;
     }
 
-    const normalizedTemplate = template
+    const filteredTemplate = template
         ? {
             ...template,
-            target: template.target ?? '',
             properties: template.properties
                 .filter(prop => !(prop.name === 'siCardNumber' && !showSiField)
                     && !(prop.name === 'wantsToRentSi' && !showRentCheckbox))
@@ -100,10 +99,7 @@ export const EventRegistrationDialog = ({
         : labels.events.registrationModal.confirmEdit;
 
     const unregisterTemplate = mode === 'edit' ? prefillData?._templates?.unregisterFromEvent : undefined;
-    const normalizedUnregisterTemplate = unregisterTemplate
-        ? {...unregisterTemplate, target: unregisterTemplate.target ?? ''}
-        : undefined;
-    const showUnregisterConfirmation = confirmingUnregister && normalizedUnregisterTemplate !== undefined;
+    const showUnregisterConfirmation = confirmingUnregister && unregisterTemplate !== undefined;
 
     const handleClose = () => {
         setServerFieldErrors({});
@@ -188,10 +184,10 @@ export const EventRegistrationDialog = ({
                 <Alert severity="error">{labels.events.registrationModal.prefillLoadError}</Alert>
             ) : showUnregisterConfirmation ? (
                 <HalFormDisplay
-                    template={normalizedUnregisterTemplate}
+                    template={unregisterTemplate}
                     templateName="unregisterFromEvent"
                     resourceData={resolvedResource}
-                    pathname={normalizedUnregisterTemplate.target}
+                    pathname={unregisterTemplate.target ?? ''}
                     resourceUrl={registration.href}
                     onClose={handleClose}
                     onSubmitSuccess={() => onChanged?.()}
@@ -205,22 +201,22 @@ export const EventRegistrationDialog = ({
                     onClose={handleClose}
                     syncLink={prefillData._links?.sync}
                 />
-            ) : missingAffordance || !normalizedTemplate ? (
+            ) : missingAffordance || !filteredTemplate ? (
                 <Alert severity="error">{labels.events.registrationModal.noRegistrationAffordance}</Alert>
             ) : (
                 <HalFormDisplay
-                    template={normalizedTemplate}
+                    template={filteredTemplate}
                     templateName={mode === 'new' ? 'registerForEvent' : 'editRegistration'}
                     resourceData={resolvedResource}
-                    pathname={normalizedTemplate.target}
+                    pathname={filteredTemplate.target ?? ''}
                     onClose={handleClose}
                     onSubmitSuccess={() => onChanged?.()}
                     onSubmitError={handleSubmitError}
                     postprocessPayload={stripHiddenSharedServices}
                     refineValidationSchema={refineValidationSchema}
                     navigateOnSuccess={false}
-                    successMessage={normalizedTemplate.title
-                        ? labels.events.registrationModal.savedWithTemplate(normalizedTemplate.title)
+                    successMessage={filteredTemplate.title
+                        ? labels.events.registrationModal.savedWithTemplate(filteredTemplate.title)
                         : labels.ui.savedSuccessfully}
                     submitButtonLabel={confirmLabel}
                     submitIcon={<Check className="h-4 w-4"/>}

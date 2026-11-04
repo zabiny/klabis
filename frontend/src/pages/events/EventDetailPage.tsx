@@ -18,7 +18,6 @@ import type {HalFormsTemplate} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
 import {renderYesNo} from '../../utils/formatters.ts';
 import {getActionVariant} from '../../utils/actionVariants.ts';
-import {toRegistrationLink} from '../../utils/halFormsUtils.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventSiPolicyFields} from '../../components/events/EventSiPolicyFields.tsx';
@@ -205,7 +204,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     const isCancelled = event.status === 'CANCELLED';
 
     const newRegistrationLink = asLinkArray(resourceData._links?.newRegistration)[0];
-    const editRegistrationLink = toRegistrationLink(resourceData._templates?.editRegistration?.target);
+    const editRegistrationLink = resourceData._templates?.editRegistration?.target ? {href: resourceData._templates.editRegistration.target} : undefined;
 
     const template: HalFormsTemplate | null = resourceData?._templates?.updateEvent ?? null;
     const hasEditTemplate = template !== null;

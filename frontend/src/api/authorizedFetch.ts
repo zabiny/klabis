@@ -44,6 +44,7 @@ async function executeRequest(url: string | URL, options?: RequestInit): Promise
     });
 }
 
+// String URLs are always backend API hrefs (origin dropped, off-origin absolute strings unsupported); URL instances pass through as-is.
 function resolveUrl(url: string | URL): string {
     return typeof url === 'string' ? toApiHref(url) : url.toString();
 }

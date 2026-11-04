@@ -247,7 +247,7 @@ describe('CategoryPresetsPage', () => {
             fireEvent.click(screen.getByRole('button', {name: 'Upravit'}));
             fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /uložit|odeslat|potvrdit/i}));
 
-            return waitFor(() => expect(mutate).toHaveBeenCalledWith(expect.objectContaining({url: '/api/category-presets/preset-1'}), expect.anything()));
+            return waitFor(() => expect(mutate).toHaveBeenCalledWith(expect.objectContaining({url: expect.stringMatching(/\/api\/category-presets\/preset-1$/)}), expect.anything()));
         });
     });
 });

@@ -103,17 +103,7 @@ export const HalFormDisplay = ({
 
     const handleSubmit = async (data: Record<string, unknown>) => {
         const processed = postprocessPayload ? postprocessPayload(data, template) : data;
-        const resolvedResourceUrl = resourceUrl
-            ? (() => {
-                try {
-                    const parsed = new URL(resourceUrl);
-                    return parsed.pathname;
-                } catch {
-                    return resourceUrl;
-                }
-            })()
-            : undefined;
-        const url = template.target || resolvedResourceUrl || pathname;
+        const url = template.target || resourceUrl || pathname;
         submitForm({url, data: processed}, {
             onSuccess: async ({data: responseData, location}) => {
                 const toastMessage = successMessage ?? (template.title ? `${template.title} — úspěšně uloženo` : 'Úspěšně uloženo');

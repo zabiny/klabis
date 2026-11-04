@@ -4,7 +4,6 @@ import {Bell, Calendar, ChevronRight, User, UserPen} from 'lucide-react'
 import {Button, Card} from '../components/UI'
 import {EventRegistrationDialog} from '../components/events/EventRegistrationDialog'
 import {getActionVariant} from '../utils/actionVariants'
-import {toRegistrationLink} from '../utils/halFormsUtils'
 import type {Link} from '../api'
 import {useRootNavigation} from "../hooks/useRootNavigation";
 import {labels} from "../localization/labels";
@@ -93,7 +92,7 @@ const UserDashboard = ({profileHref, menuItems}: {
                             <>
                                 <div className="divide-y divide-border">
                                     {registrationItems.map((event) => {
-                                        const editLink = toRegistrationLink(event.editRegistrationTarget)
+                                        const editLink = event.editRegistrationTarget ? {href: event.editRegistrationTarget} : undefined
                                         return (
                                         <RouterLink
                                             key={event.selfHref}
