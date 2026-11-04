@@ -30,9 +30,9 @@
 
 ## 4. Members, events, category presets, event types
 
-- [ ] 4.1 Migrate the `suspendMember` and `sendMemberAccountActivation` modals of `pages/members/MemberDetailPage.tsx`. Keep the `labels.dialogTitles.*` titles, `size="2xl"`, the confirmation `note`, `successMessage`, `submitLabel` and `onSuspendSubmitError`. Buttons use `available` / `label` where the label is unchanged.
-- [ ] 4.2 Replace the row `actionModal` state in `pages/members/MembersPage.tsx`, `pages/events/EventsPage.tsx`, `pages/events/CategoryPresetsPage.tsx` and `pages/events/EventTypesPage.tsx` with one late-bound hook each (D3), keeping each page's title expression (D5) and `navigateOnSuccess`.
-- [ ] 4.3 Rewrite the affected tests without mocking `HalFormDisplay` or `Modal`. Keep the existing assertions on titles, toasts and navigation. Run the tests of these pages.
+- [x] 4.1 Migrate the `suspendMember` and `sendMemberAccountActivation` modals of `pages/members/MemberDetailPage.tsx`. Keep the `labels.dialogTitles.*` titles, `size="2xl"`, the confirmation `note`, `successMessage`, `submitLabel` and `onSuspendSubmitError`. Buttons use `available` / `label` where the label is unchanged.
+- [x] 4.2 Replace the row `actionModal` state in `pages/members/MembersPage.tsx`, `pages/events/EventsPage.tsx`, `pages/events/CategoryPresetsPage.tsx` and `pages/events/EventTypesPage.tsx` with one late-bound hook each (D3), keeping each page's title expression (D5) and `navigateOnSuccess`.
+- [x] 4.3 Rewrite the affected tests without mocking `HalFormDisplay` or `Modal`. Keep the existing assertions on titles, toasts and navigation. Run the tests of these pages.
 
 ## 5. Cleanup
 

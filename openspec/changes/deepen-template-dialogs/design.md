@@ -66,7 +66,9 @@ Call sites build titles differently today, for example:
 - fixed strings in `RulesTable` ("Upravit pravidlo", "Smazat pravidlo");
 - `labels.dialogTitles.*` in `MemberDetailPage`.
 
-Rule: every migrated call site that passes a title today keeps the same expression in `options.title`, or in a `title` callback that receives the template when the expression depends on it. Only call sites that pass no title today (the `HalFormButton` path) use the default.
+Rule: every migrated call site that passes a title today keeps the same expression in `options.title`. When the expression depends on the template or its name, it goes in a `title: (template, name) => string` callback. Only call sites that pass no title today (the `HalFormButton` path) use the default.
+
+Explanatory text shown above the form, such as the account activation confirmation in `MemberDetailPage`, moves to `note`. `Modal` renders `note` as a band under the title instead of a paragraph in the body. This changes placement only, not text or behavior, and was accepted so that all template dialogs look the same.
 
 ### D6: Member filter through `fieldsFactory`
 

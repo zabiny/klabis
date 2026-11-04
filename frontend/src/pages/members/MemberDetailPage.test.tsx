@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import React from 'react';
-import {render, screen} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -12,6 +12,8 @@ import {MemberDetailPage} from './MemberDetailPage';
 import {vi} from 'vitest';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
+import {FetchError} from '../../api/authorizedFetch';
+import {labels} from '../../localization';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -69,18 +71,6 @@ vi.mock('../../api/hateoas', async (importOriginal) => {
         toFormValidationError: vi.fn((error) => error),
     };
 });
-
-vi.mock('../../components/UI/Modal.tsx', () => ({
-    Modal: ({isOpen, children, onClose, title}: {isOpen: boolean; children: React.ReactNode; onClose: () => void; title?: string}) => (
-        isOpen ? (
-            <div data-testid="modal-overlay" role="dialog">
-                {title && <h4>{title}</h4>}
-                {children}
-                <button onClick={onClose}>Close</button>
-            </div>
-        ) : null
-    ),
-}));
 
 const adminEditTemplate: HalFormsTemplate = {
     method: 'PUT',
@@ -552,6 +542,31 @@ describe('MemberDetailPage', () => {
             });
             renderPage(createMockPageData(data));
             expect(screen.getByRole('button', {name: /ukončit členství/i})).toBeInTheDocument();
+        });
+
+        it('closes the suspend dialog and opens the negative-balance dialog on debt 409', async () => {
+            const user = userEvent.setup();
+            const mutate = vi.fn((_vars: unknown, opts: {onError?: (e: unknown) => void}) => {
+                opts.onError?.(new FetchError('409 Conflict', 409, 'Conflict', new Headers(), JSON.stringify({
+                    debt: {balance: {amount: -350, currency: 'CZK'}, accountLink: '/api/members/m1/account'},
+                    groups: null,
+                })));
+            });
+            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate, isPending: false, error: null} as unknown as ReturnType<typeof useAuthorizedMutation>);
+            const data = mockMemberDetailData({
+                _templates: {
+                    updateMember: adminEditTemplate,
+                    suspendMember: mockHalFormsTemplate({method: 'POST', title: 'Terminate', target: '/api/members/m1/suspend', properties: []}),
+                },
+            });
+            renderPage(createMockPageData(data));
+
+            await user.click(screen.getByRole('button', {name: /ukončit členství/i}));
+            expect(screen.getAllByRole('heading', {name: labels.dialogTitles.suspendMember})[0]).toBeInTheDocument();
+            await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: /uložit|odeslat|potvrdit/i}));
+
+            expect(await screen.findByRole('heading', {name: labels.negativeBalanceWarning.title})).toBeInTheDocument();
+            expect(screen.queryByRole('heading', {name: labels.dialogTitles.suspendMember})).not.toBeInTheDocument();
         });
 
         it('shows "Založit účet" button and confirmation dialog when sendMemberAccountActivation template exists', async () => {
