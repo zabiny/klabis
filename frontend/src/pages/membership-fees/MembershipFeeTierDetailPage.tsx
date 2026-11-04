@@ -3,8 +3,8 @@ import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
-import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
-import type {GetTierResource} from '../../api';
+import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
+import type {GetTierResource, HalResponse} from '../../api';
 import {labels} from '../../localization';
 import {ChevronRight, Pencil, Save, Trash2} from 'lucide-react';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
@@ -16,7 +16,11 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
     const {route} = useHalPageData<FeeTierDetail>();
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
-    const [deleteModal, setDeleteModal] = useState(false);
+    const deleteDialog = useTemplateDialog('deleteTier', {
+        resource: resourceData as unknown as HalResponse,
+        title: (template) => template.title ?? labels.templates.deleteMembershipFeeTier,
+        onSubmitSuccess: () => navigate('/membership-fee-tiers'),
+    });
 
     const editTemplate = resourceData._templates?.editTier ?? null;
     const deleteTemplate = resourceData._templates?.deleteTier ?? null;
@@ -69,7 +73,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                             {deleteTemplate && (
                                 <button
                                     type="button"
-                                    onClick={() => setDeleteModal(true)}
+                                    onClick={() => deleteDialog.open()}
                                     className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-error bg-error-bg border border-error hover:opacity-80 transition-colors"
                                 >
                                     <Trash2 className="w-[15px] h-[15px]"/>
@@ -99,17 +103,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
                 <RulesTable/>
             </HalSubresourceProvider>
 
-            {deleteTemplate && deleteModal && (
-                <HalFormModal
-                    title={deleteTemplate.title ?? labels.templates.deleteMembershipFeeTier}
-                    template={deleteTemplate}
-                    templateName="deleteTier"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => setDeleteModal(false)}
-                    onSubmitSuccess={() => navigate('/membership-fee-tiers')}
-                />
-            )}
+            {deleteDialog.dialog}
         </div>
     );
 };

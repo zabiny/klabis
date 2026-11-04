@@ -1,9 +1,9 @@
-import {type ReactElement, useState} from 'react';
+import type {ReactElement} from 'react';
 import {Calendar, Lock} from 'lucide-react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
-import {HalFormModal} from '../HalNavigator2/HalFormModal.tsx';
-import type {GetPublicationResource} from '../../api';
+import {useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
+import type {GetPublicationResource, HalResponse} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
@@ -17,9 +17,17 @@ export type FeeSelectionCampaignDetail = GetPublicationResource;
 type FeeGroupsCollection = components['schemas']['CollectionModelEntityModelMembershipFeeGroupResponse'];
 
 export const CampaignDetail = (): ReactElement | null => {
-    const {resourceData, route} = useHalPageData<FeeSelectionCampaignDetail>();
-    const [changeDeadlineOpen, setChangeDeadlineOpen] = useState(false);
-    const [closeCampaignOpen, setCloseCampaignOpen] = useState(false);
+    const {resourceData} = useHalPageData<FeeSelectionCampaignDetail>();
+    const changeDeadlineDialog = useTemplateDialog('changeDeadline', {
+        resource: resourceData as unknown as HalResponse | null,
+        title: labels.templates.changeDeadline,
+        navigateOnSuccess: false,
+    });
+    const closeCampaignDialog = useTemplateDialog('closeCampaign', {
+        resource: resourceData as unknown as HalResponse | null,
+        title: labels.templates.closeCampaign,
+        navigateOnSuccess: false,
+    });
 
     const levelsHref = resourceData?._links?.levels ? toHref(resourceData._links.levels) : '';
     const {data: groupsData} = useAuthorizedQuery<FeeGroupsCollection>(
@@ -29,9 +37,6 @@ export const CampaignDetail = (): ReactElement | null => {
     // The rows carry per-row _links added at runtime; FeeGroupsTable's FeeGroupSummary is the
     // view type for those.
     const groups = (groupsData?._embedded?.membershipFeeGroupResponseList ?? []) as unknown as FeeGroupSummary[];
-
-    const changeDeadlineTemplate = resourceData?._templates?.changeDeadline ?? null;
-    const closeCampaignTemplate = resourceData?._templates?.closeCampaign ?? null;
 
     if (!resourceData) {
         return null;
@@ -53,12 +58,12 @@ export const CampaignDetail = (): ReactElement | null => {
                     </div>
                 </div>
 
-                {(changeDeadlineTemplate || closeCampaignTemplate) && (
+                {(changeDeadlineDialog.available || closeCampaignDialog.available) && (
                     <div className="mt-5 pt-5 border-t border-border-subtle flex flex-wrap gap-2">
-                        {changeDeadlineTemplate && (
+                        {changeDeadlineDialog.available && (
                             <button
                                 type="button"
-                                onClick={() => setChangeDeadlineOpen(true)}
+                                onClick={() => changeDeadlineDialog.open()}
                                 className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-text-secondary bg-surface border border-border-subtle hover:bg-bg-subtle transition-colors"
                                 aria-label={labels.templates.changeDeadline}
                             >
@@ -66,10 +71,10 @@ export const CampaignDetail = (): ReactElement | null => {
                                 {labels.templates.changeDeadline}
                             </button>
                         )}
-                        {closeCampaignTemplate && (
+                        {closeCampaignDialog.available && (
                             <button
                                 type="button"
-                                onClick={() => setCloseCampaignOpen(true)}
+                                onClick={() => closeCampaignDialog.open()}
                                 className="inline-flex items-center gap-2 h-[38px] px-4 rounded-md text-sm font-medium text-white bg-error hover:brightness-110 transition-colors"
                                 aria-label={labels.templates.closeCampaign}
                             >
@@ -86,29 +91,8 @@ export const CampaignDetail = (): ReactElement | null => {
                 <FeeGroupsTable groups={groups}/>
             </div>
 
-            {changeDeadlineTemplate && changeDeadlineOpen && (
-                <HalFormModal
-                    title={labels.templates.changeDeadline}
-                    template={changeDeadlineTemplate}
-                    templateName="changeDeadline"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => setChangeDeadlineOpen(false)}
-                    navigateOnSuccess={false}
-                />
-            )}
-
-            {closeCampaignTemplate && closeCampaignOpen && (
-                <HalFormModal
-                    title={labels.templates.closeCampaign}
-                    template={closeCampaignTemplate}
-                    templateName="closeCampaign"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => setCloseCampaignOpen(false)}
-                    navigateOnSuccess={false}
-                />
-            )}
+            {changeDeadlineDialog.dialog}
+            {closeCampaignDialog.dialog}
         </div>
     );
 };

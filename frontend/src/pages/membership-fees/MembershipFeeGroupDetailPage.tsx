@@ -3,8 +3,8 @@ import {Link} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
-import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
-import type {GetFeeGroupResource} from '../../api';
+import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
+import type {GetFeeGroupResource, HalResponse} from '../../api';
 import {getEnumLabel, labels} from '../../localization';
 import {ChevronRight, Pencil, UserPlus, Users} from 'lucide-react';
 import {formatDate} from '../../utils/dateUtils.ts';
@@ -58,10 +58,14 @@ const StatusBadge = ({status}: {status: 'EDITABLE' | 'FROZEN'}): ReactElement =>
 const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: MembershipFeeGroupDetail}): ReactElement => {
     const {route} = useHalPageData<MembershipFeeGroupDetail>();
     const [isEditing, setIsEditing] = useState(false);
-    const [assignMemberModal, setAssignMemberModal] = useState(false);
+    const assignMemberDialog = useTemplateDialog('assignMember', {
+        resource: resourceData as unknown as HalResponse,
+        title: labels.templates.assignMember,
+        successMessage: labels.ui.savedSuccessfully,
+        navigateOnSuccess: false,
+    });
 
     const editTemplate = resourceData._templates?.editSnapshot ?? null;
-    const assignMemberTemplate = resourceData._templates?.assignMember ?? null;
     const members = resourceData._embedded?.members ?? [];
     const canEdit = resourceData.status === 'EDITABLE' && !!editTemplate;
 
@@ -97,10 +101,10 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                                 {labels.buttons.edit}
                             </button>
                         )}
-                        {assignMemberTemplate && (
+                        {assignMemberDialog.available && (
                             <button
                                 type="button"
-                                onClick={() => setAssignMemberModal(true)}
+                                onClick={() => assignMemberDialog.open()}
                                 className="inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-white transition-colors hover:opacity-90"
                                 style={{background: 'var(--color-primary)'}}
                             >
@@ -205,18 +209,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                 )}
             </div>
 
-            {assignMemberTemplate && assignMemberModal && (
-                <HalFormModal
-                    title={labels.templates.assignMember}
-                    template={assignMemberTemplate}
-                    templateName="assignMember"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => { setAssignMemberModal(false); void route.refetch(); }}
-                    successMessage={labels.ui.savedSuccessfully}
-                    navigateOnSuccess={false}
-                />
-            )}
+            {assignMemberDialog.dialog}
         </div>
     );
 };
