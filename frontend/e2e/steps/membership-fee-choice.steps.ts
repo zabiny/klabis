@@ -4,7 +4,7 @@ import {test, type ApiClient, type FeeScenarioState} from '../support/fixtures';
 import {memberIdentity} from '../support/halApi';
 import {expectActing, personas, type Persona} from '../support/personas';
 import type {Role} from '../support/roles';
-import {action, czechAmount, heading, navigateInApp, openFromMenu, submitWith} from '../support/ui';
+import {action, czechAmount, heading, openAddress, openFromMenu, submitWith} from '../support/ui';
 
 const {When, Then} = createBdd(test);
 
@@ -23,10 +23,10 @@ const openProfile = async (page: Page) => {
     await expect(feeSection(page).locator('p').first()).toBeVisible();
 };
 
-// The form is not linked from the profile once voting is closed, so it is reached through the SPA router.
+// The form is not linked from the profile once voting is closed, so its address is opened.
 const openChoiceForm = async (page: Page, apiAs: (role: Role) => ApiClient, persona: Persona, feeState: FeeScenarioState) => {
     const {id} = await memberIdentity(apiAs(personas[persona]));
-    await navigateInApp(page, `/members/${id}/fee-choice/${feeState.year}`);
+    await openAddress(page, `/members/${id}/fee-choice/${feeState.year}`);
     await expect(page.getByRole('heading', {name: new RegExp(`pro rok ${feeState.year}$`), level: 1})).toBeVisible();
 };
 
