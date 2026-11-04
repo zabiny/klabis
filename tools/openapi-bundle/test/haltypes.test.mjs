@@ -239,3 +239,277 @@ describe('renderHalTypes', () => {
         expect(output).toContain('templates: [] as const,');
     });
 });
+
+const listDocument = (response, schemas = {}) => ({
+    paths: {
+        '/api/members': {
+            get: {
+                operationId: 'listMembers',
+                responses: {
+                    '200': {
+                        content: {
+                            'application/json': {
+                                schema: {type: 'array', items: {$ref: '#/components/schemas/MemberSummaryResponse'}},
+                            },
+                            'application/prs.hal-forms+json': {
+                                schema: {$ref: '#/components/schemas/CollectionModelEntityModelMemberSummaryResponse'},
+                            },
+                        },
+                        ...response,
+                    },
+                },
+            },
+        },
+    },
+    components: {schemas},
+});
+
+describe('row types — placement on a response', () => {
+    const rows = {
+        'x-hal-links': {self: {}},
+        'x-hal-item-links': {self: {description: 'This member'}},
+        'x-hal-item-templates': {updateMember: {description: 'Edit member'}},
+    };
+
+    it('collects the item rels and the EntityModel row schema of an array payload', () => {
+        const [resource] = collectHalResources(listDocument(rows));
+
+        expect(resource.itemLinks).toEqual(['self']);
+        expect(resource.itemTemplates).toEqual(['updateMember']);
+        expect(resource.itemSchema).toBe('EntityModelMemberSummaryResponse');
+    });
+
+    it('types rows of an x-hal-embedded response by the declared items payload', () => {
+        const document = memberDocument({
+            'x-hal-links': {self: {}},
+            'x-hal-embedded': {items: 'RegistrationResponse', suffix: 'WithRegistrations'},
+            'x-hal-item-links': {self: {}},
+        });
+        document.paths['/api/members/{id}'].get.responses['200'].content['application/json'] = {
+            schema: {$ref: '#/components/schemas/MemberDetailsResponse'},
+        };
+
+        const [resource] = collectHalResources(document);
+        expect(resource.itemSchema).toBe('RegistrationResponse');
+    });
+
+    it('emits ItemHal, ItemResource and ItemRels next to the page types', () => {
+        const output = renderHalTypes(listDocument(rows));
+
+        expect(output).toContain('export interface ListMembersItemHal {');
+        expect(output).toContain("'self'?: HalResourceLinks;");
+        expect(output).toContain("'updateMember'?: HalFormsTemplate;");
+        expect(output).toContain("/** Edit member */");
+        expect(output).toContain("export type ListMembersItemResource =\n  components['schemas']['EntityModelMemberSummaryResponse'] & ListMembersItemHal;");
+        expect(output).toContain("export const ListMembersItemRels = {\n  links: ['self'] as const,\n  templates: ['updateMember'] as const,\n} as const;");
+        expect(output).toContain('export interface ListMembersHal {');
+    });
+
+    it('emits the row types even when the page itself declares no rels', () => {
+        const output = renderHalTypes(listDocument({
+            'x-hal-item-links': {self: {}},
+        }));
+
+        expect(output).toContain('export interface ListMembersItemHal {');
+        expect(output).not.toContain('ListMembersHal');
+    });
+
+    it('leaves the output unchanged when no item rels are declared', () => {
+        const without = renderHalTypes(listDocument({'x-hal-links': {self: {}}}));
+
+        expect(without).not.toContain('Item');
+    });
+});
+
+describe('row types — placement on an array property', () => {
+    const groupDocument = (extraPaths = {}) => ({
+        paths: {
+            '/api/training-groups/{id}': {
+                get: {
+                    operationId: 'getTrainingGroup',
+                    responses: {
+                        '200': {
+                            content: {
+                                'application/prs.hal-forms+json': {
+                                    schema: {$ref: '#/components/schemas/EntityModelTrainingGroupResponse'},
+                                },
+                            },
+                            'x-hal-links': {self: {}},
+                        },
+                    },
+                },
+            },
+            ...extraPaths,
+        },
+        components: {
+            schemas: {
+                EntityModelTrainingGroupResponse: {
+                    allOf: [
+                        {$ref: '#/components/schemas/TrainingGroupResponse'},
+                        {$ref: '#/components/schemas/EntityModel'},
+                    ],
+                },
+                TrainingGroupResponse: {
+                    type: 'object',
+                    properties: {
+                        name: {type: 'string'},
+                        members: {
+                            type: 'array',
+                            items: {$ref: '#/components/schemas/EntityModelTrainingGroupMemberResponse'},
+                            'x-hal-item-links': {self: {description: 'This member'}},
+                            'x-hal-item-templates': {removeMember: {}},
+                        },
+                        trainers: {
+                            type: 'array',
+                            items: {$ref: '#/components/schemas/EntityModelTrainerResponse'},
+                            'x-hal-item-links': {self: {}},
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    it('overrides the array properties on the parent resource via Omit', () => {
+        const output = renderHalTypes(groupDocument());
+
+        expect(output).toContain(
+            "export type GetTrainingGroupResource =\n"
+            + "  Omit<components['schemas']['EntityModelTrainingGroupResponse'], 'members' | 'trainers'>\n"
+            + "  & {members?: GetTrainingGroupMembersItemResource[]; trainers?: GetTrainingGroupTrainersItemResource[]}\n"
+            + "  & GetTrainingGroupHal;");
+    });
+
+    it('emits Hal, Resource and Rels per property, named after operation and property', () => {
+        const output = renderHalTypes(groupDocument());
+
+        expect(output).toContain('export interface GetTrainingGroupMembersItemHal {');
+        expect(output).toContain("export type GetTrainingGroupMembersItemResource =\n  components['schemas']['EntityModelTrainingGroupMemberResponse'] & GetTrainingGroupMembersItemHal;");
+        expect(output).toContain("export const GetTrainingGroupMembersItemRels = {\n  links: ['self'] as const,\n  templates: ['removeMember'] as const,\n} as const;");
+        expect(output).toContain("export type GetTrainingGroupTrainersItemResource =\n  components['schemas']['EntityModelTrainerResponse'] & GetTrainingGroupTrainersItemHal;");
+    });
+
+    it('emits the override on every resource whose schema uses the property schema', () => {
+        const output = renderHalTypes(groupDocument({
+            '/api/training-groups': {
+                post: {
+                    operationId: 'createTrainingGroup',
+                    responses: {
+                        '201': {
+                            content: {
+                                'application/prs.hal-forms+json': {
+                                    schema: {$ref: '#/components/schemas/EntityModelTrainingGroupResponse'},
+                                },
+                            },
+                            'x-hal-links': {self: {}},
+                        },
+                    },
+                },
+            },
+        }));
+
+        expect(output).toContain('export type CreateTrainingGroupMembersItemResource =');
+        expect(output).toContain('export type GetTrainingGroupMembersItemResource =');
+        expect(output).toContain("Omit<components['schemas']['EntityModelTrainingGroupResponse'], 'members' | 'trainers'>\n  & {members?: CreateTrainingGroupMembersItemResource[]");
+    });
+
+    it('does not override a resource whose schema lacks the property schema', () => {
+        const output = renderHalTypes(memberDocument({'x-hal-links': {self: {}}}));
+
+        expect(output).not.toContain('Omit<');
+    });
+});
+
+describe('row types — review fixes', () => {
+    it('references the items payload itself when it is already envelope-shaped', () => {
+        const document = listDocument({'x-hal-item-links': {self: {}}}, {
+            MemberSummaryResponse: {
+                type: 'object',
+                properties: {_links: {type: 'object'}},
+            },
+        });
+
+        const [resource] = collectHalResources(document);
+        expect(resource.itemSchema).toBe('MemberSummaryResponse');
+    });
+
+    it('wraps a plain items payload in EntityModel', () => {
+        const document = listDocument({'x-hal-item-links': {self: {}}}, {
+            MemberSummaryResponse: {type: 'object', properties: {id: {type: 'string'}}},
+        });
+
+        expect(collectHalResources(document)[0].itemSchema).toBe('EntityModelMemberSummaryResponse');
+    });
+
+    const propertyOnlyDocument = (schemaPatch = {}) => ({
+        paths: {
+            '/api/groups/{id}': {
+                get: {
+                    operationId: 'getGroup',
+                    responses: {
+                        '200': {
+                            content: {
+                                'application/prs.hal-forms+json': {
+                                    schema: {$ref: '#/components/schemas/EntityModelGroupResponse'},
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+        components: {
+            schemas: {
+                EntityModelGroupResponse: {
+                    allOf: [{$ref: '#/components/schemas/GroupResponse'}, {$ref: '#/components/schemas/EntityModel'}],
+                },
+                GroupResponse: {
+                    type: 'object',
+                    properties: {
+                        owners: {
+                            type: 'array',
+                            items: {$ref: '#/components/schemas/EntityModelOwnerResponse'},
+                            'x-hal-item-links': {self: {}},
+                        },
+                    },
+                    ...schemaPatch,
+                },
+            },
+        },
+    });
+
+    it('emits the parent resource with the override when the page declares no rels', () => {
+        const output = renderHalTypes(propertyOnlyDocument());
+
+        expect(output).toContain('export interface GetGroupHal {');
+        expect(output).toContain(
+            "export type GetGroupResource =\n"
+            + "  Omit<components['schemas']['EntityModelGroupResponse'], 'owners'>\n"
+            + "  & {owners?: GetGroupOwnersItemResource[]}\n"
+            + "  & GetGroupHal;");
+        expect(output).toContain('export const GetGroupOwnersItemRels = {');
+    });
+
+    it('does not emit empty page Rels for a parent that declares no rels', () => {
+        const output = renderHalTypes(propertyOnlyDocument());
+
+        expect(output).not.toContain('GetGroupRels');
+        expect(output).not.toContain('GetGroupLinkRel');
+    });
+
+    it('keeps a required array property required in the override', () => {
+        const output = renderHalTypes(propertyOnlyDocument({required: ['owners']}));
+
+        expect(output).toContain('& {owners: GetGroupOwnersItemResource[]}');
+    });
+
+    it('reads required from an allOf sibling of the declaring schema', () => {
+        const document = propertyOnlyDocument();
+        const group = document.components.schemas.GroupResponse;
+        document.components.schemas.GroupResponse = {
+            allOf: [group, {required: ['owners']}],
+        };
+
+        expect(renderHalTypes(document)).toContain('& {owners: GetGroupOwnersItemResource[]}');
+    });
+});

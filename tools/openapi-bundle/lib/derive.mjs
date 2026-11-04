@@ -188,9 +188,9 @@ function deriveResponseEnvelope(jsonSchema, schemas, {paged, embedded}, collisio
  * resources carrying their own `_links`, which is an API design choice rather than something
  * derivable. Emits `EntityModel<Item>` and retargets the items `$ref` at it.
  */
-function deriveEntityItems(node, schemas, collisions) {
+function deriveEntityItems(node, schemas, collisions, path, consumedPaths) {
     if (Array.isArray(node)) {
-        for (const item of node) deriveEntityItems(item, schemas, collisions);
+        node.forEach((item, i) => deriveEntityItems(item, schemas, collisions, `${path}[${i}]`, consumedPaths));
         return;
     }
     if (!isPlainObject(node)) return;
@@ -216,9 +216,13 @@ function deriveEntityItems(node, schemas, collisions) {
         // ref already names the wrapper) — the self-contradiction `validate.mjs`'s already-enveloped
         // check would then flag. It appears zero times in today's committed bundle.
         delete node['x-hal-entity-items'];
+        // Same path format as validate.mjs's walk — the validator can no longer see the marker.
+        consumedPaths.add(path);
     }
 
-    for (const value of Object.values(node)) deriveEntityItems(value, schemas, collisions);
+    for (const [key, value] of Object.entries(node)) {
+        deriveEntityItems(value, schemas, collisions, `${path}/${key}`, consumedPaths);
+    }
 }
 
 /**
@@ -374,7 +378,7 @@ export function halResponsePayloadNames(jsonSchema) {
 export function deriveHalEnvelopes(document) {
     const collisions = [];
     const schemas = document?.components?.schemas;
-    if (!isPlainObject(schemas)) return {document, collisions};
+    if (!isPlainObject(schemas)) return {document, collisions, entityItemPaths: new Set()};
 
     forEachHalResponse(document, ({content, jsonSchema, paged, embedded}) => {
         const derived = deriveResponseEnvelope(jsonSchema, schemas, {paged, embedded}, collisions);
@@ -382,8 +386,9 @@ export function deriveHalEnvelopes(document) {
         content[HAL_FORMS] = {schema: schemaRef(derived)};
     });
 
-    deriveEntityItems(schemas, schemas, collisions);
+    const entityItemPaths = new Set();
+    deriveEntityItems(schemas, schemas, collisions, '/components/schemas', entityItemPaths);
     consumePropertyDirectives(document);
 
-    return {document, collisions};
+    return {document, collisions, entityItemPaths};
 }

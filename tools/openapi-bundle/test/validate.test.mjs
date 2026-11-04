@@ -1297,3 +1297,179 @@ describe('validateSpec — x-klabis-read-authority', () => {
         expect(errors[0].message).toContain('not valid on an operation');
     });
 });
+
+describe('validateSpec — x-hal-item-links / x-hal-item-templates', () => {
+    const authorities = parseAuthorities(AUTHORITY_JAVA);
+    const validate = (doc, entityItemPaths = new Set()) => validateSpec(doc, {authorities, entityItemPaths});
+    const itemRels = {
+        'x-hal-item-links': {self: {description: 'This row'}},
+        'x-hal-item-templates': {updateThing: {operation: 'updateThing', description: 'Edit row'}},
+    };
+    const operation = (response) => ({
+        paths: {
+            '/api/things': {get: {operationId: 'listThings', responses: {'200': response}}},
+            '/api/things/{id}': {put: {operationId: 'updateThing', responses: {'200': {}}}},
+        },
+        components: {
+            schemas: {
+                Thing: {type: 'object', properties: {}},
+                Holder: {type: 'object', properties: {}},
+            },
+        },
+    });
+    const json = (schema) => ({content: {'application/json': {schema}}});
+
+    it('accepts the keys on a response with an array payload', () => {
+        expect(validate(operation({
+            ...json({type: 'array', items: {$ref: '#/components/schemas/Thing'}}),
+            ...itemRels,
+        }))).toEqual([]);
+    });
+
+    it('accepts the keys on an x-hal-embedded response', () => {
+        expect(validate(operation({
+            ...json({$ref: '#/components/schemas/Holder'}),
+            'x-hal-embedded': {items: 'Thing', suffix: 'WithThings'},
+            ...itemRels,
+        }))).toEqual([]);
+    });
+
+    it('accepts the keys next to x-hal-entity-items on an array property', () => {
+        const doc = operation({});
+        doc.components.schemas.Holder.properties.things = {
+            type: 'array',
+            items: {$ref: '#/components/schemas/Thing'},
+            'x-hal-entity-items': true,
+            ...itemRels,
+        };
+        expect(validate(doc)).toEqual([]);
+    });
+
+    it('accepts the keys on an array property whose marker the deriver already consumed', () => {
+        const doc = operation({});
+        doc.components.schemas.EntityModel = {type: 'object', properties: {_links: {type: 'object'}, _templates: {type: 'object'}}};
+        doc.components.schemas.EntityModelThing = {
+            allOf: [{$ref: '#/components/schemas/Thing'}, {$ref: '#/components/schemas/EntityModel'}],
+        };
+        doc.components.schemas.Holder.properties.things = {
+            type: 'array',
+            items: {$ref: '#/components/schemas/EntityModelThing'},
+            ...itemRels,
+        };
+        expect(validate(doc, new Set(['/components/schemas/Holder/properties/things']))).toEqual([]);
+    });
+
+    it('rejects the keys on a hand-enveloped array that never carried the marker', () => {
+        const doc = operation({});
+        doc.components.schemas.EntityModel = {type: 'object', properties: {_links: {type: 'object'}}};
+        doc.components.schemas.EntityModelThing = {
+            allOf: [{$ref: '#/components/schemas/Thing'}, {$ref: '#/components/schemas/EntityModel'}],
+        };
+        doc.components.schemas.Holder.properties.things = {
+            type: 'array',
+            items: {$ref: '#/components/schemas/EntityModelThing'},
+            ...itemRels,
+        };
+        const errors = validate(doc);
+        expect(errors.map((e) => e.path.split('/').pop()).sort())
+            .toEqual(['x-hal-item-links', 'x-hal-item-templates']);
+    });
+
+    it('accepts the keys on a response whose application/json schema $refs a named array schema', () => {
+        const doc = operation({
+            ...json({$ref: '#/components/schemas/ThingList'}),
+            ...itemRels,
+        });
+        doc.components.schemas.ThingList = {type: 'array', items: {$ref: '#/components/schemas/Thing'}};
+        expect(validate(doc)).toEqual([]);
+    });
+
+    it('rejects the keys on a requestBody with an array schema', () => {
+        const doc = operation({});
+        doc.paths['/api/things'].post = {
+            operationId: 'createThings',
+            requestBody: {
+                ...json({type: 'array', items: {$ref: '#/components/schemas/Thing'}}),
+                'x-hal-item-links': {self: {}},
+            },
+            responses: {'200': {}},
+        };
+        const errors = validate(doc);
+        expect(errors).toHaveLength(1);
+        expect(errors[0].path).toContain('requestBody');
+    });
+
+    it('rejects the keys on a response that has both an array payload and x-hal-embedded', () => {
+        const errors = validate(operation({
+            ...json({type: 'array', items: {$ref: '#/components/schemas/Thing'}}),
+            'x-hal-embedded': {items: 'Thing', suffix: 'WithThings'},
+            ...itemRels,
+        }));
+        expect(errors.map((e) => e.path.split('/').pop()).sort())
+            .toEqual(['x-hal-item-links', 'x-hal-item-templates']);
+    });
+
+    it('rejects the keys on an entity-items array whose items is not a $ref', () => {
+        const doc = operation({});
+        doc.components.schemas.Holder.properties.things = {
+            type: 'array',
+            items: {type: 'string'},
+            'x-hal-entity-items': true,
+            ...itemRels,
+        };
+        expect(validate(doc).some((e) => e.path.endsWith('/x-hal-item-links'))).toBe(true);
+    });
+
+    it.each(['x-hal-item-links', 'x-hal-item-templates'])('rejects %s on a response without array payload or x-hal-embedded', (key) => {
+        const errors = validate(operation({
+            ...json({$ref: '#/components/schemas/Holder'}),
+            [key]: itemRels[key],
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].path).toContain(key);
+    });
+
+    it('rejects the keys on an array property without x-hal-entity-items', () => {
+        const doc = operation({});
+        doc.components.schemas.Holder.properties.things = {
+            type: 'array',
+            items: {$ref: '#/components/schemas/Thing'},
+            ...itemRels,
+        };
+        const errors = validate(doc);
+        expect(errors.map((e) => e.path.split('/').pop()).sort())
+            .toEqual(['x-hal-item-links', 'x-hal-item-templates']);
+    });
+
+    it('rejects the keys on a non-array schema', () => {
+        const doc = operation({});
+        doc.components.schemas.Holder.properties.thing = {
+            $ref: '#/components/schemas/Thing',
+            'x-hal-entity-items': true,
+            'x-hal-item-links': {self: {}},
+        };
+        expect(validate(doc).some((e) => e.path.endsWith('/x-hal-item-links'))).toBe(true);
+    });
+
+    it.each(['x-hal-item-links', 'x-hal-item-templates'])('rejects an unknown operation in %s', (key) => {
+        const errors = validate(operation({
+            ...json({type: 'array', items: {$ref: '#/components/schemas/Thing'}}),
+            [key]: {self: {operation: 'nope'}},
+        }));
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('does not match any operationId');
+    });
+
+    it('checks operation on a property-level placement too', () => {
+        const doc = operation({});
+        doc.components.schemas.Holder.properties.things = {
+            type: 'array',
+            items: {$ref: '#/components/schemas/Thing'},
+            'x-hal-entity-items': true,
+            'x-hal-item-links': {self: {operation: 'nope'}},
+        };
+        const errors = validate(doc);
+        expect(errors).toHaveLength(1);
+        expect(errors[0].message).toContain('does not match any operationId');
+    });
+});
