@@ -3,13 +3,14 @@ import {PermissionsDialog} from "../../components/members/PermissionsDialog";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 import {Link, useLocation, useNavigate} from "react-router-dom";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from "../../components/UI";
+import {Alert, Badge, Button, DetailRow, Skeleton} from "../../components/UI";
 import {ErrorPage} from "../ErrorPage.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
-import type {GetMemberHal, GetMemberResource, HalFormsTemplate} from "../../api";
+import type {GetMemberHal, GetMemberResource, HalFormsTemplate, HalResponse} from "../../api";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
+import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
 import {Banknote, Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserPlus, UserX} from "lucide-react";
 import {Section} from "./MemberSection";
 import {BirthNumberConditionalField} from "./BirthNumberConditionalField";
@@ -85,8 +86,14 @@ interface MemberDetailContentProps {
 
 const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = false}: MemberDetailContentProps) => {
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
-    const [suspendMemberModal, setSuspendMemberModal] = useState(false);
-    const [accountActivationModal, setAccountActivationModal] = useState(false);
+    const accountActivationDialog = useTemplateDialog('sendMemberAccountActivation', {
+        resource: resourceData as unknown as HalResponse,
+        title: labels.dialogTitles.sendMemberAccountActivation,
+        size: '2xl',
+        note: <p className="text-text-secondary">{labels.accountActivation.confirm}</p>,
+        successMessage: labels.accountActivation.sent,
+        submitLabel: labels.templates.sendMemberAccountActivation,
+    });
 
     const {
         suspensionWarning,
@@ -94,7 +101,13 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
         clearSuspensionWarning,
         clearNegativeBalanceWarning,
         onSubmitError: onSuspendSubmitError,
-    } = useSuspendMemberAction({closeActionModal: () => setSuspendMemberModal(false)});
+    } = useSuspendMemberAction();
+    const suspendDialog = useTemplateDialog('suspendMember', {
+        resource: resourceData as unknown as HalResponse,
+        title: labels.dialogTitles.suspendMember,
+        size: '2xl',
+        onSubmitError: onSuspendSubmitError,
+    });
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
     const navigate = useNavigate();
 
@@ -348,20 +361,20 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     {labels.permissions['MEMBERS:PERMISSIONS'].label}
                                 </Button>
                             )}
-                            {hasEditTemplate && resourceData._templates?.suspendMember && (
+                            {hasEditTemplate && suspendDialog.available && (
                                 <Button
                                     variant="danger"
-                                    onClick={() => setSuspendMemberModal(true)}
+                                    onClick={() => suspendDialog.open()}
                                     startIcon={<UserX className="w-4 h-4"/>}
                                 >
                                     {labels.templates.suspendMember}
                                 </Button>
                             )}
                             {hasEditTemplate && <HalFormButton name="resumeMember" modal={true}/>}
-                            {resourceData._templates?.sendMemberAccountActivation && (
+                            {accountActivationDialog.available && (
                                 <Button
                                     variant="secondary"
-                                    onClick={() => setAccountActivationModal(true)}
+                                    onClick={() => accountActivationDialog.open()}
                                     startIcon={<UserPlus className="w-4 h-4"/>}
                                 >
                                     {labels.templates.sendMemberAccountActivation}
@@ -448,8 +461,6 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
         {enabled: isPermissionsDialogOpen, onSaved: () => setIsPermissionsDialogOpen(false)},
     );
 
-    const suspendTemplate = resourceData._templates?.suspendMember ?? null;
-    const accountActivationTemplate = resourceData._templates?.sendMemberAccountActivation ?? null;
 
     return (
         <>
@@ -467,42 +478,8 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                 onClose={clearNegativeBalanceWarning}
                 warning={negativeBalanceWarning}
             />
-            {accountActivationTemplate && accountActivationModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setAccountActivationModal(false)}
-                    title={labels.dialogTitles.sendMemberAccountActivation}
-                    size="2xl"
-                >
-                    <p className="mb-4 text-text-secondary">{labels.accountActivation.confirm}</p>
-                    <HalFormDisplay
-                        template={accountActivationTemplate}
-                        templateName="sendMemberAccountActivation"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => setAccountActivationModal(false)}
-                        successMessage={labels.accountActivation.sent}
-                        submitButtonLabel={labels.templates.sendMemberAccountActivation}
-                    />
-                </Modal>
-            )}
-            {suspendTemplate && suspendMemberModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setSuspendMemberModal(false)}
-                    title={labels.dialogTitles.suspendMember}
-                    size="2xl"
-                >
-                    <HalFormDisplay
-                        template={suspendTemplate}
-                        templateName="suspendMember"
-                        resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => setSuspendMemberModal(false)}
-                        onSubmitError={onSuspendSubmitError}
-                    />
-                </Modal>
-            )}
+            {accountActivationDialog.dialog}
+            {suspendDialog.dialog}
             <PermissionsDialog
                 isOpen={isPermissionsDialogOpen}
                 onClose={() => setIsPermissionsDialogOpen(false)}

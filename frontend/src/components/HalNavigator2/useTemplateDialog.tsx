@@ -9,7 +9,7 @@ import type {HalFormFieldFactory} from './halforms';
 
 export interface TemplateDialogOptions {
     resource?: HalResponse | null;
-    title?: string | ((template: HalFormsTemplate) => string);
+    title?: string | ((template: HalFormsTemplate, name: string) => string);
     size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
     note?: ReactNode;
     submitLabel?: string;
@@ -71,7 +71,7 @@ export function useTemplateDialog(name?: string, options: TemplateDialogOptions 
     let dialog: ReactElement | null = null;
     if (opened && openedTemplate) {
         const title = typeof options.title === 'function'
-            ? options.title(openedTemplate)
+            ? options.title(openedTemplate, opened.name)
             : options.title ?? getDialogTitleLabel(opened.name) ?? getTemplateLabel(opened.name) ?? openedTemplate.title;
 
         dialog = createPortal(

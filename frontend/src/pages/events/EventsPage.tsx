@@ -1,11 +1,11 @@
 import {type ReactElement, useState} from "react";
-import type {HalFormsTemplate, HalResourceLinks, Link} from "../../api";
+import type {HalFormsTemplate, HalResourceLinks, HalResponse, Link} from "../../api";
 import type {components} from "../../api/klabisApi";
 import {TableCell} from "../../components/KlabisTable";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
-import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {asLinkArray, toHref} from "../../api/hateoas.ts";
+import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
+import {asLinkArray} from "../../api/hateoas.ts";
 import {toRegistrationLink} from "../../utils/halFormsUtils.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {useHalRoute} from "../../contexts/halRouteContext.ts";
@@ -18,7 +18,7 @@ import {ImportOrisEventModal} from "../../components/events/ImportOrisEventModal
 import {BulkSyncOrisModal} from "../../components/events/BulkSyncOrisModal.tsx";
 import {useOrisEventImport} from "../../hooks/useOrisEventImport.ts";
 import {eventFormFieldsFactory} from "../../components/events/eventFormFieldsFactory.tsx";
-import {Button, DetailRow, Modal, Tooltip} from "../../components/UI";
+import {Button, DetailRow, Tooltip} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {Section} from "../members/MemberSection.tsx";
 import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
@@ -35,12 +35,6 @@ import {useEventsFilterState} from "./useEventsFilterState.ts";
 
 type EventListData = components['schemas']['EntityModelEventSummaryDto'] & {
     _templates?: Record<string, HalFormsTemplate>;
-}
-
-interface EventActionModalState {
-    event: EventListData;
-    templateName: string;
-    template: HalFormsTemplate;
 }
 
 const ROW_ACTION_BUTTONS = [
@@ -105,7 +99,10 @@ export const EventsPage = (): ReactElement => {
     const {getById: getEventTypeById, eventTypes} = useEventTypes();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isBulkSyncModalOpen, setIsBulkSyncModalOpen] = useState(false);
-    const [actionModal, setActionModal] = useState<EventActionModalState | null>(null);
+    const actionDialog = useTemplateDialog(undefined, {
+        size: '2xl',
+        title: (template, name) => getDialogTitleLabel(name) ?? getTemplateLabel(name) ?? template.title ?? name,
+    });
     const [registrationTarget, setRegistrationTarget] = useState<Link | null>(null);
     const {filterValue, extraParams, defaultSort, handleFilterChange} = useEventsFilterState();
 
@@ -122,12 +119,6 @@ export const EventsPage = (): ReactElement => {
         isImportModalOpen,
         {onImported: () => route.refetch()},
     );
-
-    const openActionModal = (event: EventListData, templateName: string) => {
-        const template = event._templates?.[templateName];
-        if (!template) return;
-        setActionModal({event, templateName, template});
-    };
 
     const renderActionsCell = ({item}: TableCellRenderProps) => {
         const event = item as unknown as EventListData;
@@ -161,7 +152,7 @@ export const EventsPage = (): ReactElement => {
                         if (name === 'updateEvent') {
                             route.navigateToResource(event, {state: {editing: true}});
                         } else {
-                            openActionModal(event, name);
+                            actionDialog.open(event as unknown as HalResponse, name);
                         }
                     }}>
                         <Icon className="w-4 h-4"/>
@@ -382,20 +373,7 @@ export const EventsPage = (): ReactElement => {
             />
         )}
 
-        {actionModal && (
-            <Modal isOpen={true} onClose={() => setActionModal(null)}
-                   title={getDialogTitleLabel(actionModal.templateName) ?? getTemplateLabel(actionModal.templateName) ?? actionModal.template.title ?? actionModal.templateName} size="2xl">
-                <HalFormDisplay
-                    template={actionModal.template}
-                    templateName={actionModal.templateName}
-                    resourceData={actionModal.event as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    resourceUrl={actionModal.event._links?.self ? toHref(actionModal.event._links.self) : undefined}
-                    onClose={() => setActionModal(null)}
-                    fieldsFactory={actionModal.templateName === 'updateEvent' ? eventFormFieldsFactory : undefined}
-                />
-            </Modal>
-        )}
+        {actionDialog.dialog}
 
         <EventRegistrationDialog
             registration={registrationTarget}

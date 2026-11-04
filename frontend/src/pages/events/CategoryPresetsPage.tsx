@@ -1,14 +1,12 @@
-import {type ReactElement, useState} from "react";
-import type {HalFormsTemplate} from "../../api";
+import type {ReactElement} from "react";
+import type {HalFormsTemplate, HalResponse} from "../../api";
 import type {components} from "../../api/klabisApi";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
-import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {useHalPageData} from "../../hooks/useHalPageData.ts";
-import {toHref} from "../../api/hateoas.ts";
+import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
 import {labels} from "../../localization";
-import {Badge, Button, Modal} from "../../components/UI";
+import {Badge, Button} from "../../components/UI";
 import {Pencil, Trash2} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 
@@ -16,20 +14,14 @@ type CategoryPresetListItem = components['schemas']['EntityModelCategoryPresetDt
     _templates?: Record<string, HalFormsTemplate>;
 };
 
-interface ActionModalState {
-    item: CategoryPresetListItem;
-    templateName: string;
-    template: HalFormsTemplate;
-}
-
 export const CategoryPresetsPage = (): ReactElement => {
-    const {route} = useHalPageData();
-    const [actionModal, setActionModal] = useState<ActionModalState | null>(null);
+    const actionDialog = useTemplateDialog(undefined, {
+        size: 'md',
+        title: (template, name) => template.title ?? labels.templates[name as keyof typeof labels.templates],
+    });
 
     const openActionModal = (item: CategoryPresetListItem, templateName: string) => {
-        const template = item._templates?.[templateName];
-        if (!template) return;
-        setActionModal({item, templateName, template});
+        actionDialog.open(item as unknown as HalResponse, templateName);
     };
 
     const renderActionsCell = ({item}: TableCellRenderProps) => {
@@ -100,23 +92,7 @@ export const CategoryPresetsPage = (): ReactElement => {
                 </HalEmbeddedTable>
             </div>
 
-            {actionModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setActionModal(null)}
-                    title={actionModal.template.title ?? labels.templates[actionModal.templateName as keyof typeof labels.templates]}
-                    size="md"
-                >
-                    <HalFormDisplay
-                        template={actionModal.template}
-                        templateName={actionModal.templateName}
-                        resourceData={actionModal.item as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        resourceUrl={actionModal.item._links?.self ? toHref(actionModal.item._links.self) : undefined}
-                        onClose={() => setActionModal(null)}
-                    />
-                </Modal>
-            )}
+            {actionDialog.dialog}
         </div>
     );
 };

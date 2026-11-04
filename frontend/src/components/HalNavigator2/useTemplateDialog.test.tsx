@@ -198,14 +198,14 @@ describe('useTemplateDialog', () => {
             expect(await screen.findByTestId('modal-title')).toHaveTextContent('Moje');
         });
 
-        it('title callback receives the template', async () => {
+        it('title callback receives the template and its name', async () => {
             const user = userEvent.setup();
             renderHarness({
                 name: 'publishEvent',
-                options: {resource: resourceWith({publishEvent: template({title: 'T1'})}), title: t => `Vlastní: ${t.title}`},
+                options: {resource: resourceWith({publishEvent: template({title: 'T1'})}), title: (t, n) => `Vlastní: ${t.title} ${n}`},
             });
             await user.click(screen.getByText('open'));
-            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Vlastní: T1');
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Vlastní: T1 publishEvent');
         });
 
         it('renders the note under the title', async () => {

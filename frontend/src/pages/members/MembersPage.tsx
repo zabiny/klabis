@@ -1,13 +1,13 @@
 import {type ReactElement, useMemo, useState} from "react";
-import type {HalFormsTemplate, Link} from "../../api";
+import type {HalFormsTemplate, HalResponse, Link} from "../../api";
 import type {components} from "../../api/klabisApi";
 import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
-import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
-import {Badge, Button, DetailRow, Modal} from "../../components/UI";
+import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
+import {Badge, Button, DetailRow} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {SyncMembersFromOrisModal} from "../../components/members/SyncMembersFromOrisModal.tsx";
 import {DisplayContactText} from "./DisplayContactText.tsx";
@@ -35,12 +35,6 @@ type MemberSummaryData = components['schemas']['EntityModelMemberSummaryResponse
     _templates?: Record<string, HalFormsTemplate>;
 };
 
-interface MemberActionModalState {
-    member: MemberSummaryData;
-    templateName: string;
-    template: HalFormsTemplate;
-}
-
 interface MemberPermissionsDialogState {
     member: MemberSummaryData;
     permissionsUrl: string;
@@ -48,7 +42,6 @@ interface MemberPermissionsDialogState {
 
 export const MembersPage = (): ReactElement => {
     const {route, resourceData} = useHalPageData();
-    const [actionModal, setActionModal] = useState<MemberActionModalState | null>(null);
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
     const [transactionDialogAccount, setTransactionDialogAccount] = useState<Link | null>(null);
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -63,7 +56,13 @@ export const MembersPage = (): ReactElement => {
         clearSuspensionWarning,
         clearNegativeBalanceWarning,
         onSubmitError: onSuspendSubmitError,
-    } = useSuspendMemberAction({closeActionModal: () => setActionModal(null)});
+    } = useSuspendMemberAction();
+
+    const actionDialog = useTemplateDialog(undefined, {
+        size: '2xl',
+        title: (template, name) => template.title ?? name,
+        onSubmitError: onSuspendSubmitError,
+    });
 
     const hasManageAuthority = resourceData?._templates?.registerMember !== undefined;
 
@@ -74,13 +73,6 @@ export const MembersPage = (): ReactElement => {
     });
     const filterValue = values as MembersFilterValue;
     const extraParams = useMemo(() => toQuery(filterValue), [filterValue]);
-
-    const openActionModal = (member: MemberSummaryData, templateName: string) => {
-        const template = member._templates?.[templateName];
-        if (!template) return;
-        setActionModal({member, templateName, template});
-    };
-
 
     const openPermissionsDialog = (member: MemberSummaryData) => {
         const permissionsLink = member._links?.permissions;
@@ -152,7 +144,7 @@ export const MembersPage = (): ReactElement => {
                         className="text-red-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            openActionModal(member, 'suspendMember');
+                            actionDialog.open(member as unknown as HalResponse, 'suspendMember');
                         }}
                     >
                         <UserX className="w-4 h-4"/>
@@ -166,7 +158,7 @@ export const MembersPage = (): ReactElement => {
                         className="text-green-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            openActionModal(member, 'resumeMember');
+                            actionDialog.open(member as unknown as HalResponse, 'resumeMember');
                         }}
                     >
                         <UserCheck className="w-4 h-4"/>
@@ -325,23 +317,7 @@ export const MembersPage = (): ReactElement => {
                 {...permissionsEditor}
             />
 
-            {actionModal && (
-                <Modal
-                    isOpen={true}
-                    onClose={() => setActionModal(null)}
-                    title={actionModal.template.title ?? actionModal.templateName}
-                    size="2xl"
-                >
-                    <HalFormDisplay
-                        template={actionModal.template}
-                        templateName={actionModal.templateName}
-                        resourceData={actionModal.member as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
-                        onClose={() => setActionModal(null)}
-                        onSubmitError={actionModal.templateName === 'suspendMember' ? onSuspendSubmitError : undefined}
-                    />
-                </Modal>
-            )}
+            {actionDialog.dialog}
             <SuspensionWarningDialog
                 isOpen={suspensionWarning !== null}
                 onClose={clearSuspensionWarning}
