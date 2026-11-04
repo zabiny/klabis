@@ -42,13 +42,10 @@ describe('HalEmbeddedTable', () => {
         mockGetResourceLink.mockReturnValue({href: '/api/test/resource'});
         (useHalPageData as Mock).mockReturnValue({
             isLoading: false,
-            route: {
-                getResourceLink: mockGetResourceLink,
-                pathname: '/test',
-                navigateToResource: vi.fn(),
-                refetch: vi.fn(),
-                queryState: 'success',
-            },
+            getResourceLink: mockGetResourceLink,
+            pathname: '/test',
+            navigateToResource: vi.fn(),
+            refetch: vi.fn(),
         });
     });
 

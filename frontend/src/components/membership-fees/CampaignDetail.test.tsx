@@ -50,24 +50,10 @@ const createMockPageData = (resourceData: HalResponse | null) => ({
     resourceData,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/administration/fee-selection-campaigns/campaign-1',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/fee-selection-campaigns/campaign-1'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    pathname: '/administration/fee-selection-campaigns/campaign-1',
+    navigateToResource: vi.fn(),
+    refetch: async () => {},
+    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/fee-selection-campaigns/campaign-1'}),
 });
 
 const renderComponent = (pageData: ReturnType<typeof createMockPageData>) => {

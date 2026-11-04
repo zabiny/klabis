@@ -1,12 +1,12 @@
 ## 1. Narrow `useHalPageData`
 
-- [ ] 1.1 Narrow `hooks/useHalPageData.ts` to the D1 interface:
+- [x] 1.1 Narrow `hooks/useHalPageData.ts` to the D1 interface:
   - delete the 7 unused helpers;
   - flatten `route.*` and drop `queryState`, `isAdmin` and `actions`;
   - keep `pathname` for now (it is removed in group 2).
 
   Migrate `GenericHalPage` (local `isCollection`, `navigateToResource({href})`), `HalLinksSection` callers, `MemberDetailPage` (typed `resourceData._links?.x` instead of `hasLink`) and the 3 `isAdmin` callers (`useIsAdmin()`). Delete `hooks/useHalActions.ts` if it has no caller left.
-- [ ] 1.2 Update `__mocks__/halGroupPageTest.tsx`, `__mocks__/halDialogTest.tsx` and every inline `useHalPageData` mock to the new shape, keeping assertions. Tests that depend on `isAdmin` mock `useIsAdmin` (D6). Run the frontend test suite.
+- [x] 1.2 Update `__mocks__/halGroupPageTest.tsx`, `__mocks__/halDialogTest.tsx` and every inline `useHalPageData` mock to the new shape, keeping assertions. Tests that depend on `isAdmin` mock `useIsAdmin` (D6). Run the frontend test suite.
 
 ## 2. `HalFormDisplay` without `pathname`
 

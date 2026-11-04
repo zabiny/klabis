@@ -15,7 +15,7 @@ const formatGuardianNames = ({value}: {value: unknown}): string =>
         .join(', ');
 
 export const LegalGuardianGroupsPage = (): ReactElement => {
-    const {isLoading, error, route} = useHalPageData();
+    const {isLoading, error, navigateToResource} = useHalPageData();
 
     if (isLoading) {
         return <Skeleton/>;
@@ -33,7 +33,7 @@ export const LegalGuardianGroupsPage = (): ReactElement => {
                 collectionName="legalGuardianGroupSummaryResponseList"
                 tableId="groups.legalGuardian"
                 defaultOrderBy="name"
-                onRowClick={route.navigateToResource}
+                onRowClick={navigateToResource}
                 emptyMessage={labels.ui.noLegalGuardianGroups}
             >
                 <TableCell sortable column="name">{labels.fields.name}</TableCell>

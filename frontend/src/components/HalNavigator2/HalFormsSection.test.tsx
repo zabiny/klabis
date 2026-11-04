@@ -23,27 +23,11 @@ const createMockPageData = (overrides: Record<string, unknown> = {}) => ({
     resourceData: null,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/test',
-        navigateToResource: vi.fn(),
-        refetch: async () => {
-        },
-        queryState: 'success',
-        getResourceLink: vi.fn(),
+    pathname: '/test',
+    navigateToResource: vi.fn(),
+    refetch: async () => {
     },
-    actions: {
-        handleNavigateToItem: vi.fn(),
-    },
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    getResourceLink: vi.fn(),
     ...overrides,
 });
 

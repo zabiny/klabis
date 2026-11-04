@@ -10,7 +10,7 @@ import {labels} from '../../localization';
 type TrainingGroupSummaryItem = components['schemas']['EntityModelTrainingGroupSummaryResponse'];
 
 export const TrainingGroupsPage = (): ReactElement => {
-    const {isLoading, error, route} = useHalPageData();
+    const {isLoading, error, navigateToResource} = useHalPageData();
 
     if (isLoading) {
         return <Skeleton/>;
@@ -33,7 +33,7 @@ export const TrainingGroupsPage = (): ReactElement => {
                     collectionName="trainingGroupSummaryResponseList"
                     tableId="groups.training"
                     defaultOrderBy="name"
-                    onRowClick={route.navigateToResource}
+                    onRowClick={navigateToResource}
                     emptyMessage="Nejste členem žádné tréninkové skupiny."
                 >
                     <TableCell sortable column="name">{labels.fields.name}</TableCell>

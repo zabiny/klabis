@@ -93,7 +93,7 @@ const CREATE_FORM_SI_POLICY_FIELDS = ['siUsage', 'siRentalAllowed'];
 const CREATE_FORM_SHARED_SERVICE_FIELDS = ['sharedTransportEnabled', 'sharedAccommodationEnabled'];
 
 export const EventsPage = (): ReactElement => {
-    const {route, resourceData} = useHalPageData();
+    const {navigateToResource, refetch, resourceData} = useHalPageData();
     const {getUser} = useAuth();
     const {getById: getEventTypeById, eventTypes} = useEventTypes();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -116,7 +116,7 @@ export const EventsPage = (): ReactElement => {
     const orisImport = useOrisEventImport(
         activeImportTemplate,
         isImportModalOpen,
-        {onImported: () => route.refetch()},
+        {onImported: () => refetch()},
     );
 
     const renderActionsCell = ({item}: TableCellRenderProps) => {
@@ -149,7 +149,7 @@ export const EventsPage = (): ReactElement => {
                     <Button key={name} variant={getActionVariant(name)} size="sm" title={label} onClick={(e) => {
                         e.stopPropagation();
                         if (name === 'updateEvent') {
-                            route.navigateToResource(event, {state: {editing: true}});
+                            navigateToResource(event, {state: {editing: true}});
                         } else {
                             actionDialog.open(event, name);
                         }
@@ -266,7 +266,7 @@ export const EventsPage = (): ReactElement => {
                 defaultOrderBy={defaultSort.by}
                 defaultOrderDirection={defaultSort.direction}
                 extraParams={extraParams}
-                onRowClick={route.navigateToResource}
+                onRowClick={navigateToResource}
                 hideEmptyColumns={true}
                 emptyMessage={labels.eventsFilter.emptyState}
             >
@@ -368,7 +368,7 @@ export const EventsPage = (): ReactElement => {
                 isOpen={isBulkSyncModalOpen}
                 onClose={() => setIsBulkSyncModalOpen(false)}
                 syncUrl={bulkSyncTemplate.target}
-                onSyncComplete={route.refetch}
+                onSyncComplete={refetch}
             />
         )}
 
@@ -377,7 +377,7 @@ export const EventsPage = (): ReactElement => {
         <EventRegistrationDialog
             registration={registrationTarget}
             onClose={() => setRegistrationTarget(null)}
-            onChanged={route.refetch}
+            onChanged={refetch}
         />
     </div>;
 }

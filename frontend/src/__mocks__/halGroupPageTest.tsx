@@ -45,24 +45,10 @@ export const renderDetailPage = (
         resourceData,
         isLoading: options.isLoading ?? false,
         error: options.error ?? null,
-        isAdmin: false,
-        route: {
-            pathname: options.pathname,
-            navigateToResource: vi.fn(),
-            refetch: options.refetch ?? (async () => {}),
-            queryState: 'success' as const,
-            getResourceLink: vi.fn(),
-        },
-        actions: {handleNavigateToItem: vi.fn()},
-        getLinks: vi.fn(() => undefined),
-        getTemplates: vi.fn(() => undefined),
-        hasEmbedded: vi.fn(() => false),
-        getEmbeddedItems: vi.fn(() => []),
-        isCollection: vi.fn(() => false),
-        hasLink: vi.fn(() => false),
-        hasTemplate: vi.fn(() => false),
-        hasForms: vi.fn(() => false),
-        getPageMetadata: vi.fn(() => undefined),
+        pathname: options.pathname,
+        navigateToResource: vi.fn(),
+        refetch: options.refetch ?? (async () => {}),
+        getResourceLink: vi.fn(),
     } as unknown as ReturnType<typeof useHalPageData>);
     const queryClient = createTestQueryClient();
     return render(

@@ -258,8 +258,8 @@ export const TransactionsTable = ({
     extraParams?: Record<string, string>;
     onReverseRequest?: (tx: TransactionReverseRequest) => void;
 }): ReactElement => {
-    const {isLoading, route} = useHalPageData();
-    const selfLink = route.getResourceLink();
+    const {isLoading, getResourceLink} = useHalPageData();
+    const selfLink = getResourceLink();
 
     if (isLoading) {
         return (

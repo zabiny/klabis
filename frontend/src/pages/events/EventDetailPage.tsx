@@ -191,7 +191,7 @@ interface EventDetailContentProps {
 }
 
 const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactElement => {
-    const {route} = useHalPageData<EventDetail>();
+    const {pathname, refetch} = useHalPageData<EventDetail>();
     const {getById: getEventTypeById} = useEventTypes();
     const location = useLocation();
     const initialEditing = !!(location.state as { editing?: boolean })?.editing;
@@ -282,7 +282,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                             <HalFormButton name="discoverOrisRegistrations" modal={true} variant="secondary" icon={<Download className="w-4 h-4"/>}/>
                             {resourceData._links?.['accommodation-list'] && (
                                 <Link
-                                    to={`${route.pathname}/accommodation-list`}
+                                    to={`${pathname}/accommodation-list`}
                                     className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-bg-secondary"
                                 >
                                     <List className="w-4 h-4"/>
@@ -499,7 +499,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
         <EventRegistrationDialog
             registration={registrationDialogTarget}
             onClose={handleRegistrationDialogClose}
-            onChanged={route.refetch}
+            onChanged={refetch}
         />
     );
 
@@ -507,7 +507,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
         <EventRegistrationDialog
             registration={newRegistrationTarget}
             onClose={() => setNewRegistrationTarget(null)}
-            onChanged={route.refetch}
+            onChanged={refetch}
         />
     );
 
@@ -518,7 +518,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                     template={enrichedTemplate}
                     templateName="updateEvent"
                     resourceData={resourceData as Record<string, unknown>}
-                    pathname={route.pathname}
+                    pathname={pathname}
                     onClose={cancelEditing}
                     postprocessPayload={postprocessPayload}
                     successMessage={labels.ui.savedSuccessfully}

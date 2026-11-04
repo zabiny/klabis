@@ -41,7 +41,7 @@ interface MemberPermissionsDialogState {
 }
 
 export const MembersPage = (): ReactElement => {
-    const {route, resourceData} = useHalPageData();
+    const {navigateToResource, refetch, resourceData} = useHalPageData();
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
     const [transactionDialogAccount, setTransactionDialogAccount] = useState<Link | null>(null);
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -116,7 +116,7 @@ export const MembersPage = (): ReactElement => {
                         className="text-primary"
                         onClick={(e) => {
                             e.stopPropagation();
-                            route.navigateToResource(member, {state: {editing: true}});
+                            navigateToResource(member, {state: {editing: true}});
                         }}
                     >
                         <Pencil className="w-4 h-4"/>
@@ -297,7 +297,7 @@ export const MembersPage = (): ReactElement => {
                                                       hideEmptyColumns
                                                       extraParams={extraParams}
                                                       emptyMessage={labels.membersFilter.emptyState}
-                                                      onRowClick={route.navigateToResource}>
+                                                      onRowClick={navigateToResource}>
                     <TableCell sortable column={"registrationNumber"}>{labels.fields.registrationNumber}</TableCell>
                     <TableCell sortable column={"lastName"}>{labels.fields.lastName}</TableCell>
                     <TableCell sortable column={"firstName"}>{labels.fields.firstName}</TableCell>
@@ -337,7 +337,7 @@ export const MembersPage = (): ReactElement => {
                 isOpen={isSyncModalOpen}
                 onClose={() => setIsSyncModalOpen(false)}
                 targetUrl={importFromOrisTarget}
-                onSyncComplete={() => route.refetch()}
+                onSyncComplete={() => refetch()}
             />
         </div>
     );
