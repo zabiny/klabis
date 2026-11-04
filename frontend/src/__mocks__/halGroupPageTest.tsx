@@ -1,12 +1,11 @@
-/* eslint-disable react-refresh/only-export-components */
 import type {ReactElement} from 'react';
 import {render} from '@testing-library/react';
-import {MemoryRouter, useLocation} from 'react-router-dom';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {MemoryRouter} from 'react-router-dom';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
 import {useHalPageData} from '../hooks/useHalPageData';
 import {ToastProvider} from '../contexts/ToastContext.tsx';
-import {useToast} from '../contexts/toastContext.ts';
+import {createTestQueryClient, LocationProbe, ToastProbe} from './halDialogTest.tsx';
 import {mockHalFormsTemplate} from './halData';
 import type {HalFormsTemplate, HalResponse} from '../api';
 
@@ -37,13 +36,6 @@ export const confirmTemplate = (overrides?: Partial<HalFormsTemplate>): HalForms
     ...overrides,
 });
 
-const ToastProbe = () => {
-    const {toasts} = useToast();
-    return <ul>{toasts.map(t => <li key={t.id} data-testid="toast">{t.message}</li>)}</ul>;
-};
-
-const LocationProbe = () => <span data-testid="location">{useLocation().pathname}</span>;
-
 export const renderDetailPage = (
     page: ReactElement,
     resourceData: HalResponse | null,
@@ -72,7 +64,7 @@ export const renderDetailPage = (
         hasForms: vi.fn(() => false),
         getPageMetadata: vi.fn(() => undefined),
     } as unknown as ReturnType<typeof useHalPageData>);
-    const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+    const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
             <MemoryRouter initialEntries={[options.pathname]}>

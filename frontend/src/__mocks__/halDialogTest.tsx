@@ -1,6 +1,10 @@
+/* eslint-disable react-refresh/only-export-components */
+import {QueryClient} from '@tanstack/react-query';
+import {useLocation} from 'react-router-dom';
 import {vi} from 'vitest';
 import {createMockResponse} from './mockFetch.ts';
 import type {HalRouteContextValue} from '../contexts/halRouteContext.ts';
+import {useToast} from '../contexts/toastContext.ts';
 import type {HalResponse} from '../api';
 
 export const halRouteValue = (resourceData: HalResponse | null, pathname: string): HalRouteContextValue => ({
@@ -27,3 +31,12 @@ export const stubFetch = (respond: (url: string, init?: RequestInit) => unknown 
     });
     return {fetchSpy, writeCalls};
 };
+
+export const ToastProbe = () => {
+    const {toasts} = useToast();
+    return <ul>{toasts.map(t => <li key={t.id} data-testid="toast">{t.message}</li>)}</ul>;
+};
+
+export const LocationProbe = () => <span data-testid="location">{useLocation().pathname}</span>;
+
+export const createTestQueryClient = () => new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});

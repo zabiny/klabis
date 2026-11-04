@@ -9,7 +9,7 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {LegalGuardianGroupDetailPage} from './LegalGuardianGroupDetailPage';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
-import {stubFetch} from '../../__mocks__/halDialogTest.ts';
+import {stubFetch} from '../../__mocks__/halDialogTest.tsx';
 import {FetchError} from '../../api/authorizedFetch';
 
 vi.mock('../../hooks/useHalPageData', () => ({useHalPageData: vi.fn()}));

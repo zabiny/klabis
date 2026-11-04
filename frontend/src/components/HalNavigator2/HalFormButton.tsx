@@ -12,8 +12,7 @@
 import {type ReactElement, type ReactNode} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useHalForm} from '../../contexts/halFormContext.ts';
-import {getDialogTitleLabel, getTemplateLabel} from '../../localization';
-import {useTemplateDialog} from './useTemplateDialog.tsx';
+import {defaultDialogTitle, useTemplateDialog} from './useTemplateDialog.tsx';
 import {HalFormTemplateButton} from './HalFormTemplateButton.tsx';
 import type {HalFormFieldFactory} from './halforms';
 import type {HalFormPanelChildren} from './HalFormPanel';
@@ -119,7 +118,7 @@ export function HalFormButton({name, modal = true, label, children, fieldsFactor
             templateName: name,
             children,
             fieldsFactory,
-            dialogTitle: dialogTitle ?? getDialogTitleLabel(name) ?? getTemplateLabel(name) ?? template.title,
+            dialogTitle: dialogTitle ?? defaultDialogTitle(name, template),
             navigateOnSuccess,
         });
     };

@@ -75,7 +75,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
     const addMemberFactory = useMemo(() => createMemberFilteredFactory(currentMemberIds), [currentMemberIds]);
     const addOwnerFactory = useMemo(() => createMemberFilteredFactory(undefined, currentMemberIds), [currentMemberIds]);
 
-    const group = resourceData as unknown as HalResponse;
+    const group = resourceData;
 
     const addMemberDialog = useTemplateDialog('addGroupMember', {
         resource: group,
@@ -101,23 +101,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
     });
     const removeOwnerDialog = useTemplateDialog('removeGroupOwner', {
         title: labels.templates.removeGroupOwner,
-        note: <span className="text-sm text-text-secondary">{labels.templates.removeGroupOwnerLeavesGroup}</span>,
         successMessage: labels.ui.savedSuccessfully,
-    });
-    const removeSelfAsOwnerDialog = useTemplateDialog('removeGroupOwner', {
-        title: labels.templates.removeGroupOwner,
-        note: <span className="text-sm text-text-secondary">{labels.templates.removeSelfAsOwnerLeavesGroup}</span>,
-        successMessage: labels.ui.savedSuccessfully,
-        onSubmitSuccess: () => navigate('/groups'),
-    });
-    // The backend sends the caller's own removeGroupMember here when the caller is a member but not
-    // an owner. It means "leave this group", so it is rendered under its own label.
-    const leaveGroupDialog = useTemplateDialog('removeGroupMember', {
-        resource: group,
-        title: labels.templates.leaveGroup,
-        note: <span className="text-sm text-text-secondary">{labels.templates.leaveGroupConfirm}</span>,
-        onSubmitSuccess: () => navigate('/groups'),
-        navigateOnSuccess: false,
     });
     const deleteDialog = useTemplateDialog('deleteGroup', {
         resource: group,
@@ -128,7 +112,26 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
         title: (template) => template.title ?? labels.templates.cancelInvitation,
         successMessage: labels.ui.savedSuccessfully,
         navigateOnSuccess: false,
-        onSubmitSuccess: () => { void route.refetch(); },
+    });
+
+    const openRemoveOwner = (owner: GroupOwner) => {
+        const isSelf = owner.memberId === currentMemberId;
+        removeOwnerDialog.open(owner, undefined, {
+            note: <span className="text-sm text-text-secondary">
+                {isSelf ? labels.templates.removeSelfAsOwnerLeavesGroup : labels.templates.removeGroupOwnerLeavesGroup}
+            </span>,
+            onSubmitSuccess: isSelf ? () => navigate('/groups') : undefined,
+        });
+    };
+
+    // The backend sends the caller's own removeGroupMember on the group when the caller is a member but not
+    // an owner. It means "leave this group", so it is rendered under its own label.
+    const openLeaveGroup = () => removeMemberDialog.open(group, undefined, {
+        title: labels.templates.leaveGroup,
+        note: <span className="text-sm text-text-secondary">{labels.templates.leaveGroupConfirm}</span>,
+        successMessage: undefined,
+        navigateOnSuccess: false,
+        onSubmitSuccess: () => navigate('/groups'),
     });
 
     const openCancelInvitation = (invitation: PendingInvitation) => {
@@ -173,10 +176,10 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                             {labels.templates.deleteGroup}
                         </Button>
                     )}
-                    {leaveGroupDialog.available && (
+                    {removeMemberDialog.availableOn(group) && (
                         <Button
                             variant="secondary"
-                            onClick={() => leaveGroupDialog.open()}
+                            onClick={openLeaveGroup}
                             startIcon={<LogOut className="w-4 h-4"/>}
                         >
                             {labels.templates.leaveGroup}
@@ -220,18 +223,15 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         )}
                     </div>
                     <dl>
-                        {(resourceData.owners ?? []).map((owner) => {
-                            const ownerDialog = owner.memberId === currentMemberId ? removeSelfAsOwnerDialog : removeOwnerDialog;
-                            return (
-                                <MemberRowWithRemove
-                                    key={owner.memberId}
-                                    memberId={owner.memberId}
-                                    memberLink={owner._links.member}
-                                    removeAriaLabel={labels.templates.removeOwner}
-                                    onRemove={ownerDialog.availableOn(owner) ? () => ownerDialog.open(owner) : undefined}
-                                />
-                            );
-                        })}
+                        {(resourceData.owners ?? []).map((owner) => (
+                            <MemberRowWithRemove
+                                key={owner.memberId}
+                                memberId={owner.memberId}
+                                memberLink={owner._links.member}
+                                removeAriaLabel={labels.templates.removeOwner}
+                                onRemove={removeOwnerDialog.availableOn(owner) ? () => openRemoveOwner(owner) : undefined}
+                            />
+                        ))}
                     </dl>
                 </Card>
             )}
@@ -313,8 +313,6 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
             {addOwnerDialog.dialog}
             {removeMemberDialog.dialog}
             {removeOwnerDialog.dialog}
-            {removeSelfAsOwnerDialog.dialog}
-            {leaveGroupDialog.dialog}
             {deleteDialog.dialog}
             {cancelInvitationDialog.dialog}
         </div>

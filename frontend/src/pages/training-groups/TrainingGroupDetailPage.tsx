@@ -5,7 +5,7 @@ import {Alert, Button, Card, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
 import {createMemberFilteredFactory} from '../../components/KlabisFieldsFactory.tsx';
-import type {HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
+import type {HalFormsTemplate, HalResourceLinks} from '../../api';
 import {labels} from '../../localization';
 import {Pencil, Trash2, UserPlus} from 'lucide-react';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
@@ -30,7 +30,7 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
     const addMemberFactory = useMemo(() => createMemberFilteredFactory(nonTraineeIds), [nonTraineeIds]);
     const addTrainerFactory = useMemo(() => createMemberFilteredFactory(trainerIds), [trainerIds]);
 
-    const trainingGroup = resourceData as unknown as HalResponse;
+    const trainingGroup = resourceData;
 
     const addMemberDialog = useTemplateDialog('addTrainingGroupMember', {
         resource: trainingGroup,

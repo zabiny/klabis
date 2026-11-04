@@ -3,7 +3,7 @@ import {Calendar, Lock} from 'lucide-react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
 import {useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
-import type {GetPublicationResource, HalResponse} from '../../api';
+import type {GetPublicationResource} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
@@ -19,12 +19,12 @@ type FeeGroupsCollection = components['schemas']['CollectionModelEntityModelMemb
 export const CampaignDetail = (): ReactElement | null => {
     const {resourceData} = useHalPageData<FeeSelectionCampaignDetail>();
     const changeDeadlineDialog = useTemplateDialog('changeDeadline', {
-        resource: resourceData as unknown as HalResponse | null,
+        resource: resourceData,
         title: labels.templates.changeDeadline,
         navigateOnSuccess: false,
     });
     const closeCampaignDialog = useTemplateDialog('closeCampaign', {
-        resource: resourceData as unknown as HalResponse | null,
+        resource: resourceData,
         title: labels.templates.closeCampaign,
         navigateOnSuccess: false,
     });

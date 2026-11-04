@@ -29,7 +29,7 @@ const LegalGuardianGroupDetailContent = ({resourceData, onEditStarted}: {
 
             <LegalGuardiansSection
                 guardiansLink={resourceData._links?.legalGuardians}
-                editTemplate={resourceData._templates?.setLegalGuardianGroupGuardians}
+                resource={resourceData}
                 editTemplateName="setLegalGuardianGroupGuardians"
                 onEditStarted={onEditStarted}
             />

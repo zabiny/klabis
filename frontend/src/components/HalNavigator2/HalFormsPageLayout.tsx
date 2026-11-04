@@ -10,6 +10,7 @@ import {useHalForm} from '../../contexts/halFormContext.ts';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {HalFormPanel} from './HalFormPanel.tsx';
 import type {HalFormsTemplate} from '../../api';
+import {toHref} from '../../api/hateoas.ts';
 import {normalizeKlabisApiPath} from '../../utils/halFormsUtils.ts';
 
 interface HalFormsPageLayoutProps {
@@ -28,8 +29,7 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
     }
 
     const selfLink = pageResource?._links?.self;
-    const selfHref = Array.isArray(selfLink) ? selfLink[0]?.href : selfLink?.href;
-    const resourceUrl = typeof selfHref === 'string' ? selfHref : undefined;
+    const resourceUrl = selfLink ? toHref(selfLink) : undefined;
 
     const formPanel = currentFormRequest.children ? (
         <HalFormPanel

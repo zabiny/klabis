@@ -4,7 +4,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
-import type {GetFeeGroupResource, HalResponse} from '../../api';
+import type {GetFeeGroupResource} from '../../api';
 import {getEnumLabel, labels} from '../../localization';
 import {ChevronRight, Pencil, UserPlus, Users} from 'lucide-react';
 import {formatDate} from '../../utils/dateUtils.ts';
@@ -59,7 +59,7 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
     const {route} = useHalPageData<MembershipFeeGroupDetail>();
     const [isEditing, setIsEditing] = useState(false);
     const assignMemberDialog = useTemplateDialog('assignMember', {
-        resource: resourceData as unknown as HalResponse,
+        resource: resourceData,
         title: labels.templates.assignMember,
         successMessage: labels.ui.savedSuccessfully,
         navigateOnSuccess: false,

@@ -1,5 +1,5 @@
 import {type ReactElement, useState} from "react";
-import type {HalFormsTemplate, HalResourceLinks, HalResponse, Link} from "../../api";
+import type {HalFormsTemplate, HalResourceLinks, Link} from "../../api";
 import type {components} from "../../api/klabisApi";
 import {TableCell} from "../../components/KlabisTable";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
@@ -152,7 +152,7 @@ export const EventsPage = (): ReactElement => {
                         if (name === 'updateEvent') {
                             route.navigateToResource(event, {state: {editing: true}});
                         } else {
-                            actionDialog.open(event as unknown as HalResponse, name);
+                            actionDialog.open(event, name);
                         }
                     }}>
                         <Icon className="w-4 h-4"/>

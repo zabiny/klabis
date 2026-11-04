@@ -1,5 +1,5 @@
 import {type ReactElement, useMemo, useState} from "react";
-import type {HalFormsTemplate, HalResponse, Link} from "../../api";
+import type {HalFormsTemplate, Link} from "../../api";
 import type {components} from "../../api/klabisApi";
 import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
 import {TableCell} from "../../components/KlabisTable";
@@ -144,7 +144,7 @@ export const MembersPage = (): ReactElement => {
                         className="text-red-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            actionDialog.open(member as unknown as HalResponse, 'suspendMember');
+                            actionDialog.open(member, 'suspendMember');
                         }}
                     >
                         <UserX className="w-4 h-4"/>
@@ -158,7 +158,7 @@ export const MembersPage = (): ReactElement => {
                         className="text-green-600"
                         onClick={(e) => {
                             e.stopPropagation();
-                            actionDialog.open(member as unknown as HalResponse, 'resumeMember');
+                            actionDialog.open(member, 'resumeMember');
                         }}
                     >
                         <UserCheck className="w-4 h-4"/>

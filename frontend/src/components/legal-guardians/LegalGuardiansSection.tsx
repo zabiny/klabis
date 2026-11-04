@@ -1,23 +1,23 @@
 import type {ReactElement} from 'react';
 import {Pencil} from 'lucide-react';
 import {Button, Card, DetailRow} from '../UI';
-import {useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
+import {type TemplateResource, useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
 import {useLegalGuardians} from '../../hooks/useLegalGuardians.ts';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import type {HalFormsTemplate, HalResourceLinks, HalResponse, Link} from '../../api';
+import type {HalResourceLinks, Link} from '../../api';
 import {getTemplateLabel, labels} from '../../localization';
 
 interface LegalGuardiansSectionProps {
     guardiansLink?: HalResourceLinks;
-    /** Template that replaces the guardians; the edit action is offered only when present. */
-    editTemplate?: HalFormsTemplate | null;
+    /** Page resource holding the guardians-replacing template; the edit action is offered only when it has it. */
+    resource?: TemplateResource | null;
     editTemplateName?: string;
     onEditStarted?: () => void;
 }
 
 export const LegalGuardiansSection = ({
                                           guardiansLink,
-                                          editTemplate,
+                                          resource,
                                           editTemplateName = '',
                                           onEditStarted,
                                       }: LegalGuardiansSectionProps): ReactElement => {
@@ -25,12 +25,8 @@ export const LegalGuardiansSection = ({
     const {route} = useHalPageData();
     const editLabel = getTemplateLabel(editTemplateName) ?? '';
     const editDialog = useTemplateDialog(editTemplateName, {
-        resource: editTemplate
-            ? {
-                legalGuardians: guardians.map(guardian => ({userId: guardian.userId})),
-                _templates: {[editTemplateName]: editTemplate},
-            } as HalResponse
-            : null,
+        resource,
+        initialData: {legalGuardians: guardians.map(guardian => ({userId: guardian.userId}))},
         title: editLabel,
         successMessage: labels.ui.savedSuccessfully,
     });
@@ -41,7 +37,7 @@ export const LegalGuardiansSection = ({
                 <h3 className="text-xs uppercase font-semibold text-text-secondary">
                     {labels.sections.legalGuardians}
                 </h3>
-                {editTemplate && (
+                {editDialog.available && (
                     <Button
                         variant="secondary"
                         disabled={isLoading}

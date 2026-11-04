@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import {render as rtlRender, screen, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import {vi} from 'vitest';
 import type {ReactElement} from 'react';
@@ -9,8 +9,7 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {useLegalGuardians} from '../../hooks/useLegalGuardians.ts';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
-import {useToast} from '../../contexts/toastContext.ts';
-import {stubFetch} from '../../__mocks__/halDialogTest.ts';
+import {stubFetch, ToastProbe, createTestQueryClient} from '../../__mocks__/halDialogTest.tsx';
 import {LegalGuardiansSection} from './LegalGuardiansSection';
 
 vi.mock('../../hooks/useHalPageData', () => ({useHalPageData: vi.fn()}));
@@ -28,13 +27,8 @@ vi.mock('../../hooks/useRootNavigation', () => ({
 const loadedGuardians = [{userId: 'u-1', firstName: 'Jana', lastName: 'Nováková', _links: {member: {href: '/api/members/u-1'}}}];
 vi.mock('../../hooks/useLegalGuardians.ts', () => ({useLegalGuardians: vi.fn()}));
 
-const ToastProbe = () => {
-    const {toasts} = useToast();
-    return <ul>{toasts.map(t => <li key={t.id} data-testid="toast">{t.message}</li>)}</ul>;
-};
-
 const render = (ui: ReactElement) => rtlRender(
-    <QueryClientProvider client={new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}})}>
+    <QueryClientProvider client={createTestQueryClient()}>
         <MemoryRouter>
             <ToastProvider>
                 {ui}
@@ -43,6 +37,11 @@ const render = (ui: ReactElement) => rtlRender(
         </MemoryRouter>
     </QueryClientProvider>
 );
+
+const pageResource = (template: Parameters<typeof mockHalFormsTemplate>[0]) => ({
+    _links: {self: {href: '/api/members/m-1'}},
+    _templates: {setMemberLegalGuardians: mockHalFormsTemplate(template)},
+});
 
 const navigateToResource = vi.fn();
 const refetch = vi.fn();
@@ -73,7 +72,7 @@ describe('LegalGuardiansSection', () => {
         const onEditStarted = vi.fn();
         render(<LegalGuardiansSection
             guardiansLink={{href: '/api/x/guardians'}}
-            editTemplate={mockHalFormsTemplate({
+            resource={pageResource({
                 method: 'PUT',
                 target: '/api/x/legal-guardians',
                 properties: [],
@@ -95,11 +94,26 @@ describe('LegalGuardiansSection', () => {
         expect(screen.getByTestId('toast')).toHaveTextContent('Úspěšně uloženo');
     });
 
+    it('submits to the page resource URL when the template has no target', async () => {
+        const user = userEvent.setup();
+        render(<LegalGuardiansSection
+            guardiansLink={{href: '/api/x/guardians'}}
+            resource={pageResource({method: 'PUT', target: undefined, properties: []})}
+            editTemplateName="setMemberLegalGuardians"
+        />);
+
+        await user.click(screen.getByRole('button', {name: 'Upravit zástupce'}));
+        await user.click(await screen.findByRole('button', {name: /odeslat/i}));
+
+        await waitFor(() => expect(writeCalls()).toHaveLength(1));
+        expect(writeCalls()[0][0]).toBe('/api/members/m-1');
+    });
+
     it('disables the edit action until the guardians are loaded', () => {
         vi.mocked(useLegalGuardians).mockReturnValue({guardians: [], isLoading: true});
         render(<LegalGuardiansSection
             guardiansLink={{href: '/api/x/guardians'}}
-            editTemplate={mockHalFormsTemplate({method: 'PUT', target: '/api/x/legal-guardians'})}
+            resource={pageResource({method: 'PUT', target: '/api/x/legal-guardians'})}
             editTemplateName="setMemberLegalGuardians"
         />);
         expect(screen.getByRole('button', {name: 'Upravit zástupce'})).toBeDisabled();

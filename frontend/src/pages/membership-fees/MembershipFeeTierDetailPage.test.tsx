@@ -2,16 +2,14 @@ import '@testing-library/jest-dom';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembershipFeeTierDetailPage} from './MembershipFeeTierDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 import {HalRouteContext, type HalRouteContextValue} from '../../contexts/halRouteContext.ts';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
-import {useToast} from '../../contexts/toastContext.ts';
-import {halRouteValue, stubFetch} from '../../__mocks__/halDialogTest.ts';
-import {useLocation} from 'react-router-dom';
+import {halRouteValue, stubFetch, ToastProbe, createTestQueryClient, LocationProbe} from '../../__mocks__/halDialogTest.tsx';
 
 vi.mock('../../api/klabisUserManager', () => ({
     klabisAuthUserManager: {
@@ -79,16 +77,9 @@ const createMockRulesPageData = (rulesCollection: HalResponse | null, overrides?
     ...overrides,
 });
 
-const ToastProbe = () => {
-    const {toasts} = useToast();
-    return <ul>{toasts.map(t => <li key={t.id} data-testid="toast">{t.message}</li>)}</ul>;
-};
-
-const LocationProbe = () => <span data-testid="location">{useLocation().pathname}</span>;
-
 const renderPage = (tierData: HalRouteContextValue, rulesData?: HalRouteContextValue) => {
     rulesRoute = rulesData ?? createMockRulesPageData(buildRulesCollection([]));
-    const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+    const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
             <MemoryRouter initialEntries={['/administration/membership-fee-tiers/tier-1']}>

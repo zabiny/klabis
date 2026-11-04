@@ -8,7 +8,7 @@ import {ErrorPage} from "../ErrorPage.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormRenderHelpers} from "../../components/HalNavigator2/halforms";
 import {formatDate} from "../../utils/dateUtils.ts";
-import type {GetMemberHal, GetMemberResource, HalFormsTemplate, HalResponse} from "../../api";
+import type {GetMemberHal, GetMemberResource, HalFormsTemplate} from "../../api";
 import {HalFormDisplay} from "../../components/HalNavigator2/HalFormDisplay.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
 import {Banknote, Check, Dumbbell, Heart, KeyRound, Pencil, Shield, UserPlus, UserX} from "lucide-react";
@@ -87,7 +87,7 @@ interface MemberDetailContentProps {
 const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = false}: MemberDetailContentProps) => {
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
     const accountActivationDialog = useTemplateDialog('sendMemberAccountActivation', {
-        resource: resourceData as unknown as HalResponse,
+        resource: resourceData,
         title: labels.dialogTitles.sendMemberAccountActivation,
         size: '2xl',
         note: <p className="text-text-secondary">{labels.accountActivation.confirm}</p>,
@@ -103,7 +103,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
         onSubmitError: onSuspendSubmitError,
     } = useSuspendMemberAction();
     const suspendDialog = useTemplateDialog('suspendMember', {
-        resource: resourceData as unknown as HalResponse,
+        resource: resourceData,
         title: labels.dialogTitles.suspendMember,
         size: '2xl',
         onSubmitError: onSuspendSubmitError,
@@ -404,7 +404,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                 {showGuardiansSection && (
                     <LegalGuardiansSection
                         guardiansLink={resourceData._links?.legalGuardians}
-                        editTemplate={setGuardiansTemplate}
+                        resource={resourceData}
                         editTemplateName="setMemberLegalGuardians"
                     />
                 )}

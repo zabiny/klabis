@@ -1,7 +1,7 @@
 import type {ReactElement} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
-import type {HalFormsTemplate, HalResponse, ListGroupRulesResource, OptionItem} from '../../api';
+import type {HalFormsTemplate, ListGroupRulesResource, OptionItem} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {Pencil, Plus, X} from 'lucide-react';
@@ -17,22 +17,13 @@ type PaymentRuleItem = components['schemas']['PaymentRuleResponse'] & {
 
 type RulesCollection = ListGroupRulesResource;
 
-const RuleRow = ({rule, getRankingLabel, getEventTypeById}: {
+const RuleRow = ({rule, getRankingLabel, getEventTypeById, onEdit, onRemove}: {
     rule: PaymentRuleItem;
     getRankingLabel: (code: string) => string;
     getEventTypeById: (id: string | null | undefined) => EventTypeCatalogItem | undefined;
+    onEdit?: () => void;
+    onRemove?: () => void;
 }): ReactElement => {
-    const editDialog = useTemplateDialog('editRule', {
-        resource: rule as unknown as HalResponse,
-        title: 'Upravit pravidlo',
-        navigateOnSuccess: false,
-    });
-    const removeDialog = useTemplateDialog('removeRule', {
-        resource: rule as unknown as HalResponse,
-        title: 'Smazat pravidlo',
-        navigateOnSuccess: false,
-    });
-
     return (
         <tr className="border-t border-border-subtle" style={{height: '52px'}}>
             <td className="px-5 text-text-primary">{getEventTypeById(rule.eventTypeId)?.name ?? rule.eventTypeId}</td>
@@ -47,31 +38,25 @@ const RuleRow = ({rule, getRankingLabel, getEventTypeById}: {
             </td>
             <td className="px-3">
                 <div className="flex items-center gap-1">
-                    {editDialog.available && (
-                        <>
-                            <button
-                                type="button"
-                                aria-label="Upravit pravidlo"
-                                onClick={() => editDialog.open()}
-                                className="w-8 h-8 flex items-center justify-center rounded-md text-text-secondary bg-bg-subtle hover:bg-bg-subtle transition-colors"
-                            >
-                                <Pencil className="w-4 h-4"/>
-                            </button>
-                            {editDialog.dialog}
-                        </>
+                    {onEdit && (
+                        <button
+                            type="button"
+                            aria-label="Upravit pravidlo"
+                            onClick={onEdit}
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-text-secondary bg-bg-subtle hover:bg-bg-subtle transition-colors"
+                        >
+                            <Pencil className="w-4 h-4"/>
+                        </button>
                     )}
-                    {removeDialog.available && (
-                        <>
-                            <button
-                                type="button"
-                                aria-label="Smazat pravidlo"
-                                onClick={() => removeDialog.open()}
-                                className="w-8 h-8 flex items-center justify-center rounded-md text-error bg-error-bg hover:opacity-80 transition-colors"
-                            >
-                                <X className="w-4 h-4"/>
-                            </button>
-                            {removeDialog.dialog}
-                        </>
+                    {onRemove && (
+                        <button
+                            type="button"
+                            aria-label="Smazat pravidlo"
+                            onClick={onRemove}
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-error bg-error-bg hover:opacity-80 transition-colors"
+                        >
+                            <X className="w-4 h-4"/>
+                        </button>
                     )}
                 </div>
             </td>
@@ -98,8 +83,16 @@ export const RulesTable = (): ReactElement => {
     const rankingLabelLookup = buildRankingLabelLookup(addRuleTemplate);
     const getRankingLabel = (code: string): string => rankingLabelLookup.get(code) ?? code;
     const addRuleDialog = useTemplateDialog('addRule', {
-        resource: resourceData as unknown as HalResponse | null,
+        resource: resourceData,
         title: (template) => template.title ?? 'Přidat pravidlo',
+        navigateOnSuccess: false,
+    });
+    const editRuleDialog = useTemplateDialog('editRule', {
+        title: 'Upravit pravidlo',
+        navigateOnSuccess: false,
+    });
+    const removeRuleDialog = useTemplateDialog('removeRule', {
+        title: 'Smazat pravidlo',
         navigateOnSuccess: false,
     });
 
@@ -135,6 +128,8 @@ export const RulesTable = (): ReactElement => {
                                 rule={rule}
                                 getRankingLabel={getRankingLabel}
                                 getEventTypeById={getEventTypeById}
+                                onEdit={editRuleDialog.availableOn(rule) ? () => editRuleDialog.open(rule) : undefined}
+                                onRemove={removeRuleDialog.availableOn(rule) ? () => removeRuleDialog.open(rule) : undefined}
                             />
                         ))
                     )}
@@ -153,9 +148,11 @@ export const RulesTable = (): ReactElement => {
                         <Plus className="w-4 h-4 text-primary"/>
                         Přidat pravidlo…
                     </button>
-                    {addRuleDialog.dialog}
                 </>
             )}
+            {addRuleDialog.dialog}
+            {editRuleDialog.dialog}
+            {removeRuleDialog.dialog}
         </div>
     );
 };
