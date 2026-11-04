@@ -18,8 +18,8 @@
 
 ## 2. Membership fees and legal guardians
 
-- [ ] 2.1 Migrate `components/membership-fees/RulesTable.tsx`, `components/membership-fees/CampaignDetail.tsx`, `components/legal-guardians/LegalGuardiansSection.tsx`, and the delete modal of `pages/membership-fees/MembershipFeeTierDetailPage.tsx` and the `assignMember` modal of `pages/membership-fees/MembershipFeeGroupDetailPage.tsx` from `HalFormModal` to the hook. Keep every `title`, `note`, `successMessage` and callback expression (D5).
-- [ ] 2.2 Rewrite the affected tests: drop the `HalFormModal` / `HalFormDisplay` / `Modal` mocks and assert dialog titles and submit requests through the fixture. Run the tests of these modules.
+- [x] 2.1 Migrate `components/membership-fees/RulesTable.tsx`, `components/membership-fees/CampaignDetail.tsx`, `components/legal-guardians/LegalGuardiansSection.tsx`, and the delete modal of `pages/membership-fees/MembershipFeeTierDetailPage.tsx` and the `assignMember` modal of `pages/membership-fees/MembershipFeeGroupDetailPage.tsx` from `HalFormModal` to the hook. Keep every `title`, `note`, `successMessage` and callback expression (D5).
+- [x] 2.2 Rewrite the affected tests: drop the `HalFormModal` / `HalFormDisplay` / `Modal` mocks and assert dialog titles and submit requests through the fixture. Run the tests of these modules.
 
 ## 3. Groups and training groups
 

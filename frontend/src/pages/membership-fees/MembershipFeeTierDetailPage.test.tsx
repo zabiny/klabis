@@ -1,37 +1,35 @@
 import '@testing-library/jest-dom';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {useHalPageData} from '../../hooks/useHalPageData';
-import type {UseHalPageDataReturn} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembershipFeeTierDetailPage} from './MembershipFeeTierDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
-import type {HalFormDisplayProps} from '../../components/HalNavigator2/HalFormDisplay.tsx';
-import type {HalFormModalProps} from '../../components/HalNavigator2/HalFormModal.tsx';
+import {HalRouteContext, type HalRouteContextValue} from '../../contexts/halRouteContext.ts';
+import {ToastProvider} from '../../contexts/ToastContext.tsx';
+import {useToast} from '../../contexts/toastContext.ts';
+import {halRouteValue, stubFetch} from '../../__mocks__/halDialogTest.ts';
+import {useLocation} from 'react-router-dom';
 
-vi.mock('../../hooks/useHalPageData', () => ({
-    useHalPageData: vi.fn(),
+vi.mock('../../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: vi.fn().mockReturnValue({access_token: 'test-token', token_type: 'Bearer'}),
+    },
 }));
 
-vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: ({submitButtonLabel}: HalFormDisplayProps) => (
-        <button type="submit">{submitButtonLabel ?? 'Odeslat'}</button>
-    ),
+vi.mock('../../hooks/useRootNavigation', () => ({
+    useRootNavigation: vi.fn().mockReturnValue({data: [], isLoading: false, error: null}),
 }));
 
-vi.mock('../../components/HalNavigator2/HalFormModal.tsx', () => ({
-    HalFormModal: ({title, onClose}: HalFormModalProps) => (
-        <div role="dialog" aria-label={title}>
-            <button onClick={onClose}>Zavřít</button>
-        </div>
-    ),
-}));
+let rulesRoute: HalRouteContextValue;
 
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     HalSubresourceProvider: ({subresourceLinkName, children}: {subresourceLinkName: string; children: React.ReactNode}) => (
-        <div data-testid={`subresource-${subresourceLinkName}`}>{children}</div>
+        <div data-testid={`subresource-${subresourceLinkName}`}>
+            <HalRouteContext.Provider value={rulesRoute}>{children}</HalRouteContext.Provider>
+        </div>
     ),
 }));
 
@@ -69,89 +67,53 @@ const buildFeeTierDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
     ...overrides,
 });
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>): UseHalPageDataReturn => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/administration/membership-fee-tiers/tier-1',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers/tier-1'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+type RouteOverrides = Partial<Pick<HalRouteContextValue, 'isLoading' | 'error'>>;
+
+const createMockPageData = (resourceData: HalResponse | null, overrides?: RouteOverrides): HalRouteContextValue => ({
+    ...halRouteValue(resourceData, '/administration/membership-fee-tiers/tier-1'),
     ...overrides,
 });
 
-const createMockRulesPageData = (rulesCollection: HalResponse | null, overrides?: Partial<UseHalPageDataReturn>): UseHalPageDataReturn => ({
-    resourceData: rulesCollection,
-    isLoading: false,
-    error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/administration/membership-fee-tiers/tier-1/rules',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers/tier-1/rules'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => true),
-    getEmbeddedItems: vi.fn(() => (rulesCollection?._embedded?.paymentRuleResponseList ?? []) as unknown[]),
-    isCollection: vi.fn(() => true),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+const createMockRulesPageData = (rulesCollection: HalResponse | null, overrides?: RouteOverrides): HalRouteContextValue => ({
+    ...halRouteValue(rulesCollection, '/administration/membership-fee-tiers/tier-1/rules'),
     ...overrides,
 });
 
-/**
- * Sets up mocks for page (tier detail) and rules subresource.
- * Call order: MembershipFeeTierDetailPage → FeeTierDetailContent → RulesTableBody (+ repeated for rows)
- * Tier data needed for calls 1 and 2, rules collection for call 3+
- */
-const setupPageDataMocks = (
-    tierData: UseHalPageDataReturn,
-    rulesData: UseHalPageDataReturn,
-) => {
-    vi.mocked(useHalPageData)
-        .mockReset()
-        .mockReturnValueOnce(tierData)
-        .mockReturnValueOnce(tierData)
-        .mockReturnValue(rulesData);
+const ToastProbe = () => {
+    const {toasts} = useToast();
+    return <ul>{toasts.map(t => <li key={t.id} data-testid="toast">{t.message}</li>)}</ul>;
 };
 
-const renderPage = (tierData: UseHalPageDataReturn, rulesData?: UseHalPageDataReturn) => {
-    const rulesPageData = rulesData ?? createMockRulesPageData(buildRulesCollection([]));
-    setupPageDataMocks(tierData, rulesPageData);
+const LocationProbe = () => <span data-testid="location">{useLocation().pathname}</span>;
+
+const renderPage = (tierData: HalRouteContextValue, rulesData?: HalRouteContextValue) => {
+    rulesRoute = rulesData ?? createMockRulesPageData(buildRulesCollection([]));
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
             <MemoryRouter initialEntries={['/administration/membership-fee-tiers/tier-1']}>
-                <MembershipFeeTierDetailPage/>
+                <ToastProvider>
+                    <HalRouteContext.Provider value={tierData}>
+                        <MembershipFeeTierDetailPage/>
+                    </HalRouteContext.Provider>
+                    <ToastProbe/>
+                    <LocationProbe/>
+                </ToastProvider>
             </MemoryRouter>
         </QueryClientProvider>
     );
 };
 
 describe('MembershipFeeTierDetailPage', () => {
+    let writeCalls: ReturnType<typeof stubFetch>['writeCalls'];
+
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(useHalPageData).mockReset();
+        ({writeCalls} = stubFetch());
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     it('shows skeleton loading state when data is loading', () => {
@@ -318,7 +280,7 @@ describe('MembershipFeeTierDetailPage', () => {
         expect(screen.getByText('100 CZK')).toBeInTheDocument();
     });
 
-    it('renders save button inside basic info card when editTier template exists (after clicking edit)', () => {
+    it('renders save button inside basic info card when editTier template exists (after clicking edit)', async () => {
         const resourceData = buildFeeTierDetail({
             _templates: {
                 editTier: mockHalFormsTemplate({title: 'Upravit tier', method: 'PATCH'}),
@@ -326,7 +288,7 @@ describe('MembershipFeeTierDetailPage', () => {
         });
         renderPage(createMockPageData(resourceData));
         fireEvent.click(screen.getByRole('button', {name: /upravit/i}));
-        expect(screen.getByRole('button', {name: /uložit změny/i})).toBeInTheDocument();
+        expect(await screen.findByRole('button', {name: /uložit změny/i})).toBeInTheDocument();
     });
 
     it('does not render save button when editTier template is absent', () => {
@@ -423,7 +385,7 @@ describe('MembershipFeeTierDetailPage', () => {
             expect(screen.getAllByRole('button', {name: /upravit pravidlo/i})).toHaveLength(2);
         });
 
-        it('opens editRule modal when edit button is clicked', () => {
+        it('opens editRule modal when edit button is clicked', async () => {
             const rules: PaymentRuleItem[] = [{
                 eventTypeId: 'sprint',
                 rankingShortName: 'A',
@@ -438,10 +400,10 @@ describe('MembershipFeeTierDetailPage', () => {
                 createMockRulesPageData(buildRulesCollection(rules)),
             );
             fireEvent.click(screen.getByRole('button', {name: /upravit pravidlo/i}));
-            expect(screen.getByRole('dialog', {name: 'Upravit pravidlo'})).toBeInTheDocument();
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Upravit pravidlo');
         });
 
-        it('closes editRule modal when close button is clicked', () => {
+        it('closes editRule modal when cancel is clicked', async () => {
             const rules: PaymentRuleItem[] = [{
                 eventTypeId: 'sprint',
                 rankingShortName: 'A',
@@ -456,8 +418,8 @@ describe('MembershipFeeTierDetailPage', () => {
                 createMockRulesPageData(buildRulesCollection(rules)),
             );
             fireEvent.click(screen.getByRole('button', {name: /upravit pravidlo/i}));
-            fireEvent.click(screen.getByRole('button', {name: /zavřít/i}));
-            expect(screen.queryByRole('dialog', {name: 'Upravit pravidlo'})).not.toBeInTheDocument();
+            fireEvent.click(await screen.findByRole('button', {name: /zrušit/i}));
+            await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
         });
     });
 
@@ -493,7 +455,7 @@ describe('MembershipFeeTierDetailPage', () => {
             expect(screen.queryByRole('button', {name: /smazat pravidlo/i})).not.toBeInTheDocument();
         });
 
-        it('opens removeRule modal when delete button is clicked', () => {
+        it('opens removeRule modal when delete button is clicked', async () => {
             const rules: PaymentRuleItem[] = [{
                 eventTypeId: 'sprint',
                 rankingShortName: 'A',
@@ -508,10 +470,10 @@ describe('MembershipFeeTierDetailPage', () => {
                 createMockRulesPageData(buildRulesCollection(rules)),
             );
             fireEvent.click(screen.getByRole('button', {name: /smazat pravidlo/i}));
-            expect(screen.getByRole('dialog', {name: 'Smazat pravidlo'})).toBeInTheDocument();
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Smazat pravidlo');
         });
 
-        it('closes removeRule modal when close button is clicked', () => {
+        it('closes removeRule modal when cancel is clicked', async () => {
             const rules: PaymentRuleItem[] = [{
                 eventTypeId: 'sprint',
                 rankingShortName: 'A',
@@ -526,8 +488,89 @@ describe('MembershipFeeTierDetailPage', () => {
                 createMockRulesPageData(buildRulesCollection(rules)),
             );
             fireEvent.click(screen.getByRole('button', {name: /smazat pravidlo/i}));
-            fireEvent.click(screen.getByRole('button', {name: /zavřít/i}));
-            expect(screen.queryByRole('dialog', {name: 'Smazat pravidlo'})).not.toBeInTheDocument();
+            fireEvent.click(await screen.findByRole('button', {name: /zrušit/i}));
+            await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        });
+    });
+
+    describe('dialog submits', () => {
+        const ruleWith = (templates: Record<string, unknown>): PaymentRuleItem => ({
+            eventTypeId: 'sprint',
+            rankingShortName: 'A',
+            ruleType: 'PERCENTAGE',
+            percentage: 50,
+            _templates: templates,
+        });
+
+        it('submits editRule to the rule self link and shows the default toast', async () => {
+            const user = userEvent.setup();
+            renderPage(
+                createMockPageData(buildFeeTierDetail()),
+                createMockRulesPageData(buildRulesCollection([ruleWith({
+                    editRule: mockHalFormsTemplate({title: 'Upravit pravidlo', method: 'PATCH', target: undefined, properties: []}),
+                })])),
+            );
+
+            await user.click(screen.getByRole('button', {name: /upravit pravidlo/i}));
+            await user.click(await screen.findByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => expect(writeCalls()).toHaveLength(1));
+            expect(writeCalls()[0][0]).toBe('/api/membership-fee-tiers/tier-1/rules/sprint/A');
+            expect((writeCalls()[0][1] as RequestInit).method).toBe('PATCH');
+            await waitFor(() => expect(screen.getByTestId('toast')).toHaveTextContent('Upravit pravidlo — úspěšně uloženo'));
+            expect(screen.getByTestId('location')).toHaveTextContent('/administration/membership-fee-tiers/tier-1');
+        });
+
+        it('submits removeRule to the rule self link', async () => {
+            const user = userEvent.setup();
+            renderPage(
+                createMockPageData(buildFeeTierDetail()),
+                createMockRulesPageData(buildRulesCollection([ruleWith({
+                    removeRule: mockHalFormsTemplate({title: 'Smazat pravidlo', method: 'DELETE', target: undefined, properties: []}),
+                })])),
+            );
+
+            await user.click(screen.getByRole('button', {name: /smazat pravidlo/i}));
+            await user.click(await screen.findByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => expect(writeCalls()).toHaveLength(1));
+            expect(writeCalls()[0][0]).toBe('/api/membership-fee-tiers/tier-1/rules/sprint/A');
+            expect((writeCalls()[0][1] as RequestInit).method).toBe('DELETE');
+        });
+
+        it('opens addRule with the template title and submits to the collection', async () => {
+            const user = userEvent.setup();
+            const collection = {
+                ...buildRulesCollection([]),
+                _templates: {
+                    addRule: mockHalFormsTemplate({title: 'Přidat pravidlo', method: 'POST', target: undefined, properties: []}),
+                },
+            };
+            renderPage(createMockPageData(buildFeeTierDetail()), createMockRulesPageData(collection));
+
+            await user.click(screen.getByRole('button', {name: /přidat pravidlo/i}));
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Přidat pravidlo');
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => expect(writeCalls()).toHaveLength(1));
+            expect(writeCalls()[0][0]).toBe('/api/membership-fee-tiers/tier-1/rules');
+        });
+
+        it('deleting the tier opens the template title dialog and navigates to the tier list', async () => {
+            const user = userEvent.setup();
+            renderPage(createMockPageData(buildFeeTierDetail({
+                _templates: {
+                    deleteTier: mockHalFormsTemplate({title: 'Smazat tier', method: 'DELETE', target: undefined, properties: []}),
+                },
+            })));
+
+            await user.click(screen.getByRole('button', {name: /smazat tier/i}));
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Smazat tier');
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => expect(writeCalls()).toHaveLength(1));
+            expect(writeCalls()[0][0]).toBe('/api/membership-fee-tiers/tier-1');
+            await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/membership-fee-tiers'));
         });
     });
 });

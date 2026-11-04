@@ -1,37 +1,29 @@
 import '@testing-library/jest-dom';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
-import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {CampaignDetail} from './CampaignDetail';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {stubFetch} from '../../__mocks__/halDialogTest.ts';
+import {ToastProvider} from '../../contexts/ToastContext.tsx';
+import {useToast} from '../../contexts/toastContext.ts';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
 }));
 
-vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
-    useAuthorizedMutation: vi.fn().mockReturnValue({
-        mutate: vi.fn(),
-        isPending: false,
-        error: null,
-    }),
+vi.mock('../../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: vi.fn().mockReturnValue({access_token: 'test-token', token_type: 'Bearer'}),
+    },
 }));
 
-vi.mock('../../contexts/HalFormContext.tsx', () => ({
-    HalFormProvider: ({children}: {children: React.ReactNode}) => children,
-}));
-
-vi.mock('../../contexts/halFormContext.ts', () => ({
-    useHalForm: vi.fn().mockReturnValue({
-        displayHalForm: vi.fn(),
-        currentFormRequest: null,
-        closeForm: vi.fn(),
-    }),
+vi.mock('../../hooks/useRootNavigation', () => ({
+    useRootNavigation: vi.fn().mockReturnValue({data: [], isLoading: false, error: null}),
 }));
 
 const mockGroups = [
@@ -79,21 +71,38 @@ const createMockPageData = (resourceData: HalResponse | null) => ({
     getPageMetadata: vi.fn(() => undefined),
 });
 
+const ToastProbe = () => {
+    const {toasts} = useToast();
+    return <ul>{toasts.map(t => <li key={t.id} data-testid="toast">{t.message}</li>)}</ul>;
+};
+
 const renderComponent = (pageData: ReturnType<typeof createMockPageData>) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData as ReturnType<typeof useHalPageData>);
     const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
     return render(
         <QueryClientProvider client={queryClient}>
             <MemoryRouter>
-                <CampaignDetail/>
+                <ToastProvider>
+                    <CampaignDetail/>
+                    <ToastProbe/>
+                </ToastProvider>
             </MemoryRouter>
         </QueryClientProvider>
     );
 };
 
 describe('CampaignDetail', () => {
+    let writeCalls: ReturnType<typeof stubFetch>['writeCalls'];
+
     beforeEach(() => {
         vi.clearAllMocks();
+        ({writeCalls} = stubFetch(url => url.endsWith('/levels')
+            ? {_embedded: {membershipFeeGroupResponseList: mockGroups}}
+            : {}));
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     it('renders campaign year', () => {
@@ -150,12 +159,44 @@ describe('CampaignDetail', () => {
         expect(screen.getByRole('button', {name: /uzavřít kampaň/i})).toBeInTheDocument();
     });
 
-    it('renders fee groups when groups data is available', () => {
-        vi.mocked(useAuthorizedQuery).mockReturnValue({
-            data: {_embedded: {membershipFeeGroupResponseList: mockGroups}},
-            error: null,
-        } as ReturnType<typeof useAuthorizedQuery>);
+    it('renders fee groups when groups data is available', async () => {
         renderComponent(createMockPageData(buildCampaignDetail()));
-        expect(screen.getByText('Základní členství')).toBeInTheDocument();
+        expect(await screen.findByText('Základní členství')).toBeInTheDocument();
+    });
+
+    it('opens the change deadline dialog and submits to the template target', async () => {
+        const user = userEvent.setup();
+        renderComponent(createMockPageData(buildCampaignDetail({
+            _templates: {
+                changeDeadline: mockHalFormsTemplate({
+                    title: 'Změnit deadline', method: 'PATCH', target: '/api/fee-selection-campaigns/campaign-1', properties: [],
+                }),
+            },
+        })));
+
+        await user.click(screen.getByRole('button', {name: /změnit deadline/i}));
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Změnit deadline');
+        await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        await waitFor(() => expect(writeCalls()).toHaveLength(1));
+        expect(writeCalls()[0][0]).toBe('/api/fee-selection-campaigns/campaign-1');
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(screen.getByTestId('toast')).toHaveTextContent('Změnit deadline — úspěšně uloženo');
+    });
+
+    it('opens the close campaign dialog and closes it on cancel without a request', async () => {
+        const user = userEvent.setup();
+        renderComponent(createMockPageData(buildCampaignDetail({
+            _templates: {
+                closeCampaign: mockHalFormsTemplate({title: 'Uzavřít kampaň', method: 'POST', properties: []}),
+            },
+        })));
+
+        await user.click(screen.getByRole('button', {name: /uzavřít kampaň/i}));
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Uzavřít kampaň');
+        await user.click(screen.getByRole('button', {name: /zrušit/i}));
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(writeCalls()).toHaveLength(0);
     });
 });
