@@ -33,7 +33,7 @@
 
 ## 4. Cleanup and verification
 
-- [ ] 4.1 Delete `frontend/src/utils/navigationPath.ts` and remove `normalizeKlabisApiPath` and `stripUriTemplate` from `utils/halFormsUtils.ts`. Confirm with grep that nothing outside `api/apiPath.ts` handles the `/api` prefix, apart from the literal strings and `normalizeUrl` listed as out of scope.
-- [ ] 4.2 Update `.claude/skills/hal-navigator-patterns/references/component-api.md` ("HATEOAS Utility Functions") to describe `toApiHref` / `toRoutePath`, and say that fetch callers pass raw hrefs.
-- [ ] 4.3 Run `npm run build`, eslint and the full frontend test suite.
-- [ ] 4.4 Run the E2E suite against a local instance. Only the 2 pre-existing unregister failures in `event-registrations.feature` are allowed.
+- [x] 4.1 Delete `frontend/src/utils/navigationPath.ts` and remove `normalizeKlabisApiPath` and `stripUriTemplate` from `utils/halFormsUtils.ts`. Confirm with grep that nothing outside `api/apiPath.ts` handles the `/api` prefix, apart from the literal strings and `normalizeUrl` listed as out of scope.
+- [x] 4.2 Update `.claude/skills/hal-navigator-patterns/references/component-api.md` ("HATEOAS Utility Functions") to describe `toApiHref` / `toRoutePath`, and say that fetch callers pass raw hrefs.
+- [x] 4.3 Run `npm run build`, eslint and the full frontend test suite.
+- [x] 4.4 Run the E2E suite against a local instance. Only the 2 pre-existing unregister failures in `event-registrations.feature` are allowed. Result: 79/80; the only failure is the pre-existing "User with EVENTS:REGISTRATIONS unregisters another member" scenario.

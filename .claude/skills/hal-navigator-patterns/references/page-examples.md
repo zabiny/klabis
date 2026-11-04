@@ -189,7 +189,7 @@ Key patterns:
 - Type the response with `useHalPageData<GetMemberResource>()` — fields are typed, no `as any`
 - Conditionally render sections based on data presence
 - Navigation buttons based on available `_links`
-- Use `extractNavigationPath(href)` to convert API hrefs to router paths
+- Use `toRoutePath(href)` to convert API hrefs to router paths
 
 ```tsx
 // Key excerpts from frontend/src/pages/members/MemberDetailPage.tsx
@@ -201,7 +201,7 @@ const member = resourceData;   // typed as GetMemberResource | null
 
 // Navigate via link
 const handleNavigateToLink = (href: string) => {
-    navigate(extractNavigationPath(href));
+    navigate(toRoutePath(href));
 };
 
 // Conditional action buttons based on available links
@@ -243,7 +243,7 @@ if (resourceData && hasCalendarItems(resourceData)) {
 // Navigate via HAL links
 const handlePrevMonth = () => {
     const prevLink = resourceData?._links?.prev;
-    if (prevLink) navigate(extractNavigationPath(toHref(prevLink)));
+    if (prevLink) navigate(toRoutePath(toHref(prevLink)));
 };
 
 // Conditionally disable navigation buttons
@@ -276,7 +276,7 @@ import type {HalResponse, HalFormsTemplate} from '../../api';
 // Utilities
 import {formatDate} from '../../utils/dateUtils.ts';
 import {toHref} from '../../api/hateoas.ts';
-import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {toRoutePath} from '../../api/apiPath';
 
 // UI components
 import {Alert, Button, Skeleton, Spinner} from '../../components/UI';
