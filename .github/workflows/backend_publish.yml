@@ -7,6 +7,8 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
+      - 'docs/openapi/**'
+      - 'tools/openapi-bundle/**'
       - '.github/workflows/backend_publish.yml'
   workflow_dispatch:  # Manual trigger
 
