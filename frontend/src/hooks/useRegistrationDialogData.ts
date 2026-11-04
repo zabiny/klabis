@@ -36,15 +36,13 @@ const resolveMode = (
 };
 
 export const useRegistrationDialogData = (registration: Link | null): RegistrationDialogData => {
-    const registrationQuery = useAuthorizedQuery<GetRegistrationResource>(registration?.href ?? '', {
-        enabled: !!registration,
+    const registrationQuery = useAuthorizedQuery<GetRegistrationResource>(registration?.href, {
         retry: false,
     });
 
     const eventHref = asLinkArray(registrationQuery.data?._links?.event)[0]?.href;
 
-    const eventQuery = useAuthorizedQuery<GetEventResource>(eventHref ?? '', {
-        enabled: !!eventHref,
+    const eventQuery = useAuthorizedQuery<GetEventResource>(eventHref, {
         retry: false,
     });
 

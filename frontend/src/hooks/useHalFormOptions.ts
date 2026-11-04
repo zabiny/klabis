@@ -81,10 +81,9 @@ export function useHalFormOptions(
     optionDef: HalFormsOption | undefined,
     prop?: EnumOptionContext
 ): UseHalFormOptionsResult {
-    const optionsHref = optionDef?.link?.href ?? '';
+    const optionsHref = optionDef?.link?.href || undefined;
 
     const linkOptions = useAuthorizedQuery(optionsHref, {
-        enabled: !!optionsHref,
         staleTime: 5 * 60 * 1000, // 5 minutes - options rarely change
         select: (data) => convertToSelectOptions((Array.isArray(data) ? data : []) as HalFormsOptionType[])
     })

@@ -468,7 +468,7 @@ describe('EventsPage', () => {
                 ...prefill,
             };
             vi.mocked(authorizedFetch).mockImplementation(((url: string) => {
-                if (url.includes('newRegistration=true')) {
+                if (url?.includes('newRegistration=true')) {
                     return Promise.resolve(createMockResponse(prefillResponse));
                 }
                 if (url === '/api/events/evt-1') {
@@ -476,7 +476,7 @@ describe('EventsPage', () => {
                 }
                 return Promise.resolve(createMockResponse({}));
             }) as typeof authorizedFetch);
-            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) => {
                 if (url === '/api/event-types') {
                     return {
                         data: {_embedded: {eventTypeDtoList: []}},
@@ -484,7 +484,7 @@ describe('EventsPage', () => {
                         error: null,
                     } as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
-                if (url.includes('newRegistration=true')) {
+                if (url?.includes('newRegistration=true')) {
                     return {
                         data: prefillResponse,
                         isLoading: false,
@@ -610,8 +610,8 @@ describe('EventsPage', () => {
                 _links: {self: {href: '/api/events/evt-edit'}},
                 _templates: templates,
             };
-            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => {
-                if (url.includes('/registrations/')) {
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) => {
+                if (url?.includes('/registrations/')) {
                     return {data: undefined, isLoading: true, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>;
                 }
                 return {
@@ -769,7 +769,7 @@ describe('EventsPage', () => {
         });
 
         it('reflects eventTypeId from URL by pressing the matching pill', () => {
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
                 if (url === '/api/event-types') {
                     return {
                         data: {_embedded: {eventTypeDtoList: [
@@ -791,7 +791,7 @@ describe('EventsPage', () => {
 
     describe('table state follows filters', () => {
         const mockPagedEvents = () => {
-            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation(((url: string | undefined) => {
                 if (url === '/api/event-types') {
                     return {data: {_embedded: {eventTypeDtoList: []}}, isLoading: false, error: null};
                 }
@@ -917,7 +917,7 @@ describe('EventsPage', () => {
             events: unknown[],
             eventTypes: {id: string; name: string; color?: string; sortOrder: number}[] = []
         ) => {
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
                 if (url === '/api/event-types') {
                     return {
                         data: {_embedded: {eventTypeDtoList: eventTypes}},

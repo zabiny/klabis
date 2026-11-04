@@ -96,11 +96,11 @@ export function useHalFormData(
         return shouldFetchTargetData(selectedTemplate.target, currentPathname);
     }, [selectedTemplate, currentPathname]);
 
-    const targetUrl = selectedTemplate?.target ?? '';
+    const targetUrl = selectedTemplate?.target;
 
     // Phase 1: Probe the target via OPTIONS to determine whether GET is supported.
     // Only fires when shouldFetch is true so we don't probe same-resource targets.
-    const probeResult = useHalFormGetAvailability(targetUrl || undefined, shouldFetch);
+    const probeResult = useHalFormGetAvailability(targetUrl, shouldFetch);
 
     // Phase 2: Fetch prefill data only when the OPTIONS probe confirmed GET is supported.
     // Stale Time: 0 — always fetch fresh form data on mount
@@ -111,7 +111,7 @@ export function useHalFormData(
         isLoading: isGetLoading,
         error: getError,
         refetch
-    } = useAuthorizedQuery<Record<string, unknown>>(targetUrl || '', {
+    } = useAuthorizedQuery<Record<string, unknown>>(targetUrl, {
         enabled: shouldFetch && probeResult.isGetAllowed === true,
         staleTime: 0,
         gcTime: 60000,

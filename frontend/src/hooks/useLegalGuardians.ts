@@ -9,12 +9,10 @@ type GuardiansResponse = {_embedded?: {legalGuardianGroupGuardianResponseList?: 
 
 /** Loads guardians behind a `legalGuardians` link; without the link there is nothing to load. */
 export function useLegalGuardians(guardiansLink?: HalResourceLinks): {guardians: LegalGuardianRow[]; isLoading: boolean} {
-    const href = guardiansLink ? toHref(guardiansLink) : '';
-    const {data, isLoading} = useAuthorizedQuery<GuardiansResponse>(href, {
-        enabled: href !== '',
-    });
+    const href = guardiansLink ? toHref(guardiansLink) : undefined;
+    const {data, isLoading} = useAuthorizedQuery<GuardiansResponse>(href);
     return {
         guardians: data?._embedded?.legalGuardianGroupGuardianResponseList ?? [],
-        isLoading: href !== '' && isLoading,
+        isLoading: href !== undefined && isLoading,
     };
 }

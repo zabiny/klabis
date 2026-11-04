@@ -43,13 +43,10 @@ export const AccommodationListPage = (): ReactElement => {
         useAuthorizedQuery<EventData>(eventUrl);
 
     const accommodationListLink = eventData?._links?.['accommodation-list'];
-    const accommodationListUrl = accommodationListLink ? toHref(accommodationListLink) : null;
+    const accommodationListUrl = accommodationListLink ? toHref(accommodationListLink) : undefined;
 
     const {data: listData, isLoading: listLoading, error: listError} =
-        useAuthorizedQuery<AccommodationListResponse>(
-            accommodationListUrl ?? '',
-            {enabled: !!accommodationListUrl}
-        );
+        useAuthorizedQuery<AccommodationListResponse>(accommodationListUrl);
 
     if (eventLoading || listLoading) {
         return <Skeleton/>;

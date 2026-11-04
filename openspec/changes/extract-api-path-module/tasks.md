@@ -40,10 +40,10 @@
 
 ## 5. "No URL" as `undefined` (D6, added after simplify review)
 
-- [ ] 5.1 Add `useAuthorizedQuery` tests:
+- [x] 5.1 Add `useAuthorizedQuery` tests:
   - `useAuthorizedQuery(undefined)` never calls `fetch` and does not receive data cached for `/api`;
   - a defined URL with `enabled: false` still does not fetch.
 
   Change the signature to `url: string | undefined`, use `skipToken` for `undefined`, and delete the `url ? toApiHref(url) : ''` key special case. Run the tests of `src/hooks/`.
-- [ ] 5.2 Migrate every caller that passes `''` (or `x ?? ''`) as a "no URL" sentinel to pass `undefined`, and drop the guards that only existed for the sentinel (`enabled: !!x`, `href !== ''`). Apply the same rule to `useHalFormGetAvailability`. Update tests mechanically.
-- [ ] 5.3 Run `npm run build`, eslint and the full frontend test suite.
+- [x] 5.2 Migrate every caller that passes `''` (or `x ?? ''`) as a "no URL" sentinel to pass `undefined`, and drop the guards that only existed for the sentinel (`enabled: !!x`, `href !== ''`). Apply the same rule to `useHalFormGetAvailability`. Update tests mechanically.
+- [x] 5.3 Run `npm run build`, eslint and the full frontend test suite. Final E2E run: 78/80, only the 2 pre-existing unregister failures.

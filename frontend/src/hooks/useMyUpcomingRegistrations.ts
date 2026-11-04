@@ -41,8 +41,7 @@ function toUpcomingRegistrationsData(response: HalResponse): UpcomingRegistratio
 }
 
 export function useMyUpcomingRegistrations(href: string | undefined) {
-    return useAuthorizedQuery(href ?? '', {
-        enabled: !!href,
+    return useAuthorizedQuery(href, {
         select: (data) => toUpcomingRegistrationsData(data as HalResponse),
     });
 }

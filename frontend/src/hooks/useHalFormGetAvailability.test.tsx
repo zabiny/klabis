@@ -131,9 +131,18 @@ describe('useHalFormGetAvailability', () => {
         expect(result.current.isLoading).toBe(false);
     });
 
-    it('does not fire request when URL is empty', () => {
-        const {result} = renderHook(
+    it('does not fire request when URL is an empty string', () => {
+        renderHook(
             () => useHalFormGetAvailability('', true),
+            {wrapper: createWrapper()}
+        );
+
+        expect(fetchSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not fire request when URL is undefined', () => {
+        const {result} = renderHook(
+            () => useHalFormGetAvailability(undefined, true),
             {wrapper: createWrapper()}
         );
 
