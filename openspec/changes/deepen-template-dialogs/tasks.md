@@ -23,10 +23,10 @@
 
 ## 3. Groups and training groups
 
-- [ ] 3.1 Migrate every modal in `pages/groups/GroupDetailPage.tsx` to the hook: add/invite member, add/remove owner, remove member, leave, delete and cancel invitation. Member-picker dialogs pass `fieldsFactory: createMemberFilteredFactory(…)` (D6). Row templates use `open(row)` / `availableOn(row)`. Drop `route.refetch()` from `onClose` (D9). The self-removal of an owner keeps its current post-submit behavior.
-- [ ] 3.2 Migrate every modal in `pages/training-groups/TrainingGroupDetailPage.tsx` in the same way, including the trainee and trainer pickers with their filter.
-- [ ] 3.3 Delete the `_templates` cast types in `pages/groups/types.ts` and `pages/training-groups/types.ts` that are no longer used.
-- [ ] 3.4 Rewrite the affected tests, including `TrainingGroupDetailPage.trainers.test.tsx`, without mocking `HalFormDisplay`, `HalFormModal` or `Modal`. Assert that member-picker dialogs hide current members. Run the tests of these pages.
+- [x] 3.1 Migrate every modal in `pages/groups/GroupDetailPage.tsx` to the hook: add/invite member, add/remove owner, remove member, leave, delete and cancel invitation. Member-picker dialogs pass `fieldsFactory: createMemberFilteredFactory(…)` (D6). Row templates use `open(row)` / `availableOn(row)`. Drop `route.refetch()` from `onClose` (D9). The self-removal of an owner keeps its current post-submit behavior.
+- [x] 3.2 Migrate every modal in `pages/training-groups/TrainingGroupDetailPage.tsx` in the same way, including the trainee and trainer pickers with their filter.
+- [x] 3.3 Delete the `_templates` cast types in `pages/groups/types.ts` and `pages/training-groups/types.ts` that are no longer used.
+- [x] 3.4 Rewrite the affected tests, including `TrainingGroupDetailPage.trainers.test.tsx`, without mocking `HalFormDisplay`, `HalFormModal` or `Modal`. Assert that member-picker dialogs hide current members. Run the tests of these pages.
 
 ## 4. Members, events, category presets, event types
 

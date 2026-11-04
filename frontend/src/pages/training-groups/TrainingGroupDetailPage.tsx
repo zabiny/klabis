@@ -3,54 +3,60 @@ import {Link, useNavigate} from 'react-router-dom';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
-import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
-import type {HalFormsTemplate, HalResourceLinks} from '../../api';
-import {toHref} from '../../api/hateoas.ts';
-import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
+import {createMemberFilteredFactory} from '../../components/KlabisFieldsFactory.tsx';
+import type {HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
 import {labels} from '../../localization';
 import {Pencil, Trash2, UserPlus} from 'lucide-react';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
 import type {TrainingGroupDetail, TrainingGroupMember, TrainingGroupTrainer} from './types.ts';
 
-interface MemberActionModalState {
-    member: TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate>; _links: { member?: HalResourceLinks; self?: HalResourceLinks } };
-    templateName: string;
-    template: HalFormsTemplate;
-}
-
 const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroupDetail}): ReactElement => {
     const {route} = useHalPageData<TrainingGroupDetail>();
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
-    const [addMemberModal, setAddMemberModal] = useState(false);
-    const [deleteModal, setDeleteModal] = useState(false);
-    const [removeMemberModal, setRemoveMemberModal] = useState<MemberActionModalState | null>(null);
-    const [addTrainerModal, setAddTrainerModal] = useState(false);
-    const [removeTrainerModal, setRemoveTrainerModal] = useState<{template: HalFormsTemplate; trainerSelfHref: string} | null>(null);
 
     const editTemplate = resourceData._templates?.updateTrainingGroup ?? null;
-    const deleteTemplate = resourceData._templates?.deleteTrainingGroup ?? null;
-    const addMemberTemplate = resourceData._templates?.addTrainingGroupMember ?? null;
-    const addTrainerTemplate = resourceData._templates?.addTrainer ?? null;
 
     const trainers: TrainingGroupTrainer[] = (resourceData.trainers as TrainingGroupTrainer[] | undefined) ?? [];
-    const members = (resourceData.members as TrainingGroupMember[] | undefined ?? []) as Array<TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }>;
+    const members: TrainingGroupMember[] = (resourceData.members as TrainingGroupMember[] | undefined) ?? [];
 
     const trainerIds = useMemo(() => trainers.map(t => t.memberId), [trainers]);
     const memberIds = useMemo(() => members.map(m => m.memberId), [members]);
     // A trainer is never a trainee of the group they train, so the picker must not offer them.
     const nonTraineeIds = useMemo(() => [...memberIds, ...trainerIds], [memberIds, trainerIds]);
 
-    const handleRemoveMember = (member: TrainingGroupMember & { _templates?: Record<string, HalFormsTemplate> }) => {
-        const template = member._templates?.removeTrainingGroupMember;
-        if (!template || !member._links.self) return;
-        setRemoveMemberModal({
-            member: member as MemberActionModalState['member'],
-            templateName: 'removeTrainingGroupMember',
-            template,
-        });
-    };
+    const addMemberFactory = useMemo(() => createMemberFilteredFactory(nonTraineeIds), [nonTraineeIds]);
+    const addTrainerFactory = useMemo(() => createMemberFilteredFactory(trainerIds), [trainerIds]);
+
+    const trainingGroup = resourceData as unknown as HalResponse;
+
+    const addMemberDialog = useTemplateDialog('addTrainingGroupMember', {
+        resource: trainingGroup,
+        title: labels.templates.addTrainingGroupMember,
+        successMessage: labels.ui.savedSuccessfully,
+        fieldsFactory: addMemberFactory,
+    });
+    const removeMemberDialog = useTemplateDialog('removeTrainingGroupMember', {
+        title: (template) => template.title ?? labels.templates.removeTrainingGroupMember,
+        successMessage: labels.ui.savedSuccessfully,
+    });
+    const addTrainerDialog = useTemplateDialog('addTrainer', {
+        resource: trainingGroup,
+        title: labels.templates.addTrainer,
+        successMessage: labels.ui.savedSuccessfully,
+        fieldsFactory: addTrainerFactory,
+    });
+    const removeTrainerDialog = useTemplateDialog('removeTrainer', {
+        title: labels.templates.removeTrainer,
+        successMessage: labels.ui.savedSuccessfully,
+    });
+    const deleteDialog = useTemplateDialog('deleteTrainingGroup', {
+        resource: trainingGroup,
+        title: (template) => template.title ?? labels.templates.deleteTrainingGroup,
+        onSubmitSuccess: () => navigate('/training-groups'),
+    });
 
     return (
         <div className="flex flex-col gap-8">
@@ -80,10 +86,10 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                             {labels.templates.updateTrainingGroup}
                         </Button>
                     )}
-                    {deleteTemplate && (
+                    {deleteDialog.available && (
                         <Button
                             variant="danger"
-                            onClick={() => setDeleteModal(true)}
+                            onClick={() => deleteDialog.open()}
                             startIcon={<Trash2 className="w-4 h-4"/>}
                         >
                             {labels.templates.deleteTrainingGroup}
@@ -108,17 +114,17 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
 
             <hr className="border-border"/>
 
-            {(trainers.length > 0 || addTrainerTemplate) && (
+            {(trainers.length > 0 || addTrainerDialog.available) && (
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xs uppercase font-semibold text-text-secondary">
                             {labels.sections.trainingGroupTrainers}
                         </h3>
-                        {addTrainerTemplate && (
+                        {addTrainerDialog.available && (
                             <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => setAddTrainerModal(true)}
+                                onClick={() => addTrainerDialog.open()}
                                 startIcon={<UserPlus className="w-4 h-4"/>}
                             >
                                 {labels.templates.addTrainer}
@@ -127,15 +133,14 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                     </div>
                     <dl>
                         {trainers.map((trainer) => {
-                            const removeTrainerTpl = trainer._templates?.removeTrainer;
-                            const selfHref = trainer._links?.self ? toHref(trainer._links.self) : '';
+                            const canRemove = removeTrainerDialog.availableOn(trainer) && trainer._links?.self;
                             return trainer._links.member ? (
                                 <MemberRowWithRemove
                                     key={trainer.memberId}
                                     memberId={trainer.memberId}
                                     memberLink={trainer._links.member as HalResourceLinks}
                                     removeAriaLabel={labels.templates.removeTrainer}
-                                    onRemove={removeTrainerTpl && selfHref ? () => setRemoveTrainerModal({template: removeTrainerTpl, trainerSelfHref: selfHref}) : undefined}
+                                    onRemove={canRemove ? () => removeTrainerDialog.open(trainer) : undefined}
                                 />
                             ) : null;
                         })}
@@ -146,10 +151,10 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
             <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                     <h2 className="text-xl font-bold text-text-primary">{labels.sections.trainingGroupMembers}</h2>
-                    {addMemberTemplate && (
+                    {addMemberDialog.available && (
                         <Button
                             variant="primary"
-                            onClick={() => setAddMemberModal(true)}
+                            onClick={() => addMemberDialog.open()}
                             startIcon={<UserPlus className="w-4 h-4"/>}
                         >
                             {labels.templates.addTrainingGroupMember}
@@ -164,72 +169,16 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                         joinedAt: member.joinedAt,
                         memberLink: member._links.member as HalResourceLinks | undefined,
                         removeAriaLabel: labels.templates.removeTrainingGroupMember,
-                        onRemove: member._templates?.removeTrainingGroupMember ? () => handleRemoveMember(member) : undefined,
+                        onRemove: removeMemberDialog.availableOn(member) && member._links.self ? () => removeMemberDialog.open(member) : undefined,
                     }))}
                 />
             </div>
 
-            {addMemberTemplate && addMemberModal && (
-                <HalFormModal
-                    title={labels.templates.addTrainingGroupMember}
-                    template={addMemberTemplate as HalFormsTemplate}
-                    templateName="addTrainingGroupMember"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => { setAddMemberModal(false); void route.refetch(); }}
-                    successMessage={labels.ui.savedSuccessfully}
-                    excludeMemberIds={nonTraineeIds}
-                />
-            )}
-
-            {removeMemberModal && (
-                <HalFormModal
-                    title={removeMemberModal.template.title ?? labels.templates.removeTrainingGroupMember}
-                    template={removeMemberModal.template}
-                    templateName={removeMemberModal.templateName}
-                    resourceData={removeMemberModal.member as unknown as Record<string, unknown>}
-                    pathname={extractNavigationPath(toHref(removeMemberModal.member._links.self!))}
-                    onClose={() => { setRemoveMemberModal(null); void route.refetch(); }}
-                    successMessage={labels.ui.savedSuccessfully}
-                />
-            )}
-
-            {addTrainerTemplate && addTrainerModal && (
-                <HalFormModal
-                    title={labels.templates.addTrainer}
-                    template={addTrainerTemplate as HalFormsTemplate}
-                    templateName="addTrainer"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => { setAddTrainerModal(false); void route.refetch(); }}
-                    successMessage={labels.ui.savedSuccessfully}
-                    excludeMemberIds={trainerIds}
-                />
-            )}
-
-            {removeTrainerModal && (
-                <HalFormModal
-                    title={labels.templates.removeTrainer}
-                    template={removeTrainerModal.template}
-                    templateName="removeTrainer"
-                    resourceData={{}}
-                    pathname={removeTrainerModal.trainerSelfHref ? extractNavigationPath(removeTrainerModal.trainerSelfHref) : route.pathname}
-                    onClose={() => { setRemoveTrainerModal(null); void route.refetch(); }}
-                    successMessage={labels.ui.savedSuccessfully}
-                />
-            )}
-
-            {deleteTemplate && deleteModal && (
-                <HalFormModal
-                    title={(deleteTemplate as HalFormsTemplate).title ?? labels.templates.deleteTrainingGroup}
-                    template={deleteTemplate as HalFormsTemplate}
-                    templateName="deleteTrainingGroup"
-                    resourceData={resourceData as unknown as Record<string, unknown>}
-                    pathname={route.pathname}
-                    onClose={() => setDeleteModal(false)}
-                    onSubmitSuccess={() => navigate('/training-groups')}
-                />
-            )}
+            {addMemberDialog.dialog}
+            {removeMemberDialog.dialog}
+            {addTrainerDialog.dialog}
+            {removeTrainerDialog.dialog}
+            {deleteDialog.dialog}
         </div>
     );
 };
