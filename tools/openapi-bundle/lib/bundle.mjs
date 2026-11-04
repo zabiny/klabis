@@ -205,7 +205,7 @@ export function bundleSpec(rootFile, options = {}) {
 
     // After ref inlining (the deriver needs every payload schema present and locally addressable)
     // and before sortKeysDeep, so derived schemas are ordered like every other one.
-    const {collisions} = deriveHalEnvelopes(document);
+    const {collisions, entityItemPaths} = deriveHalEnvelopes(document);
 
-    return {document: sortKeysDeep(document), conflicts, collisions};
+    return {document: sortKeysDeep(document), conflicts, collisions, entityItemPaths};
 }

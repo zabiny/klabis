@@ -53,7 +53,7 @@ function main() {
         console.error(`Spec bundling failed: ${e.message}`);
         process.exit(1);
     }
-    const {document, conflicts, collisions} = bundled;
+    const {document, conflicts, collisions, entityItemPaths} = bundled;
 
     if (conflicts.length > 0) {
         console.error('Conflicting component definitions (same name, different shape):');
@@ -71,7 +71,7 @@ function main() {
     // missing hal-forms entry as "the deriver skipped this", which is only true post-derivation.
     // Validating first would flag every hand-written envelope instead.
     const authorities = loadAuthorities(AUTHORITY_JAVA);
-    const errors = validateSpec(document, {authorities});
+    const errors = validateSpec(document, {authorities, entityItemPaths});
 
     const specDir = dirname(SPEC_ROOT);
     const rootDocument = parse(readFileSync(SPEC_ROOT, 'utf8'));

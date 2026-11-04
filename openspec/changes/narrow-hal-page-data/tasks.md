@@ -25,13 +25,13 @@
 
 ## 3. Row relation extensions in the tooling
 
-- [ ] 3.1 Add `validate.test.mjs` cases for `x-hal-item-links` / `x-hal-item-templates`:
+- [x] 3.1 Add `validate.test.mjs` cases for `x-hal-item-links` / `x-hal-item-templates`:
   - accepted on an array-payload response, on an `x-hal-embedded` response and next to `x-hal-entity-items: true`;
   - rejected elsewhere;
   - `operation:` checked.
 
   Add `haltypes.test.mjs` cases for both placements (D4), including the entity-items property override and the unchanged output when no item rels exist. Confirm the tests fail.
-- [ ] 3.2 Implement D3 in `lib/validate.mjs` and D4 in `lib/haltypes.mjs`. Run the `tools/openapi-bundle` tests.
+- [x] 3.2 Implement D3 in `lib/validate.mjs` and D4 in `lib/haltypes.mjs`. Run the `tools/openapi-bundle` tests.
 
 ## 4. Spec content and generated row types
 

@@ -236,6 +236,23 @@ describe('deriveHalEnvelopes', () => {
             });
         });
 
+        it('reports the paths of the properties whose marker it consumed', () => {
+            const document = docWith(ref('TrainingGroupResponse'), {
+                TrainingGroupResponse: {
+                    type: 'object',
+                    properties: {
+                        trainers: {type: 'array', 'x-hal-entity-items': true, items: ref('TrainerResponse')},
+                        plain: {type: 'array', items: ref('TrainerResponse')},
+                    },
+                },
+                TrainerResponse: {type: 'object', properties: {id: {type: 'string'}}},
+            });
+
+            const {entityItemPaths} = deriveHalEnvelopes(document);
+
+            expect([...entityItemPaths]).toEqual(['/components/schemas/TrainingGroupResponse/properties/trainers']);
+        });
+
         it('derives one consistent schema for a payload used as both a response item and a nested row', () => {
             const document = docWith(ref('GroupResponse'), {
                 GroupResponse: {
