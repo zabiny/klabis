@@ -1,6 +1,6 @@
 ## 1. The `apiPath` module
 
-- [ ] 1.1 Write `frontend/src/api/apiPath.test.ts`, table-driven, for `toApiHref` and `toRoutePath`. Cover:
+- [x] 1.1 Write `frontend/src/api/apiPath.test.ts`, table-driven, for `toApiHref` and `toRoutePath`. Cover:
   - absolute URL, `/api/x`, `/x` and bare `x`;
   - URI template variables in path and query position;
   - empty input and `/`;
@@ -8,7 +8,7 @@
   - the prefix edge cases from design D2 (`/api`, `/api?x`, `/apiary`).
 
   Move the `normalizeKlabisApiPath` cases from `utils/halFormsUtils.test.ts` into it, adapting the expected values to `toRoutePath`. Confirm the tests fail.
-- [ ] 1.2 Implement `frontend/src/api/apiPath.ts` with no imports (D1, D2). 1.1 passes.
+- [x] 1.2 Implement `frontend/src/api/apiPath.ts` with no imports (D1, D2). 1.1 passes.
 
 ## 2. Fetch layer
 
