@@ -30,6 +30,8 @@ const d = useTemplateDialog(name?: string, options?: TemplateDialogOptions);
 // d.dialog: ReactElement | null              — render anywhere in the caller's tree
 ```
 
+`open` also takes an optional third argument, `overrides`, with `title`, `note`, `onSubmitSuccess`, `successMessage` and `navigateOnSuccess`. These apply only to that opening. This lets one hook cover the variants of one template, such as removing another owner versus removing yourself. `options.initialData` replaces the form prefill when the values do not come from the resource itself, for example the current legal guardians. `label` was left out: no caller needs it.
+
 The state lives with the caller and the dialog renders in the caller's tree. As a result the hook sees its own resource, so the `resourceContext` snapshot is no longer needed. Tests can render a component without `HalFormProvider`.
 
 *Alternative rejected:* extending `HalFormRequest` with all options. That keeps the snapshot workaround and the hidden dependency on `HalFormsPageLayout`.

@@ -1,14 +1,14 @@
 import '@testing-library/jest-dom';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {MemoryRouter, useLocation} from 'react-router-dom';
+import {type QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {MemoryRouter} from 'react-router-dom';
 import {type ReactElement, useRef} from 'react';
 import {vi} from 'vitest';
 import {useTemplateDialog, type TemplateDialogOptions} from './useTemplateDialog.tsx';
-import {HalRouteContext, type HalRouteContextValue} from '../../contexts/halRouteContext.ts';
+import {HalRouteContext} from '../../contexts/halRouteContext.ts';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
-import {useToast} from '../../contexts/toastContext.ts';
+import {createTestQueryClient, halRouteValue, LocationProbe, stubFetch, ToastProbe} from '../../__mocks__/halDialogTest.tsx';
 import {createMockResponse} from '../../__mocks__/mockFetch.ts';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
 import type {HalFormsTemplate, HalResponse} from '../../api';
@@ -24,18 +24,6 @@ vi.mock('../../hooks/useRootNavigation', () => ({
     useRootNavigation: vi.fn().mockReturnValue({data: [], isLoading: false, error: null}),
 }));
 
-const routeValue = (pathname: string): HalRouteContextValue => ({
-    resourceData: null,
-    navigateToResource: vi.fn(),
-    isLoading: false,
-    error: null,
-    refetch: async () => {
-    },
-    pathname,
-    queryState: 'success',
-    getResourceLink: vi.fn(),
-});
-
 const template = (overrides: Partial<HalFormsTemplate> = {}): HalFormsTemplate => mockHalFormsTemplate({
     method: 'POST',
     target: '/api/members/1/publish',
@@ -48,13 +36,6 @@ const resourceWith = (templates: Record<string, HalFormsTemplate>, self?: string
     _links: self ? {self: {href: self}} : {},
     _templates: templates,
 } as HalResponse);
-
-const ToastProbe = () => {
-    const {toasts} = useToast();
-    return <ul>{toasts.map(t => <li key={t.id} data-testid="toast">{t.message}</li>)}</ul>;
-};
-
-const LocationProbe = () => <span data-testid="location">{useLocation().pathname}</span>;
 
 interface HarnessProps {
     name?: string;
@@ -72,7 +53,6 @@ const Harness = ({name, options, row, rowTemplateName, onApi}: HarnessProps): Re
     return (
         <div>
             <span data-testid="available">{String(d.available)}</span>
-            <span data-testid="label">{d.label}</span>
             {row && rowTemplateName && (
                 <span data-testid="available-on-row">{String(d.availableOn(row, rowTemplateName))}</span>
             )}
@@ -84,18 +64,13 @@ const Harness = ({name, options, row, rowTemplateName, onApi}: HarnessProps): Re
 };
 
 describe('useTemplateDialog', () => {
-    let fetchSpy: ReturnType<typeof vi.fn>;
+    let fetchSpy: ReturnType<typeof stubFetch>['fetchSpy'];
+    let writeCalls: ReturnType<typeof stubFetch>['writeCalls'];
     let queryClient: QueryClient;
 
-    const writeCalls = () => fetchSpy.mock.calls.filter(([, init]) => (init as RequestInit | undefined)?.method !== 'OPTIONS');
-
     beforeEach(() => {
-        queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
-        fetchSpy = vi.fn(async (_url: string, init?: RequestInit) => {
-            if (init?.method === 'OPTIONS') return createMockResponse(null, 200);
-            return createMockResponse({}, 200);
-        });
-        vi.stubGlobal('fetch', fetchSpy);
+        queryClient = createTestQueryClient();
+        ({fetchSpy, writeCalls} = stubFetch());
     });
 
     afterEach(() => {
@@ -106,7 +81,7 @@ describe('useTemplateDialog', () => {
         render(
             <QueryClientProvider client={queryClient}>
                 <MemoryRouter initialEntries={[pathname]}>
-                    <HalRouteContext.Provider value={routeValue(pathname)}>
+                    <HalRouteContext.Provider value={halRouteValue(null, pathname)}>
                         <ToastProvider>
                             <Harness {...props}/>
                             <ToastProbe/>
@@ -117,7 +92,7 @@ describe('useTemplateDialog', () => {
             </QueryClientProvider>
         );
 
-    describe('availability and label', () => {
+    describe('availability', () => {
         it('is available when the resource has the named template', () => {
             renderHarness({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()})}});
             expect(screen.getByTestId('available')).toHaveTextContent('true');
@@ -133,10 +108,9 @@ describe('useTemplateDialog', () => {
             expect(screen.getByTestId('available')).toHaveTextContent('false');
         });
 
-        it('is unavailable and has empty label without a name', () => {
+        it('is unavailable without a name', () => {
             renderHarness({options: {resource: resourceWith({publishEvent: template()})}});
             expect(screen.getByTestId('available')).toHaveTextContent('false');
-            expect(screen.getByTestId('label')).toHaveTextContent('');
         });
 
         it('availableOn checks a given resource and template name', () => {
@@ -149,20 +123,6 @@ describe('useTemplateDialog', () => {
             const row = resourceWith({});
             renderHarness({row, rowTemplateName: 'editRow'});
             expect(screen.getByTestId('available-on-row')).toHaveTextContent('false');
-        });
-
-        it('label prefers the localized template label', () => {
-            renderHarness({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()})}});
-            expect(screen.getByTestId('label')).toHaveTextContent('Publikovat');
-        });
-
-        it('label falls back to template title, then template name', () => {
-            const {unmount} = renderHarness({name: 'customThing', options: {resource: resourceWith({customThing: template({title: 'Custom title'})})}});
-            expect(screen.getByTestId('label')).toHaveTextContent('Custom title');
-            unmount();
-
-            renderHarness({name: 'customThing', options: {resource: resourceWith({customThing: template({title: undefined})})}});
-            expect(screen.getByTestId('label')).toHaveTextContent('customThing');
         });
     });
 
@@ -213,6 +173,64 @@ describe('useTemplateDialog', () => {
             renderHarness({name: 'publishEvent', options: {resource: resourceWith({publishEvent: template()}), note: 'Opravdu?'}});
             await user.click(screen.getByText('open'));
             expect(await screen.findByText('Opravdu?')).toBeInTheDocument();
+        });
+    });
+
+    describe('overrides and initialData', () => {
+        it('overrides apply to one opening only', async () => {
+            const user = userEvent.setup();
+            const onSubmitSuccess = vi.fn();
+            const row = resourceWith({deleteRow: template({title: 'Delete row'})});
+            const Probe = () => {
+                const d = useTemplateDialog('deleteRow', {title: 'Základ'});
+                return (
+                    <div>
+                        <button onClick={() => d.open(row, undefined, {title: 'Varianta', note: 'Pozn', onSubmitSuccess})}>variant</button>
+                        <button onClick={() => d.open(row)}>plain</button>
+                        {d.dialog}
+                    </div>
+                );
+            };
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <MemoryRouter>
+                        <HalRouteContext.Provider value={halRouteValue(null, '/members/1')}>
+                            <ToastProvider><Probe/></ToastProvider>
+                        </HalRouteContext.Provider>
+                    </MemoryRouter>
+                </QueryClientProvider>
+            );
+
+            await user.click(screen.getByText('variant'));
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Varianta');
+            expect(screen.getByText('Pozn')).toBeInTheDocument();
+            await user.click(screen.getByRole('button', {name: /odeslat/i}));
+            await waitFor(() => expect(onSubmitSuccess).toHaveBeenCalledTimes(1));
+            await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+            await user.click(screen.getByText('plain'));
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Základ');
+            expect(screen.queryByText('Pozn')).not.toBeInTheDocument();
+        });
+
+        it('initialData replaces the prefill while the URL still comes from the resource', async () => {
+            const user = userEvent.setup();
+            const res = resourceWith({
+                setGuardians: template({
+                    method: 'PUT',
+                    target: undefined,
+                    properties: [{name: 'legalGuardians', prompt: 'Zástupci', type: 'text'}],
+                }),
+            }, '/api/members/5');
+            renderHarness({
+                name: 'setGuardians',
+                options: {resource: res, initialData: {legalGuardians: 'u-1'}},
+            });
+            await user.click(screen.getByText('open'));
+            await user.click(await screen.findByRole('button', {name: /odeslat/i}));
+            await waitFor(() => expect(writeCalls()).toHaveLength(1));
+            expect(writeCalls()[0][0]).toBe('/api/members/5');
+            expect(JSON.parse((writeCalls()[0][1] as RequestInit).body as string)).toMatchObject({legalGuardians: 'u-1'});
         });
     });
 

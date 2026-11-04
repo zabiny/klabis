@@ -2,15 +2,14 @@ import '@testing-library/jest-dom';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {CampaignDetail} from './CampaignDetail';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
-import {stubFetch} from '../../__mocks__/halDialogTest.ts';
+import {stubFetch, ToastProbe, createTestQueryClient} from '../../__mocks__/halDialogTest.tsx';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
-import {useToast} from '../../contexts/toastContext.ts';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -71,14 +70,9 @@ const createMockPageData = (resourceData: HalResponse | null) => ({
     getPageMetadata: vi.fn(() => undefined),
 });
 
-const ToastProbe = () => {
-    const {toasts} = useToast();
-    return <ul>{toasts.map(t => <li key={t.id} data-testid="toast">{t.message}</li>)}</ul>;
-};
-
 const renderComponent = (pageData: ReturnType<typeof createMockPageData>) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData as ReturnType<typeof useHalPageData>);
-    const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+    const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
             <MemoryRouter>

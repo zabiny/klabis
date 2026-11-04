@@ -125,10 +125,11 @@ The way to open a HAL-FORMS template in a modal (embedded rows, member pickers, 
 
 ```typescript
 const dialog = useTemplateDialog(name?: string, options?: TemplateDialogOptions)
-// dialog: { available, availableOn(resource, name?), label, open(resource?, name?), dialog }
+// dialog: { available, availableOn(resource, name?), open(resource?, name?, overrides?), dialog }
 
 interface TemplateDialogOptions {
-  resource?: HalResponse | null   // default target resource
+  resource?: TemplateResource | null   // default target resource (any object with _templates/_links)
+  initialData?: Record<string, unknown>   // form prefill when it does not come from the resource
   title?: string | ((template, name) => string)  // default: localized dialog title, then template label/title
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl'   // default 'md'
   note?: ReactNode
@@ -142,8 +143,8 @@ interface TemplateDialogOptions {
 }
 ```
 
-- `open(resource?, name?)` opens the dialog for `resource` (default `options.resource`) and template `name` (default the hook argument). No-op when the template is missing on that resource.
-- `availableOn(resource, name?)` / `available` tell whether the template exists; use them to show or hide the trigger (e.g. per table row). `label` is the localized template label.
+- `open(resource?, name?, overrides?)` opens the dialog for `resource` (default `options.resource`) and template `name` (default the hook argument). No-op when the template is missing on that resource. `overrides` (`title`, `note`, `onSubmitSuccess`, `successMessage`, `navigateOnSuccess`) apply to this opening only — use them for variants of one template instead of a second hook.
+- `availableOn(resource, name?)` / `available` tell whether the template exists; use them to show or hide the trigger (e.g. per table row).
 - Render `{dialog.dialog}` once; it is a portal (`createPortal` to `document.body`) of `Modal` + `HalFormDisplay`.
 - Submit URL falls back to the opened resource self link when `template.target` is absent.
 - Member filtering goes through `fieldsFactory` with `createMemberFilteredFactory(excludeIds?, includeOnlyIds?)` from `KlabisFieldsFactory.tsx` (memoize it); `HalFormDisplay` has no member-filter props.
@@ -153,7 +154,7 @@ const addMember = useTemplateDialog('addMember', {
   fieldsFactory: useMemo(() => createMemberFilteredFactory(currentMemberIds), [currentMemberIds]),
 });
 
-{addMember.available && <Button onClick={() => addMember.open()}>{addMember.label}</Button>}
+{addMember.available && <Button onClick={() => addMember.open()}>{labels.templates.addMember}</Button>}
 {addMember.dialog}
 ```
 

@@ -4,7 +4,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
-import type {GetTierResource, HalResponse} from '../../api';
+import type {GetTierResource} from '../../api';
 import {labels} from '../../localization';
 import {ChevronRight, Pencil, Save, Trash2} from 'lucide-react';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
@@ -17,7 +17,7 @@ const FeeTierDetailContent = ({resourceData}: {resourceData: FeeTierDetail}): Re
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
     const deleteDialog = useTemplateDialog('deleteTier', {
-        resource: resourceData as unknown as HalResponse,
+        resource: resourceData,
         title: (template) => template.title ?? labels.templates.deleteMembershipFeeTier,
         onSubmitSuccess: () => navigate('/membership-fee-tiers'),
     });

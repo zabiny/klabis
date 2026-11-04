@@ -1,5 +1,5 @@
 import type {ReactElement} from "react";
-import type {HalFormsTemplate, HalResponse} from "../../api";
+import type {HalFormsTemplate} from "../../api";
 import type {components} from "../../api/klabisApi";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
@@ -21,7 +21,7 @@ export const EventTypesPage = (): ReactElement => {
     });
 
     const openActionModal = (item: EventTypeListItem, templateName: string) => {
-        actionDialog.open(item as unknown as HalResponse, templateName);
+        actionDialog.open(item, templateName);
     };
 
     const renderColorSwatch = ({value}: TableCellRenderProps) => {
