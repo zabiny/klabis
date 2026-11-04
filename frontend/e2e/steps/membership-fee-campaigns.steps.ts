@@ -20,7 +20,7 @@ import {
     expectRefused,
     fill,
     heading,
-    navigateInApp,
+    openAddress,
     pick,
     section,
     submit,
@@ -98,10 +98,10 @@ When('{persona} opens the membership fees page', async ({page, actAs}, persona: 
     await openFeesPage(page);
 });
 
-// Members have no link to the campaign detail, so it is reached through the SPA router.
+// Members have no link to the campaign detail, so its address is opened.
 When('{persona} opens the active campaign', async ({page, actAs, feeState}, persona: Persona) => {
     await actAs(persona);
-    await navigateInApp(page, feeState.campaignPath!);
+    await openAddress(page, feeState.campaignPath!);
     await expect(heading(page, String(feeState.year))).toBeVisible();
 });
 

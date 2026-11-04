@@ -1,7 +1,7 @@
 import {expect, type Page} from '@playwright/test';
 import type {FeeScenarioState} from './fixtures';
 import type {Contribution} from './parameters';
-import {heading, menuEntry, navigateInApp, openFromMenu, section} from './ui';
+import {heading, menuEntry, openAddress, openFromMenu, section} from './ui';
 
 export const CATALOG = 'Katalog tierů';
 export const ACTIVE_CAMPAIGN = 'Aktivní kampaň';
@@ -12,12 +12,12 @@ const LEVEL_DETAIL = 'Základní informace';
 
 export const catalogTable = (page: Page) => page.getByRole('table', {name: 'Tabulka dat'});
 
-// Members have no menu entry for the page, so they reach it through the SPA router.
+// Members have no menu entry for the page, so they open its address.
 export const openFeesPage = async (page: Page) => {
     if (await menuEntry(page, 'Členské příspěvky').count()) {
         await openFromMenu(page, 'Členské příspěvky');
     } else {
-        await navigateInApp(page, '/membership-fee-tiers');
+        await openAddress(page, '/membership-fee-tiers');
     }
     await expect(heading(page, CATALOG)).toBeVisible();
 };

@@ -2,6 +2,7 @@ import React, {type ReactNode, useCallback, useEffect, useRef, useState,} from '
 import {useNavigate} from 'react-router-dom';
 import {User, UserManager,} from 'oidc-client-ts';
 import {normalizeUrl} from "../api/url.ts";
+import {toSafeReturnPath} from '../api/returnPath';
 import {AuthContext, type AuthUserDetails} from './authContext';
 import {unsubscribeCurrentDevice} from '../pwa/pushSubscription';
 import {clearRegisteredEndpoint} from '../pwa/pushSubscriptionStore';
@@ -84,7 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, userManager
                 .then((user) => {
                     setValidUser(user);
                     setLoading(false);
-                    navigate('/', {replace: true});
+                    navigate(toSafeReturnPath((user.state as { returnTo?: unknown } | undefined)?.returnTo), {replace: true});
                 })
                 .catch((err) => {
                     console.error('Signin redirect callback error:', err);
@@ -106,7 +107,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children, userManager
 
     const login = useCallback(() => {
         if (logoutInProgress.current) return;
-        userManager.signinRedirect();
+        const {pathname, search, hash} = window.location;
+        userManager.signinRedirect({state: {returnTo: toSafeReturnPath(pathname + search + hash)}});
     }, [userManager]);
 
     const logout = useCallback(async () => {

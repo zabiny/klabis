@@ -26,6 +26,9 @@ export const createOpenEvent = async (admin: ApiClient, name: string) => {
     await admin.post(admin.templateTarget(event, 'publishEvent'), {});
 };
 
+export const eventAppPath = async (client: ApiClient, name: string) =>
+    new URL((await findEvent(client, name))._links!.self.href, 'http://placeholder').pathname.replace(/^\/api/, '');
+
 export const registerForEvent = async (member: ApiClient, name: string) => {
     const event = await findEvent(member, name);
     const categoryId = templateOptions(event, 'registerForEvent', 'categoryId')[0].value;
