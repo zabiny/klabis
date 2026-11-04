@@ -1,42 +1,4 @@
-import {stripUriTemplate, normalizeKlabisApiPath, shouldFetchTargetData, toRegistrationLink} from './halFormsUtils';
-
-describe('normalizeApiPath', () => {
-    it('removes /api prefix from path', () => {
-        expect(normalizeKlabisApiPath('/api/members/123')).toBe('/members/123');
-    });
-
-    it('returns path unchanged if no /api prefix', () => {
-        expect(normalizeKlabisApiPath('/members/123')).toBe('/members/123');
-    });
-
-    it('handles paths without leading slash', () => {
-        expect(normalizeKlabisApiPath('members/123')).toBe('/members/123');
-    });
-
-    it('extracts pathname from full URL', () => {
-        expect(normalizeKlabisApiPath('https://example.com/api/members/123')).toBe('/members/123');
-    });
-
-    it('extracts pathname from full URL without /api prefix', () => {
-        expect(normalizeKlabisApiPath('https://example.com/members/123')).toBe('/members/123');
-    });
-
-    it('handles root path', () => {
-        expect(normalizeKlabisApiPath('/api')).toBe('');
-    });
-
-    it('handles empty string', () => {
-        expect(normalizeKlabisApiPath('')).toBe('/');
-    });
-
-    it('handles URL with query parameters', () => {
-        expect(normalizeKlabisApiPath('/api/members/123?view=edit')).toBe('/members/123?view=edit');
-    });
-
-    it('handles URL object with query parameters', () => {
-        expect(normalizeKlabisApiPath('https://example.com/api/members/123?view=edit')).toBe('/members/123?view=edit');
-    });
-});
+import {stripUriTemplate, shouldFetchTargetData, toRegistrationLink} from './halFormsUtils';
 
 describe('shouldFetchTargetData', () => {
     it('returns false when template target is undefined', () => {
