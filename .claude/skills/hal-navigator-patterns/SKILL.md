@@ -158,13 +158,13 @@ onRowClick={route.navigateToResource}
 ```tsx
 const navigate = useNavigate();
 const prevLink = resourceData?._links?.prev;
-if (prevLink) navigate(extractNavigationPath(toHref(prevLink)));
+if (prevLink) navigate(toRoutePath(toHref(prevLink)));
 ```
 
 **Navigate to link from item details:**
 ```tsx
 const handleNavigateToLink = (href: string) => {
-  navigate(extractNavigationPath(href));
+  navigate(toRoutePath(href));
 };
 ```
 

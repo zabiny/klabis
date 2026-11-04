@@ -286,9 +286,12 @@ Location: `frontend/src/api/hateoas.ts`
 - `isLink(item): item is Link` — type guard
 - `normalizeUrl(input: string): string` — convert relative paths to absolute
 
-Location: `frontend/src/utils/navigationPath.ts`
+Location: `frontend/src/api/apiPath.ts`
 
-- `extractNavigationPath(href: string): string` — strip API base URL prefix, return router-compatible path
+- `toApiHref(href: string): string` — canonical `/api/...` request URL (strips origin, URI templates and fragment, adds the `/api` prefix once)
+- `toRoutePath(href: string): string` — router-compatible path without the `/api` prefix (for `navigate()`)
+
+Fetch callers pass raw HAL hrefs to `authorizedFetch` / `useAuthorizedQuery`; both normalise through `toApiHref`, so one resource has one cache entry. Do not normalise hrefs yourself before fetching.
 
 ## Error Handling
 

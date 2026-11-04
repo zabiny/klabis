@@ -1,4 +1,4 @@
-import {stripUriTemplate, shouldFetchTargetData, toRegistrationLink} from './halFormsUtils';
+import {shouldFetchTargetData, toRegistrationLink} from './halFormsUtils';
 
 describe('shouldFetchTargetData', () => {
     it('returns false when template target is undefined', () => {
@@ -46,20 +46,6 @@ describe('shouldFetchTargetData', () => {
     });
 });
 
-describe('stripUriTemplate', () => {
-    it('drops the template expressions', () => {
-        expect(stripUriTemplate('https://localhost:8443/api/legal-guardian-options{?kind}'))
-            .toBe('https://localhost:8443/api/legal-guardian-options');
-    });
-
-    it('keeps fixed query parameters outside the template', () => {
-        expect(stripUriTemplate('/api/opts?kind=LEGAL_GUARDIAN{&q}')).toBe('/api/opts?kind=LEGAL_GUARDIAN');
-    });
-
-    it('leaves non-templated urls untouched', () => {
-        expect(stripUriTemplate('/api/x?a=1')).toBe('/api/x?a=1');
-    });
-});
 
 describe('toRegistrationLink', () => {
     it('returns link with the raw template target', () => {

@@ -53,7 +53,7 @@ Vše frameworkové v `frontend/src/`:
 - `src/components/KlabisTable/` — tabulková komponenta
 - `src/components/UI/` — generic UI knihovna (Button, Modal, Alert, Spinner, Toast)
 - `src/localization/` — labels.ts, getFieldLabel, getTemplateLabel, getNavLabel, getEnumLabel
-- `src/utils/` — sdílené utility (halFormsUtils, navigationPath)
+- `src/utils/` — sdílené utility (halFormsUtils)
 
 ### Cross-cutting konvence
 

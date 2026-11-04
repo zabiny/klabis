@@ -848,7 +848,7 @@ export const MemberDetailsPage = () => {
 
 ```typescript
 import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection';
-import {extractNavigationPath} from '../utils/navigationPath';
+import {toRoutePath} from '../api/apiPath';
 import {useNavigate} from 'react-router-dom';
 
 export const CustomPage = () => {
@@ -860,7 +860,7 @@ export const CustomPage = () => {
     };
 
     const handleNavigate = (href: string) => {
-        const path = extractNavigationPath(href);
+        const path = toRoutePath(href);
         navigate(path);
     };
 
@@ -1067,7 +1067,7 @@ import {useHalPageData} from '../hooks/useHalPageData';
 import {HalFormsSection} from '../components/HalNavigator2/HalFormsSection';
 import {HalLinksSection} from '../components/HalNavigator2/HalLinksSection';
 import {useNavigate} from 'react-router-dom';
-import {extractNavigationPath} from '../utils/navigationPath';
+import {toRoutePath} from '../api/apiPath';
 
 export const CalendarEventPage = () => {
     const {resourceData, isLoading, error, actions} = useHalPageData();
@@ -1111,7 +1111,7 @@ export const CalendarEventPage = () => {
         links = {resourceData._links}
     onNavigate = {(href)
 =>
-    navigate(extractNavigationPath(href))
+    navigate(toRoutePath(href))
 }
     />
     < /div>
@@ -1242,11 +1242,11 @@ export const MemberDetailPage = () => {
    await route.refetch();
    ```
 
-5. **Používej `useNavigate` + `extractNavigationPath` pro HAL linky**
+5. **Používej `useNavigate` + `toRoutePath` pro HAL linky**
    ```typescript
    const navigate = useNavigate();
    const handleLink = (href: string) => {
-     navigate(extractNavigationPath(href));
+     navigate(toRoutePath(href));
    };
    ```
 
