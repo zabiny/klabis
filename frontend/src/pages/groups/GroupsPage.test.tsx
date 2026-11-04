@@ -8,8 +8,6 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {GroupsPage} from './GroupsPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
-import {useHalForm} from '../../contexts/halFormContext';
-import {groupFormFieldsFactory} from '../../components/groups/groupFormFieldsFactory';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -160,27 +158,31 @@ describe('GroupsPage', () => {
         expect(screen.getByRole('button', {name: /vytvořit skupinu/i})).toBeInTheDocument();
     });
 
-    it('opens the create dialog with the field factory that renders delegated permissions as checkboxes', () => {
-        const displayHalForm = vi.fn();
-        vi.mocked(useHalForm).mockReturnValue({
-            displayHalForm,
-            currentFormRequest: null,
-            closeForm: vi.fn(),
-        } as unknown as ReturnType<typeof useHalForm>);
+    it('opens the create dialog', async () => {
         const resourceData: HalResponse = {
             _links: {self: {href: '/api/groups'}},
             _templates: {
-                createGroup: mockHalFormsTemplate({title: 'Vytvořit skupinu', method: 'POST'}),
+                createGroup: mockHalFormsTemplate({
+                    title: 'Vytvořit skupinu',
+                    method: 'POST',
+                    target: '/api/groups',
+                    properties: [{
+                        name: 'delegatedAuthorities',
+                        prompt: 'Oprávnění',
+                        type: 'Authority',
+                        multiple: true,
+                        options: {inline: [{value: 'MANAGE', prompt: 'Správa členů'}]},
+                    }],
+                }),
             },
         };
         renderPage(createMockPageData(resourceData));
 
         fireEvent.click(screen.getByRole('button', {name: /vytvořit skupinu/i}));
 
-        expect(displayHalForm).toHaveBeenCalledWith(expect.objectContaining({
-            templateName: 'createGroup',
-            fieldsFactory: groupFormFieldsFactory,
-        }));
+        expect(await screen.findByRole('checkbox', {name: /správa členů/i})).toBeInTheDocument();
+        const dialog = await screen.findByRole('dialog');
+        expect(dialog).toHaveTextContent('Vytvořit skupinu');
     });
 
     it('does not render create button when createGroup template is absent', () => {

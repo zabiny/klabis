@@ -1,6 +1,6 @@
 ## 1. The hook and `HalFormButton`
 
-- [ ] 1.1 Write `components/HalNavigator2/useTemplateDialog.test.tsx` with a real `QueryClient`, `MemoryRouter`, a HAL fixture and the `__mocks__/mockFetch.ts` stub, with no mock of `HalFormDisplay` or `Modal`. It covers:
+- [x] 1.1 Write `components/HalNavigator2/useTemplateDialog.test.tsx` with a real `QueryClient`, `MemoryRouter`, a HAL fixture and the `__mocks__/mockFetch.ts` stub, with no mock of `HalFormDisplay` or `Modal`. It covers:
   - `available` / `availableOn` / `label`;
   - `open()` renders the dialog with the default title (design D4), and an explicit `title` wins;
   - the submit URL is `template.target`, otherwise the resource's `self` path, otherwise the route fallback (D2);
@@ -12,9 +12,9 @@
   - the dialog is rendered through a portal into `document.body` (D8).
 
   Confirm that the tests fail.
-- [ ] 1.2 Implement `useTemplateDialog` (D1–D4, D8). 1.1 passes.
-- [ ] 1.3 Rebuild the modal variant of `HalFormButton` on the hook (D7). Remove `resourceContext` from `HalFormRequest`, `HalFormButton` and `HalFormsPageLayout`, and drop the modal branch of `HalFormsPageLayout`. Update `HalFormButton.test.tsx` and `HalFormsPageLayout.test.tsx` mechanically, keeping their assertions.
-- [ ] 1.4 Add a test: opening `synchronizeNow` from `SyncStatusOverlay` shows the form above the overlay. Then run the frontend test suite.
+- [x] 1.2 Implement `useTemplateDialog` (D1–D4, D8). 1.1 passes.
+- [x] 1.3 Rebuild the modal variant of `HalFormButton` on the hook (D7). Remove `resourceContext` from `HalFormRequest`, `HalFormButton` and `HalFormsPageLayout`, and drop the modal branch of `HalFormsPageLayout`. Update `HalFormButton.test.tsx` and `HalFormsPageLayout.test.tsx` mechanically, keeping their assertions.
+- [x] 1.4 Add a test: opening `synchronizeNow` from `SyncStatusOverlay` shows the form above the overlay. Then run the frontend test suite.
 
 ## 2. Membership fees and legal guardians
 

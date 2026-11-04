@@ -207,9 +207,7 @@ describe('MembershipFeesAdminPage', () => {
             const user = userEvent.setup();
             renderPage(createMockPageData(tierCatalogResourceWithPublishYear));
             await user.click(screen.getByRole('button', {name: /vypsat kampaň/i}));
-            expect(mockDisplayHalForm).toHaveBeenCalledWith(
-                expect.objectContaining({templateName: 'publishYear', modal: true}),
-            );
+            expect(await screen.findByRole('dialog')).toBeInTheDocument();
         });
     });
 
