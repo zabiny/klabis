@@ -1,7 +1,7 @@
 import type {UseMutationResult, UseQueryResult} from '@tanstack/react-query';
 import {type QueryClient, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {authorizedFetch} from '../api/authorizedFetch';
-import type {Path} from "react-router-dom";
+import {toApiHref} from '../api/apiPath';
 
 /**
  * Options for useAuthorizedQuery hook
@@ -42,24 +42,6 @@ export function invalidateAuthorizedQueries(queryClient: QueryClient): Promise<v
     return queryClient.invalidateQueries({queryKey: AUTHORIZED_QUERY_KEY});
 }
 
-const toPath = (url: string): Path => {
-    if (!url) {
-        return {pathname: '', hash: '', search: ''} as Path;
-    }
-    if (url.startsWith('/')) {
-        url = `https://test.com${url}`;
-    }
-    try {
-        const fullUrl = new URL(url);
-        return {
-            search: fullUrl.search, pathname: fullUrl.pathname, hash: fullUrl.hash
-        } as Path;
-    } catch (e) {
-        console.warn('Failed URL:  ' + JSON.stringify(url))
-        throw e;
-    }
-}
-
 /**
  * Hook to fetch data using authorizedFetch with React Query
  *
@@ -84,10 +66,8 @@ export function useAuthorizedQuery<T = unknown>(
 ): UseQueryResult<T | undefined> {
     // TODO: find way how to put there actual type from OpenApi generated schemas. Check useKlabisQuery (url: Path<API> => Result<API>?)
 
-    const urlPath = toPath(url);
-
     return useQuery({
-        queryKey: [...AUTHORIZED_QUERY_KEY, urlPath.pathname, urlPath.search || ''],
+        queryKey: [...AUTHORIZED_QUERY_KEY, url ? toApiHref(url) : ''],
         queryFn: async () => {
             const response = await authorizedFetch(
                 url,

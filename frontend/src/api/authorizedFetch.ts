@@ -1,3 +1,4 @@
+import {toApiHref} from './apiPath';
 import {klabisAuthUserManager, silentRenewRetry} from './klabisUserManager';
 
 /**
@@ -44,16 +45,7 @@ async function executeRequest(url: string | URL, options?: RequestInit): Promise
 }
 
 function resolveUrl(url: string | URL): string {
-    if (typeof url !== 'string') {
-        return url.toString();
-    }
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/api')) {
-        return url;
-    }
-    if (url === '/') {
-        return '/api';
-    }
-    return `/api${url.startsWith('/') ? '' : '/'}${url}`;
+    return typeof url === 'string' ? toApiHref(url) : url.toString();
 }
 
 async function buildFetchError(response: Response): Promise<FetchError> {

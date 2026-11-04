@@ -121,4 +121,27 @@ describe('authorizedFetch', () => {
 
         expect(mockFetch.mock.calls[0][0]).toBe('/api/members');
     });
+
+    it.each([
+        ['raw absolute HAL href', 'https://localhost:8443/api/members/1', '/api/members/1'],
+        ['templated HAL href', '/api/members{?q,page}', '/api/members'],
+        ['templated href keeping literal query', '/api/members?sort=name{&page}', '/api/members?sort=name'],
+        ['bare route path', 'members/1', '/api/members/1'],
+    ])('resolves %s to an origin-relative /api URL', async (_label, input, expected) => {
+        const mockFetch = vi.fn().mockResolvedValue(new Response('ok', {status: 200}));
+        vi.stubGlobal('fetch', mockFetch);
+
+        await authorizedFetch(input);
+
+        expect(mockFetch.mock.calls[0][0]).toBe(expected);
+    });
+
+    it('passes a URL instance through unchanged', async () => {
+        const mockFetch = vi.fn().mockResolvedValue(new Response('ok', {status: 200}));
+        vi.stubGlobal('fetch', mockFetch);
+
+        await authorizedFetch(new URL('https://example.com/other?x=1'));
+
+        expect(mockFetch.mock.calls[0][0]).toBe('https://example.com/other?x=1');
+    });
 });

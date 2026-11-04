@@ -12,8 +12,8 @@
 
 ## 2. Fetch layer
 
-- [ ] 2.1 Add a `useAuthorizedQuery` test. Two consumers request `/members/1` and `https://host/api/members/1`, and the test asserts a single `fetch` call. Add `authorizedFetch` cases for a raw HAL href, a templated href and a bare route path. Confirm the new cases fail.
-- [ ] 2.2 `authorizedFetch` resolves string URLs through `toApiHref`. `useAuthorizedQuery` keys by `toApiHref(url)`. Delete `toPath` and the prefix branch of `resolveUrl` (D3). Check that nothing reads individual query-key parts. Run the tests of `api/` and `hooks/`.
+- [x] 2.1 Add a `useAuthorizedQuery` test. Two consumers request `/members/1` and `https://host/api/members/1`, and the test asserts a single `fetch` call. Add `authorizedFetch` cases for a raw HAL href, a templated href and a bare route path. Confirm the new cases fail.
+- [x] 2.2 `authorizedFetch` resolves string URLs through `toApiHref`. `useAuthorizedQuery` keys by `toApiHref(url)`. Delete `toPath` and the prefix branch of `resolveUrl` (D3). Check that nothing reads individual query-key parts. Run the tests of `api/` and `hooks/`.
 
 ## 3. Callers
 
