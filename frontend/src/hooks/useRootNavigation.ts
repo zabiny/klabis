@@ -1,5 +1,5 @@
 import type {HalResponse, Link} from '../api';
-import {extractNavigationPath} from '../utils/navigationPath';
+import {toRoutePath} from '../api/apiPath';
 import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
 import {labels} from '../localization';
 import {useIsAuthReady} from './useIsAuthReady';
@@ -39,7 +39,7 @@ function convertItems(response: HalResponse): NavigationItem[] {
         links.forEach((link: Link | { href?: string; title?: string }) => {
             if (link && typeof link === 'object' && 'href' in link) {
                 const href = link.href as string;
-                const navigationPath = extractNavigationPath(href);
+                const navigationPath = toRoutePath(href);
                 const title = (link as { title?: string }).title;
                 const label = navLabels[rel] ?? title ?? rel;
 

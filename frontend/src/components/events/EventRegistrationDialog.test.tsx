@@ -375,7 +375,7 @@ describe('EventRegistrationDialog', () => {
 
         const postCall = vi.mocked(authorizedFetch).mock.calls.find(([, options]) =>
             (options as RequestInit | undefined)?.method === 'POST');
-        expect(postCall?.[0]).toBe('/events/evt-1/registrations');
+        expect(postCall?.[0]).toBe('/api/events/evt-1/registrations');
         expect(JSON.parse((postCall?.[1] as RequestInit).body as string)).toEqual({
             siCardNumber: '1234567',
             categoryId: 'cat-1',
@@ -458,7 +458,7 @@ describe('EventRegistrationDialog', () => {
             const deleteCalls = vi.mocked(authorizedFetch).mock.calls.filter(([, options]) =>
                 (options as RequestInit | undefined)?.method === 'DELETE');
             expect(deleteCalls).toHaveLength(1);
-            expect(deleteCalls[0][0]).toBe('/events/evt-1/registrations/member-2');
+            expect(deleteCalls[0][0]).toBe('/api/events/evt-1/registrations/member-2');
         });
 
         it('dismissing the confirmation sends nothing and does not call onChanged', async () => {
@@ -642,7 +642,7 @@ describe('EventRegistrationDialog', () => {
 
         const putCall = vi.mocked(authorizedFetch).mock.calls.find(([, options]) =>
             (options as RequestInit | undefined)?.method === 'PUT');
-        expect(putCall?.[0]).toBe('/events/evt-1/registrations/member-1');
+        expect(putCall?.[0]).toBe('/api/events/evt-1/registrations/member-1');
         expect(JSON.parse((putCall?.[1] as RequestInit).body as string)).toEqual({
             siCardNumber: '7654321',
             categoryId: 'cat-2',

@@ -4,7 +4,7 @@ import {Alert, Button, Spinner} from '../../components/UI';
 import {hasCalendarItems} from '../../api';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {toHref} from '../../api/hateoas.ts';
-import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {toRoutePath} from '../../api/apiPath';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useUrlFilters} from '../../hooks/useUrlFilters.ts';
 import {labels} from '../../localization';
@@ -107,18 +107,18 @@ const CalendarPage = () => {
 
     const handlePrevMonth = () => {
         const prevLink = resourceData?._links?.prev;
-        if (prevLink) navigate(extractNavigationPath(toHref(prevLink)));
+        if (prevLink) navigate(toRoutePath(toHref(prevLink)));
     };
 
     const handleNextMonth = () => {
         const nextLink = resourceData?._links?.next;
-        if (nextLink) navigate(extractNavigationPath(toHref(nextLink)));
+        if (nextLink) navigate(toRoutePath(toHref(nextLink)));
     };
 
     const handleItemClick = (item: CalendarItem) => {
         // Prefer event link if available, otherwise navigate to calendar-item details
         const href = item._links.event?.href || item._links.self.href;
-        const itemPath = extractNavigationPath(href);
+        const itemPath = toRoutePath(href);
         navigate(itemPath);
     };
 

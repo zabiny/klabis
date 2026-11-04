@@ -8,7 +8,6 @@ import {isFormValidationError, toFormValidationError} from '../../api/hateoas';
 import type {Link} from '../../api/types';
 import type {HalResourceLinks} from '../../api';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils';
-import {normalizeKlabisApiPath} from '../../utils/halFormsUtils';
 import {HalFormDisplay} from '../HalNavigator2/HalFormDisplay';
 import type {FormRenderHelpers, RenderFormCallback} from '../HalNavigator2/halforms';
 import * as Yup from 'yup';
@@ -83,7 +82,7 @@ export const EventRegistrationDialog = ({
     const normalizedTemplate = template
         ? {
             ...template,
-            target: normalizeKlabisApiPath(template.target ?? ''),
+            target: template.target ?? '',
             properties: template.properties
                 .filter(prop => !(prop.name === 'siCardNumber' && !showSiField)
                     && !(prop.name === 'wantsToRentSi' && !showRentCheckbox))
@@ -102,7 +101,7 @@ export const EventRegistrationDialog = ({
 
     const unregisterTemplate = mode === 'edit' ? prefillData?._templates?.unregisterFromEvent : undefined;
     const normalizedUnregisterTemplate = unregisterTemplate
-        ? {...unregisterTemplate, target: normalizeKlabisApiPath(unregisterTemplate.target ?? '')}
+        ? {...unregisterTemplate, target: unregisterTemplate.target ?? ''}
         : undefined;
     const showUnregisterConfirmation = confirmingUnregister && normalizedUnregisterTemplate !== undefined;
 

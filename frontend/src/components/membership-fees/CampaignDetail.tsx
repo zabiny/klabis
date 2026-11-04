@@ -7,7 +7,6 @@ import type {GetPublicationResource} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {formatDate} from '../../utils/dateUtils.ts';
-import {extractNavigationPath} from '../../utils/navigationPath.ts';
 import {toHref} from '../../api/hateoas.ts';
 import {FeeGroupsTable} from './FeeGroupsTable.tsx';
 import type {FeeGroupSummary} from './FeeGroupsTable.tsx';
@@ -31,7 +30,7 @@ export const CampaignDetail = (): ReactElement | null => {
 
     const levelsHref = resourceData?._links?.levels ? toHref(resourceData._links.levels) : '';
     const {data: groupsData} = useAuthorizedQuery<FeeGroupsCollection>(
-        levelsHref ? extractNavigationPath(levelsHref) : '',
+        levelsHref,
         {enabled: !!levelsHref}
     );
     // The rows carry per-row _links added at runtime; FeeGroupsTable's FeeGroupSummary is the

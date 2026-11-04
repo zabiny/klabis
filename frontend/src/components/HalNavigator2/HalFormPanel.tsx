@@ -57,7 +57,7 @@ export function HalFormPanel({
         return <Alert severity="error">{templateMissingMessage ?? `Template "${templateName}" není dostupný.`}</Alert>;
     }
 
-    const resolvedPathname = pathname ?? collectionUrl.replace(/^\/api/, '');
+    const resolvedPathname = pathname ?? collectionUrl;
     const fieldNameSet = new Set(template.properties.map(p => p.name));
     const fieldTypeSet = new Set(template.properties.map(p => p.type));
 

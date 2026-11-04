@@ -4,6 +4,7 @@
 
 import type {HalFormsProperty, HalFormsTemplate} from '../api';
 import type {Link} from '../api/types';
+import {toApiHref} from '../api/apiPath';
 
 export function enrichTemplateWithReadOnlyFields(
     template: HalFormsTemplate,
@@ -79,8 +80,8 @@ export function shouldFetchTargetData(
         return false;
     }
 
-    const normalizedTarget = normalizeKlabisApiPath(templateTarget);
-    const normalizedCurrent = normalizeKlabisApiPath(currentPathname);
+    const normalizedTarget = toApiHref(templateTarget);
+    const normalizedCurrent = toApiHref(currentPathname);
 
     // If normalized paths are the same, no need to fetch
     return normalizedTarget !== normalizedCurrent;
@@ -91,5 +92,5 @@ export function stripUriTemplate(href: string): string {
 }
 
 export function toRegistrationLink(target?: string): Link | undefined {
-    return target ? {href: normalizeKlabisApiPath(target)} : undefined;
+    return target ? {href: target} : undefined;
 }

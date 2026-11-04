@@ -4,7 +4,7 @@
  */
 
 import {useNavigate} from 'react-router-dom';
-import {extractNavigationPath} from '../utils/navigationPath';
+import {toRoutePath} from '../api/apiPath';
 
 interface UseHalActionsReturn {
     handleNavigateToItem: (href: string) => void;
@@ -18,7 +18,7 @@ export function useHalActions(): UseHalActionsReturn {
     const navigate = useNavigate();
 
     const handleNavigateToItem = (href: string) => {
-        const path = extractNavigationPath(href);
+        const path = toRoutePath(href);
         navigate(path);
     };
 

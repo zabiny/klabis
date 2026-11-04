@@ -2,7 +2,7 @@ import {type ReactElement, useState} from 'react';
 import {labels} from '../../localization';
 import {KlabisTableWithQuery} from '../KlabisTable';
 import {parseHalHref, serializeHalHref} from '../../api/hateoas';
-import {stripUriTemplate} from '../../utils/halFormsUtils';
+import {toApiHref} from '../../api/apiPath';
 import type {components} from '../../api/klabisApi';
 import {attemptColumns} from './syncAttemptColumns';
 
@@ -11,7 +11,7 @@ type SyncAttempt = components['schemas']['EntityModelSyncAttemptResponse'];
 const HISTORY_SIZE = 10;
 
 const buildHistoryHref = (href: string, includeUnchanged: boolean): string => {
-    const target = parseHalHref(stripUriTemplate(href));
+    const target = parseHalHref(toApiHref(href));
     if (includeUnchanged) target.searchParams.set('includeUnchanged', 'true');
     return serializeHalHref(target);
 };

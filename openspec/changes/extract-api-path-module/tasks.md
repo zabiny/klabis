@@ -17,19 +17,19 @@
 
 ## 3. Callers
 
-- [ ] 3.1 Migrate the navigation callers of `extractNavigationPath` to `toRoutePath`:
+- [x] 3.1 Migrate the navigation callers of `extractNavigationPath` to `toRoutePath`:
   - `HalFormDisplay`, `HalRouteContext`, `HalLinksSection`;
   - `useRootNavigation`, `useHalActions`;
   - `CalendarPage`, `UpcomingDeadlinesWidget`, `FeeGroupsTable`, `GroupMembersTable`, `PastCampaignsSection` (links), `HomePage`, `NegativeBalanceSuspensionDialog`, `SyncOverviewPage`.
-- [ ] 3.2 Make the fetch callers pass raw hrefs (D4):
+- [x] 3.2 Make the fetch callers pass raw hrefs (D4):
   - `PastCampaignsSection` and `CampaignDetail` (fetch URLs);
   - `HalRouteContext`, `useLegalGuardians`, `useHalFormOptions`, `useHalFormGetAvailability` and `useHalFormData`;
   - `EventRegistrationDialog` and `toRegistrationLink`;
   - `SyncAttemptHistory`, which uses `toApiHref` before `parseHalHref`.
 
   `shouldFetchTargetData` compares both sides through `toApiHref`.
-- [ ] 3.3 Remove the hand-built prefixes in `HalFormDisplay`, `HalFormsPageLayout` and `Layout` (`'/api' + …`, `` `/api${…}` ``).
-- [ ] 3.4 Update the tests that import or mock the old helpers, including `useHalActions.test.tsx`, keeping their assertions. Run the frontend test suite.
+- [x] 3.3 Remove the hand-built prefixes in `HalFormDisplay`, `HalFormsPageLayout` and `Layout` (`'/api' + …`, `` `/api${…}` ``).
+- [x] 3.4 Update the tests that import or mock the old helpers, including `useHalActions.test.tsx`, keeping their assertions. Run the frontend test suite.
 
 ## 4. Cleanup and verification
 
