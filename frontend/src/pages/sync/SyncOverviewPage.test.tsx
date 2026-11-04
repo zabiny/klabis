@@ -38,7 +38,6 @@ const pageData = (resourceData: HalResponse | null) => ({
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/sync/attempts',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/sync/attempts'}),

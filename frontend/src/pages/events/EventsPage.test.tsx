@@ -121,7 +121,6 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/events',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/events'}),
@@ -1113,7 +1112,6 @@ describe('EventsPage', () => {
             renderPage(createMockPageData(
                 {_links: {self: {href: '/api/events'}}},
                 {
-                    pathname: '/events',
                     navigateToResource,
                     refetch: async () => {},
                     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/events'}),

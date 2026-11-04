@@ -24,7 +24,6 @@ const createMockPageData = (overrides: Record<string, unknown> = {}) => ({
     resourceData: null,
     isLoading: false,
     error: null,
-    pathname: '/test',
     navigateToResource: vi.fn(),
     refetch: async () => {
     },

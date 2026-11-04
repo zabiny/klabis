@@ -59,7 +59,6 @@ const withReasonProperty = (template: HalFormsTemplate): HalFormsTemplate => {
 };
 
 const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactElement => {
-    const {pathname} = useHalPageData<GroupDetail>();
     const navigate = useNavigate();
     const [isEditingName, setIsEditingName] = useState(false);
     const currentMemberId = useAuth().getUser()?.memberId ?? null;
@@ -195,7 +194,6 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         template={editTemplate}
                         templateName="updateGroup"
                         resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={pathname}
                         onClose={() => setIsEditingName(false)}
                         successMessage={labels.ui.savedSuccessfully}
                         submitButtonLabel={labels.buttons.saveChanges}

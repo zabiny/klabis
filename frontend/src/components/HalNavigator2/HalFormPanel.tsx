@@ -14,10 +14,9 @@ export interface HalFormPanelRenderHelpers extends FormRenderHelpers {
 export type HalFormPanelChildren = (helpers: HalFormPanelRenderHelpers) => ReactElement;
 
 export interface HalFormPanelProps {
-    collectionUrl: string;
+    collectionUrl?: string;
     templateName: string;
     initialData?: Record<string, unknown>;
-    pathname?: string;
     fieldsFactory?: HalFormFieldFactory;
     onSuccess?: (responseData?: unknown) => void;
     onCancel?: () => void;
@@ -34,7 +33,7 @@ export interface HalFormPanelProps {
 }
 
 export function HalFormPanel({
-    collectionUrl, templateName, initialData = {}, pathname,
+    collectionUrl, templateName, initialData = {},
     fieldsFactory, onSuccess, onCancel, navigateOnSuccess,
     templateMissingMessage, successMessage, template: templateOverride, children,
 }: HalFormPanelProps): ReactElement {
@@ -57,7 +56,6 @@ export function HalFormPanel({
         return <Alert severity="error">{templateMissingMessage ?? `Template "${templateName}" není dostupný.`}</Alert>;
     }
 
-    const resolvedPathname = pathname ?? collectionUrl;
     const fieldNameSet = new Set(template.properties.map(p => p.name));
     const fieldTypeSet = new Set(template.properties.map(p => p.type));
 
@@ -72,7 +70,7 @@ export function HalFormPanel({
             template={template}
             templateName={templateName}
             resourceData={initialData}
-            pathname={resolvedPathname}
+            resourceUrl={collectionUrl}
             onClose={onCancel ?? (() => {})}
             onSubmitSuccess={onSuccess}
             fieldsFactory={fieldsFactory}

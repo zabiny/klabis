@@ -55,7 +55,6 @@ describe('useHalPageData', () => {
             const {result} = renderHook(() => useHalPageData(), {wrapper: createWrapper()});
 
             await waitFor(() => {
-                expect(typeof result.current.pathname).toBe('string');
                 expect(typeof result.current.navigateToResource).toBe('function');
                 expect(typeof result.current.refetch).toBe('function');
                 expect(typeof result.current.getResourceLink).toBe('function');
@@ -76,7 +75,7 @@ describe('useHalPageData', () => {
             const {result} = renderHook(() => useHalPageData(), {wrapper: createWrapper()});
 
             expect(Object.keys(result.current).sort()).toEqual([
-                'error', 'getResourceLink', 'isLoading', 'navigateToResource', 'pathname', 'refetch', 'resourceData',
+                'error', 'getResourceLink', 'isLoading', 'navigateToResource', 'refetch', 'resourceData',
             ]);
         });
     });

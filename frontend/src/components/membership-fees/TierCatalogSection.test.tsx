@@ -38,7 +38,6 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/administration/membership-fees',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers'}),
@@ -126,7 +125,6 @@ describe('TierCatalogSection', () => {
         };
         vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as ReturnType<typeof useAuthorizedQuery>);
         renderSection(createMockPageData(resourceData, {
-            pathname: '/administration/membership-fees',
             navigateToResource,
             refetch: async () => {},
             getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers'}),

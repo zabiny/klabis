@@ -187,8 +187,7 @@ export const EventRegistrationDialog = ({
                     template={unregisterTemplate}
                     templateName="unregisterFromEvent"
                     resourceData={resolvedResource}
-                    pathname={unregisterTemplate.target ?? ''}
-                    resourceUrl={registration.href}
+                    resourceUrl={unregisterTemplate.target ?? registration.href}
                     onClose={handleClose}
                     onSubmitSuccess={() => onChanged?.()}
                     navigateOnSuccess={false}
@@ -208,7 +207,7 @@ export const EventRegistrationDialog = ({
                     template={filteredTemplate}
                     templateName={mode === 'new' ? 'registerForEvent' : 'editRegistration'}
                     resourceData={resolvedResource}
-                    pathname={filteredTemplate.target ?? ''}
+                    resourceUrl={filteredTemplate.target}
                     onClose={handleClose}
                     onSubmitSuccess={() => onChanged?.()}
                     onSubmitError={handleSubmitError}

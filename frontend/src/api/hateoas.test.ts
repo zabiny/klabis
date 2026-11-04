@@ -2,6 +2,7 @@ import {
     type FormValidationError,
     isFormValidationError,
     parseHalHref,
+    selfHref,
     serializeHalHref,
     toFormValidationError,
 } from './hateoas';
@@ -245,5 +246,17 @@ describe('toFormValidationError', () => {
             expect(result.message).toBe('undefined');
             expect(isFormValidationError(result)).toBeFalsy();
         });
+    });
+});
+
+describe('selfHref', () => {
+    it('returns the href of the self link', () => {
+        expect(selfHref({_links: {self: {href: '/api/things/1'}}})).toBe('/api/things/1');
+    });
+
+    it('returns undefined without a self link or resource', () => {
+        expect(selfHref({_links: {}})).toBeUndefined();
+        expect(selfHref(null)).toBeUndefined();
+        expect(selfHref(undefined)).toBeUndefined();
     });
 });

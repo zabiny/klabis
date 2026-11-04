@@ -164,7 +164,6 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/members/123e4567-e89b-12d3-a456-426614174000',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: '/api/members/123e4567-e89b-12d3-a456-426614174000'}),

@@ -67,7 +67,6 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/event-types',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/event-types'}),
@@ -242,7 +241,7 @@ describe('EventTypesPage', () => {
                 page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
             };
             vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-            renderPage(createMockPageData(resourceData, {pathname: '/event-types', navigateToResource, refetch: async () => {}, getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/event-types'})}));
+            renderPage(createMockPageData(resourceData, {navigateToResource, refetch: async () => {}, getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/event-types'})}));
 
             fireEvent.click(screen.getByText('Trénink'));
 

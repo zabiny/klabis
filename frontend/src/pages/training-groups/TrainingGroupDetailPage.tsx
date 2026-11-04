@@ -13,7 +13,6 @@ import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.t
 import type {TrainingGroupDetail, TrainingGroupMember, TrainingGroupTrainer} from './types.ts';
 
 const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroupDetail}): ReactElement => {
-    const {pathname} = useHalPageData<TrainingGroupDetail>();
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
 
@@ -104,7 +103,6 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                         template={editTemplate as HalFormsTemplate}
                         templateName="updateTrainingGroup"
                         resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={pathname}
                         onClose={() => setIsEditing(false)}
                         successMessage={labels.ui.savedSuccessfully}
                         submitButtonLabel={labels.buttons.saveChanges}

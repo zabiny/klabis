@@ -16,6 +16,7 @@ import type {EntityModel, GetEventResource, Link as HalLink} from '../../api';
 import type {components} from '../../api/klabisApi';
 import type {HalFormsTemplate} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
+import {toRoutePath} from '../../api/apiPath';
 import {renderYesNo} from '../../utils/formatters.ts';
 import {getActionVariant} from '../../utils/actionVariants.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
@@ -191,7 +192,7 @@ interface EventDetailContentProps {
 }
 
 const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactElement => {
-    const {pathname, refetch} = useHalPageData<EventDetail>();
+    const {refetch} = useHalPageData<EventDetail>();
     const {getById: getEventTypeById} = useEventTypes();
     const location = useLocation();
     const initialEditing = !!(location.state as { editing?: boolean })?.editing;
@@ -203,6 +204,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     const statusVariant = event.status ? (STATUS_VARIANT[event.status] ?? 'default') : 'default';
     const isCancelled = event.status === 'CANCELLED';
 
+    const accommodationListLink = resourceData._links?.['accommodation-list'];
     const newRegistrationLink = asLinkArray(resourceData._links?.newRegistration)[0];
     const editRegistrationLink = resourceData._templates?.editRegistration?.target ? {href: resourceData._templates.editRegistration.target} : undefined;
 
@@ -280,9 +282,9 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 </Button>
                             )}
                             <HalFormButton name="discoverOrisRegistrations" modal={true} variant="secondary" icon={<Download className="w-4 h-4"/>}/>
-                            {resourceData._links?.['accommodation-list'] && (
+                            {accommodationListLink && (
                                 <Link
-                                    to={`${pathname}/accommodation-list`}
+                                    to={toRoutePath(toHref(accommodationListLink))}
                                     className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-bg-secondary"
                                 >
                                     <List className="w-4 h-4"/>
@@ -518,7 +520,6 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                     template={enrichedTemplate}
                     templateName="updateEvent"
                     resourceData={resourceData as Record<string, unknown>}
-                    pathname={pathname}
                     onClose={cancelEditing}
                     postprocessPayload={postprocessPayload}
                     successMessage={labels.ui.savedSuccessfully}

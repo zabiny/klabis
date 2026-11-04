@@ -2,7 +2,6 @@ import {type ReactElement, type ReactNode, useCallback, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {HalFormsTemplate, HalResourceLinks} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
-import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {getDialogTitleLabel, getTemplateLabel} from '../../localization';
 import {Modal} from '../UI';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
@@ -58,7 +57,6 @@ const selfHref = (resource: TemplateResource): string | undefined => {
 };
 
 export function useTemplateDialog(name?: string, options: TemplateDialogOptions = {}): TemplateDialog {
-    const {pathname} = useHalPageData();
     const [opened, setOpened] = useState<OpenDialog | null>(null);
     const {resource: defaultResource} = options;
 
@@ -94,7 +92,6 @@ export function useTemplateDialog(name?: string, options: TemplateDialogOptions 
                     template={openedTemplate}
                     templateName={opened.name}
                     resourceData={(effective.initialData ?? opened.resource) as Record<string, unknown>}
-                    pathname={pathname}
                     resourceUrl={selfHref(opened.resource)}
                     onClose={close}
                     onSubmitSuccess={(data) => {

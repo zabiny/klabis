@@ -62,7 +62,6 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     resourceData,
     isLoading: false,
     error: null,
-    pathname: '/administration/membership-fee-groups/group-1',
     navigateToResource: vi.fn(),
     refetch: async () => {},
     getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-groups/group-1'}),

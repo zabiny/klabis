@@ -43,7 +43,6 @@ describe('HalEmbeddedTable', () => {
         (useHalPageData as Mock).mockReturnValue({
             isLoading: false,
             getResourceLink: mockGetResourceLink,
-            pathname: '/test',
             navigateToResource: vi.fn(),
             refetch: vi.fn(),
         });
