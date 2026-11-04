@@ -85,9 +85,9 @@ const {dialogFixtures, resolveDialogQueryData} = vi.hoisted(() => {
             },
         },
     };
-    const resolveDialogQueryData = (url: string): unknown => {
-        if (url.includes('newRegistration=true')) return dialogFixtures.dialogPrefillRegistrationData;
-        if (url.includes('/registrations/member-1')) return dialogFixtures.dialogEditRegistrationData;
+    const resolveDialogQueryData = (url: string | undefined): unknown => {
+        if (url?.includes('newRegistration=true')) return dialogFixtures.dialogPrefillRegistrationData;
+        if (url?.includes('/registrations/member-1')) return dialogFixtures.dialogEditRegistrationData;
         if (url === 'http://localhost:8443/api/events/1') return dialogFixtures.dialogEventData;
         return {
             _embedded: {registrationDtoList: []},
@@ -295,7 +295,7 @@ describe('EventDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockNavigate.mockReset();
-        vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => ({
+        vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => ({
             data: resolveDialogQueryData(url),
             isLoading: false,
             error: null,
@@ -939,8 +939,8 @@ describe('EventDetailPage', () => {
                 _embedded: {registrationDtoList: rows},
                 page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
             };
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => ({
-                data: url.includes('newRegistration=true') || url.includes('/registrations/member-1')
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => ({
+                data: url?.includes('newRegistration=true') || url?.includes('/registrations/member-1')
                     ? resolveDialogQueryData(url)
                     : registrationsListData,
                 isLoading: false,
@@ -1474,7 +1474,7 @@ describe('EventDetailPage', () => {
 
     describe('event type badge (B7.3)', () => {
         const withEventTypesMock = (eventTypes: {id: string; name: string; color?: string; sortOrder: number}[]) => {
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
                 if (url === '/api/event-types') {
                     return {
                         data: {_embedded: {eventTypeDtoList: eventTypes}},

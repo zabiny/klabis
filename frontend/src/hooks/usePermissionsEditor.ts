@@ -38,8 +38,8 @@ export function usePermissionsEditor(
 ): UsePermissionsEditorResult {
     const {addToast} = useToast();
 
-    const {data, isLoading} = useAuthorizedQuery<GetUserPermissionsResource>(permissionsUrl ?? '', {
-        enabled: (options?.enabled ?? true) && !!permissionsUrl,
+    const {data, isLoading} = useAuthorizedQuery<GetUserPermissionsResource>(permissionsUrl, {
+        enabled: options?.enabled ?? true,
         staleTime: 60_000,
     });
 

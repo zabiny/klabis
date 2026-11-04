@@ -28,11 +28,8 @@ export const CampaignDetail = (): ReactElement | null => {
         navigateOnSuccess: false,
     });
 
-    const levelsHref = resourceData?._links?.levels ? toHref(resourceData._links.levels) : '';
-    const {data: groupsData} = useAuthorizedQuery<FeeGroupsCollection>(
-        levelsHref,
-        {enabled: !!levelsHref}
-    );
+    const levelsHref = resourceData?._links?.levels ? toHref(resourceData._links.levels) : undefined;
+    const {data: groupsData} = useAuthorizedQuery<FeeGroupsCollection>(levelsHref);
     // The rows carry per-row _links added at runtime; FeeGroupsTable's FeeGroupSummary is the
     // view type for those.
     const groups = (groupsData?._embedded?.membershipFeeGroupResponseList ?? []) as unknown as FeeGroupSummary[];

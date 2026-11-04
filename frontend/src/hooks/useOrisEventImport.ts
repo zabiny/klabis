@@ -62,11 +62,9 @@ export function useOrisEventImport(
 
     const eventsUrl = isOpen && batchImportHref
         ? `/api/oris/events?region=${encodeURIComponent(selectedRegion)}`
-        : '';
+        : undefined;
 
-    const {data, isError, isSuccess} = useAuthorizedQuery<OrisEvent[]>(eventsUrl, {
-        enabled: isOpen && !!batchImportHref,
-    });
+    const {data, isError, isSuccess} = useAuthorizedQuery<OrisEvent[]>(eventsUrl);
 
     const fetchState: OrisImportFetchState = isError ? 'error' : isSuccess ? 'success' : 'loading';
 

@@ -99,15 +99,27 @@ describe('useAuthorizedQuery', () => {
             expect(fetchSpy).toHaveBeenCalledTimes(2);
         });
 
-        it('does not let a disabled empty-URL query adopt data cached for the API root', () => {
+        it('does not fetch nor adopt data cached for the API root when url is undefined', () => {
             getQueryClient().setQueryData(['authorized', '/api'], {root: true});
 
             const {result} = renderHook(
-                () => useAuthorizedQuery('', {enabled: false}),
+                () => useAuthorizedQuery(undefined),
                 {wrapper: createWrapper()}
             );
 
             expect(result.current.data).toBeUndefined();
+            expect(result.current.isLoading).toBe(false);
+            expect(result.current.fetchStatus).toBe('idle');
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        it('does not fetch a defined url when enabled is false', () => {
+            renderHook(
+                () => useAuthorizedQuery('/api/items', {enabled: false}),
+                {wrapper: createWrapper()}
+            );
+
+            expect(fetchSpy).not.toHaveBeenCalled();
         });
     });
 
