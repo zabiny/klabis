@@ -76,5 +76,6 @@ jobs:
       run: docker images
 
     - name: Deploy to Coolify
-      run: | 
-        curl --request GET '${{ secrets.COOLIFY_WEBHOOK_BE }}' --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
+      run: |
+        curl -sS --fail-with-body -X POST '${{ secrets.COOLIFY_WEBHOOK_BE }}' --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
+#        curl --request GET '${{ secrets.COOLIFY_WEBHOOK_BE }}' --header 'Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}'
