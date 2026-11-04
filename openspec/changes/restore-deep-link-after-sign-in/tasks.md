@@ -22,7 +22,7 @@
 
 ## 4. Integration verification
 
-- [ ] 4.1 Run the full frontend Vitest suite via the test-runner and verify it is green.
+- [x] 4.1 Run the full frontend Vitest suite via the test-runner and verify it is green.
 - [ ] 4.2 Run the whole E2E suite against :3000 and verify it is green.
-- [ ] 4.3 Run `publish-frontend-resources`, restart the backend, run the E2E suite with `E2E_BASE_URL=https://localhost:8443` and verify the `users.feature` scenarios pass there too.
-- [ ] 4.4 Manual QA on :3000 with Playwright MCP: open `/events/<id>` with a fresh browser (login form) and with only the AS session (no form) and verify the event detail is shown; log out from an event detail 3× per user and verify each time the backend log shows `/connect/logout` and the next sign-in lands on the home page.
+- [x] 4.3 Run `publish-frontend-resources`, restart the backend, run the E2E suite with `E2E_BASE_URL=https://localhost:8443` and verify the `users.feature` scenarios pass there too.
+- [x] 4.4 Manual QA on :3000 with Playwright MCP: open `/events/<id>` with a fresh browser (login form) and with only the AS session (no form) and verify the event detail is shown; log out from an event detail 3× per user and verify each time the backend log shows `/connect/logout` and the next sign-in lands on the home page.
