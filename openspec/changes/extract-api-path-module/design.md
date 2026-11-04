@@ -85,6 +85,22 @@ Alternative: keep the key `[…, pathname, search]`. Rejected because it would m
 - A `useAuthorizedQuery` test renders two consumers, one with `/members/1` and one with `https://host/api/members/1`. It asserts one `fetch` call.
 - Tests that `vi.mock` `navigationPath` or the removed helpers are updated to the new import.
 
+### D6: "No URL" is `undefined`, not `''`
+
+This decision was added after the simplify review. Callers without a URL used to pass `''` together with `enabled: false`. Since `toApiHref('')` is `/api`, the fetch layer needed a special case so that such queries do not share the cache entry of the API root.
+
+The new rule:
+- `useAuthorizedQuery(url: string | undefined, options)`. For `undefined` the hook uses TanStack Query's `skipToken` as `queryFn`, so it never fetches. The key is `[...AUTHORIZED_QUERY_KEY, toApiHref(url)]` for a defined url, and a constant placeholder for `undefined`.
+- `options.enabled` keeps working for callers that disable a query with a known URL.
+- The `url ? toApiHref(url) : ''` special case is deleted.
+- Callers pass `undefined` instead of `''` and drop the matching `enabled: !!x` / `href !== ''` guards. Callers that use `enabled` for other reasons keep it. Affected callers include:
+  - `useLegalGuardians`, `useHalFormOptions`, `useHalFormData`;
+  - `CampaignDetail`, `PastCampaignsSection`, `AccommodationListPage`;
+  - `useMyUpcomingRegistrations`, `useUpcomingDeadlines`, `useRegistrationDialogData`, `usePermissionsEditor`.
+
+  Find the full list with grep.
+- `useHalFormGetAvailability` follows the same rule for its `hal-options` key and `shouldProbe`.
+
 ## Risks / Trade-offs
 
 - **Absolute hrefs go through the dev proxy.** In `npm run dev`, absolute backend hrefs (`https://localhost:8443/api/…`) were fetched cross-origin. Now they become origin-relative and go through the Vite `/api` proxy. Production serves frontend and API from one origin, so nothing changes there. This is acceptable, and it removes a dev-only CORS dependency.

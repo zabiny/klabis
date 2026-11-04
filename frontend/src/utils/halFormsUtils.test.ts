@@ -1,4 +1,4 @@
-import {shouldFetchTargetData, toRegistrationLink} from './halFormsUtils';
+import {shouldFetchTargetData} from './halFormsUtils';
 
 describe('shouldFetchTargetData', () => {
     it('returns false when template target is undefined', () => {
@@ -43,17 +43,5 @@ describe('shouldFetchTargetData', () => {
 
     it('handles query parameters - exact match including params should return false', () => {
         expect(shouldFetchTargetData('/members/123?view=edit', '/members/123?view=edit')).toBe(false);
-    });
-});
-
-
-describe('toRegistrationLink', () => {
-    it('returns link with the raw template target', () => {
-        expect(toRegistrationLink('/api/events/e1/registrations/me')).toEqual({href: '/api/events/e1/registrations/me'});
-    });
-
-    it('returns undefined for missing or empty target', () => {
-        expect(toRegistrationLink(undefined)).toBeUndefined();
-        expect(toRegistrationLink('')).toBeUndefined();
     });
 });
