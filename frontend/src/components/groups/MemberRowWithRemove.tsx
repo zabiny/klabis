@@ -7,7 +7,7 @@ import type {HalResourceLinks} from '../../api';
 
 interface MemberRowWithRemoveProps {
     memberId: string;
-    memberLink: HalResourceLinks;
+    memberLink: HalResourceLinks | undefined;
     removeAriaLabel?: string;
     onRemove?: () => void;
 }
@@ -15,9 +15,13 @@ interface MemberRowWithRemoveProps {
 export const MemberRowWithRemove = ({memberId, memberLink, removeAriaLabel, onRemove}: MemberRowWithRemoveProps): ReactElement => (
     <DetailRow key={memberId} label="">
         <div className="flex items-center justify-between w-full">
-            <HalRouteProvider routeLink={memberLink}>
-                <MemberNameWithRegNumber/>
-            </HalRouteProvider>
+            {memberLink ? (
+                <HalRouteProvider routeLink={memberLink}>
+                    <MemberNameWithRegNumber/>
+                </HalRouteProvider>
+            ) : (
+                <span>{memberId}</span>
+            )}
             {onRemove && (
                 <Button
                     variant="ghost"

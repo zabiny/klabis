@@ -14,7 +14,7 @@ Pages in Klabis follow a layered architecture for HAL resource display:
 
 ```
 Page Component
-  ├── useHalPageData()           — access current HAL resource + helpers
+  ├── useHalPageData()           — access current HAL resource, loading/error, navigation
   ├── HalEmbeddedTable           — display _embedded collections as paginated tables
   │   └── KlabisTableWithQuery   — data-fetching wrapper (React Query)
   │       └── KlabisTable        — pure UI table (no data fetching)
@@ -26,20 +26,19 @@ Page Component
 
 ## Core Hook: useHalPageData
 
-Entry point for every page. Combines route data, actions, and admin state.
+Entry point for every page. Narrow interface over the current HAL route.
 
 ```tsx
 import type { GetMemberResource } from '@/api';
 
-const { resourceData, isLoading, error, isAdmin, route } = useHalPageData<GetMemberResource>();
+const { resourceData, isLoading, error } = useHalPageData<GetMemberResource>();
 ```
 
 **Type the response with the generated `*Resource` type.** `npm run openapi` emits one per HAL
 operation into `frontend/src/api/halTypes.ts`, re-exported from `@/api`:
 `GetMemberResource`, `ListEventsResource`, `GetFeeGroupResource`, … Each is `<payload schema> &
 <typed _links/_templates>`. Passing it makes `resourceData.<field>`, `resourceData._embedded?.<list>`
-and `resourceData._templates?.<rel>` all typed. Omit the type argument only on pages that read just
-`route` / `isAdmin` and never touch `resourceData`.
+and `resourceData._templates?.<rel>` all typed. Omit the type argument only on pages that never touch `resourceData`.
 
 - Do **not** write `useHalPageData<GetMemberResource & HalResponse>()` — `& HalResponse` collapses
   every payload field to `unknown`. Pass the bare `*Resource`.
@@ -48,15 +47,16 @@ and `resourceData._templates?.<rel>` all typed. Omit the type argument only on p
 - Legacy pages still use `EntityModel<{...}>` hand-written shapes and `resourceData as any` — that
   is the old pattern; use `*Resource` / `components['schemas'][...]` in new code.
 
-**Key properties:**
+**Returned members** (`{resourceData, isLoading, error, navigateToResource, getResourceLink, refetch}`):
 - `resourceData` — fetched HAL response, typed as `T` (with `_links`, `_embedded`, `_templates`)
 - `isLoading` / `error` — loading and error states
-- `route.navigateToResource(resource)` — navigate to a HAL resource (accepts `HalResponse` or `Link`)
-- `route.getResourceLink(linkName?)` — get specific link from current resource (defaults to `'self'`)
-- `route.refetch()` — manually refetch current resource
-- Helper methods: `hasLink()`, `hasTemplate()`, `isCollection()`, `getEmbeddedItems()`, `hasForms()`
-  — `getEmbeddedItems()` stays `unknown[]`; for typed rows read `resourceData._embedded?.<listKey>`
-  directly
+- `navigateToResource(resource, options?)` — navigate to a HAL resource (accepts `HalResponse` or `Link`, so `navigateToResource({href})` also works)
+- `getResourceLink(linkName?)` — get specific link from current resource (defaults to `'self'`)
+- `refetch()` — manually refetch current resource; needed only outside mutations (sync-completion or `onChanged` callbacks), form submits via `HalFormDisplay` refresh data on their own
+
+There are no `hasLink` / `hasTemplate` / `isCollection` / `getEmbeddedItems` helpers: read typed
+`resourceData._links?.<rel>`, `resourceData._templates?.<name>` and `resourceData._embedded?.<listKey>`
+directly. Admin state comes from `useIsAdmin()`, not from this hook.
 
 ## Displaying Collections: HalEmbeddedTable
 
@@ -66,7 +66,7 @@ Display `_embedded` collections as paginated, sortable tables. Automatically fet
 <HalEmbeddedTable<MyItemType>
   collectionName="itemResponseList"
   defaultOrderBy="lastName"
-  onRowClick={route.navigateToResource}
+  onRowClick={navigateToResource}
 >
   <TableCell sortable column="firstName">Jmeno</TableCell>
   <TableCell sortable column="lastName">Prijmeni</TableCell>
@@ -83,19 +83,19 @@ Display `_embedded` collections as paginated, sortable tables. Automatically fet
 
 **TableCell props:** `column` (data field name), `sortable` (enables sorting), `dataRender` (custom cell renderer receiving `{value, item}`)
 
-**Type the row** with the generated schema type for the `_embedded` item, not a hand-written
-`EntityModel<{...}>`:
+**Type the row** with the generated `*ItemResource` type, not a hand-written
+`EntityModel<{...}> & {_templates?: ...}`:
 ```tsx
-import type { components } from '@/api/klabisApi';
+import type { ListMembersItemResource } from '@/api';
 
-// row payload + EntityModel wrapper, straight from the spec
-type MyRow = components['schemas']['EntityModelMemberSummaryResponse'];
-
-// if the backend adds per-row affordances at runtime (not in the schema), extend:
-type MyRow = components['schemas']['EntityModelMemberSummaryResponse'] & {
-  _templates?: Record<string, HalFormsTemplate>;
-};
+<HalEmbeddedTable<ListMembersItemResource> collectionName="memberSummaryResponseList" ...>
 ```
+`<Op>ItemResource` (list responses, `x-hal-embedded` rows) and `<Op><Prop>ItemResource` (arrays with
+`x-hal-entity-items`, e.g. `GetGroupOwnersItemResource`) are generated from `x-hal-item-links` /
+`x-hal-item-templates` in the spec, so `row._templates?.updateMember` is typed and a typo fails the
+build. A missing row relation is fixed in the spec (see the `klabis-api-spec` skill), never by
+extending the type by hand.
+
 Generated payload fields are all optional (`firstName?`), reflecting field-level authority — expect
 `?.` / `?? ''` at the call site.
 
@@ -151,20 +151,21 @@ Fetch a related resource via a link from the parent resource and provide it as a
 
 **Navigate to resource via row click:**
 ```tsx
-onRowClick={route.navigateToResource}
+const { navigateToResource } = useHalPageData();
+onRowClick={navigateToResource}
 ```
 
 **Navigate via HAL link (e.g. prev/next):**
 ```tsx
 const navigate = useNavigate();
 const prevLink = resourceData?._links?.prev;
-if (prevLink) navigate(extractNavigationPath(toHref(prevLink)));
+if (prevLink) navigate(toRoutePath(toHref(prevLink)));
 ```
 
 **Navigate to link from item details:**
 ```tsx
 const handleNavigateToLink = (href: string) => {
-  navigate(extractNavigationPath(href));
+  navigate(toRoutePath(href));
 };
 ```
 
@@ -183,7 +184,7 @@ Standard page loading/error/content pattern:
 
 ```tsx
 export const MyPage = (): ReactElement => {
-  const { resourceData, isLoading, error, route } = useHalPageData();
+  const { resourceData, isLoading, error, navigateToResource } = useHalPageData();
 
   if (isLoading) return <Spinner />;
   if (error) return <Alert severity="error">{error.message}</Alert>;
@@ -197,7 +198,7 @@ export const MyPage = (): ReactElement => {
           <h2 className="text-xl font-bold text-text-primary">Section</h2>
           <HalFormButton name="create" />
         </div>
-        <HalEmbeddedTable collectionName="itemList" onRowClick={route.navigateToResource}>
+        <HalEmbeddedTable collectionName="itemList" onRowClick={navigateToResource}>
           <TableCell sortable column="name">Nazev</TableCell>
         </HalEmbeddedTable>
       </div>

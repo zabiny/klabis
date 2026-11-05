@@ -27,7 +27,8 @@ vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     HalRouteProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
 }));
 
-vi.mock('../../contexts/halRouteContext.ts', () => ({
+vi.mock('../../contexts/halRouteContext.ts', async (importOriginal) => ({
+    ...(await importOriginal<object>()),
     useHalRoute: vi.fn(() => ({
         resourceData: {firstName: 'Petr', lastName: 'Trenér', registrationNumber: 'ZBM1000', _links: {self: {href: '/api/members/trainer-1'}}},
         navigateToResource: vi.fn(),

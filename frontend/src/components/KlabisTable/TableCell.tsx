@@ -14,7 +14,8 @@ import type {TableCellProps} from './types'
  *   <TableCell column="email">Email</TableCell>
  * </KlabisTable>
  */
-export const TableCell: React.FC<TableCellProps> = () => {
+export const TableCell = <T extends object = Record<string, unknown>>(props: TableCellProps<T>): React.ReactElement | null => {
+    void props
     // This component doesn't render anything - it's only used for its props
     return null
 }

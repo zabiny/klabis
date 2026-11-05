@@ -1,6 +1,5 @@
 import {type ReactElement, useMemo, useState} from "react";
-import type {HalFormsTemplate, Link} from "../../api";
-import type {components} from "../../api/klabisApi";
+import type {Link, ListMembersItemResource} from "../../api";
 import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
@@ -31,9 +30,7 @@ import {useUrlFilters} from "../../hooks/useUrlFilters.ts";
 import {toQuery} from "./membersQuery.ts";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 
-type MemberSummaryData = components['schemas']['EntityModelMemberSummaryResponse'] & {
-    _templates?: Record<string, HalFormsTemplate>;
-};
+type MemberSummaryData = ListMembersItemResource;
 
 interface MemberPermissionsDialogState {
     member: MemberSummaryData;
@@ -41,7 +38,7 @@ interface MemberPermissionsDialogState {
 }
 
 export const MembersPage = (): ReactElement => {
-    const {route, resourceData} = useHalPageData();
+    const {navigateToResource, refetch, resourceData} = useHalPageData();
     const [permissionsDialog, setPermissionsDialog] = useState<MemberPermissionsDialogState | null>(null);
     const [transactionDialogAccount, setTransactionDialogAccount] = useState<Link | null>(null);
     const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -82,8 +79,7 @@ export const MembersPage = (): ReactElement => {
         setPermissionsDialog({member, permissionsUrl: link.href});
     };
 
-    const renderActionsCell = ({item}: TableCellRenderProps) => {
-        const member = item as unknown as MemberSummaryData;
+    const renderActionsCell = ({item: member}: TableCellRenderProps<MemberSummaryData>) => {
         const hasEditTemplate = !!member._templates?.updateMember;
         const hasPermissionsLink = !!member._links?.permissions;
         const hasAccountLink = !!member._links?.account;
@@ -116,7 +112,7 @@ export const MembersPage = (): ReactElement => {
                         className="text-primary"
                         onClick={(e) => {
                             e.stopPropagation();
-                            route.navigateToResource(member, {state: {editing: true}});
+                            navigateToResource(member, {state: {editing: true}});
                         }}
                     >
                         <Pencil className="w-4 h-4"/>
@@ -169,8 +165,8 @@ export const MembersPage = (): ReactElement => {
         );
     };
 
-    const renderContactCell = ({item}: TableCellRenderProps) => {
-        const contact = (item as unknown as MemberSummaryData).displayContact;
+    const renderContactCell = ({item}: TableCellRenderProps<MemberSummaryData>) => {
+        const contact = item.displayContact;
         if (!contact) return null;
         return (
             <div className="flex flex-col">
@@ -180,8 +176,7 @@ export const MembersPage = (): ReactElement => {
         );
     };
 
-    const renderDataIncompleteCell = ({item}: TableCellRenderProps) => {
-        const member = item as unknown as MemberSummaryData;
+    const renderDataIncompleteCell = ({item: member}: TableCellRenderProps<MemberSummaryData>) => {
         if (!member.dataIncomplete) return null;
         return <Badge variant="orange" size="sm">{labels.membersFilter.incompleteBadge}</Badge>;
     };
@@ -297,7 +292,7 @@ export const MembersPage = (): ReactElement => {
                                                       hideEmptyColumns
                                                       extraParams={extraParams}
                                                       emptyMessage={labels.membersFilter.emptyState}
-                                                      onRowClick={route.navigateToResource}>
+                                                      onRowClick={navigateToResource}>
                     <TableCell sortable column={"registrationNumber"}>{labels.fields.registrationNumber}</TableCell>
                     <TableCell sortable column={"lastName"}>{labels.fields.lastName}</TableCell>
                     <TableCell sortable column={"firstName"}>{labels.fields.firstName}</TableCell>
@@ -337,7 +332,7 @@ export const MembersPage = (): ReactElement => {
                 isOpen={isSyncModalOpen}
                 onClose={() => setIsSyncModalOpen(false)}
                 targetUrl={importFromOrisTarget}
-                onSyncComplete={() => route.refetch()}
+                onSyncComplete={() => refetch()}
             />
         </div>
     );

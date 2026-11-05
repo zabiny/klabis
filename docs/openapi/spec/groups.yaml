@@ -560,6 +560,23 @@ paths:
           x-hal-links:
             self:
               description: This collection
+          x-hal-item-links:
+            invitedMember:
+              operation: getMember
+              description: The invited member (the caller)
+            accept:
+              operation: acceptInvitation
+              description: Accept the invitation
+            reject:
+              operation: rejectInvitation
+              description: Reject the invitation
+          x-hal-item-templates:
+            acceptInvitation:
+              operation: acceptInvitation
+              description: Affordance of the accept link
+            rejectInvitation:
+              operation: rejectInvitation
+              description: Affordance of the reject link
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -1047,17 +1064,62 @@ components:
         owners:
           type: array
           x-hal-entity-items: true
+          x-hal-item-links:
+            member:
+              operation: getMember
+              description: The owner's member resource
+            self:
+              operation: removeGroupOwner
+              description: The href is the endpoint that removes the owner (removeGroupOwner). Present only when the caller is an owner and the group has more than one owner
+          x-hal-item-templates:
+            removeGroupOwner:
+              operation: removeGroupOwner
+              description: Present only when the caller is an owner and the group has more than one owner
           items:
             $ref: '#/components/schemas/OwnerResponse'
         members:
           type: array
           x-hal-entity-items: true
+          x-hal-item-links:
+            member:
+              operation: getMember
+              description: The member resource
+            self:
+              operation: removeGroupMember
+              description: The href is the endpoint that removes the member (removeGroupMember). Present only when the caller is an owner of the group
+          x-hal-item-templates:
+            removeGroupMember:
+              operation: removeGroupMember
+              description: Present only when the caller is an owner of the group
           items:
             $ref: '#/components/schemas/FreeGroupMembershipResponse'
         pendingInvitations:
           type: array
           description: Present only when the caller is an owner of this group.
           x-hal-entity-items: true
+          x-hal-item-links:
+            invitedMember:
+              operation: getMember
+              description: The invited member
+            accept:
+              operation: acceptInvitation
+              description: Recipient link added to every invitation row
+            reject:
+              operation: rejectInvitation
+              description: Recipient link added to every invitation row
+            self:
+              operation: cancelInvitation
+              description: The href is the endpoint that cancels the invitation (cancelInvitation)
+          x-hal-item-templates:
+            acceptInvitation:
+              operation: acceptInvitation
+              description: Affordance of the accept link
+            rejectInvitation:
+              operation: rejectInvitation
+              description: Affordance of the reject link
+            cancelInvitation:
+              operation: cancelInvitation
+              description: Affordance of the self link
           items:
             $ref: '#/components/schemas/PendingInvitationResponse'
 
@@ -1218,11 +1280,33 @@ components:
         trainers:
           type: array
           x-hal-entity-items: true
+          x-hal-item-links:
+            member:
+              operation: getMember
+              description: The trainer's member resource
+            self:
+              operation: removeTrainer
+              description: The href is the endpoint that removes the trainer (removeTrainer). Present only for callers with GROUPS:TRAINING when the group has more than one trainer
+          x-hal-item-templates:
+            removeTrainer:
+              operation: removeTrainer
+              description: Present only for callers with GROUPS:TRAINING when the group has more than one trainer
           items:
             $ref: '#/components/schemas/TrainerResponse'
         members:
           type: array
           x-hal-entity-items: true
+          x-hal-item-links:
+            member:
+              operation: getMember
+              description: The member resource
+            self:
+              operation: removeTrainingGroupMember
+              description: The href is the endpoint that removes the member (removeTrainingGroupMember). Present only for callers with GROUPS:TRAINING
+          x-hal-item-templates:
+            removeTrainingGroupMember:
+              operation: removeTrainingGroupMember
+              description: Present only for callers with GROUPS:TRAINING
           items:
             $ref: '#/components/schemas/GroupMembershipResponse'
 

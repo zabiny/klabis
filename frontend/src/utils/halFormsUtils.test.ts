@@ -1,42 +1,4 @@
-import {stripUriTemplate, normalizeKlabisApiPath, shouldFetchTargetData, toRegistrationLink} from './halFormsUtils';
-
-describe('normalizeApiPath', () => {
-    it('removes /api prefix from path', () => {
-        expect(normalizeKlabisApiPath('/api/members/123')).toBe('/members/123');
-    });
-
-    it('returns path unchanged if no /api prefix', () => {
-        expect(normalizeKlabisApiPath('/members/123')).toBe('/members/123');
-    });
-
-    it('handles paths without leading slash', () => {
-        expect(normalizeKlabisApiPath('members/123')).toBe('/members/123');
-    });
-
-    it('extracts pathname from full URL', () => {
-        expect(normalizeKlabisApiPath('https://example.com/api/members/123')).toBe('/members/123');
-    });
-
-    it('extracts pathname from full URL without /api prefix', () => {
-        expect(normalizeKlabisApiPath('https://example.com/members/123')).toBe('/members/123');
-    });
-
-    it('handles root path', () => {
-        expect(normalizeKlabisApiPath('/api')).toBe('');
-    });
-
-    it('handles empty string', () => {
-        expect(normalizeKlabisApiPath('')).toBe('/');
-    });
-
-    it('handles URL with query parameters', () => {
-        expect(normalizeKlabisApiPath('/api/members/123?view=edit')).toBe('/members/123?view=edit');
-    });
-
-    it('handles URL object with query parameters', () => {
-        expect(normalizeKlabisApiPath('https://example.com/api/members/123?view=edit')).toBe('/members/123?view=edit');
-    });
-});
+import {shouldFetchTargetData} from './halFormsUtils';
 
 describe('shouldFetchTargetData', () => {
     it('returns false when template target is undefined', () => {
@@ -81,31 +43,5 @@ describe('shouldFetchTargetData', () => {
 
     it('handles query parameters - exact match including params should return false', () => {
         expect(shouldFetchTargetData('/members/123?view=edit', '/members/123?view=edit')).toBe(false);
-    });
-});
-
-describe('stripUriTemplate', () => {
-    it('drops the template expressions', () => {
-        expect(stripUriTemplate('https://localhost:8443/api/legal-guardian-options{?kind}'))
-            .toBe('https://localhost:8443/api/legal-guardian-options');
-    });
-
-    it('keeps fixed query parameters outside the template', () => {
-        expect(stripUriTemplate('/api/opts?kind=LEGAL_GUARDIAN{&q}')).toBe('/api/opts?kind=LEGAL_GUARDIAN');
-    });
-
-    it('leaves non-templated urls untouched', () => {
-        expect(stripUriTemplate('/api/x?a=1')).toBe('/api/x?a=1');
-    });
-});
-
-describe('toRegistrationLink', () => {
-    it('returns link with normalized href for a template target', () => {
-        expect(toRegistrationLink('/api/events/e1/registrations/me')).toEqual({href: '/events/e1/registrations/me'});
-    });
-
-    it('returns undefined for missing or empty target', () => {
-        expect(toRegistrationLink(undefined)).toBeUndefined();
-        expect(toRegistrationLink('')).toBeUndefined();
     });
 });

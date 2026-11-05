@@ -367,7 +367,7 @@ describe('HomePage - UserDashboard widget: edit registration action', () => {
         renderHomePage()
         const notPrevented = fireEvent.click(screen.getByRole('button', {name: 'Upravit přihlášku'}))
         expect(notPrevented).toBe(false)
-        expect(screen.getByTestId('event-registration-dialog')).toHaveAttribute('data-registration-href', '/events/evt-1/registrations/me')
+        expect(screen.getByTestId('event-registration-dialog')).toHaveAttribute('data-registration-href', '/api/events/evt-1/registrations/me')
         expect(screen.getByTestId('location')).toHaveTextContent(/^\/$/)
     })
 

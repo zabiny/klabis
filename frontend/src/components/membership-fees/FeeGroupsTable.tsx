@@ -2,7 +2,7 @@ import {type ReactElement} from 'react';
 import {Link} from 'react-router-dom';
 import {ArrowRight} from 'lucide-react';
 import {getEnumLabel} from '../../localization';
-import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {toRoutePath} from '../../api/apiPath';
 import {Badge} from '../UI/Badge.tsx';
 
 export interface FeeGroupSummary {
@@ -44,7 +44,7 @@ export const FeeGroupsTable = ({groups}: FeeGroupsTableProps): ReactElement => {
                         >
                             <td className="px-5 text-text-primary font-medium">
                                 <Link
-                                    to={extractNavigationPath(group._links.self.href)}
+                                    to={toRoutePath(group._links.self.href)}
                                     className="hover:text-primary"
                                 >
                                     {group.name}
@@ -58,7 +58,7 @@ export const FeeGroupsTable = ({groups}: FeeGroupsTableProps): ReactElement => {
                             </td>
                             <td className="px-5">
                                 <Link
-                                    to={extractNavigationPath(group._links.self.href)}
+                                    to={toRoutePath(group._links.self.href)}
                                     className="flex items-center justify-center w-8 h-8 rounded-[6px] bg-bg-subtle text-text-secondary hover:bg-bg-subtle"
                                     aria-label="Otevřít detail skupiny"
                                 >

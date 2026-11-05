@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React from 'react';
@@ -14,7 +14,6 @@ import {
 import type {HalCollectionResponse, HalResponse} from '../api';
 import {vi} from 'vitest';
 import * as HalRouteContextModule from '../contexts/halRouteContext';
-import * as HalActionsModule from '../hooks/useHalActions';
 
 // Mock child components
 vi.mock('../contexts/halRouteContext', async () => ({
@@ -79,10 +78,6 @@ vi.mock('../components/HalNavigator2/HalFormsPageLayout.tsx', () => ({
     ),
 }));
 
-vi.mock('../hooks/useHalActions', () => ({
-    useHalActions: vi.fn(),
-}));
-
 vi.mock('../hooks/useIsAdmin', () => ({
     useIsAdmin: vi.fn(() => ({isAdmin: true})),
 }));
@@ -100,10 +95,8 @@ vi.mock('./ErrorPage', () => ({
 }));
 
 const useHalRoute = vi.mocked(HalRouteContextModule.useHalRoute);
-const useHalActions = vi.mocked(HalActionsModule.useHalActions);
 
 describe('GenericHalPage Component', () => {
-    let mockHalActions: ReturnType<typeof HalActionsModule.useHalActions>;
     let queryClient: QueryClient;
 
     beforeEach(() => {
@@ -113,16 +106,6 @@ describe('GenericHalPage Component', () => {
             },
         });
 
-        mockHalActions = {
-            selectedTemplate: null,
-            setSelectedTemplate: vi.fn(),
-            submitError: null,
-            isSubmitting: false,
-            handleNavigateToItem: vi.fn(),
-            handleFormSubmit: vi.fn().mockResolvedValue(undefined),
-        } as unknown as ReturnType<typeof HalActionsModule.useHalActions>;
-
-        useHalActions.mockReturnValue(mockHalActions);
         vi.clearAllMocks();
     });
 
@@ -511,7 +494,8 @@ describe('GenericHalPage Component', () => {
     });
 
     describe('Navigation', () => {
-        it('should call handleNavigateToItem when navigating', async () => {
+        it('should navigate to the link href through navigateToResource', async () => {
+            const navigateToResource = vi.fn();
             const collectionData = mockHalCollectionResponse(1);
             useHalRoute.mockReturnValue({
                 resourceData: collectionData,
@@ -520,12 +504,13 @@ describe('GenericHalPage Component', () => {
                 pathname: '/api/items',
                 refetch: vi.fn(),
                 queryState: 'success',
-                navigateToResource: vi.fn(),
+                navigateToResource,
                 getResourceLink: vi.fn(),
             });
 
             renderWithRouter(<GenericHalPage/>);
-            expect(screen.getByTestId('hal-links')).toBeInTheDocument();
+            fireEvent.click(screen.getByText('Navigate'));
+            expect(navigateToResource).toHaveBeenCalledWith({href: '/test'});
         });
     });
 
@@ -566,23 +551,6 @@ describe('GenericHalPage Component', () => {
             renderWithRouter(<GenericHalPage/>);
 
             expect(useHalRoute).toHaveBeenCalled();
-        });
-
-        it('should pass correct props to useHalActions', () => {
-            useHalRoute.mockReturnValue({
-                resourceData: mockHalResponse(),
-                isLoading: false,
-                error: null,
-                pathname: '/api/items/1',
-                refetch: vi.fn(),
-                queryState: 'success',
-                navigateToResource: vi.fn(),
-                getResourceLink: vi.fn(),
-            });
-
-            renderWithRouter(<GenericHalPage/>);
-
-            expect(useHalActions).toHaveBeenCalled();
         });
 
         it('should pass form submission handler to HAL forms', () => {

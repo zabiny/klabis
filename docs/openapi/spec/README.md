@@ -142,11 +142,59 @@ Hypermedia, on **response objects** (not on schemas — links belong to the repr
 - `x-hal-links` — link relations the response may carry
 - `x-hal-templates` — HAL-FORMS templates the response may carry
 - `x-hal-embedded` — a nested collection the controller assembles at runtime
+- `x-hal-item-links` / `x-hal-item-templates` — relations carried by each **row** (see below)
 
 Both `x-hal-links` and `x-hal-templates` describe the **maximal variant**. `klabisLinkTo` returns
 `Optional` and `klabisAfford` returns an empty list when the user lacks authorization, so any link or
 template may be absent at runtime, and the same endpoint returns different `_links`/`_templates` per
 user. Conditions are not expressible here — put them in `description`.
+
+### Row relations: `x-hal-item-links` / `x-hal-item-templates`
+
+`x-hal-links` / `x-hal-templates` describe the response itself. Rows have their own relations
+(a member row carries `self`, `suspendMember`, ...), which the item keys describe. Same map format
+(rel -> `{operation?, description}`), two placements:
+
+| placement | rows described |
+|---|---|
+| a **response** with an array payload **or** `x-hal-embedded` | each row in `_embedded` (`listMembers`; event registrations in `getEvent`) |
+| an array **property** next to `x-hal-entity-items: true` | each item of that array (`owners`, `members` of `getGroup`) |
+
+```yaml
+# listMembers response
+x-hal-templates:                 # on the collection
+  registerMember: { operation: registerMember, description: Present only for callers with MEMBERS:MANAGE }
+x-hal-item-templates:            # on every row
+  suspendMember: { operation: suspendMember, description: Present for active members and callers with MEMBERS:MANAGE }
+
+# getGroup response schema
+owners:
+  type: array
+  x-hal-entity-items: true
+  x-hal-item-links:
+    member: { operation: getMember, description: The owner's member resource }
+  x-hal-item-templates:
+    removeGroupOwner: { operation: removeGroupOwner, description: Present only when the caller is an owner and the group has more than one owner }
+  items: { $ref: '#/components/schemas/OwnerResponse' }
+```
+
+`validate.mjs` rejects the keys on a response that has neither an array payload nor `x-hal-embedded`,
+on a response that has **both** (the row schema would be ambiguous), on an array property without
+`x-hal-entity-items`, on an array whose `items` is not a `$ref`, and anywhere else.
+
+`haltypes.mjs` turns them into frontend row types in `halTypes.ts`:
+
+- response placement: `<Op>ItemResource` (`ListMembersItemResource`) = the row's `EntityModel` payload
+  plus `<Op>ItemHal` (typed `_links` / `_templates`) and `<Op>ItemRels`;
+- property placement: `<Op><Prop>ItemResource` (`GetGroupOwnersItemResource`), and the parent
+  `<Op>Resource` overrides the array property with it (`Omit<EntityModelX, 'owners'> & {owners?: ...[]}`).
+
+The backend ignores both keys (`KlabisSpringCodegen` reads only `x-hal-entity-items` and
+`x-hal-input-type`); they exist for frontend types and documentation.
+
+Derive the rels from the backend postprocessor or assembler that adds them, not from the frontend,
+and write authorisation conditions in `description`. When the backend adds a template to both the
+collection and each row (`updateMember` for `listMembers`), list it at both levels.
 
 ## HAL envelopes are derived, not written
 

@@ -22,7 +22,7 @@ export const LegalGuardiansSection = ({
                                           onEditStarted,
                                       }: LegalGuardiansSectionProps): ReactElement => {
     const {guardians, isLoading} = useLegalGuardians(guardiansLink);
-    const {route} = useHalPageData();
+    const {navigateToResource} = useHalPageData();
     const editLabel = getTemplateLabel(editTemplateName) ?? '';
     const editDialog = useTemplateDialog(editTemplateName, {
         resource,
@@ -63,7 +63,7 @@ export const LegalGuardiansSection = ({
                                 <div className="flex flex-col">
                                     {link ? (
                                         <button type="button" className="text-left hover:underline text-text-primary"
-                                                onClick={() => route.navigateToResource(link)}>
+                                                onClick={() => navigateToResource(link)}>
                                             {name}
                                         </button>
                                     ) : (

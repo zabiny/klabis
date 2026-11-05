@@ -3,7 +3,7 @@ import {useNavigate} from 'react-router-dom';
 import {Button, Modal} from '../../components/UI';
 import {labels} from '../../localization';
 import {formatCurrency} from '../finances/financeFormatters';
-import {extractNavigationPath} from '../../utils/navigationPath';
+import {toRoutePath} from '../../api/apiPath';
 import {type NegativeBalanceWarning} from './suspensionUtils';
 
 interface NegativeBalanceSuspensionDialogProps {
@@ -19,7 +19,7 @@ export const NegativeBalanceSuspensionDialog = ({isOpen, onClose, warning}: Nega
 
     const handleOpenAccount = () => {
         onClose();
-        navigate(extractNavigationPath(warning.accountLink));
+        navigate(toRoutePath(warning.accountLink));
     };
 
     return (

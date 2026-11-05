@@ -10,7 +10,7 @@ import {labels} from '../../localization';
 type FeeTierSummary = components['schemas']['EntityModelMembershipFeeTierSummaryResponse'];
 
 export const TierCatalogSection = (): ReactElement => {
-    const {route} = useHalPageData();
+    const {navigateToResource} = useHalPageData();
 
     return (
         <div className="flex flex-col gap-4">
@@ -29,14 +29,13 @@ export const TierCatalogSection = (): ReactElement => {
                     collectionName="membershipFeeTierSummaryResponseList"
                     tableId="membership-fee-tiers"
                     defaultOrderBy="name"
-                    onRowClick={route.navigateToResource}
+                    onRowClick={navigateToResource}
                     emptyMessage="Žádné tiery členských příspěvků."
                 >
-                    <TableCell
+                    <TableCell<FeeTierSummary>
                         sortable
                         column="name"
-                        dataRender={({item}) => {
-                            const tier = item as unknown as FeeTierSummary;
+                        dataRender={({item: tier}) => {
                             return (
                                 <span className="text-sm font-bold text-text-primary">{tier.name}</span>
                             );

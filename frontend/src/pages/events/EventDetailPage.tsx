@@ -12,13 +12,13 @@ import {HalRouteProvider, HalSubresourceProvider} from '../../contexts/HalRouteC
 import {useHalRoute} from '../../contexts/halRouteContext.ts';
 import {TableCell} from '../../components/KlabisTable';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils.ts';
-import type {EntityModel, GetEventResource, Link as HalLink} from '../../api';
+import type {GetEventItemResource, GetEventResource, Link as HalLink} from '../../api';
 import type {components} from '../../api/klabisApi';
 import type {HalFormsTemplate} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
+import {toRoutePath} from '../../api/apiPath';
 import {renderYesNo} from '../../utils/formatters.ts';
 import {getActionVariant} from '../../utils/actionVariants.ts';
-import {toRegistrationLink} from '../../utils/halFormsUtils.ts';
 import {useInlineEditing} from '../../hooks/useInlineEditing.ts';
 import {labels, getEnumLabel} from '../../localization';
 import {EventSiPolicyFields} from '../../components/events/EventSiPolicyFields.tsx';
@@ -35,11 +35,7 @@ type EventCategory = components['schemas']['EventCategoryDto'];
 
 type EventDetail = GetEventResource;
 
-interface RegistrationData extends EntityModel<components['schemas']['RegistrationSummaryDto'] & {
-    [key: string]: unknown;
-}> {
-    _templates?: Record<string, HalFormsTemplate>;
-}
+type RegistrationData = GetEventItemResource;
 
 const STATUS_VARIANT: Record<string, 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info'> = {
     DRAFT: 'default',
@@ -91,8 +87,7 @@ interface RegistrationsTableProps {
 }
 
 const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionDialog}: RegistrationsTableProps): ReactElement => {
-    const renderActionsCell = ({item}: TableCellRenderProps) => {
-        const registration = item as unknown as RegistrationData;
+    const renderActionsCell = ({item: registration}: TableCellRenderProps<RegistrationData>) => {
         const editTemplate = registration._templates?.editRegistration;
         const recordTransactionLink = registration._links?.recordTransaction;
         const accountLink = recordTransactionLink && !Array.isArray(recordTransactionLink)
@@ -147,13 +142,13 @@ const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionD
     return (
         <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList" hideEmptyColumns defaultOrderBy="registrationTime">
             <TableCell column="firstName" sortable>{labels.fields.firstName}</TableCell>
-            <TableCell
+            <TableCell<RegistrationData>
                 column="lastName"
                 sortable
                 dataRender={({value, item}) => (
                     <span className="inline-flex flex-wrap items-center gap-2">
                         {value as string}
-                        {(item as RegistrationData).missingInOris === true && (
+                        {item.missingInOris === true && (
                             <Badge variant="warning">{labels.events.missingInOris}</Badge>
                         )}
                     </span>
@@ -192,7 +187,7 @@ interface EventDetailContentProps {
 }
 
 const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactElement => {
-    const {route} = useHalPageData<EventDetail>();
+    const {refetch} = useHalPageData<EventDetail>();
     const {getById: getEventTypeById} = useEventTypes();
     const location = useLocation();
     const initialEditing = !!(location.state as { editing?: boolean })?.editing;
@@ -204,8 +199,9 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
     const statusVariant = event.status ? (STATUS_VARIANT[event.status] ?? 'default') : 'default';
     const isCancelled = event.status === 'CANCELLED';
 
+    const accommodationListLink = resourceData._links?.['accommodation-list'];
     const newRegistrationLink = asLinkArray(resourceData._links?.newRegistration)[0];
-    const editRegistrationLink = toRegistrationLink(resourceData._templates?.editRegistration?.target);
+    const editRegistrationLink = resourceData._templates?.editRegistration?.target ? {href: resourceData._templates.editRegistration.target} : undefined;
 
     const template: HalFormsTemplate | null = resourceData?._templates?.updateEvent ?? null;
     const hasEditTemplate = template !== null;
@@ -281,9 +277,9 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                                 </Button>
                             )}
                             <HalFormButton name="discoverOrisRegistrations" modal={true} variant="secondary" icon={<Download className="w-4 h-4"/>}/>
-                            {resourceData._links?.['accommodation-list'] && (
+                            {accommodationListLink && (
                                 <Link
-                                    to={`${route.pathname}/accommodation-list`}
+                                    to={toRoutePath(toHref(accommodationListLink))}
                                     className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md border border-border text-text-primary hover:bg-bg-secondary"
                                 >
                                     <List className="w-4 h-4"/>
@@ -500,7 +496,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
         <EventRegistrationDialog
             registration={registrationDialogTarget}
             onClose={handleRegistrationDialogClose}
-            onChanged={route.refetch}
+            onChanged={refetch}
         />
     );
 
@@ -508,7 +504,7 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
         <EventRegistrationDialog
             registration={newRegistrationTarget}
             onClose={() => setNewRegistrationTarget(null)}
-            onChanged={route.refetch}
+            onChanged={refetch}
         />
     );
 
@@ -519,7 +515,6 @@ const EventDetailContent = ({resourceData}: EventDetailContentProps): ReactEleme
                     template={enrichedTemplate}
                     templateName="updateEvent"
                     resourceData={resourceData as Record<string, unknown>}
-                    pathname={route.pathname}
                     onClose={cancelEditing}
                     postprocessPayload={postprocessPayload}
                     successMessage={labels.ui.savedSuccessfully}

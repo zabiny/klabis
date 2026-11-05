@@ -3,18 +3,12 @@ import {Link, useNavigate, useParams} from 'react-router-dom';
 import {Alert, Button, Skeleton} from '../../components/UI';
 import {labels} from '../../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
-import type {HalFormsTemplate} from '../../api';
-import type {FeeSummaryData as FeeSummaryBase} from './memberFeeTypes';
+import type {GetFeeSummaryResource} from '../../api';
 import {Check} from 'lucide-react';
 
 const l = labels.memberFee;
 
-interface FeeSummaryData extends FeeSummaryBase {
-    _templates?: {
-        chooseTier?: HalFormsTemplate;
-        removeChoice?: HalFormsTemplate;
-    };
-}
+type FeeSummaryData = GetFeeSummaryResource;
 
 type ChooseLevelOption = {
     value: string;
@@ -70,16 +64,18 @@ const RadioCard = ({
     </button>
 );
 
-const LockedChoiceCard = ({name, yearlyFee}: {name: string; yearlyFee: number}): ReactElement => (
+const LockedChoiceCard = ({name, yearlyFee}: {name?: string; yearlyFee?: number}): ReactElement => (
     <div
         className="p-4 rounded-lg border"
         style={{background: 'var(--color-bg-subtle)', borderColor: 'var(--color-border-subtle)', borderRadius: '8px'}}
     >
         <p className="text-sm font-medium mb-1" style={{color: 'var(--color-text-secondary)'}}>{l.currentTier}</p>
         <p className="text-lg font-semibold" style={{color: 'var(--color-text-primary)'}}>{name}</p>
-        <p className="text-sm mt-1" style={{color: 'var(--color-text-secondary)'}}>
-            {yearlyFee} {labels.finance.currency} / rok
-        </p>
+        {yearlyFee !== undefined && (
+            <p className="text-sm mt-1" style={{color: 'var(--color-text-secondary)'}}>
+                {yearlyFee} {labels.finance.currency} / rok
+            </p>
+        )}
     </div>
 );
 

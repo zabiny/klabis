@@ -1,12 +1,10 @@
 import {type ReactElement, useState} from "react";
-import type {HalFormsTemplate, HalResourceLinks, Link} from "../../api";
-import type {components} from "../../api/klabisApi";
+import type {HalResourceLinks, Link, ListEventsItemResource} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
 import {asLinkArray} from "../../api/hateoas.ts";
-import {toRegistrationLink} from "../../utils/halFormsUtils.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
 import {useHalRoute} from "../../contexts/halRouteContext.ts";
 import {formatDate, getFutureDeadlines, getRelevantDeadlineIndex} from "../../utils/dateUtils.ts";
@@ -33,9 +31,7 @@ import {useEventTypes} from "../../hooks/useEventTypes.ts";
 import {getTodayIso} from "../../components/events/eventsFilterUtils.ts";
 import {useEventsFilterState} from "./useEventsFilterState.ts";
 
-type EventListData = components['schemas']['EntityModelEventSummaryDto'] & {
-    _templates?: Record<string, HalFormsTemplate>;
-}
+type EventListData = ListEventsItemResource;
 
 const ROW_ACTION_BUTTONS = [
     {name: 'updateEvent', icon: Pencil, label: labels.templates.updateEvent},
@@ -94,7 +90,7 @@ const CREATE_FORM_SI_POLICY_FIELDS = ['siUsage', 'siRentalAllowed'];
 const CREATE_FORM_SHARED_SERVICE_FIELDS = ['sharedTransportEnabled', 'sharedAccommodationEnabled'];
 
 export const EventsPage = (): ReactElement => {
-    const {route, resourceData} = useHalPageData();
+    const {navigateToResource, refetch, resourceData} = useHalPageData();
     const {getUser} = useAuth();
     const {getById: getEventTypeById, eventTypes} = useEventTypes();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -117,15 +113,14 @@ export const EventsPage = (): ReactElement => {
     const orisImport = useOrisEventImport(
         activeImportTemplate,
         isImportModalOpen,
-        {onImported: () => route.refetch()},
+        {onImported: () => refetch()},
     );
 
-    const renderActionsCell = ({item}: TableCellRenderProps) => {
-        const event = item as unknown as EventListData;
+    const renderActionsCell = ({item: event}: TableCellRenderProps<EventListData>) => {
         const templates = event._templates;
         const links = event._links as Record<string, HalResourceLinks> | undefined;
         const newRegLink = links?.['newRegistration'] ? asLinkArray(links['newRegistration'])[0] : undefined;
-        const editRegistrationLink = toRegistrationLink(templates?.editRegistration?.target);
+        const editRegistrationLink = templates?.editRegistration?.target ? {href: templates.editRegistration.target} : undefined;
         const syncLink = links?.sync ? asLinkArray(links.sync)[0] : undefined;
 
         return (
@@ -150,7 +145,7 @@ export const EventsPage = (): ReactElement => {
                     <Button key={name} variant={getActionVariant(name)} size="sm" title={label} onClick={(e) => {
                         e.stopPropagation();
                         if (name === 'updateEvent') {
-                            route.navigateToResource(event, {state: {editing: true}});
+                            navigateToResource(event, {state: {editing: true}});
                         } else {
                             actionDialog.open(event, name);
                         }
@@ -267,15 +262,14 @@ export const EventsPage = (): ReactElement => {
                 defaultOrderBy={defaultSort.by}
                 defaultOrderDirection={defaultSort.direction}
                 extraParams={extraParams}
-                onRowClick={route.navigateToResource}
+                onRowClick={navigateToResource}
                 hideEmptyColumns={true}
                 emptyMessage={labels.eventsFilter.emptyState}
             >
                 <TableCell sortable column={"eventDate"}
                            dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>{labels.tables.date}</TableCell>
-                <TableCell sortable column={"name"}
-                           dataRender={({value, item}) => {
-                               const event = item as unknown as EventListData;
+                <TableCell<EventListData> sortable column={"name"}
+                           dataRender={({value, item: event}) => {
                                if (event.status !== 'CANCELLED') return value as string;
                                // Non-managers see no status column, so the state is repeated for screen readers.
                                return (
@@ -301,9 +295,8 @@ export const EventsPage = (): ReactElement => {
                                    <ExternalLink className="w-4 h-4"/>
                                </a>
                            ) : null}>{labels.tables.web}</TableCell>
-                <TableCell alwaysVisible column={"deadlines"}
-                           dataRender={({item}) => {
-                               const event = item as unknown as EventListData;
+                <TableCell<EventListData> alwaysVisible column={"deadlines"}
+                           dataRender={({item: event}) => {
                                const deadlines = event.deadlines;
                                if (!deadlines || deadlines.length === 0) return null;
                                const today = getTodayIso();
@@ -335,19 +328,17 @@ export const EventsPage = (): ReactElement => {
                                    </span>
                                );
                            }}>{labels.tables.registrationDeadline}</TableCell>
-                <TableCell column={"_links"}
+                <TableCell<EventListData> column={"_links"}
                            dataRender={({item}) => {
-                               const links = item._links as Record<string, unknown> | undefined;
-                               const coordinatorLinks = asLinkArray(links?.coordinator as HalResourceLinks | undefined);
+                               const coordinatorLinks = asLinkArray(item._links?.coordinator);
                                if (coordinatorLinks.length === 0) return null;
                                return <CoordinatorCellContent coordinatorLinks={coordinatorLinks}/>;
                            }}>{labels.tables.coordinator}</TableCell>
                 <TableCell sortable column={"status"}
                            hidden={!canManageEvents}
                            dataRender={({value}) => typeof value === 'string' ? getEnumLabel('eventStatus', value) : ''}>{labels.tables.status}</TableCell>
-                <TableCell column={"eventTypeId"}
-                           dataRender={({item}) => {
-                               const event = item as unknown as EventListData;
+                <TableCell<EventListData> column={"eventTypeId"}
+                           dataRender={({item: event}) => {
                                const eventType = getEventTypeById(event.eventTypeId);
                                if (!eventType) return null;
                                return <EventTypeBadge eventType={eventType}/>;
@@ -369,7 +360,7 @@ export const EventsPage = (): ReactElement => {
                 isOpen={isBulkSyncModalOpen}
                 onClose={() => setIsBulkSyncModalOpen(false)}
                 syncUrl={bulkSyncTemplate.target}
-                onSyncComplete={route.refetch}
+                onSyncComplete={refetch}
             />
         )}
 
@@ -378,7 +369,7 @@ export const EventsPage = (): ReactElement => {
         <EventRegistrationDialog
             registration={registrationTarget}
             onClose={() => setRegistrationTarget(null)}
-            onChanged={route.refetch}
+            onChanged={refetch}
         />
     </div>;
 }

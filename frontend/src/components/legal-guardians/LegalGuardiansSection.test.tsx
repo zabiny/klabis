@@ -57,7 +57,7 @@ beforeEach(() => {
     ({writeCalls} = stubFetch());
     vi.mocked(useLegalGuardians).mockReturnValue({guardians: loadedGuardians, isLoading: false});
     vi.mocked(useHalPageData).mockReturnValue({
-        route: {pathname: '/members/m-1', navigateToResource, refetch},
+        navigateToResource, refetch,
     } as unknown as ReturnType<typeof useHalPageData>);
 });
 

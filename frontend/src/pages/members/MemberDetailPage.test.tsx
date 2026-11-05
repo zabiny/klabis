@@ -164,24 +164,9 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/members/123e4567-e89b-12d3-a456-426614174000',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: '/api/members/123e4567-e89b-12d3-a456-426614174000'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    navigateToResource: vi.fn(),
+    refetch: async () => {},
+    getResourceLink: vi.fn().mockReturnValue({href: '/api/members/123e4567-e89b-12d3-a456-426614174000'}),
     ...overrides,
 });
 
@@ -603,7 +588,6 @@ describe('MemberDetailPage', () => {
                 },
             });
             const pageData = createMockPageData(data, {
-                hasLink: vi.fn((name: string) => name === 'permissions'),
             });
             renderPage(pageData);
             expect(screen.getByRole('button', {name: /oprávnění/i})).toBeInTheDocument();

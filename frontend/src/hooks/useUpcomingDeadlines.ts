@@ -51,8 +51,7 @@ function toUpcomingDeadlinesData(response: HalResponse): UpcomingDeadlinesData {
 }
 
 export function useUpcomingDeadlines(href: string | undefined) {
-    return useAuthorizedQuery(href ?? '', {
-        enabled: !!href,
+    return useAuthorizedQuery(href, {
         select: (data) => toUpcomingDeadlinesData(data as HalResponse),
     });
 }

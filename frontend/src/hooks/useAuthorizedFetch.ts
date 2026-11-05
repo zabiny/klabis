@@ -1,7 +1,7 @@
 import type {UseMutationResult, UseQueryResult} from '@tanstack/react-query';
-import {type QueryClient, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {type QueryClient, skipToken, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {authorizedFetch} from '../api/authorizedFetch';
-import type {Path} from "react-router-dom";
+import {toApiHref} from '../api/apiPath';
 
 /**
  * Options for useAuthorizedQuery hook
@@ -33,6 +33,7 @@ export interface UseAuthorizedQueryOptions<T = unknown> {
 }
 
 const AUTHORIZED_QUERY_KEY = ['authorized'] as const;
+const NO_URL_KEY = '__no-url__';
 
 /**
  * Marks every authorized query stale and refetches the active ones.
@@ -40,24 +41,6 @@ const AUTHORIZED_QUERY_KEY = ['authorized'] as const;
  */
 export function invalidateAuthorizedQueries(queryClient: QueryClient): Promise<void> {
     return queryClient.invalidateQueries({queryKey: AUTHORIZED_QUERY_KEY});
-}
-
-const toPath = (url: string): Path => {
-    if (!url) {
-        return {pathname: '', hash: '', search: ''} as Path;
-    }
-    if (url.startsWith('/')) {
-        url = `https://test.com${url}`;
-    }
-    try {
-        const fullUrl = new URL(url);
-        return {
-            search: fullUrl.search, pathname: fullUrl.pathname, hash: fullUrl.hash
-        } as Path;
-    } catch (e) {
-        console.warn('Failed URL:  ' + JSON.stringify(url))
-        throw e;
-    }
 }
 
 /**
@@ -69,7 +52,7 @@ const toPath = (url: string): Path => {
  * - Caching and deduplication
  * - JSON parsing
  *
- * @param url - The URL to fetch
+ * @param url - The URL to fetch; undefined means there is nothing to fetch
  * @param options - Configuration options
  * @returns Query result with data, loading state, and error
  *
@@ -79,23 +62,23 @@ const toPath = (url: string): Path => {
  * });
  */
 export function useAuthorizedQuery<T = unknown>(
-    url: string,
+    url: string | undefined,
     options?: UseAuthorizedQueryOptions<T>
 ): UseQueryResult<T | undefined> {
     // TODO: find way how to put there actual type from OpenApi generated schemas. Check useKlabisQuery (url: Path<API> => Result<API>?)
 
-    const urlPath = toPath(url);
-
     return useQuery({
-        queryKey: [...AUTHORIZED_QUERY_KEY, urlPath.pathname, urlPath.search || ''],
-        queryFn: async () => {
-            const response = await authorizedFetch(
-                url,
-                options?.headers ? {headers: options.headers} : {},
-                true
-            );
-            return await response.json();
-        },
+        queryKey: [...AUTHORIZED_QUERY_KEY, url === undefined ? NO_URL_KEY : toApiHref(url)],
+        queryFn: url === undefined
+            ? skipToken
+            : async () => {
+                const response = await authorizedFetch(
+                    url,
+                    options?.headers ? {headers: options.headers} : {},
+                    true
+                );
+                return await response.json();
+            },
         select: options?.select,
         gcTime: options?.gcTime,
         ...(options?.retry !== undefined && {retry: options.retry}),

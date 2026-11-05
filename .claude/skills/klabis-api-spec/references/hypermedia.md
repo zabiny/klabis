@@ -428,6 +428,50 @@ Worth verifying whenever you wire up a new page: rename a rel in `halTypes.ts` b
 `frontend/src/api/types.ts` stays hand-written: it describes the HAL-FORMS **media type**
 (`Link`, `HalResponse`, `HalFormsTemplate`, …), which is defined by the standard, not by Klabis.
 
+### Row relations: `x-hal-item-links` / `x-hal-item-templates`
+
+Rows carry their own relations. The item keys use the same map as `x-hal-links` /
+`x-hal-templates` (rel -> `{operation?, description}`) and have two placements:
+
+1. **On a response with an array payload or `x-hal-embedded`**: describes each row in `_embedded`
+   (`listMembers`, `listEvents`; event registrations in `getEvent`).
+2. **On an array property next to `x-hal-entity-items: true`**: describes each item of the array
+   (`owners`, `members`, `pendingInvitations` of `getGroup`; `members`, `trainers` of
+   `getTrainingGroup`).
+
+```yaml
+# listMembers response
+x-hal-item-links:
+  self: { operation: getMember, description: This member }
+  account: { operation: getAccount, description: Present only for callers with FINANCE:MANAGE }
+x-hal-item-templates:
+  suspendMember: { operation: suspendMember, description: Present for active members and callers with MEMBERS:MANAGE }
+
+# getGroup response schema property
+owners:
+  type: array
+  x-hal-entity-items: true
+  x-hal-item-templates:
+    removeGroupOwner: { operation: removeGroupOwner, description: Present only when the caller is an owner and the group has more than one owner }
+  items: { $ref: '#/components/schemas/OwnerResponse' }
+```
+
+The validator rejects the keys:
+- on a response with neither an array payload nor `x-hal-embedded`;
+- on a response with **both** (ambiguous row schema);
+- on an array property without `x-hal-entity-items`, or whose `items` is not a `$ref`;
+- anywhere else. `operation:` is checked against `operationId`s like the response-level keys.
+
+Generated types (`frontend/src/api/halTypes.ts`):
+- placement 1: `<Op>ItemResource` (`ListMembersItemResource`), with `<Op>ItemHal` and `<Op>ItemRels`;
+- placement 2: `<Op><Prop>ItemResource` (`GetGroupOwnersItemResource`); the parent `<Op>Resource`
+  overrides the property: `Omit<EntityModelX, 'owners'> & {owners?: GetGroupOwnersItemResource[]} & <Op>Hal`.
+
+The backend ignores both keys. Take the rels from the backend postprocessor/assembler that adds them
+(not from the frontend), put authorisation conditions in `description`, and when the backend adds the
+same template to the collection **and** to each row (`updateMember` for `listMembers`), list it at
+both levels. Every rel stays optional on the frontend, as below.
+
 ### These describe the MAXIMAL variant
 
 `klabisLinkTo` returns `Optional` and `klabisAfford` returns an empty list when the caller lacks
