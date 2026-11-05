@@ -40,6 +40,25 @@ class ErrorTypeCatalogueTest {
         assertThat(emittedTypes()).allMatch(type -> type.matches("/errors/[a-z0-9]+(-[a-z0-9]+)*"));
     }
 
+    @Test
+    @DisplayName("every concrete subclass of the five common bases is a UserFacingError")
+    void everyBaseSubclassIsUserFacing() throws Exception {
+        var scanner = new ClassPathScanningCandidateComponentProvider(false);
+        for (Class<?> base : List.of(BusinessRuleViolationException.class, ConflictException.class,
+                ResourceNotFoundException.class, InvalidDataException.class, AuthorizationException.class)) {
+            scanner.addIncludeFilter(new AssignableTypeFilter(base));
+        }
+        List<String> untyped = new ArrayList<>();
+        for (BeanDefinition candidate : scanner.findCandidateComponents("com.klabis")) {
+            Class<?> type = Class.forName(candidate.getBeanClassName());
+            if (!isTestClass(type) && !UserFacingError.class.isAssignableFrom(type)) {
+                untyped.add(type.getName());
+            }
+        }
+
+        assertThat(untyped).isEmpty();
+    }
+
     private List<String> emittedTypes() throws Exception {
         List<String> emitted = new ArrayList<>(CommonErrorTypes.ALL);
         for (Class<?> errorClass : userFacingErrorClasses()) {

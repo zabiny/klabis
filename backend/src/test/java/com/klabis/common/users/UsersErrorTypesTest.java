@@ -1,5 +1,6 @@
 package com.klabis.common.users;
 
+import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.exceptions.ConflictException;
 import com.klabis.common.exceptions.InsufficientAuthorityException;
 import com.klabis.common.exceptions.InvalidDataException;
@@ -8,6 +9,7 @@ import com.klabis.common.exceptions.ResourceNotFoundException;
 import com.klabis.common.exceptions.UserFacingError;
 import com.klabis.common.ratelimit.RateLimitExceededException;
 import com.klabis.common.users.application.PasswordComplexityValidator;
+import com.klabis.common.users.domain.AuthorityNotGrantableOverAllException;
 import com.klabis.common.users.domain.AuthorityValidator;
 import com.klabis.common.users.domain.AuthorizationPolicy;
 import com.klabis.common.users.domain.CannotRemoveLastPermissionManagerException;
@@ -68,6 +70,18 @@ class UsersErrorTypesTest {
                     assertThat(ex.errorType()).isEqualTo("invalid-authority");
                     assertThat(ex.messageParameters()).containsOnly(Map.entry("authority", "NOPE:NOPE"));
                 });
+    }
+
+    @Test
+    @DisplayName("authorities that cannot be granted over everything are listed by code, sorted")
+    void authorityNotGrantableOverAll() {
+        AuthorityNotGrantableOverAllException ex = new AuthorityNotGrantableOverAllException(
+                Set.of(Authority.MEMBERS_READ, Authority.MEMBERS_EDIT_PROFILE));
+
+        assertThat(ex).isInstanceOf(BusinessRuleViolationException.class);
+        assertThat(ex.errorType()).isEqualTo("authority-not-grantable-over-all");
+        assertThat(ex.messageParameters()).containsOnly(
+                Map.entry("authorities", List.of("MEMBERS:EDIT_PROFILE", "MEMBERS:READ")));
     }
 
     @Test

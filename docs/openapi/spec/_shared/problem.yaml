@@ -184,3 +184,8 @@ components:
         - /errors/sync-record-not-found                 # 404, no parameters
         - /errors/sync-record-not-enrolled              # 404, no parameters
         - /errors/notification-device-not-found         # 404, no parameters
+        # closing sweep (every subclass of the five common bases)
+        - /errors/field-authorization                   # 403, field = the request property the caller may not write, no parameters
+        - /errors/authority-not-grantable-over-all      # 400, parameter authorities (array of authority codes)
+        - /errors/invalid-delegated-authority           # 400, parameter authority (authority code)
+        - /errors/unknown-sync-entity-type              # 400, parameters entityType (EVENT | DISCIPLINE | MEMBER | EVENT_REGISTRATION), externalSystem (ORIS)

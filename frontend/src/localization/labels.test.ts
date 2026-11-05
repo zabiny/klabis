@@ -399,6 +399,7 @@ describe('labels.errorTypes finance, groups, users, sync and notifications', () 
         ['/errors/sync-record-not-found', 'Záznam synchronizace nebyl nalezen.'],
         ['/errors/sync-record-not-enrolled', 'Záznam není zařazen do synchronizace.'],
         ['/errors/notification-device-not-found', 'Zařízení pro notifikace nebylo nalezeno.'],
+        ['/errors/field-authorization', 'Toto pole nemáte oprávnění měnit.'],
     ] as const)('has a fixed text for %s', (type, expected) => {
         expect(text(type)).toBe(expected);
     });
@@ -464,6 +465,16 @@ describe('labels.errorTypes finance, groups, users, sync and notifications', () 
         ['/errors/sync-record-needs-resolution', {syncStatus: 'X'}, 'Záznam synchronizace je třeba nejprve vyřešit.'],
         ['/errors/sync-record-needs-resolution', {}, 'Záznam synchronizace je třeba nejprve vyřešit.'],
         ['/errors/unsupported-resolution', {resolution: 'ACCEPT_DIVERGENCE'}, 'Způsob řešení „Ponechat obě verze“ není pro tento záznam podporován.'],
+        ['/errors/authority-not-grantable-over-all', {authorities: ['MEMBERS:EDIT_PROFILE']}, 'Oprávnění „Úprava údajů člena“ nelze předat všem členům skupiny.'],
+        ['/errors/authority-not-grantable-over-all', {authorities: ['UNKNOWN:CODE', 5]}, 'Vybraná oprávnění nelze předat všem členům skupiny.'],
+        ['/errors/authority-not-grantable-over-all', {}, 'Vybraná oprávnění nelze předat všem členům skupiny.'],
+        ['/errors/invalid-delegated-authority', {authority: 'MEMBERS:EDIT_PROFILE'}, 'Oprávnění „Úprava údajů člena“ nelze skupině delegovat.'],
+        ['/errors/invalid-delegated-authority', {authority: 'UNKNOWN:CODE'}, 'Zvolené oprávnění nelze skupině delegovat.'],
+        ['/errors/invalid-delegated-authority', {}, 'Zvolené oprávnění nelze skupině delegovat.'],
+        ['/errors/unknown-sync-entity-type', {entityType: 'MEMBER', externalSystem: 'ORIS'}, 'Synchronizace typu „Člen“ se systémem ORIS není podporována.'],
+        ['/errors/unknown-sync-entity-type', {entityType: 'EVENT_REGISTRATION'}, 'Synchronizace typu „Přihláška na akci“ není podporována.'],
+        ['/errors/unknown-sync-entity-type', {entityType: 'X', externalSystem: 'ORIS'}, 'Tento typ záznamu nelze synchronizovat.'],
+        ['/errors/unknown-sync-entity-type', {}, 'Tento typ záznamu nelze synchronizovat.'],
         ['/errors/unsupported-resolution', {}, 'Zvolený způsob řešení není pro tento záznam podporován.'],
     ] as const)('renders %s with params %j', (type, params, expected) => {
         expect(text(type, params)).toBe(expected);

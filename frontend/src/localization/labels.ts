@@ -91,6 +91,15 @@ const describePasswordViolations = (violations: unknown, minLength: unknown): st
     return sentences.length > 0 ? sentences.join(' ') : 'Heslo nesplňuje požadavky na složitost.';
 };
 
+const syncEntityTypeNames = {
+    EVENT: 'Akce',
+    DISCIPLINE: 'Disciplína',
+    MEMBER: 'Člen',
+    EVENT_REGISTRATION: 'Přihláška na akci',
+} as const;
+
+const authorityName = (code: string): string | undefined => getPermissionInfo(code)?.label;
+
 const errorTypes: Record<ErrorType, (params: ErrorParams) => string> = {
     '/errors/validation-failed': () => 'Zadané údaje nejsou platné. Zkontrolujte formulář a zkuste to znovu.',
     '/errors/invalid-request': () => 'Požadavek se nepodařilo zpracovat. Zkontrolujte zadané údaje a zkuste to znovu.',
@@ -398,6 +407,32 @@ const errorTypes: Record<ErrorType, (params: ErrorParams) => string> = {
     '/errors/sync-record-not-found': () => 'Záznam synchronizace nebyl nalezen.',
     '/errors/sync-record-not-enrolled': () => 'Záznam není zařazen do synchronizace.',
     '/errors/notification-device-not-found': () => 'Zařízení pro notifikace nebylo nalezeno.',
+    '/errors/field-authorization': () => 'Toto pole nemáte oprávnění měnit.',
+    '/errors/authority-not-grantable-over-all': ({authorities}) => {
+        const names = Array.isArray(authorities)
+            ? authorities
+                .map((a) => (typeof a === 'string' ? authorityName(a) : undefined))
+                .filter((n): n is string => n !== undefined)
+            : [];
+        return names.length > 0
+            ? `Oprávnění ${names.map((n) => `„${n}“`).join(', ')} nelze předat všem členům skupiny.`
+            : 'Vybraná oprávnění nelze předat všem členům skupiny.';
+    },
+    '/errors/invalid-delegated-authority': ({authority}) => {
+        const name = typeof authority === 'string' ? authorityName(authority) : undefined;
+        return name
+            ? `Oprávnění „${name}“ nelze skupině delegovat.`
+            : 'Zvolené oprávnění nelze skupině delegovat.';
+    },
+    '/errors/unknown-sync-entity-type': ({entityType, externalSystem}) => {
+        const entity = typeof entityType === 'string' && Object.hasOwn(syncEntityTypeNames, entityType)
+            ? syncEntityTypeNames[entityType as keyof typeof syncEntityTypeNames]
+            : undefined;
+        const system = nonEmptyString(externalSystem);
+        if (entity && system) return `Synchronizace typu „${entity}“ se systémem ${system} není podporována.`;
+        if (entity) return `Synchronizace typu „${entity}“ není podporována.`;
+        return 'Tento typ záznamu nelze synchronizovat.';
+    },
 };
 
 export const labels = {
@@ -827,6 +862,7 @@ export const labels = {
         rateLimitedRetryAfter: 'Požadavek byl omezen. Zkuste to znovu za {seconds} sekund.',
         rateLimitedRetryLater: 'Požadavek byl omezen. Zkuste to prosím později.',
         requestFailed: 'Požadavek selhal.',
+        loadDataFailed: 'Data se nepodařilo načíst.',
         unexpectedError: UNEXPECTED_ERROR_TEXT,
         savePermissionsFailed: 'Nepodařilo se uložit oprávnění. Zkuste to prosím znovu.',
         memberRegistrationUnavailable: 'Registrace nového člena není k dispozici.',

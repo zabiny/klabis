@@ -76,6 +76,16 @@ class FreeGroupErrorTypesTest {
     }
 
     @Test
+    @DisplayName("delegating an authority that cannot be delegated reports the authority code")
+    void invalidDelegatedAuthority() {
+        InvalidDelegatedAuthorityException ex = new InvalidDelegatedAuthorityException(
+                com.klabis.common.users.Authority.MEMBERS_PERMISSIONS);
+
+        assertThat(ex.errorType()).isEqualTo("invalid-delegated-authority");
+        assertThat(ex.messageParameters()).containsOnly(Map.entry("authority", "MEMBERS:PERMISSIONS"));
+    }
+
+    @Test
     @DisplayName("a missing invitation is a 404 without parameters")
     void invitationNotFound() {
         InvitationNotFoundException ex = new InvitationNotFoundException(new InvitationId(UUID.randomUUID()));
