@@ -54,20 +54,20 @@ Every new error type follows the same steps:
 
 ## 8. Finance module
 
-- [ ] 8.1 Migrate `OVERDRAFT_LIMIT_EXCEEDED`/`TRANSACTION_ALREADY_REVERSED` to `/errors/overdraft-limit-exceeded` and `/errors/transaction-already-reversed`, and update the assertion in `MemberAccountControllerTest`. Rebase `TransactionNotFound`, `MemberAccountNotFound`, `TransactionAlreadyReversed` and `OverdraftLimitExceeded` onto the common bases as typed errors, with the amount and the member name as parameters. Add the enum values and Czech templates. Switch `FinanceTransactionDialog` and `ReverseConfirmModal` to `describeError`. Verify with finance handler tests, `labels` tests and the finance E2E features.
+- [x] 8.1 Migrate `OVERDRAFT_LIMIT_EXCEEDED`/`TRANSACTION_ALREADY_REVERSED` to `/errors/overdraft-limit-exceeded` and `/errors/transaction-already-reversed`, and update the assertion in `MemberAccountControllerTest`. Rebase `TransactionNotFound`, `MemberAccountNotFound`, `TransactionAlreadyReversed` and `OverdraftLimitExceeded` onto the common bases as typed errors, with the amount and the member name as parameters. Add the enum values and Czech templates. Switch `FinanceTransactionDialog` and `ReverseConfirmModal` to `describeError`. Verify with finance handler tests, `labels` tests and the finance E2E features.
 
 ## 9. Groups (free, training, family, user groups)
 
-- [ ] 9.1 Migrate the group exceptions (`GroupsExceptionHandler`, `FreeGroupExceptionHandler`, and the training group exceptions that extend the bases) to typed errors with group and member names and with `field` bindings. Add the enum values and Czech templates, and switch the group pages to `describeError`. Verify with handler tests, `labels` tests and the group E2E features.
+- [x] 9.1 Migrate the group exceptions (`GroupsExceptionHandler`, `FreeGroupExceptionHandler`, and the training group exceptions that extend the bases) to typed errors with group and member names and with `field` bindings. Add the enum values and Czech templates, and switch the group pages to `describeError`. Verify with handler tests, `labels` tests and the group E2E features.
 
 ## 10. Common/users (permissions, password, authorization)
 
-- [ ] 10.1 Migrate `PermissionController`'s `https://klabis.com/problems/*` types to `/errors/user-not-found`, `/errors/cannot-remove-last-permission-manager`, `/errors/admin-lockout`, `/errors/invalid-authority` and `/errors/invalid-request`, and update the three `PermissionControllerTest` assertions. Migrate `InsufficientAuthority`, `MemberProfileRequired`, the password exceptions (including `/errors/incorrect-current-password`) and rate limiting to typed errors with Czech templates. Verify with handler tests and `labels` tests.
-- [ ] 10.2 Switch `ChangePasswordDialog` from English substring matching to `/errors/incorrect-current-password`, switch `usePermissionsEditor` from status 409 to `/errors/cannot-remove-last-permission-manager`, and switch the remaining pages in this area to `describeError`. Verify with `ChangePasswordDialog` and `usePermissionsEditor` tests and the related E2E features.
+- [x] 10.1 Migrate `PermissionController`'s `https://klabis.com/problems/*` types to `/errors/user-not-found`, `/errors/cannot-remove-last-permission-manager`, `/errors/admin-lockout`, `/errors/invalid-authority` and `/errors/invalid-request`, and update the three `PermissionControllerTest` assertions. Migrate `InsufficientAuthority`, `MemberProfileRequired`, the password exceptions (including `/errors/incorrect-current-password`) and rate limiting to typed errors with Czech templates. Verify with handler tests and `labels` tests.
+- [x] 10.2 Switch `ChangePasswordDialog` from English substring matching to `/errors/incorrect-current-password`, switch `usePermissionsEditor` from status 409 to `/errors/cannot-remove-last-permission-manager`, and switch the remaining pages in this area to `describeError`. Verify with `ChangePasswordDialog` and `usePermissionsEditor` tests and the related E2E features.
 
 ## 11. Sync/ORIS and notifications
 
-- [ ] 11.1 Migrate the user-facing exceptions in `SyncExceptionHandler` (for example `ClubKeyNotSet`, `AmbiguousSyncTarget`) and in notifications to typed errors with Czech templates, and switch `SyncOverviewPage` to `describeError`. Verify with handler tests, `labels` tests and the sync E2E features.
+- [x] 11.1 Migrate the user-facing exceptions in `SyncExceptionHandler` (for example `ClubKeyNotSet`, `AmbiguousSyncTarget`) and in notifications to typed errors with Czech templates, and switch `SyncOverviewPage` to `describeError`. Verify with handler tests, `labels` tests and the sync E2E features.
 
 ## 12. Closing (integration only)
 

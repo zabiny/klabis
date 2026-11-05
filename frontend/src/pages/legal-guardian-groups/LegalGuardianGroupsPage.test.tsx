@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {vi} from 'vitest';
+import {ApiError} from '../../api/apiError';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {LegalGuardianGroupsPage} from './LegalGuardianGroupsPage';
 
@@ -43,5 +44,17 @@ describe('LegalGuardianGroupsPage', () => {
         render(<LegalGuardianGroupsPage/>);
         expect(screen.getByText('Zástupci')).toBeInTheDocument();
         expect(screen.getByTestId('guardians-cell')).toHaveTextContent('Ondřej Kratochvíl, Lenka Kratochvílová');
+    });
+
+    it('shows the Czech text of a load error instead of the HTTP status', () => {
+        vi.mocked(useHalPageData).mockReturnValue({
+            isLoading: false,
+            error: new ApiError(404, {type: '/errors/not-found', detail: 'Missing'}),
+            route: {navigateToResource: vi.fn()},
+        } as unknown as ReturnType<typeof useHalPageData>);
+        render(<LegalGuardianGroupsPage/>);
+
+        expect(screen.getByText('Požadovaná položka nebyla nalezena.')).toBeInTheDocument();
+        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 });

@@ -1,10 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {
-    completePasswordSetup,
-    PasswordSetupError,
-    type SetPasswordRequest,
-} from '../api/passwordSetup';
-import {labels} from '../localization';
+import {completePasswordSetup, type SetPasswordRequest} from '../api/passwordSetup';
+import {ApiError} from '../api/apiError';
+import {describeError} from '../localization';
 
 export interface UsePasswordSetupOptions {
     onSuccess: (registrationNumber: string) => void;
@@ -14,7 +11,9 @@ export interface UsePasswordSetupResult {
     onSubmit: (data: { password: string; passwordConfirmation: string }) => void;
     isSubmitting: boolean;
     serverError: string | null;
+    serverFieldErrors: Record<string, string>;
     onClearServerError: () => void;
+    onClearServerFieldError: (field: string) => void;
     showSuccess: boolean;
 }
 
@@ -24,6 +23,7 @@ export function usePasswordSetup(
 ): UsePasswordSetupResult {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [serverError, setServerError] = useState<string | null>(null);
+    const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string>>({});
     const [showSuccess, setShowSuccess] = useState(false);
     const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -36,6 +36,7 @@ export function usePasswordSetup(
     const onSubmit = useCallback(
         async (data: { password: string; passwordConfirmation: string }) => {
             setServerError(null);
+            setServerFieldErrors({});
             setIsSubmitting(true);
 
             try {
@@ -52,18 +53,12 @@ export function usePasswordSetup(
                     options.onSuccess(response.registrationNumber || '');
                 }, 2000);
             } catch (error) {
-                if (error instanceof PasswordSetupError) {
-                    if (error.status === 400) {
-                        setServerError(error.getErrorMessage());
-                    } else if (error.status === 410) {
-                        setServerError(labels.errors.tokenExpired);
-                    } else if (error.status === 404) {
-                        setServerError(labels.errors.tokenInvalid);
-                    } else {
-                        setServerError(error.getErrorMessage());
-                    }
+                if (error instanceof ApiError && error.field) {
+                    setServerFieldErrors({[error.field]: describeError(error)});
+                } else if (error instanceof ApiError && Object.keys(error.fieldErrors).length > 0) {
+                    setServerFieldErrors(error.fieldErrors);
                 } else {
-                    setServerError(labels.errors.unexpectedError);
+                    setServerError(describeError(error));
                 }
             } finally {
                 setIsSubmitting(false);
@@ -74,13 +69,25 @@ export function usePasswordSetup(
 
     const onClearServerError = useCallback(() => {
         setServerError(null);
+        setServerFieldErrors({});
+    }, []);
+
+    const onClearServerFieldError = useCallback((field: string) => {
+        setServerFieldErrors((prev) => {
+            if (!(field in prev)) return prev;
+            const rest = {...prev};
+            delete rest[field];
+            return rest;
+        });
     }, []);
 
     return {
         onSubmit,
         isSubmitting,
         serverError,
+        serverFieldErrors,
         onClearServerError,
+        onClearServerFieldError,
         showSuccess,
     };
 }

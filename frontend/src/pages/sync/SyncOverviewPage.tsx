@@ -10,7 +10,7 @@ import type {HalResourceLinks} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
 import {toRoutePath} from '../../api/apiPath';
 import {formatDateTimeSeconds} from '../../utils/dateUtils.ts';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {attemptColumns, enumCell} from '../../components/sync/syncAttemptColumns.tsx';
 import {SyncAttemptFilterBar} from './SyncAttemptFilterBar.tsx';
 import {toQuery, type SyncAttemptFilters} from './syncAttemptsQuery.ts';
@@ -130,7 +130,7 @@ export const SyncOverviewPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     const attentionLink = resourceData?._links?.recordsNeedingAttention;

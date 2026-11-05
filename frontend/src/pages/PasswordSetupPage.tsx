@@ -2,7 +2,8 @@ import {useEffect, useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Alert, Button, Spinner} from '../components/UI';
 import {PasswordSetupForm} from '../components/auth/PasswordSetupForm';
-import {TokenValidationError, validateToken} from '../api/passwordSetup';
+import {validateToken} from '../api/passwordSetup';
+import {describeError} from '../localization';
 import {usePasswordSetup} from '../hooks/usePasswordSetup';
 
 /**
@@ -30,17 +31,7 @@ const PasswordSetupPage = () => {
                 await validateToken(token);
                 setIsValid(true);
             } catch (error) {
-                if (error instanceof TokenValidationError) {
-                    if (error.status === 410) {
-                        setValidationError('Platnost tokenu vypršela nebo byl již použit. Požádejte si o nový.');
-                    } else if (error.status === 404) {
-                        setValidationError('Neplatný token. Požádejte si o nový.');
-                    } else {
-                        setValidationError(error.detail.detail || 'Token nelze ověřit.');
-                    }
-                } else {
-                    setValidationError('Došlo k neočekávané chybě při ověřování tokenu.');
-                }
+                setValidationError(describeError(error));
             } finally {
                 setIsValidating(false);
             }

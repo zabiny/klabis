@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {ApiError} from '../../api/apiError';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {TrainingGroupDetailPage} from './TrainingGroupDetailPage';
 import {vi} from 'vitest';
@@ -225,5 +226,17 @@ describe('TrainingGroupDetailPage — trainees and deletion', () => {
         await waitFor(() => expect(writeCalls()).toHaveLength(1));
         expect(writeCalls()[0][0]).toBe('/api/training-groups/tg-1');
         await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/training-groups$/));
+    });
+});
+
+describe('TrainingGroupDetailPage load error', () => {
+    it('shows the Czech text of the error instead of the HTTP status', () => {
+        renderDetailPage(<TrainingGroupDetailPage/>, null, {
+            pathname: '/training-groups/tg-1',
+            error: new ApiError(404, {type: '/errors/group-not-found', detail: 'Group not found'}),
+        });
+
+        expect(screen.getByText('Skupina nebyla nalezena.')).toBeInTheDocument();
+        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 });

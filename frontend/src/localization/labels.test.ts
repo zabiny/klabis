@@ -372,3 +372,100 @@ describe('labels.errorTypes members, events and calendar', () => {
         expect(text(type, params)).toBe(expected);
     });
 });
+
+describe('labels.errorTypes finance, groups, users, sync and notifications', () => {
+    const text = (type: keyof typeof labels.errorTypes, params: Record<string, unknown> = {}) =>
+        labels.errorTypes[type](params).replace(/\s/g, ' ');
+    const czk = (amount: number) => ({amount, currency: 'CZK'});
+
+    it.each([
+        ['/errors/group-not-found', 'Skupina nebyla nalezena.'],
+        ['/errors/invitation-not-found', 'Pozvánka nebyla nalezena.'],
+        ['/errors/user-not-found', 'Uživatel nebyl nalezen.'],
+        ['/errors/cannot-remove-last-permission-manager', 'Nelze odebrat oprávnění správce — systém musí mít alespoň jednoho uživatele se správou oprávnění.'],
+        ['/errors/admin-lockout', 'Změna by odebrala přístup ke správě oprávnění všem administrátorům. Alespoň jeden aktivní uživatel musí toto oprávnění zachovat.'],
+        ['/errors/incorrect-current-password', 'Zadané aktuální heslo je nesprávné.'],
+        ['/errors/passwords-do-not-match', 'Hesla se neshodují.'],
+        ['/errors/invalid-token', 'Odkaz pro nastavení hesla není platný.'],
+        ['/errors/token-expired', 'Platnost odkazu vypršela. Požádejte o nový odkaz.'],
+        ['/errors/token-already-used', 'Tento odkaz již byl použit.'],
+        ['/errors/insufficient-authority', 'K této akci nemáte dostatečné oprávnění.'],
+        ['/errors/member-profile-required', 'Pro tuto akci musíte mít propojený členský profil.'],
+        ['/errors/rate-limit-exceeded', 'Příliš mnoho požadavků. Zkuste to prosím za chvíli znovu.'],
+        ['/errors/sync-record-not-in-conflict', 'Záznam synchronizace není v konfliktu.'],
+        ['/errors/conflict-not-acknowledged', 'Konflikt je nejprve nutné potvrdit.'],
+        ['/errors/sync-record-not-failed', 'Záznam synchronizace nemá stav selhání, nelze ho resetovat.'],
+        ['/errors/sync-record-claimed', 'Záznam právě zpracovává jiná synchronizace. Zkuste to za chvíli znovu.'],
+        ['/errors/sync-record-not-found', 'Záznam synchronizace nebyl nalezen.'],
+        ['/errors/sync-record-not-enrolled', 'Záznam není zařazen do synchronizace.'],
+        ['/errors/notification-device-not-found', 'Zařízení pro notifikace nebylo nalezeno.'],
+    ] as const)('has a fixed text for %s', (type, expected) => {
+        expect(text(type)).toBe(expected);
+    });
+
+    it.each([
+        ['/errors/overdraft-limit-exceeded', {memberName: 'Jan Novák', chargeAmount: czk(500), currentBalance: czk(-200), overdraftLimit: czk(1000)},
+            'Částku 500,00 Kč nelze strhnout z účtu člena Jan Novák, protože by byl překročen povolený debet 1 000,00 Kč (aktuální zůstatek -200,00 Kč).'],
+        ['/errors/overdraft-limit-exceeded', {chargeAmount: czk(500), currentBalance: czk(-200), overdraftLimit: czk(1000)},
+            'Částku 500,00 Kč nelze strhnout z účtu, protože by byl překročen povolený debet 1 000,00 Kč (aktuální zůstatek -200,00 Kč).'],
+        ['/errors/overdraft-limit-exceeded', {overdraftLimit: czk(1000)}, 'Částku nelze strhnout z účtu, protože by byl překročen povolený debet 1 000,00 Kč.'],
+        ['/errors/overdraft-limit-exceeded', {chargeAmount: 'x'}, 'Částku nelze strhnout z účtu, protože by byl překročen povolený debet.'],
+        ['/errors/transaction-already-reversed', {memberName: 'Jan Novák', amount: czk(250)}, 'Transakce ve výši 250,00 Kč na účtu člena Jan Novák již byla stornována.'],
+        ['/errors/transaction-already-reversed', {amount: czk(250)}, 'Transakce ve výši 250,00 Kč již byla stornována.'],
+        ['/errors/transaction-already-reversed', {}, 'Transakce již byla stornována.'],
+        ['/errors/member-account-not-found', {memberName: 'Jan Novák'}, 'Účet člena Jan Novák nebyl nalezen.'],
+        ['/errors/member-account-not-found', {}, 'Účet člena nebyl nalezen.'],
+        ['/errors/transaction-not-found', {memberName: 'Jan Novák'}, 'Transakce na účtu člena Jan Novák nebyla nalezena.'],
+        ['/errors/transaction-not-found', {}, 'Transakce nebyla nalezena.'],
+        ['/errors/cannot-remove-last-owner', {groupName: 'Trenéři', memberName: 'Jan Novák'}, 'Ze skupiny „Trenéři“ nelze odebrat člena Jan Novák, protože je jejím posledním vlastníkem.'],
+        ['/errors/cannot-remove-last-owner', {groupName: 'Trenéři'}, 'Ze skupiny „Trenéři“ nelze odebrat posledního vlastníka.'],
+        ['/errors/direct-member-addition-not-allowed', {groupName: 'Trenéři'}, 'Do skupiny „Trenéři“ nelze členy přidávat přímo, musí být pozváni.'],
+        ['/errors/direct-member-addition-not-allowed', {}, 'Do této skupiny nelze členy přidávat přímo, musí být pozváni.'],
+        ['/errors/owner-cannot-be-member', {groupName: 'Trenéři', memberName: 'Jan Novák'}, 'Člen Jan Novák je vlastníkem skupiny „Trenéři“ a nemůže být zároveň jejím členem.'],
+        ['/errors/owner-cannot-be-member', {groupName: 'Trenéři'}, 'Vlastník skupiny „Trenéři“ nemůže být zároveň jejím členem.'],
+        ['/errors/owner-cannot-be-member', {}, 'Vlastník skupiny nemůže být zároveň jejím členem.'],
+        ['/errors/member-already-in-group', {groupName: 'Trenéři', memberName: 'Jan Novák'}, 'Člen Jan Novák již je ve skupině „Trenéři“.'],
+        ['/errors/member-already-in-group', {groupName: 'Trenéři'}, 'Člen již je ve skupině „Trenéři“.'],
+        ['/errors/member-not-in-group', {groupName: 'Trenéři', memberName: 'Jan Novák'}, 'Člen Jan Novák není ve skupině „Trenéři“.'],
+        ['/errors/member-not-in-group', {}, 'Člen není v této skupině.'],
+        ['/errors/group-ownership-required', {groupName: 'Trenéři'}, 'Tuto akci může provést jen vlastník skupiny „Trenéři“.'],
+        ['/errors/group-ownership-required', {}, 'Tuto akci může provést jen vlastník skupiny.'],
+        ['/errors/not-invited-member', {groupName: 'Trenéři'}, 'Do skupiny „Trenéři“ nejste pozváni.'],
+        ['/errors/not-invited-member', {}, 'Do této skupiny nejste pozváni.'],
+        ['/errors/cannot-invite-existing-member', {groupName: 'Trenéři', memberName: 'Jan Novák'}, 'Člen Jan Novák již je členem skupiny „Trenéři“, nelze ho pozvat.'],
+        ['/errors/cannot-invite-existing-member', {}, 'Člen již je členem této skupiny, nelze ho pozvat.'],
+        ['/errors/duplicate-pending-invitation', {groupName: 'Trenéři', memberName: 'Jan Novák'}, 'Člen Jan Novák již má do skupiny „Trenéři“ čekající pozvánku.'],
+        ['/errors/duplicate-pending-invitation', {}, 'Člen již má do této skupiny čekající pozvánku.'],
+        ['/errors/cannot-promote-non-member-to-owner', {groupName: 'Trenéři', memberName: 'Jan Novák'}, 'Člen Jan Novák není členem skupiny „Trenéři“, proto ho nelze povýšit na vlastníka.'],
+        ['/errors/cannot-promote-non-member-to-owner', {}, 'Člen není členem této skupiny, proto ho nelze povýšit na vlastníka.'],
+        ['/errors/invitation-not-cancellable', {invitationStatus: 'ACCEPTED'}, 'Pozvánku nelze zrušit, protože již byla přijata.'],
+        ['/errors/invitation-not-cancellable', {invitationStatus: 'REJECTED'}, 'Pozvánku nelze zrušit, protože již byla odmítnuta.'],
+        ['/errors/invitation-not-cancellable', {invitationStatus: 'CANCELLED'}, 'Pozvánku nelze zrušit, protože již byla zrušena.'],
+        ['/errors/invitation-not-cancellable', {}, 'Pozvánku nelze zrušit.'],
+        ['/errors/member-already-in-training-group', {groupName: 'Žáci', memberName: 'Jan Novák'}, 'Člen Jan Novák již trénuje v tréninkové skupině „Žáci“.'],
+        ['/errors/member-already-in-training-group', {}, 'Člen již trénuje v jiné tréninkové skupině.'],
+        ['/errors/trainer-required', {groupName: 'Žáci'}, 'Tréninková skupina „Žáci“ musí mít alespoň jednoho trenéra.'],
+        ['/errors/trainer-required', {}, 'Tréninková skupina musí mít alespoň jednoho trenéra.'],
+        ['/errors/invalid-age-range', {minAge: 10, maxAge: 8}, 'Maximální věk (8) nesmí být nižší než minimální věk (10).'],
+        ['/errors/invalid-age-range', {minAge: 'x'}, 'Maximální věk nesmí být nižší než minimální věk.'],
+        ['/errors/overlapping-age-range', {minAge: 10, maxAge: 12}, 'Věkové rozmezí 10–12 se překrývá s jinou tréninkovou skupinou.'],
+        ['/errors/overlapping-age-range', {}, 'Věkové rozmezí se překrývá s jinou tréninkovou skupinou.'],
+        ['/errors/invalid-authority', {authority: 'FOO:BAR'}, 'Oprávnění „FOO:BAR“ není platné.'],
+        ['/errors/invalid-authority', {}, 'Zadané oprávnění není platné.'],
+        ['/errors/password-requirements-not-met', {violations: ['TOO_SHORT', 'MISSING_UPPERCASE', 'MISSING_DIGIT'], minLength: 12}, 'Heslo musí mít alespoň 12 znaků, obsahovat velké písmeno a číslici.'],
+        ['/errors/password-requirements-not-met', {violations: ['TOO_SHORT'], minLength: 4}, 'Heslo musí mít alespoň 4 znaky.'],
+        ['/errors/password-requirements-not-met', {violations: ['TOO_SHORT']}, 'Heslo musí být delší.'],
+        ['/errors/password-requirements-not-met', {violations: ['MISSING_UPPERCASE', 'MISSING_LOWERCASE', 'MISSING_DIGIT', 'MISSING_SPECIAL_CHARACTER']}, 'Heslo musí obsahovat velké písmeno, malé písmeno, číslici a speciální znak.'],
+        ['/errors/password-requirements-not-met', {violations: ['MISSING_DIGIT', 'CONTAINS_FIRST_NAME', 'CONTAINS_LAST_NAME', 'CONTAINS_REGISTRATION_NUMBER']}, 'Heslo musí obsahovat číslici. Heslo nesmí obsahovat vaše jméno, vaše příjmení a vaše registrační číslo.'],
+        ['/errors/password-requirements-not-met', {violations: ['REQUIRED', 'TOO_SHORT'], minLength: 12}, 'Heslo je povinné.'],
+        ['/errors/password-requirements-not-met', {violations: ['UNKNOWN']}, 'Heslo nesplňuje požadavky na složitost.'],
+        ['/errors/password-requirements-not-met', {}, 'Heslo nesplňuje požadavky na složitost.'],
+        ['/errors/sync-record-needs-resolution', {syncStatus: 'CONFLICT'}, 'Záznam synchronizace je ve stavu „Konflikt“ a je třeba ho nejprve vyřešit.'],
+        ['/errors/sync-record-needs-resolution', {syncStatus: 'X'}, 'Záznam synchronizace je třeba nejprve vyřešit.'],
+        ['/errors/sync-record-needs-resolution', {}, 'Záznam synchronizace je třeba nejprve vyřešit.'],
+        ['/errors/unsupported-resolution', {resolution: 'ACCEPT_DIVERGENCE'}, 'Způsob řešení „Ponechat obě verze“ není pro tento záznam podporován.'],
+        ['/errors/unsupported-resolution', {}, 'Zvolený způsob řešení není pro tento záznam podporován.'],
+    ] as const)('renders %s with params %j', (type, params, expected) => {
+        expect(text(type, params)).toBe(expected);
+    });
+});

@@ -266,7 +266,7 @@ describe('PermissionsDialog', () => {
         });
 
         it('shows user-friendly Czech message when admin lockout is detected (409)', () => {
-            const conflictError = new ApiError(409);
+            const conflictError = new ApiError(409, {type: '/errors/cannot-remove-last-permission-manager'});
 
             renderDialog({error: conflictError});
 

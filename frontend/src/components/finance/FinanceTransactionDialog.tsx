@@ -1,7 +1,7 @@
 import {type ReactElement, useEffect, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Banknote, Check, CircleArrowDown, CircleArrowUp} from 'lucide-react';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {Alert, Button, Modal, Skeleton, TabButton} from '../UI';
 import {authorizedFetch} from '../../api/authorizedFetch';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
@@ -132,7 +132,7 @@ export const FinanceTransactionDialog = ({
                     handleClose();
                 },
                 onError: (error: unknown) => {
-                    setSubmitError(error instanceof Error ? error.message : labels.errors.requestFailed);
+                    setSubmitError(describeError(error));
                 },
             }
         );

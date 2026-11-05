@@ -5,7 +5,7 @@ import {Alert, Skeleton} from '../../components/UI';
 import {LegalGuardiansSection} from '../../components/legal-guardians/LegalGuardiansSection.tsx';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import type {GetLegalGuardianGroupResource, HalResourceLinks} from '../../api';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {ApiError} from '../../api/apiError.ts';
 import {useToast} from '../../contexts/toastContext.ts';
 
@@ -75,7 +75,7 @@ export const LegalGuardianGroupDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     return <LegalGuardianGroupDetailContent resourceData={resourceData!} onEditStarted={() => setGuardiansEdited(true)}/>;
