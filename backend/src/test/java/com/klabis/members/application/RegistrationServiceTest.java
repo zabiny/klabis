@@ -597,7 +597,7 @@ class RegistrationServiceTest {
                     .thenReturn(new GuardianContacts(true, false, false));
 
             assertThatThrownBy(() -> service.registerMember(minorCommand(null, null, guardians)))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(MemberDataRequiredException.class);
 
             verify(memberRepository, never()).save(any(Member.class));
         }
@@ -671,7 +671,7 @@ class RegistrationServiceTest {
         void shouldRequireOwnEmail() {
             assertThatThrownBy(() -> service.registerMember(
                     adultCommand(null, PhoneNumber.of("+420777111222"), List.of(), null)))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(MemberDataRequiredException.class);
 
             verify(memberRepository, never()).save(any(Member.class));
         }
@@ -681,7 +681,7 @@ class RegistrationServiceTest {
         void shouldRequireOwnPhone() {
             assertThatThrownBy(() -> service.registerMember(
                     adultCommand(EmailAddress.of("eva@example.com"), null, List.of(), null)))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(MemberDataRequiredException.class);
 
             verify(memberRepository, never()).save(any(Member.class));
         }

@@ -1,6 +1,5 @@
 package com.klabis.events.domain;
 
-import com.klabis.common.exceptions.BusinessRuleViolationException;
 import org.jmolecules.ddd.annotation.ValueObject;
 import org.springframework.util.Assert;
 
@@ -27,12 +26,10 @@ public record SiPolicy(SiUsage usage, boolean rentalAllowed) {
             return;
         }
         if (wantsToRentSi && !rentalAllowed) {
-            throw new BusinessRuleViolationException("SI card rental is not allowed for this event") {
-            };
+            throw new SiCardRentalNotAllowedException();
         }
         if (usage == SiUsage.REQUIRED && siCardNumber == null && !wantsToRentSi) {
-            throw new BusinessRuleViolationException("SI card number is required") {
-            };
+            throw new SiCardNumberRequiredException();
         }
     }
 }

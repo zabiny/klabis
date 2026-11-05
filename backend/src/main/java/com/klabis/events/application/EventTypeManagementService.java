@@ -55,7 +55,7 @@ class EventTypeManagementService implements EventTypeManagementPort {
         for (DisciplineId disciplineId : disciplineIds) {
             eventTypeRepository.findByDisciplineId(disciplineId).ifPresent(existing -> {
                 if (ownerOrNull == null || !existing.getId().equals(ownerOrNull.getId())) {
-                    throw new OrisDisciplineAlreadyMappedException(disciplineId);
+                    throw new OrisDisciplineAlreadyMappedException(existing.getName());
                 }
             });
         }

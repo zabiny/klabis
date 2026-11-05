@@ -272,3 +272,103 @@ describe('labels.errorTypes membership fees', () => {
             .toBe('Kampaň volby členského příspěvku nebyla nalezena.');
     });
 });
+
+
+describe('labels.errorTypes members, events and calendar', () => {
+    const text = (type: keyof typeof labels.errorTypes, params: Record<string, unknown> = {}) =>
+        labels.errorTypes[type](params);
+
+    it.each([
+        ['/errors/member-not-found', 'Člen nebyl nalezen.'],
+        ['/errors/legal-guardian-not-found', 'Zákonný zástupce nebyl nalezen.'],
+        ['/errors/email-required', 'Vyplňte e-mail.'],
+        ['/errors/phone-required', 'Vyplňte telefon.'],
+        ['/errors/address-required', 'Vyplňte adresu.'],
+        ['/errors/birth-number-required', 'Vyplňte rodné číslo.'],
+        ['/errors/guardian-required', 'Nezletilý člen musí mít alespoň jednoho zákonného zástupce.'],
+        ['/errors/birth-number-not-allowed', 'Rodné číslo lze zadat jen u členů z České republiky.'],
+        ['/errors/invalid-birth-number', 'Rodné číslo není platné.'],
+        ['/errors/invalid-bank-account-number', 'Číslo bankovního účtu není platné.'],
+        ['/errors/invalid-email-address', 'E-mailová adresa není platná.'],
+        ['/errors/invalid-phone-number', 'Telefonní číslo není platné.'],
+        ['/errors/date-of-birth-in-future', 'Datum narození nesmí být v budoucnosti.'],
+        ['/errors/medical-course-validity-not-after-completion', 'Platnost zdravotního kurzu musí být později než datum jeho absolvování.'],
+        ['/errors/member-already-suspended', 'Člen je již pozastaven.'],
+        ['/errors/member-already-active', 'Člen je již aktivní.'],
+        ['/errors/suspension-blocked', 'Členství nelze pozastavit, dokud není vyřešeno vlastnictví skupin nebo dluh člena.'],
+        ['/errors/adult-member-cannot-have-guardians', 'Zletilý člen nemůže mít zákonné zástupce.'],
+        ['/errors/minor-cannot-take-over-guardian', 'Nezletilý člen nemůže převzít roli zákonného zástupce.'],
+        ['/errors/account-activation-not-available', 'Aktivaci účtu nelze pro tohoto člena provést.'],
+        ['/errors/guardian-not-found', 'Vybraný uživatel nemůže být zákonným zástupcem.'],
+        ['/errors/legal-guardian-group-without-guardian', 'Skupina zákonných zástupců musí mít alespoň jednoho zákonného zástupce.'],
+        ['/errors/only-minors-allowed', 'Tuto akci lze provést jen u nezletilých členů.'],
+        ['/errors/event-not-found', 'Akce nebyla nalezena.'],
+        ['/errors/discipline-not-found', 'Disciplína nebyla nalezena.'],
+        ['/errors/event-type-not-found', 'Typ akce nebyl nalezen.'],
+        ['/errors/category-preset-not-found', 'Předvolba kategorií nebyla nalezena.'],
+        ['/errors/registration-not-found', 'Přihláška nebyla nalezena.'],
+        ['/errors/coordinator-not-found', 'Koordinátor nebyl nalezen.'],
+        ['/errors/member-registration-blocked', 'Přihlášení člena na akci není možné.'],
+        ['/errors/duplicate-category-oris-id', 'ORIS ID kategorie je v akci uvedeno vícekrát.'],
+        ['/errors/registration-deadline-after-event-date', 'Termín přihlášek nesmí být po datu konání akce.'],
+        ['/errors/finished-event-cannot-be-updated', 'Ukončenou akci nelze upravovat.'],
+        ['/errors/cancelled-event-cannot-be-updated', 'Zrušenou akci nelze upravovat.'],
+        ['/errors/category-required', 'Vyberte kategorii.'],
+        ['/errors/category-not-available', 'Vybraná kategorie není na této akci k dispozici.'],
+        ['/errors/event-not-active-for-registration', 'Na tuto akci se nelze přihlásit, protože není aktivní.'],
+        ['/errors/registration-deadline-passed', 'Termín přihlášek na tuto akci již vypršel.'],
+        ['/errors/registration-closed-after-event-date', 'Přihlášky na akci jsou uzavřeny, protože akce již proběhla.'],
+        ['/errors/si-card-rental-not-allowed', 'Půjčení SI čipu není u této akce možné.'],
+        ['/errors/si-card-number-required', 'Vyplňte číslo SI čipu.'],
+        ['/errors/unknown-event-category', 'Akce neobsahuje zadanou kategorii.'],
+        ['/errors/accommodation-list-access-denied', 'K seznamu ubytování nemáte přístup.'],
+        ['/errors/shared-accommodation-not-offered', 'Sdílené ubytování u této akce není nabízeno.'],
+        ['/errors/calendar-item-not-found', 'Položka kalendáře nebyla nalezena.'],
+        ['/errors/calendar-item-read-only', 'Tuto položku kalendáře nelze upravovat.'],
+        ['/errors/calendar-item-end-before-start', 'Datum konce nesmí být před datem začátku.'],
+    ] as const)('has a fixed text for %s', (type, expected) => {
+        expect(text(type)).toBe(expected);
+    });
+
+    it.each([
+        ['/errors/registration-number-already-in-use', {registrationNumber: 'ZBM9500'}, 'Registrační číslo ZBM9500 již používá jiný člen.'],
+        ['/errors/registration-number-already-in-use', {}, 'Registrační číslo již používá jiný člen.'],
+        ['/errors/legal-guardian-email-already-in-use', {email: 'a@b.cz'}, 'E-mail a@b.cz již používá jiný uživatel.'],
+        ['/errors/legal-guardian-email-already-in-use', {}, 'Tento e-mail již používá jiný uživatel.'],
+        ['/errors/oris-event-not-found', {orisId: 123}, 'Akce s ORIS ID 123 nebyla v ORISu nalezena.'],
+        ['/errors/oris-event-not-found', {}, 'Akce nebyla v ORISu nalezena.'],
+        ['/errors/oris-discipline-not-found', {orisId: 'SB'}, 'Disciplína s ORIS ID SB nebyla v ORISu nalezena.'],
+        ['/errors/oris-discipline-not-found', {}, 'Disciplína nebyla v ORISu nalezena.'],
+        ['/errors/duplicate-registration', {eventName: 'Závod'}, 'Na akci „Závod“ již existuje přihláška.'],
+        ['/errors/duplicate-registration', {}, 'Na tuto akci již existuje přihláška.'],
+        ['/errors/discipline-not-editable', {disciplineName: 'Sprint'}, 'Disciplínu „Sprint“ nelze upravit.'],
+        ['/errors/discipline-not-editable', {}, 'Disciplínu nelze upravit.'],
+        ['/errors/discipline-not-archived', {disciplineName: 'Sprint'}, 'Disciplína „Sprint“ není archivovaná.'],
+        ['/errors/discipline-not-archived', {}, 'Disciplína není archivovaná.'],
+        ['/errors/oris-discipline-already-mapped', {eventTypeName: 'Závod'}, 'Tato disciplína z ORISu je již přiřazena typu akce „Závod“.'],
+        ['/errors/oris-discipline-already-mapped', {}, 'Tato disciplína z ORISu je již přiřazena jinému typu akce.'],
+        ['/errors/event-type-in-use', {eventNames: ['A', 'B']}, 'Typ akce nelze smazat, používají ho akce: A, B.'],
+        ['/errors/event-type-in-use', {}, 'Typ akce nelze smazat, protože ho používají akce.'],
+        ['/errors/event-type-in-use', {eventNames: []}, 'Typ akce nelze smazat, protože ho používají akce.'],
+        ['/errors/event-type-name-already-exists', {name: 'Závod'}, 'Typ akce s názvem „Závod“ již existuje.'],
+        ['/errors/event-type-name-already-exists', {}, 'Typ akce s tímto názvem již existuje.'],
+        ['/errors/event-sync-needs-resolution', {orisId: 7}, 'Synchronizace akce s ORIS ID 7 vyžaduje ruční vyřešení rozdílů.'],
+        ['/errors/event-sync-needs-resolution', {}, 'Synchronizace akce vyžaduje ruční vyřešení rozdílů.'],
+        ['/errors/duplicate-category-name', {categoryName: 'H21'}, 'Kategorie „H21“ je v akci uvedena vícekrát.'],
+        ['/errors/duplicate-category-name', {}, 'Název kategorie je v akci uveden vícekrát.'],
+        ['/errors/invalid-event-status-transition', {from: 'DRAFT', to: 'FINISHED'}, 'Stav akce nelze změnit z „Koncept“ na „Ukončeno“.'],
+        ['/errors/invalid-event-status-transition', {from: 'CANCELLED', to: 'ACTIVE'}, 'Stav akce nelze změnit z „Zrušeno“ na „Aktivní“.'],
+        ['/errors/invalid-event-status-transition', {from: 'X', to: 'ACTIVE'}, 'Stav akce nelze v tuto chvíli změnit.'],
+        ['/errors/invalid-event-status-transition', {}, 'Stav akce nelze v tuto chvíli změnit.'],
+        ['/errors/invalid-oris-registration-deadlines', {orisId: 9}, 'Termíny přihlášek akce s ORIS ID 9 v ORISu nejsou platné.'],
+        ['/errors/invalid-oris-registration-deadlines', {}, 'Termíny přihlášek akce v ORISu nejsou platné.'],
+        ['/errors/date-range-too-long', {maxDays: 1}, 'Zvolené období je příliš dlouhé, nejvýše může mít 1 den.'],
+        ['/errors/date-range-too-long', {maxDays: 3}, 'Zvolené období je příliš dlouhé, nejvýše může mít 3 dny.'],
+        ['/errors/date-range-too-long', {maxDays: 366}, 'Zvolené období je příliš dlouhé, nejvýše může mít 366 dnů.'],
+        ['/errors/date-range-too-long', {}, 'Zvolené období je příliš dlouhé.'],
+        ['/errors/date-range-too-long', {maxDays: 'abc'}, 'Zvolené období je příliš dlouhé.'],
+        ['/errors/event-type-in-use', {eventNames: ['A', 5, null, 'B']}, 'Typ akce nelze smazat, používají ho akce: A, B.'],
+    ] as const)('renders %s with params %j', (type, params, expected) => {
+        expect(text(type, params)).toBe(expected);
+    });
+});

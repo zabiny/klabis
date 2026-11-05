@@ -62,7 +62,7 @@ public enum EventStatus {
      *
      * @param newStatus the new status to transition to
      * @throws IllegalArgumentException if newStatus is null
-     * @throws IllegalStateException    if transition is not allowed
+     * @throws InvalidEventStatusTransitionException if transition is not allowed
      */
     public void validateTransition(EventStatus newStatus) {
         if (newStatus == null) {
@@ -70,9 +70,7 @@ public enum EventStatus {
         }
 
         if (!canTransitionTo(newStatus)) {
-            throw new IllegalStateException(
-                    "Cannot transition from %s to %s".formatted(this, newStatus)
-            );
+            throw new InvalidEventStatusTransitionException(this, newStatus);
         }
     }
 }

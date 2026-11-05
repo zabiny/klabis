@@ -8,6 +8,7 @@ import com.klabis.members.domain.BirthNumber;
 import com.klabis.members.domain.EmailAddress;
 import com.klabis.members.domain.PersonalInformation;
 import com.klabis.members.domain.PhoneNumber;
+import com.klabis.members.infrastructure.restapi.InvalidFieldValueException.Kind;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 
@@ -33,10 +34,10 @@ class RegisterNewMemberConverter implements Converter<RegisterMemberRequestWithP
                         request.dateOfBirth(), request.nationality(), gender),
                 request.address() != null ? new Address(request.address().street(), request.address().city(),
                         request.address().postalCode(), request.address().country()) : null,
-                hasText(request.email()) ? EmailAddress.of(request.email()) : null,
-                hasText(request.phone()) ? PhoneNumber.of(request.phone()) : null,
-                request.birthNumber() != null ? BirthNumber.of(request.birthNumber()) : null,
-                request.bankAccountNumber() != null ? BankAccountNumber.of(request.bankAccountNumber()) : null,
+                hasText(request.email()) ? InvalidFieldValueException.parse(Kind.EMAIL, () -> EmailAddress.of(request.email())) : null,
+                hasText(request.phone()) ? InvalidFieldValueException.parse(Kind.PHONE, () -> PhoneNumber.of(request.phone())) : null,
+                request.birthNumber() != null ? InvalidFieldValueException.parse(Kind.BIRTH_NUMBER, () -> BirthNumber.of(request.birthNumber())) : null,
+                request.bankAccountNumber() != null ? InvalidFieldValueException.parse(Kind.BANK_ACCOUNT_NUMBER, () -> BankAccountNumber.of(request.bankAccountNumber())) : null,
                 source.registeredBy(),
                 GuardianInputMapper.toInputs(request.legalGuardians()),
                 request.legalGuardianUserId() != null ? new UserId(request.legalGuardianUserId()) : null

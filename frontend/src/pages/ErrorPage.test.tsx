@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {ErrorPage} from './ErrorPage';
+import {ApiError} from '../api/apiError';
 
 vi.mock('./NotFoundPage', () => ({
     default: () => <div data-testid="not-found-page">404 Not Found</div>,
@@ -39,10 +40,9 @@ describe('ErrorPage', () => {
         });
 
         it('renders generic error page for 500 error', () => {
-            const error = Object.assign(new Error('Internal server error'), {responseStatus: 500});
-            renderPage(error);
+            renderPage(new ApiError(500));
             expect(screen.getByText(/něco se pokazilo/i)).toBeInTheDocument();
-            expect(screen.getByText('Internal server error')).toBeInTheDocument();
+            expect(screen.getByText('Došlo k neočekávané chybě. Zkuste to prosím znovu.')).toBeInTheDocument();
         });
     });
 
@@ -60,7 +60,18 @@ describe('ErrorPage', () => {
         it('renders generic error page for unknown error message', () => {
             renderPage(new Error('Network timeout'));
             expect(screen.getByText(/něco se pokazilo/i)).toBeInTheDocument();
-            expect(screen.getByText('Network timeout')).toBeInTheDocument();
+            expect(screen.getByText('Došlo k neočekávané chybě. Zkuste to prosím znovu.')).toBeInTheDocument();
+            expect(screen.queryByText('Network timeout')).not.toBeInTheDocument();
+        });
+
+        it('renders NotFoundPage for a typed error with status 404', () => {
+            renderPage(new ApiError(404, {type: '/errors/event-not-found'}));
+            expect(screen.getByTestId('not-found-page')).toBeInTheDocument();
+        });
+
+        it('renders the Czech text of a typed error', () => {
+            renderPage(new ApiError(409, {type: '/errors/finished-event-cannot-be-updated'}));
+            expect(screen.getByText('Ukončenou akci nelze upravovat.')).toBeInTheDocument();
         });
     });
 

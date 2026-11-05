@@ -10,6 +10,13 @@ export type ErrorParams = Record<string, unknown>;
 
 const UNEXPECTED_ERROR_TEXT = 'Došlo k neočekávané chybě. Zkuste to prosím znovu.';
 
+const eventStatusNames = {
+    ACTIVE: 'Aktivní',
+    FINISHED: 'Ukončeno',
+    CANCELLED: 'Zrušeno',
+    DRAFT: 'Koncept',
+} as const;
+
 const errorTypes: Record<ErrorType, (params: ErrorParams) => string> = {
     '/errors/validation-failed': () => 'Zadané údaje nejsou platné. Zkontrolujte formulář a zkuste to znovu.',
     '/errors/invalid-request': () => 'Požadavek se nepodařilo zpracovat. Zkontrolujte zadané údaje a zkuste to znovu.',
@@ -48,6 +55,119 @@ const errorTypes: Record<ErrorType, (params: ErrorParams) => string> = {
         year !== undefined && year !== null
             ? `Kampaň volby členského příspěvku pro rok ${year} nebyla nalezena.`
             : 'Kampaň volby členského příspěvku nebyla nalezena.',
+    '/errors/member-not-found': () => 'Člen nebyl nalezen.',
+    '/errors/legal-guardian-not-found': () => 'Zákonný zástupce nebyl nalezen.',
+    '/errors/email-required': () => 'Vyplňte e-mail.',
+    '/errors/phone-required': () => 'Vyplňte telefon.',
+    '/errors/address-required': () => 'Vyplňte adresu.',
+    '/errors/birth-number-required': () => 'Vyplňte rodné číslo.',
+    '/errors/guardian-required': () => 'Nezletilý člen musí mít alespoň jednoho zákonného zástupce.',
+    '/errors/birth-number-not-allowed': () => 'Rodné číslo lze zadat jen u členů z České republiky.',
+    '/errors/invalid-birth-number': () => 'Rodné číslo není platné.',
+    '/errors/invalid-bank-account-number': () => 'Číslo bankovního účtu není platné.',
+    '/errors/invalid-email-address': () => 'E-mailová adresa není platná.',
+    '/errors/invalid-phone-number': () => 'Telefonní číslo není platné.',
+    '/errors/date-of-birth-in-future': () => 'Datum narození nesmí být v budoucnosti.',
+    '/errors/medical-course-validity-not-after-completion': () =>
+        'Platnost zdravotního kurzu musí být později než datum jeho absolvování.',
+    '/errors/member-already-suspended': () => 'Člen je již pozastaven.',
+    '/errors/member-already-active': () => 'Člen je již aktivní.',
+    '/errors/suspension-blocked': () => 'Členství nelze pozastavit, dokud není vyřešeno vlastnictví skupin nebo dluh člena.',
+    '/errors/adult-member-cannot-have-guardians': () => 'Zletilý člen nemůže mít zákonné zástupce.',
+    '/errors/minor-cannot-take-over-guardian': () => 'Nezletilý člen nemůže převzít roli zákonného zástupce.',
+    '/errors/registration-number-already-in-use': ({registrationNumber}) =>
+        registrationNumber
+            ? `Registrační číslo ${registrationNumber} již používá jiný člen.`
+            : 'Registrační číslo již používá jiný člen.',
+    '/errors/account-activation-not-available': () => 'Aktivaci účtu nelze pro tohoto člena provést.',
+    '/errors/legal-guardian-email-already-in-use': ({email}) =>
+        email
+            ? `E-mail ${email} již používá jiný uživatel.`
+            : 'Tento e-mail již používá jiný uživatel.',
+    '/errors/guardian-not-found': () => 'Vybraný uživatel nemůže být zákonným zástupcem.',
+    '/errors/legal-guardian-group-without-guardian': () => 'Skupina zákonných zástupců musí mít alespoň jednoho zákonného zástupce.',
+    '/errors/only-minors-allowed': () => 'Tuto akci lze provést jen u nezletilých členů.',
+    '/errors/event-not-found': () => 'Akce nebyla nalezena.',
+    '/errors/oris-event-not-found': ({orisId}) =>
+        orisId !== undefined && orisId !== null
+            ? `Akce s ORIS ID ${orisId} nebyla v ORISu nalezena.`
+            : 'Akce nebyla v ORISu nalezena.',
+    '/errors/discipline-not-found': () => 'Disciplína nebyla nalezena.',
+    '/errors/oris-discipline-not-found': ({orisId}) =>
+        orisId !== undefined && orisId !== null
+            ? `Disciplína s ORIS ID ${orisId} nebyla v ORISu nalezena.`
+            : 'Disciplína nebyla v ORISu nalezena.',
+    '/errors/event-type-not-found': () => 'Typ akce nebyl nalezen.',
+    '/errors/category-preset-not-found': () => 'Předvolba kategorií nebyla nalezena.',
+    '/errors/registration-not-found': () => 'Přihláška nebyla nalezena.',
+    '/errors/coordinator-not-found': () => 'Koordinátor nebyl nalezen.',
+    '/errors/duplicate-registration': ({eventName}) =>
+        eventName
+            ? `Na akci „${eventName}“ již existuje přihláška.`
+            : 'Na tuto akci již existuje přihláška.',
+    '/errors/discipline-not-editable': ({disciplineName}) =>
+        disciplineName
+            ? `Disciplínu „${disciplineName}“ nelze upravit.`
+            : 'Disciplínu nelze upravit.',
+    '/errors/discipline-not-archived': ({disciplineName}) =>
+        disciplineName
+            ? `Disciplína „${disciplineName}“ není archivovaná.`
+            : 'Disciplína není archivovaná.',
+    '/errors/oris-discipline-already-mapped': ({eventTypeName}) =>
+        eventTypeName
+            ? `Tato disciplína z ORISu je již přiřazena typu akce „${eventTypeName}“.`
+            : 'Tato disciplína z ORISu je již přiřazena jinému typu akce.',
+    '/errors/event-type-in-use': ({eventNames}) => {
+        const names = Array.isArray(eventNames) ? eventNames.filter((n): n is string => typeof n === 'string' && n !== '') : [];
+        return names.length > 0
+            ? `Typ akce nelze smazat, používají ho akce: ${names.join(', ')}.`
+            : 'Typ akce nelze smazat, protože ho používají akce.';
+    },
+    '/errors/event-type-name-already-exists': ({name}) =>
+        name
+            ? `Typ akce s názvem „${name}“ již existuje.`
+            : 'Typ akce s tímto názvem již existuje.',
+    '/errors/event-sync-needs-resolution': ({orisId}) =>
+        orisId !== undefined && orisId !== null
+            ? `Synchronizace akce s ORIS ID ${orisId} vyžaduje ruční vyřešení rozdílů.`
+            : 'Synchronizace akce vyžaduje ruční vyřešení rozdílů.',
+    '/errors/member-registration-blocked': () => 'Přihlášení člena na akci není možné.',
+    '/errors/duplicate-category-name': ({categoryName}) =>
+        categoryName
+            ? `Kategorie „${categoryName}“ je v akci uvedena vícekrát.`
+            : 'Název kategorie je v akci uveden vícekrát.',
+    '/errors/duplicate-category-oris-id': () => 'ORIS ID kategorie je v akci uvedeno vícekrát.',
+    '/errors/registration-deadline-after-event-date': () => 'Termín přihlášek nesmí být po datu konání akce.',
+    '/errors/finished-event-cannot-be-updated': () => 'Ukončenou akci nelze upravovat.',
+    '/errors/cancelled-event-cannot-be-updated': () => 'Zrušenou akci nelze upravovat.',
+    '/errors/category-required': () => 'Vyberte kategorii.',
+    '/errors/category-not-available': () => 'Vybraná kategorie není na této akci k dispozici.',
+    '/errors/event-not-active-for-registration': () => 'Na tuto akci se nelze přihlásit, protože není aktivní.',
+    '/errors/registration-deadline-passed': () => 'Termín přihlášek na tuto akci již vypršel.',
+    '/errors/registration-closed-after-event-date': () => 'Přihlášky na akci jsou uzavřeny, protože akce již proběhla.',
+    '/errors/si-card-rental-not-allowed': () => 'Půjčení SI čipu není u této akce možné.',
+    '/errors/si-card-number-required': () => 'Vyplňte číslo SI čipu.',
+    '/errors/invalid-event-status-transition': ({from, to}) => {
+        const fromName = typeof from === 'string' && Object.hasOwn(eventStatusNames, from) ? eventStatusNames[from as keyof typeof eventStatusNames] : undefined;
+        const toName = typeof to === 'string' && Object.hasOwn(eventStatusNames, to) ? eventStatusNames[to as keyof typeof eventStatusNames] : undefined;
+        return fromName && toName
+            ? `Stav akce nelze změnit z „${fromName}“ na „${toName}“.`
+            : 'Stav akce nelze v tuto chvíli změnit.';
+    },
+    '/errors/unknown-event-category': () => 'Akce neobsahuje zadanou kategorii.',
+    '/errors/invalid-oris-registration-deadlines': ({orisId}) =>
+        orisId !== undefined && orisId !== null
+            ? `Termíny přihlášek akce s ORIS ID ${orisId} v ORISu nejsou platné.`
+            : 'Termíny přihlášek akce v ORISu nejsou platné.',
+    '/errors/accommodation-list-access-denied': () => 'K seznamu ubytování nemáte přístup.',
+    '/errors/shared-accommodation-not-offered': () => 'Sdílené ubytování u této akce není nabízeno.',
+    '/errors/calendar-item-not-found': () => 'Položka kalendáře nebyla nalezena.',
+    '/errors/calendar-item-read-only': () => 'Tuto položku kalendáře nelze upravovat.',
+    '/errors/calendar-item-end-before-start': () => 'Datum konce nesmí být před datem začátku.',
+    '/errors/date-range-too-long': ({maxDays}) =>
+        maxDays !== undefined && maxDays !== null && maxDays !== '' && Number.isFinite(Number(maxDays))
+            ? `Zvolené období je příliš dlouhé, nejvýše může mít ${maxDays} ${czechPlural(Number(maxDays), 'den', 'dny', 'dnů')}.`
+            : 'Zvolené období je příliš dlouhé.',
 };
 
 export const labels = {
@@ -412,12 +532,7 @@ export const labels = {
             members: 'Člen',
             'event-registrations': 'Přihláška na akci',
         },
-        eventStatus: {
-            ACTIVE: 'Aktivní',
-            FINISHED: 'Ukončeno',
-            CANCELLED: 'Zrušeno',
-            DRAFT: 'Koncept',
-        },
+        eventStatus: eventStatusNames,
         memberStatus: {
             active: 'Aktivní',
             inactive: 'Neaktivní',

@@ -1,6 +1,6 @@
 import {type ReactElement, useCallback, useEffect, useMemo, useState} from 'react';
 import {type LucideIcon, Calendar, Check, FileText, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
-import {getDialogTitleLabel, getFieldLabel, labels} from '../../localization';
+import {describeError, getDialogTitleLabel, getFieldLabel, labels} from '../../localization';
 import {renderYesNo} from '../../utils/formatters';
 import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from '../UI';
 import {type RegistrationDialogData, type RegistrationDialogMode, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
@@ -126,7 +126,11 @@ export const EventRegistrationDialog = ({
 
     const handleSubmitError = (submitError: unknown): boolean => {
         if (submitError instanceof ApiError) {
-            setServerFieldErrors(submitError.fieldErrors);
+            setServerFieldErrors(
+                submitError.field && !submitError.fieldErrors[submitError.field]
+                    ? {...submitError.fieldErrors, [submitError.field]: describeError(submitError)}
+                    : submitError.fieldErrors
+            );
         }
         return false;
     };

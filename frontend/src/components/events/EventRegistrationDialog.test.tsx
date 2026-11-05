@@ -661,6 +661,47 @@ describe('EventRegistrationDialog', () => {
         expect(screen.getByLabelText(/SI čip/)).toHaveClass('border-error');
     });
 
+    it('shows the Czech text of a typed error bound to the SI chip field at that field', async () => {
+        const user = userEvent.setup();
+        mockRoutes((url, options) => {
+            if (options?.method === 'PUT') {
+                return Promise.reject(new ApiError(400, {type: '/errors/si-card-number-required', field: 'siCardNumber'}));
+            }
+            if (options?.method) return writeOk();
+            if (url === EVENT_URL) return jsonOk(eventData());
+            if (url === EDIT_URL) return jsonOk(editInitialData());
+            return jsonOk({});
+        });
+        renderDialog({registration: {href: EDIT_URL}});
+
+        await screen.findByLabelText(/SI čip/);
+        await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmEdit}));
+
+        expect(await screen.findByText('Vyplňte číslo SI čipu.')).toBeInTheDocument();
+        expect(screen.getByLabelText(/SI čip/)).toHaveClass('border-error');
+    });
+
+    it('shows the Czech text of a duplicate registration in the alert', async () => {
+        const user = userEvent.setup();
+        mockRoutes((url, options) => {
+            if (options?.method === 'POST') {
+                return Promise.reject(new ApiError(409, {type: '/errors/duplicate-registration', params: {eventName: 'Jarní závod'}}));
+            }
+            if (options?.method) return writeOk();
+            if (url === EVENT_URL) return jsonOk(eventData());
+            if (url === PREFILL_URL) return jsonOk(prefillData({siCardNumber: ''}));
+            return jsonOk({});
+        });
+        renderDialog();
+
+        const siInput = await screen.findByLabelText(/SI čip/);
+        await user.type(siInput, '1234567');
+        await user.selectOptions(screen.getByLabelText(/Kategorie/), 'cat-1');
+        await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmNew}));
+
+        expect(await screen.findByText('Na akci „Jarní závod“ již existuje přihláška.')).toBeInTheDocument();
+    });
+
     it('shows alert with Czech message for non-validation errors and keeps entered data', async () => {
         const user = userEvent.setup();
         mockRoutes((url, options) => {

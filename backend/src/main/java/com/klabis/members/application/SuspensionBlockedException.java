@@ -1,5 +1,7 @@
 package com.klabis.members.application;
 
+import com.klabis.common.exceptions.ConflictException;
+import com.klabis.common.exceptions.UserFacingError;
 import com.klabis.members.OwnedGroup;
 
 import java.util.List;
@@ -10,7 +12,7 @@ import java.util.List;
  * checks always run, so both blockers are reported together in one response instead of forcing
  * the caller to fix one, resubmit, and only then discover the other.
  */
-public class SuspensionBlockedException extends RuntimeException {
+public class SuspensionBlockedException extends ConflictException implements UserFacingError {
 
     private final List<OwnedGroup> blockingGroups;
     private final MemberFinancialStatePort.MemberFinancialSnapshot debtSnapshot;

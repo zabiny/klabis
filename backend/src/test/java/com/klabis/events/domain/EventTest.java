@@ -339,7 +339,7 @@ class EventTest {
             EventAssert.assertThat(event).hasStatus(EventStatus.DRAFT);
 
             assertThatThrownBy(() -> event.finish())
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InvalidEventStatusTransitionException.class)
                     .hasMessageContaining("Cannot transition from DRAFT to FINISHED");
         }
 
@@ -363,7 +363,7 @@ class EventTest {
             setup.accept(event);
 
             assertThatThrownBy(() -> action.accept(event))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InvalidEventStatusTransitionException.class)
                     .hasMessageContaining(expectedMessage);
         }
 
@@ -1447,7 +1447,7 @@ class EventTest {
             SiCardNumber siCardNumber = SiCardNumber.of("123456");
 
             assertThatThrownBy(() -> register(event, memberId, siCardNumber, null))
-                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .isInstanceOf(RegistrationNotOpenException.class)
                     .hasMessageContaining("Registration is only allowed for ACTIVE events");
         }
 
@@ -1661,7 +1661,7 @@ class EventTest {
             MemberId memberId = new MemberId(UUID.randomUUID());
 
             assertThatThrownBy(() -> register(event, memberId, SiCardNumber.of("123456"), null))
-                    .isInstanceOf(BusinessRuleViolationException.class)
+                    .isInstanceOf(CategoryRequiredException.class)
                     .hasMessageContaining("Category is required");
         }
 
