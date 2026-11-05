@@ -1,21 +1,15 @@
 import type {ReactElement} from 'react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
-import type {HalFormsTemplate, ListGroupRulesResource, OptionItem} from '../../api';
-import type {components} from '../../api/klabisApi';
+import type {HalFormsTemplate, ListGroupRulesResource, ListRulesItemResource, ListRulesResource, OptionItem} from '../../api';
 import {labels} from '../../localization';
 import {Pencil, Plus, X} from 'lucide-react';
 import {useEventTypes, type EventTypeCatalogItem} from '../../hooks/useEventTypes.ts';
 import {CoParticipationRuleTypeBadge} from './CoParticipationRuleTypeBadge.tsx';
 
-// PaymentRuleResponse payload + the per-row _links / _templates the backend adds at runtime
-// (editRule, removeRule) which the generated schema does not describe.
-type PaymentRuleItem = components['schemas']['PaymentRuleResponse'] & {
-    _links?: { self?: { href: string } };
-    _templates?: Record<string, HalFormsTemplate>;
-};
+type PaymentRuleItem = NonNullable<NonNullable<RulesCollection['_embedded']>['paymentRuleResponseList']>[number] | ListRulesItemResource;
 
-type RulesCollection = ListGroupRulesResource;
+type RulesCollection = ListRulesResource | ListGroupRulesResource;
 
 const RuleRow = ({rule, getRankingLabel, getEventTypeById, onEdit, onRemove}: {
     rule: PaymentRuleItem;

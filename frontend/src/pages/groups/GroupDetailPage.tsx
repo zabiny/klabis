@@ -5,8 +5,12 @@ import {Alert, Button, Card, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
 import {createMemberFilteredFactory} from '../../components/KlabisFieldsFactory.tsx';
-import type {GetGroupResource, HalFormsTemplate, HalResourceLinks, HalResponse} from '../../api';
-import type {PendingInvitation} from './types.ts';
+import type {
+    GetGroupOwnersItemResource,
+    GetGroupPendingInvitationsItemResource,
+    GetGroupResource,
+    HalFormsTemplate,
+} from '../../api';
 import {labels} from '../../localization';
 import {Ban, Crown, LogOut, Pencil, Trash2, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
@@ -15,34 +19,6 @@ import {MemberNameWithRegNumber} from '../../components/members/MemberNameWithRe
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import {DelegatedAuthoritiesNotice, DelegatedAuthoritiesReadOnly} from '../../components/groups/DelegatedAuthorities.tsx';
 import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
-
-interface GroupOwner extends HalResponse {
-    memberId: string;
-    _links: {
-        member: HalResourceLinks;
-        self?: HalResourceLinks;
-    };
-}
-
-interface GroupMember extends HalResponse {
-    memberId: string;
-    joinedAt: string;
-    _links: {
-        self: HalResourceLinks;
-        member: HalResourceLinks;
-    };
-}
-
-// GetGroupResource types the payload (id, name, _templates) from the spec. Its
-// owners/members/pendingInvitations arrays carry per-row _links / _templates added at runtime
-// by the backend (member link, removeGroupOwner, removeGroupMember, cancelInvitation) that the
-// generated schema does not describe, so those rows are read through the view types above and
-// in ./types.ts.
-type GroupDetail = Omit<GetGroupResource, 'owners' | 'members' | 'pendingInvitations'> & {
-    owners?: GroupOwner[];
-    members?: GroupMember[];
-    pendingInvitations?: PendingInvitation[];
-};
 
 // Spring HATEOAS does not emit properties for DELETE affordances. The backend does
 // accept a reason body — inject the property client-side so the form renders the field.
@@ -58,7 +34,7 @@ const withReasonProperty = (template: HalFormsTemplate): HalFormsTemplate => {
     };
 };
 
-const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactElement => {
+const GroupDetailContent = ({resourceData}: {resourceData: GetGroupResource}): ReactElement => {
     const navigate = useNavigate();
     const [isEditingName, setIsEditingName] = useState(false);
     const currentMemberId = useAuth().getUser()?.memberId ?? null;
@@ -68,7 +44,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
     const pendingInvitations = resourceData.pendingInvitations ?? [];
 
     const currentMemberIds = useMemo(
-        () => (resourceData.members ?? []).map(m => m.memberId),
+        () => (resourceData.members ?? []).flatMap(m => m.memberId ? [m.memberId] : []),
         [resourceData.members]
     );
     const addMemberFactory = useMemo(() => createMemberFilteredFactory(currentMemberIds), [currentMemberIds]);
@@ -113,7 +89,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
         navigateOnSuccess: false,
     });
 
-    const openRemoveOwner = (owner: GroupOwner) => {
+    const openRemoveOwner = (owner: GetGroupOwnersItemResource) => {
         const isSelf = owner.memberId === currentMemberId;
         removeOwnerDialog.open(owner, undefined, {
             note: <span className="text-sm text-text-secondary">
@@ -133,7 +109,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
         onSubmitSuccess: () => navigate('/groups'),
     });
 
-    const openCancelInvitation = (invitation: PendingInvitation) => {
+    const openCancelInvitation = (invitation: GetGroupPendingInvitationsItemResource) => {
         const template = invitation._templates?.cancelInvitation;
         if (!template) return;
         cancelInvitationDialog.open({
@@ -224,8 +200,8 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                         {(resourceData.owners ?? []).map((owner) => (
                             <MemberRowWithRemove
                                 key={owner.memberId}
-                                memberId={owner.memberId}
-                                memberLink={owner._links.member}
+                                memberId={owner.memberId ?? ''}
+                                memberLink={owner._links?.member}
                                 removeAriaLabel={labels.templates.removeOwner}
                                 onRemove={removeOwnerDialog.availableOn(owner) ? () => openRemoveOwner(owner) : undefined}
                             />
@@ -297,9 +273,9 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
                 <GroupMembersTable
                     emptyMessage="Skupina nemá žádné členy."
                     members={(resourceData.members ?? []).map((member) => ({
-                        memberId: member.memberId,
-                        joinedAt: member.joinedAt,
-                        memberLink: member._links.member,
+                        memberId: member.memberId ?? '',
+                        joinedAt: member.joinedAt ?? '',
+                        memberLink: member._links?.member,
                         removeAriaLabel: labels.templates.removeGroupMember,
                         onRemove: removeMemberDialog.availableOn(member) ? () => removeMemberDialog.open(member) : undefined,
                     }))}
@@ -318,7 +294,7 @@ const GroupDetailContent = ({resourceData}: {resourceData: GroupDetail}): ReactE
 };
 
 export const GroupDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<GroupDetail>();
+    const {resourceData, isLoading, error} = useHalPageData<GetGroupResource>();
 
     if (isLoading) {
         return <Skeleton/>;

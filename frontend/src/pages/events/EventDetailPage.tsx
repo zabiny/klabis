@@ -12,7 +12,7 @@ import {HalRouteProvider, HalSubresourceProvider} from '../../contexts/HalRouteC
 import {useHalRoute} from '../../contexts/halRouteContext.ts';
 import {TableCell} from '../../components/KlabisTable';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils.ts';
-import type {EntityModel, GetEventResource, Link as HalLink} from '../../api';
+import type {GetEventItemResource, GetEventResource, Link as HalLink} from '../../api';
 import type {components} from '../../api/klabisApi';
 import type {HalFormsTemplate} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
@@ -35,11 +35,7 @@ type EventCategory = components['schemas']['EventCategoryDto'];
 
 type EventDetail = GetEventResource;
 
-interface RegistrationData extends EntityModel<components['schemas']['RegistrationSummaryDto'] & {
-    [key: string]: unknown;
-}> {
-    _templates?: Record<string, HalFormsTemplate>;
-}
+type RegistrationData = GetEventItemResource;
 
 const STATUS_VARIANT: Record<string, 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info'> = {
     DRAFT: 'default',

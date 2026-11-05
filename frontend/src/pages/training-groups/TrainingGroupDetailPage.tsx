@@ -5,24 +5,28 @@ import {Alert, Button, Card, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {useTemplateDialog} from '../../components/HalNavigator2/useTemplateDialog.tsx';
 import {createMemberFilteredFactory} from '../../components/KlabisFieldsFactory.tsx';
-import type {HalFormsTemplate, HalResourceLinks} from '../../api';
+import type {
+    GetTrainingGroupMembersItemResource,
+    GetTrainingGroupResource,
+    GetTrainingGroupTrainersItemResource,
+    HalFormsTemplate,
+} from '../../api';
 import {labels} from '../../localization';
 import {Pencil, Trash2, UserPlus} from 'lucide-react';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
-import type {TrainingGroupDetail, TrainingGroupMember, TrainingGroupTrainer} from './types.ts';
 
-const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroupDetail}): ReactElement => {
+const TrainingGroupDetailContent = ({resourceData}: {resourceData: GetTrainingGroupResource}): ReactElement => {
     const navigate = useNavigate();
     const [isEditing, setIsEditing] = useState(false);
 
     const editTemplate = resourceData._templates?.updateTrainingGroup ?? null;
 
-    const trainers: TrainingGroupTrainer[] = (resourceData.trainers as TrainingGroupTrainer[] | undefined) ?? [];
-    const members: TrainingGroupMember[] = (resourceData.members as TrainingGroupMember[] | undefined) ?? [];
+    const trainers: GetTrainingGroupTrainersItemResource[] = resourceData.trainers ?? [];
+    const members: GetTrainingGroupMembersItemResource[] = resourceData.members ?? [];
 
-    const trainerIds = useMemo(() => trainers.map(t => t.memberId), [trainers]);
-    const memberIds = useMemo(() => members.map(m => m.memberId), [members]);
+    const trainerIds = useMemo(() => trainers.flatMap(t => t.memberId ? [t.memberId] : []), [trainers]);
+    const memberIds = useMemo(() => members.flatMap(m => m.memberId ? [m.memberId] : []), [members]);
     // A trainer is never a trainee of the group they train, so the picker must not offer them.
     const nonTraineeIds = useMemo(() => [...memberIds, ...trainerIds], [memberIds, trainerIds]);
 
@@ -132,15 +136,15 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                     <dl>
                         {trainers.map((trainer) => {
                             const canRemove = removeTrainerDialog.availableOn(trainer) && trainer._links?.self;
-                            return trainer._links.member ? (
+                            return (
                                 <MemberRowWithRemove
                                     key={trainer.memberId}
-                                    memberId={trainer.memberId}
-                                    memberLink={trainer._links.member as HalResourceLinks}
+                                    memberId={trainer.memberId ?? ''}
+                                    memberLink={trainer._links?.member}
                                     removeAriaLabel={labels.templates.removeTrainer}
                                     onRemove={canRemove ? () => removeTrainerDialog.open(trainer) : undefined}
                                 />
-                            ) : null;
+                            );
                         })}
                     </dl>
                 </Card>
@@ -163,11 +167,11 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
                 <GroupMembersTable
                     emptyMessage="Skupina nemá žádné členy."
                     members={members.map((member) => ({
-                        memberId: member.memberId,
-                        joinedAt: member.joinedAt,
-                        memberLink: member._links.member as HalResourceLinks | undefined,
+                        memberId: member.memberId ?? '',
+                        joinedAt: member.joinedAt ?? '',
+                        memberLink: member._links?.member,
                         removeAriaLabel: labels.templates.removeTrainingGroupMember,
-                        onRemove: removeMemberDialog.availableOn(member) && member._links.self ? () => removeMemberDialog.open(member) : undefined,
+                        onRemove: removeMemberDialog.availableOn(member) && member._links?.self ? () => removeMemberDialog.open(member) : undefined,
                     }))}
                 />
             </div>
@@ -182,7 +186,7 @@ const TrainingGroupDetailContent = ({resourceData}: {resourceData: TrainingGroup
 };
 
 export const TrainingGroupDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error} = useHalPageData<TrainingGroupDetail>();
+    const {resourceData, isLoading, error} = useHalPageData<GetTrainingGroupResource>();
 
     if (isLoading) {
         return <Skeleton/>;

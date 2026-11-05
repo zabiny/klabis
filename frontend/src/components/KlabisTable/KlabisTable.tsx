@@ -7,6 +7,7 @@ import type {SortDirection} from '../../api'
 import {ErrorDisplay} from '../UI'
 import {useMediaQuery} from '../../hooks/useMediaQuery'
 import {RotateCcw} from 'lucide-react'
+import {rowKey, rowRecord} from './rowRecord'
 
 // Extract column definitions from children (TableCell components)
 const extractColumns = (children: ReactNode): ColumnDef[] => {
@@ -71,7 +72,7 @@ const ensurePageSizeInOptions = (pageSize: number, options: number[]): number[] 
  *   );
  * }
  */
-export const KlabisTable = <T extends Record<string, unknown>>({
+export const KlabisTable = <T extends object>({
                                                                    data,
                                                                    page,
                                                                    error,
@@ -110,7 +111,7 @@ export const KlabisTable = <T extends Record<string, unknown>>({
             if (col.name.startsWith('_')) return true
             if (col.alwaysVisible) return true
             return rows.some(row => {
-                const val = row[col.name]
+                const val = rowRecord(row)[col.name]
                 return val !== null && val !== undefined && val !== ''
             })
         })
@@ -240,9 +241,11 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                                 </tr>
                             ) : (
                                 <>
-                                    {rows.map((item, rowIndex) => (
+                                    {rows.map((item, rowIndex) => {
+                                        const record = rowRecord(item)
+                                        return (
                                         <tr
-                                            key={item.id ? String(item.id) : `row-${rowIndex}`}
+                                            key={rowKey(record, rowIndex, 'row')}
                                             className={`border-b border-border transition-colors ${
                                                 onRowClick
                                                     ? 'hover:bg-surface-base cursor-pointer'
@@ -260,12 +263,12 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                                             aria-label={`Row ${rowIndex + 1}`}
                                         >
                                             {effectiveColumns.map((col) => {
-                                                const value = item[col.name]
+                                                const value = record[col.name]
                                                 const renderFn = col.dataRender || defaultRenderCell
                                                 let cellContent: ReactNode
                                                 try {
                                                     cellContent = renderFn({
-                                                        item,
+                                                        item: record,
                                                         column: col.name,
                                                         value
                                                     })
@@ -284,7 +287,8 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                                                 )
                                             })}
                                         </tr>
-                                    ))}
+                                        )
+                                    })}
                                 </>
                             )}
                             </tbody>

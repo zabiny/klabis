@@ -40,7 +40,7 @@ export interface ColumnDef {
 
 // Pure UI table component props
 // This is the pure presentation component with no data fetching
-export interface KlabisTableProps<T extends Record<string, unknown>> {
+export interface KlabisTableProps<T extends object> {
     // Data (required - from parent)
     data: T[];
     page?: TablePageData;

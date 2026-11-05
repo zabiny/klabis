@@ -1,11 +1,11 @@
 import {useHalRoute} from '../contexts/halRouteContext';
-import type {HalResponse, Link} from '../api';
+import type {HalEnvelope, HalResponse, Link} from '../api';
 
 export interface UseHalPageDataReturn<T = HalResponse> {
     resourceData: T | null;
     isLoading: boolean;
     error: Error | null;
-    navigateToResource: (resource: HalResponse | Link, options?: { state?: unknown }) => void;
+    navigateToResource: (resource: HalEnvelope | Link, options?: { state?: unknown }) => void;
     getResourceLink: (linkName?: string) => Link | null;
     refetch: () => Promise<void>;
 }

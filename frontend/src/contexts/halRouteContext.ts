@@ -1,5 +1,5 @@
 import React, {useContext} from 'react';
-import type {HalResponse, Link} from '../api';
+import type {HalEnvelope, HalResponse, Link} from '../api';
 
 /**
  * Context value provided by HalRouteProvider
@@ -10,7 +10,7 @@ export interface HalRouteContextValue {
     resourceData: HalResponse | null;
 
     /** Can be used to perform navigation to given resource. It will be delegated to react router with 'self' link target extracted from resource **/
-    navigateToResource: (resource: HalResponse | Link, options?: { state?: unknown }) => void;
+    navigateToResource: (resource: HalEnvelope | Link, options?: { state?: unknown }) => void;
 
     /** Loading state while fetching from API */
     isLoading: boolean;

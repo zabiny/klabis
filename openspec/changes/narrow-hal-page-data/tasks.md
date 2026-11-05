@@ -35,14 +35,14 @@
 
 ## 4. Spec content and generated row types
 
-- [ ] 4.1 Members and events:
+- [x] 4.1 Members and events:
   - write `x-hal-item-links` / `x-hal-item-templates` for `listMembers` (moving `updateMember` there), `listEvents`, event types, category presets and the `getEvent` registrations, derived from the backend postprocessors (D5);
   - run `npm run openapi`;
   - replace the hand-written row types in `MembersPage`, `EventsPage`, `EventTypesPage`, `CategoryPresetsPage` and `EventDetailPage` (`RegistrationData`) with the generated ones.
 
   Run the backend build to confirm that the generated Java is unchanged, then `npm run build` and the tests of these pages.
-- [ ] 4.2 Finance and membership fees: write the extensions for payment rules, transactions and fee-group members. Replace the row types in `RulesTable` and `FinancesPage`, and switch `MemberFeeChoicePage` to `GetFeeSummaryResource`. Run `npm run build` and the tests of these modules.
-- [ ] 4.3 Groups:
+- [x] 4.2 Finance and membership fees: write the extensions for payment rules, transactions and fee-group members. Replace the row types in `RulesTable` and `FinancesPage`, and switch `MemberFeeChoicePage` to `GetFeeSummaryResource`. Run `npm run build` and the tests of these modules.
+- [x] 4.3 Groups:
   - write the extensions on the `x-hal-entity-items` arrays of free groups (owners, members, pending invitations) and training groups (members, trainers);
   - replace `pages/groups/types.ts` and `pages/training-groups/types.ts` with the generated resource types, deleting the files if they become empty.
 

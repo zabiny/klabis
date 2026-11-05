@@ -140,6 +140,26 @@ paths:
               description: Next page (present when one exists)
             prev:
               description: Previous page (present when one exists)
+          x-hal-item-links:
+            self:
+              operation: getTransaction
+              description: This transaction
+            reversedBy:
+              operation: getTransaction
+              description: Present when the transaction has been reversed
+            reverses:
+              operation: getTransaction
+              description: Present on a reversal transaction; points at the original
+            recordedBy:
+              operation: getMember
+              description: The member who recorded the transaction. Present only when the caller may read that member.
+            account:
+              operation: getAccount
+              description: The member's finance account. Present only for callers allowed to read the account.
+          x-hal-item-templates:
+            reverse:
+              operation: reverse
+              description: Present only for callers with FINANCE:MANAGE, on transactions that are neither reversed nor reversals
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
