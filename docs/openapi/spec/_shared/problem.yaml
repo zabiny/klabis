@@ -8,8 +8,7 @@ components:
       type: object
       properties:
         type:
-          type: string
-          format: uri
+          $ref: '#/components/schemas/ErrorType'
         title:
           type: string
         status:
@@ -20,6 +19,44 @@ components:
         instance:
           type: string
           format: uri
+        field:
+          type: string
+          description: >
+            Request field the error concerns, set on typed errors bound to one form field.
+        fieldErrors:
+          type: object
+          description: Bean validation messages (Czech) by request field name.
+          additionalProperties:
+            type: string
+        errors:
+          type: array
+          description: Bean validation messages (Czech) not bound to a single field.
+          items:
+            type: string
+        parameterErrors:
+          type: array
+          description: Bean validation messages (Czech) for request parameters.
+          items:
+            type: string
         properties:
           type: object
           additionalProperties: {}
+
+    ErrorType:
+      type: string
+      description: >
+        Identifies the kind of error as a relative URI /errors/{error-name}. Parameters the user-facing
+        message needs are sent as further top-level properties of the problem detail (named per type below),
+        never as identifiers. The Klabis frontend maps each value to a Czech text.
+      enum:
+        - /errors/validation-failed       # 400, Czech fieldErrors / errors / parameterErrors
+        - /errors/invalid-request         # 400, internal checks and errors without their own type
+        - /errors/unauthorized            # 401, missing or invalid authentication
+        - /errors/forbidden               # 403, missing authority
+        - /errors/account-inactive        # 403, deactivated account
+        - /errors/not-found               # 404, unknown path or resource without its own type
+        - /errors/conflict                # 409, conflict without its own type
+        - /errors/concurrent-update       # 409, optimistic locking failure
+        - /errors/unexpected              # 500, anything unhandled
+        - /errors/voting-deadline-not-in-future  # 400, parameter deadline (ISO date), field votingDeadline
+        - /errors/voting-deadline-in-past        # 400, parameter deadline (ISO date), field votingDeadline

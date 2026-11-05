@@ -112,6 +112,8 @@ A small framework-free contract, **UserFacingError**, is opted into by each migr
 
 `getMessage()` stays English and goes into `detail` and the logs.
 
+**Deliberate shortcut:** the contract also has an optional `field()`, so an exception can name its form field itself. Membership fees has no module handler to do the binding (see above), so `DeadlineNotInFutureException` returns `votingDeadline` directly. A backend test checks that this equals the property name of the generated request DTOs, so a rename in the spec fails the build.
+
 Handlers write each parameter as a top-level ProblemDetail extension property. An error bound to one form field adds the `field` property with the request field name. That binding is done by the module's REST exception handler, not by the domain, so wire names stay out of the domain.
 
 - **Value formats.**
