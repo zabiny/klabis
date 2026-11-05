@@ -301,16 +301,16 @@ class FeeSelectionCampaignControllerTest {
         }
 
         @Test
-        @DisplayName("should return 400 when publication not found")
+        @DisplayName("should return 404 when publication not found")
         @WithKlabisMockUser(memberId = MEMBER_ID)
-        void shouldReturn400WhenNotFound() throws Exception {
+        void shouldReturn404WhenNotFound() throws Exception {
             when(managementPort.getPublication(PUBLICATION_ID))
                     .thenThrow(new FeeSelectionCampaignNotFoundException(PUBLICATION_ID));
 
             mockMvc.perform(
                             get("/api/fee-selection-campaigns/{id}", PUBLICATION_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isNotFound());
         }
     }
 

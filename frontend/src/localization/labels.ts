@@ -22,6 +22,32 @@ const errorTypes: Record<ErrorType, (params: ErrorParams) => string> = {
     '/errors/unexpected': () => UNEXPECTED_ERROR_TEXT,
     '/errors/voting-deadline-not-in-future': () => 'Termín pro výběr musí být v budoucnosti.',
     '/errors/voting-deadline-in-past': () => 'Termín pro výběr nesmí být v minulosti.',
+    '/errors/duplicate-payment-rule': ({eventTypeName, rankingLabel}) =>
+        eventTypeName && rankingLabel
+            ? `Pravidlo pro typ akce „${eventTypeName}“ a žebříček „${rankingLabel}“ již v této úrovni existuje.`
+            : 'Pravidlo pro tuto kombinaci typu akce a žebříčku již v této úrovni existuje.',
+    '/errors/payment-rule-not-found': ({eventTypeName, rankingLabel}) =>
+        eventTypeName && rankingLabel
+            ? `Pravidlo pro typ akce „${eventTypeName}“ a žebříček „${rankingLabel}“ nebylo nalezeno.`
+            : 'Pravidlo pro tuto kombinaci typu akce a žebříčku nebylo nalezeno.',
+    '/errors/payment-rule-value-missing': ({ruleType}) => {
+        if (ruleType === 'PERCENTAGE') return 'Vyplňte procento spoluúčasti.';
+        if (ruleType === 'FIXED_AMOUNT') return 'Vyplňte fixní částku spoluúčasti.';
+        return 'Vyplňte hodnotu pravidla spoluúčasti.';
+    },
+    '/errors/negative-payment-rule-percentage': ({percent}) =>
+        `Procento spoluúčasti nesmí být záporné (zadáno ${percent} %).`,
+    '/errors/active-campaign-exists': () => 'Již existuje aktivní kampaň volby členského příspěvku. Nejprve ji uzavřete.',
+    '/errors/campaign-closed': () => 'Kampaň je již uzavřena, změnu nelze provést.',
+    '/errors/campaign-already-processed': () => 'Kampaň již byla zpracována, akci nelze zopakovat.',
+    '/errors/snapshot-frozen': () => 'Úroveň je součástí vyhlášené kampaně a již ji nelze měnit.',
+    '/errors/voting-closed': () => 'Hlasování v této kampani již skončilo.',
+    '/errors/membership-fee-tier-not-found': () => 'Úroveň členského příspěvku nebyla nalezena.',
+    '/errors/membership-fee-group-not-found': () => 'Skupina členských příspěvků nebyla nalezena.',
+    '/errors/fee-selection-campaign-not-found': ({year}) =>
+        year !== undefined && year !== null
+            ? `Kampaň volby členského příspěvku pro rok ${year} nebyla nalezena.`
+            : 'Kampaň volby členského příspěvku nebyla nalezena.',
 };
 
 export const labels = {

@@ -3,6 +3,7 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
+import {ApiError} from '../../api/apiError';
 import {MemberFeeChoicePage} from './MemberFeeChoicePage';
 import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
 
@@ -62,6 +63,19 @@ describe('MemberFeeChoicePage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockMutation();
+    });
+
+    describe('error state', () => {
+        it('shows Czech text when the fee summary is not found', () => {
+            vi.mocked(useAuthorizedQuery).mockReturnValue({
+                data: undefined,
+                isLoading: false,
+                error: new ApiError(404, {type: '/errors/fee-selection-campaign-not-found', params: {year: 2026}}),
+                status: 'error',
+            } as unknown as ReturnType<typeof useAuthorizedQuery>);
+            renderPage();
+            expect(screen.getByText('Kampaň volby členského příspěvku pro rok 2026 nebyla nalezena.')).toBeInTheDocument();
+        });
     });
 
     describe('loading state', () => {

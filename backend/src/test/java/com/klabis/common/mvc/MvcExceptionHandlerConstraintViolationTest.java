@@ -42,23 +42,22 @@ class MvcExceptionHandlerConstraintViolationTest {
     }
 
     @Test
-    @DisplayName("should answer 400 with the parameter name, not the full method path")
-    void shouldReportParameterNameOnly() throws NoSuchMethodException {
-        ResponseEntity<ProblemDetail> response =
-                handler.handleConstraintViolationException(violationsFor(""));
+    @DisplayName("should answer 400 validation-failed with the bare constraint messages, no parameter prefix")
+    void shouldReportBareMessages() throws NoSuchMethodException {
+        ConstraintViolationException exception = violationsFor("");
+
+        ResponseEntity<ProblemDetail> response = handler.handleConstraintViolationException(exception);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         ProblemDetail body = response.getBody();
         assertThat(body).isNotNull();
+        assertThat(body.getType().toString()).isEqualTo("/errors/validation-failed");
 
-        // Only the parameter name is asserted, not the message: constraint messages are localised,
-        // so their text belongs to Hibernate Validator rather than to this handler.
         @SuppressWarnings("unchecked")
-        var parameterErrors = (Iterable<String>) body.getProperties().get("parameterErrors");
-        assertThat(parameterErrors)
-                .isNotNull()
-                .isNotEmpty()
-                .allSatisfy(error -> assertThat(error).startsWith("token: "));
+        var parameterErrors = (java.util.List<String>) body.getProperties().get("parameterErrors");
+        assertThat(parameterErrors).containsExactlyInAnyOrderElementsOf(
+                exception.getConstraintViolations().stream().map(v -> v.getMessage()).toList());
+        assertThat(parameterErrors).noneMatch(error -> error.startsWith("token: "));
     }
 
     @Test

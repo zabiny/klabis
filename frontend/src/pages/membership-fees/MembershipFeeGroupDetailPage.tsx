@@ -5,7 +5,7 @@ import {Alert, Skeleton} from '../../components/UI';
 import {HalFormDisplay} from '../../components/HalNavigator2/HalFormDisplay.tsx';
 import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
 import type {GetFeeGroupResource} from '../../api';
-import {getEnumLabel, labels} from '../../localization';
+import {getEnumLabel, labels, describeError} from '../../localization';
 import {ChevronRight, Pencil, UserPlus, Users} from 'lucide-react';
 import {formatDate} from '../../utils/dateUtils.ts';
 import {HalSubresourceProvider} from '../../contexts/HalRouteContext.tsx';
@@ -229,7 +229,7 @@ export const MembershipFeeGroupDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     if (!resourceData) {

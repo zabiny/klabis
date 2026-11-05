@@ -86,6 +86,10 @@ Then('catalog level {name} has no {contribution} rule for races of ranking {name
         await expect(ruleRow(page, contribution, ranking)).toHaveCount(0);
     });
 
+Then('the rule is refused with the message {string}', async ({page}, message: string) => {
+    await expect(page.getByRole('alert').filter({hasText: message}).first()).toBeVisible();
+});
+
 Then('{persona} is not offered to add a fee level', async ({page, currentRole}, persona: Persona) => {
     expectActing(currentRole, persona);
     await openFeesPage(page);

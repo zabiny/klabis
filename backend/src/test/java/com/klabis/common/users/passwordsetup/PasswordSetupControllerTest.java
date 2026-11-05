@@ -291,7 +291,7 @@ class PasswordSetupControllerTest {
             mockMvc.perform(get("/api/auth/password-setup/validate")
                             .param("token", ""))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.parameterErrors[0]").value("token: must match \"^(?!\\s*$).+\""));
+                    .andExpect(jsonPath("$.parameterErrors[0]").value("musí odpovídat \"^(?!\\s*$).+\""));
         }
 
         @Test

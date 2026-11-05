@@ -28,33 +28,33 @@ public abstract class CalendarItem extends KlabisAggregateRoot<CalendarItem, Cal
 
     @RecordBuilder
     public record CreateCalendarItem(
-            @NotBlank(message = "Calendar item name is required")
-            @Size(max = 200, message = "Calendar item name must not exceed 200 characters")
+            @NotBlank(message = "Název položky kalendáře je povinný")
+            @Size(max = 200, message = "Název položky kalendáře nesmí být delší než 200 znaků")
             String name,
 
-            @Size(max = 1000, message = "Calendar item description must not exceed 1000 characters")
+            @Size(max = 1000, message = "Popis položky kalendáře nesmí být delší než 1000 znaků")
             String description,
 
-            @NotNull(message = "Start date is required")
+            @NotNull(message = "Datum začátku je povinné")
             LocalDate startDate,
 
-            @NotNull(message = "End date is required")
+            @NotNull(message = "Datum konce je povinné")
             LocalDate endDate
     ) {}
 
     @RecordBuilder
     public record UpdateCalendarItem(
-            @NotBlank(message = "Calendar item name is required")
-            @Size(max = 200, message = "Calendar item name must not exceed 200 characters")
+            @NotBlank(message = "Název položky kalendáře je povinný")
+            @Size(max = 200, message = "Název položky kalendáře nesmí být delší než 200 znaků")
             String name,
 
-            @Size(max = 1000, message = "Calendar item description must not exceed 1000 characters")
+            @Size(max = 1000, message = "Popis položky kalendáře nesmí být delší než 1000 znaků")
             String description,
 
-            @NotNull(message = "Start date is required")
+            @NotNull(message = "Datum začátku je povinné")
             LocalDate startDate,
 
-            @NotNull(message = "End date is required")
+            @NotNull(message = "Datum konce je povinné")
             LocalDate endDate
     ) {}
 

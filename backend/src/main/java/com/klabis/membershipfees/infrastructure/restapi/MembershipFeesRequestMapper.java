@@ -6,6 +6,7 @@ import com.klabis.membershipfees.application.FeeSelectionCampaignManagementPort;
 import com.klabis.membershipfees.application.MembershipFeeTierManagementPort;
 import com.klabis.membershipfees.domain.EventTypeReference;
 import com.klabis.membershipfees.domain.MembershipPaymentRule;
+import com.klabis.membershipfees.domain.PaymentRuleValueMissingException;
 
 import java.math.BigDecimal;
 import java.util.Currency;
@@ -70,9 +71,19 @@ final class MembershipFeesRequestMapper {
                                                  Integer percentage, BigDecimal fixedAmount, String fixedCurrency) {
         EventTypeReference evtTypeId = EventTypeReference.of(eventTypeId);
         return switch (ruleType) {
-            case "PERCENTAGE" -> MembershipPaymentRule.percentage(evtTypeId, rankingShortName, percentage);
-            case "FIXED_AMOUNT" -> MembershipPaymentRule.fixedAmount(evtTypeId, rankingShortName,
-                    toMoney(fixedAmount, fixedCurrency));
+            case "PERCENTAGE" -> {
+                if (percentage == null) {
+                    throw new PaymentRuleValueMissingException(ruleType);
+                }
+                yield MembershipPaymentRule.percentage(evtTypeId, rankingShortName, percentage);
+            }
+            case "FIXED_AMOUNT" -> {
+                if (fixedAmount == null) {
+                    throw new PaymentRuleValueMissingException(ruleType);
+                }
+                yield MembershipPaymentRule.fixedAmount(evtTypeId, rankingShortName,
+                        toMoney(fixedAmount, fixedCurrency));
+            }
             default -> throw new IllegalArgumentException("Unknown rule type: " + ruleType);
         };
     }

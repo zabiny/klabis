@@ -80,21 +80,21 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     @RecordBuilder
     public record CreateEvent(
-            @NotBlank(message = "Event name is required")
-            @Size(max = 100, message = "Event name must not exceed 100 characters")
+            @NotBlank(message = "Název akce je povinný")
+            @Size(max = 100, message = "Název akce nesmí být delší než 100 znaků")
             String name,
 
-            @NotNull(message = "Event date is required")
+            @NotNull(message = "Datum akce je povinné")
             LocalDate eventDate,
 
-            @Size(max = 100, message = "Event location must not exceed 100 characters")
+            @Size(max = 100, message = "Místo konání nesmí být delší než 100 znaků")
             String location,
 
-            @NotBlank(message = "Event organizer is required")
-            @Size(max = 10, message = "Event organizer must not exceed 10 characters")
+            @NotBlank(message = "Pořadatel akce je povinný")
+            @Size(max = 10, message = "Zkratka pořadatele nesmí být delší než 10 znaků")
             String organizer,
 
-            @URL(message = "Website URL must be valid")
+            @URL(message = "Adresa webu musí být platná")
             String websiteUrl,
 
             LinkedHashSet<MemberId> coordinators,
@@ -123,21 +123,21 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     @RecordBuilder
     public record UpdateEvent(
-            @NotBlank(message = "Event name is required")
-            @Size(max = 100, message = "Event name must not exceed 100 characters")
+            @NotBlank(message = "Název akce je povinný")
+            @Size(max = 100, message = "Název akce nesmí být delší než 100 znaků")
             String name,
 
-            @NotNull(message = "Event date is required")
+            @NotNull(message = "Datum akce je povinné")
             LocalDate eventDate,
 
-            @Size(max = 100, message = "Event location must not exceed 100 characters")
+            @Size(max = 100, message = "Místo konání nesmí být delší než 100 znaků")
             String location,
 
-            @NotBlank(message = "Event organizer is required")
-            @Size(max = 10, message = "Event organizer must not exceed 10 characters")
+            @NotBlank(message = "Pořadatel akce je povinný")
+            @Size(max = 10, message = "Zkratka pořadatele nesmí být delší než 10 znaků")
             String organizer,
 
-            @URL(message = "Website URL must be valid")
+            @URL(message = "Adresa webu musí být platná")
             String websiteUrl,
 
             LinkedHashSet<MemberId> coordinators,
@@ -199,7 +199,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     @RecordBuilder
     public record ImportCommand(
-            @jakarta.validation.constraints.Positive(message = "ORIS event ID must be positive")
+            @jakarta.validation.constraints.Positive(message = "ORIS ID akce musí být kladné číslo")
             int orisId
     ) {
     }
@@ -235,7 +235,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
 
     @RecordBuilder
     public record CancelEvent(
-            @Size(max = 500, message = "Cancellation reason must not exceed 500 characters")
+            @Size(max = 500, message = "Důvod zrušení nesmí být delší než 500 znaků")
             String cancellationReason
     ) {
         public CancelEvent {
