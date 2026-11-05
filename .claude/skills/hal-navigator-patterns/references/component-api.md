@@ -79,7 +79,7 @@ Wraps KlabisTable with React Query data fetching, pagination state, and sort sta
 
 Location: `frontend/src/components/HalNavigator2/HalEmbeddedTable.tsx`
 
-Highest-level table component. Uses `useHalPageData()` to get the current resource's self link, then delegates to KlabisTableWithQuery.
+Highest-level table component. Uses `useHalPageData().getResourceLink()` to get the current resource's self link, then delegates to KlabisTableWithQuery.
 
 **Props:**
 ```typescript
@@ -93,8 +93,8 @@ interface HalEmbeddedTableProps<T> {
 }
 ```
 
-`T` is unconstrained (`= Record<string, unknown>`). Pass the generated row type:
-`<HalEmbeddedTable<components['schemas']['EntityModelFooDto']>>`.
+`T` is unconstrained (`= Record<string, unknown>`). Pass the generated row type from `@/api`:
+`<HalEmbeddedTable<ListMembersItemResource>>` (`<Op>ItemResource`, generated from `x-hal-item-links` / `x-hal-item-templates`; never a hand-written `EntityModel<...> & {...}`).
 
 ## HalFormButton
 
@@ -114,7 +114,7 @@ interface HalFormButtonProps {
 **Form flow:**
 1. Checks `resourceData._templates[name]` exists
 2. Modal mode: opens the dialog locally through `useTemplateDialog`. Inline mode (`modal={false}`): calls `requestForm()` from `HalFormContext` and `HalFormsPageLayout` renders `HalFormDisplay`
-3. `HalFormDisplay` fetches initial values from `template.target`, submits to same URL
+3. `HalFormDisplay` fetches initial values from `template.target`, submits to same URL. Without `template.target` it falls back to its `resourceUrl` prop, then the resource's self link, then the current route; it has no `pathname` prop
 4. On success: invalidates all query caches, refetches current resource, closes form
 
 ## useTemplateDialog
