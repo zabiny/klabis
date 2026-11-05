@@ -1,6 +1,5 @@
 import {type ReactElement, useMemo, useState} from "react";
-import type {HalFormsTemplate, Link} from "../../api";
-import type {components} from "../../api/klabisApi";
+import type {Link, ListMembersItemResource} from "../../api";
 import {FinanceTransactionDialog} from "../../components/finance/FinanceTransactionDialog.tsx";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
@@ -31,9 +30,7 @@ import {useUrlFilters} from "../../hooks/useUrlFilters.ts";
 import {toQuery} from "./membersQuery.ts";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 
-type MemberSummaryData = components['schemas']['EntityModelMemberSummaryResponse'] & {
-    _templates?: Record<string, HalFormsTemplate>;
-};
+type MemberSummaryData = ListMembersItemResource;
 
 interface MemberPermissionsDialogState {
     member: MemberSummaryData;

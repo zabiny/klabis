@@ -62,7 +62,7 @@ export interface HalEmbeddedTableProps<T = Record<string, unknown>> {
  *   <TableCell column="registrationNumber">Reg. číslo</TableCell>
  * </HalEmbeddedTable>
  */
-export function HalEmbeddedTable<T extends Record<string, unknown> = Record<string, unknown>>({
+export function HalEmbeddedTable<T extends object = Record<string, unknown>>({
                                                                               collectionName,
                                                                               onRowClick,
                                                                               defaultOrderBy,

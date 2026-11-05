@@ -1,6 +1,5 @@
 import {type ReactElement, useCallback, useMemo} from "react";
-import type {HalFormsTemplate} from "../../api";
-import type {components} from "../../api/klabisApi";
+import type {ListTransactionsItemResource} from "../../api";
 import {KlabisTable, TableCell} from "../../components/KlabisTable";
 import {Card, Spinner} from "../../components/UI";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
@@ -12,21 +11,10 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {Button} from "../../components/UI";
 import {formatCurrency, formatDate} from "./financeFormatters.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
-import {parseHalHref, serializeHalHref} from "../../api/hateoas.ts";
+import {parseHalHref, serializeHalHref, toHref} from "../../api/hateoas.ts";
 import {MemberName} from "../../components/members/MemberName.tsx";
 
-// TransactionResource payload + the per-row _links / _templates the backend adds at runtime.
-type TransactionItem = components['schemas']['TransactionResource'] & {
-    _links?: {
-        self?: { href: string };
-        reverses?: { href: string };
-        reversedBy?: { href: string };
-        recordedBy?: { href: string };
-    };
-    _templates?: {
-        reverse?: HalFormsTemplate;
-    };
-};
+type TransactionItem = ListTransactionsItemResource;
 
 export const BalanceCard = ({balance, currency}: {balance: number | undefined; currency: string | undefined}): ReactElement => {
     const isNegative = typeof balance === 'number' && balance < 0;
@@ -204,7 +192,8 @@ const TransactionsTableContent = ({
 
     const renderRecordedByCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
         const tx = item as unknown as TransactionItem;
-        const href = tx._links?.recordedBy?.href;
+        const recordedBy = tx._links?.recordedBy;
+        const href = recordedBy ? toHref(recordedBy) : undefined;
         return <RecordedByCell href={href} />;
     }, []);
 

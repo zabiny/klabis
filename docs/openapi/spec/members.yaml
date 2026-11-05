@@ -87,7 +87,9 @@ paths:
           x-hal-templates:
             updateMember:
               operation: updateMember
-              description: Edit template used by the table's inline row editor
+              description: |
+                Collection-level copy attached to the list self link (MemberListPostprocessor),
+                not tied to a particular member. The row-level template is in x-hal-item-templates.
             registerMember:
               operation: registerMember
               description: Present only for callers with MEMBERS:MANAGE
@@ -96,6 +98,29 @@ paths:
               description: |
                 Present only for callers with SYNC:MANAGE and only while a club key is held —
                 without one the action could not do anything (design.md D11).
+          x-hal-item-links:
+            self:
+              operation: getMember
+              description: This member
+            permissions:
+              operation: getUserPermissions
+              description: Present only for active members and callers with MEMBERS:PERMISSIONS
+            account:
+              operation: getAccount
+              description: Present only for callers with FINANCE:MANAGE
+            sync:
+              operation: getSyncState
+              description: Present when the member is paired with a synchronised counterpart
+          x-hal-item-templates:
+            updateMember:
+              operation: updateMember
+              description: Row-level edit template. Present for callers with MEMBERS:MANAGE or MEMBERS:EDIT_PROFILE (the latter only on their own row)
+            suspendMember:
+              operation: suspendMember
+              description: Present for active members and callers with MEMBERS:MANAGE
+            resumeMember:
+              operation: resumeMember
+              description: Present for suspended members and callers with MEMBERS:MANAGE
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':

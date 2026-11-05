@@ -1,6 +1,5 @@
 import type {ReactElement} from "react";
-import type {HalFormsTemplate} from "../../api";
-import type {components} from "../../api/klabisApi";
+import type {ListPresetsItemResource} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
@@ -10,9 +9,7 @@ import {Badge, Button} from "../../components/UI";
 import {Pencil, Trash2} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 
-type CategoryPresetListItem = components['schemas']['EntityModelCategoryPresetDto'] & {
-    _templates?: Record<string, HalFormsTemplate>;
-};
+type CategoryPresetListItem = ListPresetsItemResource;
 
 export const CategoryPresetsPage = (): ReactElement => {
     const actionDialog = useTemplateDialog(undefined, {

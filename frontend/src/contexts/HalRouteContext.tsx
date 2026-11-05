@@ -1,6 +1,6 @@
 import React, {type PropsWithChildren} from 'react';
 import {type Path, useLocation, useNavigate} from 'react-router-dom';
-import type {HalResourceLinks, HalResponse, Link} from '../api';
+import type {HalEnvelope, HalResourceLinks, HalResponse, Link} from '../api';
 import {toRoutePath} from '../api/apiPath';
 import {isHalResponse} from "../components/HalNavigator2/halforms/utils.ts";
 import {useAuthorizedQuery} from "../hooks/useAuthorizedFetch.ts";
@@ -85,7 +85,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
         queryState = 'idle';
     }
 
-    const navigateToResource = (resource: HalResponse | Link, options?: { state?: unknown }): void => {
+    const navigateToResource = (resource: HalEnvelope | Link, options?: { state?: unknown }): void => {
         let targetLink: Link;
         if (isHalResponse(resource)) {
             const selfLink = resource?._links?.self;
@@ -94,7 +94,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
             }
             targetLink = Array.isArray(selfLink) ? selfLink[0] : selfLink
         } else {
-            targetLink = resource;
+            targetLink = resource as Link;
         }
 
         const href = Array.isArray(targetLink) ? targetLink[0]?.href : targetLink?.href

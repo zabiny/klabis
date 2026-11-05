@@ -1,6 +1,5 @@
 import {type ReactElement, useState} from "react";
-import type {HalFormsTemplate, HalResourceLinks, Link} from "../../api";
-import type {components} from "../../api/klabisApi";
+import type {HalResourceLinks, Link, ListEventsItemResource} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
@@ -32,9 +31,7 @@ import {useEventTypes} from "../../hooks/useEventTypes.ts";
 import {getTodayIso} from "../../components/events/eventsFilterUtils.ts";
 import {useEventsFilterState} from "./useEventsFilterState.ts";
 
-type EventListData = components['schemas']['EntityModelEventSummaryDto'] & {
-    _templates?: Record<string, HalFormsTemplate>;
-}
+type EventListData = ListEventsItemResource;
 
 const ROW_ACTION_BUTTONS = [
     {name: 'updateEvent', icon: Pencil, label: labels.templates.updateEvent},
