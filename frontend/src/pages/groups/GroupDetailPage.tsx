@@ -8,7 +8,7 @@ import type {GetGroupResource, HalFormsTemplate, HalResourceLinks, HalResponse} 
 import type {PendingInvitation} from './types.ts';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {Ban, Crown, LogOut, Pencil, Trash2, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {useAuth} from '../../contexts/authContext.ts';
@@ -415,7 +415,7 @@ export const GroupDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     if (!resourceData) {

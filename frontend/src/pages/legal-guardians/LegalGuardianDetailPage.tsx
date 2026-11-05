@@ -4,7 +4,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Card, DetailRow, Skeleton} from '../../components/UI';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import type {GetLegalGuardianResource} from '../../api';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 
 const LegalGuardianDetailContent = ({resourceData}: {resourceData: GetLegalGuardianResource}): ReactElement => {
     return (
@@ -35,7 +35,7 @@ export const LegalGuardianDetailPage = (): ReactElement => {
     const {resourceData, isLoading, error} = useHalPageData<GetLegalGuardianResource>();
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     if (isLoading || !resourceData) {
