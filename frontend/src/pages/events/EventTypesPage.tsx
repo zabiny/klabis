@@ -33,8 +33,7 @@ export const EventTypesPage = (): ReactElement => {
         );
     };
 
-    const renderActionsCell = ({item}: TableCellRenderProps) => {
-        const eventType = item as unknown as EventTypeListItem;
+    const renderActionsCell = ({item: eventType}: TableCellRenderProps<EventTypeListItem>) => {
         const hasEditTemplate = !!eventType._templates?.updateEventType;
         const hasDeleteTemplate = !!eventType._templates?.deleteEventType;
 

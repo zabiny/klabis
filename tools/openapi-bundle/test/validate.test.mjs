@@ -1300,7 +1300,7 @@ describe('validateSpec — x-klabis-read-authority', () => {
 
 describe('validateSpec — x-hal-item-links / x-hal-item-templates', () => {
     const authorities = parseAuthorities(AUTHORITY_JAVA);
-    const validate = (doc, entityItemPaths = new Set()) => validateSpec(doc, {authorities, entityItemPaths});
+    const validate = (doc) => validateSpec(doc, {authorities});
     const itemRels = {
         'x-hal-item-links': {self: {description: 'This row'}},
         'x-hal-item-templates': {updateThing: {operation: 'updateThing', description: 'Edit row'}},
@@ -1356,14 +1356,14 @@ describe('validateSpec — x-hal-item-links / x-hal-item-templates', () => {
             items: {$ref: '#/components/schemas/EntityModelThing'},
             ...itemRels,
         };
-        expect(validate(doc, new Set(['/components/schemas/Holder/properties/things']))).toEqual([]);
+        expect(validate(doc)).toEqual([]);
     });
 
     it('rejects the keys on a hand-enveloped array that never carried the marker', () => {
         const doc = operation({});
-        doc.components.schemas.EntityModel = {type: 'object', properties: {_links: {type: 'object'}}};
         doc.components.schemas.EntityModelThing = {
-            allOf: [{$ref: '#/components/schemas/Thing'}, {$ref: '#/components/schemas/EntityModel'}],
+            type: 'object',
+            properties: {_links: {type: 'object'}},
         };
         doc.components.schemas.Holder.properties.things = {
             type: 'array',

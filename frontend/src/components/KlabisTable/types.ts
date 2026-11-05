@@ -4,20 +4,20 @@ import {type SortState} from "../../hooks/useTableSort";
 export type {SortState};
 
 // Cell rendering props
-export interface TableCellRenderProps {
-    item: Record<string, unknown>;
+export interface TableCellRenderProps<T extends object = Record<string, unknown>> {
+    item: T;
     column: string;
     value: unknown;
 }
 
 // Column definition component props
-export interface TableCellProps {
+export interface TableCellProps<T extends object = Record<string, unknown>> {
     column: string;
     hidden?: boolean;
     sortable?: boolean;
     alwaysVisible?: boolean;
     children: React.ReactNode;
-    dataRender?: (props: TableCellRenderProps) => React.ReactNode;
+    dataRender?: (props: TableCellRenderProps<T>) => React.ReactNode;
 }
 
 // Pagination data from API
@@ -29,13 +29,13 @@ export interface TablePageData {
 }
 
 // Column definition extracted from children
-export interface ColumnDef {
+export interface ColumnDef<T extends object = Record<string, unknown>> {
     name: string;
     label: React.ReactNode;
     hidden: boolean;
     sortable: boolean;
     alwaysVisible: boolean;
-    dataRender?: (props: TableCellRenderProps) => React.ReactNode;
+    dataRender?: (props: TableCellRenderProps<T>) => React.ReactNode;
 }
 
 // Pure UI table component props

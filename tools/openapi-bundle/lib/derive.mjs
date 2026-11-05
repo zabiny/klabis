@@ -37,7 +37,23 @@ export function schemaName(node) {
     return match ? match[1] : undefined;
 }
 
+/** The schema a local `$ref` names, or the node itself when it is not a ref. */
+export function resolveSchema(document, node) {
+    const name = schemaName(node);
+    return name === undefined ? node : document?.components?.schemas?.[name];
+}
+
 const schemaRef = (name) => ({$ref: `#/components/schemas/${name}`});
+
+/**
+ * The exact `EntityModel<Payload>` shape `entityModel` builds without an `_embedded` block. Lets a
+ * consumer that runs after derivation tell a retargeted `x-hal-entity-items` array from a plain one.
+ */
+export function isDerivedEntityModel(schema) {
+    return Array.isArray(schema?.allOf) && schema.allOf.length === 2
+        && schemaName(schema.allOf[0]) !== undefined
+        && schema.allOf[1]?.$ref === ENTITY_MODEL_REF;
+}
 
 /**
  * Recognises a schema the deriver would itself have produced, so it is not wrapped a second time.
@@ -188,9 +204,9 @@ function deriveResponseEnvelope(jsonSchema, schemas, {paged, embedded}, collisio
  * resources carrying their own `_links`, which is an API design choice rather than something
  * derivable. Emits `EntityModel<Item>` and retargets the items `$ref` at it.
  */
-function deriveEntityItems(node, schemas, collisions, path, consumedPaths) {
+function deriveEntityItems(node, schemas, collisions) {
     if (Array.isArray(node)) {
-        node.forEach((item, i) => deriveEntityItems(item, schemas, collisions, `${path}[${i}]`, consumedPaths));
+        for (const item of node) deriveEntityItems(item, schemas, collisions);
         return;
     }
     if (!isPlainObject(node)) return;
@@ -216,13 +232,9 @@ function deriveEntityItems(node, schemas, collisions, path, consumedPaths) {
         // ref already names the wrapper) — the self-contradiction `validate.mjs`'s already-enveloped
         // check would then flag. It appears zero times in today's committed bundle.
         delete node['x-hal-entity-items'];
-        // Same path format as validate.mjs's walk — the validator can no longer see the marker.
-        consumedPaths.add(path);
     }
 
-    for (const [key, value] of Object.entries(node)) {
-        deriveEntityItems(value, schemas, collisions, `${path}/${key}`, consumedPaths);
-    }
+    for (const value of Object.values(node)) deriveEntityItems(value, schemas, collisions);
 }
 
 /**
@@ -378,7 +390,7 @@ export function halResponsePayloadNames(jsonSchema) {
 export function deriveHalEnvelopes(document) {
     const collisions = [];
     const schemas = document?.components?.schemas;
-    if (!isPlainObject(schemas)) return {document, collisions, entityItemPaths: new Set()};
+    if (!isPlainObject(schemas)) return {document, collisions};
 
     forEachHalResponse(document, ({content, jsonSchema, paged, embedded}) => {
         const derived = deriveResponseEnvelope(jsonSchema, schemas, {paged, embedded}, collisions);
@@ -386,9 +398,8 @@ export function deriveHalEnvelopes(document) {
         content[HAL_FORMS] = {schema: schemaRef(derived)};
     });
 
-    const entityItemPaths = new Set();
-    deriveEntityItems(schemas, schemas, collisions, '/components/schemas', entityItemPaths);
+    deriveEntityItems(schemas, schemas, collisions);
     consumePropertyDirectives(document);
 
-    return {document, collisions, entityItemPaths};
+    return {document, collisions};
 }

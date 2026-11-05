@@ -32,11 +32,10 @@ export const TierCatalogSection = (): ReactElement => {
                     onRowClick={navigateToResource}
                     emptyMessage="Žádné tiery členských příspěvků."
                 >
-                    <TableCell
+                    <TableCell<FeeTierSummary>
                         sortable
                         column="name"
-                        dataRender={({item}) => {
-                            const tier = item as unknown as FeeTierSummary;
+                        dataRender={({item: tier}) => {
                             return (
                                 <span className="text-sm font-bold text-text-primary">{tier.name}</span>
                             );

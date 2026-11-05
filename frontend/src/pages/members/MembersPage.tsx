@@ -79,8 +79,7 @@ export const MembersPage = (): ReactElement => {
         setPermissionsDialog({member, permissionsUrl: link.href});
     };
 
-    const renderActionsCell = ({item}: TableCellRenderProps) => {
-        const member = item as unknown as MemberSummaryData;
+    const renderActionsCell = ({item: member}: TableCellRenderProps<MemberSummaryData>) => {
         const hasEditTemplate = !!member._templates?.updateMember;
         const hasPermissionsLink = !!member._links?.permissions;
         const hasAccountLink = !!member._links?.account;
@@ -166,8 +165,8 @@ export const MembersPage = (): ReactElement => {
         );
     };
 
-    const renderContactCell = ({item}: TableCellRenderProps) => {
-        const contact = (item as unknown as MemberSummaryData).displayContact;
+    const renderContactCell = ({item}: TableCellRenderProps<MemberSummaryData>) => {
+        const contact = item.displayContact;
         if (!contact) return null;
         return (
             <div className="flex flex-col">
@@ -177,8 +176,7 @@ export const MembersPage = (): ReactElement => {
         );
     };
 
-    const renderDataIncompleteCell = ({item}: TableCellRenderProps) => {
-        const member = item as unknown as MemberSummaryData;
+    const renderDataIncompleteCell = ({item: member}: TableCellRenderProps<MemberSummaryData>) => {
         if (!member.dataIncomplete) return null;
         return <Badge variant="orange" size="sm">{labels.membersFilter.incompleteBadge}</Badge>;
     };

@@ -87,8 +87,7 @@ interface RegistrationsTableProps {
 }
 
 const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionDialog}: RegistrationsTableProps): ReactElement => {
-    const renderActionsCell = ({item}: TableCellRenderProps) => {
-        const registration = item as unknown as RegistrationData;
+    const renderActionsCell = ({item: registration}: TableCellRenderProps<RegistrationData>) => {
         const editTemplate = registration._templates?.editRegistration;
         const recordTransactionLink = registration._links?.recordTransaction;
         const accountLink = recordTransactionLink && !Array.isArray(recordTransactionLink)
@@ -143,13 +142,13 @@ const RegistrationsTable = ({event, onOpenRegistrationDialog, onOpenTransactionD
     return (
         <HalEmbeddedTable<RegistrationData> collectionName="registrationDtoList" hideEmptyColumns defaultOrderBy="registrationTime">
             <TableCell column="firstName" sortable>{labels.fields.firstName}</TableCell>
-            <TableCell
+            <TableCell<RegistrationData>
                 column="lastName"
                 sortable
                 dataRender={({value, item}) => (
                     <span className="inline-flex flex-wrap items-center gap-2">
                         {value as string}
-                        {(item as RegistrationData).missingInOris === true && (
+                        {item.missingInOris === true && (
                             <Badge variant="warning">{labels.events.missingInOris}</Badge>
                         )}
                     </span>

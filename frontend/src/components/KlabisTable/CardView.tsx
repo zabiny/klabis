@@ -1,15 +1,15 @@
 import type {ReactNode} from 'react'
 import type {ColumnDef, TableCellRenderProps} from './types'
-import {rowKey, rowRecord} from './rowRecord'
+import {cellValue, rowKey} from './rowAccess'
 
 interface CardViewProps<T extends object> {
     data: T[]
-    columns: ColumnDef[]
+    columns: ColumnDef<T>[]
     onRowClick?: (item: T) => void
     emptyMessage: string
 }
 
-const defaultRenderCell = (props: TableCellRenderProps): ReactNode => (
+const defaultRenderCell = (props: Pick<TableCellRenderProps, 'value'>): ReactNode => (
     <span>{String(props.value ?? '')}</span>
 )
 
@@ -33,10 +33,9 @@ export const CardView = <T extends object>({
     return (
         <div className="flex flex-col gap-3 p-3">
             {data.map((item, rowIndex) => {
-                const record = rowRecord(item)
                 return (
                 <div
-                    key={rowKey(record, rowIndex, 'card')}
+                    key={rowKey(item, rowIndex, 'card')}
                     className={`border border-border bg-surface-raised rounded-lg p-4 transition-colors ${
                         onRowClick ? 'cursor-pointer hover:bg-surface-base active:bg-surface-base' : ''
                     }`}
@@ -51,11 +50,11 @@ export const CardView = <T extends object>({
                     role={onRowClick ? 'button' : undefined}
                 >
                     {dataColumns.map((col) => {
-                        const value = record[col.name]
+                        const value = cellValue(item, col.name)
                         const renderFn = col.dataRender || defaultRenderCell
                         let cellContent: ReactNode
                         try {
-                            cellContent = renderFn({item: record, column: col.name, value})
+                            cellContent = renderFn({item, column: col.name, value})
                         } catch {
                             cellContent = <span className="text-red-500 text-xs">Error</span>
                         }

@@ -116,8 +116,7 @@ export const EventsPage = (): ReactElement => {
         {onImported: () => refetch()},
     );
 
-    const renderActionsCell = ({item}: TableCellRenderProps) => {
-        const event = item as unknown as EventListData;
+    const renderActionsCell = ({item: event}: TableCellRenderProps<EventListData>) => {
         const templates = event._templates;
         const links = event._links as Record<string, HalResourceLinks> | undefined;
         const newRegLink = links?.['newRegistration'] ? asLinkArray(links['newRegistration'])[0] : undefined;
@@ -269,9 +268,8 @@ export const EventsPage = (): ReactElement => {
             >
                 <TableCell sortable column={"eventDate"}
                            dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}>{labels.tables.date}</TableCell>
-                <TableCell sortable column={"name"}
-                           dataRender={({value, item}) => {
-                               const event = item as unknown as EventListData;
+                <TableCell<EventListData> sortable column={"name"}
+                           dataRender={({value, item: event}) => {
                                if (event.status !== 'CANCELLED') return value as string;
                                // Non-managers see no status column, so the state is repeated for screen readers.
                                return (
@@ -297,9 +295,8 @@ export const EventsPage = (): ReactElement => {
                                    <ExternalLink className="w-4 h-4"/>
                                </a>
                            ) : null}>{labels.tables.web}</TableCell>
-                <TableCell alwaysVisible column={"deadlines"}
-                           dataRender={({item}) => {
-                               const event = item as unknown as EventListData;
+                <TableCell<EventListData> alwaysVisible column={"deadlines"}
+                           dataRender={({item: event}) => {
                                const deadlines = event.deadlines;
                                if (!deadlines || deadlines.length === 0) return null;
                                const today = getTodayIso();
@@ -331,19 +328,17 @@ export const EventsPage = (): ReactElement => {
                                    </span>
                                );
                            }}>{labels.tables.registrationDeadline}</TableCell>
-                <TableCell column={"_links"}
+                <TableCell<EventListData> column={"_links"}
                            dataRender={({item}) => {
-                               const links = item._links as Record<string, unknown> | undefined;
-                               const coordinatorLinks = asLinkArray(links?.coordinator as HalResourceLinks | undefined);
+                               const coordinatorLinks = asLinkArray(item._links?.coordinator);
                                if (coordinatorLinks.length === 0) return null;
                                return <CoordinatorCellContent coordinatorLinks={coordinatorLinks}/>;
                            }}>{labels.tables.coordinator}</TableCell>
                 <TableCell sortable column={"status"}
                            hidden={!canManageEvents}
                            dataRender={({value}) => typeof value === 'string' ? getEnumLabel('eventStatus', value) : ''}>{labels.tables.status}</TableCell>
-                <TableCell column={"eventTypeId"}
-                           dataRender={({item}) => {
-                               const event = item as unknown as EventListData;
+                <TableCell<EventListData> column={"eventTypeId"}
+                           dataRender={({item: event}) => {
                                const eventType = getEventTypeById(event.eventTypeId);
                                if (!eventType) return null;
                                return <EventTypeBadge eventType={eventType}/>;

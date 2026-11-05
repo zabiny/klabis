@@ -111,13 +111,11 @@ const TransactionsTableContent = ({
         return ids;
     }, [tableData]);
 
-    const renderTypeCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
-        const tx = item as unknown as TransactionItem;
+    const renderTypeCell = useCallback(({item: tx}: TableCellRenderProps<TransactionItem>): ReactElement => {
         return <TypeCell type={tx.type as string} />;
     }, []);
 
-    const renderAmountCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
-        const tx = item as unknown as TransactionItem;
+    const renderAmountCell = useCallback(({item: tx}: TableCellRenderProps<TransactionItem>): ReactElement => {
         const amount = tx.amount as number;
         const currency = tx.currency as string;
         const isNegative = amount < 0;
@@ -131,12 +129,11 @@ const TransactionsTableContent = ({
         );
     }, [reversedIds]);
 
-    const renderDateCell = useCallback(({item}: TableCellRenderProps): string => {
-        return formatDate((item as unknown as TransactionItem).occurredAt as string);
+    const renderDateCell = useCallback(({item}: TableCellRenderProps<TransactionItem>): string => {
+        return formatDate(item.occurredAt as string);
     }, []);
 
-    const renderNoteCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
-        const tx = item as unknown as TransactionItem;
+    const renderNoteCell = useCallback(({item: tx}: TableCellRenderProps<TransactionItem>): ReactElement => {
         const isReversal = !!tx.reversesTransactionId;
         const isReversed = !!tx.id && reversedIds.has(tx.id);
 
@@ -158,9 +155,8 @@ const TransactionsTableContent = ({
         );
     }, [reversedIds]);
 
-    const renderActionsCell = useCallback(({item}: TableCellRenderProps): ReactElement | null => {
+    const renderActionsCell = useCallback(({item: tx}: TableCellRenderProps<TransactionItem>): ReactElement | null => {
         if (!onReverseRequest) return null;
-        const tx = item as unknown as TransactionItem;
         const reverseTarget = tx._templates?.reverse?.target;
         if (!reverseTarget) return null;
 
@@ -190,8 +186,7 @@ const TransactionsTableContent = ({
         );
     }, [onReverseRequest]);
 
-    const renderRecordedByCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
-        const tx = item as unknown as TransactionItem;
+    const renderRecordedByCell = useCallback(({item: tx}: TableCellRenderProps<TransactionItem>): ReactElement => {
         const recordedBy = tx._links?.recordedBy;
         const href = recordedBy ? toHref(recordedBy) : undefined;
         return <RecordedByCell href={href} />;

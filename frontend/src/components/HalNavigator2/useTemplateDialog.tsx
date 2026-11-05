@@ -1,7 +1,7 @@
 import {type ReactElement, type ReactNode, useCallback, useState} from 'react';
 import {createPortal} from 'react-dom';
-import type {HalFormsTemplate, HalResourceLinks} from '../../api';
-import {toHref} from '../../api/hateoas.ts';
+import type {HalFormsTemplate} from '../../api';
+import {selfHref} from '../../api/hateoas.ts';
 import {getDialogTitleLabel, getTemplateLabel} from '../../localization';
 import {Modal} from '../UI';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
@@ -51,11 +51,6 @@ interface OpenDialog {
 const templateOf = (resource: TemplateResource | null | undefined, name: string | undefined): HalFormsTemplate | undefined =>
     name ? (resource?._templates as Record<string, HalFormsTemplate> | undefined)?.[name] : undefined;
 
-const selfHref = (resource: TemplateResource): string | undefined => {
-    const self = (resource._links as {self?: HalResourceLinks} | undefined)?.self;
-    return self ? toHref(self) : undefined;
-};
-
 export function useTemplateDialog(name?: string, options: TemplateDialogOptions = {}): TemplateDialog {
     const [opened, setOpened] = useState<OpenDialog | null>(null);
     const {resource: defaultResource} = options;
@@ -92,7 +87,7 @@ export function useTemplateDialog(name?: string, options: TemplateDialogOptions 
                     template={openedTemplate}
                     templateName={opened.name}
                     resourceData={(effective.initialData ?? opened.resource) as Record<string, unknown>}
-                    resourceUrl={selfHref(opened.resource)}
+                    resourceUrl={selfHref(opened.resource as Parameters<typeof selfHref>[0])}
                     onClose={close}
                     onSubmitSuccess={(data) => {
                         effective.onSubmitSuccess?.(data);
