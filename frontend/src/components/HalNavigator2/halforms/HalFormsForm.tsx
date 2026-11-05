@@ -1,6 +1,6 @@
 import * as Yup from "yup";
-import {Form, Formik, getIn, useFormikContext} from "formik";
-import React, {type ReactElement, type ReactNode, useContext, useMemo} from "react";
+import {Form, Formik, type FormikErrors, getIn, setIn, useFormikContext} from "formik";
+import React, {type ReactElement, type ReactNode, useContext, useEffect, useMemo} from "react";
 import {type HalFormsProperty, type HalFormsTemplate} from "../../../api";
 import {type HalFormFieldFactory, type HalFormsInputProps, type RenderMode, SIMPLE_FIELD_TYPES, type SubElementConfiguration} from "./types.ts";
 import {halFormsFieldsFactory} from "./HalFormsFieldFactory.tsx";
@@ -8,7 +8,8 @@ import {isMultipleProperty, sanitizeFormValues} from "./utils.ts";
 import {Alert, Button, Spinner} from "../../UI";
 import {Box} from "../../UI/layout";
 import {FieldWrapper} from "../../UI/forms";
-import {getFieldLabel} from "../../../localization";
+import {describeError, getFieldLabel} from "../../../localization";
+import type {ApiError} from "../../../api/apiError.ts";
 import {UI_MESSAGES, VALIDATION_MESSAGES} from "../../../constants/messages.ts";
 
 type FormData = Record<string, unknown>;
@@ -211,7 +212,7 @@ interface HalFormsFormProps {
     fieldsFactory?: HalFormFieldFactory,
     isSubmitting?: boolean,
     renderForm?: RenderFormCallback,
-    serverValidationErrors?: Record<string, string>,
+    serverError?: ApiError | null,
     refineValidationSchema?: (schema: Yup.ObjectSchema<Record<string, unknown>>) => Yup.ObjectSchema<Record<string, unknown>>
 }
 
@@ -223,6 +224,28 @@ const HalFormsFormContext = React.createContext<HalFormsFormContextType>({
     renderLabel: () => undefined,
 });
 
+function useApplyServerError(template: HalFormsTemplate, serverError?: ApiError | null) {
+    const {setErrors, setFieldTouched} = useFormikContext<Record<string, unknown>>();
+
+    useEffect(() => {
+        if (!serverError) return;
+        const isTemplateField = (key: string) => template.properties.some(p => p.name === key.split('.')[0]);
+        const fieldErrors: Record<string, string> = {};
+        Object.entries(serverError.fieldErrors).forEach(([key, text]) => {
+            if (isTemplateField(key)) fieldErrors[key] = text;
+        });
+        if (serverError.field && isTemplateField(serverError.field) && !fieldErrors[serverError.field]) {
+            fieldErrors[serverError.field] = describeError(serverError);
+        }
+        const keys = Object.keys(fieldErrors);
+        if (keys.length === 0) return;
+        setErrors(keys.reduce<FormikErrors<Record<string, unknown>>>((acc, key) => setIn(acc, key, fieldErrors[key]), {}));
+        keys.forEach(key => setFieldTouched(key, true, false));
+        // Re-apply only when a new server error arrives; template and Formik helpers changing must not wipe client edits
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [serverError]);
+}
+
 // --- Inner form content rendered inside Formik context ---
 interface HalFormsFormContentProps {
     template: HalFormsTemplate,
@@ -232,6 +255,7 @@ interface HalFormsFormContentProps {
     fieldsFactory: HalFormFieldFactory,
     externalIsSubmitting: boolean,
     renderForm?: RenderFormCallback,
+    serverError?: ApiError | null,
     children?: ReactNode,
 }
 
@@ -243,8 +267,10 @@ const HalFormsFormContent: React.FC<HalFormsFormContentProps> = ({
     fieldsFactory,
     externalIsSubmitting,
     renderForm,
+    serverError,
     children,
 }) => {
+    useApplyServerError(template, serverError);
     const {isSubmitting: formikIsSubmitting, errors, touched, submitCount} = useFormikContext<Record<string, unknown>>();
     const isFormProcessing = formikIsSubmitting || externalIsSubmitting;
     const submitted = submitCount > 0;
@@ -360,7 +386,7 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                                                                                 isSubmitting: externalIsSubmitting = false,
                                                                                 renderForm,
                                                                                 children,
-                                                                                serverValidationErrors,
+                                                                                serverError,
                                                                                 refineValidationSchema
                                                                             }) => {
 
@@ -379,7 +405,6 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
     return (
         <Formik
             initialValues={initialValues}
-            initialErrors={serverValidationErrors}
             validationSchema={validationSchema}
             validateOnChange={false}
             validateOnBlur={true}
@@ -400,6 +425,7 @@ const HalFormsForm: React.FC<React.PropsWithChildren<HalFormsFormProps>> = ({
                 fieldsFactory={fieldsFactory}
                 externalIsSubmitting={externalIsSubmitting}
                 renderForm={renderForm}
+                serverError={serverError}
             >
                 {children}
             </HalFormsFormContent>

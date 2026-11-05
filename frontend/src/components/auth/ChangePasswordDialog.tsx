@@ -4,7 +4,7 @@ import {PasswordField} from './PasswordField';
 import {PasswordStrengthIndicator} from './PasswordStrengthIndicator';
 import {labels} from '../../localization';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
-import type {FetchError} from '../../api/authorizedFetch';
+import type {ApiError} from '../../api/apiError';
 import {buildPasswordRequirements} from './passwordRequirements';
 
 interface ChangePasswordDialogProps {
@@ -26,21 +26,12 @@ interface ValidationErrors {
 
 const INCORRECT_CURRENT_PASSWORD_MARKER = 'Current password is incorrect';
 
-function extractServerErrorMessage(error: Error): string {
-    const responseBody = (error as FetchError).responseBody;
-    if (responseBody) {
-        try {
-            const body = JSON.parse(responseBody);
-            const detail: string = body?.detail ?? '';
-            if (detail.includes(INCORRECT_CURRENT_PASSWORD_MARKER)) {
-                return labels.changePassword.errorIncorrectCurrentPassword;
-            }
-            return detail || labels.errors.unexpectedError;
-        } catch {
-            // fall through
-        }
+function extractServerErrorMessage(error: ApiError): string {
+    const detail = error.detail ?? '';
+    if (detail.includes(INCORRECT_CURRENT_PASSWORD_MARKER)) {
+        return labels.changePassword.errorIncorrectCurrentPassword;
     }
-    return labels.errors.unexpectedError;
+    return detail || labels.errors.unexpectedError;
 }
 
 export const ChangePasswordDialog = ({isOpen, onClose}: ChangePasswordDialogProps) => {

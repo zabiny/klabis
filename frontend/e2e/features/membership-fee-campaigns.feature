@@ -23,7 +23,7 @@ Feature: Membership fee selection campaigns
       Given a catalog fee level "Deadline" exists
       And no fee selection campaign is active
       When Jan starts a fee selection campaign offering level "Deadline" with the voting deadline today
-      Then the campaign is refused
+      Then the voting deadline field shows the message "Termín pro výběr musí být v budoucnosti."
       And the membership fees page shows no active campaign
 
   Rule: Only one campaign can be active at a time
@@ -59,7 +59,7 @@ Feature: Membership fee selection campaigns
     Scenario: Deadline cannot be moved to the past
       Given an active fee selection campaign offers level "Past" with the voting deadline in 30 days
       When Jan changes the voting deadline to yesterday
-      Then the deadline change is refused
+      Then the voting deadline field shows the message "Termín pro výběr nesmí být v minulosti."
       And the active campaign has the voting deadline in 30 days
 
     Scenario: Closed campaign deadline cannot be changed

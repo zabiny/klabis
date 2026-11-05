@@ -2,7 +2,7 @@ import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {vi} from 'vitest';
 import {PermissionsDialog, type PermissionsDialogProps} from './PermissionsDialog';
-import {FetchError} from '../../api/authorizedFetch';
+import {ApiError} from '../../api/authorizedFetch';
 
 const renderDialog = (props?: Partial<PermissionsDialogProps>) => {
     const defaultProps: PermissionsDialogProps = {
@@ -266,13 +266,7 @@ describe('PermissionsDialog', () => {
         });
 
         it('shows user-friendly Czech message when admin lockout is detected (409)', () => {
-            const conflictError = new FetchError(
-                'HTTP 409 (Conflict)',
-                409,
-                'Conflict',
-                new Headers(),
-                undefined,
-            );
+            const conflictError = new ApiError(409);
 
             renderDialog({error: conflictError});
 

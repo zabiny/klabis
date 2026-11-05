@@ -6,7 +6,8 @@ import {MemoryRouter} from 'react-router-dom';
 import {HalRouteProvider} from '../../contexts/HalRouteContext';
 import {EventRegistrationDialog, type EventRegistrationDialogProps} from './EventRegistrationDialog.tsx';
 import {createDelayedMockResponse, createMockResponse} from '../../__mocks__/mockFetch.ts';
-import {authorizedFetch, FetchError} from '../../api/authorizedFetch';
+import {authorizedFetch} from '../../api/authorizedFetch';
+import {ApiError} from '../../api/apiError';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {type Mock, vi} from 'vitest';
 import type {HalFormsTemplate} from '../../api/types';
@@ -14,17 +15,6 @@ import {labels} from '../../localization';
 
 vi.mock('../../api/authorizedFetch', () => ({
     authorizedFetch: vi.fn(),
-    FetchError: class FetchError extends Error {
-        public responseStatus: number;
-        public responseBody?: string;
-        public responseHeaders: Headers;
-        constructor(message: string, responseStatus: number, _statusText?: string, headers?: Headers, responseBody?: string) {
-            super(message);
-            this.responseStatus = responseStatus;
-            this.responseHeaders = headers ?? new Headers();
-            this.responseBody = responseBody;
-        }
-    },
 }));
 
 const PREFILL_URL = '/api/events/evt-1/registrations/M001?newRegistration=true';
@@ -655,13 +645,7 @@ describe('EventRegistrationDialog', () => {
         const user = userEvent.setup();
         mockRoutes((url, options) => {
             if (options?.method === 'PUT') {
-                return Promise.reject(new FetchError(
-                    'HTTP 400 (Bad Request)',
-                    400,
-                    'Bad Request',
-                    new Headers({'Content-Type': 'application/problem+json'}),
-                    JSON.stringify({fieldErrors: {siCardNumber: 'SI čip je již zaregistrovaný'}}),
-                ));
+                return Promise.reject(new ApiError(400, {fieldErrors: {siCardNumber: 'SI čip je již zaregistrovaný'}}));
             }
             if (options?.method) return writeOk();
             if (url === EVENT_URL) return jsonOk(eventData());
@@ -677,11 +661,11 @@ describe('EventRegistrationDialog', () => {
         expect(screen.getByLabelText(/SI čip/)).toHaveClass('border-error');
     });
 
-    it('shows alert with server message for non-validation errors and keeps entered data', async () => {
+    it('shows alert with Czech message for non-validation errors and keeps entered data', async () => {
         const user = userEvent.setup();
         mockRoutes((url, options) => {
             if (options?.method === 'POST') {
-                return Promise.reject(new FetchError('HTTP 500 (Internal Server Error)', 500, 'Internal Server Error', new Headers()));
+                return Promise.reject(new ApiError(500));
             }
             if (options?.method) return writeOk();
             if (url === EVENT_URL) return jsonOk(eventData());
@@ -695,7 +679,7 @@ describe('EventRegistrationDialog', () => {
         await user.selectOptions(screen.getByLabelText(/Kategorie/), 'cat-1');
         await user.click(screen.getByRole('button', {name: labels.events.registrationModal.confirmNew}));
 
-        expect(await screen.findByText('HTTP 500 (Internal Server Error)')).toBeInTheDocument();
+        expect(await screen.findByText(labels.errors.unexpectedError)).toBeInTheDocument();
         expect(siInput).toHaveValue('1234567');
     });
 
@@ -717,7 +701,7 @@ describe('EventRegistrationDialog', () => {
     });
 
     it('shows prefill load error alert and no form when the registration fetch fails', async () => {
-        mockRoutes(() => Promise.reject(new FetchError('HTTP 500', 500, 'Internal Server Error', new Headers())));
+        mockRoutes(() => Promise.reject(new ApiError(500)));
         renderDialog();
 
         expect(await screen.findByText(labels.events.registrationModal.prefillLoadError)).toBeInTheDocument();

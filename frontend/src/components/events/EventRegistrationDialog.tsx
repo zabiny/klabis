@@ -4,7 +4,7 @@ import {getDialogTitleLabel, getFieldLabel, labels} from '../../localization';
 import {renderYesNo} from '../../utils/formatters';
 import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from '../UI';
 import {type RegistrationDialogData, type RegistrationDialogMode, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
-import {isFormValidationError, toFormValidationError} from '../../api/hateoas';
+import {ApiError} from '../../api/apiError';
 import type {Link} from '../../api/types';
 import type {HalResourceLinks} from '../../api';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils';
@@ -125,9 +125,8 @@ export const EventRegistrationDialog = ({
     };
 
     const handleSubmitError = (submitError: unknown): boolean => {
-        const validationError = toFormValidationError(submitError);
-        if (isFormValidationError(validationError)) {
-            setServerFieldErrors(validationError.validationErrors);
+        if (submitError instanceof ApiError) {
+            setServerFieldErrors(submitError.fieldErrors);
         }
         return false;
     };

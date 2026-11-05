@@ -1,6 +1,7 @@
 import {renderHook, act} from '@testing-library/react';
 import {vi, describe, it, expect, beforeEach} from 'vitest';
 import type {UseQueryResult, UseMutationResult} from '@tanstack/react-query';
+import type {ApiError} from '../api/authorizedFetch';
 import {useOrisEventImport} from './useOrisEventImport';
 import type {HalFormsTemplate} from '../api/types';
 import type {MutationResult, UseAuthorizedMutationVariables} from './useAuthorizedFetch';
@@ -24,8 +25,8 @@ const makeTemplate = (overrides: Partial<HalFormsTemplate> = {}): HalFormsTempla
 describe('useOrisEventImport', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: undefined, isError: false, isSuccess: false} as unknown as UseQueryResult<unknown>);
-        vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: vi.fn()} as unknown as UseMutationResult<MutationResult, Error, UseAuthorizedMutationVariables>);
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: undefined, isError: false, isSuccess: false} as unknown as UseQueryResult<unknown, ApiError>);
+        vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: vi.fn()} as unknown as UseMutationResult<MutationResult, ApiError, UseAuthorizedMutationVariables>);
     });
 
     describe('template undefined — guard disabled', () => {
@@ -49,7 +50,7 @@ describe('useOrisEventImport', () => {
     describe('submit URL and method derived from affordance', () => {
         it('passes template.target as mutation URL', () => {
             const mutateMock = vi.fn();
-            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: mutateMock} as unknown as UseMutationResult<MutationResult, Error, UseAuthorizedMutationVariables>);
+            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: mutateMock} as unknown as UseMutationResult<MutationResult, ApiError, UseAuthorizedMutationVariables>);
 
             vi.mocked(useAuthorizedQuery).mockReturnValue({
                 data: [
@@ -58,7 +59,7 @@ describe('useOrisEventImport', () => {
                 ],
                 isError: false,
                 isSuccess: true,
-            } as unknown as UseQueryResult<unknown>);
+            } as unknown as UseQueryResult<unknown, ApiError>);
 
             const template = makeTemplate({target: '/api/events/import-batch', method: 'POST'});
             const {result} = renderHook(() => useOrisEventImport(template, true));
@@ -73,7 +74,7 @@ describe('useOrisEventImport', () => {
         });
 
         it('uses method from affordance (non-POST)', () => {
-            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: vi.fn()} as unknown as UseMutationResult<MutationResult, Error, UseAuthorizedMutationVariables>);
+            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: vi.fn()} as unknown as UseMutationResult<MutationResult, ApiError, UseAuthorizedMutationVariables>);
             const template = makeTemplate({method: 'PUT'});
 
             renderHook(() => useOrisEventImport(template, true));
@@ -84,7 +85,7 @@ describe('useOrisEventImport', () => {
         });
 
         it('falls back to POST when method is absent in affordance', () => {
-            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: vi.fn()} as unknown as UseMutationResult<MutationResult, Error, UseAuthorizedMutationVariables>);
+            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: vi.fn()} as unknown as UseMutationResult<MutationResult, ApiError, UseAuthorizedMutationVariables>);
             const template = makeTemplate({method: undefined});
 
             renderHook(() => useOrisEventImport(template, true));
@@ -96,12 +97,12 @@ describe('useOrisEventImport', () => {
 
         it('uses property name as body key when orisIds property found', () => {
             const mutateMock = vi.fn();
-            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: mutateMock} as unknown as UseMutationResult<MutationResult, Error, UseAuthorizedMutationVariables>);
+            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: mutateMock} as unknown as UseMutationResult<MutationResult, ApiError, UseAuthorizedMutationVariables>);
             vi.mocked(useAuthorizedQuery).mockReturnValue({
                 data: [{id: 7, name: 'Z', date: '2025-01-01', organizer: 'A', location: null}],
                 isError: false,
                 isSuccess: true,
-            } as unknown as UseQueryResult<unknown>);
+            } as unknown as UseQueryResult<unknown, ApiError>);
 
             const template = makeTemplate({
                 properties: [{name: 'eventOrisIds', type: 'number', multi: true, max: 10}],
@@ -119,12 +120,12 @@ describe('useOrisEventImport', () => {
 
         it('falls back to orisIds key when no multi property found', () => {
             const mutateMock = vi.fn();
-            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: mutateMock} as unknown as UseMutationResult<MutationResult, Error, UseAuthorizedMutationVariables>);
+            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: mutateMock} as unknown as UseMutationResult<MutationResult, ApiError, UseAuthorizedMutationVariables>);
             vi.mocked(useAuthorizedQuery).mockReturnValue({
                 data: [{id: 5, name: 'Z', date: '2025-01-01', organizer: 'A', location: null}],
                 isError: false,
                 isSuccess: true,
-            } as unknown as UseQueryResult<unknown>);
+            } as unknown as UseQueryResult<unknown, ApiError>);
 
             const template = makeTemplate({properties: []});
             const {result} = renderHook(() => useOrisEventImport(template, true));
@@ -180,7 +181,7 @@ describe('useOrisEventImport', () => {
         ];
 
         beforeEach(() => {
-            vi.mocked(useAuthorizedQuery).mockReturnValue({data: events, isError: false, isSuccess: true} as unknown as UseQueryResult<unknown>);
+            vi.mocked(useAuthorizedQuery).mockReturnValue({data: events, isError: false, isSuccess: true} as unknown as UseQueryResult<unknown, ApiError>);
         });
 
         it('is false when selection is below limit', () => {
@@ -211,7 +212,7 @@ describe('useOrisEventImport', () => {
         ];
 
         beforeEach(() => {
-            vi.mocked(useAuthorizedQuery).mockReturnValue({data: events, isError: false, isSuccess: true} as unknown as UseQueryResult<unknown>);
+            vi.mocked(useAuthorizedQuery).mockReturnValue({data: events, isError: false, isSuccess: true} as unknown as UseQueryResult<unknown, ApiError>);
         });
 
         it('does not add id when limit is reached', () => {
@@ -236,12 +237,12 @@ describe('useOrisEventImport', () => {
     describe('import result status normalization', () => {
         it('normalizes lowercase status from API response to uppercase', async () => {
             const mutateMock = vi.fn();
-            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: mutateMock} as unknown as UseMutationResult<MutationResult, Error, UseAuthorizedMutationVariables>);
+            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate: mutateMock} as unknown as UseMutationResult<MutationResult, ApiError, UseAuthorizedMutationVariables>);
             vi.mocked(useAuthorizedQuery).mockReturnValue({
                 data: [{id: 1, name: 'Z', date: '2025-01-01', organizer: 'A', location: null}],
                 isError: false,
                 isSuccess: true,
-            } as unknown as UseQueryResult<unknown>);
+            } as unknown as UseQueryResult<unknown, ApiError>);
 
             const template = makeTemplate();
             const {result} = renderHook(() => useOrisEventImport(template, true));
@@ -281,7 +282,7 @@ describe('useOrisEventImport', () => {
         ];
 
         beforeEach(() => {
-            vi.mocked(useAuthorizedQuery).mockReturnValue({data: events, isError: false, isSuccess: true} as unknown as UseQueryResult<unknown>);
+            vi.mocked(useAuthorizedQuery).mockReturnValue({data: events, isError: false, isSuccess: true} as unknown as UseQueryResult<unknown, ApiError>);
         });
 
         it('selects at most `limit` events when toggling all from empty selection', () => {

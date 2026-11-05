@@ -78,7 +78,7 @@ function createMockQueryResult<T>(data: T | null = null, overrides: Record<strin
         errorUpdatedAt: null,
         dataUpdatedAt: Date.now(),
         ...overrides,
-    } as unknown as import('@tanstack/react-query').UseQueryResult<T | undefined>;
+    } as unknown as import('@tanstack/react-query').UseQueryResult<T | undefined, import('../api/authorizedFetch').ApiError>;
 }
 
 const regularNavItems: NavigationItem[] = [

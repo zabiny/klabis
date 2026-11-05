@@ -4,7 +4,7 @@ import type {ReactNode} from 'react';
 import React from 'react';
 import {invalidateAuthorizedQueries, useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
 import {createMockResponse} from '../__mocks__/mockFetch';
-import {FetchError} from '../api/authorizedFetch';
+import {ApiError} from '../api/authorizedFetch';
 import {type Mock, vi} from 'vitest';
 
 // Mock dependencies
@@ -459,14 +459,11 @@ describe('useAuthorizedMutation', () => {
             expect(result.current.error).toEqual(networkError);
         });
 
-        it('should include response headers in FetchError', async () => {
-            const mockResponse = {
-                ok: false,
-                status: 400,
-                statusText: 'Bad Request',
-                headers: new Headers({'Content-Type': 'application/json'}),
-                text: async () => 'Bad Request',
-            } as Response;
+        it('should reject with ApiError parsed from problem+json response', async () => {
+            const mockResponse = new Response(
+                JSON.stringify({type: '/errors/validation-failed', status: 400, fieldErrors: {name: 'nesmí být prázdné'}}),
+                {status: 400, headers: {'Content-Type': 'application/problem+json'}}
+            );
 
             fetchSpy.mockResolvedValueOnce(mockResponse);
 
@@ -481,11 +478,11 @@ describe('useAuthorizedMutation', () => {
                 expect(result.current.error).toBeDefined();
             });
 
-            const error = result.current.error as FetchError;
-            expect(error).toBeInstanceOf(FetchError);
-            expect(error.responseHeaders).toBeDefined();
-            expect(error.responseHeaders).toBeInstanceOf(Headers);
-            expect(error.responseHeaders.get('Content-Type')).toBe('application/json');
+            const error = result.current.error as ApiError;
+            expect(error).toBeInstanceOf(ApiError);
+            expect(error.status).toBe(400);
+            expect(error.type).toBe('/errors/validation-failed');
+            expect(error.fieldErrors).toEqual({name: 'nesmí být prázdné'});
         });
     });
 

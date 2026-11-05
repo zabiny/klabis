@@ -4,7 +4,7 @@ import NotFoundPage from './NotFoundPage';
 import ForbiddenPage from './ForbiddenPage';
 
 interface ErrorWithStatus {
-    responseStatus?: number;
+    status?: number;
     message: string;
 }
 
@@ -13,8 +13,8 @@ interface ErrorPageProps {
 }
 
 function extractStatus(error: ErrorWithStatus | Error): number | undefined {
-    if ('responseStatus' in error && typeof error.responseStatus === 'number') {
-        return error.responseStatus;
+    if ('status' in error && typeof error.status === 'number') {
+        return error.status;
     }
     const match = error.message.match(/HTTP (\d{3})/);
     return match ? parseInt(match[1], 10) : undefined;

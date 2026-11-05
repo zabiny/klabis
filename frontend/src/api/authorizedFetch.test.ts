@@ -13,7 +13,7 @@ vi.mock('./klabisUserManager', () => {
 });
 
 const {klabisAuthUserManager, silentRenewRetry} = await import('./klabisUserManager');
-const {authorizedFetch, FetchError} = await import('./authorizedFetch');
+const {authorizedFetch, ApiError} = await import('./authorizedFetch');
 
 const mockUserManager = klabisAuthUserManager as unknown as {
     getUser: ReturnType<typeof vi.fn>;
@@ -98,18 +98,18 @@ describe('authorizedFetch', () => {
             .mockResolvedValue(new Response('Unauthorized', {status: 401}));
         vi.stubGlobal('fetch', mockFetch);
 
-        await expect(authorizedFetch('/test')).rejects.toBeInstanceOf(FetchError);
+        await expect(authorizedFetch('/test')).rejects.toBeInstanceOf(ApiError);
 
         // silentRenewRetry called only once (for the first 401), not for the retried 401
         expect(mockSilentRenewRetry).toHaveBeenCalledTimes(1);
         expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
-    it('throws FetchError for non-401 error responses when throwOnError is true', async () => {
+    it('throws ApiError for non-401 error responses when throwOnError is true', async () => {
         const mockFetch = vi.fn().mockResolvedValue(new Response('Not Found', {status: 404}));
         vi.stubGlobal('fetch', mockFetch);
 
-        await expect(authorizedFetch('/test')).rejects.toBeInstanceOf(FetchError);
+        await expect(authorizedFetch('/test')).rejects.toBeInstanceOf(ApiError);
         expect(mockSilentRenewRetry).not.toHaveBeenCalled();
     });
 
@@ -143,5 +143,91 @@ describe('authorizedFetch', () => {
         await authorizedFetch(new URL('https://example.com/other?x=1'));
 
         expect(mockFetch.mock.calls[0][0]).toBe('https://example.com/other?x=1');
+    });
+
+    describe('error parsing', () => {
+        const problemResponse = (body: unknown, status = 400, contentType = 'application/problem+json') =>
+            new Response(typeof body === 'string' ? body : JSON.stringify(body), {
+                status,
+                headers: {'Content-Type': contentType},
+            });
+
+        const failWith = async (response: Response): Promise<InstanceType<typeof ApiError>> => {
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response));
+            return await authorizedFetch('/test').catch(e => e);
+        };
+
+        it('maps every documented problem+json member', async () => {
+            const error = await failWith(problemResponse({
+                type: '/errors/voting-deadline-not-in-future',
+                title: 'Bad Request',
+                status: 400,
+                detail: 'Voting deadline must be in the future',
+                instance: '/api/x',
+                field: 'votingDeadline',
+                fieldErrors: {name: 'nesmí být prázdné'},
+                errors: ['global one'],
+                parameterErrors: ['param one'],
+                deadline: '2026-10-18',
+            }));
+
+            expect(error).toBeInstanceOf(ApiError);
+            expect(error.status).toBe(400);
+            expect(error.type).toBe('/errors/voting-deadline-not-in-future');
+            expect(error.detail).toBe('Voting deadline must be in the future');
+            expect(error.field).toBe('votingDeadline');
+            expect(error.fieldErrors).toEqual({name: 'nesmí být prázdné'});
+            expect(error.errors).toEqual(['global one', 'param one']);
+            expect(error.params).toEqual({deadline: '2026-10-18'});
+            expect(error.message).toBe('HTTP 400: Voting deadline must be in the future');
+        });
+
+        it('puts unknown extension properties into params', async () => {
+            const error = await failWith(problemResponse({
+                type: '/errors/conflict',
+                status: 409,
+                groups: {affectedGroups: []},
+                somethingNew: 42,
+            }, 409));
+
+            expect(error.params).toEqual({groups: {affectedGroups: []}, somethingNew: 42});
+        });
+
+        it('defaults collections to empty and omits detail from message', async () => {
+            const error = await failWith(problemResponse({type: '/errors/not-found', status: 404}, 404));
+
+            expect(error.fieldErrors).toEqual({});
+            expect(error.errors).toEqual([]);
+            expect(error.params).toEqual({});
+            expect(error.message).toBe('HTTP 404');
+        });
+
+        it('does not throw when the problem+json body is not valid JSON', async () => {
+            const error = await failWith(problemResponse('<html>oops</html>', 500));
+
+            expect(error).toBeInstanceOf(ApiError);
+            expect(error.status).toBe(500);
+            expect(error.type).toBeUndefined();
+            expect(error.fieldErrors).toEqual({});
+            expect(error.errors).toEqual([]);
+            expect(error.params).toEqual({});
+        });
+
+        it('ignores a JSON body whose content type is not problem+json', async () => {
+            const error = await failWith(problemResponse({type: '/errors/conflict', detail: 'x'}, 409, 'application/json'));
+
+            expect(error.status).toBe(409);
+            expect(error.type).toBeUndefined();
+            expect(error.detail).toBeUndefined();
+            expect(error.message).toBe('HTTP 409');
+        });
+
+        it('exposes no raw response data', async () => {
+            const error = await failWith(problemResponse({status: 400}));
+
+            expect(error).not.toHaveProperty('responseBody');
+            expect(error).not.toHaveProperty('responseHeaders');
+            expect(error).not.toHaveProperty('responseStatusText');
+        });
     });
 });

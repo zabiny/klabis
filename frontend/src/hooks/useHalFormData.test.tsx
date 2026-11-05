@@ -4,7 +4,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalFormData} from './useHalFormData';
 import {mockHalFormsTemplate} from '../__mocks__/halData';
 import {createMockResponse} from '../__mocks__/mockFetch';
-import {FetchError} from '../api/authorizedFetch';
+import {ApiError} from '../api/authorizedFetch';
 import {type Mock, vi} from 'vitest';
 
 // Mock dependencies
@@ -275,7 +275,7 @@ describe('useHalFormData Hook', () => {
 
         it('should surface OPTIONS error through targetFetchError and skip GET', async () => {
             const template = mockHalFormsTemplate({target: '/api/events/456'});
-            const optionsError = new FetchError('HTTP 500 (Internal Server Error)', 500, 'Internal Server Error', new Headers());
+            const optionsError = new ApiError(500);
             fetchSpy.mockRejectedValueOnce(optionsError);
 
             const {result} = renderHook(
@@ -433,7 +433,7 @@ describe('useHalFormData Hook', () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
             fetchSpy
                 .mockResolvedValueOnce(createOptionsResponse(['GET']))
-                .mockRejectedValueOnce(new FetchError('HTTP 500 (Internal Server Error)', 500, 'Internal Server Error', new Headers()));
+                .mockRejectedValueOnce(new ApiError(500));
 
             const {result} = renderHook(
                 () => useHalFormData(template, currentResourceData, '/members/123'),
@@ -449,7 +449,7 @@ describe('useHalFormData Hook', () => {
         it('should not fire GET when OPTIONS returns 404 (endpoint does not support OPTIONS)', async () => {
             // Replaces old "suppress 404 error" test — now handled by OPTIONS probe, not GET 404-swallowing
             const template = mockHalFormsTemplate({target: '/events/456'});
-            const optionsError = new FetchError('HTTP 404 (Not Found)', 404, 'Not Found', new Headers());
+            const optionsError = new ApiError(404);
             fetchSpy.mockRejectedValueOnce(optionsError);
 
             const {result} = renderHook(
@@ -469,7 +469,7 @@ describe('useHalFormData Hook', () => {
 
         it('should show error for HTTP 500 from OPTIONS probe', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
-            const fetchError = new FetchError('HTTP 500 (Internal Server Error)', 500, 'Internal Server Error', new Headers());
+            const fetchError = new ApiError(500);
             fetchSpy.mockRejectedValueOnce(fetchError);
 
             const {result} = renderHook(
@@ -805,7 +805,7 @@ describe('useHalFormData Hook', () => {
             });
         });
 
-        it('should handle non-FetchError errors (standard Error instances) from OPTIONS', async () => {
+        it('should handle non-ApiError errors (standard Error instances) from OPTIONS', async () => {
             const template = mockHalFormsTemplate({target: '/events/456'});
             const standardError = new Error('Network timeout');
             fetchSpy.mockRejectedValueOnce(standardError);

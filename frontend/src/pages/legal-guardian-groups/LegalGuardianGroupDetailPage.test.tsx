@@ -10,7 +10,7 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {LegalGuardianGroupDetailPage} from './LegalGuardianGroupDetailPage';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {stubFetch} from '../../__mocks__/halDialogTest.tsx';
-import {FetchError} from '../../api/authorizedFetch';
+import {ApiError} from '../../api/authorizedFetch';
 
 vi.mock('../../hooks/useHalPageData', () => ({useHalPageData: vi.fn()}));
 
@@ -172,7 +172,7 @@ describe('LegalGuardianGroupDetailPage', () => {
         vi.mocked(useHalPageData).mockReturnValue({
             resourceData: undefined,
             isLoading: false,
-            error: new FetchError('HTTP 404 (Not Found)', 404, 'Not Found', new Headers()),
+            error: new ApiError(404),
             navigateToResource, refetch: async () => {},
         } as unknown as ReturnType<typeof useHalPageData>);
         rerender(<QueryClientProvider client={new QueryClient()}><ToastProvider><MemoryRouter><LegalGuardianGroupDetailPage/></MemoryRouter></ToastProvider></QueryClientProvider>);
@@ -185,12 +185,12 @@ describe('LegalGuardianGroupDetailPage', () => {
         vi.mocked(useHalPageData).mockReturnValue({
             resourceData: undefined,
             isLoading: false,
-            error: new FetchError('HTTP 404 (Not Found)', 404, 'Not Found', new Headers()),
+            error: new ApiError(404),
             navigateToResource, refetch: async () => {},
         } as unknown as ReturnType<typeof useHalPageData>);
         render(<MemoryRouter><LegalGuardianGroupDetailPage/></MemoryRouter>);
 
-        expect(screen.getByText('HTTP 404 (Not Found)')).toBeInTheDocument();
+        expect(screen.getByText('HTTP 404')).toBeInTheDocument();
         expect(navigate).not.toHaveBeenCalled();
     });
 });

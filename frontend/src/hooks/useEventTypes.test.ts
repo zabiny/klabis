@@ -2,6 +2,7 @@ import {describe, it, expect, vi, beforeEach} from 'vitest';
 import {renderHook} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type {UseQueryResult} from '@tanstack/react-query';
+import type {ApiError} from '../api/authorizedFetch';
 import {createElement} from 'react';
 import {useEventTypes} from './useEventTypes.ts';
 import {useAuthorizedQuery} from './useAuthorizedFetch.ts';
@@ -25,7 +26,7 @@ describe('useEventTypes', () => {
     });
 
     it('returns empty list when no data', () => {
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: undefined, isLoading: false, error: null} as unknown as UseQueryResult<unknown>);
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: undefined, isLoading: false, error: null} as unknown as UseQueryResult<unknown, ApiError>);
         const {result} = renderHook(() => useEventTypes(), {wrapper: createWrapper()});
         expect(result.current.eventTypes).toEqual([]);
     });
@@ -36,7 +37,7 @@ describe('useEventTypes', () => {
             data: {_embedded: {eventTypeDtoList: types}},
             isLoading: false,
             error: null,
-        } as unknown as UseQueryResult<unknown>);
+        } as unknown as UseQueryResult<unknown, ApiError>);
         const {result} = renderHook(() => useEventTypes(), {wrapper: createWrapper()});
         expect(result.current.eventTypes).toHaveLength(2);
         expect(result.current.eventTypes[0].name).toBe('Trénink');
@@ -48,7 +49,7 @@ describe('useEventTypes', () => {
             data: {_embedded: {eventTypeDtoList: types}},
             isLoading: false,
             error: null,
-        } as unknown as UseQueryResult<unknown>);
+        } as unknown as UseQueryResult<unknown, ApiError>);
         const {result} = renderHook(() => useEventTypes(), {wrapper: createWrapper()});
         expect(result.current.getById('type-1')?.name).toBe('Trénink');
     });
@@ -59,7 +60,7 @@ describe('useEventTypes', () => {
             data: {_embedded: {eventTypeDtoList: types}},
             isLoading: false,
             error: null,
-        } as unknown as UseQueryResult<unknown>);
+        } as unknown as UseQueryResult<unknown, ApiError>);
         const {result} = renderHook(() => useEventTypes(), {wrapper: createWrapper()});
         expect(result.current.getById('unknown-id')).toBeUndefined();
     });
@@ -70,14 +71,14 @@ describe('useEventTypes', () => {
             data: {_embedded: {eventTypeDtoList: types}},
             isLoading: false,
             error: null,
-        } as unknown as UseQueryResult<unknown>);
+        } as unknown as UseQueryResult<unknown, ApiError>);
         const {result} = renderHook(() => useEventTypes(), {wrapper: createWrapper()});
         expect(result.current.getById(null)).toBeUndefined();
         expect(result.current.getById(undefined)).toBeUndefined();
     });
 
     it('queries /api/event-types with 5-minute staleTime', () => {
-        vi.mocked(useAuthorizedQuery).mockReturnValue({data: undefined, isLoading: false, error: null} as unknown as UseQueryResult<unknown>);
+        vi.mocked(useAuthorizedQuery).mockReturnValue({data: undefined, isLoading: false, error: null} as unknown as UseQueryResult<unknown, ApiError>);
         renderHook(() => useEventTypes(), {wrapper: createWrapper()});
         expect(vi.mocked(useAuthorizedQuery)).toHaveBeenCalledWith(
             '/api/event-types',
