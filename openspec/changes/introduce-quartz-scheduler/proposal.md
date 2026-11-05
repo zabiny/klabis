@@ -1,26 +1,34 @@
 ## Why
 
-Scheduled work is spread across four modules with no shared mechanism. The
-application currently has six `@Scheduled` methods:
+Scheduled work is spread across five modules with no shared mechanism. The
+application currently has thirteen `@Scheduled` methods:
 
 | Job | Schedule | Configurable |
 |---|---|---|
 | `TokenCleanupJob` | `0 0 0 * * *` | no — hardcoded in the annotation |
+| `MinorAgeOutJob` | `0 5 0 * * *` | no — hardcoded in the annotation |
 | `EventCompletionScheduler` | `0 0 2 * * *` | no — hardcoded in the annotation |
 | `FeeSelectionDeadlineScheduler` | `0 0 3 * * *` | no — hardcoded in the annotation |
 | `SyncHistoryRetentionJob` | `0 0 3 * * *` | no — hardcoded in the annotation |
 | `SyncScheduler.runFullPass` | `${klabis.sync.scan-cron}` | yes |
 | `SyncScheduler.runDueScan` | `${klabis.sync.due-scan-interval}` | yes |
+| `DisciplineDiscoveryJob` (cron) | `${klabis.disciplines.discovery-cron}` | yes |
+| `MemberDiscoveryJob` (cron) | `${klabis.members.oris-discovery-cron}` | yes |
+| `OrisEventRegistrationDiscoveryJob` (cron) | `${klabis.events.oris-entries-discovery-cron}` | yes |
+| the same three discovery jobs, a second `@Scheduled(initialDelayString)` run once shortly after start-up | `PT10S` / `PT10S` / `PT30S` | no |
 
-Four of the six carry their cron expression inline, so changing when they run needs a
-rebuild. There is no shared way to see what is scheduled, when a job last ran, whether
-it failed, or to run one by hand. Each module solved the problem for itself.
+Five of the jobs carry their cron expression inline, so changing when they run needs a
+rebuild. The three ORIS discovery jobs show the configurable pattern the project has
+since settled on (a `klabis.*-cron` property plus a one-off run shortly after
+start-up), but each module wrote it for itself. There is no shared way to see what is
+scheduled, when a job last ran, whether it failed, or to run one by hand.
 
 Three things make this worth addressing now rather than later:
 
 - **More scheduled work is coming.** `gh-89-deadline-reminder-notifications` describes
   *"a scheduled job scans events whose registrationDeadline is within the next N
-  days"*, and the notification capability behind issues #27 and #28 will add more.
+  days"*, `gh-113-oris-auto-sync` adds a recurring discovery of ORIS events, and the
+  notification work behind issues #27 and #28 will add more.
   Every new job repeats the pattern and inherits the same gaps.
 - **Notifications want a different scheduling shape.** Sending a reminder 24 hours
   before a specific event's deadline is naturally "run once, at this computed
@@ -37,11 +45,15 @@ Three things make this worth addressing now rather than later:
   durable and, if a second instance is ever deployed, each job fires once across the
   cluster.
 - **The `QRTZ_*` tables** as a database migration.
-- **The four plain periodic jobs move onto it** — `TokenCleanupJob`,
+- **The five plain periodic jobs move onto it** — `TokenCleanupJob`, `MinorAgeOutJob`,
   `EventCompletionScheduler`, `FeeSelectionDeadlineScheduler`,
   `SyncHistoryRetentionJob`. Each becomes a Quartz `Job` with its schedule supplied by
   configuration instead of an inline annotation. The work each one performs is
   untouched; only what invokes it changes.
+- **The three ORIS discovery jobs move onto it** with the configuration keys they
+  already have (`klabis.disciplines.discovery-cron`, `klabis.members.oris-discovery-cron`,
+  `klabis.events.oris-entries-discovery-cron`) and their start-up run, expressed as a
+  Quartz trigger with a start delay instead of a second annotation.
 - **`SyncScheduler`'s two cadences move onto it as ordinary cron/interval jobs.** They
   keep calling `SyncRecordRepository.findDueForScan` exactly as they do today.
 - **A documented way to add a job**, so the next one does not invent its own approach.
@@ -55,7 +67,7 @@ Explicitly **not** in this change:
   `consider-migration-of-sync-to-quartz`, which recommends against it.
 - **No admin UI** for inspecting or triggering jobs. Quartz makes that possible later;
   this change only puts the schedules in one durable place.
-- **No new jobs.** `gh-89` and the notification work are the motivation, not the scope.
+- **No new jobs.** `gh-89`, `gh-113-oris-auto-sync` and the notification work are the motivation, not the scope.
 
 ## No Behavior Change Justification
 
@@ -85,18 +97,27 @@ Explicitly **not** in this change:
   calls `CampaignEndProcessingPort.processCampaignEnd(today)`, unchanged.
 - `openspec/specs/users-authentication/spec.md` — unaffected. `TokenCleanupJob` deletes
   expired password-setup tokens; expiry semantics are unchanged.
+- `openspec/specs/legal-guardians/spec.md` (`Minors Leave Guardian Groups When They Turn 18`),
+  `openspec/specs/user-groups/spec.md` (`Age-Based Automatic Reassignment`) — unaffected.
+  `MinorAgeOutJob` and the group age checks keep their daily cadence.
+- `openspec/specs/data-synchronization/spec.md` (`Reference Data Is Discovered And Brought In Automatically`),
+  `openspec/specs/member-synchronization/spec.md`, `openspec/specs/event-registrations/spec.md`
+  (`Registrations Entered In ORIS Appear In Klabis`) — unaffected. The three discovery jobs keep
+  their cron keys, defaults and start-up run; only the invoker changes. Their start-up run is the
+  one place where Quartz's start delay and misfire policy must reproduce today's "once, shortly
+  after start" behaviour exactly.
 
 **Why no spec update is needed:**
 
 This substitutes the mechanism that invokes already-specified work. Every job runs at
 the same time, does the same thing and produces the same outcome; only the thing that
 calls it changes. No requirement names Spring `@Scheduled`, and no requirement
-constrains the four non-sync jobs' cadence at all.
+constrains the cadence of the jobs outside `sync` at all.
 
 **Two boundaries to watch during implementation** — cross either and this change must
 be re-raised under the `spec-driven` schema:
 
-1. **Making the four non-sync schedules configurable is an added capability, not a
+1. **Making the inline schedules configurable is an added capability, not a
    preserved one.** No spec requires it today. That is a widening rather than a
    behaviour change and is a natural part of the migration, but if it grows into
    operator-facing configuration with its own documented defaults — as
@@ -114,11 +135,15 @@ be re-raised under the `spec-driven` schema:
 
 - New Quartz configuration and a small registration mechanism for jobs.
 - `com.klabis.common.users.infrastructure.TokenCleanupJob`,
+  `com.klabis.members.infrastructure.scheduler.MinorAgeOutJob`,
   `com.klabis.events.infrastructure.scheduler.EventCompletionScheduler`,
   `com.klabis.membershipfees.infrastructure.scheduler.FeeSelectionDeadlineScheduler`,
   `com.klabis.sync.application.SyncHistoryRetentionJob`,
-  `com.klabis.sync.application.SyncScheduler` — each loses `@Scheduled` and gains a
-  Quartz `Job` wrapper. The methods doing the work keep their current signatures;
+  `com.klabis.sync.application.SyncScheduler`,
+  `com.klabis.events.infrastructure.orissync.DisciplineDiscoveryJob`,
+  `com.klabis.events.infrastructure.orissync.OrisEventRegistrationDiscoveryJob`,
+  `com.klabis.members.infrastructure.orissync.MemberDiscoveryJob` — each loses
+  `@Scheduled` and gains a Quartz `Job` wrapper. The methods doing the work keep their current signatures;
   several already expose a parameterised variant (`completeExpiredEvents(LocalDate)`)
   that tests call directly, and that stays true.
 - `KlabisApplication` — `@EnableScheduling` can go once no `@Scheduled` remains.

@@ -4,12 +4,12 @@
 
 The system SHALL allow authenticated members to register themselves for ACTIVE events with open registrations (future event date AND registration deadline not passed). Only users with an associated member profile can register. A category selection is required only when the event has the Categories facet active with a non-empty category list; when the Categories facet is not active, or is active but its category list is empty, no category is required and the member is registered without a category. After a successful registration the member remains on the event detail page and the registration list refreshes to include their new registration.
 
-When the registration form opens, the SI card number field SHALL be prefilled with the member's SI card number from their profile if one is set. The prefilled value MAY be overwritten by the member for this registration without affecting the profile.
+When the registration form opens for an event that uses SI cards, the SI card number field SHALL be prefilled with the member's SI card number from their profile if one is set. The prefilled value MAY be overwritten by the member for this registration without affecting the profile. Whether the SI card number is required follows the event's SI policy.
 
 #### Scenario: Member registers for an open event
 
 - **WHEN** authenticated member clicks the register button for an active event with open registrations
-- **AND** provides their SI card number
+- **AND** provides their SI card number where the event requires one
 - **THEN** the registration is created
 - **AND** the member stays on the event detail page
 - **AND** the registration list refreshes and shows the new registration
@@ -18,7 +18,7 @@ When the registration form opens, the SI card number field SHALL be prefilled wi
 #### Scenario: Registration form prefills SI card number from profile
 
 - **GIVEN** an authenticated member has an SI card number recorded in their profile
-- **WHEN** the member opens the registration form for an active event
+- **WHEN** the member opens the registration form for an active event that uses SI cards
 - **THEN** the SI card number field is prefilled with the value from the profile
 - **AND** the member can submit the form immediately without retyping the SI card number
 
@@ -32,26 +32,19 @@ When the registration form opens, the SI card number field SHALL be prefilled wi
 #### Scenario: Registration form has empty SI card number when not in profile
 
 - **GIVEN** an authenticated member has no SI card number recorded in their profile
-- **WHEN** the member opens the registration form for an active event
+- **WHEN** the member opens the registration form for an active event that requires SI cards
 - **THEN** the SI card number field is empty
-- **AND** the member must enter the SI card number manually before submitting
+- **AND** the member must enter the SI card number manually, or ask to rent one where rental is allowed, before submitting
 
-#### Scenario: Member registers for an event with a non-empty categories facet
+#### Scenario: Member registers for an event with categories
 
 - **WHEN** authenticated member registers for an event that has the Categories facet active with categories defined
 - **THEN** the registration form includes a category selection field with the event's available categories
 - **AND** the member MUST select one category before submitting
 
-#### Scenario: Member registers for an event without the Categories facet
+#### Scenario: Member registers for an event without categories
 
 - **GIVEN** an active event that does not have the Categories facet active
-- **WHEN** an authenticated member registers for the event
-- **THEN** the registration form does not include a category selection field
-- **AND** the registration is created without a category
-
-#### Scenario: Member registers for an event with an active but empty categories facet
-
-- **GIVEN** an active event that has the Categories facet active but with an empty category list
 - **WHEN** an authenticated member registers for the event
 - **THEN** the registration form does not include a category selection field
 - **AND** the registration is created without a category
@@ -80,3 +73,11 @@ When the registration form opens, the SI card number field SHALL be prefilled wi
 
 - **WHEN** authenticated user without a member profile attempts to register for an event
 - **THEN** the system shows an error that a member profile is required to register for events
+
+#### Scenario: Member registers for an event with an active but empty categories facet
+
+- **GIVEN** an active event that has the Categories facet active but with an empty category list
+- **WHEN** an authenticated member registers for the event
+- **THEN** the registration form does not include a category selection field
+- **AND** the registration is created without a category
+

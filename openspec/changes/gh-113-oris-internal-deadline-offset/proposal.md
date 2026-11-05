@@ -28,7 +28,12 @@ Explicitly **not** in this change: per-group offsets (an earlier variant of the 
 
 **Affected code (backend):**
 
-- `RegistrationDeadlines` (`com.klabis.events.domain`) — the value object already holds up to three deadlines (`deadline1..3`) and already answers `registrationsOpen(today)` and `nextRelevant(today)`. This is the single place where the offset has to take effect, which is what keeps the change small and reversible.
+- `RegistrationDeadlines` (`com.klabis.events.domain`) — the value object already holds up to three deadlines (`deadline1..3`) and already answers `registrationsOpen(today)` and `nextRelevant(today)`. This is where the offset takes effect for the "is registration open" decision (`Event` uses it when registering). It is not the only place that reasons about deadlines, though; each of these must see the same effective deadline or members get contradictory answers:
+  - `EventRepositoryAdapter` repeats the nearest-future-deadline rule in SQL (its comment says it "mirrors `RegistrationDeadlines#nextRelevant`"), and `EventFilter` uses it for the upcoming-deadlines filter that feeds the dashboard widget "Končící přihlášky tento týden";
+  - the calendar items "Přihlášky - {event name}" are created from the stored deadlines (`CalendarEventSyncService`) and would keep showing the ORIS day;
+  - the reminder of `gh-89-deadline-reminder-notifications`, if it lands.
+  Keeping the offset out of stored data (below) means every one of these has to apply it when it reads; decide whether that is acceptable or whether one query method is introduced that all of them go through.
+- Registrations entered in ORIS are brought into Klabis "regardless of the Klabis registration deadline" (`Registrations Entered In ORIS Appear In Klabis`), so the offset only restricts registrations made in Klabis, which is the intent. Klabis still cannot forward registrations to ORIS (`A Klabis Change To A Synchronised Registration Asks For A Decision`), so the reason for the buffer stands.
 - Club-level configuration holding the offset.
 - The synchronisation projection for ORIS events (`OrisEventProjection`) carries the upstream deadlines. The offset must **not** be baked into the projection or the stored ORIS-owned value — otherwise the synchronisation engine would compare a derived value against the upstream one and report a permanent false conflict on every pass. The offset is applied when the deadline is *used*, not when it is *stored*. This is the main implementation risk of this change.
 

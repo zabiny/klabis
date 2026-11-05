@@ -2,7 +2,9 @@
 
 Členové se přihlašují na eventy, ale systém zatím neumí spočítat, kolik daná registrace stojí. Cena se přitom liší podle zvolené kategorie, podle doplňkových služeb (ubytování, doprava, půjčení čipu) a podle členské úrovně (membership tier), která může vstupné zlevnit. Bez výpočtu ceny nelze připravit budoucí rezervaci a vyúčtování plateb za eventy.
 
-> **Závislost:** Tato změna navazuje na change **`event-category-identity`**, který se implementuje **před** ní. Ten dává kategoriím stabilní identitu a volitelnou cenu; pricing tuto cenu už jen konzumuje.
+> **Závislost (splněna):** Tato změna navazuje na change **`event-category-identity`**, který je hotový a archivovaný (2026-07-27). Kategorie mají stabilní `EventCategoryId` a volitelnou cenu (`EventCategory.feeOverride`, hlavní spec `Category Entry Fee`); registrace odkazuje kategorii přes id (`Registration Keeps Its Category Across Renames`). Pricing tuto cenu už jen konzumuje.
+
+> **Překryv s hotovou funkcí:** Event dnes umí dvě ano/ne nabídky, společnou dopravu a společné ubytování (`Shared Transport And Shared Accommodation Options On An Event`, `wantsSharedTransport` / `wantsSharedAccommodation` na registraci, seznam ubytovaných s CSV exportem). Nemají cenu, ale pokrývají část toho, co zde modelují doplňkové služby „ubytování“ a „doprava“. Vztah obou funkcí je otevřená otázka v `design.md`.
 
 ## What Changes
 
@@ -31,5 +33,5 @@
 - **Sjednocení `Money` (napříč moduly):** Dnešní duplicitní `events.domain.Money` a `finance.domain.Money` se slučují do sdíleného `com.klabis.common.domain.Money`. Odstraňuje duplicitu i mapování na hranici portu a zabraňuje tomu, aby moduly pracující s cenou musely závist na `finance`. Dotýká se `finance`, `membershipfees` i `events` — čistě náhrada importů, bez změny chování a SQL schématu.
 - **Frontend:** Správa služeb v create/edit formuláři eventu, výběr služeb při registraci, zobrazení rozpadu ceny.
 - **Migrace dat:** Žádná. Změna je čistě aditivní (nové služby, nová pole na registraci); migraci kategorií vlastní `event-category-identity`.
-- **Pořadí implementace:** Až po dokončení `event-category-identity`.
+- **Pořadí implementace:** `event-category-identity` je hotový, takže na pořadí nic nečeká. Sjednocení `Money` (krok 1 migračního plánu) je dál první.
 - **Mimo rozsah:** Skutečná rezervace/blokace plateb a vyúčtování eventu (samostatná navazující změna). Cena registrace je zatím jen informativní a neukládá se. Tvar a migrace kategorií.

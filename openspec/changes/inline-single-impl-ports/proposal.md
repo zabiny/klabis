@@ -9,10 +9,10 @@ In `members` and `events`, almost every application service is a `XxxPort` inter
   - **events:** `EventManagementPort`, `EventRegistrationPort`, `AccommodationListPort`, `CategoryPresetManagementPort`, `DisciplineManagementPort`
 - Nested command records and annotations declared on the interfaces (`RegistrationPort.RegisterNewMember`, `@Transactional`, `@NonNull`) move to the service class.
 - Merge `MemberContactService` and `MemberCompletenessService` (same dependencies, both resolve guardian contacts) into one `MemberContactService`; delete `MemberContactPort` and `MemberCompletenessPort`.
-- Merge `OrisEventImportService`, `OrisEventBulkImportService` and `OrisBulkSyncService` into one `OrisEventImportService`; delete `OrisEventImportPort`, `OrisEventBulkImportPort`, `OrisBulkSyncPort`.
+- Merge `OrisEventImportService`, `OrisEventBulkImportService` and `OrisBulkSyncService` into one `OrisEventImportService`; delete `OrisEventImportPort`, `OrisEventBulkImportPort`, `OrisBulkSyncPort`. `gh-113-oris-auto-sync` will call this merged service from its scheduled discovery job, so whichever change lands second adopts the other's entry point.
 - `MemberDiscoveryPort` and `OrisEventRegistrationDiscoveryPort` (implemented by `@Application` jobs) are removed only if `JMoleculesArchitectureTest` accepts a primary adapter depending on the job class; otherwise they stay (see design.md).
 - Kept unchanged: cross-module ports (`Members`, `LegalGuardians`, `AllMembersPort`, `ActiveMembersByAgeProvider`, `EventTypeManagementPort`, `MemberRegistrationSanctionPort`, `EventScheduleQuery`, `EventDataProvider`, `EventTypeOptionsProvider`), SPIs implemented elsewhere (`MemberFinancialStatePort`, `MemberOwnedGroupsPort`, `ImportedOrisEventsPort`), secondary ports (`LoginNumberSequence`, repositories).
-- New ADR-011 in `docs/design-decisions.md`; `backend-patterns` skill updated (service = concrete class, interface only for cross-module port or SPI).
+- New ADR-011 in `docs/design-decisions.md` (ADR-012 is reserved by `show-error-messages-in-czech`); `backend-patterns` skill updated (service = concrete class, interface only for cross-module port or SPI).
 
 ```mermaid
 flowchart LR
