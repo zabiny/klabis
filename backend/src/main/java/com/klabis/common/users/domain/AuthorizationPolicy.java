@@ -1,5 +1,7 @@
 package com.klabis.common.users.domain;
 
+import com.klabis.common.exceptions.ConflictException;
+import com.klabis.common.exceptions.UserFacingError;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 
@@ -76,7 +78,7 @@ public final class AuthorizationPolicy {
      * This exception indicates that an operation would leave the system
      * with zero users having MEMBERS:PERMISSIONS authority.
      */
-    public static class AdminLockoutException extends RuntimeException {
+    public static class AdminLockoutException extends ConflictException implements UserFacingError {
         public AdminLockoutException(String message) {
             super(message);
         }

@@ -52,9 +52,7 @@ public final class AuthorityValidator {
                 String validAuthorities = Set.of(Authority.values()).stream()
                         .map(Authority::getValue)
                         .collect(Collectors.joining(", "));
-                throw new IllegalArgumentException(
-                        "Invalid authority: " + authority + ". Valid authorities: " + validAuthorities
-                );
+                throw new InvalidAuthorityException(authority, validAuthorities);
             }
         }
     }

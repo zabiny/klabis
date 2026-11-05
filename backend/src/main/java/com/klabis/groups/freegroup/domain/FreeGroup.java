@@ -106,7 +106,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         Assert.notNull(memberId, "MemberId is required");
         requireOwner(actingMember);
         if (!hasMember(memberId)) {
-            throw new CannotPromoteNonMemberToOwnerException(memberId);
+            throw new CannotPromoteNonMemberToOwnerException(memberId, getName());
         }
         addOwner(memberId);
     }
@@ -132,14 +132,14 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
     public void requireOwner(MemberId actingMember) {
         Assert.notNull(actingMember, "actingMember is required");
         if (!isOwner(actingMember)) {
-            throw new GroupOwnershipRequiredException(actingMember, id);
+            throw new GroupOwnershipRequiredException(actingMember, id, getName());
         }
     }
 
     // Direct member addition is not allowed — members must go through the invitation flow
     @Override
     public void addMember(MemberId memberId) {
-        throw new DirectMemberAdditionNotAllowedException();
+        throw new DirectMemberAdditionNotAllowedException(getName());
     }
 
     @Override
@@ -147,12 +147,12 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
         Assert.notNull(invitedBy, "invitedBy is required");
         Assert.notNull(target, "target is required");
         if (hasMember(target) || isOwner(target)) {
-            throw new CannotInviteExistingMemberException(target);
+            throw new CannotInviteExistingMemberException(target, getName());
         }
         boolean pendingAlreadyExists = invitations.stream()
                 .anyMatch(inv -> inv.isForMember(target) && inv.isPending());
         if (pendingAlreadyExists) {
-            throw new DuplicatePendingInvitationException(target);
+            throw new DuplicatePendingInvitationException(target, getName());
         }
         invitations.add(Invitation.createPending(invitedBy, target));
     }
@@ -169,7 +169,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
     public void acceptInvitation(InvitationId invitationId, MemberId acceptingMember) {
         Assert.notNull(acceptingMember, "acceptingMember is required");
         if (!isInvitedMember(acceptingMember, invitationId)) {
-            throw new NotInvitedMemberException(acceptingMember, invitationId);
+            throw new NotInvitedMemberException(acceptingMember, invitationId, getName());
         }
         acceptInvitation(invitationId);
     }
@@ -184,7 +184,7 @@ public class FreeGroup extends MemberGroup<FreeGroup, FreeGroupId, MemberId> imp
     public void rejectInvitation(InvitationId invitationId, MemberId rejectingMember) {
         Assert.notNull(rejectingMember, "rejectingMember is required");
         if (!isInvitedMember(rejectingMember, invitationId)) {
-            throw new NotInvitedMemberException(rejectingMember, invitationId);
+            throw new NotInvitedMemberException(rejectingMember, invitationId, getName());
         }
         rejectInvitation(invitationId);
     }

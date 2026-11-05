@@ -1,24 +1,41 @@
 package com.klabis.common.groups.infrastructure.restapi;
 
+import com.klabis.common.exceptions.UserFacingError;
+import com.klabis.common.exceptions.UserFacingErrorResponses;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
+import com.klabis.common.groups.domain.MemberAlreadyInGroupException;
+import com.klabis.common.groups.domain.MemberNameLookup;
+import com.klabis.common.groups.domain.MemberNotInGroupException;
 import com.klabis.common.groups.domain.OwnerCannotBeMemberException;
 import com.klabis.common.mvc.MvcComponent;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Group exceptions only know the member's identifier; the user knows the person by name, so the name is
+ * resolved here. A name that cannot be resolved is left out, never replaced by the identifier.
+ */
 @MvcComponent
 @RestControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class GroupsExceptionHandler {
+
+    private final ObjectProvider<MemberNameLookup> memberNames;
+
+    GroupsExceptionHandler(ObjectProvider<MemberNameLookup> memberNames) {
+        this.memberNames = memberNames;
+    }
 
     @ExceptionHandler(CannotRemoveLastOwnerException.class)
     @ApiResponse(
@@ -30,9 +47,7 @@ class GroupsExceptionHandler {
             )
     )
     public ErrorResponse handleCannotRemoveLastOwner(CannotRemoveLastOwnerException ex) {
-        return ErrorResponse.builder(ex, HttpStatusCode.valueOf(422), ex.getMessage())
-                .title("Cannot Remove Last Owner")
-                .build();
+        return namedMember(ex, ex.memberId(), HttpStatusCode.valueOf(422), "Cannot Remove Last Owner");
     }
 
     @ExceptionHandler(DirectMemberAdditionNotAllowedException.class)
@@ -45,9 +60,7 @@ class GroupsExceptionHandler {
             )
     )
     public ErrorResponse handleDirectMemberAdditionNotAllowed(DirectMemberAdditionNotAllowedException ex) {
-        return ErrorResponse.builder(ex, HttpStatusCode.valueOf(422), ex.getMessage())
-                .title("Direct Member Addition Not Allowed")
-                .build();
+        return UserFacingErrorResponses.of(ex, HttpStatusCode.valueOf(422), "Direct Member Addition Not Allowed");
     }
 
     @ExceptionHandler(OwnerCannotBeMemberException.class)
@@ -60,8 +73,37 @@ class GroupsExceptionHandler {
             )
     )
     public ErrorResponse handleOwnerCannotBeMember(OwnerCannotBeMemberException ex) {
-        return ErrorResponse.builder(ex, HttpStatusCode.valueOf(422), ex.getMessage())
-                .title("Owner Cannot Be Member")
-                .build();
+        return namedMember(ex, ex.memberId(), HttpStatusCode.valueOf(422), "Owner Cannot Be Member");
+    }
+
+    @ExceptionHandler(MemberAlreadyInGroupException.class)
+    @ApiResponse(
+            responseCode = "400",
+            description = "Bad request - the member is already in the group",
+            content = @Content(
+                    mediaType = "application/problem+json",
+                    schema = @Schema(implementation = ProblemDetail.class)
+            )
+    )
+    public ErrorResponse handleMemberAlreadyInGroup(MemberAlreadyInGroupException ex) {
+        return namedMember(ex, ex.memberId(), HttpStatus.BAD_REQUEST, "Bad Request");
+    }
+
+    @ExceptionHandler(MemberNotInGroupException.class)
+    @ApiResponse(
+            responseCode = "400",
+            description = "Bad request - the member is not in the group",
+            content = @Content(
+                    mediaType = "application/problem+json",
+                    schema = @Schema(implementation = ProblemDetail.class)
+            )
+    )
+    public ErrorResponse handleMemberNotInGroup(MemberNotInGroupException ex) {
+        return namedMember(ex, ex.memberId(), HttpStatus.BAD_REQUEST, "Bad Request");
+    }
+
+    private <E extends RuntimeException & UserFacingError> ErrorResponse namedMember(
+            E ex, Object memberId, HttpStatusCode status, String title) {
+        return UserFacingErrorResponses.of(ex, status, title, MemberNameParameter.of(memberNames.getIfAvailable(), memberId));
     }
 }

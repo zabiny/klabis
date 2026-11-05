@@ -5,6 +5,7 @@ import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.Map;
 import java.util.Objects;
 
 @ValueObject
@@ -74,6 +75,10 @@ public final class Money {
 
     public Currency currency() {
         return currency;
+    }
+
+    public Map<String, Object> asMessageParameter() {
+        return Map.of("amount", new BigDecimal(amount.toPlainString()), "currency", currency.getCurrencyCode());
     }
 
     @Override

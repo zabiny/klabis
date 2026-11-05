@@ -137,3 +137,50 @@ components:
         - /errors/calendar-item-read-only               # 400, no parameters
         - /errors/calendar-item-end-before-start        # 400, field endDate, no parameters
         - /errors/date-range-too-long                   # 400, parameter maxDays (integer)
+        # finance
+        - /errors/overdraft-limit-exceeded              # 422, parameters memberName (string, left out when unknown), chargeAmount, currentBalance, overdraftLimit (each {amount: number, currency: string})
+        - /errors/transaction-already-reversed          # 409, parameters memberName (string, left out when unknown), amount ({amount: number, currency: string}, the reversed transaction)
+        - /errors/member-account-not-found              # 404, parameter memberName (string, left out when unknown)
+        - /errors/transaction-not-found                 # 404, parameter memberName (string, left out when unknown)
+        # groups
+        - /errors/group-not-found                       # 404, no parameters
+        - /errors/cannot-remove-last-owner              # 422, parameters groupName (string), memberName (string, left out when unknown)
+        - /errors/direct-member-addition-not-allowed    # 422, parameter groupName (string)
+        - /errors/owner-cannot-be-member                # 422, parameters groupName (string), memberName (string, left out when unknown)
+        - /errors/member-already-in-group               # 400, parameters groupName (string), memberName (string, left out when unknown)
+        - /errors/member-not-in-group                   # 400, parameters groupName (string), memberName (string, left out when unknown)
+        - /errors/group-ownership-required              # 403, parameter groupName (string)
+        - /errors/not-invited-member                    # 400, parameter groupName (string)
+        - /errors/cannot-invite-existing-member         # 400, field memberId, parameters groupName (string), memberName (string, left out when unknown)
+        - /errors/duplicate-pending-invitation          # 400, field memberId, parameters groupName (string), memberName (string, left out when unknown)
+        - /errors/cannot-promote-non-member-to-owner    # 409, field memberId, parameters groupName (string), memberName (string, left out when unknown)
+        - /errors/invitation-not-cancellable            # 409, parameter invitationStatus (ACCEPTED | REJECTED | CANCELLED)
+        - /errors/invitation-not-found                  # 404, no parameters
+        - /errors/member-already-in-training-group      # 409, field memberId, parameters groupName (the group the member already trains in), memberName (string, left out when unknown)
+        - /errors/trainer-required                      # 400 (was 422 as the unmigrated last-owner error; intended), field trainers, parameter groupName (string, only when raised by the group itself)
+        - /errors/invalid-age-range                     # 400, parameters minAge, maxAge (integers, maxAge below minAge)
+        - /errors/overlapping-age-range                 # 400, parameters minAge, maxAge (integers, the refused range)
+        # common/users
+        - /errors/user-not-found                        # 404, no parameters
+        - /errors/cannot-remove-last-permission-manager # 409, no parameters
+        - /errors/admin-lockout                         # 409, no parameters
+        - /errors/invalid-authority                     # 400, parameter authority (string, the refused authority value)
+        - /errors/incorrect-current-password            # 400, field currentPassword, no parameters
+        - /errors/passwords-do-not-match                # 400, field passwordConfirmation, no parameters
+        - /errors/password-requirements-not-met         # 400, parameters violations (array of REQUIRED | TOO_SHORT | MISSING_UPPERCASE | MISSING_LOWERCASE | MISSING_DIGIT | MISSING_SPECIAL_CHARACTER | CONTAINS_FIRST_NAME | CONTAINS_LAST_NAME | CONTAINS_REGISTRATION_NUMBER), minLength (integer)
+        - /errors/invalid-token                         # 400, no parameters (unknown token, unknown user, account not awaiting activation)
+        - /errors/token-expired                         # 410, no parameters
+        - /errors/token-already-used                    # 410, no parameters
+        - /errors/insufficient-authority                # 403, no parameters
+        - /errors/member-profile-required               # 403, no parameters
+        - /errors/rate-limit-exceeded                   # 429, no parameters (Retry-After header)
+        # sync, notifications
+        - /errors/sync-record-needs-resolution          # 409, parameter syncStatus (CONFLICT | FAILED | RETRYING | ...)
+        - /errors/sync-record-not-in-conflict           # 409, no parameters
+        - /errors/conflict-not-acknowledged             # 409, no parameters
+        - /errors/sync-record-not-failed                # 409, no parameters
+        - /errors/sync-record-claimed                   # 409, no parameters (another synchronisation pass holds the record)
+        - /errors/unsupported-resolution                # 409, parameter resolution (INWARD | OUTWARD | ACCEPT_DIVERGENCE)
+        - /errors/sync-record-not-found                 # 404, no parameters
+        - /errors/sync-record-not-enrolled              # 404, no parameters
+        - /errors/notification-device-not-found         # 404, no parameters

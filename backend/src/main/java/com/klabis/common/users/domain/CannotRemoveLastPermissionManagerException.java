@@ -1,13 +1,9 @@
 package com.klabis.common.users.domain;
 
-/**
- * Exception thrown when attempting to remove the MEMBERS:PERMISSIONS authority
- * from the last active user who has it.
- * <p>
- * This business rule prevents lockout by ensuring at least one user with
- * permission management capability always exists in the system.
- */
-public class CannotRemoveLastPermissionManagerException extends RuntimeException {
+import com.klabis.common.exceptions.ConflictException;
+import com.klabis.common.exceptions.UserFacingError;
+
+public class CannotRemoveLastPermissionManagerException extends ConflictException implements UserFacingError {
 
     private static final String MESSAGE =
             "Cannot remove MEMBERS:PERMISSIONS: this is the last active user with permission management capability. " +

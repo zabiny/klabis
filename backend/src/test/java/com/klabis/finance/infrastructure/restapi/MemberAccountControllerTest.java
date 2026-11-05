@@ -14,7 +14,13 @@ import com.klabis.finance.domain.Transaction;
 import com.klabis.finance.domain.TransactionAlreadyReversedException;
 import com.klabis.finance.domain.TransactionId;
 import com.klabis.finance.domain.TransactionType;
+import com.klabis.members.MemberDto;
+import com.klabis.members.MemberDtoBuilder;
 import com.klabis.members.MemberId;
+import com.klabis.members.Members;
+import com.klabis.finance.application.MemberAccountNotFoundException;
+import com.klabis.finance.application.TransactionNotFoundException;
+import com.klabis.finance.domain.OverdraftLimitExceededException;
 import com.klabis.members.MemberTestDataBuilder;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberViewAccess;
@@ -35,12 +41,16 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
+import static com.klabis.common.ProblemDetailAssertions.noIdentifiersInParameters;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -73,6 +83,9 @@ class MemberAccountControllerTest {
 
     @Autowired
     private ManagementPort managementPort;
+
+    @Autowired
+    private Members membersPort;
 
     @Nested
     @DisplayName("POST /api/members/{id}/account/transactions (deposit)")
@@ -641,14 +654,137 @@ class MemberAccountControllerTest {
         @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
         void shouldReturn409WhenTransactionAlreadyReversed() throws Exception {
             when(reversePort.reverse(any())).thenThrow(
-                    new TransactionAlreadyReversedException(new TransactionId(TX_UUID)));
+                    new TransactionAlreadyReversedException(MEMBER_ID, new TransactionId(TX_UUID), Money.zero()));
 
             mockMvc.perform(post("/api/members/{id}/account/transactions/{txId}/reverse",
                             MEMBER_UUID, TX_UUID)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(validReverseBody()))
                     .andExpect(status().is(409))
+                    .andExpect(jsonPath("$.type").value("/errors/transaction-already-reversed"))
                     .andExpect(jsonPath("$.detail").value(containsString("has already been reversed")));
+        }
+    }
+
+    @Nested
+    @DisplayName("typed errors")
+    class TypedErrors {
+
+        private static final Money ZERO_LIMIT = Money.ofCzk(BigDecimal.ZERO);
+
+        @Test
+        @DisplayName("a reversed transaction is reported with its amount and the member name, without ids")
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
+        void alreadyReversedNamesMemberAndAmount() throws Exception {
+            when(membersPort.findById(MEMBER_ID)).thenReturn(Optional.of(memberDto("Jan", "Novák")));
+            when(reversePort.reverse(any())).thenThrow(new TransactionAlreadyReversedException(
+                    MEMBER_ID, new TransactionId(TX_UUID), Money.ofCzk(new BigDecimal("250"))));
+
+            mockMvc.perform(post("/api/members/{id}/account/transactions/{txId}/reverse", MEMBER_UUID, TX_UUID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(validReverseBody()))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/transaction-already-reversed"))
+                    .andExpect(jsonPath("$.memberName").value("Jan Novák"))
+                    .andExpect(jsonPath("$.amount.amount").value(250))
+                    .andExpect(jsonPath("$.amount.currency").value("CZK"))
+                    .andExpect(jsonPath("$.field").doesNotExist())
+                    .andExpect(noIdentifiersInParameters());
+        }
+
+        @Test
+        @DisplayName("an overdraft is reported with the amounts and the member name, as 422")
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
+        void overdraftNamesMemberAndAmounts() throws Exception {
+            when(membersPort.findById(MEMBER_ID)).thenReturn(Optional.of(memberDto("Jan", "Novák")));
+            when(chargePort.charge(any())).thenThrow(new OverdraftLimitExceededException(MEMBER_ID,
+                    Money.ofCzk(new BigDecimal("100")), Money.ofCzk(new BigDecimal("500")), ZERO_LIMIT));
+
+            mockMvc.perform(post("/api/members/{id}/account/transactions/charge", MEMBER_UUID)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(validChargeBody()))
+                    .andExpect(status().is(422))
+                    .andExpect(jsonPath("$.type").value("/errors/overdraft-limit-exceeded"))
+                    .andExpect(jsonPath("$.memberName").value("Jan Novák"))
+                    .andExpect(jsonPath("$.chargeAmount.amount").value(500))
+                    .andExpect(jsonPath("$.chargeAmount.currency").value("CZK"))
+                    .andExpect(jsonPath("$.currentBalance.amount").value(100))
+                    .andExpect(jsonPath("$.overdraftLimit.amount").value(0))
+                    .andExpect(noIdentifiersInParameters());
+        }
+
+        @Test
+        @DisplayName("a member account that does not exist is a 404 naming the member")
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
+        void accountNotFoundNamesMember() throws Exception {
+            when(membersPort.findById(MEMBER_ID)).thenReturn(Optional.of(memberDto("Jan", "Novák")));
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenThrow(new MemberAccountNotFoundException(MEMBER_ID));
+
+            mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.type").value("/errors/member-account-not-found"))
+                    .andExpect(jsonPath("$.memberName").value("Jan Novák"))
+                    .andExpect(noIdentifiersInParameters());
+        }
+
+        @Test
+        @DisplayName("a transaction that does not exist is a 404 naming the member")
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
+        void transactionNotFoundNamesMember() throws Exception {
+            when(membersPort.findById(MEMBER_ID)).thenReturn(Optional.of(memberDto("Jan", "Novák")));
+            when(transactionQueryPort.findTransactionWithReversal(any(), any()))
+                    .thenThrow(new TransactionNotFoundException(MEMBER_ID, new TransactionId(TX_UUID)));
+
+            mockMvc.perform(get("/api/members/{id}/account/transactions/{txId}", MEMBER_UUID, TX_UUID))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.type").value("/errors/transaction-not-found"))
+                    .andExpect(jsonPath("$.memberName").value("Jan Novák"))
+                    .andExpect(noIdentifiersInParameters());
+        }
+
+        @Test
+        @DisplayName("an unauthorised caller gets 403 before any service or name lookup, so no member name leaks")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
+        void unauthorisedCallerNeverReachesNameLookup() throws Exception {
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenThrow(new MemberAccountNotFoundException(MEMBER_ID));
+            when(membersPort.findById(MEMBER_ID)).thenReturn(Optional.of(memberDto("Jan", "Novák")));
+
+            mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.memberName").doesNotExist());
+
+            verify(transactionQueryPort, never()).findBalance(any());
+            verify(membersPort, never()).findById(any());
+        }
+
+        @Test
+        @DisplayName("a member name that cannot be resolved is left out, never replaced by the id")
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
+        void unresolvedNameIsLeftOut() throws Exception {
+            when(membersPort.findById(MEMBER_ID)).thenReturn(Optional.empty());
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenThrow(new MemberAccountNotFoundException(MEMBER_ID));
+
+            mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.type").value("/errors/member-account-not-found"))
+                    .andExpect(jsonPath("$.memberName").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("a failing name lookup does not hide the original error")
+        @WithKlabisMockUser(authorities = {Authority.FINANCE_MANAGE})
+        void failingLookupIsLeftOut() throws Exception {
+            when(membersPort.findById(MEMBER_ID)).thenThrow(new IllegalStateException("lookup down"));
+            when(transactionQueryPort.findBalance(MEMBER_ID)).thenThrow(new MemberAccountNotFoundException(MEMBER_ID));
+
+            mockMvc.perform(get("/api/members/{id}/account", MEMBER_UUID))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.type").value("/errors/member-account-not-found"))
+                    .andExpect(jsonPath("$.memberName").doesNotExist());
+        }
+
+        private MemberDto memberDto(String firstName, String lastName) {
+            return MemberDtoBuilder.builder().memberId(MEMBER_UUID).firstName(firstName).lastName(lastName).build();
         }
     }
 

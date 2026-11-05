@@ -1,6 +1,7 @@
 package com.klabis.common.users;
 
 import com.klabis.common.users.domain.AuthorityValidator;
+import com.klabis.common.users.domain.InvalidAuthorityException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -64,7 +65,7 @@ class AuthorityValidatorTest {
         @DisplayName("should throw exception for invalid authority string")
         void shouldThrowExceptionForInvalidAuthority() {
             assertThatThrownBy(() -> AuthorityValidator.validate(Set.of("INVALID:AUTHORITY")))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(InvalidAuthorityException.class)
                     .hasMessageContaining("Invalid authority")
                     .hasMessageContaining("INVALID:AUTHORITY")
                     .hasMessageContaining("Valid authorities");
@@ -74,7 +75,7 @@ class AuthorityValidatorTest {
         @DisplayName("should throw exception for mixed valid and invalid authorities")
         void shouldThrowExceptionForMixedAuthorities() {
             assertThatThrownBy(() -> AuthorityValidator.validate(Set.of("MEMBERS:READ", "INVALID")))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(InvalidAuthorityException.class)
                     .hasMessageContaining("Invalid authority");
         }
 
@@ -82,7 +83,7 @@ class AuthorityValidatorTest {
         @DisplayName("should include valid authorities in error message")
         void shouldIncludeValidAuthoritiesInErrorMessage() {
             assertThatThrownBy(() -> AuthorityValidator.validate(Set.of("BAD")))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(InvalidAuthorityException.class)
                     .hasMessageContaining("MEMBERS:MANAGE")
                     .hasMessageContaining("MEMBERS:READ");
         }

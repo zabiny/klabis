@@ -4,6 +4,7 @@ import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.members.MemberId;
 import io.soabase.recordbuilder.core.RecordBuilder;
+import com.klabis.groups.traininggroup.domain.TrainerRequiredException;
 import org.springframework.util.Assert;
 
 import java.util.Set;
@@ -23,7 +24,9 @@ public record UpdateTrainingGroupCommand(
     public UpdateTrainingGroupCommand {
         Assert.hasText(name, "name is required");
         Assert.notNull(ageRange, "ageRange is required");
-        Assert.notEmpty(trainers, "at least one trainer is required");
+        if (trainers == null || trainers.isEmpty()) {
+            throw new TrainerRequiredException();
+        }
     }
 
     /** The baseline command: every field at the group's current value, so applying it is a no-op. */

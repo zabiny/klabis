@@ -56,7 +56,7 @@ public class MemberAccount extends KlabisAggregateRoot<MemberAccount, MemberId> 
                                              Instant recordedAt, UserId recordedBy, OverdraftPolicy overdraftPolicy) {
         Assert.isTrue(amount.isPositive(), "Charge amount must be positive");
         if (!overdraftPolicy.allowsCharge(balance, amount)) {
-            throw new OverdraftLimitExceededException(balance, amount, overdraftPolicy.limit());
+            throw new OverdraftLimitExceededException(id, balance, amount, overdraftPolicy.limit());
         }
         return debit(amount, note, occurredAt, recordedAt, recordedBy);
     }
@@ -80,7 +80,7 @@ public class MemberAccount extends KlabisAggregateRoot<MemberAccount, MemberId> 
         boolean alreadyReversed = transactions.stream()
                 .anyMatch(tx -> transactionId.equals(tx.getReversesTransactionId()));
         if (alreadyReversed) {
-            throw new TransactionAlreadyReversedException(transactionId);
+            throw new TransactionAlreadyReversedException(id, transactionId, original.getAmount());
         }
 
         Transaction reversal = Transaction.reversal(original, note, occurredAt, recordedAt, recordedBy);
