@@ -48,6 +48,11 @@ export const submit = (page: Page, label = 'Odeslat') => submitWith(page, action
 
 export const expectRefused = (page: Page) => expect(page.getByRole('alert').first()).toBeVisible();
 
+export const expectFieldError = (page: Page, label: string, message: string) => {
+    const wrapper = page.locator('label', {hasText: new RegExp(`^${escapeRegExp(label)}\\*?$`)}).locator('xpath=..');
+    return expect(wrapper.getByText(message, {exact: true})).toBeVisible();
+};
+
 export const openAddress = async (page: Page, path: string) => {
     await page.goto(path);
     await waitForApp(page);

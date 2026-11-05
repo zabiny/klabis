@@ -3,7 +3,7 @@ import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalFormGetAvailability} from './useHalFormGetAvailability';
 import {createMockResponse} from '../__mocks__/mockFetch';
-import {FetchError} from '../api/authorizedFetch';
+import {ApiError} from '../api/authorizedFetch';
 import {type Mock, vi} from 'vitest';
 
 vi.mock('../api/klabisUserManager', () => ({
@@ -143,7 +143,7 @@ describe('useHalFormGetAvailability', () => {
     });
 
     it('propagates error and keeps isGetAllowed undefined when OPTIONS fails', async () => {
-        const fetchError = new FetchError('HTTP 403 (Forbidden)', 403, 'Forbidden', new Headers());
+        const fetchError = new ApiError(403);
         fetchSpy.mockRejectedValueOnce(fetchError);
 
         const {result} = renderHook(

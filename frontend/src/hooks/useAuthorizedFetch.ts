@@ -1,6 +1,7 @@
 import type {UseMutationResult, UseQueryResult} from '@tanstack/react-query';
 import {type QueryClient, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {authorizedFetch} from '../api/authorizedFetch';
+import type {ApiError} from '../api/apiError';
 import type {Path} from "react-router-dom";
 
 /**
@@ -81,12 +82,12 @@ const toPath = (url: string): Path => {
 export function useAuthorizedQuery<T = unknown>(
     url: string,
     options?: UseAuthorizedQueryOptions<T>
-): UseQueryResult<T | undefined> {
+): UseQueryResult<T | undefined, ApiError> {
     // TODO: find way how to put there actual type from OpenApi generated schemas. Check useKlabisQuery (url: Path<API> => Result<API>?)
 
     const urlPath = toPath(url);
 
-    return useQuery({
+    return useQuery<unknown, ApiError, T | undefined>({
         queryKey: [...AUTHORIZED_QUERY_KEY, urlPath.pathname, urlPath.search || ''],
         queryFn: async () => {
             const response = await authorizedFetch(
@@ -161,10 +162,10 @@ export interface UseAuthorizedMutationVariables {
  */
 export function useAuthorizedMutation(
     options: UseAuthorizedMutationOptions
-): UseMutationResult<MutationResult, Error, UseAuthorizedMutationVariables> {
+): UseMutationResult<MutationResult, ApiError, UseAuthorizedMutationVariables> {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useMutation<MutationResult, ApiError, UseAuthorizedMutationVariables>({
         mutationFn: async ({url, data}: UseAuthorizedMutationVariables): Promise<MutationResult> => {
             const headers: Record<string, string> = {
                 'Content-Type': 'application/json',

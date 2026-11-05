@@ -3,7 +3,6 @@ import type * as Yup from 'yup';
 import type {HalFormsTemplate} from '../../api';
 import {ErrorDisplay, Spinner} from '../UI';
 import {type HalFormFieldFactory, HalFormsForm, type RenderFormCallback} from './halforms';
-import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
 import {createMemberFilteredFactory, klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
@@ -108,7 +107,10 @@ export const HalFormDisplay = ({
         method: template.method || 'POST',
     });
 
-    const submitError = rawError ? toFormValidationError(rawError) : null;
+    const fieldPrompts = useMemo(
+        () => Object.fromEntries(template.properties.map(p => [p.name, p.prompt ?? p.name])),
+        [template]
+    );
 
     const {formData, isLoadingTargetData, targetFetchError, refetchTargetData} = useHalFormData(
         template,
@@ -169,9 +171,10 @@ export const HalFormDisplay = ({
                 />
             )}
 
-            {submitError && (
+            {rawError && (
                 <ErrorDisplay
-                    error={submitError}
+                    error={rawError}
+                    fieldPrompts={fieldPrompts}
                 />
             )}
 
@@ -183,7 +186,7 @@ export const HalFormDisplay = ({
                     onCancel={onClose}
                     isSubmitting={isSubmitting}
                     fieldsFactory={effectiveFieldsFactory}
-                    serverValidationErrors={submitError && isFormValidationError(submitError) ? submitError.validationErrors : undefined}
+                    serverError={rawError}
                     submitButtonLabel={submitButtonLabel}
                     submitIcon={submitIcon}
                     refineValidationSchema={refineValidationSchema}

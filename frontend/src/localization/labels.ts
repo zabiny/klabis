@@ -1,10 +1,32 @@
+import type {ErrorType} from '../api/apiError';
+
 export function czechPlural(count: number, one: string, few: string, many: string): string {
     if (count === 1) return one;
     if (count >= 2 && count <= 4) return few;
     return many;
 }
 
+export type ErrorParams = Record<string, unknown>;
+
+const UNEXPECTED_ERROR_TEXT = 'Došlo k neočekávané chybě. Zkuste to prosím znovu.';
+
+const errorTypes: Record<ErrorType, (params: ErrorParams) => string> = {
+    '/errors/validation-failed': () => 'Zadané údaje nejsou platné. Zkontrolujte formulář a zkuste to znovu.',
+    '/errors/invalid-request': () => 'Požadavek se nepodařilo zpracovat. Zkontrolujte zadané údaje a zkuste to znovu.',
+    '/errors/unauthorized': () => 'Platnost přihlášení vypršela. Přihlaste se prosím znovu.',
+    '/errors/forbidden': () => 'K této akci nemáte oprávnění.',
+    '/errors/account-inactive': () => 'Váš účet je deaktivován. Kontaktujte prosím administrátora.',
+    '/errors/not-found': () => 'Požadovaná položka nebyla nalezena.',
+    '/errors/conflict': () => 'Akci nelze provést, protože je v rozporu s aktuálním stavem dat.',
+    '/errors/concurrent-update': () => 'Data mezitím změnil někdo jiný. Načtěte stránku znovu a zopakujte změnu.',
+    '/errors/unexpected': () => UNEXPECTED_ERROR_TEXT,
+    '/errors/voting-deadline-not-in-future': () => 'Termín pro výběr musí být v budoucnosti.',
+    '/errors/voting-deadline-in-past': () => 'Termín pro výběr nesmí být v minulosti.',
+};
+
 export const labels = {
+    errorTypes,
+
     nav: {
         home: 'Domů',
         calendar: 'Kalendář',
@@ -445,7 +467,7 @@ export const labels = {
         rateLimitedRetryAfter: 'Požadavek byl omezen. Zkuste to znovu za {seconds} sekund.',
         rateLimitedRetryLater: 'Požadavek byl omezen. Zkuste to prosím později.',
         requestFailed: 'Požadavek selhal.',
-        unexpectedError: 'Došlo k neočekávané chybě. Zkuste to prosím znovu.',
+        unexpectedError: UNEXPECTED_ERROR_TEXT,
         tokenExpired: 'Platnost tokenu vypršela nebo byl již použit. Požádejte si o nový.',
         tokenInvalid: 'Neplatný token. Požádejte si o nový.',
         savePermissionsFailed: 'Nepodařilo se uložit oprávnění. Zkuste to prosím znovu.',

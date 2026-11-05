@@ -1,6 +1,6 @@
 import {useToast} from '../contexts/toastContext';
 import {useAuthorizedMutation, useAuthorizedQuery} from './useAuthorizedFetch';
-import {FetchError} from '../api/authorizedFetch';
+import {ApiError} from '../api/apiError';
 import {toHref} from '../api/hateoas';
 import type {GetUserPermissionsResource} from '../api';
 import {labels} from '../localization';
@@ -26,7 +26,7 @@ export interface UsePermissionsEditorOptions {
 }
 
 export function resolvePermissionErrorMessage(error: Error): string {
-    if (error instanceof FetchError && error.responseStatus === 409) {
+    if (error instanceof ApiError && error.status === 409) {
         return labels.errors.removeLastPermissionsAdmin;
     }
     return labels.errors.savePermissionsFailed;

@@ -1,4 +1,4 @@
-import {FetchError} from "../../api/authorizedFetch.ts";
+import {ApiError} from "../../api/apiError.ts";
 import {type AffectedGroup} from "./SuspensionWarningDialog.tsx";
 
 export interface NegativeBalanceWarning {
@@ -12,22 +12,20 @@ export interface SuspensionBlockedWarning {
 }
 
 export const parseSuspensionBlockedWarning409 = (error: unknown): SuspensionBlockedWarning | null => {
-    if (!(error instanceof FetchError) || error.responseStatus !== 409) return null;
-    try {
-        const body = JSON.parse(error.responseBody ?? '{}');
+    if (!(error instanceof ApiError) || error.status !== 409) return null;
+    const {groups: rawGroups, debt: rawDebt} = error.params as {
+        groups?: {affectedGroups?: unknown};
+        debt?: {balance?: {amount?: unknown}; accountLink?: unknown};
+    };
 
-        const groups = Array.isArray(body.groups?.affectedGroups)
-            ? (body.groups.affectedGroups as AffectedGroup[])
+    const groups = Array.isArray(rawGroups?.affectedGroups)
+        ? (rawGroups.affectedGroups as AffectedGroup[])
+        : null;
+
+    const debt =
+        rawDebt && typeof rawDebt.balance?.amount === 'number' && typeof rawDebt.accountLink === 'string'
+            ? (rawDebt as NegativeBalanceWarning)
             : null;
 
-        const debt =
-            body.debt && typeof body.debt.balance?.amount === 'number' && typeof body.debt.accountLink === 'string'
-                ? (body.debt as NegativeBalanceWarning)
-                : null;
-
-        if (groups || debt) return {groups, debt};
-    } catch {
-        // not a structured 409
-    }
-    return null;
+    return groups || debt ? {groups, debt} : null;
 };

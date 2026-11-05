@@ -5,13 +5,13 @@ import type {ReactNode} from 'react';
 import React from 'react';
 import {useRegistrationDialogData} from './useRegistrationDialogData';
 import {createDelayedMockResponse, createMockResponse} from '../__mocks__/mockFetch';
-import {authorizedFetch, FetchError} from '../api/authorizedFetch';
+import {authorizedFetch, ApiError} from '../api/authorizedFetch';
 import {mockHalFormsTemplate, mockLink} from '../__mocks__/halData';
 import {type Mock, vi} from 'vitest';
 
 vi.mock('../api/authorizedFetch', () => ({
     authorizedFetch: vi.fn(),
-    FetchError: class FetchError extends Error {
+    ApiError: class ApiError extends Error {
         public responseStatus: number;
         public responseBody?: string;
         public responseHeaders: Headers;
@@ -191,7 +191,7 @@ describe('useRegistrationDialogData', () => {
 
     it('propagates an error from the registration fetch', async () => {
         vi.mocked(authorizedFetch as Mock).mockRejectedValue(
-            new FetchError('HTTP 500', 500, 'Internal Server Error', new Headers()));
+            new ApiError(500));
         const {result} = renderHook(() => useRegistrationDialogData(mockLink(PREFILL_URL)), {wrapper: createWrapper()});
 
         await waitFor(() => expect(result.current.error).toBeTruthy());
@@ -201,7 +201,7 @@ describe('useRegistrationDialogData', () => {
     it('propagates an error from the event fetch after the registration loaded', async () => {
         vi.mocked(authorizedFetch as Mock).mockImplementation(((url: string) => {
             if (url === EDIT_URL) return Promise.resolve(createMockResponse(editRegistration));
-            return Promise.reject(new FetchError('HTTP 500', 500, 'Internal Server Error', new Headers()));
+            return Promise.reject(new ApiError(500));
         }) as typeof authorizedFetch);
         const {result} = renderHook(() => useRegistrationDialogData(mockLink(EDIT_URL)), {wrapper: createWrapper()});
 

@@ -1,6 +1,7 @@
 import {renderHook} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type {UseQueryResult} from '@tanstack/react-query';
+import type {ApiError} from '../api/authorizedFetch';
 import {type ReactNode} from 'react';
 import {useIsAdmin} from './useIsAdmin';
 import type {NavigationItem} from './useRootNavigation';
@@ -63,7 +64,7 @@ describe('useIsAdmin', () => {
             errorUpdateCount: 0,
             errorUpdatedAt: null,
             dataUpdatedAt: Date.now(),
-        } as unknown as UseQueryResult<NavigationItem[] | undefined>);
+        } as unknown as UseQueryResult<NavigationItem[] | undefined, ApiError>);
 
         const {result} = renderHook(() => useIsAdmin(), {
             wrapper: createWrapper(),
@@ -98,7 +99,7 @@ describe('useIsAdmin', () => {
             errorUpdateCount: 0,
             errorUpdatedAt: null,
             dataUpdatedAt: Date.now(),
-        } as unknown as UseQueryResult<NavigationItem[] | undefined>);
+        } as unknown as UseQueryResult<NavigationItem[] | undefined, ApiError>);
 
         const {result} = renderHook(() => useIsAdmin(), {
             wrapper: createWrapper(),
@@ -128,7 +129,7 @@ describe('useIsAdmin', () => {
             errorUpdateCount: 0,
             errorUpdatedAt: null,
             dataUpdatedAt: 0,
-        } as unknown as UseQueryResult<NavigationItem[] | undefined>);
+        } as unknown as UseQueryResult<NavigationItem[] | undefined, ApiError>);
 
         const {result} = renderHook(() => useIsAdmin(), {
             wrapper: createWrapper(),
@@ -157,7 +158,7 @@ describe('useIsAdmin', () => {
             errorUpdateCount: 0,
             errorUpdatedAt: null,
             dataUpdatedAt: Date.now(),
-        } as unknown as UseQueryResult<NavigationItem[] | undefined>);
+        } as unknown as UseQueryResult<NavigationItem[] | undefined, ApiError>);
 
         const {result} = renderHook(() => useIsAdmin(), {
             wrapper: createWrapper(),

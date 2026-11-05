@@ -1,8 +1,12 @@
 import {klabisAuthUserManager, silentRenewRetry} from './klabisUserManager';
+import {ApiError} from './apiError';
+
+export {ApiError};
+export type {ApiErrorDetails, ErrorType} from './apiError';
 
 /**
  * Fetch with automatic Bearer token injection and /api prefix for relative URLs.
- * Throws FetchError on non-ok responses unless throwOnError is false.
+ * Throws ApiError on non-ok responses unless throwOnError is false.
  */
 export async function authorizedFetch(
     url: string | URL,
@@ -56,35 +60,49 @@ function resolveUrl(url: string | URL): string {
     return `/api${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
-async function buildFetchError(response: Response): Promise<FetchError> {
-    let errorBody: string | undefined;
-    try {
-        errorBody = await response.clone().text();
-    } catch {
-        // Ignore if we can't read the body
+const PROBLEM_JSON = 'application/problem+json';
+const DROPPED_PROPERTIES = new Set(['title', 'instance', 'status']);
+const MAPPED_PROPERTIES = new Set(['type', 'detail', 'field', 'fieldErrors', 'errors', 'parameterErrors']);
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const asString = (value: unknown): string | undefined => typeof value === 'string' ? value : undefined;
+
+const asStringArray = (value: unknown): string[] =>
+    Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
+const asStringRecord = (value: unknown): Record<string, string> =>
+    isRecord(value)
+        ? Object.fromEntries(Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
+        : {};
+
+async function readProblem(response: Response): Promise<Record<string, unknown> | undefined> {
+    if (!(response.headers.get('Content-Type') ?? '').includes(PROBLEM_JSON)) {
+        return undefined;
     }
-    return new FetchError(
-        `HTTP ${response.status} (${response.statusText})`,
-        response.status,
-        response.statusText,
-        response.headers,
-        errorBody
-    );
+    try {
+        const body: unknown = await response.clone().json();
+        return isRecord(body) ? body : undefined;
+    } catch {
+        return undefined;
+    }
 }
 
-
-export class FetchError extends Error {
-    public responseBody?: string;
-    public responseStatus: number;
-    public responseStatusText: string;
-    public responseHeaders: Headers;
-
-    constructor(message: string, responseStatus: number, responseStatusText: string, responseHeaders: Headers, responseBody?: string) {
-        super(message);
-        this.responseBody = responseBody;
-        this.responseStatus = responseStatus;
-        this.responseStatusText = responseStatusText;
-        this.responseHeaders = responseHeaders;
+async function buildFetchError(response: Response): Promise<ApiError> {
+    const problem = await readProblem(response);
+    if (!problem) {
+        return new ApiError(response.status);
     }
-
+    const params = Object.fromEntries(
+        Object.entries(problem).filter(([key]) => !DROPPED_PROPERTIES.has(key) && !MAPPED_PROPERTIES.has(key))
+    );
+    return new ApiError(response.status, {
+        type: asString(problem.type),
+        detail: asString(problem.detail),
+        field: asString(problem.field),
+        fieldErrors: asStringRecord(problem.fieldErrors),
+        errors: [...asStringArray(problem.errors), ...asStringArray(problem.parameterErrors)],
+        params,
+    });
 }

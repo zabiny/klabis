@@ -6,7 +6,7 @@ import {LegalGuardiansSection} from '../../components/legal-guardians/LegalGuard
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import type {GetLegalGuardianGroupResource, HalResourceLinks} from '../../api';
 import {labels} from '../../localization';
-import {FetchError} from '../../api/authorizedFetch.ts';
+import {ApiError} from '../../api/apiError.ts';
 import {useToast} from '../../contexts/toastContext.ts';
 
 const LegalGuardianGroupDetailContent = ({resourceData, onEditStarted}: {
@@ -58,7 +58,7 @@ export const LegalGuardianGroupDetailPage = (): ReactElement => {
     const [guardiansEdited, setGuardiansEdited] = useState(false);
 
     // Changing guardians may merge this group into an existing one, which deletes it: the refetch then answers 404.
-    const groupGone = guardiansEdited && error instanceof FetchError && error.responseStatus === 404;
+    const groupGone = guardiansEdited && error instanceof ApiError && error.status === 404;
 
     useEffect(() => {
         if (!groupGone) return;

@@ -95,11 +95,13 @@ vi.mock('../../hooks/useAuthorizedFetch', () => ({
 
 vi.mock('../../api/authorizedFetch', () => ({
     authorizedFetch: vi.fn(),
-    FetchError: class FetchError extends Error {
-        public responseStatus: number;
-        constructor(message: string, status: number) {
-            super(message);
-            this.responseStatus = status;
+    ApiError: class ApiError extends Error {
+        public status: number;
+        public fieldErrors: Record<string, string>;
+        constructor(status: number, details: {fieldErrors?: Record<string, string>} = {}) {
+            super(`HTTP ${status}`);
+            this.status = status;
+            this.fieldErrors = details.fieldErrors ?? {};
         }
     },
 }));

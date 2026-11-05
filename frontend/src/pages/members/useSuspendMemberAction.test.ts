@@ -1,45 +1,28 @@
 import {act, renderHook} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {useSuspendMemberAction} from './useSuspendMemberAction';
-import {FetchError} from '../../api/authorizedFetch';
+import {ApiError} from '../../api/authorizedFetch';
 
 const makeAffectedGroups409 = () =>
-    new FetchError(
-        '409 Conflict',
-        409,
-        'Conflict',
-        new Headers(),
-        JSON.stringify({
+    new ApiError(409, {params: {
             groups: {
                 message: 'member is last owner',
                 affectedGroups: [{groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'}],
             },
             debt: null,
-        }),
-    );
+        }});
 
 const makeNegativeBalance409 = () =>
-    new FetchError(
-        '409 Conflict',
-        409,
-        'Conflict',
-        new Headers(),
-        JSON.stringify({
+    new ApiError(409, {params: {
             debt: {
                 balance: {amount: -350, currency: 'CZK'},
                 accountLink: '/api/members/abc-123/account',
             },
             groups: null,
-        }),
-    );
+        }});
 
 const makeBothBlockers409 = () =>
-    new FetchError(
-        '409 Conflict',
-        409,
-        'Conflict',
-        new Headers(),
-        JSON.stringify({
+    new ApiError(409, {params: {
             debt: {
                 balance: {amount: -350, currency: 'CZK'},
                 accountLink: '/api/members/abc-123/account',
@@ -48,14 +31,13 @@ const makeBothBlockers409 = () =>
                 message: 'member is last owner',
                 affectedGroups: [{groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'}],
             },
-        }),
-    );
+        }});
 
 const makeUnknown409 = () =>
-    new FetchError('409 Conflict', 409, 'Conflict', new Headers(), JSON.stringify({message: 'some other conflict'}));
+    new ApiError(409, {params: {message: 'some other conflict'}});
 
 const makeNon409Error = () =>
-    new FetchError('500 Internal Server Error', 500, 'Internal Server Error', new Headers(), '{}');
+    new ApiError(500);
 
 describe('useSuspendMemberAction', () => {
     let closeActionModal: ReturnType<typeof vi.fn>;
@@ -278,7 +260,7 @@ describe('useSuspendMemberAction', () => {
         });
     });
 
-    describe('plain (non-FetchError) exception', () => {
+    describe('plain (non-ApiError) exception', () => {
         it('returns undefined for a plain Error', () => {
             const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
 

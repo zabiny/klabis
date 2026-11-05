@@ -2,26 +2,16 @@ import {render, screen} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {ErrorDisplay} from './ErrorDisplay'
 import {vi} from 'vitest'
-import {FetchError} from '../../api/authorizedFetch'
-import type {FormValidationError} from '../../api/hateoas'
+import {ApiError} from '../../api/authorizedFetch'
+import {labels} from '../../localization'
 
 describe('ErrorDisplay Component', () => {
-    const mockFetchError = new FetchError(
-        'Failed to fetch data',
-        500,
-        'Internal Server Error',
-        new Headers()
-    )
+    const mockFetchError = new Error('Failed to fetch data')
 
-    const mockValidationError: FormValidationError = {
-        name: 'FormValidationError',
-        message: 'Validation failed',
-        validationErrors: {
-            name: 'Name is required',
-            email: 'Invalid email format',
-        },
-        formData: {},
-    } as FormValidationError
+    const validationError = new ApiError(400, {
+        type: '/errors/validation-failed',
+        fieldErrors: {name: 'nesmí být prázdné', email: 'musí být e-mailová adresa'},
+    })
 
     describe('Rendering', () => {
         it('should not render when error is null', () => {
@@ -83,25 +73,91 @@ describe('ErrorDisplay Component', () => {
         })
     })
 
-    describe('Validation Errors', () => {
-        it('should display validation field errors', () => {
-            const {container} = render(<ErrorDisplay error={mockValidationError}/>)
-            expect(container.textContent).toContain('Name is required')
-            expect(container.textContent).toContain('Invalid email format')
+    describe('ApiError', () => {
+        it('shows the Czech text of a typed error instead of the technical message', () => {
+            render(<ErrorDisplay error={new ApiError(404, {type: '/errors/not-found', detail: 'English detail'})}/>)
+
+            expect(screen.getByText(labels.errorTypes['/errors/not-found']({}))).toBeInTheDocument()
+            expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument()
+            expect(screen.queryByText(/English detail/)).not.toBeInTheDocument()
         })
 
-        it('should not display validation errors for non-validation errors', () => {
-            const {container} = render(<ErrorDisplay error={mockFetchError}/>)
-            expect(container.textContent).not.toContain('Name is required')
+        it('falls back to a generic Czech text by status for an unknown type', () => {
+            render(<ErrorDisplay error={new ApiError(403, {type: '/errors/new-one'})}/>)
+
+            expect(screen.getByText(labels.errorTypes['/errors/forbidden']({}))).toBeInTheDocument()
         })
 
-        it('should display message before validation errors', () => {
-            const {container} = render(<ErrorDisplay error={mockValidationError}/>)
-            const message = screen.getByText('Validation failed')
-            const ul = container.querySelector('ul')
-            if (ul) {
-                expect(message.compareDocumentPosition(ul) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-            }
+        it('shows form-level error texts', () => {
+            render(<ErrorDisplay error={new ApiError(400, {type: '/errors/validation-failed', errors: ['Hesla se neshodují']})}/>)
+
+            expect(screen.getByText('Hesla se neshodují')).toBeInTheDocument()
+        })
+
+        it('shows the validation heading when only field errors exist', () => {
+            render(<ErrorDisplay error={validationError}/>)
+
+            expect(screen.getByText(labels.errors.formValidationErrors)).toBeInTheDocument()
+            expect(screen.queryByText(labels.errorTypes['/errors/validation-failed']({}))).not.toBeInTheDocument()
+        })
+
+        it('treats a nested key as matched when its first segment is a template property', () => {
+            const error = new ApiError(400, {
+                type: '/errors/validation-failed',
+                fieldErrors: {'address.street': 'nesmí být prázdné'},
+            })
+
+            const {container} = render(<ErrorDisplay error={error} fieldPrompts={{address: 'Adresa'}}/>)
+
+            expect(container.textContent).not.toContain('nesmí být prázdné')
+            expect(container.textContent).not.toContain('address.street')
+        })
+
+        it('shows the generic validation text when validation-failed carries no details', () => {
+            const {container} = render(<ErrorDisplay error={new ApiError(400, {type: '/errors/validation-failed'})}/>)
+
+            expect(container.textContent).toContain(labels.errorTypes['/errors/validation-failed']({}))
+        })
+
+        it('shows an unmatched field error without its raw key when no property matches', () => {
+            const error = new ApiError(400, {type: '/errors/validation-failed', fieldErrors: {unknownKey: 'chyba'}})
+
+            const {container} = render(<ErrorDisplay error={error} fieldPrompts={{name: 'Název'}}/>)
+
+            expect(screen.getByText('chyba')).toBeInTheDocument()
+            expect(container.textContent).not.toContain('unknownKey')
+        })
+
+        it('omits field errors that are shown at their fields', () => {
+            const {container} = render(
+                <ErrorDisplay error={validationError} fieldPrompts={{name: 'Název', email: 'E-mail'}}/>
+            )
+
+            expect(container.textContent).not.toContain('nesmí být prázdné')
+            expect(container.textContent).toContain(labels.errors.formValidationErrors)
+        })
+
+        it('renders nothing for a typed error bound to a rendered field', () => {
+            const error = new ApiError(400, {type: '/errors/voting-deadline-not-in-future', field: 'votingDeadline'})
+
+            const {container} = render(<ErrorDisplay error={error} fieldPrompts={{votingDeadline: 'Termín'}}/>)
+
+            expect(container.firstChild).toBeNull()
+        })
+
+        it('shows a typed error bound to a field that is not in the form', () => {
+            const error = new ApiError(400, {type: '/errors/voting-deadline-not-in-future', field: 'votingDeadline'})
+
+            render(<ErrorDisplay error={error} fieldPrompts={{name: 'Název'}}/>)
+
+            expect(screen.getByText('Termín pro výběr musí být v budoucnosti.')).toBeInTheDocument()
+        })
+
+        it('keeps the custom message ahead of field errors', () => {
+            render(<ErrorDisplay error={validationError} customMessage="Opravte chyby"/>)
+
+            expect(screen.getByText('Opravte chyby')).toBeInTheDocument()
+            expect(screen.queryByText(labels.errors.formValidationErrors)).not.toBeInTheDocument()
         })
     })
 
@@ -200,37 +256,21 @@ describe('ErrorDisplay Component', () => {
     })
 
     describe('Complex Scenarios', () => {
-        it('should display full error with title, subtitle, buttons and validation errors', () => {
-            const mockOnRetry = vi.fn()
-            const mockOnCancel = vi.fn()
+        it('should display title, subtitle, field errors and buttons together', () => {
             const {container} = render(
                 <ErrorDisplay
-                    error={mockValidationError}
+                    error={validationError}
                     title="Form Submission Error"
                     subtitle="Check your input fields"
-                    onRetry={mockOnRetry}
-                    onCancel={mockOnCancel}
+                    onRetry={vi.fn()}
+                    onCancel={vi.fn()}
                 />
             )
             expect(screen.getByText('Form Submission Error')).toBeInTheDocument()
-            expect(screen.getByText('Validation failed')).toBeInTheDocument()
             expect(screen.getByText('Check your input fields')).toBeInTheDocument()
-            expect(container.textContent).toContain('Name is required')
+            expect(container.textContent).toContain('nesmí být prázdné')
             expect(screen.getByTestId('error-display-retry-button')).toBeInTheDocument()
             expect(screen.getByTestId('error-display-cancel-button')).toBeInTheDocument()
-        })
-
-        it('should prioritize custom message over error message', () => {
-            const {container} = render(
-                <ErrorDisplay
-                    error={mockValidationError}
-                    title="Form Error"
-                    customMessage="Please fix the validation errors below"
-                />
-            )
-            expect(screen.getByText('Please fix the validation errors below')).toBeInTheDocument()
-            expect(screen.queryByText('Validation failed')).not.toBeInTheDocument()
-            expect(container.textContent).toContain('Name is required')
         })
     })
 

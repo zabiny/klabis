@@ -167,10 +167,6 @@ vi.mock('../../api/klabisUserManager', () => ({
 
 vi.mock('../../api/hateoas', () => ({
     submitHalFormsData: vi.fn(),
-    isFormValidationError: vi.fn((error) => {
-        return error && typeof error === 'object' && 'validationErrors' in error;
-    }),
-    toFormValidationError: vi.fn((error) => error),
     toHref: vi.fn((source: unknown) => {
         if (Array.isArray(source)) return (source[0] as {href?: string})?.href ?? '';
         return (source as {href?: string})?.href ?? '';
