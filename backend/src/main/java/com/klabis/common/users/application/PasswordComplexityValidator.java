@@ -1,8 +1,11 @@
 package com.klabis.common.users.application;
 
 import com.klabis.common.users.domain.PasswordValidationException;
+import com.klabis.common.users.domain.PasswordValidationException.Violation;
 import org.springframework.stereotype.Component;
 
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -24,7 +27,7 @@ import java.util.regex.Pattern;
 @Component
 public class PasswordComplexityValidator {
 
-    private static final int MIN_LENGTH = 12;
+    private static final int MIN_LENGTH = PasswordValidationException.MIN_LENGTH;
     private static final Pattern UPPERCASE = Pattern.compile("[A-Z]");
     private static final Pattern LOWERCASE = Pattern.compile("[a-z]");
     private static final Pattern DIGIT = Pattern.compile("[0-9]");
@@ -38,38 +41,29 @@ public class PasswordComplexityValidator {
      */
     public void validateBasic(String password) {
         if (password == null || password.isBlank()) {
-            throw new PasswordValidationException("Password is required");
+            throw new PasswordValidationException(Violation.REQUIRED);
         }
 
-        StringBuilder errors = new StringBuilder();
+        Set<Violation> violations = EnumSet.noneOf(Violation.class);
 
-        // Check minimum length
         if (password.length() < MIN_LENGTH) {
-            errors.append("Password must be at least ").append(MIN_LENGTH).append(" characters long. ");
+            violations.add(Violation.TOO_SHORT);
         }
-
-        // Check uppercase
         if (!UPPERCASE.matcher(password).find()) {
-            errors.append("Password must contain at least one uppercase letter. ");
+            violations.add(Violation.MISSING_UPPERCASE);
         }
-
-        // Check lowercase
         if (!LOWERCASE.matcher(password).find()) {
-            errors.append("Password must contain at least one lowercase letter. ");
+            violations.add(Violation.MISSING_LOWERCASE);
         }
-
-        // Check digit
         if (!DIGIT.matcher(password).find()) {
-            errors.append("Password must contain at least one digit. ");
+            violations.add(Violation.MISSING_DIGIT);
         }
-
-        // Check special character
         if (!SPECIAL.matcher(password).find()) {
-            errors.append("Password must contain at least one special character. ");
+            violations.add(Violation.MISSING_SPECIAL_CHARACTER);
         }
 
-        if (errors.length() > 0) {
-            throw new PasswordValidationException(errors.toString().trim());
+        if (!violations.isEmpty()) {
+            throw new PasswordValidationException(violations);
         }
     }
 
@@ -83,33 +77,27 @@ public class PasswordComplexityValidator {
      * @throws PasswordValidationException if validation fails
      */
     public void validate(String password, String firstName, String lastName, String registrationNumber) {
-        // First do basic validation
         validateBasic(password);
 
-        StringBuilder errors = new StringBuilder();
+        Set<Violation> violations = EnumSet.noneOf(Violation.class);
         String passwordLower = password.toLowerCase();
 
-        // Check first name
-        if (firstName != null && !firstName.isBlank() &&
-            passwordLower.contains(firstName.toLowerCase())) {
-            errors.append("Password cannot contain your first name. ");
+        if (containsIgnoringCase(passwordLower, firstName)) {
+            violations.add(Violation.CONTAINS_FIRST_NAME);
+        }
+        if (containsIgnoringCase(passwordLower, lastName)) {
+            violations.add(Violation.CONTAINS_LAST_NAME);
+        }
+        if (containsIgnoringCase(passwordLower, registrationNumber)) {
+            violations.add(Violation.CONTAINS_REGISTRATION_NUMBER);
         }
 
-        // Check last name
-        if (lastName != null && !lastName.isBlank() &&
-            passwordLower.contains(lastName.toLowerCase())) {
-            errors.append("Password cannot contain your last name. ");
-        }
-
-        // Check registration number
-        if (registrationNumber != null && !registrationNumber.isBlank() &&
-            passwordLower.contains(registrationNumber.toLowerCase())) {
-            errors.append("Password cannot contain your registration number. ");
-        }
-
-        if (errors.length() > 0) {
-            throw new PasswordValidationException(errors.toString().trim());
+        if (!violations.isEmpty()) {
+            throw new PasswordValidationException(violations);
         }
     }
 
+    private static boolean containsIgnoringCase(String passwordLower, String personalValue) {
+        return personalValue != null && !personalValue.isBlank() && passwordLower.contains(personalValue.toLowerCase());
+    }
 }

@@ -94,6 +94,8 @@ class PasswordChangeControllerTest {
                                     """.formatted(VALID_NEW_PASSWORD))
                             .with(klabisAuthentication(userAuth)))
                     .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/incorrect-current-password"))
+                    .andExpect(jsonPath("$.field").value("currentPassword"))
                     .andExpect(jsonPath("$.detail").value("Current password is incorrect"));
         }
 

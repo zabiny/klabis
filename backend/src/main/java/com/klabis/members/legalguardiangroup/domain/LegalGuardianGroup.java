@@ -122,7 +122,7 @@ public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGua
         // Checked before addMember so the caller keeps the established MemberAlreadyInGroupException (400)
         // carrying the minor's id, instead of the generic owner rejection from MemberGroup.
         if (isOwner(minorUserId)) {
-            throw new MemberAlreadyInGroupException(minor.id());
+            throw new MemberAlreadyInGroupException(minor.id(), getName());
         }
         addMember(minorUserId);
     }
@@ -138,7 +138,7 @@ public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGua
             other.removeMinor(minorId);
             UserId minorUserId = minorId.toUserId();
             if (isOwner(minorUserId)) {
-                throw new MemberAlreadyInGroupException(minorId);
+                throw new MemberAlreadyInGroupException(minorId, getName());
             }
             addMember(minorUserId);
         });
@@ -156,7 +156,7 @@ public class LegalGuardianGroup extends MemberGroup<LegalGuardianGroup, LegalGua
                 .filter(minors::contains)
                 .findFirst()
                 .ifPresent(userId -> {
-                    throw new MemberAlreadyInGroupException(userId);
+                    throw new MemberAlreadyInGroupException(userId, generateName(guardians));
                 });
     }
 

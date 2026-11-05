@@ -7,4 +7,9 @@ public class TokenAlreadyUsedException extends TokenValidationException {
     public TokenAlreadyUsedException(String message) {
         super(message, Reason.USED);
     }
+
+    @Override
+    public String errorType() {
+        return "token-already-used";
+    }
 }

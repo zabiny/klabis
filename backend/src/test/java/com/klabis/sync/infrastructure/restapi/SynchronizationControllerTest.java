@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.Optional;
 
+import static com.klabis.common.ProblemDetailAssertions.noIdentifiersInParameters;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -258,7 +259,9 @@ class SynchronizationControllerTest {
             when(synchronizationPort.findByTarget(TARGET)).thenReturn(Optional.empty());
 
             mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.type").value("/errors/sync-record-not-enrolled"))
+                    .andExpect(noIdentifiersInParameters());
         }
 
         @Test
@@ -267,6 +270,7 @@ class SynchronizationControllerTest {
         void returns404ForUnknownEntityType() throws Exception {
             mockMvc.perform(get("/api/nonsense/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
                     .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.type").value("/errors/not-found"))
                     .andExpect(jsonPath("$.title").value("Resource Not Found"));
         }
 
@@ -454,7 +458,10 @@ class SynchronizationControllerTest {
                     .thenThrow(new SyncRecordNeedsResolutionException(conflicted.getId(), SyncStatus.CONFLICT));
 
             mockMvc.perform(post("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isConflict());
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/sync-record-needs-resolution"))
+                    .andExpect(jsonPath("$.syncStatus").value("CONFLICT"))
+                    .andExpect(noIdentifiersInParameters());
         }
 
         @Test
@@ -514,7 +521,8 @@ class SynchronizationControllerTest {
                     .thenThrow(new SyncRecordNotInConflictException(record.getId()));
 
             mockMvc.perform(post("/api/events/{id}/sync/acknowledgement", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isConflict());
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/sync-record-not-in-conflict"));
         }
 
         @Test
@@ -580,7 +588,8 @@ class SynchronizationControllerTest {
                             .contentType("application/json")
                             .content("{\"resolution\":\"INWARD\"}")
                             .accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isConflict());
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/conflict-not-acknowledged"));
         }
 
         @Test
@@ -596,7 +605,10 @@ class SynchronizationControllerTest {
                             .contentType("application/json")
                             .content("{\"resolution\":\"OUTWARD\"}")
                             .accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isConflict());
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/unsupported-resolution"))
+                    .andExpect(jsonPath("$.resolution").value("OUTWARD"))
+                    .andExpect(noIdentifiersInParameters());
         }
 
         @Test
@@ -665,7 +677,8 @@ class SynchronizationControllerTest {
                     .thenThrow(new SyncRecordNotFailedException(record.getId()));
 
             mockMvc.perform(post("/api/events/{id}/sync/reset", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
-                    .andExpect(status().isConflict());
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/sync-record-not-failed"));
         }
 
         @Test

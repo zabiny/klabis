@@ -6,6 +6,8 @@ import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.application.PermissionService;
 import com.klabis.common.users.domain.AuthorizationPolicy;
+import com.klabis.common.users.domain.CannotRemoveLastPermissionManagerException;
+import com.klabis.common.users.domain.InvalidAuthorityException;
 import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
 import com.klabis.common.users.infrastructure.restapi.UpdatePermissionsRequest;
@@ -137,8 +139,7 @@ class PermissionControllerTest {
             // When & Then
             mockMvc.perform(get("/api/users/{id}/permissions", USER_ID.uuid()))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.type").value("https://klabis.com/problems/user-not-found"))
-                    .andExpect(jsonPath("$.title").value("User Not Found"))
+                    .andExpect(jsonPath("$.type").value("/errors/user-not-found"))
                     .andExpect(jsonPath("$.status").value(404))
                     .andExpect(jsonPath("$.detail").value(containsString("not found")));
         }
@@ -228,8 +229,7 @@ class PermissionControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.type").value("https://klabis.com/problems/admin-lockout"))
-                    .andExpect(jsonPath("$.title").value("Admin Lockout Prevention"))
+                    .andExpect(jsonPath("$.type").value("/errors/admin-lockout"))
                     .andExpect(jsonPath("$.status").value(409))
                     .andExpect(jsonPath("$.detail").value(containsString("Cannot revoke MEMBERS:PERMISSIONS")));
         }
@@ -243,8 +243,7 @@ class PermissionControllerTest {
                     new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_PERMISSIONS));
 
             when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
-                    .thenThrow(new IllegalArgumentException(
-                            "Invalid authority: INVALID:AUTHORITY. Valid authorities: [...]"));
+                    .thenThrow(new InvalidAuthorityException("INVALID:AUTHORITY", "[...]"));
 
             // When & Then
             mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
@@ -252,10 +251,46 @@ class PermissionControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.type").value("https://klabis.com/problems/invalid-authority"))
-                    .andExpect(jsonPath("$.title").value("Invalid Request"))
+                    .andExpect(jsonPath("$.type").value("/errors/invalid-authority"))
                     .andExpect(jsonPath("$.status").value(400))
+                    .andExpect(jsonPath("$.authority").value("INVALID:AUTHORITY"))
                     .andExpect(jsonPath("$.detail").value(containsString("Invalid authority")));
+        }
+
+        @Test
+        @DisplayName("should return 409 with its own type when removing the last permission manager")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
+        void shouldReturn409WhenRemovingLastPermissionManager() throws Exception {
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
+
+            when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
+                    .thenThrow(new CannotRemoveLastPermissionManagerException());
+
+            mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/cannot-remove-last-permission-manager"));
+        }
+
+        @Test
+        @DisplayName("should hide the raw message of an internal check behind the generic invalid-request type")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_PERMISSIONS})
+        void shouldReturnGenericInvalidRequestForInternalCheck() throws Exception {
+            UpdatePermissionsRequest request =
+                    new UpdatePermissionsRequest(Set.of(com.klabis.common.users.infrastructure.restapi.Authority.MEMBERS_READ));
+
+            when(permissionService.updateUserPermissions(any(UserId.class), any(Set.class)))
+                    .thenThrow(new IllegalArgumentException("Authorities required"));
+
+            mockMvc.perform(put("/api/users/{id}/permissions", USER_ID.uuid())
+                            .with(csrf())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/invalid-request"));
         }
 
         @Test

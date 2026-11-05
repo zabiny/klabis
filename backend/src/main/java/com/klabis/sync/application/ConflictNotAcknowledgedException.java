@@ -1,6 +1,7 @@
 package com.klabis.sync.application;
 
-import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.exceptions.ConflictException;
+import com.klabis.common.exceptions.UserFacingError;
 import com.klabis.sync.SyncRecordId;
 
 /**
@@ -9,7 +10,7 @@ import com.klabis.sync.SyncRecordId;
  * since the manager acknowledged and the record's snapshots were refreshed
  * (design.md D7).
  */
-public class ConflictNotAcknowledgedException extends BusinessRuleViolationException {
+public class ConflictNotAcknowledgedException extends ConflictException implements UserFacingError {
 
     public ConflictNotAcknowledgedException(SyncRecordId id) {
         super("Synchronisation record " + id + " has no current acknowledgement for its present conflict");

@@ -1,5 +1,6 @@
 package com.klabis.common;
 
+import com.klabis.common.groups.domain.MemberNameLookup;
 import com.klabis.common.settings.OrisClubKeyManagementPort;
 import com.klabis.common.users.application.PasswordChangePort;
 import com.klabis.common.users.application.PasswordSetupService;
@@ -27,6 +28,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Documented
 @MockitoBean(types = {
+        MemberNameLookup.class,
         OrisClubKeyManagementPort.class,
         PasswordChangePort.class,
         PasswordSetupService.class,

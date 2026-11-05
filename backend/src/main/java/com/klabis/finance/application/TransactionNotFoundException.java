@@ -1,16 +1,20 @@
 package com.klabis.finance.application;
 
+import com.klabis.common.exceptions.ResourceNotFoundException;
+import com.klabis.common.exceptions.UserFacingError;
 import com.klabis.finance.domain.TransactionId;
+import com.klabis.members.MemberId;
 
-import java.util.UUID;
+public class TransactionNotFoundException extends ResourceNotFoundException implements UserFacingError {
 
-public class TransactionNotFoundException extends RuntimeException {
+    private final MemberId memberId;
 
-    public TransactionNotFoundException(UUID transactionId) {
-        super("Transaction not found: " + transactionId);
+    public TransactionNotFoundException(MemberId memberId, TransactionId transactionId) {
+        super("Transaction not found: " + transactionId.value());
+        this.memberId = memberId;
     }
 
-    public TransactionNotFoundException(TransactionId transactionId) {
-        this(transactionId.value());
+    public MemberId memberId() {
+        return memberId;
     }
 }
