@@ -188,7 +188,7 @@ export const EventRegistrationDialog = ({
         >
             {isLoading ? (
                 <DialogSkeleton/>
-            ) : error ? (
+            ) : error && !showUnregisterConfirmation ? (
                 <Alert severity="error">{labels.events.registrationModal.prefillLoadError}</Alert>
             ) : showUnregisterConfirmation ? (
                 <HalFormDisplay
