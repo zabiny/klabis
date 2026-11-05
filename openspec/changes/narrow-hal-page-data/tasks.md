@@ -50,6 +50,6 @@
 
 ## 5. Docs and verification
 
-- [ ] 5.1 Document the new extensions in `docs/openapi/spec/README.md` and `.claude/skills/klabis-api-spec/references/hypermedia.md`. Update the `useHalPageData` description in `.claude/skills/hal-navigator-patterns/references/component-api.md` and `components/HalNavigator2/COMPONENTS.md`, removing the stale `route.refetch()`-after-submit advice.
-- [ ] 5.2 Run the backend build (spec bundle and codegen), `npm run openapi`, `npm run build`, eslint and the full frontend test suite.
-- [ ] 5.3 Run the E2E suite against a local instance. Only the 2 pre-existing unregister failures in `event-registrations.feature` are allowed.
+- [x] 5.1 Document the new extensions in `docs/openapi/spec/README.md` and `.claude/skills/klabis-api-spec/references/hypermedia.md`. Update the `useHalPageData` description in `.claude/skills/hal-navigator-patterns/references/component-api.md` and `components/HalNavigator2/COMPONENTS.md`, removing the stale `route.refetch()`-after-submit advice.
+- [x] 5.2 Run the backend build (spec bundle and codegen), `npm run openapi`, `npm run build`, eslint and the full frontend test suite.
+- [x] 5.3 Run the E2E suite against a local instance. Only the 2 pre-existing unregister failures in `event-registrations.feature` are allowed. Result: 78/80, only the 2 pre-existing unregister failures.

@@ -102,7 +102,7 @@ layout a potřebují vybraným komponentám říci, která data zobrazit.
 ```
 HalRouteProvider (v App.tsx)
   ↓
-useHalPageData() - poskytuje resourceData, route, actions a helper metody
+useHalPageData() - poskytuje resourceData, stav načítání a navigaci
   ↓
 HalFormButton, HalFormsSection, HalLinksSection - komponenty
 ```
@@ -111,62 +111,27 @@ HalFormButton, HalFormsSection, HalLinksSection - komponenty
 
 ## useHalPageData hook
 
-Hook, který kombinuje `useHalRoute`, `useHalActions` a `useIsAdmin`, poskytující unified rozhraní pro HAL resource data,
-akce a admin stav.
+Tenký hook nad `useHalRoute`: vrací jen aktuální HAL resource, stav načítání a navigační pomocníky. Admin stav získej
+přes `useIsAdmin()`, odkazy a šablony čti přímo z typovaného `resourceData._links` / `resourceData._templates`.
 
 ### Signatura
 
 ```typescript
-const useHalPageData
-<T extends HalResponse = HalResponse>(): UseHalPageDataReturn<T> => { ...
-}
+function useHalPageData<T = HalResponse>(): UseHalPageDataReturn<T>
 ```
+
+Jako `T` předej vygenerovaný `*Resource` typ z `@/api` (např. `GetMemberResource`, `ListEventsResource`).
 
 ### UseHalPageDataReturn interface
 
 ```typescript
-interface UseHalPageDataReturn<T extends HalResponse = HalResponse> {
-    // --- Top-level properties (most commonly used) ---
-
-    /** The fetched HAL resource data */
+interface UseHalPageDataReturn<T = HalResponse> {
     resourceData: T | null;
-
-    /** Combined loading state (true if ANY underlying hook is loading) */
     isLoading: boolean;
-
-    /** Error from fetching resource data */
     error: Error | null;
-
-    /** Whether the current user is an admin */
-    isAdmin: boolean;
-
-    // --- Grouped properties (less common) ---
-
-    /** Route-related properties */
-    route: {
-        pathname: string;
-        navigateToResource: (resource: HalResponse | Link) => void;
-        refetch: () => Promise<void>;
-        queryState: 'idle' | 'pending' | 'success' | 'error';
-        getResourceLink: (linkName?: string) => Link | null;
-    };
-
-    /** Action-related properties */
-    actions: {
-        handleNavigateToItem: (href: string) => void;
-    };
-
-    // --- Helper methods (common page patterns) ---
-
-    getLinks: () => Record<string, HalResourceLinks> | undefined;
-    getTemplates: () => Record<string, HalFormsTemplate> | undefined;
-    hasEmbedded: () => boolean;
-    getEmbeddedItems: () => unknown[];
-    isCollection: () => boolean;
-    hasLink: (linkName: string) => boolean;
-    hasTemplate: (templateName: string) => boolean;
-    hasForms: () => boolean;
-    getPageMetadata: () => PageMetadata | undefined;
+    navigateToResource: (resource: HalEnvelope | Link, options?: { state?: unknown }) => void;
+    getResourceLink: (linkName?: string) => Link | null;
+    refetch: () => Promise<void>;
 }
 ```
 
@@ -174,45 +139,23 @@ interface UseHalPageDataReturn<T extends HalResponse = HalResponse> {
 
 ```typescript
 import {useHalPageData} from '../hooks/useHalPageData';
+import type {GetEventResource} from '../api';
 
 export const MyPage = () => {
-    const {resourceData, isLoading, error, route, isAdmin} = useHalPageData();
+    const {resourceData, isLoading, error} = useHalPageData<GetEventResource>();
 
-    if (isLoading) return <Spinner / >;
-    if (error) return <Alert severity = "error" > {error.message} < /Alert>;
+    if (isLoading) return <Spinner/>;
+    if (error) return <Alert severity="error">{error.message}</Alert>;
 
-    return (
-        <div>
-            <h1>Pathname
-:
-    {
-        route.pathname
-    }
-    </h1>
-    {
-        isAdmin && <AdminPanel / >
-    }
-    </div>
-)
-    ;
+    return <h1>{resourceData?.name}</h1>;
 };
 ```
 
-### Kdy volat `route.refetch()`
+### `refetch()`
 
-`route.refetch()` se automaticky volá v `HalFormDisplay` po úspěšném odeslání formuláře. **Ruční volání je potřeba,
-když:**
-
-- Chceš načíst data z API po nějaké akcí (např. po kliknutí na tlačítko mimo formulář)
-- Aktualizuješ data v rámci customizované logiky
-
-```typescript
-const handleManualRefresh = async () => {
-    const {route} = useHalPageData();
-    await route.refetch();
-    // resourceData jsou nyní aktualizovaná
-};
-```
+Po odeslání formuláře přes `HalFormDisplay` se data obnovují automaticky (invalidace dotazů v mutaci). `refetch()` je
+potřeba jen mimo mutace, např. v callbacku dokončení synchronizace nebo v `onChanged` komponenty, která mutaci
+neprovádí přes `useAuthorizedMutation`.
 
 ---
 
@@ -674,8 +617,8 @@ interface HalFormDisplayProps {
     /** Aktuální resource data */
     resourceData: Record<string, unknown>;
 
-    /** Aktuální pathname */
-    pathname: string;
+    /** URL aktuálního resource; určuje URL odeslání, když šablona nemá `target`. Výchozí: self link `resourceData`, jinak aktuální route */
+    resourceUrl?: string;
 
     /** Callback když se má formulář zavřít */
     onClose: () => void;
@@ -706,7 +649,7 @@ Ale můžeš ji použít, pokud potřebuješ **zcela customizovaný formulářov
 import {HalFormDisplay} from '../components/HalNavigator2/HalFormDisplay';
 
 export const CustomFormWorkflow = () => {
-    const {resourceData, route} = useHalPageData();
+    const {resourceData} = useHalPageData();
     const [showForm, setShowForm] = useState(false);
 
     if (!resourceData || !resourceData._templates?.customForm) {
@@ -730,7 +673,6 @@ export const CustomFormWorkflow = () => {
                 template = {resourceData._templates.customForm}
         templateName = "customForm"
         resourceData = {resourceData}
-        pathname = {route.pathname}
         onClose = {()
     =>
         setShowForm(false)
@@ -1070,7 +1012,7 @@ import {useNavigate} from 'react-router-dom';
 import {toRoutePath} from '../api/apiPath';
 
 export const CalendarEventPage = () => {
-    const {resourceData, isLoading, error, actions} = useHalPageData();
+    const {resourceData, isLoading, error} = useHalPageData();
     const navigate = useNavigate();
 
     if (isLoading) return <Spinner / >;
@@ -1236,11 +1178,7 @@ export const MemberDetailPage = () => {
    <HalLinksSection links={_links} onNavigate={handleNav} />
    ```
 
-4. **Volej `route.refetch()` když potřebuješ ručně aktualizovat data**
-   ```typescript
-   const { route } = useHalPageData();
-   await route.refetch();
-   ```
+4. **`refetch()` volej jen mimo formuláře a mutace** (po formuláři se data obnoví sama)
 
 5. **Používej `useNavigate` + `toRoutePath` pro HAL linky**
    ```typescript
