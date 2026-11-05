@@ -7,6 +7,7 @@ import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembershipFeeGroupDetailPage} from './MembershipFeeGroupDetailPage';
 import {vi} from 'vitest';
+import {ApiError} from '../../api/apiError';
 import type {HalResponse} from '../../api';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
 import {stubFetch, ToastProbe, createTestQueryClient} from '../../__mocks__/halDialogTest.tsx';
@@ -100,9 +101,10 @@ describe('MembershipFeeGroupDetailPage', () => {
         expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
     });
 
-    it('shows error message when fetch fails', () => {
-        renderPage(createMockPageData(null, {error: new Error('Chyba serveru')}));
-        expect(screen.getByText('Chyba serveru')).toBeInTheDocument();
+    it('shows Czech text when the resource is not found', () => {
+        renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/not-found', detail: 'Tier 123 not found'})}));
+        expect(screen.getByText('Požadovaná položka nebyla nalezena.')).toBeInTheDocument();
+        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 
     it('back link leads to the membership fees page', () => {

@@ -1224,7 +1224,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.firstName").value("must not be blank"));
+                    .andExpect(jsonPath("$.fieldErrors.firstName").value("nesmí být prázdná"));
         }
 
         @Test
@@ -1252,7 +1252,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.email").value("must be a well-formed email address"));
+                    .andExpect(jsonPath("$.fieldErrors.email").value("musí mít správně utvořenou e-mailovou adresu"));
         }
 
         @Test
@@ -1281,7 +1281,7 @@ class MemberControllerApiTest {
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.phone").value(
-                            "must match \"^\\+[0-9\\s]{7,20}$\""));
+                            "musí odpovídat \"^\\+[0-9\\s]{7,20}$\""));
         }
 
         @Test
@@ -1308,7 +1308,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.dateOfBirth").value("must be a past date"));
+                    .andExpect(jsonPath("$.fieldErrors.dateOfBirth").value("musí se jednat o datum v minulosti"));
         }
 
         @Test
@@ -1413,7 +1413,7 @@ class MemberControllerApiTest {
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.nationality").value(
-                            "size must be between 2 and 2"));
+                            "velikost musí ležet v rozsahu 2 až 2"));
         }
 
         @Test
@@ -1441,7 +1441,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors['address.street']").value("must not be blank"));
+                    .andExpect(jsonPath("$.fieldErrors['address.street']").value("nesmí být prázdná"));
         }
 
         @Test
@@ -1469,7 +1469,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors['address.country']").value("must match \"^[A-Za-z]{2}$\""));
+                    .andExpect(jsonPath("$.fieldErrors['address.country']").value("musí odpovídat \"^[A-Za-z]{2}$\""));
         }
     }
 
@@ -2321,7 +2321,7 @@ class MemberControllerApiTest {
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.fieldErrors.reason").value("must not be null"));
+                    .andExpect(jsonPath("$.fieldErrors.reason").value("nesmí mít hodnotu Null"));
         }
 
         @Test
@@ -2342,7 +2342,7 @@ class MemberControllerApiTest {
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.fieldErrors.note").value("size must be between 0 and 500"));
+                    .andExpect(jsonPath("$.fieldErrors.note").value("velikost musí ležet v rozsahu 0 až 500"));
         }
 
         @Test

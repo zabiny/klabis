@@ -35,7 +35,9 @@ public record MembershipPaymentRule(
 
         record Percentage(int percent) implements RuleValue {
             public Percentage {
-                Assert.isTrue(percent >= 0, "Percentage must be non-negative");
+                if (percent < 0) {
+                    throw new NegativePaymentRulePercentageException(percent);
+                }
             }
         }
 

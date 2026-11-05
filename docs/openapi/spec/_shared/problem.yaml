@@ -60,3 +60,15 @@ components:
         - /errors/unexpected              # 500, anything unhandled
         - /errors/voting-deadline-not-in-future  # 400, parameter deadline (ISO date), field votingDeadline
         - /errors/voting-deadline-in-past        # 400, parameter deadline (ISO date), field votingDeadline
+        - /errors/duplicate-payment-rule         # 409, parameters eventTypeName, rankingLabel (each left out when the name cannot be resolved)
+        - /errors/payment-rule-not-found         # 404, parameters eventTypeName, rankingLabel (each left out when the name cannot be resolved)
+        - /errors/payment-rule-value-missing     # 400, parameter ruleType (PERCENTAGE | FIXED_AMOUNT)
+        - /errors/negative-payment-rule-percentage  # 400, parameter percent (integer)
+        - /errors/active-campaign-exists         # 409, no parameters
+        - /errors/campaign-closed                # 409, no parameters
+        - /errors/campaign-already-processed     # 409, no parameters
+        - /errors/snapshot-frozen                # 400, no parameters
+        - /errors/voting-closed                  # 400, no parameters
+        - /errors/membership-fee-tier-not-found  # 404, no parameters
+        - /errors/membership-fee-group-not-found # 404, no parameters
+        - /errors/fee-selection-campaign-not-found  # 404, parameter year (integer) only when the campaign was looked up by year

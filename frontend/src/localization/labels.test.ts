@@ -201,3 +201,74 @@ describe('getPermissionInfo()', () => {
         expect(getPermissionInfo('MEMBERS:EDIT_PROFILE')?.label).toBe('Úprava údajů člena');
     });
 });
+
+describe('labels.errorTypes membership fees', () => {
+    const text = (type: keyof typeof labels.errorTypes, params: Record<string, unknown> = {}) =>
+        labels.errorTypes[type](params);
+
+    it('names the event type and ranking of a duplicate payment rule', () => {
+        expect(text('/errors/duplicate-payment-rule', {eventTypeName: 'Závod', rankingLabel: 'Morava'}))
+            .toBe('Pravidlo pro typ akce „Závod“ a žebříček „Morava“ již v této úrovni existuje.');
+    });
+
+    it.each([
+        [{}],
+        [{eventTypeName: 'Závod'}],
+        [{rankingLabel: 'Morava'}],
+    ])('uses the wording without names for a duplicate payment rule with params %j', (params) => {
+        expect(text('/errors/duplicate-payment-rule', params))
+            .toBe('Pravidlo pro tuto kombinaci typu akce a žebříčku již v této úrovni existuje.');
+    });
+
+    it('names the event type and ranking of a missing payment rule', () => {
+        expect(text('/errors/payment-rule-not-found', {eventTypeName: 'Závod', rankingLabel: 'Morava'}))
+            .toBe('Pravidlo pro typ akce „Závod“ a žebříček „Morava“ nebylo nalezeno.');
+    });
+
+    it('uses the wording without names for a missing payment rule', () => {
+        expect(text('/errors/payment-rule-not-found'))
+            .toBe('Pravidlo pro tuto kombinaci typu akce a žebříčku nebylo nalezeno.');
+    });
+
+    it('asks for the percentage when a percentage rule has no value', () => {
+        expect(text('/errors/payment-rule-value-missing', {ruleType: 'PERCENTAGE'}))
+            .toBe('Vyplňte procento spoluúčasti.');
+    });
+
+    it('asks for the fixed amount when a fixed amount rule has no value', () => {
+        expect(text('/errors/payment-rule-value-missing', {ruleType: 'FIXED_AMOUNT'}))
+            .toBe('Vyplňte fixní částku spoluúčasti.');
+    });
+
+    it('falls back to a general wording for an unknown rule type', () => {
+        expect(text('/errors/payment-rule-value-missing'))
+            .toBe('Vyplňte hodnotu pravidla spoluúčasti.');
+    });
+
+    it('states the invalid percentage', () => {
+        expect(text('/errors/negative-payment-rule-percentage', {percent: -5}))
+            .toBe('Procento spoluúčasti nesmí být záporné (zadáno -5 %).');
+    });
+
+    it.each([
+        ['/errors/active-campaign-exists', 'Již existuje aktivní kampaň volby členského příspěvku. Nejprve ji uzavřete.'],
+        ['/errors/campaign-closed', 'Kampaň je již uzavřena, změnu nelze provést.'],
+        ['/errors/campaign-already-processed', 'Kampaň již byla zpracována, akci nelze zopakovat.'],
+        ['/errors/snapshot-frozen', 'Úroveň je součástí vyhlášené kampaně a již ji nelze měnit.'],
+        ['/errors/voting-closed', 'Hlasování v této kampani již skončilo.'],
+        ['/errors/membership-fee-tier-not-found', 'Úroveň členského příspěvku nebyla nalezena.'],
+        ['/errors/membership-fee-group-not-found', 'Skupina členských příspěvků nebyla nalezena.'],
+    ] as const)('has Czech text for %s', (type, expected) => {
+        expect(text(type)).toBe(expected);
+    });
+
+    it('names the year of a missing fee selection campaign', () => {
+        expect(text('/errors/fee-selection-campaign-not-found', {year: 2026}))
+            .toBe('Kampaň volby členského příspěvku pro rok 2026 nebyla nalezena.');
+    });
+
+    it('has a wording without year for a missing fee selection campaign', () => {
+        expect(text('/errors/fee-selection-campaign-not-found'))
+            .toBe('Kampaň volby členského příspěvku nebyla nalezena.');
+    });
+});

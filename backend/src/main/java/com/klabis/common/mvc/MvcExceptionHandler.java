@@ -12,7 +12,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-import jakarta.validation.Path;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +20,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.*;
 import org.springframework.util.Assert;
 import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -33,7 +33,6 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.net.URI;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -212,7 +211,7 @@ class MvcExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ProblemDetail> handleConstraintViolationException(ConstraintViolationException ex) {
         List<String> parameterErrors = ex.getConstraintViolations().stream()
-                .map(this::toParameterError)
+                .map(ConstraintViolation::getMessage)
                 .toList();
 
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
@@ -221,16 +220,6 @@ class MvcExceptionHandler extends ResponseEntityExceptionHandler {
             problemDetail.setProperty("parameterErrors", parameterErrors);
         }
         return ResponseEntity.badRequest().body(problemDetail);
-    }
-
-    private String toParameterError(ConstraintViolation<?> violation) {
-        Path.Node lastNode = null;
-        Iterator<Path.Node> nodes = violation.getPropertyPath().iterator();
-        while (nodes.hasNext()) {
-            lastNode = nodes.next();
-        }
-        String parameterName = lastNode != null ? lastNode.getName() : violation.getPropertyPath().toString();
-        return "%s: %s".formatted(parameterName, violation.getMessage());
     }
 
     @Override
@@ -279,7 +268,7 @@ class MvcExceptionHandler extends ResponseEntityExceptionHandler {
                 problemDetail.setProperty("errors",
                         ex.getGlobalErrors()
                                 .stream()
-                                .map(e -> "%s [%s]".formatted(e.getDefaultMessage(), e.getCode()))
+                                .map(ObjectError::getDefaultMessage)
                                 .toList());
             }
         }
@@ -324,8 +313,8 @@ class MvcExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     private String toMessage(ParameterValidationResult validationResult) {
-        return "%s: %s".formatted(validationResult.getMethodParameter().getParameterName(),
-                validationResult.getResolvableErrors().stream().map(MessageSourceResolvable::getDefaultMessage).collect(
-                        Collectors.joining(", ")));
+        return validationResult.getResolvableErrors().stream()
+                .map(MessageSourceResolvable::getDefaultMessage)
+                .collect(Collectors.joining(", "));
     }
 }

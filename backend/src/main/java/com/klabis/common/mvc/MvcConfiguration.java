@@ -17,11 +17,14 @@ import org.springframework.core.annotation.Order;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.http.MediaType;
 import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.i18n.FixedLocaleResolver;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
+import java.util.Locale;
 
 @ComponentScan(
         basePackages = "com.klabis",
@@ -55,6 +58,12 @@ class MvcConfiguration implements WebMvcConfigurer {
     @Override
     public void extendHandlerExceptionResolvers(List<HandlerExceptionResolver> resolvers) {
         resolvers.add(new UnexpectedErrorResolver(objectMapper.getObject()));
+    }
+
+    // Fixed so bean-validation messages are Czech regardless of the browser's Accept-Language.
+    @Bean
+    public LocaleResolver localeResolver() {
+        return new FixedLocaleResolver(Locale.forLanguageTag("cs"));
     }
 
     @Bean

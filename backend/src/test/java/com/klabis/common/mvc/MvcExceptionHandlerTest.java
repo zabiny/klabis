@@ -259,4 +259,24 @@ class MvcExceptionHandlerTest {
         assertThat(response.getBody().getType()).isEqualTo(URI.create(CommonErrorTypes.VALIDATION_FAILED));
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    @DisplayName("object-level validation errors are sent as the bare message without the constraint code")
+    void globalErrorsHaveNoConstraintCode() throws Exception {
+        var bindingResult = new org.springframework.validation.BeanPropertyBindingResult(new Object(), "request");
+        bindingResult.addError(new org.springframework.validation.ObjectError(
+                "request", new String[]{"EndAfterStart"}, null, "Konec musí být po začátku"));
+        var parameter = new org.springframework.core.MethodParameter(
+                MvcExceptionHandlerTest.class.getDeclaredMethod("globalErrorsHaveNoConstraintCode"), -1);
+        var request = new org.springframework.web.context.request.ServletWebRequest(
+                new org.springframework.mock.web.MockHttpServletRequest());
+
+        var result = handler.handleMethodArgumentNotValid(
+                new org.springframework.web.bind.MethodArgumentNotValidException(parameter, bindingResult),
+                new org.springframework.http.HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+
+        ProblemDetail problem = (ProblemDetail) result.getBody();
+        assertThat(problem.getType()).isEqualTo(URI.create(CommonErrorTypes.VALIDATION_FAILED));
+        assertThat(problem.getProperties()).containsEntry("errors", java.util.List.of("Konec musí být po začátku"));
+    }
 }
