@@ -130,7 +130,10 @@ fun Project.openApiModule(
         // KlabisSpringCodegen never emits an illegal generic class literal (e.g. `Page<X>.class`) in
         // the springdoc `@Schema` annotations it generates, so no post-process patch is needed for
         // that either.
-        val commonMappings = mapOf("ProblemDetail" to "org.springframework.http.ProblemDetail")
+        val commonMappings = mapOf(
+            "ProblemDetail" to "org.springframework.http.ProblemDetail",
+            "ErrorType" to "java.lang.String"
+        )
         schemaMappings.set(mappings + commonMappings)
         importMappings.set(mappings + commonMappings + extraImportMappings + mapOf("Instant" to "java.time.Instant"))
     }

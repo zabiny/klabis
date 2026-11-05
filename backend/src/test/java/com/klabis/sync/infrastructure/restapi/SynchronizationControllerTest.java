@@ -702,20 +702,15 @@ class SynchronizationControllerTest {
     class AmbiguousSyncTarget {
 
         @Test
-        @DisplayName("propagates as 500 Internal Server Error (deliberate, see AmbiguousSyncTargetException javadoc)")
+        @DisplayName("answers 500 with the generic unexpected error type (deliberate, see AmbiguousSyncTargetException javadoc)")
         @WithKlabisMockUser(authorities = {Authority.SYNC_MANAGE})
-        void propagatesAsInternalServerError() {
+        void answersUnexpectedError() throws Exception {
             when(synchronizationPort.findByTarget(TARGET))
                     .thenThrow(new AmbiguousSyncTargetException(SyncEntityType.EVENT, 2));
 
-            // No @ExceptionHandler catches this exception (deliberate — see javadoc), so
-            // it is not translated into an HTTP response within the dispatch: MockMvc
-            // re-throws it wrapped in a ServletException, exactly as a real container
-            // would surface an unhandled exception before falling back to its own
-            // default 500 error page.
-            org.assertj.core.api.Assertions.assertThatThrownBy(() ->
-                            mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON)))
-                    .hasRootCauseInstanceOf(AmbiguousSyncTargetException.class);
+            mockMvc.perform(get("/api/events/{id}/sync", "event-1").accept(MediaTypes.HAL_FORMS_JSON))
+                    .andExpect(status().isInternalServerError())
+                    .andExpect(jsonPath("$.type").value("/errors/unexpected"));
         }
     }
 }

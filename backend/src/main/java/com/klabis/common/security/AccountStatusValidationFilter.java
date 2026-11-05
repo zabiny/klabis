@@ -1,5 +1,6 @@
 package com.klabis.common.security;
 
+import com.klabis.common.exceptions.CommonErrorTypes;
 import tools.jackson.databind.ObjectMapper;
 import com.klabis.common.users.UserService;
 import com.klabis.common.users.domain.User;
@@ -58,10 +59,10 @@ public class AccountStatusValidationFilter extends OncePerRequestFilter {
 
     private void handleDisabledUser(HttpServletResponse response) throws IOException {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
 
         Map<String, Object> problem = new HashMap<>();
-        problem.put("type", "https://api.klabis.example.com/errors/forbidden");
+        problem.put("type", CommonErrorTypes.ACCOUNT_INACTIVE);
         problem.put("title", "Forbidden");
         problem.put("status", 403);
         problem.put("detail", "User account is no longer active");
