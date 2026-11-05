@@ -35,7 +35,7 @@ function createMockQueryResult<T>(data: T | null = null, overrides: Record<strin
         isFetched: true,
         refetch: vi.fn(),
         ...overrides,
-    } as unknown as import('@tanstack/react-query').UseQueryResult<T | undefined>;
+    } as unknown as import('@tanstack/react-query').UseQueryResult<T | undefined, import('../../api/authorizedFetch').ApiError>;
 }
 
 const adminNavItems: NavigationItem[] = [

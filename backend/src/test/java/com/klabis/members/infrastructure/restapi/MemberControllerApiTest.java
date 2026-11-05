@@ -1224,7 +1224,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.firstName").value("must not be blank"));
+                    .andExpect(jsonPath("$.fieldErrors.firstName").value("nesmí být prázdná"));
         }
 
         @Test
@@ -1252,7 +1252,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.email").value("must be a well-formed email address"));
+                    .andExpect(jsonPath("$.fieldErrors.email").value("musí mít správně utvořenou e-mailovou adresu"));
         }
 
         @Test
@@ -1281,7 +1281,7 @@ class MemberControllerApiTest {
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.phone").value(
-                            "must match \"^\\+[0-9\\s]{7,20}$\""));
+                            "musí odpovídat \"^\\+[0-9\\s]{7,20}$\""));
         }
 
         @Test
@@ -1308,7 +1308,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors.dateOfBirth").value("must be a past date"));
+                    .andExpect(jsonPath("$.fieldErrors.dateOfBirth").value("musí se jednat o datum v minulosti"));
         }
 
         @Test
@@ -1317,7 +1317,7 @@ class MemberControllerApiTest {
         void shouldPassBlankEmailAsAbsentToService() throws Exception {
             UUID memberId = UUID.randomUUID();
             when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class)))
-                    .thenThrow(new IllegalArgumentException("At least one email address is required (member or guardian)"));
+                    .thenThrow(new MemberDataRequiredException(com.klabis.members.domain.MissingDataItem.EMAIL));
 
             mockMvc.perform(postMembers().content("""
                             {
@@ -1337,9 +1337,59 @@ class MemberControllerApiTest {
                             }
                             """)
                     )
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/email-required"))
+                    .andExpect(jsonPath("$.field").value("email"));
 
             Mockito.verify(registrationService).registerMember(argThat(cmd -> cmd.email() == null));
+        }
+
+        @Test
+        @DisplayName("with a malformed birth number should return 400 typed and bound to the birth number field")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WithTypeAndFieldWhenBirthNumberMalformed() throws Exception {
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "1990-05-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "birthNumber": "12345",
+                                "address": {"street": "Hlavní 123", "city": "Praha", "postalCode": "11000", "country": "CZ"}
+                            }
+                            """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/invalid-birth-number"))
+                    .andExpect(jsonPath("$.field").value("birthNumber"));
+
+            Mockito.verifyNoInteractions(registrationService);
+        }
+
+        @Test
+        @DisplayName("an adult with guardians should return 400 bound to the legal guardians field")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenAdultHasGuardians() throws Exception {
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class)))
+                    .thenThrow(GuardiansNotAllowedException.adultWithGuardians());
+
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "1990-05-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "email": "jan@example.com",
+                                "phone": "+420777123456",
+                                "address": {"street": "Hlavní 123", "city": "Praha", "postalCode": "11000", "country": "CZ"}
+                            }
+                            """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/adult-member-cannot-have-guardians"))
+                    .andExpect(jsonPath("$.field").value("legalGuardians"));
         }
 
         @Test
@@ -1413,7 +1463,7 @@ class MemberControllerApiTest {
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
                     .andExpect(jsonPath("$.fieldErrors.nationality").value(
-                            "size must be between 2 and 2"));
+                            "velikost musí ležet v rozsahu 2 až 2"));
         }
 
         @Test
@@ -1441,7 +1491,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors['address.street']").value("must not be blank"));
+                    .andExpect(jsonPath("$.fieldErrors['address.street']").value("nesmí být prázdná"));
         }
 
         @Test
@@ -1469,7 +1519,7 @@ class MemberControllerApiTest {
                     .andExpect(status().isBadRequest())
 
                     .andExpect(jsonPath("$.title").value("Bad Request"))
-                    .andExpect(jsonPath("$.fieldErrors['address.country']").value("must match \"^[A-Za-z]{2}$\""));
+                    .andExpect(jsonPath("$.fieldErrors['address.country']").value("musí odpovídat \"^[A-Za-z]{2}$\""));
         }
     }
 
@@ -2282,7 +2332,7 @@ class MemberControllerApiTest {
         }
 
         @Test
-        @DisplayName("should return 400 Bad Request when service throws InvalidUpdateException")
+        @DisplayName("should return 400 with its own type when the member is already suspended")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenSuspendingAlreadySuspendedMember() throws Exception {
             // Arrange
@@ -2290,7 +2340,7 @@ class MemberControllerApiTest {
 
             when(managementService.suspendMember(eq(new MemberId(memberId)),
                     any(Member.SuspendMembership.class)))
-                    .thenThrow(new InvalidUpdateException("Member is already suspended"));
+                    .thenThrow(new MemberAlreadySuspendedException());
 
             // Act & Assert
             mockMvc.perform(postMemberIdSuspend(memberId).content("""
@@ -2302,6 +2352,7 @@ class MemberControllerApiTest {
                     )
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.title").value("Bad Request"))
+                    .andExpect(jsonPath("$.type").value("/errors/member-already-suspended"))
                     .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("already suspended")));
         }
 
@@ -2321,7 +2372,7 @@ class MemberControllerApiTest {
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.fieldErrors.reason").value("must not be null"));
+                    .andExpect(jsonPath("$.fieldErrors.reason").value("nesmí mít hodnotu Null"));
         }
 
         @Test
@@ -2342,7 +2393,7 @@ class MemberControllerApiTest {
                     )
                     .andDo(MockMvcResultHandlers.print())
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.fieldErrors.note").value("size must be between 0 and 500"));
+                    .andExpect(jsonPath("$.fieldErrors.note").value("velikost musí ležet v rozsahu 0 až 500"));
         }
 
         @Test
@@ -2363,6 +2414,8 @@ class MemberControllerApiTest {
                             }
                             """))
                     .andExpect(status().isConflict())
+                    .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                    .andExpect(jsonPath("$.type").value("/errors/suspension-blocked"))
                     .andExpect(jsonPath("$.groups.affectedGroups").isArray())
                     .andExpect(jsonPath("$.groups.affectedGroups[0].groupName").value("Trail Runners"))
                     .andExpect(jsonPath("$.groups.affectedGroups[0].groupType").value("FREE"))
@@ -2388,6 +2441,7 @@ class MemberControllerApiTest {
                             }
                             """))
                     .andExpect(status().is(409))
+                    .andExpect(jsonPath("$.type").value("/errors/suspension-blocked"))
                     .andExpect(jsonPath("$.debt.balance.amount").value(-250))
                     .andExpect(jsonPath("$.debt.balance.currency").value("CZK"))
                     .andExpect(jsonPath("$.debt.accountLink").value(

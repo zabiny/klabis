@@ -7,7 +7,6 @@ import com.klabis.common.authorization.TargetType;
 import com.klabis.common.users.Authority;
 import com.klabis.members.MemberId;
 import com.klabis.members.MemberTestDataBuilder;
-import com.klabis.members.application.InvalidUpdateException;
 import com.klabis.members.application.ManagementPort;
 import com.klabis.members.application.MemberNotFoundException;
 import com.klabis.common.settings.OrisClubKeyManagementPort;
@@ -20,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.hateoas.MediaTypes;
@@ -857,70 +858,27 @@ class UpdateMemberApiTest {
         @DisplayName("Validation")
         class ValidationTests {
 
-            @Test
-            @DisplayName("empty update should return 400")
+            @ParameterizedTest(name = "{0} is refused at its own field with its own type")
+            @CsvSource({
+                    "email,invalid-email,invalid-email-address",
+                    "phone,123,invalid-phone-number",
+                    "birthNumber,12345,invalid-birth-number",
+                    "bankAccountNumber,abc,invalid-bank-account-number"
+            })
             @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenUpdateIsEmpty() throws Exception {
+            void shouldReturn400WithTypeAndFieldWhenValueInvalid(String field, String value, String type) throws Exception {
                 when(memberService.prefilledUpdateCommand(any(MemberId.class)))
                         .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenThrow(new InvalidUpdateException("Update request must contain at least one field"));
 
                 mockMvc.perform(
                                 patch("/api/members/{id}", testMemberId)
                                         .contentType("application/json")
-                                        .content("{}")
+                                        .content("{\"%s\": \"%s\"}".formatted(field, value))
                         )
-                        .andDo(MockMvcResultHandlers.print())
                         .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.detail").value("Update request must contain at least one field"))
+                        .andExpect(jsonPath("$.type").value("/errors/" + type))
+                        .andExpect(jsonPath("$.field").value(field))
                         .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("invalid email format should return 400")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenEmailInvalid() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenThrow(new InvalidUpdateException("Invalid email format: invalid-email"));
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "email": "invalid-email"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest())
-                        .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("Invalid email")))
-                        .andExpect(jsonPath("$.title").value("Bad Request"));
-            }
-
-            @Test
-            @DisplayName("invalid phone format should return 400")
-            @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
-            void shouldReturn400WhenPhoneInvalid() throws Exception {
-                when(memberService.prefilledUpdateCommand(any(MemberId.class)))
-                        .thenReturn(Member.UpdateMember.from(stubMember()));
-                when(memberService.updateMember(any(MemberId.class), any(Member.UpdateMember.class)))
-                        .thenThrow(new InvalidUpdateException("Invalid phone format: 123"));
-
-                mockMvc.perform(
-                                patch("/api/members/{id}", testMemberId)
-                                        .contentType("application/json")
-                                        .content("""
-                                                {
-                                                    "phone": "123"
-                                                }
-                                                """)
-                        )
-                        .andDo(MockMvcResultHandlers.print())
-                        .andExpect(status().isBadRequest());
             }
 
             @Test

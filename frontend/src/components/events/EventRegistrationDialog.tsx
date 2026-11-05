@@ -1,10 +1,10 @@
 import {type ReactElement, useCallback, useEffect, useMemo, useState} from 'react';
 import {type LucideIcon, Calendar, Check, FileText, Hourglass, MapPin, Pencil, UserPlus} from 'lucide-react';
-import {getDialogTitleLabel, getFieldLabel, labels} from '../../localization';
+import {describeError, getDialogTitleLabel, getFieldLabel, labels} from '../../localization';
 import {renderYesNo} from '../../utils/formatters';
 import {Alert, Badge, Button, DetailRow, Modal, Skeleton} from '../UI';
 import {type RegistrationDialogData, type RegistrationDialogMode, useRegistrationDialogData} from '../../hooks/useRegistrationDialogData';
-import {isFormValidationError, toFormValidationError} from '../../api/hateoas';
+import {ApiError} from '../../api/apiError';
 import type {Link} from '../../api/types';
 import type {HalResourceLinks} from '../../api';
 import {formatDate, formatDateTime, getRelevantDeadlineIndex, getTodayIso} from '../../utils/dateUtils';
@@ -130,9 +130,12 @@ export const EventRegistrationDialog = ({
     };
 
     const handleSubmitError = (submitError: unknown): boolean => {
-        const validationError = toFormValidationError(submitError);
-        if (isFormValidationError(validationError)) {
-            setServerFieldErrors(validationError.validationErrors);
+        if (submitError instanceof ApiError) {
+            setServerFieldErrors(
+                submitError.field && !submitError.fieldErrors[submitError.field]
+                    ? {...submitError.fieldErrors, [submitError.field]: describeError(submitError)}
+                    : submitError.fieldErrors
+            );
         }
         return false;
     };
@@ -185,7 +188,7 @@ export const EventRegistrationDialog = ({
         >
             {isLoading ? (
                 <DialogSkeleton/>
-            ) : error ? (
+            ) : error && !showUnregisterConfirmation ? (
                 <Alert severity="error">{labels.events.registrationModal.prefillLoadError}</Alert>
             ) : showUnregisterConfirmation ? (
                 <HalFormDisplay

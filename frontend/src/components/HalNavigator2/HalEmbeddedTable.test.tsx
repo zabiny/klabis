@@ -162,9 +162,9 @@ describe('HalEmbeddedTable', () => {
             </HalEmbeddedTable>
         );
 
-        const errorBox = screen.getByText('Failed to load data');
+        const errorBox = screen.getByText('Data se nepodařilo načíst.');
         expect(errorBox).toBeInTheDocument();
-        expect(screen.getByText(/Self link not found in resource data/)).toBeInTheDocument();
+        expect(screen.queryByText(/Self link not found/)).not.toBeInTheDocument();
     });
 
     it('fetches with pagination parameters', () => {

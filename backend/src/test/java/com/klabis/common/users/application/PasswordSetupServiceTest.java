@@ -329,7 +329,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             when(tokenRepository.findByTokenHash(tokenHash)).thenReturn(Optional.of(token));
             when(userRepository.findById(token.getUserId())).thenReturn(Optional.of(pendingUser));
 
-            doThrow(new PasswordValidationException("Password must be at least 12 characters long"))
+            doThrow(new PasswordValidationException(PasswordValidationException.Violation.TOO_SHORT))
                     .when(passwordValidator).validateBasic(weakPassword);
 
             PasswordSetupService.SetupPasswordCommand command =

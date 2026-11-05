@@ -1,13 +1,16 @@
 package com.klabis.common.users.domain;
 
 import com.klabis.common.exceptions.InvalidDataException;
+import com.klabis.common.exceptions.UserFacingError;
 
-/**
- * Exception thrown when the current password provided by the user does not match the stored hash.
- */
-public class IncorrectCurrentPasswordException extends InvalidDataException {
+public class IncorrectCurrentPasswordException extends InvalidDataException implements UserFacingError {
 
     public IncorrectCurrentPasswordException() {
         super("Current password is incorrect");
+    }
+
+    @Override
+    public String field() {
+        return "currentPassword";
     }
 }

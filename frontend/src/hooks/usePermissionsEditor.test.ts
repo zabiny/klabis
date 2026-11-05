@@ -3,7 +3,8 @@ import React from 'react';
 import {renderHook} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {vi} from 'vitest';
-import {usePermissionsEditor} from './usePermissionsEditor';
+import {resolvePermissionErrorMessage, usePermissionsEditor} from './usePermissionsEditor';
+import {ApiError} from '../api/apiError';
 
 vi.mock('./useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn(),
@@ -86,5 +87,39 @@ describe('usePermissionsEditor', () => {
         });
 
         expect(result.current.assignableAuthorities).toEqual([]);
+    });
+});
+
+describe('resolvePermissionErrorMessage', () => {
+    it('explains that the last permission manager cannot be removed', () => {
+        const error = new ApiError(409, {type: '/errors/cannot-remove-last-permission-manager'});
+
+        expect(resolvePermissionErrorMessage(error)).toBe(
+            'Nelze odebrat oprávnění správce — systém musí mít alespoň jednoho uživatele se správou oprávnění.');
+    });
+
+    it('gives admin lockout its own text, though it is also a 409', () => {
+        const lockout = resolvePermissionErrorMessage(new ApiError(409, {type: '/errors/admin-lockout'}));
+        const lastManager = resolvePermissionErrorMessage(
+            new ApiError(409, {type: '/errors/cannot-remove-last-permission-manager'}));
+
+        expect(lockout).toContain('Změna by odebrala přístup');
+        expect(lockout).not.toBe(lastManager);
+    });
+
+    it('names the refused authority', () => {
+        const error = new ApiError(400, {type: '/errors/invalid-authority', params: {authority: 'FOO:BAR'}});
+
+        expect(resolvePermissionErrorMessage(error)).toBe('Oprávnění „FOO:BAR“ není platné.');
+    });
+
+    it('does not treat an untyped 409 as the last permission manager', () => {
+        expect(resolvePermissionErrorMessage(new ApiError(409))).toBe(
+            'Nepodařilo se uložit oprávnění. Zkuste to prosím znovu.');
+    });
+
+    it('falls back to the save failure text for other errors', () => {
+        expect(resolvePermissionErrorMessage(new Error('boom'))).toBe(
+            'Nepodařilo se uložit oprávnění. Zkuste to prosím znovu.');
     });
 });

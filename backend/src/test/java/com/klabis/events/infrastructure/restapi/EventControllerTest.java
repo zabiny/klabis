@@ -3099,7 +3099,8 @@ class EventControllerTest {
                             get("/api/events/{eventId}/accommodation-list", eventId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.type").value("/errors/accommodation-list-access-denied"));
         }
 
         @Test
@@ -3289,6 +3290,21 @@ class EventControllerTest {
                                     .accept(MediaTypes.HAL_FORMS_JSON)
                     )
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("holder of EVENTS:REGISTRATIONS gets 403 typed as shared-accommodation-not-offered when the event does not offer it")
+        @WithKlabisMockUser(memberId = "cccccccc-cccc-cccc-cccc-cccccccccccc", authorities = {Authority.EVENTS_REGISTRATIONS})
+        void typedForbiddenWhenOfferOff() throws Exception {
+            UUID eventId = UUID.randomUUID();
+            stubEventForAccommodationAuthorization(eventId, false);
+
+            mockMvc.perform(
+                            get("/api/events/{eventId}/accommodation-list", eventId)
+                                    .accept(MediaTypes.HAL_FORMS_JSON)
+                    )
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.type").value("/errors/shared-accommodation-not-offered"));
         }
 
         @Test

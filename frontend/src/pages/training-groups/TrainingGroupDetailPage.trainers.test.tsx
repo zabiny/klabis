@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {ApiError} from '../../api/apiError';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {TrainingGroupDetailPage} from './TrainingGroupDetailPage';
@@ -188,5 +189,14 @@ describe('TrainingGroupDetailPage — trainer management', () => {
         });
         renderPage(createMockPageData(resourceData));
         expect(screen.queryByRole('button', {name: /věkové rozmezí/i})).not.toBeInTheDocument();
+    });
+});
+
+describe('TrainingGroupDetailPage load error', () => {
+    it('shows the Czech text of the error instead of the HTTP status', () => {
+        renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/group-not-found', detail: 'Group not found'})}));
+
+        expect(screen.getByText('Skupina nebyla nalezena.')).toBeInTheDocument();
+        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 });

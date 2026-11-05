@@ -1,7 +1,7 @@
 package com.klabis.sync.infrastructure.restapi;
 
 import com.klabis.common.mvc.MvcComponent;
-import com.klabis.sync.application.*;
+import com.klabis.common.exceptions.CommonErrorTypes;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,95 +15,17 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.net.URI;
+
 /**
- * Maps the sync module's "record needs a decision" exceptions to {@code 409 Conflict}
- * (design.md REST API section) — the shared {@code MvcExceptionHandler} maps
- * {@code BusinessRuleViolationException} (their common base) to {@code 400}, which is
- * right for every other module's business-rule violations but wrong here: all five of
- * these mean "resolve/reset it first", the textbook shape of a 409. Kept local to the
- * sync module rather than changing the shared handler's mapping for everyone, mirroring
- * {@code common.groups.infrastructure.restapi.GroupsExceptionHandler}.
- * <p>
- * Scoped to {@link SynchronizationController} via {@code assignableTypes} — unlike
- * {@code GroupsExceptionHandler}, this advice also handles
- * {@link MethodArgumentTypeMismatchException}, a generic Spring MVC exception any
- * controller's path/query binding can throw. An unscoped {@code @RestControllerAdvice}
- * is global, so without this restriction the mismatch handler below would intercept
- * unrelated controllers' ordinary binding failures too, there is no supported way to
- * "hand a caught exception back" to the next advice in the chain, and 500 (rather than
- * the original 400) is what a bare {@code throw} risks landing on instead. Scoping the
- * advice removes the need for that workaround entirely: a foreign controller's mismatch
- * never reaches this class.
+ * Maps a bad {@code {entityType}} path segment of {@link SynchronizationController}. Scoped to that
+ * controller via {@code assignableTypes} because {@link MethodArgumentTypeMismatchException} is a generic
+ * Spring MVC exception: an unscoped advice would intercept unrelated controllers' binding failures too.
  */
 @MvcComponent
 @RestControllerAdvice(assignableTypes = SynchronizationController.class)
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class SyncExceptionHandler {
-
-    @ExceptionHandler(SyncRecordNeedsResolutionException.class)
-    @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - the record needs a decision (resolve the conflict or reset) before it can be synchronised again",
-            content = @Content(
-                    mediaType = "application/problem+json",
-                    schema = @Schema(implementation = ProblemDetail.class)
-            )
-    )
-    ErrorResponse handleNeedsResolution(SyncRecordNeedsResolutionException ex) {
-        return conflict(ex);
-    }
-
-    @ExceptionHandler(SyncRecordNotInConflictException.class)
-    @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - the record is not currently in conflict",
-            content = @Content(
-                    mediaType = "application/problem+json",
-                    schema = @Schema(implementation = ProblemDetail.class)
-            )
-    )
-    ErrorResponse handleNotInConflict(SyncRecordNotInConflictException ex) {
-        return conflict(ex);
-    }
-
-    @ExceptionHandler(ConflictNotAcknowledgedException.class)
-    @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - no current acknowledgement for the record's present conflict",
-            content = @Content(
-                    mediaType = "application/problem+json",
-                    schema = @Schema(implementation = ProblemDetail.class)
-            )
-    )
-    ErrorResponse handleNotAcknowledged(ConflictNotAcknowledgedException ex) {
-        return conflict(ex);
-    }
-
-    @ExceptionHandler(SyncRecordNotFailedException.class)
-    @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - the record is not currently terminally failed",
-            content = @Content(
-                    mediaType = "application/problem+json",
-                    schema = @Schema(implementation = ProblemDetail.class)
-            )
-    )
-    ErrorResponse handleNotFailed(SyncRecordNotFailedException ex) {
-        return conflict(ex);
-    }
-
-    @ExceptionHandler(UnsupportedResolutionException.class)
-    @ApiResponse(
-            responseCode = "409",
-            description = "Conflict - the requested resolution direction is not supported by the integration",
-            content = @Content(
-                    mediaType = "application/problem+json",
-                    schema = @Schema(implementation = ProblemDetail.class)
-            )
-    )
-    ErrorResponse handleUnsupportedResolution(UnsupportedResolutionException ex) {
-        return conflict(ex);
-    }
 
     /**
      * A {@code {entityType}} segment outside {@code SyncEntityTypeParam}'s declared
@@ -131,14 +53,12 @@ class SyncExceptionHandler {
         if (ex.getParameter().getParameterAnnotation(PathVariable.class) == null) {
             return ErrorResponse.builder(ex, HttpStatusCode.valueOf(400), "Invalid value for parameter '" + ex.getName() + "': " + ex.getValue())
                     .title("Bad Request")
+                    .type(URI.create(CommonErrorTypes.INVALID_REQUEST))
                     .build();
         }
         return ErrorResponse.builder(ex, HttpStatusCode.valueOf(404), "Unknown synchronisable entity type: " + ex.getValue())
                 .title("Resource Not Found")
+                .type(URI.create(CommonErrorTypes.NOT_FOUND))
                 .build();
-    }
-
-    private static ErrorResponse conflict(RuntimeException ex) {
-        return ErrorResponse.builder(ex, HttpStatusCode.valueOf(409), ex.getMessage()).build();
     }
 }

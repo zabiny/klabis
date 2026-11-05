@@ -2,10 +2,10 @@ import {type ReactElement} from 'react';
 import {Card} from '../components/UI';
 import NotFoundPage from './NotFoundPage';
 import ForbiddenPage from './ForbiddenPage';
+import {describeError} from '../localization';
 
 interface ErrorWithStatus {
-    responseStatus?: number;
-    message: string;
+    status?: number;
 }
 
 interface ErrorPageProps {
@@ -13,11 +13,7 @@ interface ErrorPageProps {
 }
 
 function extractStatus(error: ErrorWithStatus | Error): number | undefined {
-    if ('responseStatus' in error && typeof error.responseStatus === 'number') {
-        return error.responseStatus;
-    }
-    const match = error.message.match(/HTTP (\d{3})/);
-    return match ? parseInt(match[1], 10) : undefined;
+    return 'status' in error && typeof error.status === 'number' ? error.status : undefined;
 }
 
 export function ErrorPage({error}: ErrorPageProps): ReactElement | null {
@@ -42,7 +38,7 @@ export function ErrorPage({error}: ErrorPageProps): ReactElement | null {
                     Něco se pokazilo
                 </h1>
                 <p className="text-center text-gray-500 dark:text-gray-400 text-sm">
-                    {error.message}
+                    {describeError(error)}
                 </p>
             </Card>
         </div>

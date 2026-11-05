@@ -78,7 +78,7 @@ public final class PersonalInformation {
         }
 
         if (dateOfBirth.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("Date of birth cannot be in the future");
+            throw new DateOfBirthInFutureException();
         }
     }
 

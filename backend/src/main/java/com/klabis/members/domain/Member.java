@@ -446,10 +446,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
         Nationality nationality = Nationality.of(nationalityCode);
 
         if (birthNumber != null && !nationality.isCzech()) {
-            throw new BusinessRuleViolationException(
-                    "Birth number is only allowed for Czech nationals"
-            ) {
-            };
+            throw new BirthNumberNotAllowedException();
         }
     }
 
@@ -472,22 +469,16 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      */
     private static void enforceCompleteness(Set<MissingDataItem> missing) {
         if (missing.contains(MissingDataItem.GUARDIAN)) {
-            throw new BusinessRuleViolationException(
-                    "Guardian is required for minors (under 18 years)"
-            ) {
-            };
+            throw new MemberDataRequiredException(MissingDataItem.GUARDIAN);
         }
-        Assert.isTrue(!missing.contains(MissingDataItem.EMAIL),
-                "At least one email address is required (member or guardian)");
-        Assert.isTrue(!missing.contains(MissingDataItem.PHONE),
-                "At least one phone number is required (member or guardian)");
-        Assert.isTrue(!missing.contains(MissingDataItem.ADDRESS), "Address is required");
+        for (MissingDataItem item : List.of(MissingDataItem.EMAIL, MissingDataItem.PHONE, MissingDataItem.ADDRESS)) {
+            if (missing.contains(item)) {
+                throw new MemberDataRequiredException(item);
+            }
+        }
 
         if (missing.contains(MissingDataItem.BIRTH_NUMBER)) {
-            throw new BusinessRuleViolationException(
-                    "Birth number is required for Czech nationals"
-            ) {
-            };
+            throw new MemberDataRequiredException(MissingDataItem.BIRTH_NUMBER);
         }
     }
 
@@ -500,25 +491,19 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
     private static void enforceNeverWorsen(Set<MissingDataItem> before, Set<MissingDataItem> after,
                                            boolean becameMinor) {
         if (after.contains(MissingDataItem.EMAIL) && !before.contains(MissingDataItem.EMAIL)) {
-            throw new IllegalArgumentException("At least one email address is required (member or guardian)");
+            throw new MemberDataRequiredException(MissingDataItem.EMAIL);
         }
         if (after.contains(MissingDataItem.PHONE) && !before.contains(MissingDataItem.PHONE)) {
-            throw new IllegalArgumentException("At least one phone number is required (member or guardian)");
+            throw new MemberDataRequiredException(MissingDataItem.PHONE);
         }
         if (after.contains(MissingDataItem.ADDRESS) && !before.contains(MissingDataItem.ADDRESS)) {
-            throw new IllegalArgumentException("Address is required");
+            throw new MemberDataRequiredException(MissingDataItem.ADDRESS);
         }
         if (!becameMinor && after.contains(MissingDataItem.GUARDIAN) && !before.contains(MissingDataItem.GUARDIAN)) {
-            throw new BusinessRuleViolationException(
-                    "Guardian is required for minors (under 18 years)"
-            ) {
-            };
+            throw new MemberDataRequiredException(MissingDataItem.GUARDIAN);
         }
         if (after.contains(MissingDataItem.BIRTH_NUMBER) && !before.contains(MissingDataItem.BIRTH_NUMBER)) {
-            throw new BusinessRuleViolationException(
-                    "Birth number is required for Czech nationals"
-            ) {
-            };
+            throw new MemberDataRequiredException(MissingDataItem.BIRTH_NUMBER);
         }
     }
 
@@ -726,9 +711,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      */
     public void suspend(SuspendMembership command) {
         if (!this.active) {
-            throw new BusinessRuleViolationException(
-                    "Member is already suspended and cannot be suspended again"
-            ) {};
+            throw new MemberAlreadySuspendedException();
         }
 
         Objects.requireNonNull(command.reason(), "Suspension reason is required");
@@ -755,9 +738,7 @@ public class Member extends KlabisAggregateRoot<Member, MemberId> {
      */
     public void resume(ResumeMembership command) {
         if (this.active) {
-            throw new BusinessRuleViolationException(
-                    "Member is already active and cannot be resumed"
-            ) {};
+            throw new MemberAlreadyActiveException();
         }
 
         Objects.requireNonNull(command.resumedBy(), "Resumed by user is required");

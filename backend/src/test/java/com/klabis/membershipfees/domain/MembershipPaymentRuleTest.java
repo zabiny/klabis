@@ -52,7 +52,7 @@ class MembershipPaymentRuleTest {
         @DisplayName("should reject negative percentage")
         void shouldRejectNegativePercentage() {
             assertThatThrownBy(() -> MembershipPaymentRule.percentage(EVENT_TYPE_A, "A", -1))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(NegativePaymentRulePercentageException.class);
         }
 
         @Test

@@ -130,3 +130,17 @@ Unchecked base classes in `com.klabis.common.exceptions`, each mapped globally b
 Pick the base class matching the wanted status; do not add a module-level `@RestControllerAdvice` for it. A module-level advice is only for non-standard bodies (e.g. `SuspensionBlockedException` returning a structured warning, or `DuplicateRegistrationException` with an intentionally empty detail) and needs `@Order(Ordered.HIGHEST_PRECEDENCE)` to win over the global handler.
 
 No manual conversion in the service layer — exceptions propagate to the handler.
+
+## Adding a user-facing error
+
+Every concrete subclass of the five bases must implement `com.klabis.common.exceptions.UserFacingError` (`ErrorTypeCatalogueTest` fails otherwise). The backend reports the kind of error and its parameters; the Czech wording lives in the frontend (`labels.errorTypes`, ADR-012).
+
+1. **Exception.** `class XxxException extends <base> implements UserFacingError`. The type is derived from the class name (`XxxException` -> `/errors/xxx`); override `errorType()` and list all values in `errorTypes()` when one class covers several rules. `getMessage()` stays English (it goes into `detail` and the log).
+2. **Parameters by name** in `messageParameters()`: names, labels, enum codes, ISO dates, amounts as `{amount, currency}` (`Money.asMessageParameter()`). Never identifiers. Do not use `type`, `title`, `status`, `detail`, `instance` or `field` as a name (use e.g. `invitationStatus`).
+3. **Field.** If the error concerns one form field, return the request property name from `field()`; leave it out when several forms share the input. Add a reflection test that the name is a record component of the generated request DTO.
+4. **Names from identifiers.** If the exception only knows an id, add an advice (`@Order(Ordered.HIGHEST_PRECEDENCE)`) that resolves the name through a port of the module and passes it to `UserFacingErrorResponses.of(ex, status, title, extraParameters)`; leave the parameter out when the name cannot be resolved or the lookup throws. Plain exceptions on a base need no advice — `MvcExceptionHandler` emits type, parameters and field.
+5. **Spec.** Add `/errors/xxx` to the `ErrorType` enum in `docs/openapi/spec/_shared/problem.yaml` with a comment naming status, parameters (with types) and field; then `./gradlew openapiBundle` and `cd frontend && npm run openapi`.
+6. **Tests.** Assert type, parameters, field and absence of identifiers (`ProblemDetailAssertions.noIdentifiersInParameters()`) in a controller test, and the type/parameters in a unit test. `ErrorTypeCatalogueTest` checks the enum entry.
+7. **Czech template** in `frontend/src/localization/labels.ts` (`labels.errorTypes`, keyed by the type; `tsc` fails while a value is missing) with a wording for a missing optional parameter, plus a `labels` test.
+
+Internal invariants (`Assert`, `IllegalArgumentException`) stay generic and reach the user as `/errors/invalid-request`; promote one to a typed exception only when a user can realistically trigger it.

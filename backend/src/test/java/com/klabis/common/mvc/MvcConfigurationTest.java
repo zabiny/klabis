@@ -3,6 +3,7 @@ package com.klabis.common.mvc;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.web.server.MimeMappings;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.server.servlet.ConfigurableServletWebServerFactory;
@@ -15,10 +16,11 @@ import static org.mockito.Mockito.verify;
 class MvcConfigurationTest {
 
     @Test
+    @SuppressWarnings("unchecked")
     @DisplayName("maps .webmanifest to application/manifest+json in the servlet container")
     void mapsWebmanifestMimeType() {
         WebServerFactoryCustomizer<ConfigurableServletWebServerFactory> customizer =
-                new MvcConfiguration().pwaMimeMappingsCustomizer();
+                new MvcConfiguration(mock(ObjectProvider.class)).pwaMimeMappingsCustomizer();
         ConfigurableServletWebServerFactory factory = mock(ConfigurableServletWebServerFactory.class);
 
         customizer.customize(factory);

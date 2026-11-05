@@ -360,6 +360,39 @@ describe('FinanceTransactionDialog', () => {
         expect(postCalls[0][0]).toContain('/transactions/charge');
     });
 
+    it('shows the Czech text of an overdraft refusal instead of the HTTP status', async () => {
+        fetchSpy.mockImplementation((url: string, options?: RequestInit) => {
+            if (options?.method === 'POST') {
+                return Promise.resolve(createMockResponse({
+                    type: '/errors/overdraft-limit-exceeded',
+                    detail: 'Overdraft limit exceeded',
+                    chargeAmount: {amount: 5000, currency: 'CZK'},
+                    currentBalance: {amount: 750, currency: 'CZK'},
+                    overdraftLimit: {amount: 1000, currency: 'CZK'},
+                    memberName: 'Jan Novák',
+                }, 422, {'Content-Type': 'application/problem+json'}));
+            }
+            if (url.includes('/members/456/account')) {
+                return Promise.resolve(createMockResponse(mockAccountBothTemplates));
+            }
+            return Promise.resolve(createMockResponse(mockMember));
+        });
+
+        renderDialog();
+
+        await waitFor(() => {
+            expect(screen.getByRole('tab', {name: /Stržení částky/i})).toBeInTheDocument();
+        });
+        await userEvent.click(screen.getByRole('tab', {name: /Stržení částky/i}));
+        await userEvent.type(screen.getByLabelText(/Částka/i), '5000');
+        await userEvent.click(screen.getByRole('button', {name: /Stržení částky/i}));
+
+        const alert = await screen.findByRole('alert');
+        expect(alert.textContent?.replace(/\s/g, ' ')).toBe(
+            'Částku 5 000,00 Kč nelze strhnout z účtu člena Jan Novák, protože by byl překročen povolený debet 1 000,00 Kč (aktuální zůstatek 750,00 Kč).');
+        expect(alert).not.toHaveTextContent('HTTP');
+    });
+
     // Dialog not rendered when isOpen=false
     it('does not render dialog content when isOpen is false', () => {
         setupFetch();

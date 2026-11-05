@@ -1,8 +1,13 @@
 import {klabisAuthUserManager, silentRenewRetry} from './klabisUserManager';
+import {ApiError} from './apiError';
+import {buildFetchError} from './problemFetch';
+
+export {ApiError, buildFetchError};
+export type {ApiErrorDetails, ErrorType} from './apiError';
 
 /**
  * Fetch with automatic Bearer token injection and /api prefix for relative URLs.
- * Throws FetchError on non-ok responses unless throwOnError is false.
+ * Throws ApiError on non-ok responses unless throwOnError is false.
  */
 export async function authorizedFetch(
     url: string | URL,
@@ -54,37 +59,4 @@ function resolveUrl(url: string | URL): string {
         return '/api';
     }
     return `/api${url.startsWith('/') ? '' : '/'}${url}`;
-}
-
-async function buildFetchError(response: Response): Promise<FetchError> {
-    let errorBody: string | undefined;
-    try {
-        errorBody = await response.clone().text();
-    } catch {
-        // Ignore if we can't read the body
-    }
-    return new FetchError(
-        `HTTP ${response.status} (${response.statusText})`,
-        response.status,
-        response.statusText,
-        response.headers,
-        errorBody
-    );
-}
-
-
-export class FetchError extends Error {
-    public responseBody?: string;
-    public responseStatus: number;
-    public responseStatusText: string;
-    public responseHeaders: Headers;
-
-    constructor(message: string, responseStatus: number, responseStatusText: string, responseHeaders: Headers, responseBody?: string) {
-        super(message);
-        this.responseBody = responseBody;
-        this.responseStatus = responseStatus;
-        this.responseStatusText = responseStatusText;
-        this.responseHeaders = responseHeaders;
-    }
-
 }

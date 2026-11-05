@@ -82,7 +82,7 @@ function createMockQueryResult<T>(data: T | null = null, overrides: Record<strin
         errorUpdatedAt: null,
         dataUpdatedAt: Date.now(),
         ...overrides,
-    } as unknown as import('@tanstack/react-query').UseQueryResult<T | undefined>;
+    } as unknown as import('@tanstack/react-query').UseQueryResult<T | undefined, import('../api/authorizedFetch').ApiError>;
 }
 
 describe('Layout - Responsive Sidebar', () => {
@@ -246,7 +246,7 @@ describe('Layout - Responsive Sidebar', () => {
             renderLayout()
 
             await waitFor(() => {
-                expect(screen.getByText('Chyba při načítání menu: Failed to load menu')).toBeInTheDocument()
+                expect(screen.getByText('Chyba při načítání menu: Došlo k neočekávané chybě. Zkuste to prosím znovu.')).toBeInTheDocument()
             })
         })
 

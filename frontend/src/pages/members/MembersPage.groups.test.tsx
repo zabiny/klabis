@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import {vi} from 'vitest';
-import {FetchError} from '../../api/authorizedFetch';
+import {ApiError} from '../../api/authorizedFetch';
 
 describe('MembersPage — suspension warning dialog (task 6.7)', () => {
     beforeEach(() => {
@@ -8,12 +8,7 @@ describe('MembersPage — suspension warning dialog (task 6.7)', () => {
     });
 
     const buildSuspendWarning409 = (groups: Array<{groupId: string; groupName: string; groupType: string}>) => {
-        const body = JSON.stringify({
-            message: 'Member is the last owner of groups',
-            affectedGroups: groups,
-        });
-        const headers = new Headers({'Content-Type': 'application/json'});
-        return new FetchError('HTTP 409 (Conflict)', 409, 'Conflict', headers, body);
+        return new ApiError(409, {params: {message: 'Member is the last owner of groups', affectedGroups: groups}});
     };
 
     it('suspension warning dialog shows affected group names', async () => {
@@ -22,10 +17,10 @@ describe('MembersPage — suspension warning dialog (task 6.7)', () => {
             {groupId: 'g-2', groupName: 'Rodina Novákových', groupType: 'LEGAL_GUARDIAN'},
         ]);
 
-        // Verify FetchError builds correctly — the dialog is rendered conditionally on this error structure
-        expect(error409.responseStatus).toBe(409);
-        const parsed = JSON.parse(error409.responseBody!);
-        expect(parsed.affectedGroups).toHaveLength(2);
-        expect(parsed.affectedGroups[0].groupName).toBe('Trail Runners');
+        // Verify ApiError builds correctly — the dialog is rendered conditionally on this error structure
+        expect(error409.status).toBe(409);
+        const affectedGroups = error409.params.affectedGroups as Array<{groupName: string}>;
+        expect(affectedGroups).toHaveLength(2);
+        expect(affectedGroups[0].groupName).toBe('Trail Runners');
     });
 });

@@ -31,10 +31,10 @@ public class EventType extends KlabisAggregateRoot<EventType, EventTypeId> {
 
     @RecordBuilder
     public record CreateEventType(
-            @NotBlank(message = "Event type name is required")
-            @Size(max = 100, message = "Event type name must not exceed 100 characters")
+            @NotBlank(message = "Název typu akce je povinný")
+            @Size(max = 100, message = "Název typu akce nesmí být delší než 100 znaků")
             String name,
-            @Pattern(regexp = "^#[0-9a-fA-F]{6}$", message = "Color must be a valid hex code like #aabbcc")
+            @Pattern(regexp = "^#[0-9a-fA-F]{6}$", message = "Barva musí být platný hexadecimální kód, například #aabbcc")
             String color,
             Integer sortOrder,
             Set<DisciplineId> disciplineIds
@@ -42,10 +42,10 @@ public class EventType extends KlabisAggregateRoot<EventType, EventTypeId> {
 
     @RecordBuilder
     public record UpdateEventType(
-            @NotBlank(message = "Event type name is required")
-            @Size(max = 100, message = "Event type name must not exceed 100 characters")
+            @NotBlank(message = "Název typu akce je povinný")
+            @Size(max = 100, message = "Název typu akce nesmí být delší než 100 znaků")
             String name,
-            @Pattern(regexp = "^#[0-9a-fA-F]{6}$", message = "Color must be a valid hex code like #aabbcc")
+            @Pattern(regexp = "^#[0-9a-fA-F]{6}$", message = "Barva musí být platný hexadecimální kód, například #aabbcc")
             String color,
             Integer sortOrder,
             Set<DisciplineId> disciplineIds

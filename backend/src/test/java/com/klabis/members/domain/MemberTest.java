@@ -143,7 +143,7 @@ class MemberTest {
                         .build();
                 Member.register(command);
             })
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(MemberDataRequiredException.class)
                     .hasMessageContaining("At least one email address is required (member or guardian)");
         }
 
@@ -175,7 +175,7 @@ class MemberTest {
                         .build();
                 Member.register(command);
             })
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(MemberDataRequiredException.class)
                     .hasMessageContaining("At least one email address is required (member or guardian)");
         }
 
@@ -207,7 +207,7 @@ class MemberTest {
                         .build();
                 Member.register(command);
             })
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(MemberDataRequiredException.class)
                     .hasMessageContaining("At least one phone number is required (member or guardian)");
         }
 
@@ -642,7 +642,7 @@ class MemberTest {
 
             assertThatThrownBy(() -> update(member, 
                     MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).email(null).build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(MemberDataRequiredException.class)
                     .hasMessageContaining("At least one email address is required");
         }
 
@@ -834,7 +834,7 @@ class MemberTest {
             assertThatThrownBy(() -> minor.update(
                     MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(minor)).email(null).build(),
                     new GuardianContacts(true, false, true)))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(MemberDataRequiredException.class)
                     .hasMessageContaining("At least one email address is required");
         }
 
@@ -936,7 +936,7 @@ class MemberTest {
                     .address(Address.of("Ulice 1", "Praha", "11000", "CZ"))
                     .phone(PhoneNumber.of("+420123456789"))
                     .build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(MemberDataRequiredException.class)
                     .hasMessage("At least one email address is required (member or guardian)");
         }
 
@@ -954,7 +954,7 @@ class MemberTest {
                     .address(Address.of("Ulice 1", "Praha", "11000", "CZ"))
                     .email(EmailAddress.of("jan@example.com"))
                     .build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(MemberDataRequiredException.class)
                     .hasMessage("At least one phone number is required (member or guardian)");
         }
 
@@ -968,7 +968,7 @@ class MemberTest {
 
             assertThatThrownBy(() -> update(member, 
                     MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).email(null).build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(MemberDataRequiredException.class)
                     .hasMessage("At least one email address is required (member or guardian)");
         }
 
@@ -982,7 +982,7 @@ class MemberTest {
 
             assertThatThrownBy(() -> update(member, 
                     MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).phone(null).build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(MemberDataRequiredException.class)
                     .hasMessage("At least one phone number is required (member or guardian)");
         }
 
@@ -996,7 +996,7 @@ class MemberTest {
 
             assertThatThrownBy(() -> update(member, 
                     MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(member)).address(null).build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(MemberDataRequiredException.class)
                     .hasMessage("Address is required");
         }
 
@@ -1086,7 +1086,7 @@ class MemberTest {
 
             assertThatThrownBy(() -> update(memberWithNoEmail, 
                     MemberUpdateMemberBuilder.builder(Member.UpdateMember.from(memberWithNoEmail)).phone(null).build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(MemberDataRequiredException.class)
                     .hasMessage("At least one phone number is required (member or guardian)");
         }
 

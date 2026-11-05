@@ -282,7 +282,8 @@ class NotificationControllerTest {
                 .when(devicesPort).removeDevice(currentUser, id);
 
         mockMvc.perform(delete("/api/notifications/devices/" + id.value()).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.type").value("/errors/notification-device-not-found"));
     }
 
     @Test

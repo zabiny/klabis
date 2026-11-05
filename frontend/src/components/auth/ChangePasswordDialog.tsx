@@ -2,9 +2,8 @@ import {type FormEvent, useMemo, useState} from 'react';
 import {Alert, Button, Modal} from '../UI';
 import {PasswordField} from './PasswordField';
 import {PasswordStrengthIndicator} from './PasswordStrengthIndicator';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
-import type {FetchError} from '../../api/authorizedFetch';
 import {buildPasswordRequirements} from './passwordRequirements';
 
 interface ChangePasswordDialogProps {
@@ -24,24 +23,7 @@ interface ValidationErrors {
     confirmPassword?: string;
 }
 
-const INCORRECT_CURRENT_PASSWORD_MARKER = 'Current password is incorrect';
-
-function extractServerErrorMessage(error: Error): string {
-    const responseBody = (error as FetchError).responseBody;
-    if (responseBody) {
-        try {
-            const body = JSON.parse(responseBody);
-            const detail: string = body?.detail ?? '';
-            if (detail.includes(INCORRECT_CURRENT_PASSWORD_MARKER)) {
-                return labels.changePassword.errorIncorrectCurrentPassword;
-            }
-            return detail || labels.errors.unexpectedError;
-        } catch {
-            // fall through
-        }
-    }
-    return labels.errors.unexpectedError;
-}
+const INCORRECT_CURRENT_PASSWORD = '/errors/incorrect-current-password';
 
 export const ChangePasswordDialog = ({isOpen, onClose}: ChangePasswordDialogProps) => {
     const [formData, setFormData] = useState<FormData>({
@@ -108,7 +90,11 @@ export const ChangePasswordDialog = ({isOpen, onClose}: ChangePasswordDialogProp
             {
                 onSuccess: () => handleClose(),
                 onError: (error) => {
-                    setServerError(extractServerErrorMessage(error));
+                    if (error.type === INCORRECT_CURRENT_PASSWORD) {
+                        setErrors(prev => ({...prev, currentPassword: describeError(error)}));
+                    } else {
+                        setServerError(describeError(error));
+                    }
                 },
             },
         );

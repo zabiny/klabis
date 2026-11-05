@@ -88,7 +88,7 @@ class ManualCalendarItemTest {
                     LocalDate.of(2026, 6, 15), LocalDate.of(2026, 6, 10));
 
             assertThatThrownBy(() -> ManualCalendarItem.create(command))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(CalendarItemEndBeforeStartException.class)
                     .hasMessageContaining("End date must be on or after start date");
         }
     }

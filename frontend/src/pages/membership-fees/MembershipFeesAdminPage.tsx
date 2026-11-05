@@ -7,7 +7,7 @@ import {TierCatalogSection} from '../../components/membership-fees/TierCatalogSe
 import {PastCampaignsSection} from '../../components/membership-fees/PastCampaignsSection.tsx';
 import type {ListTiersResource} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
-import {labels} from '../../localization';
+import {labels, describeError} from '../../localization';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 
 export const MembershipFeesAdminPage = (): ReactElement => {
@@ -18,7 +18,7 @@ export const MembershipFeesAdminPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     if (!resourceData) {

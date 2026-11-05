@@ -9,7 +9,9 @@ export interface PasswordSetupFormProps {
     onSubmit: (data: { password: string; passwordConfirmation: string }) => void;
     isSubmitting: boolean;
     serverError: string | null;
+    serverFieldErrors?: Record<string, string>;
     onClearServerError: () => void;
+    onClearServerFieldError?: (field: string) => void;
     showSuccess: boolean;
 }
 
@@ -27,7 +29,9 @@ export const PasswordSetupForm = ({
     onSubmit,
     isSubmitting,
     serverError,
+    serverFieldErrors,
     onClearServerError,
+    onClearServerFieldError,
     showSuccess,
 }: PasswordSetupFormProps) => {
     const [formData, setFormData] = useState<FormData>({
@@ -66,6 +70,7 @@ export const PasswordSetupForm = ({
 
     const updateField = (field: keyof FormData, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
+        onClearServerFieldError?.(field);
         if (errors[field]) {
             setErrors((prev) => ({ ...prev, [field]: undefined }));
         }
@@ -127,7 +132,7 @@ export const PasswordSetupForm = ({
                     label="Nové heslo"
                     value={formData.password}
                     onChange={(value) => updateField('password', value)}
-                    error={errors.password}
+                    error={errors.password ?? serverFieldErrors?.password}
                     required
                     placeholder="Zadejte nové heslo"
                     autoComplete="new-password"
@@ -142,7 +147,7 @@ export const PasswordSetupForm = ({
                     label="Potvrzení hesla"
                     value={formData.passwordConfirmation}
                     onChange={(value) => updateField('passwordConfirmation', value)}
-                    error={errors.passwordConfirmation}
+                    error={errors.passwordConfirmation ?? serverFieldErrors?.passwordConfirmation}
                     required
                     placeholder="Zadejte heslo znovu"
                     autoComplete="new-password"

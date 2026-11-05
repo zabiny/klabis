@@ -7,7 +7,7 @@ import {HalFormModal} from '../../components/HalNavigator2/HalFormModal.tsx';
 import type {HalFormsTemplate, HalResourceLinks} from '../../api';
 import {toHref} from '../../api/hateoas.ts';
 import {extractNavigationPath} from '../../utils/navigationPath.ts';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {Pencil, Trash2, UserPlus} from 'lucide-react';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
@@ -242,7 +242,7 @@ export const TrainingGroupDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     if (!resourceData) {

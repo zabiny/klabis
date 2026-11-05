@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
+import {ApiError} from '../../api/apiError';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {LegalGuardianDetailPage} from './LegalGuardianDetailPage';
 
@@ -11,7 +12,7 @@ vi.mock('../../components/HalNavigator2/HalFormButton.tsx', () => ({
     HalFormButton: ({name}: {name: string}) => <button data-testid="hal-form-button">{name}</button>,
 }));
 
-const renderPage = (resourceData: Record<string, unknown> | null, extra?: {isLoading?: boolean; error?: Error}) => {
+const renderPage = (resourceData: Record<string, unknown> | null, extra?: {isLoading?: boolean; error?: ApiError}) => {
     vi.mocked(useHalPageData).mockReturnValue({
         resourceData,
         isLoading: extra?.isLoading ?? false,
@@ -55,7 +56,8 @@ describe('LegalGuardianDetailPage', () => {
     });
 
     it('shows an error alert on failure', () => {
-        renderPage(null, {error: new Error('Boom')});
-        expect(screen.getByText('Boom')).toBeInTheDocument();
+        renderPage(null, {error: new ApiError(404, {type: '/errors/legal-guardian-not-found', detail: 'Boom'})});
+        expect(screen.getByText('Zákonný zástupce nebyl nalezen.')).toBeInTheDocument();
+        expect(screen.queryByText('Boom')).not.toBeInTheDocument();
     });
 });

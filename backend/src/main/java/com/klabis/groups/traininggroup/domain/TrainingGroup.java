@@ -1,7 +1,6 @@
 package com.klabis.groups.traininggroup.domain;
 
 import com.klabis.common.domain.AuditMetadata;
-import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.GroupMembership;
 import com.klabis.common.groups.domain.MemberGroup;
 import com.klabis.common.users.Authority;
@@ -91,7 +90,7 @@ public class TrainingGroup extends MemberGroup<TrainingGroup, TrainingGroupId, M
 
     public void replaceTrainers(Set<MemberId> trainers) {
         if (trainers == null || trainers.isEmpty()) {
-            throw new CannotRemoveLastOwnerException();
+            throw new TrainerRequiredException(getName());
         }
         Set<MemberId> current = Set.copyOf(getTrainers());
         for (MemberId toAdd : trainers) {

@@ -1,20 +1,31 @@
 package com.klabis.events.domain;
 
 import com.klabis.common.exceptions.ConflictException;
-import com.klabis.events.DisciplineId;
+import com.klabis.common.exceptions.UserFacingError;
 
-public class OrisDisciplineAlreadyMappedException extends ConflictException {
+import java.util.Map;
 
-    public OrisDisciplineAlreadyMappedException(DisciplineId disciplineId) {
-        super("Discipline " + disciplineId + " is already mapped to another event type");
+public class OrisDisciplineAlreadyMappedException extends ConflictException implements UserFacingError {
+
+    private final String eventTypeName;
+
+    public OrisDisciplineAlreadyMappedException(String eventTypeName) {
+        super("A discipline is already mapped to event type '" + eventTypeName + "'");
+        this.eventTypeName = eventTypeName;
     }
 
     /**
      * Used when a unique-constraint violation is caught at the persistence boundary
      * (TOCTOU race between the application-layer check and the save) without the
-     * specific conflicting {@link DisciplineId} at hand.
+     * conflicting event type at hand.
      */
     public OrisDisciplineAlreadyMappedException() {
         super("A discipline in this event type is already mapped to another event type");
+        this.eventTypeName = null;
+    }
+
+    @Override
+    public Map<String, Object> messageParameters() {
+        return eventTypeName == null ? Map.of() : Map.of("eventTypeName", eventTypeName);
     }
 }

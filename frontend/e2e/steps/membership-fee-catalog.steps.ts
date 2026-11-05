@@ -86,6 +86,11 @@ Then('catalog level {name} has no {contribution} rule for races of ranking {name
         await expect(ruleRow(page, contribution, ranking)).toHaveCount(0);
     });
 
+Then('the rule for races of ranking {name} is refused as a duplicate of an existing one', async ({page}, ranking: string) => {
+    const message = `Pravidlo pro typ akce „Závod“ a žebříček „${ranking}“ již v této úrovni existuje.`;
+    await expect(page.getByRole('alert').filter({hasText: message}).first()).toBeVisible();
+});
+
 Then('{persona} is not offered to add a fee level', async ({page, currentRole}, persona: Persona) => {
     expectActing(currentRole, persona);
     await openFeesPage(page);

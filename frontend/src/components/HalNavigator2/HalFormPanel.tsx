@@ -4,7 +4,7 @@ import type {HalFormsTemplate, HalResponse} from '../../api';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {HalFormDisplay} from './HalFormDisplay';
 import {Alert, Spinner} from '../UI';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 
 export interface HalFormPanelRenderHelpers extends FormRenderHelpers {
     hasField: (fieldName: string) => boolean;
@@ -51,7 +51,7 @@ export function HalFormPanel({
             </div>
         );
     }
-    if (!templateOverride && error) return <Alert severity="error">{(error as Error).message}</Alert>;
+    if (!templateOverride && error) return <Alert severity="error">{describeError(error)}</Alert>;
 
     const template = templateOverride ?? collectionData?._templates?.[templateName] ?? null;
     if (!template) {

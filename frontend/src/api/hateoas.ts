@@ -1,63 +1,6 @@
-import {FetchError} from "./authorizedFetch";
 import type {HalResourceLinks} from "./types.ts";
 import type {Link} from "./index.ts";
 import {isString} from "formik";
-
-interface FormValidationError extends Error {
-    validationErrors: Record<string, string>,
-    formData: Record<string, unknown>
-}
-
-const isFormValidationError = (item: unknown): item is FormValidationError => {
-    return typeof item === 'object' && item !== null && 'validationErrors' in item && 'message' in item;
-}
-
-/**
- * Checks if a FetchError represents a HAL Forms validation error
- * and converts it to a FormValidationError if so.
- */
-function toFormValidationError(error: unknown): Error {
-    if (!(error instanceof FetchError)) {
-        return error instanceof Error ? error : new Error(String(error));
-    }
-
-    const contentType = error.responseHeaders.get('Content-Type') ?? '';
-    const isProblemJson = contentType.includes('application/problem+json');
-
-    if (error.responseStatus === 400 && isProblemJson) {
-        try {
-            const problemJson = JSON.parse(error.responseBody || '{}');
-            return {
-                message: 'Form validation errors',
-                validationErrors: problemJson.fieldErrors || problemJson.errors || {'error': problemJson.detail},
-                formData: {}  // We don't have formData in this context
-            } as FormValidationError;
-        } catch {
-            // If parsing fails, return original error
-            return error;
-        }
-    }
-
-    // For other error statuses with problem+json, surface the detail message when available
-    if (isProblemJson && error.responseBody) {
-        try {
-            const problemJson = JSON.parse(error.responseBody);
-            if (problemJson.detail) {
-                return new Error(problemJson.detail);
-            }
-        } catch {
-            // If parsing fails, return original error
-        }
-    }
-
-    return error;
-}
-
-export {
-    toFormValidationError,
-    type FormValidationError,
-    isFormValidationError
-};
 
 export const isLink = (item: unknown): item is Link => {
     return item !== undefined && item !== null && typeof item === 'object' && 'href' in item;

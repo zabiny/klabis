@@ -105,7 +105,7 @@ class TrainingGroupManagementService implements TrainingGroupManagementPort {
         trainingGroupRepository.findOne(TrainingGroupFilter.all().withMemberIs(memberId))
                 .filter(existing -> !existing.getId().equals(id))
                 .ifPresent(existing -> {
-                    throw new MemberAlreadyInTrainingGroupException(memberId, existing.getId());
+                    throw new MemberAlreadyInTrainingGroupException(memberId, existing.getId(), existing.getName());
                 });
         TrainingGroup group = loadTrainingGroup(id);
         group.addTrainee(memberId);

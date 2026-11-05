@@ -1,3 +1,4 @@
+import {labels} from '../../localization'
 import type {ReactElement, ReactNode} from 'react'
 import React, {isValidElement, useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import type {ColumnDef, KlabisTableProps, TableCellProps, TableCellRenderProps} from './types'
@@ -168,7 +169,7 @@ export const KlabisTable = <T extends Record<string, unknown>>({
 
     // Render error state if present
     if (error) {
-        return <ErrorDisplay error={error} title="Failed to load data"/>
+        return <ErrorDisplay error={error} title={labels.errors.loadDataFailed}/>
     }
 
     return (

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import {vi} from 'vitest';
 import {ChangePasswordDialog} from './ChangePasswordDialog';
 import {useAuthorizedMutation, type MutationResult} from '../../hooks/useAuthorizedFetch';
-import {FetchError} from '../../api/authorizedFetch';
+import {ApiError} from '../../api/authorizedFetch';
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedMutation: vi.fn(),
@@ -243,7 +243,7 @@ describe('ChangePasswordDialog', () => {
             await user.type(getInput('confirmPassword'), 'NewStrongPassword1!');
             await user.click(screen.getByRole('button', {name: /Změnit heslo/i}));
 
-            const serverError = new FetchError('HTTP 400 (Bad Request)', 400, 'Bad Request', new Headers(), JSON.stringify({detail: 'Current password is incorrect'}));
+            const serverError = new ApiError(400, {type: '/errors/incorrect-current-password', field: 'currentPassword', detail: 'Current password is incorrect'});
             onErrorCallback?.(serverError);
 
             await waitFor(() => {
@@ -282,12 +282,39 @@ describe('ChangePasswordDialog', () => {
             await user.type(getInput('confirmPassword'), 'NewStrongPassword1!');
             await user.click(screen.getByRole('button', {name: /Změnit heslo/i}));
 
-            const serverError = new FetchError('HTTP 400 (Bad Request)', 400, 'Bad Request', new Headers(), JSON.stringify({detail: 'Password does not meet complexity requirements'}));
+            const serverError = new ApiError(400, {
+                type: '/errors/password-requirements-not-met',
+                detail: 'Password does not meet complexity requirements',
+                params: {violations: ['MISSING_DIGIT'], minLength: 12},
+            });
             onErrorCallback?.(serverError);
 
             await waitFor(() => {
-                expect(screen.getByRole('alert')).toBeInTheDocument();
+                expect(screen.getByRole('alert')).toHaveTextContent('Heslo musí obsahovat číslici.');
             });
+        });
+
+        it('does not rely on the English detail to recognise an incorrect current password', async () => {
+            const user = userEvent.setup();
+            let onErrorCallback: ((error: Error) => void) | undefined;
+            mockMutation({
+                mutate: vi.fn().mockImplementation((_vars, opts) => {
+                    onErrorCallback = opts?.onError;
+                }),
+            });
+            renderDialog();
+
+            await user.type(getInput('currentPassword'), 'WrongPassword1!');
+            await user.type(getInput('newPassword'), 'NewStrongPassword1!');
+            await user.type(getInput('confirmPassword'), 'NewStrongPassword1!');
+            await user.click(screen.getByRole('button', {name: /Změnit heslo/i}));
+
+            onErrorCallback?.(new ApiError(400, {detail: 'Current password is incorrect'}));
+
+            await waitFor(() => {
+                expect(screen.getByRole('alert')).toHaveTextContent('Požadavek se nepodařilo zpracovat');
+            });
+            expect(screen.queryByText(/Zadané aktuální heslo je nesprávné/i)).not.toBeInTheDocument();
         });
 
         it('clears server error when user starts typing in current password', async () => {
@@ -321,7 +348,7 @@ describe('ChangePasswordDialog', () => {
             await user.type(getInput('confirmPassword'), 'NewStrongPassword1!');
             await user.click(screen.getByRole('button', {name: /Změnit heslo/i}));
 
-            const serverError = new FetchError('HTTP 400 (Bad Request)', 400, 'Bad Request', new Headers(), JSON.stringify({detail: 'Current password is incorrect'}));
+            const serverError = new ApiError(400, {type: '/errors/incorrect-current-password', field: 'currentPassword', detail: 'Current password is incorrect'});
             onErrorCallback?.(serverError);
 
             await waitFor(() => {

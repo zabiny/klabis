@@ -108,7 +108,7 @@ export interface UseHalPageDataReturn<T = HalResponse> {
  * } = useHalPageData();
  *
  * if (isLoading) return <Spinner />;
- * if (error) return <Alert severity="error">{error.message}</Alert>;
+ * if (error) return <Alert severity="error">{describeError(error)}</Alert>;
  *
  * return (
  *   <div>

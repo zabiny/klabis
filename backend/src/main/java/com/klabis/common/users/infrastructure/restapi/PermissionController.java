@@ -7,9 +7,6 @@ import com.klabis.common.ui.ModelWithDomainPostprocessor;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.application.PermissionService;
-import com.klabis.common.users.domain.AuthorizationPolicy;
-import com.klabis.common.users.domain.CannotRemoveLastPermissionManagerException;
-import com.klabis.common.users.domain.UserNotFoundException;
 import com.klabis.common.users.domain.UserPermissions;
 import org.jmolecules.architecture.hexagonal.PrimaryAdapter;
 import org.springframework.core.convert.ConversionService;
@@ -17,10 +14,7 @@ import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.server.ExposesResourceFor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -101,68 +95,6 @@ public class PermissionController implements PermissionsApi {
                 .map(link -> URI.create(link.toUri().toString()))
                 .orElseGet(() -> URI.create("/api/users/" + id + "/permissions"));
         return ResponseEntity.noContent().location(location).build();
-    }
-
-    /**
-     * Exception handler for UserNotFoundException.
-     */
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ProblemDetail> handleUserNotFound(UserNotFoundException ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.NOT_FOUND,
-                ex.getMessage()
-        );
-        problemDetail.setType(URI.create("https://klabis.com/problems/user-not-found"));
-        problemDetail.setTitle("User Not Found");
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
-    }
-
-    /**
-     * Exception handler for CannotRemoveLastPermissionManagerException.
-     */
-    @ExceptionHandler(CannotRemoveLastPermissionManagerException.class)
-    public ResponseEntity<ProblemDetail> handleCannotRemoveLastPermissionManager(
-            CannotRemoveLastPermissionManagerException ex) {
-
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.CONFLICT,
-                ex.getMessage()
-        );
-        problemDetail.setType(URI.create("https://klabis.com/problems/cannot-remove-last-admin"));
-        problemDetail.setTitle("Admin Lockout Prevention");
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
-    }
-
-    /**
-     * Exception handler for AuthorizationPolicy.AdminLockoutException.
-     */
-    @ExceptionHandler(AuthorizationPolicy.AdminLockoutException.class)
-    public ResponseEntity<ProblemDetail> handleAdminLockout(AuthorizationPolicy.AdminLockoutException ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.CONFLICT,
-                ex.getMessage()
-        );
-        problemDetail.setType(URI.create("https://klabis.com/problems/admin-lockout"));
-        problemDetail.setTitle("Admin Lockout Prevention");
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
-    }
-
-    /**
-     * Exception handler for IllegalArgumentException (invalid authorities).
-     */
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ProblemDetail> handleIllegalArgument(IllegalArgumentException ex) {
-        String type = ex.getMessage().contains("Invalid authority")
-                ? "https://klabis.com/problems/invalid-authority"
-                : "https://klabis.com/problems/invalid-request";
-
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST,
-                ex.getMessage()
-        );
-        problemDetail.setType(URI.create(type));
-        problemDetail.setTitle("Invalid Request");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
 }

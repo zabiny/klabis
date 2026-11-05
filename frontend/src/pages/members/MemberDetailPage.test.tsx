@@ -63,10 +63,6 @@ vi.mock('../../api/hateoas', async (importOriginal) => {
     return {
         ...actual,
         submitHalFormsData: vi.fn(),
-        isFormValidationError: vi.fn((error) => {
-            return error && typeof error === 'object' && 'validationErrors' in error;
-        }),
-        toFormValidationError: vi.fn((error) => error),
     };
 });
 

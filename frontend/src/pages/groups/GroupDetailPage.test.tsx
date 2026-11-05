@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {ApiError} from '../../api/apiError';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {GroupDetailPage} from './GroupDetailPage';
@@ -151,8 +152,8 @@ describe('GroupDetailPage', () => {
     });
 
     it('shows error message when fetch fails', () => {
-        renderPage(createMockPageData(null, {error: new Error('Skupina nenalezena')}));
-        expect(screen.getByText('Skupina nenalezena')).toBeInTheDocument();
+        renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/group-not-found', detail: 'Skupina nenalezena'})}));
+        expect(screen.getByText('Skupina nebyla nalezena.')).toBeInTheDocument();
     });
 
     it('renders group name as page heading', () => {
@@ -359,5 +360,14 @@ describe('GroupDetailPage', () => {
             fireEvent.click(screen.getByRole('button', {name: /pozvat člena/i}));
             expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
         });
+    });
+});
+
+describe('GroupDetailPage load error', () => {
+    it('shows the Czech text of the error instead of the HTTP status', () => {
+        renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/group-not-found', detail: 'Group not found'})}));
+
+        expect(screen.getByText('Skupina nebyla nalezena.')).toBeInTheDocument();
+        expect(screen.queryByText(/HTTP 404/)).not.toBeInTheDocument();
     });
 });

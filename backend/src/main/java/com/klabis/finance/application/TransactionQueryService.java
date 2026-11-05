@@ -60,7 +60,7 @@ class TransactionQueryService implements TransactionQueryPort {
         return account.getTransactions().stream()
                 .filter(tx -> tx.getId().equals(transactionId))
                 .findFirst()
-                .orElseThrow(() -> new TransactionNotFoundException(transactionId));
+                .orElseThrow(() -> new TransactionNotFoundException(memberId, transactionId));
     }
 
     @Override

@@ -7,4 +7,9 @@ public class TokenExpiredException extends TokenValidationException {
     public TokenExpiredException(String message) {
         super(message, Reason.EXPIRED);
     }
+
+    @Override
+    public String errorType() {
+        return "token-expired";
+    }
 }

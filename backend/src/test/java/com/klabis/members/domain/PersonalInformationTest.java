@@ -101,7 +101,7 @@ class PersonalInformationTest {
                     PersonalInformation.of(
                             "Jan", "Novák", LocalDate.now().plusDays(1), "CZ", Gender.MALE
                     )
-            ).isInstanceOf(IllegalArgumentException.class)
+            ).isInstanceOf(DateOfBirthInFutureException.class)
                     .hasMessageContaining("future");
         }
 

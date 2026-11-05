@@ -1,7 +1,9 @@
 package com.klabis.common.users.infrastructure.restapi;
 
+import com.klabis.common.exceptions.UserFacingErrorResponses;
 import com.klabis.common.users.application.PasswordSetupService;
 import com.klabis.common.users.domain.PasswordSetupToken;
+import com.klabis.common.users.domain.PasswordsDoNotMatchException;
 import com.klabis.common.users.domain.TokenAlreadyUsedException;
 import com.klabis.common.users.domain.TokenExpiredException;
 import com.klabis.common.users.domain.TokenValidationException;
@@ -72,7 +74,7 @@ public class PasswordSetupController implements PasswordSetupApi {
             HttpServletRequest httpRequest) {
 
         if (!request.password().equals(request.passwordConfirmation())) {
-            throw new com.klabis.common.users.domain.PasswordValidationException("Passwords do not match");
+            throw new PasswordsDoNotMatchException();
         }
 
         String ipAddress = getClientIpAddress(httpRequest);
@@ -142,11 +144,11 @@ public class PasswordSetupController implements PasswordSetupApi {
 
     @ExceptionHandler(TokenExpiredException.class)
     public ErrorResponse handleTokenExpired(TokenExpiredException e) {
-        return ErrorResponse.create(e, HttpStatus.GONE, "Token has expired. Please request a new one.");
+        return UserFacingErrorResponses.of(e, HttpStatus.GONE, "Gone");
     }
 
     @ExceptionHandler(TokenAlreadyUsedException.class)
     public ErrorResponse handleTokenAlreadyUsed(TokenAlreadyUsedException e) {
-        return ErrorResponse.create(e, HttpStatus.GONE, "Token has already been used. Please request a new one.");
+        return UserFacingErrorResponses.of(e, HttpStatus.GONE, "Gone");
     }
 }

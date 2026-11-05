@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import {ApiError} from '../../api/apiError';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -167,10 +168,6 @@ vi.mock('../../api/klabisUserManager', () => ({
 
 vi.mock('../../api/hateoas', () => ({
     submitHalFormsData: vi.fn(),
-    isFormValidationError: vi.fn((error) => {
-        return error && typeof error === 'object' && 'validationErrors' in error;
-    }),
-    toFormValidationError: vi.fn((error) => error),
     toHref: vi.fn((source: unknown) => {
         if (Array.isArray(source)) return (source[0] as {href?: string})?.href ?? '';
         return (source as {href?: string})?.href ?? '';
@@ -366,9 +363,10 @@ describe('EventDetailPage', () => {
         expect(screen.queryByRole('heading', {level: 1})).not.toBeInTheDocument();
     });
 
-    it('shows error message when fetch fails', () => {
-        renderPage(createMockPageData(null, {error: new Error('Načtení selhalo')}));
-        expect(screen.getByText('Načtení selhalo')).toBeInTheDocument();
+    it('shows Czech text of the error when fetch fails', () => {
+        renderPage(createMockPageData(null, {error: new ApiError(500, {detail: 'Internal failure'})}));
+        expect(screen.getByText('Došlo k neočekávané chybě. Zkuste to prosím znovu.')).toBeInTheDocument();
+        expect(screen.queryByText(/Internal failure/)).not.toBeInTheDocument();
     });
 
     it('shows loading placeholder when resourceData is null and not loading', () => {

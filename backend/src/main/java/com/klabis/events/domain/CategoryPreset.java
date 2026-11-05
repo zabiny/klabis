@@ -25,16 +25,16 @@ public class CategoryPreset extends KlabisAggregateRoot<CategoryPreset, Category
 
     @RecordBuilder
     public record CreateCategoryPreset(
-            @NotBlank(message = "Preset name is required")
-            @Size(max = 200, message = "Preset name must not exceed 200 characters")
+            @NotBlank(message = "Název předvolby je povinný")
+            @Size(max = 200, message = "Název předvolby nesmí být delší než 200 znaků")
             String name,
             List<String> categories
     ) {}
 
     @RecordBuilder
     public record UpdateCategoryPreset(
-            @NotBlank(message = "Preset name is required")
-            @Size(max = 200, message = "Preset name must not exceed 200 characters")
+            @NotBlank(message = "Název předvolby je povinný")
+            @Size(max = 200, message = "Název předvolby nesmí být delší než 200 znaků")
             String name,
             List<String> categories
     ) {}

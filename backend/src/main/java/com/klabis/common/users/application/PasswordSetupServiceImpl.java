@@ -142,11 +142,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
         User user = userRepository.findById(token.getUserId())
                 .orElseThrow(() -> new TokenValidationException("User not found"));
 
-        try {
-            passwordValidator.validateBasic(command.password());
-        } catch (PasswordValidationException e) {
-            throw new PasswordValidationException(e.getMessage());
-        }
+        passwordValidator.validateBasic(command.password());
 
         String newPasswordHash = passwordEncoder.encode(command.password());
 

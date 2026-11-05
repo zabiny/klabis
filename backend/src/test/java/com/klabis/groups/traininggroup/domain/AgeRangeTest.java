@@ -25,7 +25,7 @@ class AgeRangeTest {
         @DisplayName("should reject maxAge less than minAge")
         void shouldRejectMaxAgeLessThanMinAge() {
             assertThatThrownBy(() -> new AgeRange(10, 5))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(InvalidAgeRangeException.class);
         }
 
         @Test
