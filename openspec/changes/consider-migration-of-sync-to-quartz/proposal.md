@@ -7,7 +7,7 @@ one specific question:
 > of by the `sync.sync_schedule` table that a polling scan reads?
 
 Adopting Quartz as the application's scheduler is a **separate and healthier** change,
-proposed on its own in `introduce-quartz-scheduler`. That one moves the six existing
+proposed on its own in `introduce-quartz-scheduler`. That one moves the thirteen existing
 `@Scheduled` jobs — including `sync`'s two scan cadences — onto a shared durable
 scheduler, and deliberately leaves `sync`'s per-record scheduling alone. **Nothing here
 blocks it, and it is not a prerequisite for it.**

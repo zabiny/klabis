@@ -9,10 +9,10 @@ An event MAY have a **Ranking facet** that identifies which competition series o
 - **WHEN** a user views the detail of an event that has the Ranking facet active with a ranking value
 - **THEN** the event detail shows the ranking with its short label and full name
 
-#### Scenario: Event detail shows no ranking when the facet is not active
+#### Scenario: Event detail shows no ranking when absent
 
-- **WHEN** a user views the detail of an event that does not have the Ranking facet active
-- **THEN** the event detail shows no ranking section
+- **WHEN** a user views the detail of an event whose Ranking facet is not active
+- **THEN** the event detail shows no ranking value and no ranking section
 
 ### Requirement: Event Base Entry Fee
 
@@ -23,10 +23,10 @@ An event MAY have a **Pricing facet** that carries a base entry fee expressed as
 - **WHEN** a user views the detail of an event that has the Pricing facet active with a base entry fee
 - **THEN** the event detail shows the base entry fee amount together with its currency
 
-#### Scenario: Event detail shows no fee when the facet is not active
+#### Scenario: Event detail shows no fee when absent
 
-- **WHEN** a user views the detail of an event that does not have the Pricing facet active
-- **THEN** the event detail shows no base entry fee section
+- **WHEN** a user views the detail of an event whose Pricing facet is not active
+- **THEN** the event detail shows no base entry fee value and no entry fee section
 
 ### Requirement: ORIS Import Includes Ranking And Base Entry Fee
 
@@ -60,7 +60,7 @@ The system SHALL import an event's ranking and base entry fee from ORIS by activ
 
 ### Requirement: Manual Editing Of Ranking And Base Entry Fee
 
-An event manager SHALL be able to set or change an event's ranking and base entry fee manually by activating and editing the Ranking and Pricing facets, including for events that were not imported from ORIS. A subsequent synchronization from ORIS overwrites manually entered facet values with the values from ORIS.
+An event manager SHALL be able to set or change an event's ranking and base entry fee manually by activating and editing the Ranking and Pricing facets, including for events that were not imported from ORIS. On an ORIS-imported event, a manually entered ranking or base entry fee is a manager's edit to an ORIS-owned field: a subsequent synchronization does not silently overwrite it but asks the manager to decide, as described in "A Manager's Edit To An ORIS Field Is Never Silently Overwritten".
 
 #### Scenario: Manager sets ranking and fee on a manually created event
 
@@ -121,7 +121,7 @@ Users with EVENTS:MANAGE authority SHALL be able to set, change, or clear the ev
 
 ### Requirement: Create Event
 
-The system SHALL allow users with EVENTS:MANAGE permission to create events. Required fields: name, event date, organizer code. Optional base fields: location, website URL, coordinator, registration deadline, and an event type. Selecting an event type pre-fills the event's facets from the type's default facets; category, ranking and entry fee data are entered per facet after creation.
+The system SHALL allow users with EVENTS:MANAGE permission to create events. Required fields: name, event date, organizer code. Optional base fields: location, website URL, coordinators, registration deadline, and an event type. Selecting an event type pre-fills the event's facets from the type's default facets; category, ranking and entry fee data are entered per facet.
 
 #### Scenario: Manager creates an event with all required fields
 
@@ -129,9 +129,9 @@ The system SHALL allow users with EVENTS:MANAGE permission to create events. Req
 - **THEN** the event is created in DRAFT status
 - **AND** appears in the event list
 
-#### Scenario: Manager creates an event with optional base fields
+#### Scenario: Manager creates an event with optional fields
 
-- **WHEN** user with EVENTS:MANAGE permission fills in optional base fields (location, website URL, coordinator, registration deadline) and submits
+- **WHEN** user with EVENTS:MANAGE permission fills in optional base fields (location, website URL, coordinators, registration deadline) and submits
 - **THEN** the event is created with all provided data
 
 #### Scenario: Manager creates an event without a location
@@ -159,24 +159,40 @@ The system SHALL allow users with EVENTS:MANAGE permission to create events. Req
 - **WHEN** user references a coordinator member that does not exist
 - **THEN** the form shows an error that the coordinator was not found
 
+#### Scenario: Duplicate coordinator in collection is deduplicated
+
+- **WHEN** user adds the same member to the coordinators field more than once and submits
+- **THEN** the event is created with that member listed once
+
 #### Scenario: Registration deadline after event date shows error
 
 - **WHEN** user sets a registration deadline after the event date
 - **THEN** the form shows an error that the deadline must be on or before the event date
 
+#### Scenario: Manager creates event with multiple coordinators
+
+- **WHEN** user with EVENTS:MANAGE permission adds two distinct members to the coordinators field and submits
+- **THEN** the event is created with both members as coordinators
+
 ### Requirement: Update Event
 
-The system SHALL allow users with EVENTS:MANAGE permission to update an event's base fields in DRAFT or ACTIVE status. Category, ranking and entry fee data are no longer edited here; they are edited through their respective facets.
+The system SHALL allow users with EVENTS:MANAGE permission OR any member in the event's coordinators collection to update events in DRAFT or ACTIVE status. Editable base fields include the coordinators collection. Category, ranking and entry fee data are edited through the event's facets (see the event-facets capability), not through this base update. Only users with EVENTS:MANAGE permission SHALL be able to change the coordinators collection; a coordinator without EVENTS:MANAGE sees the coordinators read-only in the edit form.
 
 #### Scenario: Manager updates a DRAFT event
 
-- **WHEN** user with EVENTS:MANAGE permission edits and saves the base fields of a DRAFT event
+- **WHEN** user with EVENTS:MANAGE permission edits and saves a DRAFT event
 - **THEN** the event is updated with the new values
 
 #### Scenario: Manager updates an ACTIVE event
 
-- **WHEN** user with EVENTS:MANAGE permission edits and saves the base fields of an ACTIVE event
+- **WHEN** user with EVENTS:MANAGE permission edits and saves an ACTIVE event
 - **THEN** the event is updated with the new values
+
+#### Scenario: Coordinator edits the event without EVENTS:MANAGE
+
+- **WHEN** a member who is listed as a coordinator of a DRAFT or ACTIVE event edits and saves that event
+- **THEN** the event is updated with the new values
+- **AND** no EVENTS:MANAGE permission is required
 
 #### Scenario: Finished event cannot be edited
 
@@ -188,14 +204,32 @@ The system SHALL allow users with EVENTS:MANAGE permission to update an event's 
 - **WHEN** user attempts to edit a CANCELLED event
 - **THEN** the system shows an error that cancelled events cannot be modified
 
-#### Scenario: Update action not shown without permission
+#### Scenario: Update action not shown without permission or coordinator role
 
 - **WHEN** user without EVENTS:MANAGE permission views an event
+- **AND** the user is not listed as a coordinator of that event
 - **THEN** no edit action is available
+
+#### Scenario: Duplicate coordinator in update is deduplicated
+
+- **WHEN** user adds the same member twice to the coordinators field during update and submits
+- **THEN** the event is updated with that member listed once
+
+#### Scenario: Coordinator cannot change the coordinators
+
+- **GIVEN** a member who is listed as a coordinator of a DRAFT or ACTIVE event and has no EVENTS:MANAGE permission
+- **WHEN** the coordinator opens the edit form of that event
+- **THEN** the coordinators are shown read-only
+- **AND** the coordinator can still change and save the other event fields
+
+#### Scenario: Manager changes the coordinators
+
+- **WHEN** a user with EVENTS:MANAGE permission adds or removes a coordinator in the edit form of a DRAFT or ACTIVE event and saves
+- **THEN** the event is updated with the new coordinators
 
 ### Requirement: Event Detail Page
 
-The application SHALL display the event detail page with base fields (location and registration deadline when set) and a section for each active facet (categories, ranking, entry fee), and allow managers to edit them inline. Managers SHALL also be able to activate or deactivate facets from the detail page. The registrations section and the link to the registrations list SHALL only be shown for events that are not in DRAFT status.
+The application SHALL display the event detail page with base fields (location and registration deadline when set) and a section for each active facet (categories, ranking, entry fee), and allow managers to edit them inline. Managers SHALL also be able to activate or deactivate facets from the detail page. The registrations section and the link to the registrations list SHALL only be shown for events that are not in DRAFT status. For a cancelled event the detail page SHALL render the event name struck through, show a prominent "Zrušeno" badge, and display the cancellation reason directly under the name when a reason was provided.
 
 #### Scenario: Event detail shows location when set
 
@@ -227,6 +261,46 @@ The application SHALL display the event detail page with base fields (location a
 - **WHEN** a manager creates or edits an event via the form
 - **THEN** the form includes a registration deadline date picker field
 
+#### Scenario: Event detail shows categories
+
+- **WHEN** user views the detail page for an event with the Categories facet active and categories defined
+- **THEN** the categories are displayed as individual pills/tags
+
+#### Scenario: Event detail hides categories when not set
+
+- **WHEN** user views the detail page for an event without the Categories facet
+- **THEN** no categories section is shown
+
+#### Scenario: Inline edit includes categories field
+
+- **WHEN** a manager edits an event inline on the detail page
+- **THEN** the categories section of an active Categories facet is editable
+
+#### Scenario: Event detail hides registrations section for DRAFT event
+
+- **WHEN** user views the detail page for an event in DRAFT status
+- **THEN** the registrations section is NOT shown
+- **AND** no link to the registrations list is displayed
+
+#### Scenario: Event detail shows registrations section for ACTIVE event
+
+- **WHEN** user views the detail page for an event in ACTIVE status
+- **THEN** the registrations section is shown with the link to the registrations list
+
+#### Scenario: Cancelled event detail shows struck-through name, badge and reason
+
+- **WHEN** a user views the detail page of a cancelled event that has a cancellation reason
+- **THEN** the event name is rendered struck through
+- **AND** a prominent "Zrušeno" badge is shown next to the name
+- **AND** the cancellation reason is displayed directly under the name
+
+#### Scenario: Cancelled event detail without a reason
+
+- **WHEN** a user views the detail page of a cancelled event that has no cancellation reason
+- **THEN** the event name is rendered struck through
+- **AND** the "Zrušeno" badge is shown next to the name
+- **AND** no reason text is displayed
+
 #### Scenario: Event detail shows a section per active facet
 
 - **WHEN** user views the detail page for an event with the Categories and Pricing facets active
@@ -235,31 +309,20 @@ The application SHALL display the event detail page with base fields (location a
 
 #### Scenario: Manager can manage facets from the detail page
 
-- **WHEN** a manager views the detail page for an event
-- **THEN** the manager can activate a facet that is not yet active and deactivate one that is active
-
-#### Scenario: Event detail hides registrations section for DRAFT event
-
-- **WHEN** user views the detail page for an event in DRAFT status
-- **THEN** the registrations section and the link to the registrations list are not shown
+- **WHEN** a user with EVENTS:MANAGE permission views the detail page for an editable event
+- **THEN** the user can activate a facet that is not yet active and deactivate one that is active
 
 ### Requirement: Event Status Lifecycle
 
 The system SHALL manage event status transitions: DRAFT → ACTIVE → FINISHED or CANCELLED. The transition from ACTIVE to FINISHED is performed exclusively by the automatic completion process; there is no manual "finish" action available to managers. Publishing a DRAFT event (DRAFT → ACTIVE) SHALL be allowed only when every active facet is complete.
 
-When cancelling an event, the manager MAY provide an optional cancellation reason (free text, up to 500 characters). The reason SHALL be stored with the event and SHALL be displayed to viewers of the cancelled event detail; if a reason is set, summary views (e.g. event list) SHALL surface it as supplementary text on the cancelled row.
+When cancelling an event, the manager MAY provide an optional cancellation reason (free text, up to 500 characters). The reason SHALL be stored with the event and SHALL be displayed to viewers of the cancelled event detail directly under the event name. In summary views (e.g. the event list) a cancelled event is marked by its struck-through name.
 
 #### Scenario: Manager publishes a DRAFT event
 
 - **WHEN** user with EVENTS:MANAGE permission publishes an event in DRAFT status whose active facets are all complete
 - **THEN** the event becomes ACTIVE
 - **AND** members can now register for it
-
-#### Scenario: Publishing is blocked by an incomplete facet
-
-- **GIVEN** a DRAFT event with an active facet that is not fully filled in
-- **WHEN** a manager attempts to publish the event
-- **THEN** the system prevents the publication and indicates which facet must be completed
 
 #### Scenario: Manager cancels a DRAFT event without a reason
 
@@ -270,22 +333,29 @@ When cancelling an event, the manager MAY provide an optional cancellation reaso
 
 - **WHEN** user with EVENTS:MANAGE permission cancels a DRAFT event and provides a cancellation reason
 - **THEN** the event becomes CANCELLED with the reason recorded
-- **AND** the cancellation reason is shown on the event detail page
+- **AND** the cancellation reason is shown on the event detail page under the event name
 
 #### Scenario: Manager cancels an ACTIVE event with a reason
 
 - **WHEN** user with EVENTS:MANAGE permission cancels an ACTIVE event and provides a cancellation reason
 - **THEN** the event becomes CANCELLED with the reason recorded
 - **AND** existing registrations are preserved for records
-- **AND** the cancellation reason is shown on the event detail page
+- **AND** the cancellation reason is shown on the event detail page under the event name
 
-#### Scenario: Cancellation reason is shown on the cancelled event row in the list
+#### Scenario: Cancelled event is marked in the event list
 
-- **GIVEN** a cancelled event with a recorded cancellation reason
-- **WHEN** a user views the event list
-- **THEN** the cancelled status indicator on that row exposes the reason as a tooltip or supplementary text
+- **GIVEN** an event has been cancelled
+- **WHEN** a user who is allowed to see that event views the event list
+- **THEN** the event name on that row is rendered struck through
 
 #### Scenario: Invalid status transition shows error
 
 - **WHEN** user attempts an invalid status transition (e.g., FINISHED → ACTIVE)
 - **THEN** the system shows an error that the transition is not allowed
+
+#### Scenario: Publishing is blocked by an incomplete facet
+
+- **GIVEN** a DRAFT event with an active facet that is not fully filled in
+- **WHEN** a manager attempts to publish the event
+- **THEN** the system prevents the publication and indicates which facet must be completed
+

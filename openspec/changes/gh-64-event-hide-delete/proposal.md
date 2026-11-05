@@ -4,14 +4,16 @@ GitHub issue #64 ("Chci mít možnost zneviditelnit/smazat akci", milestone `cor
 
 Today the `events` spec supports only the following lifecycle transitions:
 - DRAFT → ACTIVE (publish)
-- DRAFT → CANCELLED (cancel a draft)
-- ACTIVE → CANCELLED (cancel an active event; registrations kept for records)
-- ACTIVE → FINISHED (automatic once event date passes)
+- DRAFT → CANCELLED (cancel a draft, with an optional cancellation reason)
+- ACTIVE → CANCELLED (cancel an active event with an optional reason; registrations kept for records)
+- ACTIVE → FINISHED (automatic once event date passes, performed by the nightly `EventCompletionScheduler`)
+
+Cancelled events are shown struck through in the list and with a "Zrušeno" badge and the reason on the detail (shipped with `gh-66-event-cancellation-reason`). That makes a cancelled event visible but not removable — which is exactly the gap this issue is about.
 
 There is **no hard delete** and **no "hide" state**. DRAFT events are already hidden from regular members (`List Events`: *"Regular user does not see DRAFT events"*), so managers can keep an event in DRAFT forever to effectively hide it. But:
 
 - A DRAFT event created in error (wrong organizer code, duplicate from ORIS import, test data) stays in the database forever and clutters the manager's list.
-- A cancelled event cannot be removed — it stays in `Events Table Display` as a struck-through/cancelled row indefinitely.
+- A cancelled event cannot be removed — it stays in `Events Table Display` as a struck-through row (with its cancellation reason on the detail) indefinitely.
 - There is no "archive" state — over years of operation the list will grow with cancelled/finished events with no way to tidy up.
 
 The issue is labelled `question` because the exact semantics are not decided: is it a true delete (row disappears), an archival state (row filtered out unless explicitly requested), or just visibility?
@@ -59,7 +61,7 @@ All questions below MUST be answered before the next OpenSpec artifacts (specs, 
 
 4. **What happens to event-linked calendar items on a deleted DRAFT?** DRAFT events do not have calendar items today (calendar sync only fires on publish). For ARCHIVED events — the calendar items may already have been removed on cancellation. Confirm no cascade worries.
 
-5. **What happens to ORIS import provenance on hard delete?** If an ORIS-imported event is deleted, can the same event be re-imported later? Today the unique key is event id / ORIS id — deletion should not prevent re-import. Confirm.
+5. **What happens to the ORIS synchronisation link on hard delete?** An ORIS-imported event is paired with ORIS through a `SyncRecord` of the synchronisation engine (`data-synchronization`), and its ORIS entries are paired as `EVENT_REGISTRATION` records. Deleting the event must remove or retire those records, otherwise the engine keeps scanning a vanished target. Re-importing the same ORIS event afterwards goes through `pullAndEnroll` and must create a fresh event rather than resume the deleted one (see the existing requirements "Re-Importing An ORIS Event Synchronizes It Instead Of Failing" and "Re-Importing A Finished Or Cancelled ORIS Event Resumes Its Synchronization" — the second one is about FINISHED/CANCELLED events and is why archiving such an event must keep its link intact). Confirm that delete retires the link and that archiving keeps it.
 
 6. **Should the ARCHIVED state surface on the `Automatic Event Completion` path?** I.e., auto-archive events N days after FINISHED? Probably out of scope — keep archive manual for now.
 
@@ -70,6 +72,6 @@ All questions below MUST be answered before the next OpenSpec artifacts (specs, 
 
 8. **How does the archived state interact with the events list filters (status filter, etc.)?** Archived events are excluded by default. A new filter checkbox "Zobrazit archivované" is visible to managers. Regular members never see archived events. Confirm.
 
-9. **Dedup with the `cancel` action.** Is "archive a cancelled event" allowed, or is CANCELLED already permanently hidden from the list for regular members (if we implement #66 "viditelně škrtnout" differently)? Coordinate with the `add-event-cancellation-reason` proposal (#66).
+9. **Dedup with the `cancel` action.** #66 shipped: a CANCELLED event stays visible, struck through, with its reason. Is "archive a cancelled event" allowed on top of that (CANCELLED → ARCHIVED), so the manager can finally tidy the list? Recommend: yes.
 
 10. **Spec location.** All changes sit inside `events` spec. Confirm no cross-spec deltas except what is listed under Impact.

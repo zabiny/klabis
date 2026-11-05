@@ -33,8 +33,37 @@ Users with EVENTS:MANAGE authority SHALL be able to activate a facet on an event
 
 #### Scenario: Activate/deactivate controls hidden without permission
 
-- **WHEN** a user without EVENTS:MANAGE authority views an event detail
+- **WHEN** a user without EVENTS:MANAGE authority views an event detail, including a coordinator of that event
 - **THEN** no controls to activate or deactivate facets are shown
+
+### Requirement: Categories Facet Cannot Be Deactivated While Registrations Use It
+
+The Categories facet SHALL NOT be deactivated while any registration of the event holds a category from it. The system SHALL tell the manager how many registrations prevent the deactivation.
+
+#### Scenario: Categories facet cannot be deactivated while registrations use its categories
+
+- **GIVEN** an ACTIVE event with the Categories facet active and members registered in its categories
+- **WHEN** a manager attempts to deactivate the Categories facet
+- **THEN** the system prevents the deactivation
+- **AND** tells the manager how many registrations hold a category
+
+#### Scenario: Categories facet can be deactivated when no registration holds a category
+
+- **GIVEN** an event with the Categories facet active and no registration holding a category
+- **WHEN** a manager deactivates the Categories facet
+- **THEN** the categories section is removed from the event detail
+
+### Requirement: Deactivating An ORIS-Owned Facet Is Not Silently Undone
+
+On an event imported from ORIS, activating or deactivating the Ranking or Pricing facet changes a field that ORIS owns. It SHALL be handled as any other manager's edit to an ORIS-owned field (see "A Manager's Edit To An ORIS Field Is Never Silently Overwritten" in the events capability): the next synchronisation SHALL NOT silently undo it.
+
+#### Scenario: Deactivating an ORIS-owned facet on an ORIS-imported event is not silently undone
+
+- **GIVEN** an ORIS-imported event that has the Ranking facet active with the ranking taken from ORIS
+- **WHEN** a manager deactivates the Ranking facet
+- **AND** the event is synchronised with ORIS afterwards
+- **THEN** the event is not silently given the ORIS ranking back
+- **AND** the event is marked as needing a decision about the difference against ORIS
 
 ### Requirement: Facets May Be Incomplete While the Event Is a Draft
 
@@ -77,7 +106,7 @@ When an event is published (transitions from DRAFT to ACTIVE), every active face
 
 ### Requirement: Edit Facet Data
 
-Users with EVENTS:MANAGE authority SHALL be able to edit the data of an active facet on an event in DRAFT or ACTIVE status. Editing a facet changes only that facet's fields and leaves the event's base fields and other facets unchanged.
+Users with EVENTS:MANAGE authority, and members listed as coordinators of the event, SHALL be able to edit the data of an active facet on that event in DRAFT or ACTIVE status, in line with "Coordinator Implicit Edit Authority" in the events capability. Activating and deactivating facets is reserved for EVENTS:MANAGE. Editing a facet changes only that facet's fields and leaves the event's base fields and other facets unchanged.
 
 #### Scenario: Manager edits one facet without affecting others
 
@@ -85,6 +114,19 @@ Users with EVENTS:MANAGE authority SHALL be able to edit the data of an active f
 - **WHEN** a manager changes the entry fee in the Pricing facet and saves
 - **THEN** the entry fee is updated
 - **AND** the categories remain unchanged
+
+#### Scenario: Coordinator edits a facet of their event
+
+- **GIVEN** a member who is a coordinator of a DRAFT or ACTIVE event without EVENTS:MANAGE permission, and the event has the Categories facet active
+- **WHEN** the coordinator edits the categories and saves
+- **THEN** the categories are updated
+- **AND** no EVENTS:MANAGE permission is required
+
+#### Scenario: Coordinator cannot edit a facet of another event
+
+- **GIVEN** a member who is a coordinator of event A but not of event B and has no EVENTS:MANAGE permission
+- **WHEN** the member views event B
+- **THEN** no control to edit a facet is available
 
 #### Scenario: Facet of a finished event cannot be edited
 

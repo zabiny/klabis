@@ -6,10 +6,11 @@ Today the `calendar-items` spec `View Calendar Items` supports:
 - Date-range selection (default current month, max 366 days).
 - Sorting (by name, by date).
 - Month navigation.
+- One filter, "Můj rozvrh" (query parameter `mySchedule`): narrows the calendar to event-date items of events where the user is a registered participant or a coordinator, hides deadline and manual items, is off by default, is shown in the calendar header at all times and lives in the URL (shipped as `calendar-my-schedule-filter`). The same union drives the personal iCalendar feed.
 
-There is no filtering at all. Every authenticated member sees every calendar item in the selected range.
+Nothing else can be filtered. Without "Můj rozvrh" every authenticated member sees every calendar item in the selected range. The backend repository criterion `CalendarFilter` already carries an item-type set and an event-id set, but the REST endpoint exposes only `mySchedule`.
 
-This proposal complements issue #110 (filter by my groups, which adds a single group-relevance filter). Issue #109 is broader — it is the umbrella "let the user narrow down the calendar" feature.
+This proposal complements issue #110 (filter by my groups, which adds a single group-relevance filter). Issue #109 is broader — it is the umbrella "let the user narrow down the calendar" feature, and "Můj rozvrh" is the first filter of it, which also sets the pattern the remaining ones should follow (URL state, visible in the header, off by default).
 
 ## Capabilities
 
@@ -36,8 +37,8 @@ This proposal complements issue #110 (filter by my groups, which adds a single g
 **APIs (REST):** additive — new optional query parameters on `GET /api/calendar`.
 
 **Dependencies:**
-- Filter by group depends on issue #110 and/or #113 (event-to-group tagging).
-- Filter by "only events I'm registered to" reuses logic from issue #88.
+- Filter by group depends on issue #110 and on event-to-group tagging (`gh-113-event-training-group-tagging`).
+- Filter by "only events I'm registered to" is satisfied by the shipped "Můj rozvrh".
 
 **Data:** none.
 
@@ -48,14 +49,14 @@ All questions below MUST be answered before the next OpenSpec artifacts (specs, 
 1. **Which filters belong in the MVP cut?** Candidate filters:
    - (a) **Item type** — event-date items, registration-deadline items, manual calendar items. Simple toggle group.
    - (b) **Group relevance** (*moje skupiny* vs. vše) — see proposal #110.
-   - (c) **Registration status** — only events I'm registered to (reuses #88 logic on calendar items linked to events).
+   - (c) **Registration status** — only events I'm registered to. Largely covered by "Můj rozvrh" (participant OR coordinator); only a narrower "just my registrations" variant would be new.
    - (d) **Competition level / event category** — national / regional / club-only. Requires event classification, currently unspecified.
    - (e) **Organizer** — same as the events-list organizer filter.
    - (f) **Full-text search** on item name/description.
    - (g) **Location / distance** — home range within X km. Requires geocoding, heavy; probably out of scope.
    - (h) **Date range** — already exists.
 
-   Recommend for MVP: (a) + (b) + (f). Defer (c) until #88 lands. Defer (d), (e), (g).
+   Recommend for MVP: (a) + (b) + (f). (c) is already delivered as "Můj rozvrh". Defer (d), (e), (g).
 
 2. **Relationship with #110.** Issue #110 is essentially one of the filters covered here. Options:
    - Merge: #110 becomes part of this proposal (closed as covered).
@@ -63,7 +64,7 @@ All questions below MUST be answered before the next OpenSpec artifacts (specs, 
 
    Recommend: keep separate — #110 is concrete, #109 is the umbrella. Confirm.
 
-3. **Filter persistence.** Does the filter state persist per user (preference saved server-side) or only in the URL? Recommend: URL only, consistent with other filters in the app today.
+3. **Filter persistence.** Decided by "Můj rozvrh": the state lives in the URL and resets in a fresh session (`Filter state lives in the URL and resets across sessions`). Keep the same for every new filter.
 
 4. **Multi-select vs. single-select per filter.** Recommend: multi-select for type, single-select for group (defaulting to "my groups").
 
@@ -71,7 +72,7 @@ All questions below MUST be answered before the next OpenSpec artifacts (specs, 
 
 6. **Are filters combinable (AND) or independent?** Recommend: AND across filter dimensions, OR inside a single dimension's multi-select.
 
-7. **Filter affordance.** Should filters be exposed as HAL-Forms affordances (so the frontend can render them generically from the API metadata), or as a fixed frontend-only control? The existing events-list filters — how are those exposed today? Mirror the same pattern.
+7. **Filter affordance.** "Můj rozvrh" is a boolean query parameter on `GET /api/calendar` that the link processor preserves on next/previous month links. Mirror that for the new parameters; the events list filters (type, year) use URL-held filters in the frontend as well.
 
 8. **UI placement.** Is there room for a filter bar above the calendar grid, or should filters live in a dropdown? Recommend: collapsible filter bar, same pattern as the events list (if it exists).
 

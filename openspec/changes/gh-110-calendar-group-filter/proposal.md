@@ -6,11 +6,13 @@ Today the `calendar-items` spec delivers half of this:
 - `View Calendar Items` — members see the full calendar for the selected range.
 - `Automatic Synchronization from Events` — each published event produces an event-date calendar item plus (when the event has a deadline) a "Přihlášky - {event name}" item on the deadline day. So the deadlines part of the acceptance criterion is already covered.
 
-What is missing is the **filter**:
+A first calendar filter has shipped since — "Můj rozvrh" (`mySchedule`), which keeps only events the user is registered to or coordinates. It is a personal-involvement filter, not a group filter: a U12 child who has not registered yet still sees every club event. Its conventions (off by default, state in the URL, always visible in the calendar header, hides deadline and manual items) are the precedent this proposal should follow rather than reinvent.
+
+What is missing is the **group filter**:
 - No notion of "events my groups are attending" or "events tagged for my groups".
 - Today, a child in the U12 training group sees calendar items for every club event, including CR-level races for the adult group — noise that obscures the few events their group actually attends.
 
-This proposal depends on issue #113 / #113-oris-auto-sync (event-to-group tagging): for events to be filterable by group, events must first carry group tags. Without that, the only "group membership" we can filter by is trivial (all events apply to all members).
+This proposal depends on `gh-113-event-training-group-tagging` (event-to-group tagging, split out of the original #113 proposal and not implemented yet): for events to be filterable by group, events must first carry group tags. Without that, the only "group membership" we can filter by is trivial (all events apply to all members).
 
 ## Capabilities
 
@@ -21,13 +23,13 @@ This proposal depends on issue #113 / #113-oris-auto-sync (event-to-group taggin
 ### Modified Capabilities
 
 - `calendar-items`: extend `View Calendar Items` with a group-relevance filter — items are included when the originating event is tagged for one of the current user's groups (or carries no tags at all, falling back to "relevant for everyone").
-- `events`: prerequisite — event-to-group tagging from issue #113.
+- `events`: prerequisite — event-to-group tagging from `gh-113-event-training-group-tagging`.
 
 ## Impact
 
 **Affected specs:**
-- `openspec/specs/calendar-items/spec.md` — `View Calendar Items` gains a filter dimension or a default filter based on the user's group memberships. Open decision: is the group filter always-on (implicit) or opt-in (explicit toggle)?
-- `openspec/specs/events/spec.md` (prereq, see proposal #113) — event gains a "relevant groups" collection.
+- `openspec/specs/calendar-items/spec.md` — `View Calendar Items` gains a group filter next to "Můj rozvrh". Open decision: is the group filter always-on (implicit) or opt-in (explicit toggle)? The existing filter is opt-in.
+- `openspec/specs/events/spec.md` (prereq, see `gh-113-event-training-group-tagging`) — event gains a "relevant groups" collection.
 
 **Affected code (backend, calendar module):**
 - Calendar query joins against events and filters by event-tagged groups ∩ user's groups.
@@ -38,7 +40,7 @@ This proposal depends on issue #113 / #113-oris-auto-sync (event-to-group taggin
 
 **APIs (REST):** additive — optional query parameter on `GET /api/calendar`.
 
-**Dependencies:** event-to-group tagging (proposal `113-oris-auto-sync`). This proposal does NOT ship until that is defined.
+**Dependencies:** event-to-group tagging (`gh-113-event-training-group-tagging`). This proposal does NOT ship until that is implemented.
 
 **Data:** if the calendar stores its own copy of the group tags, a new table/column. Otherwise, none.
 
@@ -46,7 +48,7 @@ This proposal depends on issue #113 / #113-oris-auto-sync (event-to-group taggin
 
 All questions below MUST be answered before the next OpenSpec artifacts (specs, design, tasks) are created for this change.
 
-1. **Default filter — on or off?**
+1. **Default filter — on or off?** (Precedent: "Můj rozvrh" is off by default and the state is not remembered across sessions.)
    - Option A: group filter is **always on** for regular members. They see only events tagged for their groups plus events with no tags (interpreted as "applies to everyone"). Opt-out is possible via a "Zobrazit vše" toggle.
    - Option B: group filter is **off** by default. Members see the full calendar and opt in via a "Pouze moje skupiny" toggle.
 
@@ -61,7 +63,7 @@ All questions below MUST be answered before the next OpenSpec artifacts (specs, 
 
 3. **"No tags" interpretation.** If an event has no group tags, does the filter include it (treat as "everyone") or exclude it (treat as "no group declared, hidden")? Recommend: include — this is the backward-compatible default.
 
-4. **Interaction with the general user-visible calendar filter.** `View Calendar Items` today has no filter — so adding one is additive. This proposal should not change `sort`, `navigate`, etc. Confirm no cross-cutting change.
+4. **Interaction with "Můj rozvrh".** Define how the two filters combine when both are on (recommend AND). "Můj rozvrh" hides deadline items, so the group filter's rule for deadline items (question 5) only matters when it is used alone. This proposal should not change `sort` or month navigation; the link processor must carry the new parameter on next/previous links as it does `mySchedule`. Confirm.
 
 5. **Deadline calendar items.** The "Přihlášky - {event name}" items inherit their group relevance from the source event (same tag set). Confirm that is what members expect.
 
@@ -69,7 +71,7 @@ All questions below MUST be answered before the next OpenSpec artifacts (specs, 
 
 7. **Cached / denormalized calendar vs. live join.** If group membership changes (a member moves between training groups per the age-based reassignment), should old calendar items reflect the new membership immediately? Recommend: yes, live join — simpler invariants.
 
-8. **Dependency ordering.** This proposal explicitly depends on event-to-group tagging from `113-oris-auto-sync`. Recommend landing #113 first (or splitting the tagging part of #113 out as a prerequisite). Confirm ordering.
+8. **Dependency ordering.** The tagging part of #113 has been split out as `gh-113-event-training-group-tagging`. Land it first. Confirm ordering.
 
 9. **Guest / hostující members.** Hosting members may belong to a training group (if assigned via the automatic age-based rule). The filter logic is the same. Confirm.
 

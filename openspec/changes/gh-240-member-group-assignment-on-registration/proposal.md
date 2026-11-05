@@ -4,18 +4,23 @@ GitHub issue #240 ("Pri zalození noveho clena klubu chci zvolit skupiny do kter
 - pick a specific training group (rather than relying on automatic age-based assignment), and
 - pick an existing family group OR create a new family group in-line.
 
-The issue references #119 (group-permissions topic) and notes the feature extends #3 (Member Registration Flow, COMPLETED) and #5 (Guest Member Creation from ORIS, TODO).
+### The family-group half is superseded
 
-Today the relevant specs behave as follows:
+Family groups no longer exist. They were replaced by **legal guardian groups** (`refactor-family-group-parents`, `family-group-parents-as-users`, `legal-guardians-via-groups`; see the `user-groups` requirement `Group Types` and the `legal-guardians` capability). The registration flow already covers what the family-group part of the issue asked for, in a different shape:
 
-- `members` spec `Member Registration Flow` collects personal info only (name, birthdate, nationality, gender, address). It does not collect group assignments. On registration completion, the `user-groups` spec `Training Group Membership Assignment` automatically assigns the new member to the training group whose age range matches (*"New member is automatically assigned to a training group"*).
-- There is no way to assign a family group at registration time. Family groups are created from the members list page (`Create Family Group` in the `user-groups` spec) by a separate action, after the member already exists.
-- The automatic training-group assignment cannot be overridden at registration time.
+- `Member Registration Flow` registers a minor together with at least one legal guardian, each guardian either chosen from the legal guardian candidates or entered as a new non-member guardian in the same step (scenarios "Admin registers a minor with an existing guardian" and "…with a new non-member guardian"). An adult is registered without guardians.
+- The guardian group is created or reused as a consequence of setting the guardians (`Setting The Legal Guardians Of A Minor`, `Legal Guardian Groups`); it is not something the admin creates or picks separately.
 
-This creates friction for common cases:
-- A 12-year-old registering should usually land in the under-13 training group. The auto-assignment works. But a child who trains with the older group (e.g., talented, or an older sibling to accompany) has to be manually moved after registration — a separate action.
-- A new child member who belongs to an existing family (parent is already a member) should be added to that family group during registration — currently requires: register child, navigate to family groups, add child to parent's family group.
-- A new child member whose parent is ALSO newly registering requires: register parent, register child, create family group with parent, add child. Three steps that could be one.
+The "register parent and child in one transaction" super-flow mentioned in the original text is therefore also covered by the guardian step (a new non-member guardian is created together with the minor).
+
+### The training-group half is still open
+
+`Training Group Membership Assignment` assigns a new member to the training group whose age range fits (`New member is automatically assigned to a training group`); a member belongs to at most one training group, and a manual "add member" from the training group side is rejected while the member is a trainee of another one (`Manual Training Group Trainee Exclusivity`), so correcting the automatic choice means removing the member from one group and adding them to another. The registration form (`Member Registration Page Layout`) collects personal data and, for minors, guardians — and does not offer a training group. A child who trains with an older group, or an adult who should go to a specific group, must be moved in a second step after registration. That is the gap that remains of #240.
+
+## What Changes
+
+- The registration form gains an optional "Tréninková skupina" choice. Empty keeps today's behaviour (age-based automatic assignment); a chosen group takes precedence over the automatic assignment.
+- No change to guardians, guardian groups or any other group type.
 
 ## Capabilities
 
@@ -25,22 +30,20 @@ This creates friction for common cases:
 
 ### Modified Capabilities
 
-- `members`: extend `Member Registration Flow` with optional training-group and family-group selection at registration time.
-- `user-groups`: extend `Training Group Membership Assignment` to cover the manual override at registration. Extend `Create Family Group` / `Add and Remove Child Members of a Family Group` for the in-line "pick existing or create new family group" flow during registration.
+- `members`: `Member Registration Flow` and `Member Registration Page Layout` — optional training group choice in the registration form.
+- `user-groups`: `Training Group Membership Assignment` — an explicit choice at registration takes precedence over the age-based assignment.
 
 ## Impact
 
 **Affected specs:**
-- `openspec/specs/members/spec.md` — `Member Registration Flow` gains scenarios for optional training-group selection, optional family-group selection (existing group pick), and optional new-family-group creation with the new member as child (and a choice of existing member as parent, or the creating admin picks the parent).
-- `openspec/specs/user-groups/spec.md` — `Training Group Membership Assignment` gains a scenario "when admin provides explicit training group at registration, it takes precedence over age-based auto-assignment". `Create Family Group` / `Add and Remove Child Members of a Family Group` gain scenarios for the registration-time variant.
+- `openspec/specs/members/spec.md` — registration scenarios for choosing a training group, for an empty choice (automatic assignment) and for an age-mismatching choice.
+- `openspec/specs/user-groups/spec.md` — scenario "explicit training group at registration takes precedence over age-based auto-assignment".
 
-**Affected code (backend, members + user-groups modules):** the registration command gains optional `trainingGroupId` and either `familyGroupId` OR `createFamilyGroupWithParent` parameters. Cross-module orchestration: the members module emits a "member registered" event that the user-groups module already listens to for auto-assignment; the flow becomes "if explicit training group provided, use it; else auto-assign".
+**Affected code (backend, members + groups):** the registration command (`RegistrationService.RegisterNewMember`) gains an optional training group id. The members module already announces a registered member and the groups module assigns on it; the assignment must use the explicit group when present. The `groups.traininggroup` module is reached only through its existing event/port, not directly.
 
-**Affected code (frontend):** the registration form gains two new optional sections:
-- "Tréninková skupina (volitelné)" — a dropdown of existing training groups. Empty = auto-assign by age.
-- "Rodinná skupina (volitelné)" — a combined picker (existing family group) + a "Založit novou" option that reveals additional fields to pick a parent member.
+**Affected code (frontend):** the registration page (`MemberRegistrationPage`, with `RegistrationGuardianSections` for the guardian part) gains a training group dropdown, after the personal data and guardian sections.
 
-**APIs (REST):** additive — the registration request body accepts new optional fields.
+**APIs (REST):** additive — the registration request accepts an optional training group.
 
 **Dependencies:** none.
 
@@ -50,48 +53,16 @@ This creates friction for common cases:
 
 All questions below MUST be answered before the next OpenSpec artifacts (specs, design, tasks) are created for this change.
 
-1. **MVP confirmation.** The issue notes "overit zda má patřit do MVP". If it belongs to a later milestone, we should still land the proposal but defer tasks. Confirm milestone.
+1. **MVP confirmation.** The issue notes "overit zda má patřit do MVP". With the family-group half gone, is the remaining training-group choice still wanted for the MVP, or is moving the member after registration acceptable? If the latter, close the proposal.
 
-2. **Training-group override: validation rules.**
-   - Can the admin pick *any* training group, or only one matching the new member's age?
-   - If the admin picks a group that doesn't match the member's age, is it an error, a warning, or silent acceptance?
+2. **Validation rules.** Can the admin pick any training group, or only one matching the new member's age? If the group does not match the age, is it an error, a warning, or silent acceptance? Recommend: any group allowed; warning on age mismatch; admin confirms to proceed.
 
-   Recommend: any group allowed; warning if age-mismatch; admin can confirm to proceed. Confirm.
+3. **Empty choice.** Empty → auto-assign by age (current behaviour), not "no group". Recommend, to preserve today's default.
 
-3. **Training group = empty means what?**
-   - Option A: empty → auto-assign by age (current behavior).
-   - Option B: empty → no training group assigned (member sits outside any training group until manually moved).
+4. **Interaction with `Age-Based Automatic Reassignment`.** If the admin manually placed a member into a non-age-matching group, should the periodic reassignment leave them alone or move them? Recommend: keep today's semantics (the periodic reassignment applies), the choice is only initial. Note that this means a deliberate "older group" placement of a child may be undone at the next reassignment; if that is not acceptable the change needs a "manually placed" marker (a new concept). `Age-Based Automatic Reassignment` makes no distinction between manual and automatic placement: it moves (or removes) every member whose age does not fit their current group's range, so a deliberately mismatching placement is undone by the next periodic check.
 
-   Recommend: Option A, to preserve today's behavior as default.
+5. **Permissions.** Training group manual management requires `GROUPS:TRAINING`; registration requires `MEMBERS:CREATE`. Does choosing a group at registration need `GROUPS:TRAINING` as well, or is `MEMBERS:CREATE` enough ("completing the same task")? Recommend: `MEMBERS:CREATE` only.
 
-4. **Family group creation during registration: who is the parent?**
-   - Option A: parent must be an existing member (picked from a member-picker).
-   - Option B: can be either an existing member OR "register this new member as the parent" (requires a role flag on the registering member — child vs. adult).
-   - Option C: the admin is the parent (rarely correct).
+6. **Members brought in from ORIS.** `Import ORIS members` (`import-oris-members`) creates members through the registration code path without an admin form. Should the training group choice apply there? Recommend: no, they keep the automatic assignment.
 
-   Recommend: Option A, with a follow-up proposal to cover "register parent + create family + register children" as a single super-flow if needed.
-
-5. **Family group: existing vs. new.** If the admin picks an existing family group, the new member is added as a CHILD (not parent). This follows the rule that children are added to existing groups, parents are designated at creation. Confirm.
-
-6. **ORIS-sourced registrations (#5).** This proposal refers to `Member Registration Flow`, which currently is admin-driven. When a hostujici / prestupujici member is imported from ORIS (#5, TODO), should group selection apply there too? Recommend: yes, same fields on the ORIS-import registration command. Confirm.
-
-7. **Interaction with Training Group automatic reassignment.** `Age-Based Automatic Reassignment` periodically moves members across training groups as they age. If the admin manually placed a member into a non-age-matching group, should the periodic reassignment leave them alone or move them?
-   - Option A: never automatically move a manually-placed member (requires a new "manually placed" flag).
-   - Option B: always run the periodic reassignment — the manual choice is only initial.
-
-   Recommend: Option B, to keep today's semantics. The admin can re-intervene if needed.
-
-8. **Permissions.** Who can specify group assignments at registration? Is it gated by `MEMBERS:CREATE` alone, or does it additionally require `GROUPS:TRAINING` (for training-group override) and `MEMBERS:MANAGE` (for family-group creation)? Today:
-   - training-group manual management requires `GROUPS:TRAINING`.
-   - family-group creation requires `MEMBERS:MANAGE`.
-
-   Recommend: at registration, allow any admin with `MEMBERS:CREATE` to specify both, with the rationale that they are completing the same task. Confirm.
-
-9. **UI ordering.** Should the group section appear before or after the personal-info section in the registration form? Recommend: after, so the required fields come first.
-
-10. **Out of scope confirmation.** This proposal does NOT cover:
-    - free-group assignment at registration (free groups are invitation-based by spec),
-    - bulk member registration,
-    - a new family-group creation flow where *two* new members are created as parent + child in a single transaction.
-
-    Confirm.
+7. **Out of scope confirmation.** Not covered: free-group assignment (invitation-based by spec), bulk registration, any guardian-group changes.
