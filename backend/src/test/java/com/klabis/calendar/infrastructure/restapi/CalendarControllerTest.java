@@ -5,6 +5,7 @@ import com.klabis.calendar.CalendarItemTestDataBuilder;
 import com.klabis.calendar.application.CalendarManagementPort;
 import com.klabis.calendar.application.CalendarNotFoundException;
 import com.klabis.calendar.domain.CalendarItem;
+import com.klabis.calendar.domain.CalendarItemEndBeforeStartException;
 import com.klabis.calendar.domain.CalendarItemReadOnlyException;
 import com.klabis.common.WithKlabisMockUser;
 import com.klabis.calendar.CalendarWebMvcTest;
@@ -387,7 +388,8 @@ class CalendarControllerTest {
                             get("/api/calendar-items/{id}", calendarItemId)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andExpect(status().isNotFound());
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.type").value("/errors/calendar-item-not-found"));
         }
     }
 
@@ -421,6 +423,30 @@ class CalendarControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(header().exists("Location"))
                     .andExpect(header().string("Location", org.hamcrest.Matchers.containsString("/api/calendar-items/" + createdItem.getId().value())));
+        }
+
+        @Test
+        @DisplayName("should return 400 bound to the end date field when it precedes the start date")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.CALENDAR_MANAGE})
+        void shouldReturn400BoundToEndDateWhenEndBeforeStart() throws Exception {
+            when(calendarManagementService.createCalendarItem(any(CalendarItem.CreateCalendarItem.class)))
+                    .thenThrow(new CalendarItemEndBeforeStartException());
+
+            mockMvc.perform(
+                            post("/api/calendar-items")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {
+                                              "name": "Training Session",
+                                              "startDate": "2026-03-15",
+                                              "endDate": "2026-03-10"
+                                            }
+                                            """)
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/calendar-item-end-before-start"))
+                    .andExpect(jsonPath("$.field").value("endDate"));
         }
 
         @Test
@@ -635,7 +661,8 @@ class CalendarControllerTest {
                                             }
                                             """)
                     )
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/calendar-item-read-only"));
         }
 
         @Test

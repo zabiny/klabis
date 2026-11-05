@@ -72,3 +72,68 @@ components:
         - /errors/membership-fee-tier-not-found  # 404, no parameters
         - /errors/membership-fee-group-not-found # 404, no parameters
         - /errors/fee-selection-campaign-not-found  # 404, parameter year (integer) only when the campaign was looked up by year
+        # members
+        - /errors/member-not-found                      # 404, no parameters
+        - /errors/legal-guardian-not-found              # 404, no parameters
+        - /errors/email-required                        # 400, field email, no parameters
+        - /errors/phone-required                        # 400, field phone, no parameters
+        - /errors/address-required                      # 400, field address, no parameters
+        - /errors/birth-number-required                 # 400, field birthNumber, no parameters
+        - /errors/guardian-required                     # 400, no field, no parameters (guardians are set through their own resource)
+        - /errors/birth-number-not-allowed              # 400, field birthNumber, no parameters
+        - /errors/invalid-birth-number                  # 400, field birthNumber, no parameters
+        - /errors/invalid-bank-account-number           # 400, field bankAccountNumber, no parameters
+        - /errors/invalid-email-address                 # 400, field email, no parameters
+        - /errors/invalid-phone-number                  # 400, field phone, no parameters
+        - /errors/date-of-birth-in-future               # 400, field dateOfBirth, no parameters
+        - /errors/medical-course-validity-not-after-completion  # 400, field medicalCourse, no parameters
+        - /errors/member-already-suspended              # 400, no parameters
+        - /errors/member-already-active                 # 400, no parameters
+        - /errors/suspension-blocked                    # 409, parameters groups (object with affectedGroups[groupId, groupName, groupType]) and debt (object with balance{amount, currency} and accountLink); each present only when it blocks
+        - /errors/adult-member-cannot-have-guardians    # 400, field legalGuardians, no parameters
+        - /errors/minor-cannot-take-over-guardian       # 400, field legalGuardianUserId, no parameters
+        - /errors/registration-number-already-in-use    # 400, parameter registrationNumber (string)
+        - /errors/account-activation-not-available      # 400, no parameters
+        - /errors/legal-guardian-email-already-in-use   # 400, parameter email (string)
+        - /errors/guardian-not-found                    # 400, no parameters (the chosen user cannot be a legal guardian)
+        - /errors/legal-guardian-group-without-guardian # 400, no parameters
+        - /errors/only-minors-allowed                   # 400, no parameters
+        # events
+        - /errors/event-not-found                       # 404, no parameters
+        - /errors/oris-event-not-found                  # 404, parameter orisId (integer)
+        - /errors/discipline-not-found                  # 404, no parameters
+        - /errors/oris-discipline-not-found             # 404, parameter orisId (string)
+        - /errors/event-type-not-found                  # 404, no parameters
+        - /errors/category-preset-not-found             # 404, no parameters
+        - /errors/registration-not-found                # 404, no parameters
+        - /errors/coordinator-not-found                 # 404, no parameters
+        - /errors/duplicate-registration                # 409, parameter eventName (string), empty detail
+        - /errors/discipline-not-editable               # 409, parameter disciplineName (string)
+        - /errors/discipline-not-archived               # 409, parameter disciplineName (string)
+        - /errors/oris-discipline-already-mapped        # 409, parameter eventTypeName (string, left out when unknown)
+        - /errors/event-type-in-use                     # 409, parameter eventNames (array of strings, at most 5)
+        - /errors/event-type-name-already-exists        # 409, parameter name (string), field name
+        - /errors/event-sync-needs-resolution           # 409, parameter orisId (integer)
+        - /errors/member-registration-blocked           # 400, no parameters
+        - /errors/duplicate-category-name               # 400, parameter categoryName (string)
+        - /errors/duplicate-category-oris-id            # 400, no parameters
+        - /errors/registration-deadline-after-event-date  # 400, field deadlines, no parameters
+        - /errors/finished-event-cannot-be-updated      # 400, no parameters
+        - /errors/cancelled-event-cannot-be-updated     # 400, no parameters
+        - /errors/category-required                     # 400, field categoryId, no parameters
+        - /errors/category-not-available                # 400, field categoryId, no parameters
+        - /errors/event-not-active-for-registration     # 400, no parameters
+        - /errors/registration-deadline-passed          # 400, no parameters
+        - /errors/registration-closed-after-event-date  # 400, no parameters
+        - /errors/si-card-rental-not-allowed            # 400, field wantsToRentSi, no parameters
+        - /errors/si-card-number-required               # 400, field siCardNumber, no parameters
+        - /errors/invalid-event-status-transition       # 400, parameters from, to (event status codes DRAFT | ACTIVE | FINISHED | CANCELLED)
+        - /errors/unknown-event-category                # 400, no parameters
+        - /errors/invalid-oris-registration-deadlines   # 400, parameter orisId (integer)
+        - /errors/accommodation-list-access-denied      # 403, no parameters
+        - /errors/shared-accommodation-not-offered      # 403, no parameters
+        # calendar
+        - /errors/calendar-item-not-found               # 404, no parameters
+        - /errors/calendar-item-read-only               # 400, no parameters
+        - /errors/calendar-item-end-before-start        # 400, field endDate, no parameters
+        - /errors/date-range-too-long                   # 400, parameter maxDays (integer)

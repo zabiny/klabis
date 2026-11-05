@@ -36,8 +36,11 @@ public record MedicalCourse(LocalDate completionDate, Optional<LocalDate> validi
         }
 
         // Validate validity date if provided
-        validityDate.ifPresent(validity -> Assert.state(validity.isAfter(completionDate),
-                "Medical course validity date"));
+        validityDate.ifPresent(validity -> {
+            if (!validity.isAfter(completionDate)) {
+                throw new MedicalCourseValidityException();
+            }
+        });
     }
 
     /**

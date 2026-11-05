@@ -89,7 +89,7 @@ class EventStatusTest {
 
             // When & Then
             assertThatThrownBy(() -> currentStatus.validateTransition(newStatus))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InvalidEventStatusTransitionException.class)
                     .hasMessageContaining("Cannot transition from FINISHED to ACTIVE");
         }
 
@@ -102,7 +102,7 @@ class EventStatusTest {
 
             // When & Then
             assertThatThrownBy(() -> currentStatus.validateTransition(newStatus))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InvalidEventStatusTransitionException.class)
                     .hasMessageContaining("Cannot transition from FINISHED to DRAFT");
         }
 
@@ -115,7 +115,7 @@ class EventStatusTest {
 
             // When & Then
             assertThatThrownBy(() -> currentStatus.validateTransition(newStatus))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InvalidEventStatusTransitionException.class)
                     .hasMessageContaining("Cannot transition from CANCELLED to ACTIVE");
         }
 
@@ -128,7 +128,7 @@ class EventStatusTest {
 
             // When & Then
             assertThatThrownBy(() -> currentStatus.validateTransition(newStatus))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InvalidEventStatusTransitionException.class)
                     .hasMessageContaining("Cannot transition from CANCELLED to DRAFT");
         }
 
@@ -141,7 +141,7 @@ class EventStatusTest {
 
             // When & Then
             assertThatThrownBy(() -> currentStatus.validateTransition(newStatus))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InvalidEventStatusTransitionException.class)
                     .hasMessageContaining("Cannot transition from ACTIVE to DRAFT");
         }
 
@@ -154,7 +154,7 @@ class EventStatusTest {
 
             // When & Then
             assertThatThrownBy(() -> currentStatus.validateTransition(newStatus))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InvalidEventStatusTransitionException.class)
                     .hasMessageContaining("Cannot transition from CANCELLED to FINISHED");
         }
 
@@ -167,7 +167,7 @@ class EventStatusTest {
 
             // When & Then
             assertThatThrownBy(() -> currentStatus.validateTransition(newStatus))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InvalidEventStatusTransitionException.class)
                     .hasMessageContaining("Cannot transition from FINISHED to CANCELLED");
         }
 
@@ -180,7 +180,7 @@ class EventStatusTest {
 
             // When & Then
             assertThatThrownBy(() -> currentStatus.validateTransition(newStatus))
-                    .isInstanceOf(IllegalStateException.class)
+                    .isInstanceOf(InvalidEventStatusTransitionException.class)
                     .hasMessageContaining("Cannot transition from DRAFT to FINISHED");
         }
     }

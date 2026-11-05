@@ -1,12 +1,13 @@
 package com.klabis.members.application;
 
 import com.klabis.common.exceptions.ResourceNotFoundException;
+import com.klabis.common.exceptions.UserFacingError;
 import com.klabis.members.MemberId;
 
 /**
  * Exception thrown when a member cannot be found by their ID.
  */
-public class MemberNotFoundException extends ResourceNotFoundException {
+public class MemberNotFoundException extends ResourceNotFoundException implements UserFacingError {
 
     private final MemberId memberId;
 

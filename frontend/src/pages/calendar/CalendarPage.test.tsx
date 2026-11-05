@@ -8,6 +8,7 @@ import {vi} from 'vitest';
 import userEvent from '@testing-library/user-event';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import type {HalResponse} from '../../api';
+import {ApiError} from '../../api/apiError';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -309,8 +310,8 @@ describe('CalendarPage Component', () => {
             expect(screen.getByText('Načítání...')).toBeInTheDocument();
         });
 
-        it('should display error alert when error occurs', () => {
-            const error = new Error('Failed to load calendar');
+        it('should display Czech text of the error in the alert', () => {
+            const error = new ApiError(404, {type: '/errors/calendar-item-not-found', detail: 'Calendar item 42 not found'});
 
             mockUseHalPageData.mockReturnValue({
                 ...createMockContext(null),
@@ -321,7 +322,8 @@ describe('CalendarPage Component', () => {
             renderWithRouter(<CalendarPage/>);
 
             expect(screen.getByTestId('alert-error')).toBeInTheDocument();
-            expect(screen.getByText('Failed to load calendar')).toBeInTheDocument();
+            expect(screen.getByText('Položka kalendáře nebyla nalezena.')).toBeInTheDocument();
+            expect(screen.queryByText(/Calendar item/)).not.toBeInTheDocument();
         });
     });
 

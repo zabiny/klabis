@@ -95,7 +95,9 @@ public abstract class CalendarItem extends KlabisAggregateRoot<CalendarItem, Cal
     }
 
     static void validateDateRange(LocalDate startDate, LocalDate endDate) {
-        Assert.isTrue(!endDate.isBefore(startDate), "End date must be on or after start date");
+        if (endDate.isBefore(startDate)) {
+            throw new CalendarItemEndBeforeStartException();
+        }
     }
 
     // ========== Abstract Domain Method ==========

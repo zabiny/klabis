@@ -40,17 +40,17 @@ Every new error type follows the same steps:
 
 ## 5. Members module
 
-- [ ] 5.1 Migrate the members exceptions (birth number, address, identity card, suspension, legal guardians) to typed errors with names instead of IDs and with `field` bindings in `MembersExceptionHandler`. Rewrite the hand-written `message=` texts in Czech. Promote user-reachable checks. Add the enum values and Czech templates. Verify with handler/controller tests and `labels` tests.
-- [ ] 5.2 Switch the members pages to `describeError` and update the affected E2E texts. Verify with the frontend tests and the members E2E features.
+- [x] 5.1 Migrate the members exceptions (birth number, address, identity card, suspension, legal guardians) to typed errors with names instead of IDs and with `field` bindings in `MembersExceptionHandler`. Rewrite the hand-written `message=` texts in Czech. Promote user-reachable checks. Add the enum values and Czech templates. Verify with handler/controller tests and `labels` tests.
+- [x] 5.2 Switch the members pages to `describeError` and update the affected E2E texts. Verify with the frontend tests and the members E2E features.
 
 ## 6. Events module (events, event types, disciplines, registrations)
 
-- [ ] 6.1 Migrate the event, event type, discipline and registration exceptions (`EventsExceptionHandler` and `MvcExceptionHandler` for those that extend the bases) to typed errors with event, category and discipline names and with `field` bindings. Add the enum values and Czech templates. Verify with handler/controller tests and `labels` tests.
-- [ ] 6.2 Switch the events pages and `EventRegistrationDialog` to `describeError` and update the E2E texts. Verify with the frontend tests and the events E2E features.
+- [x] 6.1 Migrate the event, event type, discipline and registration exceptions (`EventsExceptionHandler` and `MvcExceptionHandler` for those that extend the bases) to typed errors with event, category and discipline names and with `field` bindings. Add the enum values and Czech templates. Verify with handler/controller tests and `labels` tests.
+- [x] 6.2 Switch the events pages and `EventRegistrationDialog` to `describeError` and update the E2E texts. Verify with the frontend tests and the events E2E features.
 
 ## 7. Calendar module
 
-- [ ] 7.1 Rewrite the English `message=` texts on `CalendarItem` in Czech, migrate the calendar exceptions to typed errors with Czech templates, switch `CalendarPage` to `describeError`, and update the E2E texts. Verify with calendar controller tests, `labels` tests and the calendar E2E features.
+- [x] 7.1 Rewrite the English `message=` texts on `CalendarItem` in Czech, migrate the calendar exceptions to typed errors with Czech templates, switch `CalendarPage` to `describeError`, and update the E2E texts. Verify with calendar controller tests, `labels` tests and the calendar E2E features.
 
 ## 8. Finance module
 

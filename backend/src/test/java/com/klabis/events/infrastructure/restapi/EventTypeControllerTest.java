@@ -259,14 +259,16 @@ class EventTypeControllerTest {
         @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn409WhenOrisDisciplineAlreadyMapped() throws Exception {
             when(eventTypeManagementService.createEventType(any()))
-                    .thenThrow(new OrisDisciplineAlreadyMappedException());
+                    .thenThrow(new OrisDisciplineAlreadyMappedException("Závod"));
 
             mockMvc.perform(post("/api/event-types")
                             .contentType("application/json")
                             .content("""
                                     {"name": "Trénink"}
                                     """))
-                    .andExpect(status().isConflict());
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/oris-discipline-already-mapped"))
+                    .andExpect(jsonPath("$.eventTypeName").value("Závod"));
         }
 
         @Test
@@ -407,6 +409,8 @@ class EventTypeControllerTest {
 
             mockMvc.perform(delete("/api/event-types/{id}", id))
                     .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/event-type-in-use"))
+                    .andExpect(jsonPath("$.eventNames[0]").value("Krajský přebor"))
                     .andExpect(jsonPath("$.detail", containsString("Krajský přebor")));
         }
 

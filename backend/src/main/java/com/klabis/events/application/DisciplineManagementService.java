@@ -65,7 +65,7 @@ class DisciplineManagementService implements DisciplineManagementPort {
                 .orElseThrow(() -> new DisciplineNotFoundException(id));
 
         if (pairingLookup.pairingOf(targetFor(id)) != SyncPairing.NONE) {
-            throw new DisciplineNotEditableException(id);
+            throw new DisciplineNotEditableException(discipline.getName());
         }
 
         discipline.update(code, name);
@@ -91,7 +91,7 @@ class DisciplineManagementService implements DisciplineManagementPort {
                 .orElseThrow(() -> new DisciplineNotFoundException(id));
 
         if (!discipline.isArchived()) {
-            throw new DisciplineNotArchivedException(id);
+            throw new DisciplineNotArchivedException(discipline.getName());
         }
 
         discipline.restore();

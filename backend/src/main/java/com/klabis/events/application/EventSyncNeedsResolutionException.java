@@ -1,16 +1,26 @@
 package com.klabis.events.application;
 
 import com.klabis.common.exceptions.ConflictException;
+import com.klabis.common.exceptions.UserFacingError;
 
 /**
  * {@code importEventFromOris} was called for an ORIS event whose synchronisation record is
  * {@code CONFLICT} or {@code FAILED} and needs a decision via its synchronisation resource
  * before an ordinary sync can run again.
  */
-public class EventSyncNeedsResolutionException extends ConflictException {
+public class EventSyncNeedsResolutionException extends ConflictException implements UserFacingError {
+
+    private final int orisId;
+
 
     public EventSyncNeedsResolutionException(int orisId) {
         super(message("ORIS event " + orisId));
+        this.orisId = orisId;
+    }
+
+    @Override
+    public java.util.Map<String, Object> messageParameters() {
+        return java.util.Map.of("orisId", orisId);
     }
 
     private static String message(String subject) {

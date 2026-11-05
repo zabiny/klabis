@@ -1,6 +1,5 @@
 package com.klabis.members.application;
 
-import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
 import com.klabis.members.BirthNumberAccessedEvent;
@@ -106,11 +105,7 @@ public class ManagementService implements ManagementPort {
 
         log.info("Processing membership suspension: memberId={}, reason={}", memberId, command.reason());
 
-        try {
-            member.suspend(command);
-        } catch (BusinessRuleViolationException e) {
-            throw new InvalidUpdateException(e.getMessage(), e);
-        }
+        member.suspend(command);
 
         Member saved = memberRepository.save(member);
 
@@ -129,11 +124,7 @@ public class ManagementService implements ManagementPort {
 
         log.info("Processing membership resume: memberId={}", memberId);
 
-        try {
-            member.resume(command);
-        } catch (BusinessRuleViolationException e) {
-            throw new InvalidUpdateException(e.getMessage(), e);
-        }
+        member.resume(command);
 
         Member saved = memberRepository.save(member);
 

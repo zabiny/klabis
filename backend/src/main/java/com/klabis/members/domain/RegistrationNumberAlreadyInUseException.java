@@ -1,6 +1,9 @@
 package com.klabis.members.domain;
 
 import com.klabis.common.exceptions.BusinessRuleViolationException;
+import com.klabis.common.exceptions.UserFacingError;
+
+import java.util.Map;
 
 /**
  * Thrown when a registration number adopted from elsewhere (e.g. imported from ORIS) is already
@@ -12,9 +15,17 @@ import com.klabis.common.exceptions.BusinessRuleViolationException;
  * This exception translates the resulting {@link org.springframework.dao.DataIntegrityViolationException}
  * into a domain-meaningful failure.
  */
-public class RegistrationNumberAlreadyInUseException extends BusinessRuleViolationException {
+public class RegistrationNumberAlreadyInUseException extends BusinessRuleViolationException implements UserFacingError {
+
+    private final String registrationNumber;
 
     public RegistrationNumberAlreadyInUseException(RegistrationNumber registrationNumber, Throwable cause) {
         super("Registration number '" + registrationNumber.getValue() + "' is already in use", cause);
+        this.registrationNumber = registrationNumber.getValue();
+    }
+
+    @Override
+    public Map<String, Object> messageParameters() {
+        return Map.of("registrationNumber", registrationNumber);
     }
 }

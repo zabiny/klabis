@@ -1,6 +1,5 @@
 package com.klabis.events.infrastructure.restapi;
 
-import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.EventCategory;
 import com.klabis.events.EventCategoryId;
 import com.klabis.events.domain.Event;
@@ -96,8 +95,7 @@ class UpdateEventRequestMapper {
                     EventCategoryId id = new EventCategoryId(request.id());
                     EventCategory existing = existingById.get(id);
                     if (existing == null) {
-                        throw new BusinessRuleViolationException(
-                                "Category id '" + id + "' does not belong to this event") {};
+                        throw new UnknownEventCategoryException(id);
                     }
                     return new EventCategory(existing.id(), existing.orisId(), request.name(),
                             EventRequestConversions.toMoney(request.fee()));

@@ -7,7 +7,6 @@ import com.dpolach.api.orisclient.dto.EventClass;
 import com.dpolach.api.orisclient.dto.EventDetails;
 import com.dpolach.api.orisclient.dto.Level;
 import com.klabis.common.OrisIntegrationComponent;
-import com.klabis.common.exceptions.BusinessRuleViolationException;
 import com.klabis.events.DisciplineId;
 import com.klabis.events.EventTypeId;
 import com.klabis.events.WebsiteUrl;
@@ -128,8 +127,7 @@ class OrisEventDetailsReader {
         } catch (IllegalArgumentException e) {
             log.error("ORIS event {} contains out-of-order or invalid registration deadlines (d1={}, d2={}, d3={}): {}",
                     orisId, d1, d2, d3, e.getMessage());
-            throw new BusinessRuleViolationException(
-                    "ORIS event %d has invalid registration deadlines: %s".formatted(orisId, e.getMessage())) {};
+            throw new InvalidOrisRegistrationDeadlinesException(orisId, e.getMessage());
         }
     }
 

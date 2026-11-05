@@ -131,7 +131,7 @@ class EventRegistrationControllerTest {
             UUID eventId = UUID.randomUUID();
             Event.RegisterCommand command = EventRegisterCommandBuilder.builder().siCardNumber("123456").build();
 
-            doThrow(new DuplicateRegistrationException(new MemberId(UUID.fromString(MEMBER_1_ID)), new EventId(eventId)))
+            doThrow(new DuplicateRegistrationException(new MemberId(UUID.fromString(MEMBER_1_ID)), new EventId(eventId), "Jarní závod"))
                     .when(registrationServiceMock)
                     .registerMember(eq(new EventId(eventId)), any(MemberId.class), any(Event.RegisterCommand.class));
 
@@ -142,7 +142,9 @@ class EventRegistrationControllerTest {
                                     .content(objectMapper.writeValueAsString(command))
                     )
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.title").value("Registration Conflict"));
+                    .andExpect(jsonPath("$.title").value("Registration Conflict"))
+                    .andExpect(jsonPath("$.type").value("/errors/duplicate-registration"))
+                    .andExpect(jsonPath("$.eventName").value("Jarní závod"));
         }
 
         @Test

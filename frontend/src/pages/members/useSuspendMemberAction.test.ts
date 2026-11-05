@@ -46,6 +46,43 @@ describe('useSuspendMemberAction', () => {
         closeActionModal = vi.fn();
     });
 
+    describe('suspension-blocked problem+json with only the present blocker', () => {
+        it('reads groups and debt from params of the typed error', () => {
+            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const error = new ApiError(409, {
+                type: '/errors/suspension-blocked',
+                params: {
+                    groups: {affectedGroups: [{groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'}]},
+                    debt: {balance: {amount: -350, currency: 'CZK'}, accountLink: '/api/members/abc/account'},
+                },
+            });
+
+            let returnValue: true | undefined;
+            act(() => {
+                returnValue = result.current.onSubmitError(error);
+            });
+
+            expect(returnValue).toBe(true);
+            expect(result.current.suspensionWarning).toHaveLength(1);
+            expect(result.current.negativeBalanceWarning?.balance.amount).toBe(-350);
+        });
+
+        it('handles a debt-only error where groups is absent', () => {
+            const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));
+            const error = new ApiError(409, {
+                type: '/errors/suspension-blocked',
+                params: {debt: {balance: {amount: -10, currency: 'CZK'}, accountLink: '/api/members/abc/account'}},
+            });
+
+            act(() => {
+                result.current.onSubmitError(error);
+            });
+
+            expect(result.current.suspensionWarning).toBeNull();
+            expect(result.current.negativeBalanceWarning).not.toBeNull();
+        });
+    });
+
     describe('affected-groups 409', () => {
         it('returns true (handled) and sets suspensionWarning', () => {
             const {result} = renderHook(() => useSuspendMemberAction({closeActionModal}));

@@ -485,12 +485,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         Set<String> seenOrisIds = new HashSet<>();
         for (EventCategory category : categories) {
             if (!seenNames.add(category.name())) {
-                throw new BusinessRuleViolationException(
-                        "Category name '" + category.name() + "' is used more than once") {};
+                throw new DuplicateCategoryNameException(category.name());
             }
             if (category.orisId() != null && !seenOrisIds.add(category.orisId())) {
-                throw new BusinessRuleViolationException(
-                        "Category orisId '" + category.orisId() + "' is used more than once") {};
+                throw new DuplicateCategoryOrisIdException();
             }
         }
     }
@@ -501,7 +499,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         }
         deadlines.last().ifPresent(last -> {
             if (last.isAfter(eventDate)) {
-                throw new BusinessRuleViolationException("Registration deadline must be on or before event date") {};
+                throw new RegistrationDeadlineAfterEventDateException();
             }
         });
     }
@@ -650,12 +648,10 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
      */
     public void update(UpdateEvent command) {
         if (status == EventStatus.FINISHED) {
-            throw new BusinessRuleViolationException("Cannot update event in FINISHED status") {
-            };
+            throw EventNotUpdatableException.finished();
         }
         if (status == EventStatus.CANCELLED) {
-            throw new BusinessRuleViolationException("Cannot update event in CANCELLED status") {
-            };
+            throw EventNotUpdatableException.cancelled();
         }
 
         validateName(command.name());
@@ -790,7 +786,7 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
         assertRegistrationsOpen();
 
         if (findRegistration(memberId).isPresent()) {
-            throw new DuplicateRegistrationException(memberId, this.id);
+            throw new DuplicateRegistrationException(memberId, this.id, this.name);
         }
 
         // Values the policy does not offer are not taken, so they are not even parsed.
@@ -874,12 +870,11 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
             return null;
         }
         if (categoryId == null) {
-            throw new BusinessRuleViolationException("Category is required for this event") {};
+            throw new CategoryRequiredException();
         }
         boolean isKnownCategory = categories.stream().anyMatch(c -> c.id().equals(categoryId));
         if (!isKnownCategory) {
-            throw new BusinessRuleViolationException(
-                    "Category '" + categoryId + "' is not available for this event") {};
+            throw new CategoryNotAvailableException();
         }
         return categoryId;
     }
@@ -938,21 +933,21 @@ public class Event extends KlabisAggregateRoot<Event, EventId> {
     }
 
     private void assertRegistrationsOpen() {
-        registrationsOpenViolation().ifPresent(message -> {
-            throw new BusinessRuleViolationException(message) {};
+        registrationsOpenViolation().ifPresent(violation -> {
+            throw violation;
         });
     }
 
-    private Optional<String> registrationsOpenViolation() {
+    private Optional<RegistrationNotOpenException> registrationsOpenViolation() {
         if (status != EventStatus.ACTIVE) {
-            return Optional.of("Registration is only allowed for ACTIVE events");
+            return Optional.of(RegistrationNotOpenException.eventNotActive());
         }
         LocalDate today = LocalDate.now();
         if (!registrationDeadlines.registrationsOpen(today)) {
-            return Optional.of("Registration deadline has passed");
+            return Optional.of(RegistrationNotOpenException.deadlinePassed());
         }
         if (!today.isBefore(eventDate)) {
-            return Optional.of("Cannot register/unregister on or after event date");
+            return Optional.of(RegistrationNotOpenException.eventStarted());
         }
         return Optional.empty();
     }
