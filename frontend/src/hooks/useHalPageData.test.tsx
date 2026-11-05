@@ -61,16 +61,6 @@ describe('useHalPageData', () => {
             });
         });
 
-        it('should not expose removed members', () => {
-            const {result} = renderHook(() => useHalPageData(), {wrapper: createWrapper()});
-
-            for (const removed of ['route', 'actions', 'isAdmin', 'queryState', 'getLinks', 'getTemplates',
-                'hasEmbedded', 'getEmbeddedItems', 'isCollection', 'hasLink', 'hasTemplate', 'hasForms',
-                'getPageMetadata']) {
-                expect(removed in result.current).toBe(false);
-            }
-        });
-
         it('should return exactly the narrowed set of properties', () => {
             const {result} = renderHook(() => useHalPageData(), {wrapper: createWrapper()});
 

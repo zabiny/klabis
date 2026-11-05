@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 
 import {HTTP_METHODS, sortKeysDeep} from './bundle.mjs';
-import {forEachHalResponse, halResponsePayloadNames, isEnvelopeShaped, schemaName} from './derive.mjs';
+import {forEachHalResponse, halResponsePayloadNames, isDerivedEntityModel, isEnvelopeShaped, resolveSchema, schemaName} from './derive.mjs';
 
 /**
  * Validation of Klabis-specific OpenAPI extensions.
@@ -341,7 +341,7 @@ function missingEnvelopeBaseErrors(document) {
 /**
  * @returns {Array<{path: string, message: string}>} empty when the document is valid
  */
-export function validateSpec(document, {authorities, entityItemPaths = new Set()}) {
+export function validateSpec(document, {authorities}) {
     const operationIds = collectOperationIds(document);
     const errors = duplicateOperationIdErrors(operationIds);
     errors.push(...envelopedPayloadErrors(document));
@@ -736,8 +736,8 @@ export function validateSpec(document, {authorities, entityItemPaths = new Set()
 
         // Row relations have two valid homes: a response whose rows sit in `_embedded` (array
         // payload or `x-hal-embedded`, not both — the row schema would be ambiguous), and an
-        // `x-hal-entity-items` array property. The deriver consumes that marker, so the property
-        // is recognised by the paths it reports instead.
+        // `x-hal-entity-items` array property. The deriver consumes that marker and retargets `items`
+        // at the EntityModel it builds, so a derived document is recognised by that exact shape.
         const itemRelKeys = ['x-hal-item-links', 'x-hal-item-templates'].filter((key) => Object.hasOwn(node, key));
         if (itemRelKeys.length > 0) {
             const reject = (message) => {
@@ -745,12 +745,11 @@ export function validateSpec(document, {authorities, entityItemPaths = new Set()
             };
             const isResponse = /\/responses\/[^/]+$/.test(path);
             const isEntityItemsArray = node.type === 'array'
-                && (node['x-hal-entity-items'] === true || entityItemPaths.has(path));
+                && (node['x-hal-entity-items'] === true
+                    || isDerivedEntityModel(resolveSchema(document, node.items)));
             if (isResponse) {
                 const jsonSchema = node.content?.['application/json']?.schema;
-                const refName = schemaName(jsonSchema);
-                const payload = refName ? document.components?.schemas?.[refName] : jsonSchema;
-                const hasArrayPayload = payload?.type === 'array';
+                const hasArrayPayload = resolveSchema(document, jsonSchema)?.type === 'array';
                 const hasEmbedded = isPlainObject(node['x-hal-embedded']);
                 if (!hasArrayPayload && !hasEmbedded) {
                     reject('is only valid on a response with an array payload or x-hal-embedded, '

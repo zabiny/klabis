@@ -1,12 +1,14 @@
 import React, {type PropsWithChildren} from 'react';
 import {type Path, useLocation, useNavigate} from 'react-router-dom';
 import type {HalEnvelope, HalResourceLinks, HalResponse, Link} from '../api';
+import type {NavigateToResource} from './halRouteContext';
 import {toRoutePath} from '../api/apiPath';
-import {isHalResponse} from "../components/HalNavigator2/halforms/utils.ts";
 import {useAuthorizedQuery} from "../hooks/useAuthorizedFetch.ts";
 import {toHref} from "../api/hateoas.ts";
 import {HalRouteContext, useHalRoute} from './halRouteContext';
 import {useIsAuthReady} from '../hooks/useIsAuthReady';
+
+const isLink = (resource: HalEnvelope | Link): resource is Link => 'href' in resource;
 
 interface HalRouteProviderProps {
     children: React.ReactNode;
@@ -85,16 +87,16 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
         queryState = 'idle';
     }
 
-    const navigateToResource = (resource: HalEnvelope | Link, options?: { state?: unknown }): void => {
+    const navigateToResource: NavigateToResource = (resource, options) => {
         let targetLink: Link;
-        if (isHalResponse(resource)) {
+        if (!isLink(resource)) {
             const selfLink = resource?._links?.self;
             if (!selfLink) {
                 throw new Error('Self link not found in resource data - cannot fetch table data')
             }
             targetLink = Array.isArray(selfLink) ? selfLink[0] : selfLink
         } else {
-            targetLink = resource as Link;
+            targetLink = resource;
         }
 
         const href = Array.isArray(targetLink) ? targetLink[0]?.href : targetLink?.href

@@ -21,8 +21,7 @@ export const CategoryPresetsPage = (): ReactElement => {
         actionDialog.open(item, templateName);
     };
 
-    const renderActionsCell = ({item}: TableCellRenderProps) => {
-        const preset = item as unknown as CategoryPresetListItem;
+    const renderActionsCell = ({item: preset}: TableCellRenderProps<CategoryPresetListItem>) => {
         const hasEditTemplate = !!preset._templates?.updateCategoryPreset;
         const hasDeleteTemplate = !!preset._templates?.deleteCategoryPreset;
 

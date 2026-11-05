@@ -10,14 +10,11 @@
  * relation is optional at runtime. The value is catching typos and offering autocomplete.
  */
 
-import {isEnvelopeShaped} from './derive.mjs';
+import {isEnvelopeShaped, resolveSchema, schemaName} from './derive.mjs';
 
 const isPlainObject = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'];
-
-/** `#/components/schemas/EntityModelMemberDetailsResponse` -> `EntityModelMemberDetailsResponse` */
-const refName = (ref) => (typeof ref === 'string' ? ref.split('/').pop() : undefined);
 
 /**
  * Content types that actually carry the HAL envelope (`_links`/`_embedded`/`page`) on the wire.
@@ -40,10 +37,10 @@ function responseRowSchema(response, content, schemas) {
         return response['x-hal-embedded'].items;
     }
     const jsonSchema = content['application/json']?.schema;
-    const itemName = jsonSchema?.type === 'array' ? refName(jsonSchema.items?.$ref) : undefined;
+    const itemName = jsonSchema?.type === 'array' ? schemaName(jsonSchema.items) : undefined;
     if (itemName === undefined) return undefined;
     // The deriver leaves an already-enveloped items payload as it is.
-    return isEnvelopeShaped(schemas?.[itemName]) ? itemName : `EntityModel${itemName}`;
+    return isEnvelopeShaped(resolveSchema({components: {schemas}}, jsonSchema.items)) ? itemName : `EntityModel${itemName}`;
 }
 
 /**
@@ -52,7 +49,7 @@ function responseRowSchema(response, content, schemas) {
  */
 function collectPropertyItems(document) {
     const bySchema = new Map();
-    for (const [schemaName, schema] of Object.entries(document?.components?.schemas ?? {})) {
+    for (const [owner, schema] of Object.entries(document?.components?.schemas ?? {})) {
         const members = [schema, ...(Array.isArray(schema?.allOf) ? schema.allOf : [])];
         const found = [];
         for (const member of members) {
@@ -60,7 +57,7 @@ function collectPropertyItems(document) {
             for (const [property, definition] of Object.entries(member.properties)) {
                 const links = relNames(definition?.['x-hal-item-links']);
                 const templates = relNames(definition?.['x-hal-item-templates']);
-                const schemaOfItems = refName(definition?.items?.$ref);
+                const schemaOfItems = schemaName(definition?.items);
                 if ((links.length === 0 && templates.length === 0) || schemaOfItems === undefined) continue;
                 found.push({
                     property,
@@ -75,13 +72,13 @@ function collectPropertyItems(document) {
                 });
             }
         }
-        if (found.length > 0) bySchema.set(schemaName, found);
+        if (found.length > 0) bySchema.set(owner, found);
     }
     return bySchema;
 }
 
 /** Property items reachable from a resource schema through `allOf` refs. */
-function propertyItemsOf(schemaName, document, bySchema) {
+function propertyItemsOf(rootName, document, bySchema) {
     const found = new Map();
     const visited = new Set();
     const visit = (name) => {
@@ -90,9 +87,9 @@ function propertyItemsOf(schemaName, document, bySchema) {
         for (const item of bySchema.get(name) ?? []) {
             if (!found.has(item.property)) found.set(item.property, item);
         }
-        for (const member of document.components?.schemas?.[name]?.allOf ?? []) visit(refName(member?.$ref));
+        for (const member of document.components?.schemas?.[name]?.allOf ?? []) visit(schemaName(member));
     };
-    visit(schemaName);
+    visit(rootName);
     return [...found.values()];
 }
 
@@ -117,21 +114,18 @@ export function collectHalResources(document) {
             for (const [status, response] of Object.entries(operation.responses)) {
                 if (!isPlainObject(response)) continue;
 
-                const linkRels = isPlainObject(response['x-hal-links'])
-                    ? Object.keys(response['x-hal-links']) : [];
-                const templateRels = isPlainObject(response['x-hal-templates'])
-                    ? Object.keys(response['x-hal-templates']) : [];
-
+                const linkRels = relNames(response['x-hal-links']);
+                const templateRels = relNames(response['x-hal-templates']);
                 const itemLinkRels = relNames(response['x-hal-item-links']);
                 const itemTemplateRels = relNames(response['x-hal-item-templates']);
 
                 const content = isPlainObject(response.content) ? response.content : {};
                 const halSchemas = HAL_CONTENT_TYPES
-                    .map((type) => refName(content[type]?.schema?.$ref))
+                    .map((type) => schemaName(content[type]?.schema))
                     .filter(Boolean);
                 // Fallback for a response with no HAL content type carrying a schema (shouldn't
                 // happen for anything declaring x-hal-links/x-hal-templates, but stay safe).
-                const anySchemas = Object.values(content).map((c) => refName(c?.schema?.$ref)).filter(Boolean);
+                const anySchemas = Object.values(content).map((c) => schemaName(c?.schema)).filter(Boolean);
 
                 const schema = halSchemas[0] ?? anySchemas[0];
                 const propertyItems = propertyItemsOf(schema, document, propertyItemsBySchema);
@@ -146,8 +140,8 @@ export function collectHalResources(document) {
                     method,
                     status,
                     schema,
-                    links: linkRels.sort(),
-                    templates: templateRels.sort(),
+                    links: linkRels,
+                    templates: templateRels,
                     descriptions: {
                         links: describe(response['x-hal-links']),
                         templates: describe(response['x-hal-templates']),
@@ -219,41 +213,23 @@ export function renderHalTypes(document) {
         const name = pascalCase(resource.operationId);
         const result = [];
 
-        const hasPageRels = resource.links.length > 0 || resource.templates.length > 0;
-        const emitsPageTypes = hasPageRels || resource.propertyItems.length > 0;
+        const pageRels = {links: resource.links, templates: resource.templates, descriptions: resource.descriptions};
+        const emitsPageTypes = resource.links.length > 0 || resource.templates.length > 0
+            || resource.propertyItems.length > 0;
 
         if (emitsPageTypes) {
-            const lines = [
+            result.push([
                 `// --- ${resource.method.toUpperCase()} ${resource.path} (${resource.status}) ---`,
                 '',
-                `export interface ${name}Hal {`,
-                renderRelBlock('_links', resource.links, resource.descriptions.links, '  '),
-                renderRelBlock('_templates', resource.templates, resource.descriptions.templates, '  '),
-                '}',
-                '',
-            ];
-
-            if (resource.schema) {
-                lines.push(...renderResourceType(name, resource));
-            }
-
-            if (hasPageRels) {
-                lines.push(
-                    `export const ${name}Rels = {`,
-                    `  links: [${resource.links.map(quote).join(', ')}] as const,`,
-                    `  templates: [${resource.templates.map(quote).join(', ')}] as const,`,
-                    '} as const;',
-                    '',
-                    `export type ${name}LinkRel = typeof ${name}Rels.links[number];`,
-                    `export type ${name}TemplateRel = typeof ${name}Rels.templates[number];`,
-                    '',
-                );
-            }
-            result.push(lines.join('\n'));
+                renderResourceBlock(name, resource.schema, pageRels, {
+                    propertyItems: resource.propertyItems,
+                    withRelAliases: true,
+                }),
+            ].join('\n'));
         }
 
         if (resource.itemLinks.length > 0 || resource.itemTemplates.length > 0) {
-            result.push(renderRowTypes(`${name}Item`, resource.itemSchema, {
+            result.push(renderResourceBlock(`${name}Item`, resource.itemSchema, {
                 links: resource.itemLinks,
                 templates: resource.itemTemplates,
                 descriptions: resource.itemDescriptions,
@@ -262,7 +238,7 @@ export function renderHalTypes(document) {
 
         if (emitsPageTypes) {
             for (const item of resource.propertyItems) {
-                result.push(renderRowTypes(`${name}${pascalCase(item.property)}Item`, item.schema, item));
+                result.push(renderResourceBlock(`${name}${pascalCase(item.property)}Item`, item.schema, item));
             }
         }
 
@@ -272,28 +248,11 @@ export function renderHalTypes(document) {
     return [...header, ...blocks].join('\n');
 }
 
-function renderResourceType(name, resource) {
-    if (resource.propertyItems.length === 0) {
-        return [
-            `export type ${name}Resource =`,
-            `  components['schemas'][${quote(resource.schema)}] & ${name}Hal;`,
-            '',
-        ];
-    }
-    const omitted = resource.propertyItems.map((item) => quote(item.property)).join(' | ');
-    const overrides = resource.propertyItems
-        .map((item) => `${item.property}${item.required ? '' : '?'}: ${name}${pascalCase(item.property)}ItemResource[]`)
-        .join('; ');
-    return [
-        `export type ${name}Resource =`,
-        `  Omit<components['schemas'][${quote(resource.schema)}], ${omitted}>`,
-        `  & {${overrides}}`,
-        `  & ${name}Hal;`,
-        '',
-    ];
-}
-
-function renderRowTypes(name, schema, {links, templates, descriptions}) {
+/**
+ * The `<name>Hal` interface, the `<name>Resource` alias and the `<name>Rels` constant for one
+ * resource, page or row. `propertyItems` swap array properties of the base schema for row types.
+ */
+function renderResourceBlock(name, schema, {links, templates, descriptions}, {propertyItems = [], withRelAliases = false} = {}) {
     const lines = [
         `export interface ${name}Hal {`,
         renderRelBlock('_links', links, descriptions.links, '  '),
@@ -301,19 +260,42 @@ function renderRowTypes(name, schema, {links, templates, descriptions}) {
         '}',
         '',
     ];
+
     if (schema) {
+        const base = `components['schemas'][${quote(schema)}]`;
+        if (propertyItems.length === 0) {
+            lines.push(`export type ${name}Resource =`, `  ${base} & ${name}Hal;`, '');
+        } else {
+            const omitted = propertyItems.map((item) => quote(item.property)).join(' | ');
+            const overrides = propertyItems
+                .map((item) => `${item.property}${item.required ? '' : '?'}: ${name}${pascalCase(item.property)}ItemResource[]`)
+                .join('; ');
+            lines.push(
+                `export type ${name}Resource =`,
+                `  Omit<${base}, ${omitted}>`,
+                `  & {${overrides}}`,
+                `  & ${name}Hal;`,
+                '',
+            );
+        }
+    }
+
+    if (links.length > 0 || templates.length > 0) {
         lines.push(
-            `export type ${name}Resource =`,
-            `  components['schemas'][${quote(schema)}] & ${name}Hal;`,
+            `export const ${name}Rels = {`,
+            `  links: [${links.map(quote).join(', ')}] as const,`,
+            `  templates: [${templates.map(quote).join(', ')}] as const,`,
+            '} as const;',
             '',
         );
+        if (withRelAliases) {
+            lines.push(
+                `export type ${name}LinkRel = typeof ${name}Rels.links[number];`,
+                `export type ${name}TemplateRel = typeof ${name}Rels.templates[number];`,
+                '',
+            );
+        }
     }
-    lines.push(
-        `export const ${name}Rels = {`,
-        `  links: [${links.map(quote).join(', ')}] as const,`,
-        `  templates: [${templates.map(quote).join(', ')}] as const,`,
-        '} as const;',
-        '',
-    );
+
     return lines.join('\n');
 }
