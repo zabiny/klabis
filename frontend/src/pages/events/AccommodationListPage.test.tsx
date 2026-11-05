@@ -273,7 +273,8 @@ describe('AccommodationListPage', () => {
             anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
         });
 
-        afterEach(() => {
+        afterEach(async () => {
+            await new Promise(resolve => setTimeout(resolve, 0));
             anchorClick.mockRestore();
             vi.unstubAllGlobals();
         });
@@ -334,6 +335,7 @@ describe('AccommodationListPage', () => {
                     true
                 );
             });
+            await waitFor(() => expect(anchorClick).toHaveBeenCalled());
         });
 
         it('derives filename from Content-Disposition header', async () => {

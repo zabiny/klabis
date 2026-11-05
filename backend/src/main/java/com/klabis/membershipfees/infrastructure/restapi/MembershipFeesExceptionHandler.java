@@ -57,7 +57,7 @@ class MembershipFeesExceptionHandler {
         Map<String, String> names = new LinkedHashMap<>();
         resolve(optionsPort::listEventTypeOptions, eventTypeId.value().toString())
                 .ifPresent(name -> names.put("eventTypeName", name));
-        resolve(optionsPort::listRankingOptions, rankingShortName)
+        resolveRankingLabel(rankingShortName)
                 .ifPresent(label -> names.put("rankingLabel", label));
         names.forEach(builder::property);
         return builder.build();
@@ -69,6 +69,19 @@ class MembershipFeesExceptionHandler {
                     .filter(option -> value.equals(option.value()))
                     .map(HalFormsInlineOption::prompt)
                     .findFirst();
+        } catch (RuntimeException e) {
+            LOG.warn("Name lookup for error message failed", e);
+            return Optional.empty();
+        }
+    }
+
+    private Optional<String> resolveRankingLabel(String rankingShortName) {
+        try {
+            return Optional.of(optionsPort.listRankingOptions().stream()
+                    .filter(option -> rankingShortName.equals(option.value()))
+                    .map(HalFormsInlineOption::prompt)
+                    .findFirst()
+                    .orElse(rankingShortName));
         } catch (RuntimeException e) {
             LOG.warn("Name lookup for error message failed", e);
             return Optional.empty();

@@ -40,5 +40,5 @@ Feature: Membership fee level catalog
       Given a catalog fee level "Duplicate" exists
       And catalog level "Duplicate" includes a 50 % rule for races of ranking "Rank"
       When Jan adds a 20 % rule for races of ranking "Rank" to catalog level "Duplicate"
-      Then the rule is refused with the message "Pravidlo pro typ akce „Závod“ a žebříček „Rank“ již v této úrovni existuje."
+      Then the rule for races of ranking "Rank" is refused as a duplicate of an existing one
       And catalog level "Duplicate" has no 20 % rule for races of ranking "Rank"

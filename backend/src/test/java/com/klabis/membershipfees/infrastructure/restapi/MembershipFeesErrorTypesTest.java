@@ -130,7 +130,7 @@ class MembershipFeesErrorTypesTest {
         @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
         void leavesOutUnresolvedParameters() throws Exception {
             when(optionsPort.listEventTypeOptions()).thenThrow(new IllegalStateException("events unavailable"));
-            when(optionsPort.listRankingOptions()).thenReturn(List.of());
+            when(optionsPort.listRankingOptions()).thenThrow(new IllegalStateException("oris unavailable"));
             doThrow(new DuplicatePaymentRuleException(EventTypeReference.of(EVENT_TYPE_UUID), "A"))
                     .when(tierPort).addRule(any(), any());
 
@@ -141,6 +141,18 @@ class MembershipFeesErrorTypesTest {
                     .andExpect(jsonPath("$.rankingLabel").doesNotExist());
 
             assertThat(extensionProperties(result)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("names a ranking that is not among the known options by its short name, which the user entered")
+        @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void unknownRankingFallsBackToShortName() throws Exception {
+            when(optionsPort.listRankingOptions()).thenReturn(List.of());
+            doThrow(new DuplicatePaymentRuleException(EventTypeReference.of(EVENT_TYPE_UUID), "A"))
+                    .when(tierPort).addRule(any(), any());
+
+            addRule(ADD_PERCENT_RULE)
+                    .andExpect(jsonPath("$.rankingLabel").value("A"));
         }
 
         @Test
@@ -186,7 +198,7 @@ class MembershipFeesErrorTypesTest {
         @WithKlabisMockUser(memberId = ADMIN_ID, authorities = {Authority.MEMBERS_MANAGE})
         void leavesOutUnresolved() throws Exception {
             when(optionsPort.listEventTypeOptions()).thenReturn(List.of());
-            when(optionsPort.listRankingOptions()).thenReturn(List.of());
+            when(optionsPort.listRankingOptions()).thenThrow(new IllegalStateException("oris unavailable"));
             doThrow(new PaymentRuleNotFoundException(EventTypeReference.of(EVENT_TYPE_UUID), "A"))
                     .when(tierPort).removeRule(any(), any());
 

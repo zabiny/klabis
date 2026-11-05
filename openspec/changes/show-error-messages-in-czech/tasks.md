@@ -21,12 +21,12 @@ Every new error type follows the same steps:
 - [x] 1.7 Frontend: replace `FetchError` with `ApiError` parsed in `buildFetchError` (design D9), and declare it as the error type of `useAuthorizedQuery` and `useAuthorizedMutation`. Switch the existing consumers mechanically, with no behaviour change: `ErrorPage` and `LegalGuardianGroupDetailPage` → `status`; `parseSuspensionBlockedWarning409` → `params`; `usePermissionsEditor` → `status`; `ChangePasswordDialog` → `detail`. Verify with `authorizedFetch` unit tests (problem+json with each documented extension, an unknown extension landing in `params`, a body that is not JSON, a content type that is not problem+json), and check that the existing consumer tests pass.
 - [x] 1.8 Frontend: add `labels.errorTypes: Record<ErrorType, template>` with Czech texts for the generic types and the two deadline types. Add the `describeError` helper over `ApiError` (known type → template with `params`, otherwise status-based generic text, otherwise `unexpectedError`). Verify with unit tests, and verify that `npm run build` fails when a type has no text.
 - [x] 1.9 Frontend: remove `toFormValidationError`, `FormValidationError` and `isFormValidationError`, together with the `'Form validation errors'` literal. `HalFormDisplay` passes the `ApiError` to `HalFormsForm`, which applies `fieldErrors` and `field` with Formik `setErrors`/touched after a failed submit. `ErrorDisplay` shows form-level texts and unmatched field errors (labelled by template `prompt`, never by raw key). `EventRegistrationDialog` reads `error.fieldErrors`. Verify with `HalFormsForm`, `ErrorDisplay` and `EventRegistrationDialog` tests, including a form that is already mounted.
-- [ ] 1.10 Update the E2E scenario "Voting deadline must be in the future" in `frontend/e2e/features/membership-fee-campaigns.feature` to expect the Czech message at the voting deadline field. Verify that it passes locally against `./runLocalEnvironment.sh`. (Scenario edited; left unticked because E2E was not run - needs a running instance.)
+- [x] 1.10 Update the E2E scenario "Voting deadline must be in the future" in `frontend/e2e/features/membership-fee-campaigns.feature` to expect the Czech message at the voting deadline field. Verify that it passes locally against `./runLocalEnvironment.sh`.
 
 ## 2. Duplicate payment rule names the event type and ranking
 
 - [x] 2.1 Make `DuplicatePaymentRuleException` a `UserFacingError`. Resolve the `eventTypeName` and `rankingLabel` parameters through `MembershipFeeTierOptionsPort` (membership fees has no module handler, so the name resolution needs a place: either the controller that catches the exception, or a resolver that `MvcExceptionHandler` calls for exceptions carrying an unresolved reference — decide in this task), and leave out a parameter that cannot be resolved, never replacing it with the ID. Add the enum value and the Czech template, with a wording for a missing name. Verify with controller tests (names present, no UUID in any parameter) and a `labels` test of both wordings.
-- [ ] 2.2 Update the duplicate-rule E2E scenario to expect the Czech message with the event type name. Verify that it passes locally.
+- [x] 2.2 Update the duplicate-rule E2E scenario to expect the Czech message with the event type name. Verify that it passes locally.
 
 ## 3. Bean validation in Czech and the remaining membership-fees errors
 
@@ -36,7 +36,7 @@ Every new error type follows the same steps:
 
 ## 4. Phase 1 verification
 
-- [ ] 4.1 Run the backend membership-fees and common tests, the frontend unit tests, `npm run build`, and the membership-fees E2E feature. Verify that all pass, then request a code review.
+- [x] 4.1 Run the backend membership-fees and common tests, the frontend unit tests, `npm run build`, and the membership-fees E2E feature. Verify that all pass, then request a code review.
 
 ## 5. Members module
 
@@ -73,7 +73,7 @@ Every new error type follows the same steps:
 
 - [x] 12.1 Extend `ErrorTypeCatalogueTest` to require that every subclass of the five common exception bases implements `UserFacingError`. Verify that `grep` finds no remaining `{error.message}` or `{(error as Error).message}` alert renders in `frontend/src/pages` and `frontend/src/components`, and no `responseBody` or `JSON.parse` of an error body outside `frontend/src/api/authorizedFetch.ts`.
 - [x] 12.2 Add ADR-012 to `docs/design-decisions.md` (ADR-011 is reserved by `inline-single-impl-ports`): errors are identified by RFC 9457 `type` URIs `/errors/{name}` with named parameters; the frontend owns the Czech wording in `labels.ts`; the spec `ErrorType` enum is the shared list, enforced by `ErrorTypeCatalogueTest` and the `Record<ErrorType, …>` type; the frontend parses ProblemDetail once, into `ApiError`; and bean validation is the exception, kept in Czech by the fixed locale. Verify that the ADR follows the existing `## ADR-NNN` format.
-- [ ] 12.3 Run the full backend test suite (final verification run), `npm run build`, the frontend unit tests and the full E2E suite. Verify that all pass, apart from failures already known on `main`.
+- [x] 12.3 Run the full backend test suite (final verification run), `npm run build`, the frontend unit tests and the full E2E suite. Verify that all pass, apart from failures already known on `main`.
 
 ## Workflow follow-up
 

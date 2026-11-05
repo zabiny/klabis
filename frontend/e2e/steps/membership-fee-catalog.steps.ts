@@ -86,7 +86,8 @@ Then('catalog level {name} has no {contribution} rule for races of ranking {name
         await expect(ruleRow(page, contribution, ranking)).toHaveCount(0);
     });
 
-Then('the rule is refused with the message {string}', async ({page}, message: string) => {
+Then('the rule for races of ranking {name} is refused as a duplicate of an existing one', async ({page}, ranking: string) => {
+    const message = `Pravidlo pro typ akce „Závod“ a žebříček „${ranking}“ již v této úrovni existuje.`;
     await expect(page.getByRole('alert').filter({hasText: message}).first()).toBeVisible();
 });
 
