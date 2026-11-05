@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -368,6 +369,67 @@ class PasswordSetupControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    @DisplayName("problem+json negotiation as sent by the SPA")
+    class ProblemJsonNegotiationTests {
+
+        private static final String SPA_ACCEPT = "application/json, application/problem+json";
+
+        @Test
+        @DisplayName("validate with an expired token answers problem+json")
+        void expiredTokenOnValidate() throws Exception {
+            String token = UUID.randomUUID().toString();
+            when(passwordSetupServiceMock.validateToken(token))
+                    .thenThrow(new TokenExpiredException("Token has expired"));
+
+            mockMvc.perform(get("/api/auth/password-setup/validate")
+                            .header("Accept", SPA_ACCEPT)
+                            .param("token", token))
+                    .andExpect(status().isGone())
+                    .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                    .andExpect(jsonPath("$.type").value("/errors/token-expired"));
+        }
+
+        @Test
+        @DisplayName("complete with a used token answers problem+json")
+        void usedTokenOnComplete() throws Exception {
+            SetPasswordRequest request = SetPasswordRequestBuilder.builder()
+                    .token(UUID.randomUUID().toString())
+                    .password("SecurePassword123!")
+                    .passwordConfirmation("SecurePassword123!")
+                    .build();
+            when(passwordSetupServiceMock.completePasswordSetup(any(), anyString()))
+                    .thenThrow(new TokenAlreadyUsedException("Token has already been used"));
+
+            mockMvc.perform(post("/api/auth/password-setup/complete")
+                            .header("Accept", SPA_ACCEPT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isGone())
+                    .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                    .andExpect(jsonPath("$.type").value("/errors/token-already-used"));
+        }
+
+        @Test
+        @DisplayName("complete with mismatching passwords answers problem+json bound to the confirmation field")
+        void mismatchOnComplete() throws Exception {
+            SetPasswordRequest request = SetPasswordRequestBuilder.builder()
+                    .token(UUID.randomUUID().toString())
+                    .password("Password123!")
+                    .passwordConfirmation("DifferentPassword123!")
+                    .build();
+
+            mockMvc.perform(post("/api/auth/password-setup/complete")
+                            .header("Accept", SPA_ACCEPT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                    .andExpect(jsonPath("$.type").value("/errors/passwords-do-not-match"))
+                    .andExpect(jsonPath("$.field").value("passwordConfirmation"));
         }
     }
 }
