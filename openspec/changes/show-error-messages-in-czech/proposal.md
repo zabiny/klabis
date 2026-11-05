@@ -9,7 +9,7 @@ The Klabis UI is Czech, but almost every error produced by the backend reaches t
 
 The problem is project-wide.
 
-- **Backend.** About 90 exception classes, about 150 `IllegalArgumentException`/`IllegalStateException` throw sites and about 400 `Assert` invariant messages are all English. Handlers copy `ex.getMessage()` straight into the ProblemDetail `detail`. The ProblemDetail `type` is mostly `about:blank`, and the few explicit values use three unrelated styles.
+- **Backend.** About 90 exception classes, about 160 `IllegalArgumentException`/`IllegalStateException` throw sites and about 300 `Assert` invariant messages are all English. Handlers copy `ex.getMessage()` straight into the ProblemDetail `detail`. The ProblemDetail `type` is mostly `about:blank`, and the few explicit values use three unrelated styles.
 - **Frontend.** The frontend shows `detail` verbatim, under a hardcoded English heading *"Form validation errors"*.
 - **Specs.** No requirement in `openspec/specs/` says which language the user sees errors in.
 
@@ -66,7 +66,7 @@ None.
 
 - **Backend:**
   - `common/exceptions` gains a small opt-in contract (error type derived from the class name, plus message parameters), which each module's exceptions adopt in that module's phase. Exceptions not yet migrated emit a generic type for their status;
-  - `MvcExceptionHandler`, the 11 module `*ExceptionHandler` classes, the local handler in `PermissionController`, the security entry point and access-denied handler, and `AccountStatusValidationFilter` set `/errors/...` types and parameters;
+  - `MvcExceptionHandler`, the seven module advice classes (finance, groups, free groups, events, members, sync, rate limiting), the local handlers in `PermissionController` and `PasswordSetupController`, the security entry point and access-denied handler, and `AccountStatusValidationFilter` set `/errors/...` types and parameters;
   - the locale resolver is fixed to Czech;
   - module handlers resolve names where the domain only has an ID.
 - **API:**

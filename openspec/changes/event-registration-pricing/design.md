@@ -2,7 +2,7 @@
 
 Event nese jedno paušální vstupné (`baseEntryFee: Money`). Registrace (`EventRegistration`) drží vybranou kategorii, SI číslo čipu a čas registrace — žádnou cenu. Modul membership-fees už zná koncept členské úrovně (`MembershipFeeTier`) s pravidly `MembershipPaymentRule`, která určují, kolik člen dané úrovně přispívá na vstupné podle kombinace event type + ranking (procentem nebo pevnou částkou). Tato pravidla se zatím nikde nepoužívají pro výpočet ceny registrace.
 
-> **Předpoklad:** Tento design staví na changi **`event-category-identity`**, který se implementuje **před** ním. Ten mění kategorie z `List<String>` na `EventCategory` (stabilní `EventCategoryId`, volitelný `orisId`, název a **volitelná `fee`**) a registraci přepíná na `categoryId`. Kategorie s cenou tedy v okamžiku implementace tohoto changu **už existují** — pricing je pouze konzumuje.
+> **Předpoklad (splněn):** Tento design staví na changi **`event-category-identity`**, který je hotový a archivovaný (2026-07-27). Ten změnil kategorie z `List<String>` na `EventCategory` (stabilní `EventCategoryId`, volitelný `orisId`, název a **volitelná `fee`**) a registraci přepíná na `categoryId`. Kategorie s cenou tedy **už existují** (`com.klabis.events.EventCategory`, pole `feeOverride`) — pricing je pouze konzumuje.
 
 Cílem je umožnit spočítat orientační cenu registrace, aby na ni mohla navázat budoucí rezervace a vyúčtování plateb. Cena má vzniknout ze tří zdrojů: základní vstupné (případně přepsané cenou kategorie), příspěvek dle členské úrovně a součet zvolených doplňkových služeb.
 
@@ -86,7 +86,7 @@ record Service(String id, String nameCZ, String nameEN, String lastBookingDateTi
 - Na eventu visí jako `EventDetails.services()` typu `Map<String, Service>` — klíčem je `id`, stejně jako u `classes()`.
 - **Půjčení čipu je v ORIS jinde:** `EventDetails.entryRentSIFee` je samostatné pole eventu a v registraci mu odpovídá `EventEntry.rentSi: Boolean` — není to položka v `services`. Náš model ho reprezentuje jako běžnou službu; při případném budoucím importu půjde o zvláštní mapování, ne o 1:1 převod.
 - **ORIS zná množství a kapacitu** (`qtyAvailable`, `qtyRemaining`) a deadline objednání (`lastBookingDateTime`). Náš model je vědomě zjednodušuje na binární výběr bez kapacity (viz Non-Goals) — při budoucím importu to znamená ztrátu části informace.
-- **Import služeb z ORIS je mimo rozsah této změny.** `OrisEventImportService` dnes `services()` vůbec nečte (importuje jen `classes()` a odvozuje `baseEntryFee` jako maximum z `EventClass.fee`). Pole `orisId` se v této změně zavádí připravené, ale zůstává vždy `null`; import ho naplní později bez breaking change.
+- **Import služeb z ORIS je mimo rozsah této změny.** `OrisEventDetailsReader` (čtení ORIS dat pro import i synchronizaci) dnes `services()` vůbec nečte (importuje jen `classes()` a odvozuje `baseEntryFee` jako maximum z `EventClass.fee`). Pole `orisId` se v této změně zavádí připravené, ale zůstává vždy `null`; import ho naplní později bez breaking change.
 
 ### D5: Příspěvek dle členské úrovně přes úzký port do membership-fees
 
@@ -377,7 +377,7 @@ Nové: render rozpadu ceny, registrace bez služeb (blok se nezobrazí), přidá
 
 ## Risks / Trade-offs
 
-- **[Závislost na `event-category-identity`]** → Tento change předpokládá, že kategorie už mají strukturu s `fee` a registrace odkazuje `categoryId`. Musí se implementovat až po něm. Zmírnění: závislost je jednosměrná a explicitní; pokud by se pořadí obrátilo, pricing by musel dočasně převzít migraci kategorií.
+- **[Závislost na `event-category-identity`]** → Tento change předpokládá, že kategorie už mají strukturu s `fee` a registrace odkazuje `categoryId`. Závislost je splněná (change je archivovaný), riziko tedy odpadá. Zůstává jen kontrola, že názvy v tomto designu odpovídají kódu (`feeOverride` v záznamu `EventCategory`, metoda `fee()` vrací `Optional<Money>`).
 - **[Cena se počítá při každém čtení]** → Výpis registrací volá port per registrace. Zmírněno cachováním tieru a pravidel v rámci požadavku; u běžné velikosti eventu (desítky registrací) zanedbatelné. Pokud by to nestačilo, lze přidat batch variantu portu — bez dopadu na doménový model.
 - **[Cross-module závislost events → membership-fees]** → Úzký port `entryContribution(...)` minimalizuje vazbu; events nezná strukturu pravidel. Respektuje Spring Modulith hranice.
 - **[Osiřelý `categoryId` na registraci]** → Pokud byla kategorie z eventu odebrána, base cena spadne zpět na `baseEntryFee`. Výpočet nespadne a data se neztrácejí; prezentaci tohoto stavu definuje `event-category-identity`.
@@ -387,7 +387,7 @@ Nové: render rozpadu ceny, registrace bez služeb (blok se nezobrazí), přidá
 ## Migration Plan
 
 1. Sjednotit `Money` do `common.domain.Money` — sloučit obě dosavadní implementace (základ z `finance`, doplnit `parseCurrency`), přesměrovat `finance`, `membershipfees` i `events`, odstranit `events.domain.Money` a `finance.domain.Money` (D10). Samostatný commit, plný test run před krokem 2; aktualizovat skill `backend-patterns`.
-2. **Předpoklad:** dokončený change `event-category-identity` (kategorie s `fee`, registrace s `categoryId`).
+2. **Předpoklad (splněn):** hotový change `event-category-identity` (kategorie s `feeOverride`, registrace s `categoryId`).
 3. Přidat `SupplementaryService` + `SupplementaryServiceId` do domény a persistence (memento); validace jednotné měny na `Event`.
 4. Přidat `MemberFeePricingPort` v membership-fees + adaptér konzumující `MembershipPaymentRule` (včetně fallbacku na `basePrice`).
 5. Implementovat `RegistrationPricingService` a napojit na čtení registrací; rozšířit `EventRegistration` o `selectedServiceIds`.
@@ -398,4 +398,6 @@ Nové: render rozpadu ceny, registrace bez služeb (blok se nezobrazí), přidá
 
 ## Open Questions
 
-- Žádné otevřené otázky. (Dřívější otázka k migraci `categories` odpadla — tvar kategorií i jejich migraci vlastní change `event-category-identity`.)
+- **Vztah doplňkových služeb ke společné dopravě a ubytování.** Hotová funkce (`event-shared-transport-accommodation`) nabízí na eventu ano/ne volby bez ceny, které člen zaškrtne při registraci a které koordinátor vidí jako počty a seznam ubytovaných. Doplňková služba „Ubytování“ s cenou popisuje podobnou věc. Dvě možnosti: (a) služby nahradí nabídky (nutná migrace uložených voleb `wantsSharedTransport` / `wantsSharedAccommodation` a přepis seznamu ubytovaných a jeho CSV exportu), nebo (b) nabídky zůstanou jako koordinační funkce („kdo potřebuje odvoz nebo lůžko“) a služby jako cenová funkce, takže může existovat obojí. Doporučení: (b), protože (a) mění hotové chování mimo cenový záměr tohoto changu — ale je to rozhodnutí vlastníka produktu a musí padnout před specs.
+- **Kapacita a vlastní termín služby** (issue #103 a část #112) tento design nemodeluje (jen název a cena). Doplnit, odložit, nebo vypustit pro MVP?
+- (Dřívější otázka k migraci `categories` odpadla — tvar kategorií i jejich migraci vlastní change `event-category-identity`.)

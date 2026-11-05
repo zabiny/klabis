@@ -2,7 +2,7 @@
 
 GitHub issues #67 ("Chci kontaktovat vedoucího akce", milestone `core`) and its duplicate #37 ("Chci kontaktovat vedoucího akce, ...", milestone `core`) both ask for a way for members to contact the event coordinator directly from the event context.
 
-Today the `events` spec supports assigning a coordinator as a member reference (`Create Event`, `Get Event Detail`, `Events Table Display`) and the events list displays the coordinator's name as a clickable link to the member detail page. From the member detail page, one can see the coordinator's contact details (email, phone per the `members` spec `Member Detail` requirement, visible to authenticated members with `MEMBERS:READ`).
+Today the `events` spec supports assigning one or more coordinators as member references (`Create Event`, `Update Event`, `Get Event Detail`, `Events Table Display`; multiple coordinators shipped with `gh-83-event-deputy-coordinator`, and the field is labelled "Vedoucí" per `Event Coordinator Label Reads as "Vedoucí"`). The events list and the detail display each coordinator's name as a clickable link to the member detail page. From the member detail page, one can see the coordinator's contact details (email, phone per the `members` spec `Member Detail` requirement, visible to users with `MEMBERS:READ`). Contact values resolve through `Effective Contact Of A Member`: a minor coordinator without their own contact shows their legal guardian's e-mail and telephone.
 
 There are two problems with this indirect path:
 
@@ -53,7 +53,7 @@ All questions below MUST be answered before the next OpenSpec artifacts (specs, 
 
 3. **Do we also want a "contact coordinator" affordance for events imported from ORIS where the coordinator field is not set?** ORIS events often have an organizer contact in the ORIS upstream but not in our system. Out of scope unless we add ORIS-sourced contact fallback.
 
-4. **Should this change also cover contacting the event *deputy* coordinator once that field exists (see proposal `add-event-deputy-coordinator`, issue #83)?** Recommend: yes — make the contact affordance list all coordinators (primary + deputies) consistently. Confirm or defer to a follow-up.
+4. **Several coordinators.** The deputy coordinator (issue #83) shipped as a set of coordinators on the event with no primary/deputy distinction. The contact affordance MUST list every coordinator of the event. Reuse `Effective Contact Of A Member` so a minor coordinator's contact falls back to their guardian consistently with the member detail. Confirm.
 
 5. **#67 vs. #37 deduplication.** Both issues describe the same feature. Recommend marking #37 as "duplicate of #67" in GitHub after this proposal lands. Confirm.
 

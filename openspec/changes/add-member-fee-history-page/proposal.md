@@ -43,7 +43,7 @@ None.
 
 - `membership-fees`: the requirement "Audit Trail of Level Assignments" gets user-facing scenarios for the history page, covering access by the member, by a membership administrator and by a legal guardian. Its existing scenario "Past assignments remain available" is reworded to use the page.
 
-The requirement "Member Sees Their Current Fee Level" is not changed here. The active change `align-membership-fees-spec` already modifies it, and keeping the two changes apart avoids a merge conflict.
+The requirement "Member Sees Their Current Fee Level" is not changed here. The change `align-membership-fees-spec`, which rewrote it, is archived and its wording is already in the main spec, so there is no conflict to avoid; the history link simply sits next to the current-level widget the requirement describes.
 
 ## Impact
 
