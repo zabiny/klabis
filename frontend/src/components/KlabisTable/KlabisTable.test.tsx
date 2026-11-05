@@ -1,3 +1,4 @@
+import {labels} from '../../localization'
 import {render, screen} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {KlabisTable} from './KlabisTable'
@@ -82,8 +83,9 @@ describe('KlabisTable - Pure UI Component', () => {
                 </KlabisTable>
             )
 
-            expect(screen.getByText(/network error/i)).toBeInTheDocument()
-            expect(screen.getByText(/failed to load data/i)).toBeInTheDocument()
+            expect(screen.getByText(labels.errors.unexpectedError)).toBeInTheDocument()
+            expect(screen.queryByText(/network error/i)).not.toBeInTheDocument()
+            expect(screen.getByText('Data se nepodařilo načíst.')).toBeInTheDocument()
         })
 
         it('prioritizes error display over empty state', () => {
@@ -94,7 +96,7 @@ describe('KlabisTable - Pure UI Component', () => {
                 </KlabisTable>
             )
 
-            expect(screen.getByText(/network error/i)).toBeInTheDocument()
+            expect(screen.getByText(labels.errors.unexpectedError)).toBeInTheDocument()
             expect(screen.queryByText('No data')).not.toBeInTheDocument()
         })
     })

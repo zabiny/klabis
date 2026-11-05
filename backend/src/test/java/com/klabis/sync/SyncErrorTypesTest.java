@@ -9,7 +9,10 @@ import com.klabis.sync.application.SyncRecordNeedsResolutionException;
 import com.klabis.sync.application.SyncRecordNotFailedException;
 import com.klabis.sync.application.SyncRecordNotFoundException;
 import com.klabis.sync.application.SyncRecordNotInConflictException;
+import com.klabis.sync.application.UnknownSyncEntityTypeException;
 import com.klabis.sync.application.UnsupportedResolutionException;
+import com.klabis.sync.domain.ExternalSystem;
+import com.klabis.sync.domain.SyncEntityType;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.SyncResolution;
 import com.klabis.sync.domain.SyncStatus;
@@ -60,6 +63,16 @@ class SyncErrorTypesTest {
             assertThat(error.errorType()).isEqualTo(type);
             assertThat(error.messageParameters()).isEmpty();
         });
+    }
+
+    @Test
+    @DisplayName("an entity type without an adapter reports the entity type and the external system")
+    void unknownEntityType() {
+        UnknownSyncEntityTypeException ex = new UnknownSyncEntityTypeException(SyncEntityType.EVENT, ExternalSystem.ORIS);
+
+        assertThat(ex.errorType()).isEqualTo("unknown-sync-entity-type");
+        assertThat(ex.messageParameters()).containsOnly(
+                Map.entry("entityType", "EVENT"), Map.entry("externalSystem", "ORIS"));
     }
 
     @Test

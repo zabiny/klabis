@@ -13,7 +13,7 @@ export interface ErrorDisplayProps {
     error: Error | null | undefined
     /** Custom title for the error alert */
     title?: string
-    /** Custom message to display instead of error.message */
+    /** Custom message to display instead of the described error */
     customMessage?: string
     /** Callback when retry button is clicked */
     onRetry?: () => void
@@ -101,7 +101,7 @@ export function ErrorDisplay({
 
     const apiError = error instanceof ApiError ? error : undefined
     const content = apiError ? describeFormError(apiError, fieldPrompts) : undefined
-    const errorMessage = customMessage || (content ? content.message : error.message)
+    const errorMessage = customMessage || (content ? content.message : describeError(error))
     const heading = !errorMessage && content?.hasFieldErrors ? labels.errors.formValidationErrors : undefined
     const hasContent = Boolean(
         title || errorMessage || heading || subtitle || onRetry || onCancel

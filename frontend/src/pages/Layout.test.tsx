@@ -246,7 +246,7 @@ describe('Layout - Responsive Sidebar', () => {
             renderLayout()
 
             await waitFor(() => {
-                expect(screen.getByText('Chyba při načítání menu: Failed to load menu')).toBeInTheDocument()
+                expect(screen.getByText('Chyba při načítání menu: Došlo k neočekávané chybě. Zkuste to prosím znovu.')).toBeInTheDocument()
             })
         })
 

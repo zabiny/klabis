@@ -24,9 +24,10 @@ describe('ErrorDisplay Component', () => {
             expect(container.firstChild).toBeNull()
         })
 
-        it('should render error alert with message', () => {
+        it('should render the generic Czech text for a plain Error, never its message', () => {
             render(<ErrorDisplay error={mockFetchError}/>)
-            expect(screen.getByText('Failed to fetch data')).toBeInTheDocument()
+            expect(screen.getByText(labels.errors.unexpectedError)).toBeInTheDocument()
+            expect(screen.queryByText('Failed to fetch data')).not.toBeInTheDocument()
         })
 
         it('should render error title when provided', () => {
@@ -37,7 +38,7 @@ describe('ErrorDisplay Component', () => {
                 />
             )
             expect(screen.getByText('Load Error')).toBeInTheDocument()
-            expect(screen.getByText('Failed to fetch data')).toBeInTheDocument()
+            expect(screen.getByText(labels.errors.unexpectedError)).toBeInTheDocument()
         })
 
         it('should use custom message instead of error message', () => {

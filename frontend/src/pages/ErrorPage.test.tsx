@@ -20,21 +20,21 @@ const renderPage = (error: Parameters<typeof ErrorPage>[0]['error']) =>
     );
 
 describe('ErrorPage', () => {
-    describe('status detection via responseStatus field', () => {
+    describe('status detection via ApiError status', () => {
         it('renders ForbiddenPage for 403 error', () => {
-            const error = Object.assign(new Error('HTTP 403: Forbidden'), {responseStatus: 403});
+            const error = new ApiError(403);
             renderPage(error);
             expect(screen.getByTestId('forbidden-page')).toBeInTheDocument();
         });
 
         it('renders ForbiddenPage for 401 error', () => {
-            const error = Object.assign(new Error('HTTP 401: Unauthorized'), {responseStatus: 401});
+            const error = new ApiError(401);
             renderPage(error);
             expect(screen.getByTestId('forbidden-page')).toBeInTheDocument();
         });
 
         it('renders NotFoundPage for 404 error', () => {
-            const error = Object.assign(new Error('HTTP 404: Not Found'), {responseStatus: 404});
+            const error = new ApiError(404);
             renderPage(error);
             expect(screen.getByTestId('not-found-page')).toBeInTheDocument();
         });
@@ -46,15 +46,16 @@ describe('ErrorPage', () => {
         });
     });
 
-    describe('status detection via message parsing (backwards compat)', () => {
-        it('renders ForbiddenPage when message contains HTTP 403', () => {
-            renderPage(new Error('HTTP 403: Forbidden'));
-            expect(screen.getByTestId('forbidden-page')).toBeInTheDocument();
+    describe('plain errors', () => {
+        it('does not guess a status from the message', () => {
+            renderPage(new Error('HTTP 404 Not Found'));
+            expect(screen.queryByTestId('not-found-page')).not.toBeInTheDocument();
+            expect(screen.getByText('Došlo k neočekávané chybě. Zkuste to prosím znovu.')).toBeInTheDocument();
         });
 
-        it('renders NotFoundPage when message contains HTTP 404', () => {
-            renderPage(new Error('HTTP 404 Not Found'));
-            expect(screen.getByTestId('not-found-page')).toBeInTheDocument();
+        it('renders a status given as a plain object', () => {
+            renderPage({status: 403});
+            expect(screen.getByTestId('forbidden-page')).toBeInTheDocument();
         });
 
         it('renders generic error page for unknown error message', () => {

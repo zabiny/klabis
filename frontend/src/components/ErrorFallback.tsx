@@ -1,4 +1,5 @@
 import type {FallbackProps} from 'react-error-boundary'
+import {useEffect} from 'react'
 import {Button} from './UI'
 
 /**
@@ -9,6 +10,10 @@ export default function ErrorFallback({
                                           error,
                                           resetErrorBoundary
                                       }: FallbackProps) {
+    useEffect(() => {
+        console.error('Unhandled application error', error)
+    }, [error])
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-surface-base px-4">
             <div className="bg-surface-raised p-8 rounded-lg shadow-lg max-w-md w-full border border-border">
@@ -35,23 +40,6 @@ export default function ErrorFallback({
                 <p className="text-text-secondary mb-4 text-center text-sm">
                     Aplikace narazila na neočekávanou chybu. Prosím, zkuste to znovu nebo se vrátit později.
                 </p>
-
-                <details className="mb-6 bg-surface-base p-3 rounded text-sm">
-                    <summary
-                        className="cursor-pointer font-semibold text-text-primary hover:text-text-primary">
-                        Podrobnosti chyby
-                    </summary>
-                    <pre
-                        className="mt-2 bg-surface-raised p-2 rounded overflow-auto text-xs text-text-primary">
-                        {error?.message || 'Neznámá chyba'}
-                    </pre>
-                    {error?.stack && (
-                        <pre
-                            className="mt-2 bg-surface-raised p-2 rounded overflow-auto text-xs text-text-secondary max-h-32">
-                            {error.stack}
-                        </pre>
-                    )}
-                </details>
 
                 <div className="flex gap-3">
                     <Button

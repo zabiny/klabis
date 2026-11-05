@@ -13,7 +13,7 @@ import {HalFormsPageLayout} from "../components/HalNavigator2/HalFormsPageLayout
 import {HalFormProvider} from '../contexts/HalFormContext.tsx'
 import {ToastProvider} from '../contexts/ToastContext.tsx'
 import {useToast} from '../contexts/toastContext'
-import {labels} from '../localization'
+import {describeError, labels} from '../localization'
 import type {LucideIcon} from 'lucide-react'
 import {
     Banknote,
@@ -246,7 +246,7 @@ const Layout = () => {
                             </div>
                         ) : menuError ? (
                             <Alert severity="error" className="m-3 text-sm">
-                                {labels.ui.menuLoadError}: {menuError.message}
+                                {labels.ui.menuLoadError}: {describeError(menuError)}
                             </Alert>
                         ) : menuItems.length > 0 ? (
                             <>

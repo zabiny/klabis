@@ -6,7 +6,6 @@ import {describeError} from '../localization';
 
 interface ErrorWithStatus {
     status?: number;
-    message: string;
 }
 
 interface ErrorPageProps {
@@ -14,11 +13,7 @@ interface ErrorPageProps {
 }
 
 function extractStatus(error: ErrorWithStatus | Error): number | undefined {
-    if ('status' in error && typeof error.status === 'number') {
-        return error.status;
-    }
-    const match = error.message.match(/HTTP (\d{3})/);
-    return match ? parseInt(match[1], 10) : undefined;
+    return 'status' in error && typeof error.status === 'number' ? error.status : undefined;
 }
 
 export function ErrorPage({error}: ErrorPageProps): ReactElement | null {
