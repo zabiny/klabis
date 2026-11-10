@@ -63,3 +63,7 @@ backend/.factorypath
 /docs/githubissues/build_report.py
 /docs/githubissues/issues.json
 /docs/githubissues/klabis-issues-report.html
+# One machine's SDLC capabilities and name (agentic SDLC install)
+.claude/settings.local.json
+# The briefs and results of the SDLC agents during a run (agentic SDLC install)
+sdlc-tmp/
