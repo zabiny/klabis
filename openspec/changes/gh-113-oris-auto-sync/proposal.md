@@ -2,6 +2,8 @@
 
 GitHub issue #113 ("Automaticky vytvaret a synchronizovat (a tagovat pro ktere skupiny, termin prihlasek -1D,..) akce z ORIS", milestone `MVP`, labels `ORIS`, `přihlašovatel`, `question`) asks for automatic mass import of ORIS events. Today a manager must open the "Import z ORISu" dialog and pick events by hand; a newly published ORIS event stays invisible to the club until somebody remembers to look.
 
+Discovery of other ORIS data is already automated on the same engine, which is the precedent for this change: `DisciplineDiscoveryJob` (disciplines), `MemberDiscoveryJob` (club members) and `OrisEventRegistrationDiscoveryJob` (ORIS entries of club members for events kept in step) each run on their own configurable cron (`klabis.disciplines.discovery-cron`, `klabis.members.oris-discovery-cron`, `klabis.events.oris-entries-discovery-cron`), run once shortly after start-up, and bring in what is missing through `pullAndEnroll`. Events are the one kind of ORIS data still discovered by hand.
+
 Everything that happens *after* an event is imported is already solved. The bidirectional synchronisation engine (`data-synchronization` capability) keeps every imported event in step with ORIS, detects upstream changes, escalates a manager's local edit as a conflict instead of overwriting it, and retries failures with backoff. The gap is narrower than when this issue was filed: **nothing discovers newly published ORIS events and enrols them on its own**.
 
 This change closes exactly that gap — scheduled discovery and automatic import. The other two features bundled in issue #113 are split into their own changes, since neither depends on the import schedule:
@@ -12,13 +14,13 @@ This change closes exactly that gap — scheduled discovery and automatic import
 ## What Changes
 
 - **Persisted ORIS import settings.** A single club-level configuration for which ORIS events to pick up, replacing today's values hardcoded in `OrisController` (region `JIHOMORAVSKA`, window "today .. today + 1 year"). Editable by a manager on a settings page. The exact set of fields is an open question below.
-- **Scheduled discovery.** A recurring job asks ORIS for events matching the configured rules, drops the ones already present, and imports the rest. Can be switched off.
+- **Scheduled discovery.** A recurring job asks ORIS for events matching the configured rules, drops the ones already present, and imports the rest. Can be switched off. It follows the existing discovery jobs: its own cron property, an initial run shortly after start-up, one failure never aborting the run.
 - **Automatic import and enrolment.** Each discovered event is created through the existing single-event import path, so it is enrolled into the synchronisation engine on creation exactly like a manually imported one. From that moment the engine owns it — no separate refresh mechanism is introduced.
 - **Manual trigger.** A manager can run the discovery immediately instead of waiting for the schedule.
 - **Run visibility.** The outcome of the last run (when, how many found / imported / skipped / failed) is visible to a manager, so a silently failing job is noticeable.
 - **Import settings page** in the administration area, plus a marker in the events list distinguishing automatically imported events.
 
-Explicitly **not** in this change: group tagging, the internal deadline offset, notifications about newly discovered events (issue #91 — the project has no notification engine yet), and any change to conflict handling or retry behaviour.
+Explicitly **not** in this change: group tagging, the internal deadline offset, notifications about newly discovered events (issue #91 — web push now exists as a delivery channel, `push-notifications`, but who is told and when is a separate decision), and any change to conflict handling or retry behaviour.
 
 ## Capabilities
 
@@ -38,15 +40,16 @@ Rationale for a separate capability rather than extending `events`: this is abou
 
 **Affected code (backend):**
 
-- `com.klabis.oris` — a new settings aggregate and its persistence; a new discovery service holding the logic currently inlined in `OrisController.listOrisEvents` (build the ORIS filter, merge regions, drop already-imported ids, order by date), so that both the interactive dialog and the scheduled job share one implementation; a new scheduled job following the pattern established by `SyncScheduler` (cron from configuration, per-item try/catch so one failure cannot abort the run).
-- `com.klabis.events.application.OrisEventImportService` — unchanged in behaviour. The job MUST import through `importEventFromOris`, which already creates the event and calls `synchronizationPort.enroll` in one transaction. Bypassing it would create events invisible to the synchronisation engine; this is the main implementation risk of this change.
+- `com.klabis.oris` — a new settings aggregate and its persistence; a new discovery service holding the logic currently inlined in `OrisController.listOrisEvents` (`com.klabis.oris.infrastructure.restapi`: build the ORIS filter with region `JIHOMORAVSKA` and the window today .. today + 1 year, merge regions, drop already-imported ids, order by date), so that both the interactive dialog and the scheduled job share one implementation; a new scheduled job following the pattern of `OrisEventRegistrationDiscoveryJob` / `DisciplineDiscoveryJob` (cron from configuration, per-item try/catch so one failure cannot abort the run).
+- `com.klabis.events.application.OrisEventImportService` — unchanged in behaviour. The job MUST import through `importEventFromOris` (or the multi-event `importEventsFromOris` used by the interactive dialog), which calls `synchronizationPort.pullAndEnroll`: it reads ORIS, creates the DRAFT event, pairs it and runs the first synchronisation pass, with no transaction held open across the ORIS call. Bypassing it would create events invisible to the synchronisation engine; this is the main implementation risk of this change. Note that the change `inline-single-impl-ports` merges the single, bulk-import and bulk-sync services into this one class; either order of the two changes works, but the job must call whatever the merged entry point is called.
+- Scheduling mechanism: `@Scheduled` today. If `introduce-quartz-scheduler` lands first, the discovery job is registered the way that change documents instead.
 - `Event` — a flag distinguishing an automatically imported event from a manually imported one.
 
 **APIs (REST):** additive — read/update of the import settings, a "run discovery now" action, and the last-run summary. All under `EVENTS:MANAGE`.
 
 **Data:** a settings table (single row) and a column on `events` marking automatic import. No migration of existing data: events imported before this change stay marked as manual.
 
-**Dependencies:** none new. `oris-client` already provides event listing; the Spring scheduling infrastructure is already in use by `SyncScheduler` and `SyncHistoryRetentionJob`.
+**Dependencies:** none new. `oris-client` already provides event listing; the Spring scheduling infrastructure is already in use by `SyncScheduler`, `SyncHistoryRetentionJob` and the three discovery jobs above.
 
 **Notable constraint:** `OrisEventListFilter` — the only filter the ORIS API accepts — carries exactly four fields: `region`, `dateFrom`, `dateTo`, `officialOnly`. Any rule beyond these (competition level / ranking, organizer, event type) cannot be pushed to ORIS and would have to be applied client-side after fetching the list. This bounds the settings design and is the reason the field set is an open question rather than a decided list.
 
@@ -65,7 +68,7 @@ Rationale for a separate capability rather than extending `events`: this is abou
 
 2. **How many events may one run import?** A first run against a year-wide window can match hundreds of events. Is a cap per run needed, and what happens to the remainder — next run, or reported as skipped?
 
-3. **Is an automatically imported event created as DRAFT?** A manually imported event's status follows the existing import rules. An event nobody asked for arguably should not go straight to the members' calendar, which argues for DRAFT and an explicit publish. To confirm against the current import behaviour.
+3. **Is an automatically imported event created as DRAFT?** A manually imported event is created in DRAFT (`Imported ORIS Events Are Synchronized From The Moment They Are Imported`), so members do not see it until a manager publishes it. An event nobody asked for should follow the same rule. Confirm: automatic import creates DRAFT, same as manual.
 
 4. **Can a manager reject a discovered event?** Without it, an unwanted event is imported again on the next run after being deleted. A per-event "ignore" list would prevent that. Needed for MVP, or acceptable to leave out?
 

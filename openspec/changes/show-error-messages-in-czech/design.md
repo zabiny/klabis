@@ -6,14 +6,15 @@ See proposal.md, section Why, for the motivation. This section describes the cur
 
 ### Backend
 
-- **Exceptions.** There are 92 exception classes. Most extend one of four bases in `common/exceptions`:
-  - `BusinessRuleViolationException`: 49 subclasses, mapped to 400;
-  - `ResourceNotFoundException`: 14 subclasses, mapped to 404;
+- **Exceptions.** There are 90 exception classes. Most extend one of five bases in `common/exceptions` (`ConflictException` is the newest, split out of `BusinessRuleViolationException`):
+  - `BusinessRuleViolationException`: 34 subclasses, mapped to 400;
+  - `ConflictException`: 15 subclasses, mapped to 409;
+  - `ResourceNotFoundException`: 15 subclasses, mapped to 404;
   - `InvalidDataException`: 5 subclasses, mapped to 400;
   - `AuthorizationException`: 5 subclasses, mapped to 403.
 
-  Another 16 extend `RuntimeException` directly and are mapped by module handlers. Each builds an English sentence in its constructor, often with an ID inside, for example `DuplicatePaymentRuleException(EventTypeReference, rankingShortName)`.
-- **Handlers.** `common/mvc/MvcExceptionHandler`, 11 module `*ExceptionHandler` classes and a local handler in `PermissionController` (44 `@ExceptionHandler` methods in total) copy `ex.getMessage()` into `detail`.
+  Another 13 extend `RuntimeException` directly and are mapped by module handlers. Each builds an English sentence in its constructor, often with an ID inside, for example `DuplicatePaymentRuleException(EventTypeReference, rankingShortName)`.
+- **Handlers.** `common/mvc/MvcExceptionHandler`, seven module advice classes (`FinanceExceptionHandler`, `GroupsExceptionHandler`, `FreeGroupExceptionHandler`, `EventsExceptionHandler`, `MembersExceptionHandler`, `SyncExceptionHandler`, `RateLimitExceptionHandler`) and local handlers in `PermissionController` and `PasswordSetupController` (29 `@ExceptionHandler` methods in total) copy `ex.getMessage()` into `detail`.
 - **ProblemDetail `type` today.**
   - Mostly the Spring default `about:blank`.
   - `https://api.klabis.example.com/errors/unauthorized` and `/forbidden`, set by the security entry point and access-denied handler in `ResourceServerSecurityConfiguration`. `AccountStatusValidationFilter` also writes the forbidden one, as `application/json`.
@@ -24,7 +25,7 @@ See proposal.md, section Why, for the motivation. This section describes the cur
   - Field errors from bean validation are emitted as `fieldErrors: {field: defaultMessage}`.
   - Global errors are emitted as `errors: ["message [ConstraintCode]"]`.
   - Parameter errors are emitted as `parameterErrors: ["param: message"]`.
-- **Invariants.** There are about 150 `IllegalArgumentException`/`IllegalStateException` throw sites and about 400 `Assert.*` messages, all English. `IllegalArgumentException` reaches the user verbatim as a 400 `detail`.
+- **Invariants.** There are about 160 `IllegalArgumentException`/`IllegalStateException` throw sites and about 300 `Assert.*` messages, all English. `IllegalArgumentException` reaches the user verbatim as a 400 `detail`.
 - **Bean validation.**
   - About 2,000 constraints on the generated DTOs use the Hibernate Validator default messages. The Hibernate Validator jar ships `ValidationMessages_cs.properties`, but there is no locale configuration, so the language follows the browser's `Accept-Language`.
   - There are 38 hand-written `message="…"` English texts.
@@ -104,7 +105,7 @@ The known cost of (b) is that each new error touches the backend, the spec and `
 
 ### D3: Parameters and field binding (domain change)
 
-A small framework-free contract, **UserFacingError**, is opted into by each migrated exception. The four bases do not implement it. This lets the modules migrate one at a time, and an exception that has not migrated yet falls back to a generic type (D2):
+A small framework-free contract, **UserFacingError**, is opted into by each migrated exception. The five bases do not implement it. Membership fees, calendar, event types, disciplines, training groups and notifications have no handler of their own: their exceptions extend the bases and are mapped by `MvcExceptionHandler`, so the typed type and the parameters come from the exception through this contract, not from a module handler. This lets the modules migrate one at a time, and an exception that has not migrated yet falls back to a generic type (D2):
 
 - **`errorType`**: the `error-name` from D2. A default method derives it from the class name.
 - **`messageParameters`**: a map from parameter name to value, containing names, labels, dates and amounts. Never IDs.
@@ -151,7 +152,7 @@ classDiagram
 |---|---|---|
 | UserFacingError | **added** | The contract that a user-facing error has an error type (default: kebab-cased class name) and message parameters (default: none). |
 | BusinessRuleViolationException, ResourceNotFoundException, InvalidDataException, AuthorizationException | **unchanged** | They keep the HTTP status mapping. In phase 3, a test requires every subclass to implement UserFacingError. |
-| Module exceptions (about 90, including the 16 that extend `RuntimeException` directly) | **changed per module phase** | Implement UserFacingError. The 16 are also rebased onto one of the four bases. |
+| Module exceptions (about 90, including the 13 that extend `RuntimeException` directly) | **changed per module phase** | Implement UserFacingError. The 13 are also rebased onto one of the five bases. |
 | DuplicatePaymentRuleException | **changed** | Keeps the event type identifier. The handler resolves the name and the ranking label as parameters. |
 | DeadlineNotInFutureException | **changed** | The parameter is the deadline. The error type differs for the start case and the change case. |
 
@@ -183,7 +184,7 @@ Because the contract is opt-in (D3), an exception that has not migrated yet emit
 flowchart TD
     E[Exception reaches a handler] --> Q1{UserFacingError?}
     Q1 -- yes --> T[type /errors/name + parameters + field]
-    Q1 -- no --> B{One of the four bases?}
+    Q1 -- no --> B{One of the five bases?}
     B -- yes --> GS[Generic type for its status<br/>invalid-request, not-found, forbidden, conflict]
     B -- no --> I{IllegalArgument or IllegalState?}
     I -- yes --> GB[type /errors/invalid-request<br/>detail: fixed generic English text<br/>raw message logged only]
@@ -386,4 +387,4 @@ errorTypes: {
 - There is no data migration. The backend and the frontend ship in one artifact, so each phase deploys atomically.
 - `describeError` handles both old responses (`about:blank`, English `detail`) and new ones through the status fallback. A partially migrated codebase therefore never shows raw English to users. It shows a generic Czech text until the module is migrated.
 - Rollback means reverting the phase's commits.
-- Record the decision as a new ADR (ADR-011) in `docs/design-decisions.md` when phase 1 lands. The ADR records that the backend identifies errors by RFC 9457 `type` URIs `/errors/{name}` with named parameters, that the frontend owns the Czech wording in `labels.ts`, that the spec `ErrorType` enum is the shared list enforced on both sides, and that the frontend parses ProblemDetail once, into `ApiError` (D9). It also records why bean validation is the exception (fixed Czech locale).
+- Record the decision as a new ADR (ADR-012) in `docs/design-decisions.md` when phase 1 lands. The ADR records that the backend identifies errors by RFC 9457 `type` URIs `/errors/{name}` with named parameters, that the frontend owns the Czech wording in `labels.ts`, that the spec `ErrorType` enum is the shared list enforced on both sides, and that the frontend parses ProblemDetail once, into `ApiError` (D9). It also records why bean validation is the exception (fixed Czech locale).
