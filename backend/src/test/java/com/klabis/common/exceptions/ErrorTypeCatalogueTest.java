@@ -83,7 +83,7 @@ class ErrorTypeCatalogueTest {
 
     private static boolean isTestClass(Class<?> type) {
         String location = type.getProtectionDomain().getCodeSource().getLocation().getPath();
-        return Set.of(location.split("/")).contains("test");
+        return location.contains("/classes/java/test/");
     }
 
     @SuppressWarnings("unchecked")
