@@ -1,6 +1,6 @@
-import type {HalFormsTemplate, HalResourceLinks} from '../../api';
+import type {HalResourceLinks, HalResponse} from '../../api';
 
-export interface PendingInvitation {
+export interface PendingInvitation extends HalResponse {
     groupId: string;
     groupName: string;
     invitationId: string;
@@ -11,8 +11,5 @@ export interface PendingInvitation {
         accept?: { href: string };
         reject?: { href: string };
         invitedMember?: HalResourceLinks;
-    };
-    _templates?: {
-        cancelInvitation?: HalFormsTemplate;
     };
 }

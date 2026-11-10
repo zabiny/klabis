@@ -1,37 +1,26 @@
 import '@testing-library/jest-dom';
-import {fireEvent, render, screen} from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {useHalPageData} from '../../hooks/useHalPageData';
+import {screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {TrainingGroupDetailPage} from './TrainingGroupDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
+import {stubFetch} from '../../__mocks__/halDialogTest';
+import {
+    confirmTemplate,
+    memberOptionsResponse,
+    memberPickerTemplate,
+    renderDetailPage,
+} from '../../__mocks__/halGroupPageTest';
+
+vi.mock('../../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: vi.fn().mockReturnValue({access_token: 'test-token', token_type: 'Bearer'}),
+    },
+}));
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
-}));
-
-vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: () => <div data-testid="hal-form-display"/>,
-}));
-
-vi.mock('../../components/UI', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../components/UI')>();
-    return {
-        ...actual,
-        Modal: ({isOpen, children, title}: {isOpen: boolean; children: React.ReactNode; title: string}) =>
-            isOpen ? <div data-testid="modal-overlay" data-title={title}>{children}</div> : null,
-    };
-});
-
-vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
-    useAuthorizedMutation: vi.fn().mockReturnValue({
-        mutate: vi.fn(),
-        isPending: false,
-        error: null,
-    }),
 }));
 
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
@@ -47,42 +36,8 @@ vi.mock('../../contexts/halRouteContext.ts', () => ({
     })),
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Record<string, unknown>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/training-groups/tg-1',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/groups/tg-1'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
-    ...overrides,
-});
-
-const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
-    vi.mocked(useHalPageData).mockReturnValue(pageData as ReturnType<typeof useHalPageData>);
-    const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/training-groups/tg-1']}>
-                <TrainingGroupDetailPage/>
-            </MemoryRouter>
-        </QueryClientProvider>
-    );
-};
+const renderPage = (resourceData: HalResponse) =>
+    renderDetailPage(<TrainingGroupDetailPage/>, resourceData, {pathname: '/training-groups/tg-1'});
 
 const buildTrainingGroupDetail = (overrides?: Record<string, unknown>): HalResponse => ({
     id: 'tg-1',
@@ -90,103 +45,184 @@ const buildTrainingGroupDetail = (overrides?: Record<string, unknown>): HalRespo
     ageRange: {minAge: 8, maxAge: 10},
     trainers: [],
     members: [],
-    _links: {self: {href: '/api/groups/tg-1'}},
+    _links: {self: {href: '/api/training-groups/tg-1'}},
     ...overrides,
 });
 
 const buildTrainer = (overrides?: Record<string, unknown>) => ({
-    memberId: 'trainer-1',
-    _links: {member: {href: '/api/members/trainer-1'}},
+    memberId: 'member-1',
+    _links: {member: {href: '/api/members/member-1'}},
     ...overrides,
 });
 
+const buildTrainee = (overrides?: Record<string, unknown>) => ({
+    memberId: 'member-2',
+    joinedAt: '2025-01-15T00:00:00Z',
+    _links: {
+        self: {href: '/api/training-groups/tg-1/members/member-2'},
+        member: {href: '/api/members/member-2'},
+    },
+    ...overrides,
+});
+
+const trainerWithRemoveTemplate = () => buildTrainer({
+    _links: {
+        member: {href: '/api/members/member-1'},
+        self: {href: '/api/training-groups/tg-1/trainers/member-1'},
+    },
+    _templates: {removeTrainer: confirmTemplate({title: 'Odebrat trenéra'})},
+});
+
 describe('TrainingGroupDetailPage — trainer management', () => {
+    let writeCalls: ReturnType<typeof stubFetch>['writeCalls'];
+
     beforeEach(() => {
         vi.clearAllMocks();
+        ({writeCalls} = stubFetch(memberOptionsResponse));
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     it('shows trainers section label', () => {
-        const resourceData = buildTrainingGroupDetail({
-            trainers: [buildTrainer()],
-        });
-        renderPage(createMockPageData(resourceData));
+        renderPage(buildTrainingGroupDetail({trainers: [buildTrainer()]}));
         expect(screen.getByText(/trenéři/i)).toBeInTheDocument();
     });
 
     it('shows "Přidat trenéra" button when addTrainer template exists on resource', () => {
-        const resourceData = buildTrainingGroupDetail({
+        renderPage(buildTrainingGroupDetail({
             trainers: [buildTrainer()],
-            _templates: {addTrainer: mockHalFormsTemplate({title: 'Přidat trenéra', method: 'POST'})},
-        });
-        renderPage(createMockPageData(resourceData));
+            _templates: {addTrainer: memberPickerTemplate({title: 'Přidat trenéra'})},
+        }));
         expect(screen.getByRole('button', {name: /přidat trenéra/i})).toBeInTheDocument();
     });
 
     it('does NOT show "Přidat trenéra" button when addTrainer template is absent', () => {
-        renderPage(createMockPageData(buildTrainingGroupDetail({trainers: [buildTrainer()]})));
+        renderPage(buildTrainingGroupDetail({trainers: [buildTrainer()]}));
         expect(screen.queryByRole('button', {name: /přidat trenéra/i})).not.toBeInTheDocument();
     });
 
-    it('clicking "Přidat trenéra" opens modal', () => {
-        const resourceData = buildTrainingGroupDetail({
+    it('"Přidat trenéra" dialog hides current trainers and submits to the template target', async () => {
+        const user = userEvent.setup();
+        renderPage(buildTrainingGroupDetail({
             trainers: [buildTrainer()],
-            _templates: {addTrainer: mockHalFormsTemplate({title: 'Přidat trenéra', method: 'POST'})},
-        });
-        renderPage(createMockPageData(resourceData));
-        fireEvent.click(screen.getByRole('button', {name: /přidat trenéra/i}));
-        expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+            members: [buildTrainee()],
+            _templates: {addTrainer: memberPickerTemplate({title: 'Přidat trenéra', target: '/api/training-groups/tg-1/trainers'})},
+        }));
+        await user.click(screen.getByRole('button', {name: /přidat trenéra/i}));
+
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Přidat trenéra');
+        expect(await screen.findByRole('option', {name: 'Karel Dvořák'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: 'Jana Nováková'})).toBeInTheDocument();
+        expect(screen.queryByRole('option', {name: 'Petr Svoboda'})).not.toBeInTheDocument();
+
+        await user.selectOptions(screen.getByRole('combobox', {name: /člen/i}), 'member-3');
+        await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        await waitFor(() => expect(writeCalls()).toHaveLength(1));
+        expect(writeCalls()[0][0]).toBe('/api/training-groups/tg-1/trainers');
+        await waitFor(() => expect(screen.getByTestId('toast')).toHaveTextContent('Úspěšně uloženo'));
     });
 
     it('shows "Odebrat trenéra" button per trainer when removeTrainer template and self link exist on trainer', () => {
-        const trainerWithTemplate = {
-            ...buildTrainer(),
-            _links: {
-                member: {href: '/api/members/trainer-1'},
-                self: {href: '/api/groups/tg-1/trainers/trainer-1'},
-            },
-            _templates: {removeTrainer: mockHalFormsTemplate({title: 'Odebrat trenéra', method: 'DELETE', target: '/api/groups/tg-1/trainers/trainer-1'})},
-        };
-        const resourceData = buildTrainingGroupDetail({trainers: [trainerWithTemplate]});
-        renderPage(createMockPageData(resourceData));
+        renderPage(buildTrainingGroupDetail({trainers: [trainerWithRemoveTemplate()]}));
         expect(screen.getByRole('button', {name: /odebrat trenéra/i})).toBeInTheDocument();
     });
 
     it('does NOT show "Odebrat trenéra" button when removeTrainer template is absent on trainer', () => {
-        const resourceData = buildTrainingGroupDetail({trainers: [buildTrainer()]});
-        renderPage(createMockPageData(resourceData));
+        renderPage(buildTrainingGroupDetail({trainers: [buildTrainer()]}));
         expect(screen.queryByRole('button', {name: /odebrat trenéra/i})).not.toBeInTheDocument();
     });
 
-    it('clicking "Odebrat trenéra" opens confirmation modal', () => {
-        const trainerWithTemplate = {
-            ...buildTrainer(),
-            _links: {
-                member: {href: '/api/members/trainer-1'},
-                self: {href: '/api/groups/tg-1/trainers/trainer-1'},
-            },
-            _templates: {removeTrainer: mockHalFormsTemplate({title: 'Odebrat trenéra', method: 'DELETE', target: '/api/groups/tg-1/trainers/trainer-1'})},
-        };
-        const resourceData = buildTrainingGroupDetail({trainers: [trainerWithTemplate]});
-        renderPage(createMockPageData(resourceData));
-        fireEvent.click(screen.getByRole('button', {name: /odebrat trenéra/i}));
-        expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+    it('does NOT show "Odebrat trenéra" button when the trainer has no self link', () => {
+        renderPage(buildTrainingGroupDetail({
+            trainers: [buildTrainer({_templates: {removeTrainer: confirmTemplate({title: 'Odebrat trenéra'})}})],
+        }));
+        expect(screen.queryByRole('button', {name: /odebrat trenéra/i})).not.toBeInTheDocument();
+    });
+
+    it('clicking "Odebrat trenéra" opens confirmation dialog and submits to the trainer self link', async () => {
+        const user = userEvent.setup();
+        renderPage(buildTrainingGroupDetail({trainers: [trainerWithRemoveTemplate()]}));
+        await user.click(screen.getByRole('button', {name: /odebrat trenéra/i}));
+
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Odebrat trenéra');
+        await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        await waitFor(() => expect(writeCalls()).toHaveLength(1));
+        expect(writeCalls()[0][0]).toBe('/api/training-groups/tg-1/trainers/member-1');
+        expect((writeCalls()[0][1] as RequestInit).method).toBe('DELETE');
     });
 
     it('shows single edit button when updateTrainingGroup template exists', () => {
-        const resourceData = buildTrainingGroupDetail({
+        renderPage(buildTrainingGroupDetail({
             _templates: {updateTrainingGroup: mockHalFormsTemplate({title: 'Upravit skupinu', method: 'PATCH'})},
-        });
-        renderPage(createMockPageData(resourceData));
+        }));
         expect(screen.getByRole('button', {name: /upravit skupinu/i})).toBeInTheDocument();
     });
 
     it('does NOT show separate "Změnit věkové rozmezí" button (merged into single edit)', () => {
-        const resourceData = buildTrainingGroupDetail({
-            _templates: {
-                updateTrainingGroup: mockHalFormsTemplate({title: 'Upravit skupinu', method: 'PATCH'}),
-            },
-        });
-        renderPage(createMockPageData(resourceData));
+        renderPage(buildTrainingGroupDetail({
+            _templates: {updateTrainingGroup: mockHalFormsTemplate({title: 'Upravit skupinu', method: 'PATCH'})},
+        }));
         expect(screen.queryByRole('button', {name: /věkové rozmezí/i})).not.toBeInTheDocument();
+    });
+});
+
+describe('TrainingGroupDetailPage — trainees and deletion', () => {
+    let writeCalls: ReturnType<typeof stubFetch>['writeCalls'];
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        ({writeCalls} = stubFetch(memberOptionsResponse));
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('"Přidat člena" dialog hides current trainees and trainers', async () => {
+        const user = userEvent.setup();
+        renderPage(buildTrainingGroupDetail({
+            trainers: [buildTrainer()],
+            members: [buildTrainee()],
+            _templates: {addTrainingGroupMember: memberPickerTemplate({title: 'Přidat člena'})},
+        }));
+        await user.click(screen.getByRole('button', {name: /přidat člena/i}));
+
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Přidat člena');
+        expect(await screen.findByRole('option', {name: 'Karel Dvořák'})).toBeInTheDocument();
+        expect(screen.queryByRole('option', {name: 'Petr Svoboda'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('option', {name: 'Jana Nováková'})).not.toBeInTheDocument();
+    });
+
+    it('removing a trainee uses the template title and submits to the member self link', async () => {
+        const user = userEvent.setup();
+        renderPage(buildTrainingGroupDetail({
+            members: [buildTrainee({_templates: {removeTrainingGroupMember: confirmTemplate({title: 'Odebrat člena'})}})],
+        }));
+        await user.click(screen.getByRole('button', {name: /odebrat/i}));
+
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Odebrat člena');
+        await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        await waitFor(() => expect(writeCalls()).toHaveLength(1));
+        expect(writeCalls()[0][0]).toBe('/api/training-groups/tg-1/members/member-2');
+    });
+
+    it('deleting the group opens the template title dialog and navigates to the list', async () => {
+        const user = userEvent.setup();
+        renderPage(buildTrainingGroupDetail({
+            _templates: {deleteTrainingGroup: confirmTemplate({title: 'Smazat skupinu', target: '/api/training-groups/tg-1'})},
+        }));
+        await user.click(screen.getByRole('button', {name: /smazat tréninkovou skupinu/i}));
+
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Smazat skupinu');
+        await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        await waitFor(() => expect(writeCalls()).toHaveLength(1));
+        expect(writeCalls()[0][0]).toBe('/api/training-groups/tg-1');
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/training-groups$/));
     });
 });

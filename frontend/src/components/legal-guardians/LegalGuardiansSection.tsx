@@ -1,30 +1,35 @@
-import {type ReactElement, useState} from 'react';
+import type {ReactElement} from 'react';
 import {Pencil} from 'lucide-react';
 import {Button, Card, DetailRow} from '../UI';
-import {HalFormModal} from '../HalNavigator2/HalFormModal.tsx';
+import {type TemplateResource, useTemplateDialog} from '../HalNavigator2/useTemplateDialog.tsx';
 import {useLegalGuardians} from '../../hooks/useLegalGuardians.ts';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
-import type {HalFormsTemplate, HalResourceLinks, Link} from '../../api';
+import type {HalResourceLinks, Link} from '../../api';
 import {getTemplateLabel, labels} from '../../localization';
 
 interface LegalGuardiansSectionProps {
     guardiansLink?: HalResourceLinks;
-    /** Template that replaces the guardians; the edit action is offered only when present. */
-    editTemplate?: HalFormsTemplate | null;
+    /** Page resource holding the guardians-replacing template; the edit action is offered only when it has it. */
+    resource?: TemplateResource | null;
     editTemplateName?: string;
     onEditStarted?: () => void;
 }
 
 export const LegalGuardiansSection = ({
                                           guardiansLink,
-                                          editTemplate,
+                                          resource,
                                           editTemplateName = '',
                                           onEditStarted,
                                       }: LegalGuardiansSectionProps): ReactElement => {
     const {guardians, isLoading} = useLegalGuardians(guardiansLink);
     const {route} = useHalPageData();
-    const [editOpen, setEditOpen] = useState(false);
     const editLabel = getTemplateLabel(editTemplateName) ?? '';
+    const editDialog = useTemplateDialog(editTemplateName, {
+        resource,
+        initialData: {legalGuardians: guardians.map(guardian => ({userId: guardian.userId}))},
+        title: editLabel,
+        successMessage: labels.ui.savedSuccessfully,
+    });
 
     return (
         <Card className="p-6">
@@ -32,13 +37,13 @@ export const LegalGuardiansSection = ({
                 <h3 className="text-xs uppercase font-semibold text-text-secondary">
                     {labels.sections.legalGuardians}
                 </h3>
-                {editTemplate && (
+                {editDialog.available && (
                     <Button
                         variant="secondary"
                         disabled={isLoading}
                         onClick={() => {
                             onEditStarted?.();
-                            setEditOpen(true);
+                            editDialog.open();
                         }}
                         startIcon={<Pencil className="w-4 h-4"/>}
                     >
@@ -72,20 +77,7 @@ export const LegalGuardiansSection = ({
                     })}
                 </dl>
             )}
-            {editTemplate && editOpen && (
-                <HalFormModal
-                    title={editLabel}
-                    template={editTemplate}
-                    templateName={editTemplateName}
-                    resourceData={{legalGuardians: guardians.map(guardian => ({userId: guardian.userId}))}}
-                    pathname={route.pathname}
-                    onClose={() => {
-                        setEditOpen(false);
-                        void route.refetch();
-                    }}
-                    successMessage={labels.ui.savedSuccessfully}
-                />
-            )}
+            {editDialog.dialog}
         </Card>
     );
 };

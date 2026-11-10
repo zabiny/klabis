@@ -1,49 +1,26 @@
 import '@testing-library/jest-dom';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {useHalPageData} from '../../hooks/useHalPageData';
+import {screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {GroupDetailPage} from './GroupDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
+import {stubFetch} from '../../__mocks__/halDialogTest';
+import {
+    confirmTemplate,
+    memberOptionsResponse,
+    memberPickerTemplate,
+    renderDetailPage,
+} from '../../__mocks__/halGroupPageTest';
+
+vi.mock('../../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: vi.fn().mockReturnValue({access_token: 'test-token', token_type: 'Bearer'}),
+    },
+}));
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
-}));
-
-vi.mock('../../contexts/HalFormContext.tsx', () => ({
-    HalFormProvider: ({children}: {children: React.ReactNode}) => children,
-}));
-
-vi.mock('../../contexts/halFormContext.ts', () => ({
-    useHalForm: vi.fn().mockReturnValue({
-        displayHalForm: vi.fn(),
-        currentFormRequest: null,
-        closeForm: vi.fn(),
-    }),
-}));
-
-vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: () => <div data-testid="hal-form-display"/>,
-}));
-
-vi.mock('../../components/UI', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../components/UI')>();
-    return {
-        ...actual,
-        Modal: ({isOpen, children, title}: {isOpen: boolean; children: React.ReactNode; title: string}) =>
-            isOpen ? <div data-testid="modal-overlay" data-title={title}>{children}</div> : null,
-    };
-});
-
-vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
-    useAuthorizedMutation: vi.fn().mockReturnValue({
-        mutate: vi.fn(),
-        isPending: false,
-        error: null,
-    }),
 }));
 
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
@@ -63,42 +40,8 @@ vi.mock('../../contexts/halRouteContext.ts', () => ({
     })),
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Record<string, unknown>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/groups/group-1',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/groups/group-1'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
-    ...overrides,
-});
-
-const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
-    vi.mocked(useHalPageData).mockReturnValue(pageData as ReturnType<typeof useHalPageData>);
-    const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/groups/group-1']}>
-                <GroupDetailPage/>
-            </MemoryRouter>
-        </QueryClientProvider>
-    );
-};
+const renderPage = (resourceData: HalResponse | null, options: {isLoading?: boolean; error?: Error | null} = {}) =>
+    renderDetailPage(<GroupDetailPage/>, resourceData, {pathname: '/groups/group-1', ...options});
 
 const buildGroupDetail = (overrides?: Record<string, unknown>): HalResponse => ({
     id: 'group-1',
@@ -141,33 +84,40 @@ const buildPendingInvitation = (overrides?: Record<string, unknown>) => ({
 });
 
 describe('GroupDetailPage', () => {
+    let writeCalls: ReturnType<typeof stubFetch>['writeCalls'];
+
     beforeEach(() => {
         vi.clearAllMocks();
+        ({writeCalls} = stubFetch(memberOptionsResponse));
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     it('shows skeleton loading state when data is loading', () => {
-        renderPage(createMockPageData(null, {isLoading: true}));
+        renderPage(null, {isLoading: true});
         expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
     });
 
     it('shows error message when fetch fails', () => {
-        renderPage(createMockPageData(null, {error: new Error('Skupina nenalezena')}));
+        renderPage(null, {error: new Error('Skupina nenalezena')});
         expect(screen.getByText('Skupina nenalezena')).toBeInTheDocument();
     });
 
     it('renders group name as page heading', () => {
-        renderPage(createMockPageData(buildGroupDetail({name: 'Závoďáci'})));
+        renderPage(buildGroupDetail({name: 'Závoďáci'}));
         expect(screen.getByRole('heading', {level: 1, name: 'Závoďáci'})).toBeInTheDocument();
     });
 
     it('renders back link to /groups', () => {
-        renderPage(createMockPageData(buildGroupDetail()));
+        renderPage(buildGroupDetail());
         const backLink = screen.getByRole('link', {name: /zpět na seznam/i});
         expect(backLink).toHaveAttribute('href', '/groups');
     });
 
     it('renders "Členové" section heading', () => {
-        renderPage(createMockPageData(buildGroupDetail()));
+        renderPage(buildGroupDetail());
         expect(screen.getByText('ČLENOVÉ')).toBeInTheDocument();
     });
 
@@ -175,7 +125,7 @@ describe('GroupDetailPage', () => {
         const resourceData = buildGroupDetail({
             owners: [buildOwner()],
         });
-        renderPage(createMockPageData(resourceData));
+        renderPage(resourceData);
         expect(screen.getByText('SPRÁVCI')).toBeInTheDocument();
     });
 
@@ -183,12 +133,12 @@ describe('GroupDetailPage', () => {
         const resourceData = buildGroupDetail({
             owners: [buildOwner()],
         });
-        renderPage(createMockPageData(resourceData));
+        renderPage(resourceData);
         expect(screen.getByText('Jana Nováková (ZBM9500)')).toBeInTheDocument();
     });
 
     it('does not render owners section when owners list is empty', () => {
-        renderPage(createMockPageData(buildGroupDetail({owners: []})));
+        renderPage(buildGroupDetail({owners: []}));
         expect(screen.queryByText('SPRÁVCI')).not.toBeInTheDocument();
     });
 
@@ -196,44 +146,44 @@ describe('GroupDetailPage', () => {
         const resourceData = buildGroupDetail({
             _templates: {updateGroup: mockHalFormsTemplate({title: 'Upravit název', method: 'PATCH'})},
         });
-        renderPage(createMockPageData(resourceData));
+        renderPage(resourceData);
         expect(screen.getByRole('button', {name: /upravit název/i})).toBeInTheDocument();
     });
 
     it('does not show "edit name" button when updateGroup template is absent', () => {
-        renderPage(createMockPageData(buildGroupDetail()));
+        renderPage(buildGroupDetail());
         expect(screen.queryByRole('button', {name: /upravit název/i})).not.toBeInTheDocument();
     });
 
-    it('clicking "edit name" button shows inline form', () => {
+    it('clicking "edit name" button shows inline form', async () => {
         const resourceData = buildGroupDetail({
             _templates: {updateGroup: mockHalFormsTemplate({title: 'Upravit název', method: 'PATCH'})},
         });
-        renderPage(createMockPageData(resourceData));
-        fireEvent.click(screen.getByRole('button', {name: /upravit název/i}));
-        expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
+        renderPage(resourceData);
+        await userEvent.click(screen.getByRole('button', {name: /upravit název/i}));
+        expect(await screen.findByRole('button', {name: /uložit změny/i})).toBeInTheDocument();
     });
 
     describe('delegated permissions', () => {
         it('shows the permissions owners hold over members', () => {
-            renderPage(createMockPageData(buildGroupDetail({delegatedAuthorities: ['MEMBERS:EDIT_PROFILE']})));
+            renderPage(buildGroupDetail({delegatedAuthorities: ['MEMBERS:EDIT_PROFILE']}));
             expect(screen.getByText('Vlastníci skupiny (i budoucí) mohou: Úprava údajů člena')).toBeInTheDocument();
         });
 
         it('states that owners gain nothing when no permission is delegated', () => {
-            renderPage(createMockPageData(buildGroupDetail({delegatedAuthorities: []})));
+            renderPage(buildGroupDetail({delegatedAuthorities: []}));
             expect(screen.getByText('Vlastníci skupiny nad členy nezískávají žádná oprávnění.')).toBeInTheDocument();
         });
 
-        it('shows the delegated permissions read-only inside the edit form', () => {
+        it('shows the delegated permissions read-only inside the edit form', async () => {
             const resourceData = buildGroupDetail({
                 delegatedAuthorities: ['MEMBERS:EDIT_PROFILE'],
                 _templates: {updateGroup: mockHalFormsTemplate({title: 'Upravit název', method: 'PATCH'})},
             });
-            renderPage(createMockPageData(resourceData));
+            renderPage(resourceData);
             expect(screen.queryByTestId('delegated-authorities-readonly')).not.toBeInTheDocument();
 
-            fireEvent.click(screen.getByRole('button', {name: /upravit název/i}));
+            await userEvent.click(screen.getByRole('button', {name: /upravit název/i}));
 
             const readOnly = screen.getByTestId('delegated-authorities-readonly');
             expect(readOnly).toHaveTextContent('Úprava údajů člena');
@@ -245,29 +195,51 @@ describe('GroupDetailPage', () => {
         const resourceData = buildGroupDetail({
             _templates: {addGroupMember: mockHalFormsTemplate({title: 'Přidat člena', method: 'POST'})},
         });
-        renderPage(createMockPageData(resourceData));
+        renderPage(resourceData);
         expect(screen.getByRole('button', {name: /přidat člena/i})).toBeInTheDocument();
     });
 
     it('does not show "Přidat člena" button when addGroupMember template is absent', () => {
-        renderPage(createMockPageData(buildGroupDetail()));
+        renderPage(buildGroupDetail());
         expect(screen.queryByRole('button', {name: /přidat člena/i})).not.toBeInTheDocument();
     });
 
-    it('clicking "Přidat člena" opens modal', () => {
+    it('clicking "Přidat člena" opens dialog titled "Přidat člena"', async () => {
         const resourceData = buildGroupDetail({
-            _templates: {addGroupMember: mockHalFormsTemplate({title: 'Přidat člena', method: 'POST'})},
+            _templates: {addGroupMember: memberPickerTemplate({title: 'Přidat člena'})},
         });
-        renderPage(createMockPageData(resourceData));
-        fireEvent.click(screen.getByRole('button', {name: /přidat člena/i}));
-        expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+        renderPage(resourceData);
+        await userEvent.click(screen.getByRole('button', {name: /přidat člena/i}));
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Přidat člena');
+    });
+
+    it('"Přidat člena" picker does not offer current members and submits to the template target', async () => {
+        const user = userEvent.setup();
+        const resourceData = buildGroupDetail({
+            members: [buildMember()],
+            _templates: {addGroupMember: memberPickerTemplate({title: 'Přidat člena', target: '/api/groups/group-1/members'})},
+        });
+        renderPage(resourceData);
+        await user.click(screen.getByRole('button', {name: /přidat člena/i}));
+
+        expect(await screen.findByRole('option', {name: 'Jana Nováková'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: 'Karel Dvořák'})).toBeInTheDocument();
+        expect(screen.queryByRole('option', {name: 'Petr Svoboda'})).not.toBeInTheDocument();
+
+        await user.selectOptions(screen.getByRole('combobox', {name: /člen/i}), 'member-2');
+        await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        await waitFor(() => expect(writeCalls()).toHaveLength(1));
+        expect(writeCalls()[0][0]).toBe('/api/groups/group-1/members');
+        expect((writeCalls()[0][1] as RequestInit).method).toBe('POST');
+        await waitFor(() => expect(screen.getByTestId('toast')).toHaveTextContent('Úspěšně uloženo'));
     });
 
     it('renders member rows with resolved names, registration numbers, and joined dates', () => {
         const resourceData = buildGroupDetail({
             members: [buildMember()],
         });
-        renderPage(createMockPageData(resourceData));
+        renderPage(resourceData);
         expect(screen.getByText('Jana Nováková (ZBM9500)')).toBeInTheDocument();
         expect(screen.getByText('15. 1. 2025')).toBeInTheDocument();
     });
@@ -277,28 +249,34 @@ describe('GroupDetailPage', () => {
             _templates: {removeGroupMember: mockHalFormsTemplate({title: 'Odebrat', method: 'DELETE', target: '/api/groups/group-1/members/member-1'})},
         });
         const resourceData = buildGroupDetail({members: [member]});
-        renderPage(createMockPageData(resourceData));
+        renderPage(resourceData);
         expect(screen.getByRole('button', {name: /odebrat/i})).toBeInTheDocument();
     });
 
     it('does not render "Odebrat" button when removeGroupMember template is absent on member', () => {
         const resourceData = buildGroupDetail({members: [buildMember()]});
-        renderPage(createMockPageData(resourceData));
+        renderPage(resourceData);
         expect(screen.queryByRole('button', {name: /odebrat/i})).not.toBeInTheDocument();
     });
 
-    it('clicking "Odebrat" opens confirmation modal', () => {
+    it('clicking "Odebrat" opens the dialog with the template title and submits to the member self link', async () => {
+        const user = userEvent.setup();
         const member = buildMember({
-            _templates: {removeGroupMember: mockHalFormsTemplate({title: 'Odebrat', method: 'DELETE', target: '/api/groups/group-1/members/member-1'})},
+            _templates: {removeGroupMember: confirmTemplate({title: 'Odebrat člena'})},
         });
-        const resourceData = buildGroupDetail({members: [member]});
-        renderPage(createMockPageData(resourceData));
-        fireEvent.click(screen.getByRole('button', {name: /odebrat/i}));
-        expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+        renderPage(buildGroupDetail({members: [member]}));
+        await user.click(screen.getByRole('button', {name: /odebrat/i}));
+
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Odebrat člena');
+        await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        await waitFor(() => expect(writeCalls()).toHaveLength(1));
+        expect(writeCalls()[0][0]).toBe('/api/groups/group-1/members/member-1');
+        expect((writeCalls()[0][1] as RequestInit).method).toBe('DELETE');
     });
 
     it('shows empty state message when no members', () => {
-        renderPage(createMockPageData(buildGroupDetail({members: []})));
+        renderPage(buildGroupDetail({members: []}));
         expect(screen.getByText('Skupina nemá žádné členy.')).toBeInTheDocument();
     });
 
@@ -307,17 +285,17 @@ describe('GroupDetailPage', () => {
             const resourceData = buildGroupDetail({
                 pendingInvitations: [buildPendingInvitation()],
             });
-            renderPage(createMockPageData(resourceData));
+            renderPage(resourceData);
             expect(screen.getByText('ČEKAJÍCÍ POZVÁNKY')).toBeInTheDocument();
         });
 
         it('does not show pending invitations section when list is empty', () => {
-            renderPage(createMockPageData(buildGroupDetail({pendingInvitations: []})));
+            renderPage(buildGroupDetail({pendingInvitations: []}));
             expect(screen.queryByText('ČEKAJÍCÍ POZVÁNKY')).not.toBeInTheDocument();
         });
 
         it('does not show pending invitations section when field is absent', () => {
-            renderPage(createMockPageData(buildGroupDetail()));
+            renderPage(buildGroupDetail());
             expect(screen.queryByText('ČEKAJÍCÍ POZVÁNKY')).not.toBeInTheDocument();
         });
 
@@ -325,14 +303,14 @@ describe('GroupDetailPage', () => {
             const resourceData = buildGroupDetail({
                 pendingInvitations: [buildPendingInvitation()],
             });
-            renderPage(createMockPageData(resourceData));
+            renderPage(resourceData);
             expect(screen.queryByText('inv-1')).not.toBeInTheDocument();
         });
 
         it('falls back to invitationId when member link is absent', () => {
             const invitation = buildPendingInvitation({_links: {self: {href: '/api/groups/group-1/invitations/inv-1'}}});
             const resourceData = buildGroupDetail({pendingInvitations: [invitation]});
-            renderPage(createMockPageData(resourceData));
+            renderPage(resourceData);
             expect(screen.getByText('inv-1')).toBeInTheDocument();
         });
     });
@@ -342,22 +320,27 @@ describe('GroupDetailPage', () => {
             const resourceData = buildGroupDetail({
                 _templates: {inviteMember: mockHalFormsTemplate({title: 'Pozvat člena', method: 'POST'})},
             });
-            renderPage(createMockPageData(resourceData));
+            renderPage(resourceData);
             expect(screen.getByRole('button', {name: /pozvat člena/i})).toBeInTheDocument();
         });
 
         it('does not show "Pozvat člena" button when inviteMember template is absent', () => {
-            renderPage(createMockPageData(buildGroupDetail()));
+            renderPage(buildGroupDetail());
             expect(screen.queryByRole('button', {name: /pozvat člena/i})).not.toBeInTheDocument();
         });
 
-        it('clicking "Pozvat člena" opens modal', () => {
+        it('clicking "Pozvat člena" opens the dialog and its picker does not offer current members', async () => {
+            const user = userEvent.setup();
             const resourceData = buildGroupDetail({
-                _templates: {inviteMember: mockHalFormsTemplate({title: 'Pozvat člena', method: 'POST'})},
+                members: [buildMember()],
+                _templates: {inviteMember: memberPickerTemplate({title: 'Pozvat člena'})},
             });
-            renderPage(createMockPageData(resourceData));
-            fireEvent.click(screen.getByRole('button', {name: /pozvat člena/i}));
-            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+            renderPage(resourceData);
+            await user.click(screen.getByRole('button', {name: /pozvat člena/i}));
+
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Pozvat člena');
+            expect(await screen.findByRole('option', {name: 'Jana Nováková'})).toBeInTheDocument();
+            expect(screen.queryByRole('option', {name: 'Petr Svoboda'})).not.toBeInTheDocument();
         });
     });
 });

@@ -1,40 +1,32 @@
 import '@testing-library/jest-dom';
-import {render, screen} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {MemoryRouter} from 'react-router-dom';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembershipFeeGroupDetailPage} from './MembershipFeeGroupDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
+import {ToastProvider} from '../../contexts/ToastContext.tsx';
+import {stubFetch, ToastProbe, createTestQueryClient} from '../../__mocks__/halDialogTest.tsx';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
 }));
 
-vi.mock('../../contexts/HalFormContext.tsx', () => ({
-    HalFormProvider: ({children}: {children: React.ReactNode}) => children,
+vi.mock('../../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: vi.fn().mockReturnValue({access_token: 'test-token', token_type: 'Bearer'}),
+    },
 }));
 
-vi.mock('../../contexts/halFormContext.ts', () => ({
-    useHalForm: vi.fn().mockReturnValue({
-        displayHalForm: vi.fn(),
-        currentFormRequest: null,
-        closeForm: vi.fn(),
-    }),
+vi.mock('../../hooks/useRootNavigation', () => ({
+    useRootNavigation: vi.fn().mockReturnValue({data: [], isLoading: false, error: null}),
 }));
 
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     HalSubresourceProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
-}));
-
-vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
-    useAuthorizedMutation: vi.fn().mockReturnValue({
-        mutate: vi.fn(),
-        isPending: false,
-        error: null,
-    }),
 }));
 
 const buildGroupDetail = (overrides?: Partial<HalResponse>): HalResponse => ({
@@ -93,19 +85,29 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
 
 const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
     vi.mocked(useHalPageData).mockReturnValue(pageData as ReturnType<typeof useHalPageData>);
-    const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+    const queryClient = createTestQueryClient();
     return render(
         <QueryClientProvider client={queryClient}>
             <MemoryRouter initialEntries={['/administration/membership-fee-groups/group-1']}>
-                <MembershipFeeGroupDetailPage/>
+                <ToastProvider>
+                    <MembershipFeeGroupDetailPage/>
+                    <ToastProbe/>
+                </ToastProvider>
             </MemoryRouter>
         </QueryClientProvider>
     );
 };
 
 describe('MembershipFeeGroupDetailPage', () => {
+    let writeCalls: ReturnType<typeof stubFetch>['writeCalls'];
+
     beforeEach(() => {
         vi.clearAllMocks();
+        ({writeCalls} = stubFetch());
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     it('shows skeleton loading state when data is loading', () => {
@@ -211,5 +213,51 @@ describe('MembershipFeeGroupDetailPage', () => {
         });
         renderPage(createMockPageData(resourceData));
         expect(screen.queryByRole('button', {name: /upravit/i})).not.toBeInTheDocument();
+    });
+
+    describe('assign member dialog', () => {
+        const assignMemberGroup = () => buildGroupDetail({
+            _templates: {
+                assignMember: mockHalFormsTemplate({
+                    title: 'Přiřadit člena',
+                    method: 'POST',
+                    target: '/api/membership-fee-groups/group-1/members',
+                    properties: [],
+                }),
+            },
+        });
+
+        it('opens the dialog with the assign member title', async () => {
+            const user = userEvent.setup();
+            renderPage(createMockPageData(assignMemberGroup()));
+
+            await user.click(screen.getByRole('button', {name: /přiřadit člena/i}));
+
+            expect(await screen.findByTestId('modal-title')).toHaveTextContent('Přiřadit člena');
+        });
+
+        it('submits to the template target, shows the saved toast and closes the dialog', async () => {
+            const user = userEvent.setup();
+            renderPage(createMockPageData(assignMemberGroup()));
+
+            await user.click(screen.getByRole('button', {name: /přiřadit člena/i}));
+            await user.click(await screen.findByRole('button', {name: /odeslat/i}));
+
+            await waitFor(() => expect(writeCalls()).toHaveLength(1));
+            expect(writeCalls()[0][0]).toBe('/api/membership-fee-groups/group-1/members');
+            await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+            expect(screen.getByTestId('toast')).toHaveTextContent('Úspěšně uloženo');
+        });
+
+        it('closes without a request when cancelled', async () => {
+            const user = userEvent.setup();
+            renderPage(createMockPageData(assignMemberGroup()));
+
+            await user.click(screen.getByRole('button', {name: /přiřadit člena/i}));
+            await user.click(await screen.findByRole('button', {name: /zrušit/i}));
+
+            await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+            expect(writeCalls()).toHaveLength(0);
+        });
     });
 });

@@ -5,7 +5,7 @@ import {ErrorDisplay, Spinner} from '../UI';
 import {type HalFormFieldFactory, HalFormsForm, type RenderFormCallback} from './halforms';
 import {isFormValidationError, toFormValidationError} from '../../api/hateoas.ts';
 import {UI_MESSAGES} from '../../constants/messages.ts';
-import {createMemberFilteredFactory, klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
+import {klabisFieldsFactory} from '../KlabisFieldsFactory.tsx';
 import {useHalFormData} from '../../hooks/useHalFormData.ts';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {containerStyles} from '../../theme/designTokens';
@@ -45,12 +45,6 @@ export interface HalFormDisplayProps {
     submitButtonLabel?: string;
     /** Optional icon for the submit button */
     submitIcon?: ReactNode;
-    // TODO: remove - this has no place in HAL "framework" class
-    /** Member IDs to exclude from member-picker fields (already in group) */
-    excludeMemberIds?: string[];
-    // TODO: remove - this has no place in HAL "framework" class
-    /** When provided, member-picker fields show ONLY these member IDs (used for promote-to-owner) */
-    includeOnlyMemberIds?: string[];
     /**
      * URL of the specific resource item being acted on.
      * Used as submission URL fallback when template.target is absent (e.g. embedded item affordances).
@@ -86,21 +80,13 @@ export const HalFormDisplay = ({
                                    fieldsFactory,
                                    submitButtonLabel,
                                    submitIcon,
-                                   excludeMemberIds,
-                                   includeOnlyMemberIds,
                                    resourceUrl,
                                    navigateOnSuccess = true,
                                    refineValidationSchema,
                                }: HalFormDisplayProps): ReactElement => {
     const template = useMemo(() => withTemplateFieldPrompts(rawTemplate, templateName), [rawTemplate, templateName]);
 
-    const effectiveFieldsFactory = useMemo(() => {
-        if (fieldsFactory) return fieldsFactory;
-        if (excludeMemberIds || includeOnlyMemberIds) {
-            return createMemberFilteredFactory(excludeMemberIds, includeOnlyMemberIds);
-        }
-        return klabisFieldsFactory;
-    }, [fieldsFactory, excludeMemberIds, includeOnlyMemberIds]);
+    const effectiveFieldsFactory = fieldsFactory ?? klabisFieldsFactory;
     const {addToast} = useToast();
     const navigate = useNavigate();
 

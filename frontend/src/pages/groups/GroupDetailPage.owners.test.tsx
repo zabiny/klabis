@@ -1,49 +1,25 @@
 import '@testing-library/jest-dom';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {useHalPageData} from '../../hooks/useHalPageData';
-import {mockHalFormsTemplate} from '../../__mocks__/halData';
+import {screen, waitFor} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {GroupDetailPage} from './GroupDetailPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
+import {stubFetch} from '../../__mocks__/halDialogTest';
+import {
+    confirmTemplate,
+    memberOptionsResponse,
+    memberPickerTemplate,
+    renderDetailPage,
+} from '../../__mocks__/halGroupPageTest';
+
+vi.mock('../../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: vi.fn().mockReturnValue({access_token: 'test-token', token_type: 'Bearer'}),
+    },
+}));
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
-}));
-
-vi.mock('../../contexts/HalFormContext.tsx', () => ({
-    HalFormProvider: ({children}: {children: React.ReactNode}) => children,
-}));
-
-vi.mock('../../contexts/halFormContext.ts', () => ({
-    useHalForm: vi.fn().mockReturnValue({
-        displayHalForm: vi.fn(),
-        currentFormRequest: null,
-        closeForm: vi.fn(),
-    }),
-}));
-
-vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: () => <div data-testid="hal-form-display"/>,
-}));
-
-vi.mock('../../components/UI', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../components/UI')>();
-    return {
-        ...actual,
-        Modal: ({isOpen, children, title}: {isOpen: boolean; children: React.ReactNode; title: string}) =>
-            isOpen ? <div data-testid="modal-overlay" data-title={title}>{children}</div> : null,
-    };
-});
-
-vi.mock('../../hooks/useAuthorizedFetch', () => ({
-    useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
-    useAuthorizedMutation: vi.fn().mockReturnValue({
-        mutate: vi.fn(),
-        isPending: false,
-        error: null,
-    }),
 }));
 
 vi.mock('../../contexts/HalRouteContext.tsx', () => ({
@@ -63,42 +39,8 @@ vi.mock('../../contexts/halRouteContext.ts', () => ({
     })),
 }));
 
-const createMockPageData = (resourceData: HalResponse | null, overrides?: Record<string, unknown>) => ({
-    resourceData,
-    isLoading: false,
-    error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/groups/group-1',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/groups/group-1'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
-    ...overrides,
-});
-
-const renderPage = (pageData: ReturnType<typeof createMockPageData>) => {
-    vi.mocked(useHalPageData).mockReturnValue(pageData as ReturnType<typeof useHalPageData>);
-    const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
-    return render(
-        <QueryClientProvider client={queryClient}>
-            <MemoryRouter initialEntries={['/groups/group-1']}>
-                <GroupDetailPage/>
-            </MemoryRouter>
-        </QueryClientProvider>
-    );
-};
+const renderPage = (resourceData: HalResponse) =>
+    renderDetailPage(<GroupDetailPage/>, resourceData, {pathname: '/groups/group-1'});
 
 const buildGroupDetail = (overrides?: Record<string, unknown>): HalResponse => ({
     id: 'group-1',
@@ -116,63 +58,96 @@ const buildOwner = (overrides?: Record<string, unknown>) => ({
     ...overrides,
 });
 
+const buildMember = (overrides?: Record<string, unknown>) => ({
+    memberId: 'member-1',
+    joinedAt: '2025-01-15T00:00:00Z',
+    _links: {
+        self: {href: '/api/groups/group-1/members/member-1'},
+        member: {href: '/api/members/member-1'},
+    },
+    ...overrides,
+});
+
 describe('GroupDetailPage — owner management (task 6.3)', () => {
+    let writeCalls: ReturnType<typeof stubFetch>['writeCalls'];
+
     beforeEach(() => {
         vi.clearAllMocks();
+        ({writeCalls} = stubFetch(memberOptionsResponse));
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
     });
 
     it('shows "Přidat správce" button when addOwner template exists on resource', () => {
         const resourceData = buildGroupDetail({
             owners: [buildOwner()],
-            _templates: {addGroupOwner: mockHalFormsTemplate({title: 'Přidat správce', method: 'POST'})},
+            _templates: {addGroupOwner: memberPickerTemplate({title: 'Přidat správce'})},
         });
-        renderPage(createMockPageData(resourceData));
+        renderPage(resourceData);
         expect(screen.getByRole('button', {name: /přidat správce/i})).toBeInTheDocument();
     });
 
     it('does NOT show "Přidat správce" button when addOwner template is absent', () => {
-        renderPage(createMockPageData(buildGroupDetail({owners: [buildOwner()]})));
+        renderPage(buildGroupDetail({owners: [buildOwner()]}));
         expect(screen.queryByRole('button', {name: /přidat správce/i})).not.toBeInTheDocument();
     });
 
-    it('clicking "Přidat správce" opens modal', () => {
+    it('"Přidat správce" dialog offers only current members as candidates', async () => {
+        const user = userEvent.setup();
         const resourceData = buildGroupDetail({
             owners: [buildOwner()],
-            _templates: {addGroupOwner: mockHalFormsTemplate({title: 'Přidat správce', method: 'POST'})},
+            members: [buildMember()],
+            _templates: {addGroupOwner: memberPickerTemplate({title: 'Přidat správce', target: '/api/groups/group-1/owners'})},
         });
-        renderPage(createMockPageData(resourceData));
-        fireEvent.click(screen.getByRole('button', {name: /přidat správce/i}));
-        expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+        renderPage(resourceData);
+        await user.click(screen.getByRole('button', {name: /přidat správce/i}));
+
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Přidat správce');
+        expect(await screen.findByRole('option', {name: 'Petr Svoboda'})).toBeInTheDocument();
+        expect(screen.queryByRole('option', {name: 'Jana Nováková'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('option', {name: 'Karel Dvořák'})).not.toBeInTheDocument();
+
+        await user.selectOptions(screen.getByRole('combobox', {name: /člen/i}), 'member-1');
+        await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        await waitFor(() => expect(writeCalls()).toHaveLength(1));
+        expect(writeCalls()[0][0]).toBe('/api/groups/group-1/owners');
     });
 
     it('shows "Odebrat správce" button per owner when removeOwner template exists on owner', () => {
         const ownerWithTemplate = {
             ...buildOwner(),
-            _templates: {removeGroupOwner: mockHalFormsTemplate({title: 'Odebrat správce', method: 'DELETE', target: '/api/groups/group-1/owners/owner-1'})},
+            _templates: {removeGroupOwner: confirmTemplate({title: 'Odebrat správce', target: '/api/groups/group-1/owners/owner-1'})},
         };
-        const resourceData = buildGroupDetail({owners: [ownerWithTemplate]});
-        renderPage(createMockPageData(resourceData));
+        renderPage(buildGroupDetail({owners: [ownerWithTemplate]}));
         expect(screen.getByRole('button', {name: /odebrat správce/i})).toBeInTheDocument();
     });
 
     it('does NOT show "Odebrat správce" button when removeOwner template is absent on owner', () => {
-        const resourceData = buildGroupDetail({owners: [buildOwner()]});
-        renderPage(createMockPageData(resourceData));
+        renderPage(buildGroupDetail({owners: [buildOwner()]}));
         expect(screen.queryByRole('button', {name: /odebrat správce/i})).not.toBeInTheDocument();
     });
 
-    it('clicking "Odebrat správce" opens confirmation modal', () => {
+    it('clicking "Odebrat správce" opens a confirmation dialog that submits to the owner self link', async () => {
+        const user = userEvent.setup();
         const ownerWithTemplate = {
             ...buildOwner(),
             _links: {
                 member: {href: '/api/members/owner-1'},
                 self: {href: '/api/groups/group-1/owners/owner-1'},
             },
-            _templates: {removeGroupOwner: mockHalFormsTemplate({title: 'Odebrat správce', method: 'DELETE', target: '/api/groups/group-1/owners/owner-1'})},
+            _templates: {removeGroupOwner: confirmTemplate({title: 'Odebrat správce'})},
         };
-        const resourceData = buildGroupDetail({owners: [ownerWithTemplate]});
-        renderPage(createMockPageData(resourceData));
-        fireEvent.click(screen.getByRole('button', {name: /odebrat správce/i}));
-        expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
+        renderPage(buildGroupDetail({owners: [ownerWithTemplate]}));
+        await user.click(screen.getByRole('button', {name: /odebrat správce/i}));
+
+        expect(await screen.findByTestId('modal-title')).toHaveTextContent('Odebrat správce');
+        await user.click(screen.getByRole('button', {name: /odeslat/i}));
+
+        await waitFor(() => expect(writeCalls()).toHaveLength(1));
+        expect(writeCalls()[0][0]).toBe('/api/groups/group-1/owners/owner-1');
+        expect((writeCalls()[0][1] as RequestInit).method).toBe('DELETE');
     });
 });

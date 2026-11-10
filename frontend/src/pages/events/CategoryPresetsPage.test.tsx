@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, within, waitFor} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
@@ -9,7 +9,8 @@ import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {CategoryPresetsPage} from './CategoryPresetsPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
-import {HalFormDisplay, type HalFormDisplayProps} from '../../components/HalNavigator2/HalFormDisplay';
+import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
+import {ToastProvider} from '../../contexts/ToastContext.tsx';
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -27,18 +28,20 @@ vi.mock('../../contexts/halFormContext.ts', () => ({
     }),
 }));
 
-vi.mock('../../components/HalNavigator2/HalFormDisplay.tsx', () => ({
-    HalFormDisplay: vi.fn(() => <div data-testid="hal-form-display"/>),
+vi.mock('../../hooks/useHalFormData', () => ({
+    useHalFormData: (_template: unknown, resourceData: Record<string, unknown>) => ({
+        formData: resourceData ?? {},
+        isLoadingTargetData: false,
+        targetFetchError: null,
+        refetchTargetData: vi.fn(),
+    }),
 }));
 
-vi.mock('../../components/UI', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../components/UI')>();
-    return {
-        ...actual,
-        Modal: ({isOpen, children, title}: {isOpen: boolean; children: React.ReactNode; title: string}) =>
-            isOpen ? <div data-testid="modal-overlay" data-title={title}>{children}</div> : null,
-    };
-});
+vi.mock('../../api/klabisUserManager', () => ({
+    klabisAuthUserManager: {
+        getUser: vi.fn().mockReturnValue({access_token: 'test-token', token_type: 'Bearer'}),
+    },
+}));
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
     useAuthorizedQuery: vi.fn().mockReturnValue({data: null, error: null}),
@@ -91,7 +94,9 @@ const renderPage = (pageData: UseHalPageDataReturn) => {
     return render(
         <QueryClientProvider client={queryClient}>
             <MemoryRouter initialEntries={['/category-presets']}>
+                <ToastProvider>
                 <CategoryPresetsPage />
+                </ToastProvider>
             </MemoryRouter>
         </QueryClientProvider>,
     );
@@ -206,46 +211,43 @@ describe('CategoryPresetsPage', () => {
             expect(screen.queryByRole('button', {name: 'Smazat šablonu'})).not.toBeInTheDocument();
         });
 
-        it('opens modal with HalFormDisplay when edit button is clicked', () => {
-            const preset = buildPresetRow({
+        it('opens dialog titled by the template when edit button is clicked', () => {
+            const row = buildPresetRow({
                 _templates: {updateCategoryPreset: mockHalFormsTemplate({method: 'PUT', title: 'Upravit šablonu'})},
             });
-            renderPageWithPresets([preset]);
+            renderPageWithPresets([row]);
 
             fireEvent.click(screen.getByRole('button', {name: 'Upravit'}));
 
-            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
-            expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(within(screen.getByRole('dialog')).getAllByRole('heading', {name: 'Upravit šablonu'})[0]).toBeInTheDocument();
         });
 
-        it('opens modal with HalFormDisplay when delete button is clicked', () => {
-            const preset = buildPresetRow({
+        it('opens dialog titled by the template when delete button is clicked', () => {
+            const row = buildPresetRow({
                 _templates: {deleteCategoryPreset: mockHalFormsTemplate({method: 'DELETE', title: 'Smazat šablonu'})},
             });
-            renderPageWithPresets([preset]);
+            renderPageWithPresets([row]);
 
             fireEvent.click(screen.getByRole('button', {name: 'Smazat šablonu'}));
 
-            expect(screen.getByTestId('modal-overlay')).toBeInTheDocument();
-            expect(screen.getByTestId('hal-form-display')).toBeInTheDocument();
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(within(screen.getByRole('dialog')).getAllByRole('heading', {name: 'Smazat šablonu'})[0]).toBeInTheDocument();
         });
 
-        it('passes item self link as resourceUrl to HalFormDisplay when edit button is clicked', () => {
-            const capturedProps: HalFormDisplayProps[] = [];
-            vi.mocked(HalFormDisplay).mockImplementation((props) => {
-                capturedProps.push(props);
-                return <div data-testid="hal-form-display"/>;
-            });
-
-            const preset = buildPresetRow({
+        it('submits to the item self link path when the template has no target', () => {
+            const mutate = vi.fn();
+            vi.mocked(useAuthorizedMutation).mockReturnValue({mutate, isPending: false, error: null} as unknown as ReturnType<typeof useAuthorizedMutation>);
+            const row = buildPresetRow({
                 _links: {self: {href: 'https://localhost:8443/api/category-presets/preset-1'}},
-                _templates: {updateCategoryPreset: mockHalFormsTemplate({method: 'PUT', title: 'Upravit šablonu'})},
+                _templates: {updateCategoryPreset: mockHalFormsTemplate({method: 'PUT', title: 'Upravit šablonu', target: undefined, properties: []})},
             });
-            renderPageWithPresets([preset]);
+            renderPageWithPresets([row]);
 
             fireEvent.click(screen.getByRole('button', {name: 'Upravit'}));
+            fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /uložit|odeslat|potvrdit/i}));
 
-            expect(capturedProps[capturedProps.length - 1].resourceUrl).toBe('https://localhost:8443/api/category-presets/preset-1');
+            return waitFor(() => expect(mutate).toHaveBeenCalledWith(expect.objectContaining({url: '/api/category-presets/preset-1'}), expect.anything()));
         });
     });
 });

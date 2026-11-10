@@ -567,6 +567,36 @@ describe('SyncStatusOverlay', () => {
         });
     });
 
+    describe('form dialog stacking', () => {
+        it('renders the synchronizeNow form dialog after the overlay in the document, outside its subtree', async () => {
+            const user = userEvent.setup();
+            renderIndicator({
+                syncLink: buildSyncLink(),
+                mode: 'icon',
+                queryState: {
+                    isLoading: false,
+                    error: null,
+                    data: buildSyncState({
+                        status: 'IN_SYNC',
+                        _templates: {synchronizeNow: buildTemplate('Synchronize')},
+                    }),
+                },
+            });
+
+            const overlay = await openOverlay(user);
+            await user.click(within(overlay).getByTestId('form-template-button-synchronizeNow'));
+
+            const formTitle = (await screen.findAllByTestId('modal-title'))
+                .find(t => t.textContent === 'Synchronizovat')!;
+            const overlayDialog = overlay.closest('[role="dialog"]')!;
+            const formDialog = formTitle.closest('[role="dialog"]')!;
+
+            expect(formDialog).not.toBe(overlayDialog);
+            expect(overlayDialog.contains(formDialog)).toBe(false);
+            expect(overlayDialog.compareDocumentPosition(formDialog) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        });
+    });
+
     describe('attempt history', () => {
         const open = async (links: Record<string, {href: string}>) => {
             const user = userEvent.setup();
