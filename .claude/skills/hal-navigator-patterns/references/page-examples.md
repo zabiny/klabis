@@ -3,7 +3,7 @@
 Real page implementations from the Klabis frontend, demonstrating common patterns.
 
 > **Typing note.** New code types the row / response with generated types —
-> `components['schemas']['EntityModelFooDto']` for `_embedded` rows,
+> generated `*ItemResource` (e.g. `ListMembersItemResource`) for `_embedded` rows,
 > `Get*Resource` / `List*Resource` (from `@/api`) for `useHalPageData<T>()`. The
 > `EntityModel<{...}>` hand-written shapes and `resourceData as any` below are the **older**
 > pattern still present in the codebase; prefer the generated types. See the SKILL.md typing note.
@@ -15,16 +15,16 @@ Simple list page with sortable table and row navigation.
 ```tsx
 // frontend/src/pages/events/EventsPage.tsx
 import {type ReactElement} from "react";
-import type {components} from "../../api/klabisApi";
+import type {ListEventsItemResource} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {formatDate} from "../../utils/dateUtils.ts";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 
-type EventListData = components['schemas']['EntityModelEventSummaryDto'];
+type EventListData = ListEventsItemResource;
 
 export const EventsPage = (): ReactElement => {
-    const {route} = useHalPageData();
+    const {navigateToResource} = useHalPageData();
 
     return <div className="flex flex-col gap-8">
         <h1 className="text-3xl font-bold text-text-primary">Zavody</h1>
@@ -33,7 +33,7 @@ export const EventsPage = (): ReactElement => {
             <HalEmbeddedTable<EventListData>
                 collectionName={"eventSummaryDtoList"}
                 defaultOrderBy={"eventDate"}
-                onRowClick={route.navigateToResource}
+                onRowClick={navigateToResource}
             >
                 <TableCell sortable column={"eventDate"}
                     dataRender={({value}) => typeof value === 'string' ? formatDate(value) : ''}
@@ -55,7 +55,7 @@ List page with create action using multi-step form modal.
 ```tsx
 // frontend/src/pages/members/MembersPage.tsx
 import {type ReactElement} from "react";
-import type {components} from "../../api/klabisApi";
+import type {ListEventsItemResource} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import {HalLinksSection} from "../../components/HalNavigator2/HalLinksSection.tsx";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
@@ -63,10 +63,10 @@ import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {type FormStep, MultiStepFormModal} from "../../components/HalNavigator2/MultiStepFormModal.tsx";
 
-type MemberListData = components['schemas']['EntityModelMemberSummaryResponse'];
+type MemberListData = ListMembersItemResource;
 
 export const MembersPage = (): ReactElement => {
-    const {route} = useHalPageData();
+    const {navigateToResource} = useHalPageData();
 
     return <div className="flex flex-col gap-8">
         <h1 className="text-3xl font-bold text-text-primary">Adresar</h1>
@@ -78,7 +78,7 @@ export const MembersPage = (): ReactElement => {
             <HalEmbeddedTable<MemberListData>
                 collectionName={"memberSummaryResponseList"}
                 defaultOrderBy={"lastName"}
-                onRowClick={route.navigateToResource}
+                onRowClick={navigateToResource}
             >
                 <TableCell sortable column="firstName">Jmeno</TableCell>
                 <TableCell sortable column="lastName">Prijmeni</TableCell>
@@ -129,7 +129,7 @@ import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 
 export const MemberFinancePage = (): ReactElement => {
-    const {isLoading, resourceData, route} = useHalPageData();
+    const {isLoading, resourceData} = useHalPageData();
 
     if (isLoading) return <Skeleton/>
 
@@ -189,19 +189,19 @@ Key patterns:
 - Type the response with `useHalPageData<GetMemberResource>()` — fields are typed, no `as any`
 - Conditionally render sections based on data presence
 - Navigation buttons based on available `_links`
-- Use `extractNavigationPath(href)` to convert API hrefs to router paths
+- Use `toRoutePath(href)` to convert API hrefs to router paths
 
 ```tsx
 // Key excerpts from frontend/src/pages/members/MemberDetailPage.tsx
 import type { GetMemberResource } from '@/api';
 
-const { resourceData, isLoading, error, route } = useHalPageData<GetMemberResource>();
+const { resourceData, isLoading, error } = useHalPageData<GetMemberResource>();
 const navigate = useNavigate();
 const member = resourceData;   // typed as GetMemberResource | null
 
 // Navigate via link
 const handleNavigateToLink = (href: string) => {
-    navigate(extractNavigationPath(href));
+    navigate(toRoutePath(href));
 };
 
 // Conditional action buttons based on available links
@@ -243,7 +243,7 @@ if (resourceData && hasCalendarItems(resourceData)) {
 // Navigate via HAL links
 const handlePrevMonth = () => {
     const prevLink = resourceData?._links?.prev;
-    if (prevLink) navigate(extractNavigationPath(toHref(prevLink)));
+    if (prevLink) navigate(toRoutePath(toHref(prevLink)));
 };
 
 // Conditionally disable navigation buttons
@@ -269,14 +269,14 @@ import {type FormStep, MultiStepFormModal} from '../../components/HalNavigator2/
 import {HalLinksSection} from '../../components/HalNavigator2/HalLinksSection.tsx';
 
 // Types
-import type {components} from '../../api/klabisApi';        // components['schemas']['EntityModel…'] for rows
+import type {ListMembersItemResource} from '../../api';     // generated *ItemResource for rows
 import type {GetMemberResource} from '../../api';            // Get*Resource / List*Resource for useHalPageData<T>
 import type {HalResponse, HalFormsTemplate} from '../../api';
 
 // Utilities
 import {formatDate} from '../../utils/dateUtils.ts';
 import {toHref} from '../../api/hateoas.ts';
-import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {toRoutePath} from '../../api/apiPath';
 
 // UI components
 import {Alert, Button, Skeleton, Spinner} from '../../components/UI';

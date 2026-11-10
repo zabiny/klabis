@@ -268,6 +268,20 @@ paths:
             addRule:
               operation: addRule
               description: Present only for callers with MEMBERS:MANAGE
+          x-hal-item-links:
+            self:
+              operation: getRule
+              description: This payment rule
+            eventType:
+              operation: getEventType
+              description: The event type the rule applies to
+          x-hal-item-templates:
+            editRule:
+              operation: editRule
+              description: Present only for callers with MEMBERS:MANAGE. The ruleType property carries its options inline.
+            removeRule:
+              operation: removeRule
+              description: Present only for callers with MEMBERS:MANAGE
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':

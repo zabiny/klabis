@@ -62,7 +62,7 @@ export interface HalEmbeddedTableProps<T = Record<string, unknown>> {
  *   <TableCell column="registrationNumber">Reg. číslo</TableCell>
  * </HalEmbeddedTable>
  */
-export function HalEmbeddedTable<T extends Record<string, unknown> = Record<string, unknown>>({
+export function HalEmbeddedTable<T extends object = Record<string, unknown>>({
                                                                               collectionName,
                                                                               onRowClick,
                                                                               defaultOrderBy,
@@ -73,10 +73,10 @@ export function HalEmbeddedTable<T extends Record<string, unknown> = Record<stri
                                                                               extraParams,
                                                                               children,
                                                                           }: HalEmbeddedTableProps<T>): ReactElement {
-    const {route, isLoading} = useHalPageData()
+    const {getResourceLink, isLoading} = useHalPageData()
 
     // Extract self link from HAL resource
-    const selfLink = route.getResourceLink();
+    const selfLink = getResourceLink();
 
     if (isLoading) {
         return (

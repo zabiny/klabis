@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 
-import {deriveHalEnvelopes, embeddedKey, isEnvelopeShaped} from '../lib/derive.mjs';
+import {deriveHalEnvelopes, embeddedKey, isDerivedEntityModel, isEnvelopeShaped} from '../lib/derive.mjs';
 
 const LINKS = {$ref: '#/components/schemas/Links'};
 const TEMPLATES = {$ref: '#/components/schemas/HalFormsTemplates'};
@@ -657,5 +657,21 @@ describe('deriveHalEnvelopes', () => {
 
             expect(halForms(document)).toBeUndefined();
         });
+    });
+});
+
+describe('isDerivedEntityModel', () => {
+    it('recognises the EntityModel<Payload> shape the deriver builds', () => {
+        const {document} = deriveHalEnvelopes(docWith(ref('MemberDetailsResponse'), {
+            MemberDetailsResponse: {type: 'object', properties: {id: {type: 'string'}}},
+        }));
+
+        expect(isDerivedEntityModel(document.components.schemas.EntityModelMemberDetailsResponse)).toBe(true);
+    });
+
+    it('rejects a payload, a hand-written envelope and an envelope with an _embedded block', () => {
+        expect(isDerivedEntityModel({type: 'object', properties: {id: {type: 'string'}}})).toBe(false);
+        expect(isDerivedEntityModel({type: 'object', properties: {_links: {type: 'object'}}})).toBe(false);
+        expect(isDerivedEntityModel({allOf: [ref('X'), ENTITY_MODEL, {type: 'object'}]})).toBe(false);
     });
 });

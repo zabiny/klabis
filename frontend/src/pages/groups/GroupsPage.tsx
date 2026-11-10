@@ -4,34 +4,25 @@ import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {TableCell} from '../../components/KlabisTable';
 import {Alert, Button, Card, Skeleton} from '../../components/UI';
-import type {GetPendingInvitationsResource} from '../../api';
+import type {GetPendingInvitationsItemResource, GetPendingInvitationsResource} from '../../api';
 import type {components} from '../../api/klabisApi';
 import {labels} from '../../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
 import {toHref} from '../../api/hateoas.ts';
 import {Check, X} from 'lucide-react';
-import type {PendingInvitation} from './types.ts';
 import {DelegatedAuthoritiesNotice} from '../../components/groups/DelegatedAuthorities.tsx';
 import {groupFormFieldsFactory} from '../../components/groups/groupFormFieldsFactory.tsx';
 
 type GroupSummary = components['schemas']['EntityModelGroupSummaryResponse'];
 
-// GetPendingInvitationsResource types the collection envelope; its rows carry per-row
-// _links (accept / reject / invitedMember) added at runtime, described by the ./types.ts view type.
-type PendingInvitationsData = Omit<GetPendingInvitationsResource, '_embedded'> & {
-    _embedded?: {
-        pendingInvitationResponseList?: PendingInvitation[];
-    };
-};
-
 const PendingInvitationsSection = (): ReactElement | null => {
-    const {data} = useAuthorizedQuery<PendingInvitationsData>('/api/invitations/pending');
+    const {data} = useAuthorizedQuery<GetPendingInvitationsResource>('/api/invitations/pending');
 
     const {mutate} = useAuthorizedMutation({
         method: 'POST',
     });
 
-    const invitations = data?._embedded?.pendingInvitationResponseList ?? [];
+    const invitations: GetPendingInvitationsItemResource[] = data?._embedded?.pendingInvitationResponseList ?? [];
 
     if (invitations.length === 0) {
         return null;
@@ -49,7 +40,10 @@ const PendingInvitationsSection = (): ReactElement | null => {
             <Card className="p-0 overflow-hidden">
                 <table className="w-full text-sm">
                     <tbody>
-                    {invitations.map((invitation) => (
+                    {invitations.map((invitation) => {
+                        const acceptLink = invitation._links?.accept;
+                        const rejectLink = invitation._links?.reject;
+                        return (
                         <tr key={invitation.invitationId}
                             className="border-b border-border last:border-0">
                             <td className="px-4 py-3 text-text-primary">
@@ -61,21 +55,21 @@ const PendingInvitationsSection = (): ReactElement | null => {
                             </td>
                             <td className="px-4 py-3 text-right">
                                 <div className="flex justify-end gap-2">
-                                    {invitation._links?.accept && (
+                                    {acceptLink && (
                                         <Button
                                             variant="primary"
                                             size="sm"
-                                            onClick={() => handleAction(toHref(invitation._links.accept!))}
+                                            onClick={() => handleAction(toHref(acceptLink))}
                                             startIcon={<Check className="w-4 h-4"/>}
                                         >
                                             {labels.buttons.accept}
                                         </Button>
                                     )}
-                                    {invitation._links?.reject && (
+                                    {rejectLink && (
                                         <Button
                                             variant="danger"
                                             size="sm"
-                                            onClick={() => handleAction(toHref(invitation._links.reject!))}
+                                            onClick={() => handleAction(toHref(rejectLink))}
                                             startIcon={<X className="w-4 h-4"/>}
                                         >
                                             {labels.buttons.reject}
@@ -84,7 +78,8 @@ const PendingInvitationsSection = (): ReactElement | null => {
                                 </div>
                             </td>
                         </tr>
-                    ))}
+                        );
+                    })}
                     </tbody>
                 </table>
             </Card>
@@ -93,7 +88,7 @@ const PendingInvitationsSection = (): ReactElement | null => {
 };
 
 export const GroupsPage = (): ReactElement => {
-    const {isLoading, error, route} = useHalPageData();
+    const {isLoading, error, navigateToResource} = useHalPageData();
 
     if (isLoading) {
         return <Skeleton/>;
@@ -118,7 +113,7 @@ export const GroupsPage = (): ReactElement => {
                     collectionName="groupSummaryResponseList"
                     tableId="groups.free"
                     defaultOrderBy="name"
-                    onRowClick={route.navigateToResource}
+                    onRowClick={navigateToResource}
                     emptyMessage="Nejste členem žádné skupiny."
                 >
                     <TableCell sortable column="name">{labels.fields.name}</TableCell>

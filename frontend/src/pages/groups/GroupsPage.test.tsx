@@ -38,24 +38,9 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     resourceData,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/groups',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/groups'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    navigateToResource: vi.fn(),
+    refetch: async () => {},
+    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/groups'}),
     ...overrides,
 });
 
@@ -107,8 +92,8 @@ const renderPageWithInvitations = (invitations: unknown[]) => {
         _links: {self: {href: 'http://localhost/api/invitations/pending'}},
         _embedded: {pendingInvitationResponseList: invitations},
     };
-    vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
-        if (url.includes('invitations/pending')) {
+    vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
+        if (url?.includes('invitations/pending')) {
             return {data: invitationsData, error: null} as ReturnType<typeof useAuthorizedQuery>;
         }
         return {data: null, error: null} as ReturnType<typeof useAuthorizedQuery>;

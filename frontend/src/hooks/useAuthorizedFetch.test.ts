@@ -47,7 +47,7 @@ const createTestHookSetup = () => {
 };
 
 describe('useAuthorizedQuery', () => {
-    const {setup, teardown, createWrapper, getFetchSpy} = createTestHookSetup();
+    const {setup, teardown, createWrapper, getFetchSpy, getQueryClient} = createTestHookSetup();
     let fetchSpy: Mock;
 
     beforeEach(() => {
@@ -57,6 +57,70 @@ describe('useAuthorizedQuery', () => {
 
     afterEach(() => {
         teardown();
+    });
+
+    describe('Cache key normalisation', () => {
+        it('shares one cache entry between a route path and an absolute HAL href', async () => {
+            fetchSpy.mockResolvedValue(createMockResponse({id: 1}));
+
+            const {result} = renderHook(
+                () => ({
+                    route: useAuthorizedQuery('/members/1'),
+                    absolute: useAuthorizedQuery('https://host/api/members/1'),
+                }),
+                {wrapper: createWrapper()}
+            );
+
+            await waitFor(() => {
+                expect(result.current.route.isSuccess).toBe(true);
+                expect(result.current.absolute.isSuccess).toBe(true);
+            });
+
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+            expect(getQueryClient().getQueryData(['authorized', '/api/members/1'])).toBeDefined();
+        });
+
+        it('keeps URLs that differ only in query string distinct', async () => {
+            fetchSpy.mockResolvedValue(createMockResponse({id: 1}));
+
+            const {result} = renderHook(
+                () => ({
+                    a: useAuthorizedQuery('/members?a=1'),
+                    b: useAuthorizedQuery('/members?a=2'),
+                }),
+                {wrapper: createWrapper()}
+            );
+
+            await waitFor(() => {
+                expect(result.current.a.isSuccess).toBe(true);
+                expect(result.current.b.isSuccess).toBe(true);
+            });
+
+            expect(fetchSpy).toHaveBeenCalledTimes(2);
+        });
+
+        it('does not fetch nor adopt data cached for the API root when url is undefined', () => {
+            getQueryClient().setQueryData(['authorized', '/api'], {root: true});
+
+            const {result} = renderHook(
+                () => useAuthorizedQuery(undefined),
+                {wrapper: createWrapper()}
+            );
+
+            expect(result.current.data).toBeUndefined();
+            expect(result.current.isLoading).toBe(false);
+            expect(result.current.fetchStatus).toBe('idle');
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
+
+        it('does not fetch a defined url when enabled is false', () => {
+            renderHook(
+                () => useAuthorizedQuery('/api/items', {enabled: false}),
+                {wrapper: createWrapper()}
+            );
+
+            expect(fetchSpy).not.toHaveBeenCalled();
+        });
     });
 
     describe('Basic Query Operations', () => {
@@ -626,7 +690,7 @@ describe('cache invalidation after mutation', () => {
 
         let dataSeenInOnSuccess: unknown;
         const onSuccess = vi.fn(() => {
-            dataSeenInOnSuccess = getQueryClient().getQueryData(['authorized', '/api/items/1', '']);
+            dataSeenInOnSuccess = getQueryClient().getQueryData(['authorized', '/api/items/1']);
         });
         result.current.mutation.mutate({url: '/api/items/1', data: {}}, {onSuccess});
 

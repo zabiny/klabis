@@ -1,13 +1,14 @@
 import React, {type PropsWithChildren} from 'react';
 import {type Path, useLocation, useNavigate} from 'react-router-dom';
-import type {HalResourceLinks, HalResponse, Link} from '../api';
-import {extractNavigationPath} from "../utils/navigationPath.ts";
-import {isHalResponse} from "../components/HalNavigator2/halforms/utils.ts";
-import {normalizeKlabisApiPath} from "../utils/halFormsUtils.ts";
+import type {HalEnvelope, HalResourceLinks, HalResponse, Link} from '../api';
+import type {NavigateToResource} from './halRouteContext';
+import {toRoutePath} from '../api/apiPath';
 import {useAuthorizedQuery} from "../hooks/useAuthorizedFetch.ts";
 import {toHref} from "../api/hateoas.ts";
 import {HalRouteContext, useHalRoute} from './halRouteContext';
 import {useIsAuthReady} from '../hooks/useIsAuthReady';
+
+const isLink = (resource: HalEnvelope | Link): resource is Link => 'href' in resource;
 
 interface HalRouteProviderProps {
     children: React.ReactNode;
@@ -67,7 +68,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
         error,
         refetch,
         status
-    } = useAuthorizedQuery<HalResponse>(normalizeKlabisApiPath(resourceUrl), {
+    } = useAuthorizedQuery<HalResponse>(resourceUrl, {
         enabled: shouldFetch,
         staleTime: 5 * 60 * 1000,
         gcTime: 5 * 60 * 1000,
@@ -86,9 +87,9 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
         queryState = 'idle';
     }
 
-    const navigateToResource = (resource: HalResponse | Link, options?: { state?: unknown }): void => {
+    const navigateToResource: NavigateToResource = (resource, options) => {
         let targetLink: Link;
-        if (isHalResponse(resource)) {
+        if (!isLink(resource)) {
             const selfLink = resource?._links?.self;
             if (!selfLink) {
                 throw new Error('Self link not found in resource data - cannot fetch table data')
@@ -103,7 +104,7 @@ export const HalRouteProvider: React.FC<HalRouteProviderProps> = ({children, rou
             throw new Error('Self link href is empty')
         }
 
-        const targetPath = extractNavigationPath(toHref(href));
+        const targetPath = toRoutePath(toHref(href));
         navigate(targetPath, options);
     }
 

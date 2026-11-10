@@ -16,7 +16,7 @@
 
 import {useMemo} from 'react';
 import type {HalFormsTemplate} from '../api';
-import {normalizeKlabisApiPath, shouldFetchTargetData} from '../utils/halFormsUtils';
+import {shouldFetchTargetData} from '../utils/halFormsUtils';
 import {useAuthorizedQuery} from "./useAuthorizedFetch.ts";
 import {useHalFormGetAvailability} from "./useHalFormGetAvailability.ts";
 
@@ -62,7 +62,7 @@ export interface UseHalFormDataReturn {
  *
  * @param selectedTemplate - The currently selected HAL Forms template (null if no template selected)
  * @param currentResourceData - The current resource data to use as fallback
- * @param currentPathname - The current resource pathname to compare with template target
+ * @param currentResourceUrl - The current resource URL to compare with template target
  * @returns Form state with data, loading flag, error, and refetch function
  *
  * @example
@@ -83,7 +83,7 @@ export interface UseHalFormDataReturn {
 export function useHalFormData(
     selectedTemplate: HalFormsTemplate | null,
     currentResourceData: Record<string, unknown>,
-    currentPathname: string
+    currentResourceUrl: string
 ): UseHalFormDataReturn {
     // Validate template structure
     if (selectedTemplate && !selectedTemplate.properties) {
@@ -93,14 +93,14 @@ export function useHalFormData(
     // Determine if we need to fetch from target
     const shouldFetch = useMemo(() => {
         if (!selectedTemplate) return false;
-        return shouldFetchTargetData(selectedTemplate.target, currentPathname);
-    }, [selectedTemplate, currentPathname]);
+        return shouldFetchTargetData(selectedTemplate.target, currentResourceUrl);
+    }, [selectedTemplate, currentResourceUrl]);
 
-    const targetUrl = selectedTemplate?.target ? normalizeKlabisApiPath(selectedTemplate.target) : '';
+    const targetUrl = selectedTemplate?.target;
 
     // Phase 1: Probe the target via OPTIONS to determine whether GET is supported.
     // Only fires when shouldFetch is true so we don't probe same-resource targets.
-    const probeResult = useHalFormGetAvailability(targetUrl || undefined, shouldFetch);
+    const probeResult = useHalFormGetAvailability(targetUrl, shouldFetch);
 
     // Phase 2: Fetch prefill data only when the OPTIONS probe confirmed GET is supported.
     // Stale Time: 0 — always fetch fresh form data on mount
@@ -111,7 +111,7 @@ export function useHalFormData(
         isLoading: isGetLoading,
         error: getError,
         refetch
-    } = useAuthorizedQuery<Record<string, unknown>>(targetUrl || '', {
+    } = useAuthorizedQuery<Record<string, unknown>>(targetUrl, {
         enabled: shouldFetch && probeResult.isGetAllowed === true,
         staleTime: 0,
         gcTime: 60000,

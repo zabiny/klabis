@@ -12,6 +12,7 @@ import {type Mock, vi} from 'vitest';
 import {HalFormsFormField, type RenderFormCallback} from './halforms/HalFormsForm.tsx';
 import {MemoryRouter} from "react-router-dom";
 import type {HalFormsTemplateMethod} from '../../api/types';
+import {HalRouteContext} from '../../contexts/halRouteContext';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -71,26 +72,9 @@ describe('HalFormDisplay Component', () => {
         resourceData: resourceData || {id: 1, name: 'Test Resource'},
         isLoading: false,
         error: null,
-        isAdmin: false,
-        route: {
-            pathname: '/test/123',
-            navigateToResource: vi.fn(),
-            refetch: vi.fn(),
-            queryState: 'success',
-            getResourceLink: vi.fn(),
-        },
-        actions: {
-            handleNavigateToItem: vi.fn(),
-        },
-        getLinks: vi.fn(() => undefined),
-        getTemplates: vi.fn(() => undefined),
-        hasEmbedded: vi.fn(() => false),
-        getEmbeddedItems: vi.fn(() => []),
-        isCollection: vi.fn(() => false),
-        hasLink: vi.fn(() => false),
-        hasTemplate: vi.fn(() => false),
-        hasForms: vi.fn(() => false),
-        getPageMetadata: vi.fn(() => undefined),
+        navigateToResource: vi.fn(),
+        refetch: vi.fn(),
+        getResourceLink: vi.fn(),
     });
 
     const createWrapper = (pageData: ReturnType<typeof createMockPageData>) => {
@@ -123,7 +107,7 @@ describe('HalFormDisplay Component', () => {
                     template={template}
                     templateName="test"
                     resourceData={resourceData}
-                    pathname="/test/123"
+                    resourceUrl="/test/123"
                     onClose={onClose}
                     onSubmitSuccess={onSubmitSuccess}
                 />
@@ -188,7 +172,7 @@ describe('HalFormDisplay Component', () => {
                         template={template}
                         templateName="create"
                         resourceData={{id: 1, name: 'Existing Member'}}
-                        pathname="/members"
+                        resourceUrl="/members"
                         onClose={onClose}
                         onSubmitSuccess={onSubmitSuccess}
                     />
@@ -289,7 +273,6 @@ describe('HalFormDisplay Component', () => {
                         template={template}
                         templateName="synchronizeNow"
                         resourceData={{status: 'IN_SYNC'}}
-                        pathname="/api/EVENTS/abc/sync"
                         resourceUrl="https://localhost:8443/api/EVENTS/abc/sync"
                         onClose={onClose}
                     />
@@ -336,7 +319,7 @@ describe('HalFormDisplay Component', () => {
                         template={template}
                         templateName="synchronizeNow"
                         resourceData={{status: 'IN_SYNC'}}
-                        pathname="/api/EVENTS/abc/sync"
+                        resourceUrl="/api/EVENTS/abc/sync"
                         onClose={onClose}
                     />
                 </Wrapper>
@@ -384,7 +367,7 @@ describe('HalFormDisplay Component', () => {
                         template={template}
                         templateName="create"
                         resourceData={{id: 1, name: 'Existing'}}
-                        pathname="/members"
+                        resourceUrl="/members"
                         onClose={onClose}
                         onSubmitSuccess={onSubmitSuccess}
                     />
@@ -423,7 +406,7 @@ describe('HalFormDisplay Component', () => {
                             template={template}
                             templateName="create"
                             resourceData={{id: 1, name: 'Existing'}}
-                            pathname="/legal-guardian-groups"
+                            resourceUrl="/legal-guardian-groups"
                             onClose={vi.fn()}
                         />
                     </Wrapper>
@@ -466,7 +449,7 @@ describe('HalFormDisplay Component', () => {
                             template={template}
                             templateName="create"
                             resourceData={{id: 1, name: 'Existing'}}
-                            pathname="/legal-guardian-groups"
+                            resourceUrl="/legal-guardian-groups"
                             onClose={mockOnClose}
                         />
                     </Wrapper>
@@ -501,7 +484,7 @@ describe('HalFormDisplay Component', () => {
                             template={template}
                             templateName="edit"
                             resourceData={{id: 1, name: 'Existing'}}
-                            pathname="/legal-guardian-groups/xyz"
+                            resourceUrl="/legal-guardian-groups/xyz"
                             onClose={mockOnClose}
                         />
                     </Wrapper>
@@ -628,7 +611,7 @@ describe('HalFormDisplay Component', () => {
                         template={template}
                         templateName="edit"
                         resourceData={{id: 1, name: 'John', readOnlyField: 'read-only'}}
-                        pathname="/members/1"
+                        resourceUrl="/members/1"
                         onClose={onClose}
                         postprocessPayload={postprocessPayload}
                     />
@@ -765,7 +748,7 @@ describe('HalFormDisplay Component', () => {
                         template={template}
                         templateName="create"
                         resourceData={resourceData}
-                        pathname="/members"
+                        resourceUrl="/members"
                         onClose={vi.fn()}
                     />
                 </Wrapper>
@@ -832,7 +815,7 @@ describe('HalFormDisplay Component', () => {
                         template={template}
                         templateName="create"
                         resourceData={resourceData}
-                        pathname="/members"
+                        resourceUrl="/members"
                         onClose={vi.fn()}
                         customLayout={customLayout}
                     />
@@ -887,7 +870,7 @@ describe('HalFormDisplay Component', () => {
                         template={template}
                         templateName="create"
                         resourceData={resourceData}
-                        pathname="/members"
+                        resourceUrl="/members"
                         onClose={vi.fn()}
                         customLayout={customLayout}
                     />
@@ -931,7 +914,7 @@ describe('HalFormDisplay Component', () => {
                         template={template}
                         templateName="create"
                         resourceData={resourceData}
-                        pathname="/members"
+                        resourceUrl="/members"
                         onClose={vi.fn()}
                         // No customLayout prop
                     />
@@ -962,7 +945,6 @@ describe('HalFormDisplay Component', () => {
                         template={template}
                         templateName="updatePreset"
                         resourceData={{id: 1}}
-                        pathname="/category-presets"
                         resourceUrl={resourceUrl}
                         onClose={vi.fn()}
                     />
@@ -1015,6 +997,116 @@ describe('HalFormDisplay Component', () => {
         });
     });
 
+    describe('current-resource URL resolution', () => {
+        const routeValue = (pathname: string) => ({
+            resourceData: null,
+            navigateToResource: vi.fn(),
+            isLoading: false,
+            error: null,
+            refetch: vi.fn(),
+            pathname,
+            queryState: 'success' as const,
+            getResourceLink: vi.fn(),
+        });
+
+        const bareTemplate = (target?: string) => mockHalFormsTemplate({
+            title: 'Edit',
+            target,
+            method: 'PUT',
+            properties: [{name: 'name', prompt: 'Name', type: 'text'}],
+        });
+
+        const renderForm = (props: {
+            resourceData: Record<string, unknown>;
+            resourceUrl?: string;
+            target?: string;
+            routePathname?: string;
+        }) => {
+            const Wrapper = createWrapper(createMockPageData({id: 1}));
+            const form = (
+                <HalFormDisplay
+                    template={bareTemplate(props.target)}
+                    templateName="edit"
+                    resourceData={props.resourceData}
+                    resourceUrl={props.resourceUrl}
+                    onClose={vi.fn()}
+                />
+            );
+            return render(
+                <Wrapper>
+                    {props.routePathname === undefined
+                        ? form
+                        : <HalRouteContext.Provider value={routeValue(props.routePathname)}>{form}</HalRouteContext.Provider>}
+                </Wrapper>
+            );
+        };
+
+        const submit = async () => {
+            const user = userEvent.setup();
+            await waitFor(() => expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument());
+            await user.click(await screen.findByRole('button', {name: /odeslat/i}));
+            await waitFor(() => expect(fetchSpy).toHaveBeenCalled());
+        };
+
+        it('submits to the self link of the resource when no resourceUrl is given', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 200));
+            renderForm({
+                resourceData: {id: 1, _links: {self: {href: 'https://localhost:8443/api/things/self'}}},
+                routePathname: '/things/route',
+            });
+            await submit();
+            expect(fetchSpy.mock.calls[0][0]).toContain('/api/things/self');
+        });
+
+        it('falls back to the current route when the resource has no self link', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 200));
+            renderForm({resourceData: {id: 1}, routePathname: '/things/route'});
+            await submit();
+            expect(fetchSpy.mock.calls[0][0]).toContain('/things/route');
+        });
+
+        it('prefers an explicit resourceUrl over the self link and the route', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 200));
+            renderForm({
+                resourceData: {id: 1, _links: {self: {href: '/api/things/self'}}},
+                resourceUrl: '/api/things/explicit',
+                routePathname: '/things/route',
+            });
+            await submit();
+            expect(fetchSpy.mock.calls[0][0]).toContain('/api/things/explicit');
+        });
+
+        it('does not fetch target data when the target equals the self link', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 200));
+            renderForm({
+                resourceData: {id: 1, _links: {self: {href: '/api/things/1'}}},
+                target: '/api/things/1',
+                routePathname: '/things/route',
+            });
+            await submit();
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not fetch target data when the target equals the current route', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 200));
+            renderForm({resourceData: {id: 1}, target: '/api/things/route', routePathname: '/things/route'});
+            await submit();
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('renders without a HalRouteProvider when resourceUrl is given', async () => {
+            fetchSpy.mockResolvedValueOnce(createMockResponse({}, 200));
+            renderForm({resourceData: {id: 1}, resourceUrl: '/api/things/explicit'});
+            await submit();
+            expect(fetchSpy.mock.calls[0][0]).toContain('/api/things/explicit');
+        });
+
+        it('renders without a HalRouteProvider and without any resource URL', () => {
+            renderForm({resourceData: {id: 1}});
+            expect(screen.getByTestId('hal-forms-display')).toBeInTheDocument();
+        });
+    });
+
     describe('navigateOnSuccess prop', () => {
         // target '/api/category-presets' normalizes to '/category-presets' which equals pathname
         // — no OPTIONS/GET prefetch. resourceData carries the pre-fill value 'Existing'.
@@ -1033,7 +1125,7 @@ describe('HalFormDisplay Component', () => {
                         template={template}
                         templateName="createCategoryPreset"
                         resourceData={{id: 1, name: 'Existing'}}
-                        pathname="/category-presets"
+                        resourceUrl="/category-presets"
                         onClose={onClose}
                         navigateOnSuccess={navigateOnSuccess}
                     />

@@ -85,9 +85,9 @@ const {dialogFixtures, resolveDialogQueryData} = vi.hoisted(() => {
             },
         },
     };
-    const resolveDialogQueryData = (url: string): unknown => {
-        if (url.includes('newRegistration=true')) return dialogFixtures.dialogPrefillRegistrationData;
-        if (url.includes('/registrations/member-1')) return dialogFixtures.dialogEditRegistrationData;
+    const resolveDialogQueryData = (url: string | undefined): unknown => {
+        if (url?.includes('newRegistration=true')) return dialogFixtures.dialogPrefillRegistrationData;
+        if (url?.includes('/registrations/member-1')) return dialogFixtures.dialogEditRegistrationData;
         if (url === 'http://localhost:8443/api/events/1') return dialogFixtures.dialogEventData;
         return {
             _embedded: {registrationDtoList: []},
@@ -165,7 +165,8 @@ vi.mock('../../api/klabisUserManager', () => ({
     },
 }));
 
-vi.mock('../../api/hateoas', () => ({
+vi.mock('../../api/hateoas', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../api/hateoas')>()),
     submitHalFormsData: vi.fn(),
     isFormValidationError: vi.fn((error) => {
         return error && typeof error === 'object' && 'validationErrors' in error;
@@ -213,7 +214,8 @@ vi.mock('../../contexts/HalRouteContext.tsx', () => ({
     ),
 }));
 
-vi.mock('../../contexts/halRouteContext.ts', () => ({
+vi.mock('../../contexts/halRouteContext.ts', async (importOriginal) => ({
+    ...(await importOriginal<object>()),
     useHalRoute: vi.fn(() => ({
         resourceData: {firstName: 'Jan', lastName: 'Novák', _links: {self: {href: '/api/members/42'}}},
         navigateToResource: vi.fn(),
@@ -250,24 +252,9 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/events/1',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost:8443/api/events/1'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    navigateToResource: vi.fn(),
+    refetch: async () => {},
+    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost:8443/api/events/1'}),
     ...overrides,
 });
 
@@ -295,7 +282,7 @@ describe('EventDetailPage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockNavigate.mockReset();
-        vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => ({
+        vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => ({
             data: resolveDialogQueryData(url),
             isLoading: false,
             error: null,
@@ -939,8 +926,8 @@ describe('EventDetailPage', () => {
                 _embedded: {registrationDtoList: rows},
                 page: {totalElements: rows.length, totalPages: 1, size: 10, number: 0},
             };
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => ({
-                data: url.includes('newRegistration=true') || url.includes('/registrations/member-1')
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => ({
+                data: url?.includes('newRegistration=true') || url?.includes('/registrations/member-1')
                     ? resolveDialogQueryData(url)
                     : registrationsListData,
                 isLoading: false,
@@ -1474,7 +1461,7 @@ describe('EventDetailPage', () => {
 
     describe('event type badge (B7.3)', () => {
         const withEventTypesMock = (eventTypes: {id: string; name: string; color?: string; sortOrder: number}[]) => {
-            vi.mocked(useAuthorizedQuery).mockImplementation((url: string) => {
+            vi.mocked(useAuthorizedQuery).mockImplementation((url: string | undefined) => {
                 if (url === '/api/event-types') {
                     return {
                         data: {_embedded: {eventTypeDtoList: eventTypes}},

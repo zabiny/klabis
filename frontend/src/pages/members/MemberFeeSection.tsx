@@ -2,8 +2,9 @@ import {type ReactElement} from 'react';
 import {Link} from 'react-router-dom';
 import {Section} from './MemberSection';
 import {labels} from '../../localization';
+import {toHref} from '../../api/hateoas.ts';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
-import type {FeeSummaryData} from '../membership-fees/memberFeeTypes';
+import type {GetFeeSummaryResource} from '../../api';
 
 const l = labels.memberFee;
 
@@ -13,7 +14,7 @@ interface MemberFeeSectionProps {
 }
 
 export const MemberFeeSection = ({feeSummaryHref, memberId}: MemberFeeSectionProps): ReactElement => {
-    const {data: summary, isLoading} = useAuthorizedQuery<FeeSummaryData>(feeSummaryHref);
+    const {data: summary, isLoading} = useAuthorizedQuery<GetFeeSummaryResource>(feeSummaryHref);
 
     return (
         <Section title={l.sectionTitle}>
@@ -26,8 +27,8 @@ export const MemberFeeSection = ({feeSummaryHref, memberId}: MemberFeeSectionPro
     );
 };
 
-function renderSummary(summary: FeeSummaryData, memberId: string): ReactElement {
-    const campaignYear = summary._links.self.href.split('/').pop();
+function renderSummary(summary: GetFeeSummaryResource, memberId: string): ReactElement {
+    const campaignYear = (summary._links?.self ? toHref(summary._links.self) : '').split('/').pop();
     const feeChoicePath = `/members/${memberId}/fee-choice/${campaignYear}`;
 
     return (
@@ -73,7 +74,7 @@ function renderSummary(summary: FeeSummaryData, memberId: string): ReactElement 
                 </Link>
             )}
 
-            {summary._links.feeHistory && (
+            {summary._links?.feeHistory && (
                 <Link
                     to={`/members/${memberId}/fee-history`}
                     className="text-sm text-text-secondary hover:text-text-primary underline self-start"

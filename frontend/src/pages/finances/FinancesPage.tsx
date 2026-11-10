@@ -1,6 +1,5 @@
 import {type ReactElement, useCallback, useMemo} from "react";
-import type {HalFormsTemplate} from "../../api";
-import type {components} from "../../api/klabisApi";
+import type {ListTransactionsItemResource} from "../../api";
 import {KlabisTable, TableCell} from "../../components/KlabisTable";
 import {Card, Spinner} from "../../components/UI";
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
@@ -12,21 +11,10 @@ import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {Button} from "../../components/UI";
 import {formatCurrency, formatDate} from "./financeFormatters.ts";
 import {HalRouteProvider} from "../../contexts/HalRouteContext.tsx";
-import {parseHalHref, serializeHalHref} from "../../api/hateoas.ts";
+import {parseHalHref, serializeHalHref, toHref} from "../../api/hateoas.ts";
 import {MemberName} from "../../components/members/MemberName.tsx";
 
-// TransactionResource payload + the per-row _links / _templates the backend adds at runtime.
-type TransactionItem = components['schemas']['TransactionResource'] & {
-    _links?: {
-        self?: { href: string };
-        reverses?: { href: string };
-        reversedBy?: { href: string };
-        recordedBy?: { href: string };
-    };
-    _templates?: {
-        reverse?: HalFormsTemplate;
-    };
-};
+type TransactionItem = ListTransactionsItemResource;
 
 export const BalanceCard = ({balance, currency}: {balance: number | undefined; currency: string | undefined}): ReactElement => {
     const isNegative = typeof balance === 'number' && balance < 0;
@@ -123,13 +111,11 @@ const TransactionsTableContent = ({
         return ids;
     }, [tableData]);
 
-    const renderTypeCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
-        const tx = item as unknown as TransactionItem;
+    const renderTypeCell = useCallback(({item: tx}: TableCellRenderProps<TransactionItem>): ReactElement => {
         return <TypeCell type={tx.type as string} />;
     }, []);
 
-    const renderAmountCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
-        const tx = item as unknown as TransactionItem;
+    const renderAmountCell = useCallback(({item: tx}: TableCellRenderProps<TransactionItem>): ReactElement => {
         const amount = tx.amount as number;
         const currency = tx.currency as string;
         const isNegative = amount < 0;
@@ -143,12 +129,11 @@ const TransactionsTableContent = ({
         );
     }, [reversedIds]);
 
-    const renderDateCell = useCallback(({item}: TableCellRenderProps): string => {
-        return formatDate((item as unknown as TransactionItem).occurredAt as string);
+    const renderDateCell = useCallback(({item}: TableCellRenderProps<TransactionItem>): string => {
+        return formatDate(item.occurredAt as string);
     }, []);
 
-    const renderNoteCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
-        const tx = item as unknown as TransactionItem;
+    const renderNoteCell = useCallback(({item: tx}: TableCellRenderProps<TransactionItem>): ReactElement => {
         const isReversal = !!tx.reversesTransactionId;
         const isReversed = !!tx.id && reversedIds.has(tx.id);
 
@@ -170,9 +155,8 @@ const TransactionsTableContent = ({
         );
     }, [reversedIds]);
 
-    const renderActionsCell = useCallback(({item}: TableCellRenderProps): ReactElement | null => {
+    const renderActionsCell = useCallback(({item: tx}: TableCellRenderProps<TransactionItem>): ReactElement | null => {
         if (!onReverseRequest) return null;
-        const tx = item as unknown as TransactionItem;
         const reverseTarget = tx._templates?.reverse?.target;
         if (!reverseTarget) return null;
 
@@ -202,9 +186,9 @@ const TransactionsTableContent = ({
         );
     }, [onReverseRequest]);
 
-    const renderRecordedByCell = useCallback(({item}: TableCellRenderProps): ReactElement => {
-        const tx = item as unknown as TransactionItem;
-        const href = tx._links?.recordedBy?.href;
+    const renderRecordedByCell = useCallback(({item: tx}: TableCellRenderProps<TransactionItem>): ReactElement => {
+        const recordedBy = tx._links?.recordedBy;
+        const href = recordedBy ? toHref(recordedBy) : undefined;
         return <RecordedByCell href={href} />;
     }, []);
 
@@ -258,8 +242,8 @@ export const TransactionsTable = ({
     extraParams?: Record<string, string>;
     onReverseRequest?: (tx: TransactionReverseRequest) => void;
 }): ReactElement => {
-    const {isLoading, route} = useHalPageData();
-    const selfLink = route.getResourceLink();
+    const {isLoading, getResourceLink} = useHalPageData();
+    const selfLink = getResourceLink();
 
     if (isLoading) {
         return (

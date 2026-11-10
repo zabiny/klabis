@@ -1,3 +1,4 @@
+import {toApiHref} from './apiPath';
 import {klabisAuthUserManager, silentRenewRetry} from './klabisUserManager';
 
 /**
@@ -43,17 +44,9 @@ async function executeRequest(url: string | URL, options?: RequestInit): Promise
     });
 }
 
+// String URLs are always backend API hrefs (origin dropped, off-origin absolute strings unsupported); URL instances pass through as-is.
 function resolveUrl(url: string | URL): string {
-    if (typeof url !== 'string') {
-        return url.toString();
-    }
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/api')) {
-        return url;
-    }
-    if (url === '/') {
-        return '/api';
-    }
-    return `/api${url.startsWith('/') ? '' : '/'}${url}`;
+    return typeof url === 'string' ? toApiHref(url) : url.toString();
 }
 
 async function buildFetchError(response: Response): Promise<FetchError> {

@@ -1,6 +1,5 @@
 import type {ReactElement} from "react";
-import type {HalFormsTemplate} from "../../api";
-import type {components} from "../../api/klabisApi";
+import type {ListEventTypesItemResource} from "../../api";
 import {TableCell} from "../../components/KlabisTable";
 import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.tsx";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
@@ -10,9 +9,7 @@ import {Button} from "../../components/UI";
 import {Pencil, Trash2} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 
-type EventTypeListItem = components['schemas']['EntityModelEventTypeDto'] & {
-    _templates?: Record<string, HalFormsTemplate>;
-};
+type EventTypeListItem = ListEventTypesItemResource;
 
 export const EventTypesPage = (): ReactElement => {
     const actionDialog = useTemplateDialog(undefined, {
@@ -36,8 +33,7 @@ export const EventTypesPage = (): ReactElement => {
         );
     };
 
-    const renderActionsCell = ({item}: TableCellRenderProps) => {
-        const eventType = item as unknown as EventTypeListItem;
+    const renderActionsCell = ({item: eventType}: TableCellRenderProps<EventTypeListItem>) => {
         const hasEditTemplate = !!eventType._templates?.updateEventType;
         const hasDeleteTemplate = !!eventType._templates?.deleteEventType;
 

@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 
 import {HTTP_METHODS, sortKeysDeep} from './bundle.mjs';
-import {forEachHalResponse, halResponsePayloadNames, isEnvelopeShaped, schemaName} from './derive.mjs';
+import {forEachHalResponse, halResponsePayloadNames, isDerivedEntityModel, isEnvelopeShaped, resolveSchema, schemaName} from './derive.mjs';
 
 /**
  * Validation of Klabis-specific OpenAPI extensions.
@@ -41,6 +41,8 @@ export const KNOWN_HAL_EXTENSIONS = new Set([
     'x-hal-entity-items',
     'x-hal-embedded',
     'x-hal-input-type',
+    'x-hal-item-links',
+    'x-hal-item-templates',
     'x-hal-links',
     'x-hal-templates',
 ]);
@@ -732,7 +734,38 @@ export function validateSpec(document, {authorities}) {
             }
         }
 
-        for (const halKey of ['x-hal-links', 'x-hal-templates']) {
+        // Row relations have two valid homes: a response whose rows sit in `_embedded` (array
+        // payload or `x-hal-embedded`, not both — the row schema would be ambiguous), and an
+        // `x-hal-entity-items` array property. The deriver consumes that marker and retargets `items`
+        // at the EntityModel it builds, so a derived document is recognised by that exact shape.
+        const itemRelKeys = ['x-hal-item-links', 'x-hal-item-templates'].filter((key) => Object.hasOwn(node, key));
+        if (itemRelKeys.length > 0) {
+            const reject = (message) => {
+                for (const key of itemRelKeys) errors.push({path: `${path}/${key}`, message});
+            };
+            const isResponse = /\/responses\/[^/]+$/.test(path);
+            const isEntityItemsArray = node.type === 'array'
+                && (node['x-hal-entity-items'] === true
+                    || isDerivedEntityModel(resolveSchema(document, node.items)));
+            if (isResponse) {
+                const jsonSchema = node.content?.['application/json']?.schema;
+                const hasArrayPayload = resolveSchema(document, jsonSchema)?.type === 'array';
+                const hasEmbedded = isPlainObject(node['x-hal-embedded']);
+                if (!hasArrayPayload && !hasEmbedded) {
+                    reject('is only valid on a response with an array payload or x-hal-embedded, '
+                        + 'or on an array property marked x-hal-entity-items');
+                } else if (hasArrayPayload && hasEmbedded) {
+                    reject('is ambiguous on a response with both an array payload and x-hal-embedded');
+                }
+            } else if (!isEntityItemsArray) {
+                reject('is only valid on a response with an array payload or x-hal-embedded, '
+                    + 'or on an array property marked x-hal-entity-items');
+            } else if (typeof node.items?.$ref !== 'string') {
+                reject('requires the array\'s "items" to be a $ref to a payload schema');
+            }
+        }
+
+        for (const halKey of ['x-hal-links', 'x-hal-templates', 'x-hal-item-links', 'x-hal-item-templates']) {
             const rels = node[halKey];
             if (!isPlainObject(rels)) continue;
             for (const [rel, descriptor] of Object.entries(rels)) {

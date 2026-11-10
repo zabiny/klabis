@@ -10,15 +10,14 @@ import {useHalForm} from '../../contexts/halFormContext.ts';
 import {HalFormDisplay} from './HalFormDisplay.tsx';
 import {HalFormPanel} from './HalFormPanel.tsx';
 import type {HalFormsTemplate} from '../../api';
-import {toHref} from '../../api/hateoas.ts';
-import {normalizeKlabisApiPath} from '../../utils/halFormsUtils.ts';
+import {selfHref} from '../../api/hateoas.ts';
 
 interface HalFormsPageLayoutProps {
     children: ReactNode;
 }
 
 export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactElement {
-    const {resourceData: pageResource, route} = useHalPageData();
+    const {resourceData: pageResource} = useHalPageData();
     const {currentFormRequest, closeForm} = useHalForm();
 
     const pageTemplates = pageResource?._templates as Record<string, HalFormsTemplate> | undefined;
@@ -28,12 +27,9 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
         return <div className="space-y-6">{children}</div>;
     }
 
-    const selfLink = pageResource?._links?.self;
-    const resourceUrl = selfLink ? toHref(selfLink) : undefined;
-
     const formPanel = currentFormRequest.children ? (
         <HalFormPanel
-            collectionUrl={resourceUrl ?? `/api${normalizeKlabisApiPath(route.pathname)}`}
+            collectionUrl={selfHref(pageResource)}
             templateName={currentFormRequest.templateName}
             template={template}
             fieldsFactory={currentFormRequest.fieldsFactory}
@@ -48,8 +44,6 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
             template={template}
             templateName={currentFormRequest.templateName}
             resourceData={(pageResource ?? {}) as Record<string, unknown>}
-            pathname={route.pathname}
-            resourceUrl={resourceUrl}
             onClose={closeForm}
             onSubmitSuccess={closeForm}
             fieldsFactory={currentFormRequest.fieldsFactory}

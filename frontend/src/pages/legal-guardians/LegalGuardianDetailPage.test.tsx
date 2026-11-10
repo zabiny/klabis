@@ -16,7 +16,7 @@ const renderPage = (resourceData: Record<string, unknown> | null, extra?: {isLoa
         resourceData,
         isLoading: extra?.isLoading ?? false,
         error: extra?.error ?? null,
-        route: {pathname: '/legal-guardians/u-1', refetch: async () => {}},
+        refetch: async () => {},
     } as unknown as ReturnType<typeof useHalPageData>);
     return render(
         <MemoryRouter>

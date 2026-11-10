@@ -87,7 +87,7 @@ describe('NegativeBalanceSuspensionDialog (task 9.1)', () => {
         );
         fireEvent.click(screen.getByRole('button', {name: /Otevřít účet/i}));
         expect(onClose).toHaveBeenCalledTimes(1);
-        // extractNavigationPath strips /api prefix for React Router
+        // toRoutePath strips /api prefix for React Router
         expect(mockNavigate).toHaveBeenCalledWith('/members/abc-123/account');
     });
 

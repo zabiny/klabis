@@ -35,20 +35,14 @@ describe('useOrisEventImport', () => {
             }).not.toThrow();
         });
 
-        it('disables query when template is undefined', () => {
+        it('passes no URL when template is undefined', () => {
             renderHook(() => useOrisEventImport(undefined, true));
-            expect(useAuthorizedQuery).toHaveBeenCalledWith(
-                expect.any(String),
-                expect.objectContaining({enabled: false}),
-            );
+            expect(useAuthorizedQuery).toHaveBeenCalledWith(undefined);
         });
 
-        it('disables query when isOpen is false', () => {
+        it('passes no URL when isOpen is false', () => {
             renderHook(() => useOrisEventImport(makeTemplate(), false));
-            expect(useAuthorizedQuery).toHaveBeenCalledWith(
-                expect.any(String),
-                expect.objectContaining({enabled: false}),
-            );
+            expect(useAuthorizedQuery).toHaveBeenCalledWith(undefined);
         });
     });
 

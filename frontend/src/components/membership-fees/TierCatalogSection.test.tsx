@@ -38,24 +38,9 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Record
     resourceData,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/administration/membership-fees',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    navigateToResource: vi.fn(),
+    refetch: async () => {},
+    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers'}),
     ...overrides,
 });
 
@@ -139,13 +124,11 @@ describe('TierCatalogSection', () => {
             page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
         };
         vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as ReturnType<typeof useAuthorizedQuery>);
-        renderSection(createMockPageData(resourceData, {route: {
-            pathname: '/administration/membership-fees',
+        renderSection(createMockPageData(resourceData, {
             navigateToResource,
             refetch: async () => {},
-            queryState: 'success' as const,
             getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/membership-fee-tiers'}),
-        }}));
+        }));
         screen.getByText('Základní členství').closest('tr')!.click();
         expect(navigateToResource).toHaveBeenCalled();
     });

@@ -81,7 +81,7 @@ const Layout = () => {
     const adminItems = menuItems.filter(item => item.section === 'admin')
     const profileHref = menuItems.find(item => item.rel === 'profile')?.href
     const notificationsHref = menuItems.find(item => item.rel === 'notifications')?.href
-    usePushReregistration(notificationsHref && `/api${notificationsHref}`)
+    usePushReregistration(notificationsHref)
 
     useEffect(() => {
         if (isAuthenticated) {

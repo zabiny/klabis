@@ -58,7 +58,7 @@ const MaskedBirthNumber = ({value}: { value: string }) => {
 };
 
 export const MemberDetailPage = (): ReactElement => {
-    const {resourceData, isLoading, error, hasLink, route} = useHalPageData<MemberDetail>();
+    const {resourceData, isLoading, error} = useHalPageData<MemberDetail>();
     const location = useLocation();
     const initialEditing = !!(location.state as { editing?: boolean })?.editing;
 
@@ -74,17 +74,16 @@ export const MemberDetailPage = (): ReactElement => {
         return <Skeleton/>;
     }
 
-    return <MemberDetailContent resourceData={resourceData} hasLink={hasLink} route={route} initialEditing={initialEditing}/>;
+    return <MemberDetailContent resourceData={resourceData} initialEditing={initialEditing}/>;
 };
 
 interface MemberDetailContentProps {
     resourceData: MemberDetail;
-    hasLink: (name: string) => boolean;
-    route: ReturnType<typeof useHalPageData>['route'];
     initialEditing?: boolean;
 }
 
-const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = false}: MemberDetailContentProps) => {
+const MemberDetailContent = ({resourceData, initialEditing = false}: MemberDetailContentProps) => {
+    const {navigateToResource, getResourceLink} = useHalPageData();
     const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
     const accountActivationDialog = useTemplateDialog('sendMemberAccountActivation', {
         resource: resourceData,
@@ -325,34 +324,34 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                                     {labels.changePassword.sectionButtonLabel}
                                 </Button>
                             )}
-                            {hasLink(memberRel('account')) && (
+                            {resourceData._links?.[memberRel('account')] && (
                                 <Button
                                     variant="secondary"
-                                    onClick={() => route.navigateToResource(route.getResourceLink(memberRel('account'))!)}
+                                    onClick={() => navigateToResource(getResourceLink(memberRel('account'))!)}
                                     startIcon={<Banknote className="w-4 h-4"/>}
                                 >
                                     {labels.finance.openMemberAccount}
                                 </Button>
                             )}
-                            {hasLink(memberRel('trainingGroup')) && (
+                            {resourceData._links?.[memberRel('trainingGroup')] && (
                                 <Button
                                     variant="secondary"
-                                    onClick={() => route.navigateToResource(route.getResourceLink(memberRel('trainingGroup'))!)}
+                                    onClick={() => navigateToResource(getResourceLink(memberRel('trainingGroup'))!)}
                                     startIcon={<Dumbbell className="w-4 h-4"/>}
                                 >
                                     {labels.links.trainingGroup}
                                 </Button>
                             )}
-                            {hasLink(memberRel('legalGuardianGroup')) && (
+                            {resourceData._links?.[memberRel('legalGuardianGroup')] && (
                                 <Button
                                     variant="secondary"
-                                    onClick={() => route.navigateToResource(route.getResourceLink(memberRel('legalGuardianGroup'))!)}
+                                    onClick={() => navigateToResource(getResourceLink(memberRel('legalGuardianGroup'))!)}
                                     startIcon={<Heart className="w-4 h-4"/>}
                                 >
                                     {labels.links.legalGuardians}
                                 </Button>
                             )}
-                            {hasEditTemplate && hasLink(memberRel('permissions')) && (
+                            {hasEditTemplate && resourceData._links?.[memberRel('permissions')] && (
                                 <Button
                                     variant="secondary"
                                     onClick={() => setIsPermissionsDialogOpen(true)}
@@ -454,7 +453,7 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
         );
     };
 
-    const permissionsUrl = route.getResourceLink(memberRel('permissions'))?.href;
+    const permissionsUrl = getResourceLink(memberRel('permissions'))?.href;
 
     const permissionsEditor = usePermissionsEditor(
         permissionsUrl,
@@ -492,7 +491,6 @@ const MemberDetailContent = ({resourceData, hasLink, route, initialEditing = fal
                     template={enrichedTemplate}
                     templateName="updateMember"
                     resourceData={resourceData as Record<string, unknown>}
-                    pathname={route.pathname}
                     onClose={cancelEditing}
                     postprocessPayload={postprocessPayload}
                     successMessage={labels.ui.savedSuccessfully}

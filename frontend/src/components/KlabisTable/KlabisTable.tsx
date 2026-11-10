@@ -7,14 +7,15 @@ import type {SortDirection} from '../../api'
 import {ErrorDisplay} from '../UI'
 import {useMediaQuery} from '../../hooks/useMediaQuery'
 import {RotateCcw} from 'lucide-react'
+import {cellValue, rowKey} from './rowAccess'
 
 // Extract column definitions from children (TableCell components)
-const extractColumns = (children: ReactNode): ColumnDef[] => {
-    const columns: ColumnDef[] = []
+const extractColumns = <T extends object>(children: ReactNode): ColumnDef<T>[] => {
+    const columns: ColumnDef<T>[] = []
 
     React.Children.forEach(children, (child) => {
         if (isValidElement(child)) {
-            const props = child.props as Partial<TableCellProps>
+            const props = child.props as Partial<TableCellProps<T>>
             if (props.column) {
                 columns.push({
                     name: props.column,
@@ -32,7 +33,7 @@ const extractColumns = (children: ReactNode): ColumnDef[] => {
 }
 
 // Default cell render function
-const defaultRenderCell = (props: TableCellRenderProps): ReactNode => (
+const defaultRenderCell = (props: Pick<TableCellRenderProps, 'value'>): ReactNode => (
     <span>{String(props.value)}</span>
 )
 
@@ -71,7 +72,7 @@ const ensurePageSizeInOptions = (pageSize: number, options: number[]): number[] 
  *   );
  * }
  */
-export const KlabisTable = <T extends Record<string, unknown>>({
+export const KlabisTable = <T extends object>({
                                                                    data,
                                                                    page,
                                                                    error,
@@ -93,7 +94,7 @@ export const KlabisTable = <T extends Record<string, unknown>>({
     const [canScrollRight, setCanScrollRight] = useState(false)
 
     // Extract columns from JSX children
-    const columns = useMemo(() => extractColumns(children), [children])
+    const columns = useMemo(() => extractColumns<T>(children), [children])
 
     // Get visible columns
     const visibleColumns = useMemo(
@@ -110,7 +111,7 @@ export const KlabisTable = <T extends Record<string, unknown>>({
             if (col.name.startsWith('_')) return true
             if (col.alwaysVisible) return true
             return rows.some(row => {
-                const val = row[col.name]
+                const val = cellValue(row, col.name)
                 return val !== null && val !== undefined && val !== ''
             })
         })
@@ -240,9 +241,10 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                                 </tr>
                             ) : (
                                 <>
-                                    {rows.map((item, rowIndex) => (
+                                    {rows.map((item, rowIndex) => {
+                                        return (
                                         <tr
-                                            key={item.id ? String(item.id) : `row-${rowIndex}`}
+                                            key={rowKey(item, rowIndex, 'row')}
                                             className={`border-b border-border transition-colors ${
                                                 onRowClick
                                                     ? 'hover:bg-surface-base cursor-pointer'
@@ -260,7 +262,7 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                                             aria-label={`Row ${rowIndex + 1}`}
                                         >
                                             {effectiveColumns.map((col) => {
-                                                const value = item[col.name]
+                                                const value = cellValue(item, col.name)
                                                 const renderFn = col.dataRender || defaultRenderCell
                                                 let cellContent: ReactNode
                                                 try {
@@ -284,7 +286,8 @@ export const KlabisTable = <T extends Record<string, unknown>>({
                                                 )
                                             })}
                                         </tr>
-                                    ))}
+                                        )
+                                    })}
                                 </>
                             )}
                             </tbody>

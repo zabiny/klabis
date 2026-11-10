@@ -8,7 +8,7 @@ import {SyncStatusIndicator} from '../../components/sync/SyncStatusIndicator.tsx
 import type {components} from '../../api/klabisApi';
 import type {HalResourceLinks} from '../../api';
 import {asLinkArray, toHref} from '../../api/hateoas.ts';
-import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {toRoutePath} from '../../api/apiPath';
 import {formatDateTimeSeconds} from '../../utils/dateUtils.ts';
 import {labels} from '../../localization';
 import {attemptColumns, enumCell} from '../../components/sync/syncAttemptColumns.tsx';
@@ -33,7 +33,7 @@ const entityLabelCell = ({value, item}: {value: unknown; item: {_links?: unknown
     const links = item._links as Record<string, HalResourceLinks> | undefined;
     const label = typeof value === 'string' ? value : '';
     return links?.entity
-        ? <Link to={extractNavigationPath(toHref(links.entity))}
+        ? <Link to={toRoutePath(toHref(links.entity))}
                 onClick={(e) => e.stopPropagation()}
                 className="hover:text-primary hover:underline">{label}</Link>
         : label;

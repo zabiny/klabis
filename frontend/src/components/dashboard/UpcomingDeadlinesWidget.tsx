@@ -5,7 +5,7 @@ import {Button, Card} from '../UI';
 import {EventRegistrationDialog} from '../events/EventRegistrationDialog';
 import {useUpcomingDeadlines} from '../../hooks/useUpcomingDeadlines';
 import {formatDate} from '../../utils/dateUtils';
-import {extractNavigationPath} from '../../utils/navigationPath';
+import {toRoutePath} from '../../api/apiPath';
 import {labels} from '../../localization/labels';
 import type {Link} from '../../api';
 
@@ -38,7 +38,7 @@ export const UpcomingDeadlinesWidget = ({upcomingDeadlinesHref}: UpcomingDeadlin
                         {items.map((item) => (
                             <RouterLink
                                 key={item.selfHref}
-                                to={extractNavigationPath(item.selfHref)}
+                                to={toRoutePath(item.selfHref)}
                                 className="flex items-center justify-between p-4 hover:bg-surface-hover transition-colors"
                             >
                                 <div className="flex items-center gap-4 flex-1 min-w-0">

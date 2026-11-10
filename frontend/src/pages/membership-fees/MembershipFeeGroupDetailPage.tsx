@@ -56,7 +56,6 @@ const StatusBadge = ({status}: {status: 'EDITABLE' | 'FROZEN'}): ReactElement =>
 };
 
 const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: MembershipFeeGroupDetail}): ReactElement => {
-    const {route} = useHalPageData<MembershipFeeGroupDetail>();
     const [isEditing, setIsEditing] = useState(false);
     const assignMemberDialog = useTemplateDialog('assignMember', {
         resource: resourceData,
@@ -121,7 +120,6 @@ const MembershipFeeGroupDetailContent = ({resourceData}: {resourceData: Membersh
                         template={editTemplate}
                         templateName="editSnapshot"
                         resourceData={resourceData as unknown as Record<string, unknown>}
-                        pathname={route.pathname}
                         onClose={() => setIsEditing(false)}
                         successMessage={labels.ui.savedSuccessfully}
                         submitButtonLabel={labels.buttons.saveChanges}

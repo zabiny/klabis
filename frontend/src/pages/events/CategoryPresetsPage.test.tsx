@@ -67,24 +67,9 @@ const createMockPageData = (resourceData: HalResponse | null, overrides?: Partia
     resourceData,
     isLoading: false,
     error: null,
-    isAdmin: false,
-    route: {
-        pathname: '/category-presets',
-        navigateToResource: vi.fn(),
-        refetch: async () => {},
-        queryState: 'success' as const,
-        getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/category-presets'}),
-    },
-    actions: {handleNavigateToItem: vi.fn()},
-    getLinks: vi.fn(() => undefined),
-    getTemplates: vi.fn(() => undefined),
-    hasEmbedded: vi.fn(() => false),
-    getEmbeddedItems: vi.fn(() => []),
-    isCollection: vi.fn(() => false),
-    hasLink: vi.fn(() => false),
-    hasTemplate: vi.fn(() => false),
-    hasForms: vi.fn(() => false),
-    getPageMetadata: vi.fn(() => undefined),
+    navigateToResource: vi.fn(),
+    refetch: async () => {},
+    getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/category-presets'}),
     ...overrides,
 });
 
@@ -165,7 +150,7 @@ describe('CategoryPresetsPage', () => {
                 page: {size: 10, totalElements: 1, totalPages: 1, number: 0},
             };
             vi.mocked(useAuthorizedQuery).mockReturnValue({data: resourceData, error: null} as unknown as ReturnType<typeof useAuthorizedQuery>);
-            renderPage(createMockPageData(resourceData, {route: {pathname: '/category-presets', navigateToResource, refetch: async () => {}, queryState: 'success' as const, getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/category-presets'})}}));
+            renderPage(createMockPageData(resourceData, {navigateToResource, refetch: async () => {}, getResourceLink: vi.fn().mockReturnValue({href: 'http://localhost/api/category-presets'})}));
 
             fireEvent.click(screen.getByText('Základní šablona'));
 
@@ -247,7 +232,7 @@ describe('CategoryPresetsPage', () => {
             fireEvent.click(screen.getByRole('button', {name: 'Upravit'}));
             fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', {name: /uložit|odeslat|potvrdit/i}));
 
-            return waitFor(() => expect(mutate).toHaveBeenCalledWith(expect.objectContaining({url: '/api/category-presets/preset-1'}), expect.anything()));
+            return waitFor(() => expect(mutate).toHaveBeenCalledWith(expect.objectContaining({url: expect.stringMatching(/\/api\/category-presets\/preset-1$/)}), expect.anything()));
         });
     });
 });

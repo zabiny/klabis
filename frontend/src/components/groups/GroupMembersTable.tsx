@@ -1,6 +1,6 @@
 import type {ReactElement} from 'react';
 import {Link} from 'react-router-dom';
-import {extractNavigationPath} from '../../utils/navigationPath.ts';
+import {toRoutePath} from '../../api/apiPath';
 import {Button, Card} from '../UI';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {MemberNameWithRegNumber} from '../members/MemberNameWithRegNumber.tsx';
@@ -49,7 +49,7 @@ export const GroupMembersTable = ({members, emptyMessage, linkMembers = false}: 
                 {members.map((member) => {
                     const href = member.memberLink ? toHref(member.memberLink) : undefined;
                     const cell = (name: ReactElement) => linkMembers && href
-                        ? <Link to={extractNavigationPath(href)} className="hover:text-primary hover:underline">{name}</Link>
+                        ? <Link to={toRoutePath(href)} className="hover:text-primary hover:underline">{name}</Link>
                         : name;
                     return (
                         <tr key={member.memberId}

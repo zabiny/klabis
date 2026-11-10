@@ -37,7 +37,23 @@ export function schemaName(node) {
     return match ? match[1] : undefined;
 }
 
+/** The schema a local `$ref` names, or the node itself when it is not a ref. */
+export function resolveSchema(document, node) {
+    const name = schemaName(node);
+    return name === undefined ? node : document?.components?.schemas?.[name];
+}
+
 const schemaRef = (name) => ({$ref: `#/components/schemas/${name}`});
+
+/**
+ * The exact `EntityModel<Payload>` shape `entityModel` builds without an `_embedded` block. Lets a
+ * consumer that runs after derivation tell a retargeted `x-hal-entity-items` array from a plain one.
+ */
+export function isDerivedEntityModel(schema) {
+    return Array.isArray(schema?.allOf) && schema.allOf.length === 2
+        && schemaName(schema.allOf[0]) !== undefined
+        && schema.allOf[1]?.$ref === ENTITY_MODEL_REF;
+}
 
 /**
  * Recognises a schema the deriver would itself have produced, so it is not wrapped a second time.

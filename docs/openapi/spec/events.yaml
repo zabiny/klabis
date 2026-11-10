@@ -61,6 +61,20 @@ paths:
                 Present only for callers with EVENTS:MANAGE. The disciplineIds property is
                 populated at runtime with the available options from the local Klabis discipline
                 catalog.
+          x-hal-item-links:
+            self:
+              operation: getEventType
+              description: This event type
+            collection:
+              operation: listEventTypes
+              description: Back to the event type list
+          x-hal-item-templates:
+            updateEventType:
+              operation: updateEventType
+              description: Present only for callers with EVENTS:MANAGE
+            deleteEventType:
+              operation: deleteEventType
+              description: Present only for callers with EVENTS:MANAGE
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -627,6 +641,43 @@ paths:
             syncAllUpcomingFromOris:
               operation: syncAllUpcomingFromOris
               description: Present only when ORIS integration is active and caller has EVENTS:MANAGE
+          x-hal-item-links:
+            self:
+              operation: getEvent
+              description: This event
+            coordinator:
+              operation: getMember
+              description: One link per event coordinator
+            event-type:
+              operation: getEventType
+              description: Present when the event has an event type assigned
+            newRegistration:
+              operation: getRegistration
+              description: |
+                Present for the caller's own not-yet-existing registration when registration is
+                being offered
+            sync:
+              operation: getSyncState
+              description: Present for DRAFT and ACTIVE events enrolled in synchronisation
+          x-hal-item-templates:
+            updateEvent:
+              operation: updateEvent
+              description: Present for DRAFT and ACTIVE events and callers allowed to manage the event
+            publishEvent:
+              operation: publishEvent
+              description: Present for DRAFT events and callers allowed to manage the event
+            cancelEvent:
+              operation: cancelEvent
+              description: Present for DRAFT and ACTIVE events and callers allowed to manage the event
+            registerForEvent:
+              operation: registerForEvent
+              description: Present when the event is ACTIVE with open registrations and the caller is not yet registered
+            editRegistration:
+              operation: editRegistration
+              description: Present when the event is ACTIVE with open registrations and the caller is registered
+            unregisterFromEvent:
+              operation: unregisterFromEvent
+              description: Present when the event is ACTIVE with open registrations and the caller is registered
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -779,6 +830,24 @@ paths:
               operation: discoverOrisRegistrations
               description: |
                 Present for callers with SYNC:MANAGE when the event is ACTIVE and kept in step with ORIS
+          x-hal-item-links:
+            self:
+              operation: getRegistration
+              description: |
+                Present for the registered member or callers with EVENTS:REGISTRATIONS or
+                EVENTS:REGISTRATIONS_READ
+            recordTransaction:
+              operation: getAccount
+              description: Present only for callers with FINANCE:MANAGE
+            sync:
+              operation: getSyncState
+              description: Present when the registration is paired with a synchronised counterpart
+          x-hal-item-templates:
+            editRegistration:
+              operation: editRegistration
+              description: |
+                Present while registrations are open, on rows the caller may read. The categoryId
+                property carries the event's categories as inline options.
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
@@ -1414,6 +1483,20 @@ paths:
             createCategoryPreset:
               operation: createCategoryPreset
               description: Create a new category preset
+          x-hal-item-links:
+            self:
+              operation: getPreset
+              description: This category preset
+            collection:
+              operation: listPresets
+              description: Back to the category preset list
+          x-hal-item-templates:
+            updateCategoryPreset:
+              operation: updateCategoryPreset
+              description: Present only for callers with EVENTS:MANAGE
+            deleteCategoryPreset:
+              operation: deleteCategoryPreset
+              description: Present only for callers with EVENTS:MANAGE
         '400':
           $ref: './_shared/responses.yaml#/components/responses/BadRequest'
         '401':
