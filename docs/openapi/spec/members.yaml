@@ -407,19 +407,16 @@ paths:
         '404':
           $ref: './_shared/responses.yaml#/components/responses/NotFound'
         '409':
-          # MembersExceptionHandler answers both suspension blockers with a bespoke JSON body
-          # carrying the data the caller needs to resolve them, not with a ProblemDetail — hence
-          # the local response instead of the shared #/components/responses/Conflict.
           description: |
-            Suspension is blocked — either the member owes money on their finance account, or they
-            are the sole owner of at least one group.
+            Suspension is blocked (error type /errors/suspension-blocked) — either the member owes money on their
+            finance account, or they are the sole owner of at least one group. The reasons are the problem
+            detail's `debt` and `groups` extension properties.
           content:
-            # application/json, not the hal-forms/problem+json this operation otherwise produces:
-            # the body comes from a @RestControllerAdvice handler returning a plain record, which
-            # is not bound by the handler method's own produces list.
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/SuspensionBlockedWarning'
+                allOf:
+                  - $ref: './_shared/problem.yaml#/components/schemas/ProblemDetail'
+                  - $ref: '#/components/schemas/SuspensionBlockedWarning'
         '422':
           $ref: './_shared/responses.yaml#/components/responses/UnprocessableEntity'
 
@@ -1274,10 +1271,8 @@ components:
       description: |
         The member is the sole owner of the listed groups. Each one needs another owner (or must be
         dissolved) before the suspension can go through.
-      required: [message, affectedGroups]
+      required: [affectedGroups]
       properties:
-        message:
-          type: string
         affectedGroups:
           type: array
           items:

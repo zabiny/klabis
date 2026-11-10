@@ -4,7 +4,7 @@ import {HalEmbeddedTable} from '../../components/HalNavigator2/HalEmbeddedTable.
 import {TableCell} from '../../components/KlabisTable';
 import {Alert, Skeleton} from '../../components/UI';
 import type {components} from '../../api/klabisApi';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 
 type LegalGuardianGroupSummaryItem = components['schemas']['EntityModelLegalGuardianGroupSummaryResponse'];
 
@@ -22,7 +22,7 @@ export const LegalGuardianGroupsPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     return (

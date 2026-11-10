@@ -189,7 +189,7 @@ class CalendarItemTest {
                     .startDate(LocalDate.of(2026, 6, 15))
                     .endDate(LocalDate.of(2026, 6, 10))
                     .build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(CalendarItemEndBeforeStartException.class)
                     .hasMessageContaining("End date must be on or after start date");
         }
 
@@ -228,7 +228,7 @@ class CalendarItemTest {
                     .startDate(LocalDate.of(2026, 6, 15))
                     .endDate(LocalDate.of(2026, 6, 10))
                     .build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(CalendarItemEndBeforeStartException.class)
                     .hasMessageContaining("End date must be on or after start date");
         }
     }
@@ -472,7 +472,7 @@ class CalendarItemTest {
                     .startDate(LocalDate.of(2026, 7, 10))
                     .endDate(LocalDate.of(2026, 7, 5))
                     .build()))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(CalendarItemEndBeforeStartException.class)
                     .hasMessageContaining("End date must be on or after start date");
         }
     }

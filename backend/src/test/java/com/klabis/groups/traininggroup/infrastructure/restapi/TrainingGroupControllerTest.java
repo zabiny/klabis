@@ -4,6 +4,7 @@ import com.klabis.common.WithKlabisMockUser;
 import com.klabis.common.groups.domain.CannotRemoveLastOwnerException;
 import com.klabis.common.groups.domain.DirectMemberAdditionNotAllowedException;
 import com.klabis.common.groups.domain.GroupMembership;
+import com.klabis.common.groups.domain.MemberNameLookup;
 import com.klabis.common.groups.domain.OwnerCannotBeMemberException;
 import com.klabis.common.users.Authority;
 import com.klabis.groups.GroupsWebMvcTest;
@@ -13,6 +14,7 @@ import com.klabis.groups.traininggroup.application.TrainingGroupManagementPort;
 import com.klabis.groups.traininggroup.domain.AgeRange;
 import com.klabis.groups.traininggroup.domain.TrainingGroup;
 import com.klabis.members.MemberId;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -21,9 +23,11 @@ import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.klabis.common.ProblemDetailAssertions.noIdentifiersInParameters;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -43,6 +47,14 @@ class TrainingGroupControllerTest {
 
     @Autowired
     private TrainingGroupManagementPort trainingGroupManagementService;
+
+    @Autowired
+    private MemberNameLookup memberNames;
+
+    @BeforeEach
+    void stubMemberName() {
+        when(memberNames.nameOf(any())).thenReturn(Optional.of("Jan Novák"));
+    }
 
     private TrainingGroup buildTrainingGroup(UUID groupUuid, String name, AgeRange ageRange, String trainerUuidStr) {
         MemberId trainer = new MemberId(UUID.fromString(trainerUuidStr));
@@ -388,6 +400,25 @@ class TrainingGroupControllerTest {
         }
 
         @Test
+        @DisplayName("should return 400 with trainer-required bound to the trainers field when replacing trainers with none")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldReturn400WhenReplacingTrainersWithNone() throws Exception {
+            stubPrefill();
+
+            mockMvc.perform(
+                            patch("/api/training-groups/{id}", GROUP_UUID)
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"trainers": []}
+                                            """)
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/trainer-required"))
+                    .andExpect(jsonPath("$.field").value("trainers"));
+        }
+
+        @Test
         @DisplayName("should return 204 and pass trainer MemberIds to command when trainers list is provided")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
         void shouldReturn204WhenUpdatingTrainersList() throws Exception {
@@ -526,7 +557,7 @@ class TrainingGroupControllerTest {
         @DisplayName("should return 422 when domain rejects direct member addition")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
         void shouldReturn422WhenDirectMemberAdditionNotAllowed() throws Exception {
-            doThrow(new DirectMemberAdditionNotAllowedException())
+            doThrow(new DirectMemberAdditionNotAllowedException("Žáci"))
                     .when(trainingGroupManagementService).addMemberToTrainingGroup(any(TrainingGroupId.class), any(MemberId.class));
 
             mockMvc.perform(
@@ -537,7 +568,9 @@ class TrainingGroupControllerTest {
                                             {"memberId": "%s"}
                                             """.formatted(UUID.randomUUID()))
                     )
-                    .andExpect(status().is(422));
+                    .andExpect(status().is(422))
+                    .andExpect(jsonPath("$.type").value("/errors/direct-member-addition-not-allowed"))
+                    .andExpect(jsonPath("$.groupName").value("Žáci"));
         }
 
         @Test
@@ -546,7 +579,7 @@ class TrainingGroupControllerTest {
         void shouldReturn409WhenMemberAlreadyInAnotherTrainingGroup() throws Exception {
             MemberId conflictMember = new MemberId(UUID.fromString(MEMBER_ID));
             TrainingGroupId conflictGroup = new TrainingGroupId(UUID.randomUUID());
-            doThrow(new MemberAlreadyInTrainingGroupException(conflictMember, conflictGroup))
+            doThrow(new MemberAlreadyInTrainingGroupException(conflictMember, conflictGroup, "Mladší žáci"))
                     .when(trainingGroupManagementService).addMemberToTrainingGroup(any(TrainingGroupId.class), any(MemberId.class));
 
             mockMvc.perform(
@@ -557,7 +590,49 @@ class TrainingGroupControllerTest {
                                             {"memberId": "%s"}
                                             """.formatted(MEMBER_ID))
                     )
-                    .andExpect(status().isConflict());
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/member-already-in-training-group"))
+                    .andExpect(jsonPath("$.field").value("memberId"))
+                    .andExpect(jsonPath("$.groupName").value("Mladší žáci"))
+                    .andExpect(jsonPath("$.memberName").value("Jan Novák"))
+                    .andExpect(noIdentifiersInParameters());
+        }
+
+        @Test
+        @DisplayName("should leave memberName out when the lookup finds nobody")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldLeaveMemberNameOutWhenLookupEmpty() throws Exception {
+            when(memberNames.nameOf(any())).thenReturn(Optional.empty());
+
+            performOwnerCannotBeMember()
+                    .andExpect(status().is(422))
+                    .andExpect(jsonPath("$.type").value("/errors/owner-cannot-be-member"))
+                    .andExpect(jsonPath("$.groupName").value("Žáci"))
+                    .andExpect(jsonPath("$.memberName").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should leave memberName out when the lookup fails")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
+        void shouldLeaveMemberNameOutWhenLookupThrows() throws Exception {
+            when(memberNames.nameOf(any())).thenThrow(new IllegalStateException("lookup down"));
+
+            performOwnerCannotBeMember()
+                    .andExpect(status().is(422))
+                    .andExpect(jsonPath("$.type").value("/errors/owner-cannot-be-member"))
+                    .andExpect(jsonPath("$.memberName").doesNotExist());
+        }
+
+        private org.springframework.test.web.servlet.ResultActions performOwnerCannotBeMember() throws Exception {
+            doThrow(new OwnerCannotBeMemberException(new MemberId(UUID.fromString(MEMBER_ID)), "Žáci"))
+                    .when(trainingGroupManagementService).addMemberToTrainingGroup(any(TrainingGroupId.class), any(MemberId.class));
+            return mockMvc.perform(
+                    post("/api/training-groups/{id}/members", GROUP_UUID)
+                            .contentType("application/json")
+                            .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                            .content("""
+                                    {"memberId": "%s"}
+                                    """.formatted(MEMBER_ID)));
         }
 
         @Test
@@ -565,7 +640,7 @@ class TrainingGroupControllerTest {
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
         void shouldReturn422WhenMemberIsTrainerOfThisGroup() throws Exception {
             MemberId trainer = new MemberId(UUID.fromString(MEMBER_ID));
-            doThrow(new OwnerCannotBeMemberException(trainer))
+            doThrow(new OwnerCannotBeMemberException(trainer, "Žáci"))
                     .when(trainingGroupManagementService).addMemberToTrainingGroup(any(TrainingGroupId.class), any(MemberId.class));
 
             mockMvc.perform(
@@ -577,7 +652,11 @@ class TrainingGroupControllerTest {
                                             """.formatted(MEMBER_ID))
                     )
                     .andExpect(status().is(422))
-                    .andExpect(jsonPath("$.title").value("Owner Cannot Be Member"));
+                    .andExpect(jsonPath("$.title").value("Owner Cannot Be Member"))
+                    .andExpect(jsonPath("$.type").value("/errors/owner-cannot-be-member"))
+                    .andExpect(jsonPath("$.groupName").value("Žáci"))
+                    .andExpect(jsonPath("$.memberName").value("Jan Novák"))
+                    .andExpect(noIdentifiersInParameters());
         }
     }
 
@@ -624,14 +703,18 @@ class TrainingGroupControllerTest {
         @DisplayName("should return 422 when removing last trainer")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.GROUPS_TRAINING})
         void shouldReturn422WhenRemovingLastTrainer() throws Exception {
-            doThrow(new CannotRemoveLastOwnerException(new MemberId(UUID.fromString(TRAINER_ID))))
+            doThrow(new CannotRemoveLastOwnerException(new MemberId(UUID.fromString(TRAINER_ID)), "Žáci"))
                     .when(trainingGroupManagementService).removeTrainer(any(TrainingGroupId.class), any(MemberId.class));
 
             mockMvc.perform(
                             delete("/api/training-groups/{id}/trainers/{memberId}", GROUP_UUID, UUID.fromString(TRAINER_ID))
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
                     )
-                    .andExpect(status().is(422));
+                    .andExpect(status().is(422))
+                    .andExpect(jsonPath("$.type").value("/errors/cannot-remove-last-owner"))
+                    .andExpect(jsonPath("$.groupName").value("Žáci"))
+                    .andExpect(jsonPath("$.memberName").value("Jan Novák"))
+                    .andExpect(noIdentifiersInParameters());
         }
 
         @Test

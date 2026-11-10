@@ -4,7 +4,7 @@ import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Skeleton} from '../../components/UI';
 import {CampaignDetail} from '../../components/membership-fees/CampaignDetail.tsx';
 import type {FeeSelectionCampaignDetail} from '../../components/membership-fees/CampaignDetail.tsx';
-import {labels} from '../../localization';
+import {labels, describeError} from '../../localization';
 
 const FeeSelectionCampaignDetailContent = (): ReactElement => {
     const {resourceData} = useHalPageData<FeeSelectionCampaignDetail>();
@@ -34,7 +34,7 @@ export const FeeSelectionCampaignDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     if (!resourceData) {

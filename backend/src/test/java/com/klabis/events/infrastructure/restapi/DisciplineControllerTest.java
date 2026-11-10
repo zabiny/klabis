@@ -419,7 +419,7 @@ class DisciplineControllerTest {
         @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn409WhenNotEditable() throws Exception {
             UUID id = UUID.randomUUID();
-            doThrow(new DisciplineNotEditableException(new DisciplineId(id)))
+            doThrow(new DisciplineNotEditableException("Orientační běh"))
                     .when(disciplineManagementService).update(any(), any(), any());
 
             mockMvc.perform(put("/api/disciplines/{id}", id)
@@ -427,7 +427,9 @@ class DisciplineControllerTest {
                             .content("""
                                     {"code": "OB2", "name": "Orientační běh 2"}
                                     """))
-                    .andExpect(status().isConflict());
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/discipline-not-editable"))
+                    .andExpect(jsonPath("$.disciplineName").value("Orientační běh"));
         }
 
         @Test
@@ -520,11 +522,13 @@ class DisciplineControllerTest {
         @WithKlabisMockUser(authorities = {Authority.EVENTS_MANAGE})
         void shouldReturn409WhenNotArchived() throws Exception {
             UUID id = UUID.randomUUID();
-            doThrow(new DisciplineNotArchivedException(new DisciplineId(id)))
+            doThrow(new DisciplineNotArchivedException("Orientační běh"))
                     .when(disciplineManagementService).restore(any(), any());
 
             mockMvc.perform(post("/api/disciplines/{id}/restore", id))
-                    .andExpect(status().isConflict());
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.type").value("/errors/discipline-not-archived"))
+                    .andExpect(jsonPath("$.disciplineName").value("Orientační běh"));
         }
 
         @Test

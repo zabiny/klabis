@@ -309,7 +309,9 @@ class FieldLevelAuthorizationTest {
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"hiddenField\": \"ok\", \"hasAuthorityHiddenField\": \"no-auth\"}"))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.type").value("/errors/field-authorization"))
+                    .andExpect(jsonPath("$.field").value("hasAuthorityHiddenField"));
         }
 
         @Test

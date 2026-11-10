@@ -1,11 +1,12 @@
 package com.klabis.common.users.domain;
 
 import com.klabis.common.exceptions.InvalidDataException;
+import com.klabis.common.exceptions.UserFacingError;
 
 /**
  * Exception thrown when token validation fails.
  */
-public class TokenValidationException extends InvalidDataException {
+public class TokenValidationException extends InvalidDataException implements UserFacingError {
     private final Reason reason;
 
     public TokenValidationException(String message) {
@@ -19,6 +20,11 @@ public class TokenValidationException extends InvalidDataException {
 
     public Reason getReason() {
         return reason;
+    }
+
+    @Override
+    public String errorType() {
+        return "invalid-token";
     }
 
     public enum Reason {

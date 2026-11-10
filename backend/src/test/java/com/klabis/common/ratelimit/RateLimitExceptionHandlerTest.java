@@ -48,6 +48,7 @@ class RateLimitExceptionHandlerTest {
                 .andExpect(content().contentType("application/problem+json"))
                 .andExpect(jsonPath("$.title").value("Too Many Requests"))
                 .andExpect(jsonPath("$.status").value(429))
+                .andExpect(jsonPath("$.type").value("/errors/rate-limit-exceeded"))
                 .andExpect(jsonPath("$.detail").value("Too many requests. Please try again later"));
     }
 }

@@ -124,7 +124,7 @@ public class FeeSelectionCampaign extends KlabisAggregateRoot<FeeSelectionCampai
             throw new CampaignClosedException();
         }
         if (newDeadline.isBefore(today)) {
-            throw new DeadlineNotInFutureException(newDeadline);
+            throw DeadlineNotInFutureException.onChange(newDeadline);
         }
         this.votingDeadline = newDeadline;
     }

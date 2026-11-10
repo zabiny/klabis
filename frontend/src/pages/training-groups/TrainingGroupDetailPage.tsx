@@ -11,7 +11,7 @@ import type {
     GetTrainingGroupTrainersItemResource,
     HalFormsTemplate,
 } from '../../api';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {Pencil, Trash2, UserPlus} from 'lucide-react';
 import {GroupMembersTable} from '../../components/groups/GroupMembersTable.tsx';
 import {MemberRowWithRemove} from '../../components/groups/MemberRowWithRemove.tsx';
@@ -193,7 +193,7 @@ export const TrainingGroupDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     if (!resourceData) {

@@ -10,7 +10,7 @@ import com.klabis.sync.domain.SyncEntityType;
  * runtime state.
  * <p>
  * <b>Deliberately left unmapped by {@code SyncExceptionHandler}</b>, so it falls through
- * to Spring's default handling as a plain {@code 500 Internal Server Error}. No caller
+ * to the generic {@code /errors/unexpected} {@code 500 Internal Server Error} response. No caller
  * input produces this — it can only happen if two adapters are registered for the same
  * entity type, something only a deployment misconfiguration can cause — so there is no
  * client-actionable status to map it to (unlike the sibling {@code 409} exceptions in

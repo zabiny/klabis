@@ -72,7 +72,7 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID, M>, ID, M> extend
     public void removeOwner(M memberId) {
         Assert.notNull(memberId, "Member id is required");
         if (isLastOwner(memberId)) {
-            throw new CannotRemoveLastOwnerException(memberId);
+            throw new CannotRemoveLastOwnerException(memberId, name);
         }
         owners.remove(memberId);
     }
@@ -92,10 +92,10 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID, M>, ID, M> extend
     protected void addMember(M memberId) {
         Assert.notNull(memberId, "Member id is required");
         if (owners.contains(memberId)) {
-            throw new OwnerCannotBeMemberException(memberId);
+            throw new OwnerCannotBeMemberException(memberId, name);
         }
         if (memberIds.contains(memberId)) {
-            throw new MemberAlreadyInGroupException(memberId);
+            throw new MemberAlreadyInGroupException(memberId, name);
         }
         members.add(GroupMembership.of(memberId));
         memberIds.add(memberId);
@@ -105,7 +105,7 @@ public abstract class MemberGroup<A extends MemberGroup<A, ID, M>, ID, M> extend
         Assert.notNull(memberId, "Member id is required");
         boolean removed = members.removeIf(m -> m.memberId().equals(memberId));
         if (!removed) {
-            throw new MemberNotInGroupException(memberId);
+            throw new MemberNotInGroupException(memberId, name);
         }
         memberIds.remove(memberId);
     }

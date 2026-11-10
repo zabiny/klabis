@@ -5,7 +5,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {ToastProvider} from '../../contexts/ToastContext.tsx';
-import {FetchError} from '../../api/authorizedFetch';
+import {ApiError} from '../../api/authorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembersPage} from './MembersPage';
 import {vi} from 'vitest';
@@ -346,10 +346,10 @@ describe('MembersPage — row data rendering', () => {
 
         it('closes the dialog and opens the negative-balance dialog on debt 409', async () => {
             submitWith({
-                error: new FetchError('409 Conflict', 409, 'Conflict', new Headers(), JSON.stringify({
+                error: new ApiError(409, {params: {
                     debt: {balance: {amount: -350, currency: 'CZK'}, accountLink: '/api/members/m1/account'},
                     groups: null,
-                })),
+                }}),
             });
             openAndSubmitSuspend();
 
@@ -359,10 +359,10 @@ describe('MembersPage — row data rendering', () => {
 
         it('closes the dialog and opens the group-ownership warning on groups 409', async () => {
             submitWith({
-                error: new FetchError('409 Conflict', 409, 'Conflict', new Headers(), JSON.stringify({
+                error: new ApiError(409, {params: {
                     debt: null,
                     groups: {affectedGroups: [{groupId: 'g1', groupName: 'Skupina A', groupType: 'FREE'}]},
-                })),
+                }}),
             });
             openAndSubmitSuspend();
 

@@ -5,6 +5,7 @@ import type {HalFormsProperty, HalFormsTemplate} from '../../../api';
 import {HalFormsForm} from './HalFormsForm.tsx';
 import {vi} from 'vitest';
 import type {HalFormFieldFactory, HalFormsInputProps} from './types.ts';
+import {ApiError} from '../../../api/authorizedFetch.ts';
 
 const createProperty = (overrides: Partial<HalFormsProperty> = {}): HalFormsProperty => ({
     name: 'testField',
@@ -277,5 +278,91 @@ describe('HalFormsForm — conditional boolean checkboxes (event-shared-transpor
         ]);
         renderForm(template);
         expect(screen.getByRole('checkbox')).not.toBeChecked();
+    });
+});
+
+describe('HalFormsForm server errors', () => {
+    const template = createTemplate([
+        createProperty({name: 'name', prompt: 'Název'}),
+        createProperty({name: 'votingDeadline', prompt: 'Termín'}),
+    ]);
+
+    const renderWithError = (serverError?: ApiError | null) => {
+        const ui = (error?: ApiError | null) => (
+            <HalFormsForm data={{name: 'Tier', votingDeadline: '2026-01-01'}} template={template} onSubmit={vi.fn()} serverError={error}/>
+        );
+        const view = render(ui(serverError));
+        return {...view, setError: (error: ApiError | null) => view.rerender(ui(error))};
+    };
+
+    it('shows fieldErrors at their fields after the error arrives on an already mounted form', async () => {
+        const {setError} = renderWithError(null);
+        expect(screen.queryByText('nesmí být prázdné')).not.toBeInTheDocument();
+
+        setError(new ApiError(400, {type: '/errors/validation-failed', fieldErrors: {name: 'nesmí být prázdné'}}));
+
+        expect(await screen.findByText('nesmí být prázdné')).toBeInTheDocument();
+    });
+
+    it('keeps entered values when the error is applied', async () => {
+        const user = userEvent.setup();
+        const {setError} = renderWithError(null);
+        const input = screen.getByLabelText(/Název/);
+        await user.clear(input);
+        await user.type(input, 'Nový název');
+
+        setError(new ApiError(400, {fieldErrors: {name: 'chyba'}}));
+
+        expect(await screen.findByText('chyba')).toBeInTheDocument();
+        expect(screen.getByLabelText(/Název/)).toHaveValue('Nový název');
+    });
+
+    it('shows the Czech text of a typed error at the field named by field', async () => {
+        const {setError} = renderWithError(null);
+
+        setError(new ApiError(400, {type: '/errors/voting-deadline-not-in-future', field: 'votingDeadline'}));
+
+        expect(await screen.findByText('Termín pro výběr musí být v budoucnosti.')).toBeInTheDocument();
+    });
+
+    it('applies an error that is present when the form mounts', async () => {
+        renderWithError(new ApiError(400, {fieldErrors: {name: 'chyba při načtení'}}));
+
+        expect(await screen.findByText('chyba při načtení')).toBeInTheDocument();
+    });
+
+    it('does not show an error for a typed error bound to no template field', () => {
+        const { setError } = renderWithError(null);
+
+        setError(new ApiError(400, {type: '/errors/voting-deadline-not-in-future', field: 'other'}));
+
+        expect(screen.queryByText('Termín pro výběr musí být v budoucnosti.')).not.toBeInTheDocument();
+    });
+
+    it('ignores field errors whose key matches no template property', async () => {
+        const {setError} = renderWithError(null);
+
+        setError(new ApiError(400, {fieldErrors: {orphan: 'osiřelá chyba', name: 'chyba jména'}}));
+
+        expect(await screen.findByText('chyba jména')).toBeInTheDocument();
+        expect(screen.queryByText('osiřelá chyba')).not.toBeInTheDocument();
+    });
+
+    it('applies a nested key under its first-segment template property without showing a duplicate', async () => {
+        const addressTemplate = createTemplate([createProperty({name: 'address', prompt: 'Adresa'})]);
+        const {rerender} = render(
+            <HalFormsForm data={{address: ''}} template={addressTemplate} onSubmit={vi.fn()}/>
+        );
+
+        rerender(
+            <HalFormsForm
+                data={{address: ''}}
+                template={addressTemplate}
+                onSubmit={vi.fn()}
+                serverError={new ApiError(400, {fieldErrors: {'address.street': 'nesmí být prázdné'}})}
+            />
+        );
+
+        expect(screen.queryAllByText("nesmí být prázdné").length).toBeLessThanOrEqual(1);
     });
 });

@@ -3,8 +3,8 @@
  * These endpoints are public (no authentication required)
  */
 
+import {buildFetchError} from './problemFetch';
 import type {
-    ErrorResponse,
     PasswordSetupResponse,
     SetPasswordRequest,
     TokenRequestRequest,
@@ -19,7 +19,6 @@ export type {
     TokenRequestRequest,
     TokenRequestResponse,
     ValidateTokenResponse,
-    ErrorResponse,
 };
 
 /**
@@ -30,17 +29,12 @@ export async function validateToken(token: string): Promise<ValidateTokenRespons
     const url = `/api/auth/password-setup/validate?token=${encodeURIComponent(token)}`;
     const response = await fetch(url, {
         headers: {
-            Accept: 'application/json',
+            Accept: 'application/json, application/problem+json',
         },
     });
 
     if (!response.ok) {
-        const errorData: ErrorResponse = await response.json().catch(() => ({ message: response.statusText }));
-        throw new TokenValidationError(
-            errorData.detail || 'Token validation failed',
-            response.status,
-            errorData
-        );
+        throw await buildFetchError(response);
     }
 
     return response.json();
@@ -55,18 +49,13 @@ export async function completePasswordSetup(request: SetPasswordRequest): Promis
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            Accept: 'application/json',
+            Accept: 'application/json, application/problem+json',
         },
         body: JSON.stringify(request),
     });
 
     if (!response.ok) {
-        const errorData: ErrorResponse = await response.json().catch(() => ({ message: response.statusText }));
-        throw new PasswordSetupError(
-            errorData.detail || 'Password setup failed',
-            response.status,
-            errorData
-        );
+        throw await buildFetchError(response);
     }
 
     return response.json();
@@ -81,7 +70,7 @@ export async function requestNewToken(request: TokenRequestRequest): Promise<Tok
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            Accept: 'application/json',
+            Accept: 'application/json, application/problem+json',
         },
         body: JSON.stringify(request),
     });
@@ -96,71 +85,10 @@ export async function requestNewToken(request: TokenRequestRequest): Promise<Tok
     }
 
     if (!response.ok) {
-        const errorData: ErrorResponse = await response.json().catch(() => ({ message: response.statusText }));
-        throw new TokenRequestError(
-            errorData.detail || 'Token request failed',
-            response.status,
-            errorData
-        );
+        throw await buildFetchError(response);
     }
 
     return response.json();
-}
-
-// Custom error classes
-export class TokenValidationError extends Error {
-    status: number;
-    detail: import('./index').ErrorResponse;
-
-    constructor(
-        message: string,
-        status: number,
-        detail: ErrorResponse
-    ) {
-        super(message);
-        this.name = 'TokenValidationError';
-        this.status = status;
-        this.detail = detail;
-    }
-}
-
-export class PasswordSetupError extends Error {
-    status: number;
-    detail: ErrorResponse;
-
-    constructor(
-        message: string,
-        status: number,
-        detail: ErrorResponse
-    ) {
-        super(message);
-        this.name = 'PasswordSetupError';
-        this.status = status;
-        this.detail = detail;
-    }
-
-    /**
-     * Extracts error message from the response detail
-     */
-    getErrorMessage(): string {
-        return this.detail.detail || 'Neznámá chyba';
-    }
-}
-
-export class TokenRequestError extends Error {
-    status: number;
-    detail: ErrorResponse;
-
-    constructor(
-        message: string,
-        status: number,
-        detail: ErrorResponse
-    ) {
-        super(message);
-        this.name = 'TokenRequestError';
-        this.status = status;
-        this.detail = detail;
-    }
 }
 
 export class RateLimitError extends Error {

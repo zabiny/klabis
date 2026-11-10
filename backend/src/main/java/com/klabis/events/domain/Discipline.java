@@ -21,9 +21,9 @@ public class Discipline extends KlabisAggregateRoot<Discipline, DisciplineId> {
 
     @RecordBuilder
     public record CreateDiscipline(
-            @NotBlank(message = "Discipline code is required")
+            @NotBlank(message = "Kód disciplíny je povinný")
             String code,
-            @NotBlank(message = "Discipline name is required")
+            @NotBlank(message = "Název disciplíny je povinný")
             String name
     ) {}
 

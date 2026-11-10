@@ -8,6 +8,7 @@ import {HalFormPanel, type HalFormPanelRenderHelpers} from './HalFormPanel.tsx';
 import {useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData.ts';
 import type {HalResponse} from '../../api';
+import {ApiError} from '../../api/apiError';
 import type {HalFormDisplayProps} from './HalFormDisplay.tsx';
 
 vi.mock('../../hooks/useAuthorizedFetch', () => ({
@@ -101,7 +102,7 @@ describe('HalFormPanel', () => {
             mockUseAuthorizedQuery.mockReturnValue({
                 data: undefined,
                 isLoading: false,
-                error: new Error('Network error'),
+                error: new ApiError(404),
             } as unknown as ReturnType<typeof useAuthorizedQuery>);
 
             const Wrapper = createWrapper();
@@ -113,7 +114,7 @@ describe('HalFormPanel', () => {
                 </Wrapper>
             );
 
-            expect(screen.getByText('Network error')).toBeInTheDocument();
+            expect(screen.getByText('Požadovaná položka nebyla nalezena.')).toBeInTheDocument();
         });
     });
 

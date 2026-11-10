@@ -74,7 +74,7 @@ export interface UseHalFormDataReturn {
  * );
  *
  * if (isLoadingTargetData) return <Spinner />;
- * if (targetFetchError) return <Alert variant="error">{targetFetchError.message}</Alert>;
+ * if (targetFetchError) return <Alert variant="error">{describeError(targetFetchError)}</Alert>;
  *
  * return <Form initialValues={formData} />;
  *

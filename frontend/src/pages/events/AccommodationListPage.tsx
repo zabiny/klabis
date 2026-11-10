@@ -58,7 +58,7 @@ export const AccommodationListPage = (): ReactElement => {
     }
 
     if (eventData && !accommodationListUrl) {
-        return <ErrorPage error={{responseStatus: 403, message: 'HTTP 403: Forbidden'}}/>;
+        return <ErrorPage error={{status: 403}}/>;
     }
 
     const items = listData?._embedded?.accommodationList ?? [];

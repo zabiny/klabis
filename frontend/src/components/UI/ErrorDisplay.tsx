@@ -1,18 +1,19 @@
 import type {ReactElement} from 'react'
 import {Alert} from './Alert'
 import {Button} from './Button'
-import {isFormValidationError} from '../../api/hateoas'
+import {ApiError, VALIDATION_FAILED} from '../../api/apiError'
+import {describeError, labels} from '../../localization'
 import {errorStyles, layoutStyles} from '../../theme/designTokens'
 
 /**
  * Props for ErrorDisplay component
  */
 export interface ErrorDisplayProps {
-    /** Error object (FetchError, FormValidationError, or any Error) */
+    /** Error object (ApiError, or any Error) */
     error: Error | null | undefined
     /** Custom title for the error alert */
     title?: string
-    /** Custom message to display instead of error.message */
+    /** Custom message to display instead of the described error */
     customMessage?: string
     /** Callback when retry button is clicked */
     onRetry?: () => void
@@ -26,6 +27,32 @@ export interface ErrorDisplayProps {
     subtitle?: string
     /** CSS class name for additional styling */
     className?: string
+    /** Prompts of the form's template properties by name; errors bound to these are shown at their fields, not here */
+    fieldPrompts?: Record<string, string>
+}
+
+interface FormErrorContent {
+    message?: string
+    errors: string[]
+    unmatchedFieldErrors: Array<{key: string, text: string}>
+    hasFieldErrors: boolean
+}
+
+function describeFormError(error: ApiError, fieldPrompts: Record<string, string>): FormErrorContent {
+    const isFormField = (key: string) => Object.hasOwn(fieldPrompts, key.split('.')[0])
+    const isBoundToField = error.field !== undefined && Object.hasOwn(fieldPrompts, error.field)
+    const hasFieldErrors = Object.keys(error.fieldErrors).length > 0
+    const detailsShown = hasFieldErrors || error.errors.length > 0
+    const hidesGenericMessage = error.type === VALIDATION_FAILED && detailsShown
+    const unmatchedFieldErrors = Object.entries(error.fieldErrors)
+        .filter(([key]) => !isFormField(key))
+        .map(([key, text]) => ({key, text}))
+    return {
+        message: isBoundToField || hidesGenericMessage ? undefined : describeError(error),
+        errors: error.errors,
+        unmatchedFieldErrors,
+        hasFieldErrors,
+    }
 }
 
 /**
@@ -53,7 +80,7 @@ export interface ErrorDisplayProps {
  * // With form validation errors
  * <ErrorDisplay
  *   error={submitError}
- *   title="Submission Failed"
+ *   fieldPrompts={{name: 'Název'}}
  * />
  */
 export function ErrorDisplay({
@@ -66,13 +93,24 @@ export function ErrorDisplay({
                                  cancelText = 'Cancel',
                                  subtitle,
                                  className,
+                                 fieldPrompts = {},
                              }: ErrorDisplayProps): ReactElement | null {
     if (!error) {
         return null
     }
 
-    const errorMessage = customMessage || error.message
-    const showValidationErrors = isFormValidationError(error)
+    const apiError = error instanceof ApiError ? error : undefined
+    const content = apiError ? describeFormError(apiError, fieldPrompts) : undefined
+    const errorMessage = customMessage || (content ? content.message : describeError(error))
+    const heading = !errorMessage && content?.hasFieldErrors ? labels.errors.formValidationErrors : undefined
+    const hasContent = Boolean(
+        title || errorMessage || heading || subtitle || onRetry || onCancel
+        || content?.errors.length || content?.unmatchedFieldErrors.length
+    )
+
+    if (!hasContent) {
+        return null
+    }
 
     return (
         <Alert severity="error" className={className}>
@@ -80,20 +118,21 @@ export function ErrorDisplay({
                 {title && (
                     <p className="font-semibold">{title}</p>
                 )}
-                <p>{errorMessage}</p>
+                {errorMessage && <p>{errorMessage}</p>}
+                {heading && <p>{heading}</p>}
                 {subtitle && (
                     <p className={errorStyles.validationMessage}>
                         {subtitle}
                     </p>
                 )}
 
-                {/* Display validation field errors if applicable */}
-                {showValidationErrors && (
+                {content && (content.errors.length > 0 || content.unmatchedFieldErrors.length > 0) && (
                     <ul className={errorStyles.listItem}>
-                        {Object.entries(error.validationErrors).map(([field, fieldError]) => (
-                            <li key={field}>
-                                {field}: {fieldError}
-                            </li>
+                        {content.errors.map((text, index) => (
+                            <li key={`error-${index}`}>{text}</li>
+                        ))}
+                        {content.unmatchedFieldErrors.map(({key, text}) => (
+                            <li key={key}>{text}</li>
                         ))}
                     </ul>
                 )}

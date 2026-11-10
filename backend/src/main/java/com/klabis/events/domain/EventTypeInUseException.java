@@ -1,11 +1,13 @@
 package com.klabis.events.domain;
 
 import com.klabis.common.exceptions.ConflictException;
+import com.klabis.common.exceptions.UserFacingError;
 import com.klabis.events.EventTypeId;
 
 import java.util.List;
+import java.util.Map;
 
-public class EventTypeInUseException extends ConflictException {
+public class EventTypeInUseException extends ConflictException implements UserFacingError {
 
     private final EventTypeId eventTypeId;
     private final List<String> affectedEventNames;
@@ -22,5 +24,10 @@ public class EventTypeInUseException extends ConflictException {
 
     public List<String> getAffectedEventNames() {
         return affectedEventNames;
+    }
+
+    @Override
+    public Map<String, Object> messageParameters() {
+        return Map.of("eventNames", affectedEventNames);
     }
 }

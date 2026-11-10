@@ -145,6 +145,27 @@ class FeeSelectionCampaignControllerTest {
         }
 
         @Test
+        @DisplayName("should return 400 with type, deadline and field when deadline is not in the future")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenDeadlineNotInFuture() throws Exception {
+            when(managementPort.publishYear(any()))
+                    .thenThrow(DeadlineNotInFutureException.onStart(LocalDate.of(2026, 10, 18)));
+
+            mockMvc.perform(
+                            post("/api/fee-selection-campaigns")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .content("""
+                                            {"year": 2026, "votingDeadline": "2026-10-18", "levelIds": ["%s"]}
+                                            """.formatted(UUID.randomUUID())))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/voting-deadline-not-in-future"))
+                    .andExpect(jsonPath("$.deadline").value("2026-10-18"))
+                    .andExpect(jsonPath("$.field").value("votingDeadline"))
+                    .andExpect(jsonPath("$.detail").value("Voting deadline must be in the future, but was: 2026-10-18"));
+        }
+
+        @Test
         @DisplayName("should return 400 when levelIds is empty")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenLevelIdsIsEmpty() throws Exception {
@@ -280,16 +301,16 @@ class FeeSelectionCampaignControllerTest {
         }
 
         @Test
-        @DisplayName("should return 400 when publication not found")
+        @DisplayName("should return 404 when publication not found")
         @WithKlabisMockUser(memberId = MEMBER_ID)
-        void shouldReturn400WhenNotFound() throws Exception {
+        void shouldReturn404WhenNotFound() throws Exception {
             when(managementPort.getPublication(PUBLICATION_ID))
                     .thenThrow(new FeeSelectionCampaignNotFoundException(PUBLICATION_ID));
 
             mockMvc.perform(
                             get("/api/fee-selection-campaigns/{id}", PUBLICATION_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isNotFound());
         }
     }
 
@@ -356,7 +377,7 @@ class FeeSelectionCampaignControllerTest {
         @DisplayName("should return 400 when deadline is in the past (DeadlineNotInFutureException)")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenDeadlineInPast() throws Exception {
-            doThrow(new DeadlineNotInFutureException(LocalDate.of(2020, 1, 1)))
+            doThrow(DeadlineNotInFutureException.onChange(LocalDate.of(2020, 1, 1)))
                     .when(managementPort).changeDeadline(eq(PUBLICATION_ID), any());
 
             mockMvc.perform(
@@ -366,7 +387,10 @@ class FeeSelectionCampaignControllerTest {
                                     .content("""
                                             {"votingDeadline": "2020-01-01"}
                                             """))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/voting-deadline-in-past"))
+                    .andExpect(jsonPath("$.deadline").value("2020-01-01"))
+                    .andExpect(jsonPath("$.field").value("votingDeadline"));
         }
 
         @Test

@@ -1,7 +1,7 @@
 import {type ReactElement, useState} from 'react';
 import {Link, useNavigate, useParams} from 'react-router-dom';
 import {Alert, Button, Skeleton} from '../../components/UI';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
 import type {GetFeeSummaryResource} from '../../api';
 import {Check} from 'lucide-react';
@@ -98,7 +98,7 @@ export const MemberFeeChoicePage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{(error as Error).message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     const chooseLevelTemplate = summary?._templates?.chooseTier;

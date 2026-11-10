@@ -63,10 +63,7 @@ class CalendarManagementService implements CalendarManagementPort {
         long daysBetween = ChronoUnit.DAYS.between(startDate, endDate) + 1;
 
         if (daysBetween > MAX_DATE_RANGE_DAYS) {
-            throw new IllegalArgumentException(
-                    "Date range must not exceed %d days. Requested range: %d days".formatted(
-                            MAX_DATE_RANGE_DAYS, daysBetween)
-            );
+            throw new DateRangeTooLongException(MAX_DATE_RANGE_DAYS, daysBetween);
         }
     }
 

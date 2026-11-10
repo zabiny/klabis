@@ -193,10 +193,10 @@ class TrainingGroupTest {
         }
 
         @Test
-        @DisplayName("replaceTrainers() should throw CannotRemoveLastOwnerException when given empty set")
+        @DisplayName("replaceTrainers() should throw TrainerRequiredException when given empty set")
         void shouldThrowWhenReplacingWithEmptySet() {
             assertThatThrownBy(() -> group.replaceTrainers(Set.of()))
-                    .isInstanceOf(CannotRemoveLastOwnerException.class);
+                    .isInstanceOf(TrainerRequiredException.class);
         }
 
         @Test

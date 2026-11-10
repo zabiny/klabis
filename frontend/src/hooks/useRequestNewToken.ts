@@ -1,11 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {
-    RateLimitError,
-    requestNewToken,
-    TokenRequestError,
-    type TokenRequestRequest,
-} from '../api/passwordSetup';
-import {labels} from '../localization';
+import {RateLimitError, requestNewToken, type TokenRequestRequest} from '../api/passwordSetup';
+import {describeError, labels} from '../localization';
 
 export interface UseRequestNewTokenOptions {
     onSuccess: () => void;
@@ -56,10 +51,8 @@ export function useRequestNewToken(
                         ? labels.errors.rateLimitedRetryAfter.replace('{seconds}', String(error.retryAfter))
                         : labels.errors.rateLimitedRetryLater;
                     setServerError(retryText);
-                } else if (error instanceof TokenRequestError) {
-                    setServerError(error.detail.detail || labels.errors.requestFailed);
                 } else {
-                    setServerError(labels.errors.unexpectedError);
+                    setServerError(describeError(error));
                 }
             } finally {
                 setIsSubmitting(false);

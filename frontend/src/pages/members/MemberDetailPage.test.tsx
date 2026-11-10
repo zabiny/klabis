@@ -12,7 +12,7 @@ import {MemberDetailPage} from './MemberDetailPage';
 import {vi} from 'vitest';
 import type {HalFormsTemplate, HalResponse} from '../../api';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch';
-import {FetchError} from '../../api/authorizedFetch';
+import {ApiError} from '../../api/authorizedFetch';
 import {labels} from '../../localization';
 
 vi.mock('../../hooks/useHalPageData', () => ({
@@ -65,10 +65,6 @@ vi.mock('../../api/hateoas', async (importOriginal) => {
     return {
         ...actual,
         submitHalFormsData: vi.fn(),
-        isFormValidationError: vi.fn((error) => {
-            return error && typeof error === 'object' && 'validationErrors' in error;
-        }),
-        toFormValidationError: vi.fn((error) => error),
     };
 });
 
@@ -532,10 +528,10 @@ describe('MemberDetailPage', () => {
         it('closes the suspend dialog and opens the negative-balance dialog on debt 409', async () => {
             const user = userEvent.setup();
             const mutate = vi.fn((_vars: unknown, opts: {onError?: (e: unknown) => void}) => {
-                opts.onError?.(new FetchError('409 Conflict', 409, 'Conflict', new Headers(), JSON.stringify({
+                opts.onError?.(new ApiError(409, {params: {
                     debt: {balance: {amount: -350, currency: 'CZK'}, accountLink: '/api/members/m1/account'},
                     groups: null,
-                })));
+                }}));
             });
             vi.mocked(useAuthorizedMutation).mockReturnValue({mutate, isPending: false, error: null} as unknown as ReturnType<typeof useAuthorizedMutation>);
             const data = mockMemberDetailData({

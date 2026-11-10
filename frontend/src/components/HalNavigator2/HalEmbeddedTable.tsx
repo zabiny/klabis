@@ -3,6 +3,7 @@
  * Uses KlabisTableWithQuery to fetch and render data with pagination and sorting
  */
 
+import {labels} from '../../localization'
 import {type ReactElement} from 'react'
 import {useHalPageData} from '../../hooks/useHalPageData'
 import {KlabisTableWithQuery} from '../KlabisTable'
@@ -94,7 +95,7 @@ export function HalEmbeddedTable<T extends object = Record<string, unknown>>({
         return (
             <ErrorDisplay
                 error={error}
-                title="Failed to load data"
+                title={labels.errors.loadDataFailed}
             />
         )
     }

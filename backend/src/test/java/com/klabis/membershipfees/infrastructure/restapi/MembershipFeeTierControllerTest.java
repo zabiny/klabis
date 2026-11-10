@@ -131,6 +131,23 @@ class MembershipFeeTierControllerTest {
         }
 
         @Test
+        @DisplayName("should explain a blank name in Czech with type validation-failed even when Accept-Language is English")
+        @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturnCzechFieldErrorRegardlessOfAcceptLanguage() throws Exception {
+            mockMvc.perform(
+                            post("/api/membership-fee-tiers")
+                                    .contentType("application/json")
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE)
+                                    .header("Accept-Language", "en")
+                                    .content("""
+                                            {"name": "", "yearlyFeeAmount": 1200}
+                                            """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/validation-failed"))
+                    .andExpect(jsonPath("$.fieldErrors.name").value("nesmí být prázdná"));
+        }
+
+        @Test
         @DisplayName("should map name and yearlyFee to CreateTierCommand without rules")
         @WithKlabisMockUser(memberId = MEMBER_ID, authorities = {Authority.MEMBERS_MANAGE})
         void shouldMapRequestToCommandWithoutRules() throws Exception {
@@ -364,16 +381,16 @@ class MembershipFeeTierControllerTest {
         }
 
         @Test
-        @DisplayName("should return 400 when level not found")
+        @DisplayName("should return 404 when level not found")
         @WithKlabisMockUser(memberId = MEMBER_ID)
-        void shouldReturn400WhenNotFound() throws Exception {
+        void shouldReturn404WhenNotFound() throws Exception {
             when(managementPort.getTier(LEVEL_ID))
                     .thenThrow(new MembershipFeeTierNotFoundException(LEVEL_ID));
 
             mockMvc.perform(
                             get("/api/membership-fee-tiers/{id}", LEVEL_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isNotFound());
         }
 
         @Test

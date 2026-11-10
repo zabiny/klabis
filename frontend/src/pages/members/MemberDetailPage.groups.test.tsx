@@ -53,10 +53,6 @@ vi.mock('../../api/klabisUserManager', () => ({
 vi.mock('../../api/hateoas', async (importOriginal) => ({
     ...(await importOriginal<typeof import('../../api/hateoas')>()),
     submitHalFormsData: vi.fn(),
-    isFormValidationError: vi.fn((error) => {
-        return error && typeof error === 'object' && 'validationErrors' in error;
-    }),
-    toFormValidationError: vi.fn((error) => error),
 }));
 
 vi.mock('../../components/UI/Modal.tsx', () => ({

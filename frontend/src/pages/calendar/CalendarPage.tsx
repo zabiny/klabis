@@ -7,7 +7,7 @@ import {toHref} from '../../api/hateoas.ts';
 import {toRoutePath} from '../../api/apiPath';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {useUrlFilters} from '../../hooks/useUrlFilters.ts';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {Filter} from 'lucide-react';
 
 interface CalendarItem {
@@ -150,7 +150,7 @@ const CalendarPage = () => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     return (

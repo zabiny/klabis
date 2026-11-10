@@ -11,7 +11,7 @@ import type {
     GetGroupResource,
     HalFormsTemplate,
 } from '../../api';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {Ban, Crown, LogOut, Pencil, Trash2, UserPlus} from 'lucide-react';
 import {HalRouteProvider} from '../../contexts/HalRouteContext.tsx';
 import {useAuth} from '../../contexts/authContext.ts';
@@ -301,7 +301,7 @@ export const GroupDetailPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     if (!resourceData) {

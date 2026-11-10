@@ -1,10 +1,9 @@
 import {type ReactElement, useState} from 'react';
 import {Button, Modal} from '../../components/UI';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {useAuthorizedMutation} from '../../hooks/useAuthorizedFetch.ts';
 import {useToast} from '../../contexts/toastContext';
 import type {TransactionReverseRequest} from './FinancesPage.tsx';
-import {toFormValidationError} from '../../api/hateoas.ts';
 import {formatCurrency, formatDate} from './financeFormatters.ts';
 
 interface ReverseConfirmModalProps {
@@ -57,8 +56,7 @@ export const ReverseConfirmModal = ({isOpen, transaction, onClose}: ReverseConfi
                 handleClose();
             },
             onError: (error: unknown) => {
-                const formError = toFormValidationError(error);
-                setSubmitError(formError.message);
+                setSubmitError(describeError(error));
             },
         });
     };

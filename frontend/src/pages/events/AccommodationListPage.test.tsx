@@ -262,6 +262,7 @@ describe('AccommodationListPage', () => {
 
     describe('Stáhnout CSV button', () => {
         const mockAuthorizedFetch = authorizedFetch as ReturnType<typeof vi.fn>;
+        let anchorClick: ReturnType<typeof vi.spyOn>;
 
         beforeEach(() => {
             setupQueryMocks(buildEventData(), buildListData([]));
@@ -269,9 +270,12 @@ describe('AccommodationListPage', () => {
                 createObjectURL: vi.fn().mockReturnValue('blob:mock-url'),
                 revokeObjectURL: vi.fn(),
             });
+            anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
         });
 
-        afterEach(() => {
+        afterEach(async () => {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            anchorClick.mockRestore();
             vi.unstubAllGlobals();
         });
 
@@ -305,7 +309,7 @@ describe('AccommodationListPage', () => {
             vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
                 const el = originalCreateElement(tag);
                 if (tag === 'a') {
-                    vi.spyOn(el as HTMLAnchorElement, 'click');
+                    vi.spyOn(el as HTMLAnchorElement, 'click').mockImplementation(() => {});
                     createdAnchors.push(el as HTMLAnchorElement);
                 }
                 return el;
@@ -331,6 +335,7 @@ describe('AccommodationListPage', () => {
                     true
                 );
             });
+            await waitFor(() => expect(anchorClick).toHaveBeenCalled());
         });
 
         it('derives filename from Content-Disposition header', async () => {

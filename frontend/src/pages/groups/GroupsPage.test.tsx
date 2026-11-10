@@ -4,10 +4,16 @@ import {MemoryRouter} from 'react-router-dom';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useHalPageData} from '../../hooks/useHalPageData';
 import {useAuthorizedQuery, useAuthorizedMutation} from '../../hooks/useAuthorizedFetch';
+import {ApiError} from '../../api/apiError';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {GroupsPage} from './GroupsPage';
 import {vi} from 'vitest';
 import type {HalResponse} from '../../api';
+
+const addToastMock = vi.fn();
+vi.mock('../../contexts/toastContext', () => ({
+    useToast: () => ({addToast: addToastMock}),
+}));
 
 vi.mock('../../hooks/useHalPageData', () => ({
     useHalPageData: vi.fn(),
@@ -128,8 +134,9 @@ describe('GroupsPage', () => {
     });
 
     it('shows error message when fetch fails', () => {
-        renderPage(createMockPageData(null, {error: new Error('Chyba serveru')}));
-        expect(screen.getByText('Chyba serveru')).toBeInTheDocument();
+        renderPage(createMockPageData(null, {error: new ApiError(404, {type: '/errors/group-not-found', detail: 'Group not found'})}));
+        expect(screen.getByText('Skupina nebyla nalezena.')).toBeInTheDocument();
+        expect(screen.queryByText(/Group not found/)).not.toBeInTheDocument();
     });
 
     it('renders "Vytvořit skupinu" button when createGroup template exists', () => {
@@ -233,6 +240,7 @@ describe('GroupsPage', () => {
             await waitFor(() => {
                 expect(mockMutate).toHaveBeenCalledWith(
                     expect.objectContaining({url: '/api/groups/group-1/invitations/inv-1/accept'}),
+                    expect.any(Object),
                 );
             });
         });
@@ -249,7 +257,25 @@ describe('GroupsPage', () => {
             await waitFor(() => {
                 expect(mockMutate).toHaveBeenCalledWith(
                     expect.objectContaining({url: '/api/groups/group-1/invitations/inv-1/reject'}),
+                    expect.any(Object),
                 );
+            });
+        });
+
+        it('tells the invitee in Czech when accepting the invitation fails', async () => {
+            const mockMutate = vi.fn().mockImplementation((_vars, opts) =>
+                opts?.onError?.(new ApiError(404, {type: '/errors/invitation-not-found', detail: 'Invitation not found'})));
+            vi.mocked(useAuthorizedMutation).mockReturnValue({
+                mutate: mockMutate,
+                isPending: false,
+                error: null,
+            } as unknown as ReturnType<typeof useAuthorizedMutation>);
+            renderPageWithInvitations([buildPendingInvitation()]);
+
+            fireEvent.click(screen.getByRole('button', {name: /přijmout/i}));
+
+            await waitFor(() => {
+                expect(addToastMock).toHaveBeenCalledWith('Pozvánka nebyla nalezena.', 'error');
             });
         });
     });

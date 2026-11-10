@@ -34,7 +34,7 @@ class FeeSelectionCampaignManagementService implements FeeSelectionCampaignManag
     public FeeSelectionCampaignId publishYear(PublishYearCommand command) {
         LocalDate today = LocalDate.now(clock);
         if (!command.votingDeadline().isAfter(today)) {
-            throw new DeadlineNotInFutureException(command.votingDeadline());
+            throw DeadlineNotInFutureException.onStart(command.votingDeadline());
         }
         publicationRepository.findActive(today).ifPresent(existing -> {
             throw new ActiveCampaignExistsException();

@@ -455,7 +455,7 @@ class ManagementServiceTest {
                         .note("Second termination attempt")
                         .build();
                 assertThatThrownBy(() -> testedSubject.suspendMember(new MemberId(testMemberId), command))
-                        .isInstanceOf(InvalidUpdateException.class)
+                        .isInstanceOf(MemberAlreadySuspendedException.class)
                         .hasMessageContaining("Member is already suspended");
 
                 verify(memberRepository, never()).save(any(Member.class));
@@ -782,7 +782,7 @@ class ManagementServiceTest {
 
             var command = MemberResumeMembershipBuilder.builder().resumedBy(new UserId(adminUserId)).build();
             assertThatThrownBy(() -> testedSubject.resumeMember(new MemberId(testMemberId), command))
-                    .isInstanceOf(InvalidUpdateException.class)
+                    .isInstanceOf(MemberAlreadyActiveException.class)
                     .hasMessageContaining("already active");
 
             verify(memberRepository, never()).save(any(Member.class));

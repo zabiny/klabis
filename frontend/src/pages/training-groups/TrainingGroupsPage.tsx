@@ -5,7 +5,7 @@ import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import {TableCell} from '../../components/KlabisTable';
 import {Alert, Skeleton} from '../../components/UI';
 import type {components} from '../../api/klabisApi';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 
 type TrainingGroupSummaryItem = components['schemas']['EntityModelTrainingGroupSummaryResponse'];
 
@@ -17,7 +17,7 @@ export const TrainingGroupsPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     return (

@@ -1,5 +1,6 @@
 package com.klabis.common.security;
 
+import com.klabis.common.exceptions.CommonErrorTypes;
 import com.klabis.common.authorization.AuthorizationSnapshotLoader;
 import com.klabis.common.users.UserService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -54,7 +55,7 @@ public class ResourceServerSecurityConfiguration {
         return (request, response, authException) -> writeProblemDetail(
                 response, objectMapper,
                 HttpStatus.UNAUTHORIZED,
-                "https://api.klabis.example.com/errors/unauthorized",
+                CommonErrorTypes.UNAUTHORIZED,
                 "Unauthorized",
                 authException.getMessage() != null ? authException.getMessage() : "Authentication required");
     }
@@ -64,7 +65,7 @@ public class ResourceServerSecurityConfiguration {
         return (request, response, accessDeniedException) -> writeProblemDetail(
                 response, objectMapper,
                 HttpStatus.FORBIDDEN,
-                "https://api.klabis.example.com/errors/forbidden",
+                CommonErrorTypes.FORBIDDEN,
                 "Forbidden",
                 accessDeniedException.getMessage() != null ? accessDeniedException.getMessage() : "Insufficient authority");
     }

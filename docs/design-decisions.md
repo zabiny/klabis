@@ -358,3 +358,39 @@ flowchart LR
 - After a rollback to a version that reads the claim, users must log in again, because tokens issued by this version lack it.
 
 **References:** OpenSpec change `rebac-2-target-authorization` (`design.md` D1, D2, D4, D5), ADR-001, ADR-008.
+
+## ADR-012: Errors are identified by `/errors/{name}` types with named parameters; the frontend words them in Czech
+
+**Status:** Accepted
+
+**Context:**
+
+Every error the SPA showed was English or technical: the exception's English sentence (often with an ID inside) went into `detail`, pages rendered `error.message` (`HTTP 404 (Not Found)`), and `ChangePasswordDialog` matched an English substring of `detail`. The `type` was `about:blank` or one of three ad-hoc styles. The application is Czech-only and the SPA is its only API client.
+
+**Decision:**
+
+1. **The backend says what went wrong, the frontend words it.** A problem detail carries a relative RFC 9457 `type` `/errors/{error-name}` (kebab-case) plus the values the text needs as top-level extension properties — names, labels, dates (ISO-8601) and amounts (`{amount, currency}`), never identifiers. `detail` stays English and developer-facing. The Czech templates live in `labels.ts` (`labels.errorTypes`), next to the rest of the UI language.
+2. **`UserFacingError` is the opt-in contract** (`common.exceptions`, framework-free): `errorType()` (default: the class name without `Exception`, kebab-cased; override when one class covers several rules, and list them in `errorTypes()`), `messageParameters()` and an optional `field()`. The five bases (`BusinessRuleViolationException`, `ConflictException`, `ResourceNotFoundException`, `InvalidDataException`, `AuthorizationException`) keep owning the HTTP status; `MvcExceptionHandler` and `UserFacingErrorResponses` turn a `UserFacingError` into the type, parameters and `field`. A parameter must not be named `type`, `title`, `status`, `detail`, `instance` or `field`. Generic types (`validation-failed`, `invalid-request`, `not-found`, `conflict`, `forbidden`, `unexpected`, …) live in `CommonErrorTypes`; internal checks (`Assert`, `IllegalArgumentException`/`IllegalStateException`) become `/errors/invalid-request` with a fixed detail and the raw message only in the log.
+3. **`field()` is a deliberate shortcut.** An error bound to one form field returns the request property name itself, so modules without an advice of their own need no handler for it. A reflection test per module checks that each such name is a record component of the generated request DTO, so a spec rename fails the build. Errors whose input is shared by several forms carry no field.
+4. **Names are resolved where a port is at hand.** A domain exception that only knows an identifier is handled in a module advice (`@Order(HIGHEST_PRECEDENCE)`) that resolves the name through a port the module already has (`MembershipFeesExceptionHandler`, `FinanceExceptionHandler` via `Members`, `GroupsExceptionHandler` via `MemberNameLookup`, implemented in `members`) and adds it as a parameter. A name that cannot be resolved — or a lookup that fails — is left out, never replaced by the identifier; the Czech template has a wording without it. Authorization runs before the controller body, so an unauthorised caller never reaches a name lookup.
+5. **The OpenAPI spec holds the shared list.** `ErrorType` in `docs/openapi/spec/_shared/problem.yaml` enumerates every type, with a comment on parameters, field and status. `ErrorTypeCatalogueTest` requires that every emitted type is in the enum and every enum value is emitted, and that every concrete subclass of the five bases implements `UserFacingError`. The frontend generates a union from the enum, and `labels.errorTypes: Record<ErrorType, …>` makes a type without a Czech text a compile error.
+6. **The frontend parses a problem detail once**, in `authorizedFetch`, into `ApiError` (`status`, `type`, `detail`, `field`, `fieldErrors`, `errors`, `params`). `describeError`, `HalFormsForm`, `ErrorDisplay` and the special cases (`/errors/incorrect-current-password`, `/errors/cannot-remove-last-permission-manager`, the suspension 409) read those fields and never a response body. An unknown type falls back to a Czech text by status.
+7. **Bean validation is the exception.** Its messages are generic constraint texts, so the locale resolver is fixed to `cs` and the bundled Hibernate Validator Czech messages are sent as `fieldErrors`/`errors`/`parameterErrors` without constraint-code prefixes; hand-written `message=` texts are Czech.
+
+**Rationale:**
+
+One place owns the UI language, the type is a standard RFC 9457 member rather than a custom code property, and the frontend can format dates and amounts the Czech way. Forgetting any of the three touch points (exception, spec enum, `labels.ts`) fails a backend test or `tsc` instead of silently showing a generic text.
+
+**Alternatives considered:**
+
+- *Czech texts in the backend* (message catalogue or hard-coded): rejected — splits the UI language between two code bases.
+- *A hybrid of backend text plus code*: rejected — two mechanisms for one thing.
+- *Each consumer parses the body*: rejected — four parsers with their own fallbacks.
+
+**Consequences:**
+
+- A new user-facing error touches the exception, `problem.yaml`, a test and `labels.ts` (see `backend-patterns`, `domain-layer.md`).
+- An exception that is not user-reachable can stay on the generic fallback if it does not extend one of the five bases; extending a base obliges it to implement `UserFacingError`.
+- `/errors/*` types are relative URIs and need not be dereferenceable.
+
+**References:** OpenSpec change `show-error-messages-in-czech` (`design.md` D1–D9), ADR-001, `backend-patterns` skill.

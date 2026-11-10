@@ -1,10 +1,443 @@
+import type {ErrorType} from '../api/apiError';
+
 export function czechPlural(count: number, one: string, few: string, many: string): string {
     if (count === 1) return one;
     if (count >= 2 && count <= 4) return few;
     return many;
 }
 
+export type ErrorParams = Record<string, unknown>;
+
+const UNEXPECTED_ERROR_TEXT = 'Došlo k neočekávané chybě. Zkuste to prosím znovu.';
+
+const eventStatusNames = {
+    ACTIVE: 'Aktivní',
+    FINISHED: 'Ukončeno',
+    CANCELLED: 'Zrušeno',
+    DRAFT: 'Koncept',
+} as const;
+
+const nonEmptyString = (value: unknown): string | undefined =>
+    typeof value === 'string' && value !== '' ? value : undefined;
+
+const finiteNumber = (value: unknown): number | undefined =>
+    typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+
+const formatMoney = (value: unknown): string | undefined => {
+    if (typeof value !== 'object' || value === null) return undefined;
+    const {amount, currency} = value as {amount?: unknown; currency?: unknown};
+    const number = finiteNumber(amount);
+    if (number === undefined || typeof currency !== 'string' || currency === '') return undefined;
+    try {
+        return new Intl.NumberFormat('cs-CZ', {style: 'currency', currency}).format(number);
+    } catch {
+        return `${number} ${currency}`;
+    }
+};
+
+const syncStatusNames = {
+    NEW: 'Nový',
+    IN_SYNC: 'V synchronizaci',
+    RETRYING: 'Opakovaný pokus',
+    CONFLICT: 'Konflikt',
+    FAILED: 'Selhalo',
+    RETIRED: 'Ukončeno',
+} as const;
+
+const resolutionNames = {
+    INWARD: 'Převzít z externího systému',
+    OUTWARD: 'Zapsat do externího systému',
+    ACCEPT_DIVERGENCE: 'Ponechat obě verze',
+} as const;
+
+const invitationStatusNames = {
+    ACCEPTED: 'přijata',
+    REJECTED: 'odmítnuta',
+    CANCELLED: 'zrušena',
+} as const;
+
+const joinCzech = (items: string[]): string =>
+    items.length <= 1 ? items.join('') : `${items.slice(0, -1).join(', ')} a ${items[items.length - 1]}`;
+
+const passwordContainTexts: Record<string, string> = {
+    MISSING_UPPERCASE: 'velké písmeno',
+    MISSING_LOWERCASE: 'malé písmeno',
+    MISSING_DIGIT: 'číslici',
+    MISSING_SPECIAL_CHARACTER: 'speciální znak',
+};
+
+const passwordForbiddenTexts: Record<string, string> = {
+    CONTAINS_FIRST_NAME: 'vaše jméno',
+    CONTAINS_LAST_NAME: 'vaše příjmení',
+    CONTAINS_REGISTRATION_NUMBER: 'vaše registrační číslo',
+};
+
+const describePasswordViolations = (violations: unknown, minLength: unknown): string => {
+    const list = Array.isArray(violations) ? violations.filter((v): v is string => typeof v === 'string') : [];
+    if (list.includes('REQUIRED')) return 'Heslo je povinné.';
+    const length = finiteNumber(minLength);
+    const musts: string[] = [];
+    if (list.includes('TOO_SHORT')) {
+        musts.push(length !== undefined
+            ? `mít alespoň ${length} ${czechPlural(length, 'znak', 'znaky', 'znaků')}`
+            : 'být delší');
+    }
+    const contains = list.filter((v) => Object.hasOwn(passwordContainTexts, v)).map((v) => passwordContainTexts[v]);
+    if (contains.length > 0) musts.push(`obsahovat ${joinCzech(contains)}`);
+    const forbidden = list.filter((v) => Object.hasOwn(passwordForbiddenTexts, v)).map((v) => passwordForbiddenTexts[v]);
+    const sentences: string[] = [];
+    if (musts.length > 0) sentences.push(`Heslo musí ${musts.join(', ')}.`);
+    if (forbidden.length > 0) sentences.push(`Heslo nesmí obsahovat ${joinCzech(forbidden)}.`);
+    return sentences.length > 0 ? sentences.join(' ') : 'Heslo nesplňuje požadavky na složitost.';
+};
+
+const syncEntityTypeNames = {
+    EVENT: 'Akce',
+    DISCIPLINE: 'Disciplína',
+    MEMBER: 'Člen',
+    EVENT_REGISTRATION: 'Přihláška na akci',
+} as const;
+
+const authorityName = (code: string): string | undefined => getPermissionInfo(code)?.label;
+
+const errorTypes: Record<ErrorType, (params: ErrorParams) => string> = {
+    '/errors/validation-failed': () => 'Zadané údaje nejsou platné. Zkontrolujte formulář a zkuste to znovu.',
+    '/errors/invalid-request': () => 'Požadavek se nepodařilo zpracovat. Zkontrolujte zadané údaje a zkuste to znovu.',
+    '/errors/unauthorized': () => 'Platnost přihlášení vypršela. Přihlaste se prosím znovu.',
+    '/errors/forbidden': () => 'K této akci nemáte oprávnění.',
+    '/errors/account-inactive': () => 'Váš účet je deaktivován. Kontaktujte prosím administrátora.',
+    '/errors/not-found': () => 'Požadovaná položka nebyla nalezena.',
+    '/errors/conflict': () => 'Akci nelze provést, protože je v rozporu s aktuálním stavem dat.',
+    '/errors/concurrent-update': () => 'Data mezitím změnil někdo jiný. Načtěte stránku znovu a zopakujte změnu.',
+    '/errors/unexpected': () => UNEXPECTED_ERROR_TEXT,
+    '/errors/voting-deadline-not-in-future': () => 'Termín pro výběr musí být v budoucnosti.',
+    '/errors/voting-deadline-in-past': () => 'Termín pro výběr nesmí být v minulosti.',
+    '/errors/duplicate-payment-rule': ({eventTypeName, rankingLabel}) =>
+        eventTypeName && rankingLabel
+            ? `Pravidlo pro typ akce „${eventTypeName}“ a žebříček „${rankingLabel}“ již v této úrovni existuje.`
+            : 'Pravidlo pro tuto kombinaci typu akce a žebříčku již v této úrovni existuje.',
+    '/errors/payment-rule-not-found': ({eventTypeName, rankingLabel}) =>
+        eventTypeName && rankingLabel
+            ? `Pravidlo pro typ akce „${eventTypeName}“ a žebříček „${rankingLabel}“ nebylo nalezeno.`
+            : 'Pravidlo pro tuto kombinaci typu akce a žebříčku nebylo nalezeno.',
+    '/errors/payment-rule-value-missing': ({ruleType}) => {
+        if (ruleType === 'PERCENTAGE') return 'Vyplňte procento spoluúčasti.';
+        if (ruleType === 'FIXED_AMOUNT') return 'Vyplňte fixní částku spoluúčasti.';
+        return 'Vyplňte hodnotu pravidla spoluúčasti.';
+    },
+    '/errors/negative-payment-rule-percentage': ({percent}) =>
+        `Procento spoluúčasti nesmí být záporné (zadáno ${percent} %).`,
+    '/errors/active-campaign-exists': () => 'Již existuje aktivní kampaň volby členského příspěvku. Nejprve ji uzavřete.',
+    '/errors/campaign-closed': () => 'Kampaň je již uzavřena, změnu nelze provést.',
+    '/errors/campaign-already-processed': () => 'Kampaň již byla zpracována, akci nelze zopakovat.',
+    '/errors/snapshot-frozen': () => 'Úroveň je součástí vyhlášené kampaně a již ji nelze měnit.',
+    '/errors/voting-closed': () => 'Hlasování v této kampani již skončilo.',
+    '/errors/membership-fee-tier-not-found': () => 'Úroveň členského příspěvku nebyla nalezena.',
+    '/errors/membership-fee-group-not-found': () => 'Skupina členských příspěvků nebyla nalezena.',
+    '/errors/fee-selection-campaign-not-found': ({year}) =>
+        year !== undefined && year !== null
+            ? `Kampaň volby členského příspěvku pro rok ${year} nebyla nalezena.`
+            : 'Kampaň volby členského příspěvku nebyla nalezena.',
+    '/errors/member-not-found': () => 'Člen nebyl nalezen.',
+    '/errors/legal-guardian-not-found': () => 'Zákonný zástupce nebyl nalezen.',
+    '/errors/email-required': () => 'Vyplňte e-mail.',
+    '/errors/phone-required': () => 'Vyplňte telefon.',
+    '/errors/address-required': () => 'Vyplňte adresu.',
+    '/errors/birth-number-required': () => 'Vyplňte rodné číslo.',
+    '/errors/guardian-required': () => 'Nezletilý člen musí mít alespoň jednoho zákonného zástupce.',
+    '/errors/birth-number-not-allowed': () => 'Rodné číslo lze zadat jen u členů z České republiky.',
+    '/errors/invalid-birth-number': () => 'Rodné číslo není platné.',
+    '/errors/invalid-bank-account-number': () => 'Číslo bankovního účtu není platné.',
+    '/errors/invalid-email-address': () => 'E-mailová adresa není platná.',
+    '/errors/invalid-phone-number': () => 'Telefonní číslo není platné.',
+    '/errors/date-of-birth-in-future': () => 'Datum narození nesmí být v budoucnosti.',
+    '/errors/medical-course-validity-not-after-completion': () =>
+        'Platnost zdravotního kurzu musí být později než datum jeho absolvování.',
+    '/errors/member-already-suspended': () => 'Člen je již pozastaven.',
+    '/errors/member-already-active': () => 'Člen je již aktivní.',
+    '/errors/suspension-blocked': () => 'Členství nelze pozastavit, dokud není vyřešeno vlastnictví skupin nebo dluh člena.',
+    '/errors/adult-member-cannot-have-guardians': () => 'Zletilý člen nemůže mít zákonné zástupce.',
+    '/errors/minor-cannot-take-over-guardian': () => 'Nezletilý člen nemůže převzít roli zákonného zástupce.',
+    '/errors/registration-number-already-in-use': ({registrationNumber}) =>
+        registrationNumber
+            ? `Registrační číslo ${registrationNumber} již používá jiný člen.`
+            : 'Registrační číslo již používá jiný člen.',
+    '/errors/account-activation-not-available': () => 'Aktivaci účtu nelze pro tohoto člena provést.',
+    '/errors/legal-guardian-email-already-in-use': ({email}) =>
+        email
+            ? `E-mail ${email} již používá jiný uživatel.`
+            : 'Tento e-mail již používá jiný uživatel.',
+    '/errors/guardian-not-found': () => 'Vybraný uživatel nemůže být zákonným zástupcem.',
+    '/errors/legal-guardian-group-without-guardian': () => 'Skupina zákonných zástupců musí mít alespoň jednoho zákonného zástupce.',
+    '/errors/only-minors-allowed': () => 'Tuto akci lze provést jen u nezletilých členů.',
+    '/errors/event-not-found': () => 'Akce nebyla nalezena.',
+    '/errors/oris-event-not-found': ({orisId}) =>
+        orisId !== undefined && orisId !== null
+            ? `Akce s ORIS ID ${orisId} nebyla v ORISu nalezena.`
+            : 'Akce nebyla v ORISu nalezena.',
+    '/errors/discipline-not-found': () => 'Disciplína nebyla nalezena.',
+    '/errors/oris-discipline-not-found': ({orisId}) =>
+        orisId !== undefined && orisId !== null
+            ? `Disciplína s ORIS ID ${orisId} nebyla v ORISu nalezena.`
+            : 'Disciplína nebyla v ORISu nalezena.',
+    '/errors/event-type-not-found': () => 'Typ akce nebyl nalezen.',
+    '/errors/category-preset-not-found': () => 'Předvolba kategorií nebyla nalezena.',
+    '/errors/registration-not-found': () => 'Přihláška nebyla nalezena.',
+    '/errors/coordinator-not-found': () => 'Koordinátor nebyl nalezen.',
+    '/errors/duplicate-registration': ({eventName}) =>
+        eventName
+            ? `Na akci „${eventName}“ již existuje přihláška.`
+            : 'Na tuto akci již existuje přihláška.',
+    '/errors/discipline-not-editable': ({disciplineName}) =>
+        disciplineName
+            ? `Disciplínu „${disciplineName}“ nelze upravit.`
+            : 'Disciplínu nelze upravit.',
+    '/errors/discipline-not-archived': ({disciplineName}) =>
+        disciplineName
+            ? `Disciplína „${disciplineName}“ není archivovaná.`
+            : 'Disciplína není archivovaná.',
+    '/errors/oris-discipline-already-mapped': ({eventTypeName}) =>
+        eventTypeName
+            ? `Tato disciplína z ORISu je již přiřazena typu akce „${eventTypeName}“.`
+            : 'Tato disciplína z ORISu je již přiřazena jinému typu akce.',
+    '/errors/event-type-in-use': ({eventNames}) => {
+        const names = Array.isArray(eventNames) ? eventNames.filter((n): n is string => typeof n === 'string' && n !== '') : [];
+        return names.length > 0
+            ? `Typ akce nelze smazat, používají ho akce: ${names.join(', ')}.`
+            : 'Typ akce nelze smazat, protože ho používají akce.';
+    },
+    '/errors/event-type-name-already-exists': ({name}) =>
+        name
+            ? `Typ akce s názvem „${name}“ již existuje.`
+            : 'Typ akce s tímto názvem již existuje.',
+    '/errors/event-sync-needs-resolution': ({orisId}) =>
+        orisId !== undefined && orisId !== null
+            ? `Synchronizace akce s ORIS ID ${orisId} vyžaduje ruční vyřešení rozdílů.`
+            : 'Synchronizace akce vyžaduje ruční vyřešení rozdílů.',
+    '/errors/member-registration-blocked': () => 'Přihlášení člena na akci není možné.',
+    '/errors/duplicate-category-name': ({categoryName}) =>
+        categoryName
+            ? `Kategorie „${categoryName}“ je v akci uvedena vícekrát.`
+            : 'Název kategorie je v akci uveden vícekrát.',
+    '/errors/duplicate-category-oris-id': () => 'ORIS ID kategorie je v akci uvedeno vícekrát.',
+    '/errors/registration-deadline-after-event-date': () => 'Termín přihlášek nesmí být po datu konání akce.',
+    '/errors/finished-event-cannot-be-updated': () => 'Ukončenou akci nelze upravovat.',
+    '/errors/cancelled-event-cannot-be-updated': () => 'Zrušenou akci nelze upravovat.',
+    '/errors/category-required': () => 'Vyberte kategorii.',
+    '/errors/category-not-available': () => 'Vybraná kategorie není na této akci k dispozici.',
+    '/errors/event-not-active-for-registration': () => 'Na tuto akci se nelze přihlásit, protože není aktivní.',
+    '/errors/registration-deadline-passed': () => 'Termín přihlášek na tuto akci již vypršel.',
+    '/errors/registration-closed-after-event-date': () => 'Přihlášky na akci jsou uzavřeny, protože akce již proběhla.',
+    '/errors/si-card-rental-not-allowed': () => 'Půjčení SI čipu není u této akce možné.',
+    '/errors/si-card-number-required': () => 'Vyplňte číslo SI čipu.',
+    '/errors/invalid-event-status-transition': ({from, to}) => {
+        const fromName = typeof from === 'string' && Object.hasOwn(eventStatusNames, from) ? eventStatusNames[from as keyof typeof eventStatusNames] : undefined;
+        const toName = typeof to === 'string' && Object.hasOwn(eventStatusNames, to) ? eventStatusNames[to as keyof typeof eventStatusNames] : undefined;
+        return fromName && toName
+            ? `Stav akce nelze změnit z „${fromName}“ na „${toName}“.`
+            : 'Stav akce nelze v tuto chvíli změnit.';
+    },
+    '/errors/unknown-event-category': () => 'Akce neobsahuje zadanou kategorii.',
+    '/errors/invalid-oris-registration-deadlines': ({orisId}) =>
+        orisId !== undefined && orisId !== null
+            ? `Termíny přihlášek akce s ORIS ID ${orisId} v ORISu nejsou platné.`
+            : 'Termíny přihlášek akce v ORISu nejsou platné.',
+    '/errors/accommodation-list-access-denied': () => 'K seznamu ubytování nemáte přístup.',
+    '/errors/shared-accommodation-not-offered': () => 'Sdílené ubytování u této akce není nabízeno.',
+    '/errors/calendar-item-not-found': () => 'Položka kalendáře nebyla nalezena.',
+    '/errors/calendar-item-read-only': () => 'Tuto položku kalendáře nelze upravovat.',
+    '/errors/calendar-item-end-before-start': () => 'Datum konce nesmí být před datem začátku.',
+    '/errors/date-range-too-long': ({maxDays}) =>
+        maxDays !== undefined && maxDays !== null && maxDays !== '' && Number.isFinite(Number(maxDays))
+            ? `Zvolené období je příliš dlouhé, nejvýše může mít ${maxDays} ${czechPlural(Number(maxDays), 'den', 'dny', 'dnů')}.`
+            : 'Zvolené období je příliš dlouhé.',
+    '/errors/overdraft-limit-exceeded': ({memberName, chargeAmount, currentBalance, overdraftLimit}) => {
+        const charge = formatMoney(chargeAmount);
+        const balance = formatMoney(currentBalance);
+        const limit = formatMoney(overdraftLimit);
+        const member = nonEmptyString(memberName);
+        const subject = member ? `Částku${charge ? ` ${charge}` : ''} nelze strhnout z účtu člena ${member}` : `Částku${charge ? ` ${charge}` : ''} nelze strhnout z účtu`;
+        if (balance && limit) return `${subject}, protože by byl překročen povolený debet ${limit} (aktuální zůstatek ${balance}).`;
+        if (limit) return `${subject}, protože by byl překročen povolený debet ${limit}.`;
+        return `${subject}, protože by byl překročen povolený debet.`;
+    },
+    '/errors/transaction-already-reversed': ({memberName, amount}) => {
+        const money = formatMoney(amount);
+        const member = nonEmptyString(memberName);
+        const transaction = money ? `Transakce ve výši ${money}` : 'Transakce';
+        return member
+            ? `${transaction} na účtu člena ${member} již byla stornována.`
+            : `${transaction} již byla stornována.`;
+    },
+    '/errors/member-account-not-found': ({memberName}) =>
+        nonEmptyString(memberName) ? `Účet člena ${memberName} nebyl nalezen.` : 'Účet člena nebyl nalezen.',
+    '/errors/transaction-not-found': ({memberName}) =>
+        nonEmptyString(memberName)
+            ? `Transakce na účtu člena ${memberName} nebyla nalezena.`
+            : 'Transakce nebyla nalezena.',
+    '/errors/group-not-found': () => 'Skupina nebyla nalezena.',
+    '/errors/cannot-remove-last-owner': ({groupName, memberName}) => {
+        const group = nonEmptyString(groupName);
+        const member = nonEmptyString(memberName);
+        const where = group ? `Ze skupiny „${group}“` : 'Ze skupiny';
+        return member
+            ? `${where} nelze odebrat člena ${member}, protože je jejím posledním vlastníkem.`
+            : `${where} nelze odebrat posledního vlastníka.`;
+    },
+    '/errors/direct-member-addition-not-allowed': ({groupName}) =>
+        nonEmptyString(groupName)
+            ? `Do skupiny „${groupName}“ nelze členy přidávat přímo, musí být pozváni.`
+            : 'Do této skupiny nelze členy přidávat přímo, musí být pozváni.',
+    '/errors/owner-cannot-be-member': ({groupName, memberName}) => {
+        const group = nonEmptyString(groupName);
+        const member = nonEmptyString(memberName);
+        if (member) {
+            return group
+                ? `Člen ${member} je vlastníkem skupiny „${group}“ a nemůže být zároveň jejím členem.`
+                : `Člen ${member} je vlastníkem skupiny a nemůže být zároveň jejím členem.`;
+        }
+        return group
+            ? `Vlastník skupiny „${group}“ nemůže být zároveň jejím členem.`
+            : 'Vlastník skupiny nemůže být zároveň jejím členem.';
+    },
+    '/errors/member-already-in-group': ({groupName, memberName}) => {
+        const group = nonEmptyString(groupName);
+        const member = nonEmptyString(memberName);
+        const who = member ? `Člen ${member} již je` : 'Člen již je';
+        return group ? `${who} ve skupině „${group}“.` : `${who} v této skupině.`;
+    },
+    '/errors/member-not-in-group': ({groupName, memberName}) => {
+        const group = nonEmptyString(groupName);
+        const member = nonEmptyString(memberName);
+        const who = member ? `Člen ${member} není` : 'Člen není';
+        return group ? `${who} ve skupině „${group}“.` : `${who} v této skupině.`;
+    },
+    '/errors/group-ownership-required': ({groupName}) =>
+        nonEmptyString(groupName)
+            ? `Tuto akci může provést jen vlastník skupiny „${groupName}“.`
+            : 'Tuto akci může provést jen vlastník skupiny.',
+    '/errors/not-invited-member': ({groupName}) =>
+        nonEmptyString(groupName)
+            ? `Do skupiny „${groupName}“ nejste pozváni.`
+            : 'Do této skupiny nejste pozváni.',
+    '/errors/cannot-invite-existing-member': ({groupName, memberName}) => {
+        const group = nonEmptyString(groupName);
+        const member = nonEmptyString(memberName);
+        const who = member ? `Člen ${member} již je` : 'Člen již je';
+        return group
+            ? `${who} členem skupiny „${group}“, nelze ho pozvat.`
+            : `${who} členem této skupiny, nelze ho pozvat.`;
+    },
+    '/errors/duplicate-pending-invitation': ({groupName, memberName}) => {
+        const group = nonEmptyString(groupName);
+        const member = nonEmptyString(memberName);
+        const who = member ? `Člen ${member} již má` : 'Člen již má';
+        return group
+            ? `${who} do skupiny „${group}“ čekající pozvánku.`
+            : `${who} do této skupiny čekající pozvánku.`;
+    },
+    '/errors/cannot-promote-non-member-to-owner': ({groupName, memberName}) => {
+        const group = nonEmptyString(groupName);
+        const member = nonEmptyString(memberName);
+        const who = member ? `Člen ${member} není` : 'Člen není';
+        return group
+            ? `${who} členem skupiny „${group}“, proto ho nelze povýšit na vlastníka.`
+            : `${who} členem této skupiny, proto ho nelze povýšit na vlastníka.`;
+    },
+    '/errors/invitation-not-cancellable': ({invitationStatus}) =>
+        typeof invitationStatus === 'string' && Object.hasOwn(invitationStatusNames, invitationStatus)
+            ? `Pozvánku nelze zrušit, protože již byla ${invitationStatusNames[invitationStatus as keyof typeof invitationStatusNames]}.`
+            : 'Pozvánku nelze zrušit.',
+    '/errors/invitation-not-found': () => 'Pozvánka nebyla nalezena.',
+    '/errors/member-already-in-training-group': ({groupName, memberName}) => {
+        const group = nonEmptyString(groupName);
+        const member = nonEmptyString(memberName);
+        const who = member ? `Člen ${member} již trénuje` : 'Člen již trénuje';
+        return group
+            ? `${who} v tréninkové skupině „${group}“.`
+            : `${who} v jiné tréninkové skupině.`;
+    },
+    '/errors/trainer-required': ({groupName}) =>
+        nonEmptyString(groupName)
+            ? `Tréninková skupina „${groupName}“ musí mít alespoň jednoho trenéra.`
+            : 'Tréninková skupina musí mít alespoň jednoho trenéra.',
+    '/errors/invalid-age-range': ({minAge, maxAge}) => {
+        const min = finiteNumber(minAge);
+        const max = finiteNumber(maxAge);
+        return min !== undefined && max !== undefined
+            ? `Maximální věk (${max}) nesmí být nižší než minimální věk (${min}).`
+            : 'Maximální věk nesmí být nižší než minimální věk.';
+    },
+    '/errors/overlapping-age-range': ({minAge, maxAge}) => {
+        const min = finiteNumber(minAge);
+        const max = finiteNumber(maxAge);
+        return min !== undefined && max !== undefined
+            ? `Věkové rozmezí ${min}–${max} se překrývá s jinou tréninkovou skupinou.`
+            : 'Věkové rozmezí se překrývá s jinou tréninkovou skupinou.';
+    },
+    '/errors/user-not-found': () => 'Uživatel nebyl nalezen.',
+    '/errors/cannot-remove-last-permission-manager': () =>
+        'Nelze odebrat oprávnění správce — systém musí mít alespoň jednoho uživatele se správou oprávnění.',
+    '/errors/admin-lockout': () =>
+        'Změna by odebrala přístup ke správě oprávnění všem administrátorům. Alespoň jeden aktivní uživatel musí toto oprávnění zachovat.',
+    '/errors/invalid-authority': ({authority}) =>
+        nonEmptyString(authority) ? `Oprávnění „${authority}“ není platné.` : 'Zadané oprávnění není platné.',
+    '/errors/incorrect-current-password': () => 'Zadané aktuální heslo je nesprávné.',
+    '/errors/passwords-do-not-match': () => 'Hesla se neshodují.',
+    '/errors/password-requirements-not-met': ({violations, minLength}) =>
+        describePasswordViolations(violations, minLength),
+    '/errors/invalid-token': () => 'Odkaz pro nastavení hesla není platný.',
+    '/errors/token-expired': () => 'Platnost odkazu vypršela. Požádejte o nový odkaz.',
+    '/errors/token-already-used': () => 'Tento odkaz již byl použit.',
+    '/errors/insufficient-authority': () => 'K této akci nemáte dostatečné oprávnění.',
+    '/errors/member-profile-required': () => 'Pro tuto akci musíte mít propojený členský profil.',
+    '/errors/rate-limit-exceeded': () => 'Příliš mnoho požadavků. Zkuste to prosím za chvíli znovu.',
+    '/errors/sync-record-needs-resolution': ({syncStatus}) =>
+        typeof syncStatus === 'string' && Object.hasOwn(syncStatusNames, syncStatus)
+            ? `Záznam synchronizace je ve stavu „${syncStatusNames[syncStatus as keyof typeof syncStatusNames]}“ a je třeba ho nejprve vyřešit.`
+            : 'Záznam synchronizace je třeba nejprve vyřešit.',
+    '/errors/sync-record-not-in-conflict': () => 'Záznam synchronizace není v konfliktu.',
+    '/errors/conflict-not-acknowledged': () => 'Konflikt je nejprve nutné potvrdit.',
+    '/errors/sync-record-not-failed': () => 'Záznam synchronizace nemá stav selhání, nelze ho resetovat.',
+    '/errors/sync-record-claimed': () => 'Záznam právě zpracovává jiná synchronizace. Zkuste to za chvíli znovu.',
+    '/errors/unsupported-resolution': ({resolution}) =>
+        typeof resolution === 'string' && Object.hasOwn(resolutionNames, resolution)
+            ? `Způsob řešení „${resolutionNames[resolution as keyof typeof resolutionNames]}“ není pro tento záznam podporován.`
+            : 'Zvolený způsob řešení není pro tento záznam podporován.',
+    '/errors/sync-record-not-found': () => 'Záznam synchronizace nebyl nalezen.',
+    '/errors/sync-record-not-enrolled': () => 'Záznam není zařazen do synchronizace.',
+    '/errors/notification-device-not-found': () => 'Zařízení pro notifikace nebylo nalezeno.',
+    '/errors/field-authorization': () => 'Toto pole nemáte oprávnění měnit.',
+    '/errors/authority-not-grantable-over-all': ({authorities}) => {
+        const names = Array.isArray(authorities)
+            ? authorities
+                .map((a) => (typeof a === 'string' ? authorityName(a) : undefined))
+                .filter((n): n is string => n !== undefined)
+            : [];
+        return names.length > 0
+            ? `Oprávnění ${names.map((n) => `„${n}“`).join(', ')} nelze předat všem členům skupiny.`
+            : 'Vybraná oprávnění nelze předat všem členům skupiny.';
+    },
+    '/errors/invalid-delegated-authority': ({authority}) => {
+        const name = typeof authority === 'string' ? authorityName(authority) : undefined;
+        return name
+            ? `Oprávnění „${name}“ nelze skupině delegovat.`
+            : 'Zvolené oprávnění nelze skupině delegovat.';
+    },
+    '/errors/unknown-sync-entity-type': ({entityType, externalSystem}) => {
+        const entity = typeof entityType === 'string' && Object.hasOwn(syncEntityTypeNames, entityType)
+            ? syncEntityTypeNames[entityType as keyof typeof syncEntityTypeNames]
+            : undefined;
+        const system = nonEmptyString(externalSystem);
+        if (entity && system) return `Synchronizace typu „${entity}“ se systémem ${system} není podporována.`;
+        if (entity) return `Synchronizace typu „${entity}“ není podporována.`;
+        return 'Tento typ záznamu nelze synchronizovat.';
+    },
+};
+
 export const labels = {
+    errorTypes,
+
     nav: {
         home: 'Domů',
         calendar: 'Kalendář',
@@ -364,12 +797,7 @@ export const labels = {
             members: 'Člen',
             'event-registrations': 'Přihláška na akci',
         },
-        eventStatus: {
-            ACTIVE: 'Aktivní',
-            FINISHED: 'Ukončeno',
-            CANCELLED: 'Zrušeno',
-            DRAFT: 'Koncept',
-        },
+        eventStatus: eventStatusNames,
         memberStatus: {
             active: 'Aktivní',
             inactive: 'Neaktivní',
@@ -383,11 +811,7 @@ export const labels = {
             PRESTUP: 'Přestup',
             OTHER: 'Jiný důvod',
         },
-        resolution: {
-            INWARD: 'Převzít z externího systému',
-            OUTWARD: 'Zapsat do externího systému',
-            ACCEPT_DIVERGENCE: 'Ponechat obě verze',
-        },
+        resolution: resolutionNames,
         siUsage: {
             NOT_USED: 'Nepoužívá se',
             OPTIONAL: 'Volitelný',
@@ -405,14 +829,7 @@ export const labels = {
             MEMBER_CHOICE: 'Vlastní volba',
             ADMIN_ASSIGNMENT: 'Přiřazeno adminem',
         },
-        syncStatus: {
-            NEW: 'Nový',
-            IN_SYNC: 'V synchronizaci',
-            RETRYING: 'Opakovaný pokus',
-            CONFLICT: 'Konflikt',
-            FAILED: 'Selhalo',
-            RETIRED: 'Ukončeno',
-        },
+        syncStatus: syncStatusNames,
         missingDataItem: {
             EMAIL: 'e-mail',
             PHONE: 'telefon',
@@ -445,11 +862,9 @@ export const labels = {
         rateLimitedRetryAfter: 'Požadavek byl omezen. Zkuste to znovu za {seconds} sekund.',
         rateLimitedRetryLater: 'Požadavek byl omezen. Zkuste to prosím později.',
         requestFailed: 'Požadavek selhal.',
-        unexpectedError: 'Došlo k neočekávané chybě. Zkuste to prosím znovu.',
-        tokenExpired: 'Platnost tokenu vypršela nebo byl již použit. Požádejte si o nový.',
-        tokenInvalid: 'Neplatný token. Požádejte si o nový.',
+        loadDataFailed: 'Data se nepodařilo načíst.',
+        unexpectedError: UNEXPECTED_ERROR_TEXT,
         savePermissionsFailed: 'Nepodařilo se uložit oprávnění. Zkuste to prosím znovu.',
-        removeLastPermissionsAdmin: 'Nelze odebrat oprávnění správce — systém musí mít alespoň jednoho uživatele se správou oprávnění.',
         memberRegistrationUnavailable: 'Registrace nového člena není k dispozici.',
         importOrisConflict: 'Tato akce již byla importována.',
         importOrisFailed: 'Import akce se nezdařil. Zkuste to prosím znovu.',
@@ -745,7 +1160,6 @@ export const labels = {
         newPasswordLabel: 'Nové heslo',
         confirmPasswordLabel: 'Potvrzení nového hesla',
         submitButton: 'Změnit heslo',
-        errorIncorrectCurrentPassword: 'Zadané aktuální heslo je nesprávné.',
     },
 
     accountActivation: {

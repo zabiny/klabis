@@ -6,9 +6,10 @@ import {TableCell} from '../../components/KlabisTable';
 import {Alert, Button, Card, Skeleton} from '../../components/UI';
 import type {GetPendingInvitationsItemResource, GetPendingInvitationsResource} from '../../api';
 import type {components} from '../../api/klabisApi';
-import {labels} from '../../localization';
+import {describeError, labels} from '../../localization';
 import {useAuthorizedMutation, useAuthorizedQuery} from '../../hooks/useAuthorizedFetch.ts';
 import {toHref} from '../../api/hateoas.ts';
+import {useToast} from '../../contexts/toastContext';
 import {Check, X} from 'lucide-react';
 import {DelegatedAuthoritiesNotice} from '../../components/groups/DelegatedAuthorities.tsx';
 import {groupFormFieldsFactory} from '../../components/groups/groupFormFieldsFactory.tsx';
@@ -21,6 +22,7 @@ const PendingInvitationsSection = (): ReactElement | null => {
     const {mutate} = useAuthorizedMutation({
         method: 'POST',
     });
+    const {addToast} = useToast();
 
     const invitations: GetPendingInvitationsItemResource[] = data?._embedded?.pendingInvitationResponseList ?? [];
 
@@ -29,7 +31,7 @@ const PendingInvitationsSection = (): ReactElement | null => {
     }
 
     const handleAction = (url: string) => {
-        mutate({url});
+        mutate({url}, {onError: (error) => addToast(describeError(error), 'error')});
     };
 
     return (
@@ -95,7 +97,7 @@ export const GroupsPage = (): ReactElement => {
     }
 
     if (error) {
-        return <Alert severity="error">{error.message}</Alert>;
+        return <Alert severity="error">{describeError(error)}</Alert>;
     }
 
     return (

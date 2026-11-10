@@ -17,6 +17,7 @@ import {
     action,
     click,
     displayedDate,
+    expectFieldError,
     expectRefused,
     fill,
     heading,
@@ -131,11 +132,15 @@ When('the fee selection campaign ends', async ({apiAs, feeState}) => {
     await closeActiveCampaign(apiAs('admin'), feeState);
 });
 
-for (const request of ['rule', 'campaign', 'deadline change']) {
+for (const request of ['rule', 'campaign']) {
     Then(`the ${request} is refused`, async ({page}) => {
         await expectRefused(page);
     });
 }
+
+Then('the voting deadline field shows the message {string}', async ({page}, message: string) => {
+    await expectFieldError(page, 'Uzávěrka hlasování', message);
+});
 
 Then('the membership fees page shows no active campaign', async ({page}) => {
     await openFeesPage(page);

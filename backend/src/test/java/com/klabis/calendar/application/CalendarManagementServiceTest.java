@@ -117,7 +117,7 @@ class CalendarManagementServiceTest {
             LocalDate endDate = LocalDate.of(2025, 1, 2);
 
             assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), false, null))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(DateRangeTooLongException.class)
                     .hasMessageContaining("Date range must not exceed 366 days")
                     .hasMessageContaining("368");
         }
@@ -129,7 +129,7 @@ class CalendarManagementServiceTest {
             LocalDate endDate = LocalDate.of(2026, 1, 2);
 
             assertThatThrownBy(() -> testedSubject.listCalendarItems(startDate, endDate, Sort.unsorted(), false, null))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(DateRangeTooLongException.class)
                     .hasMessageContaining("Date range must not exceed 366 days");
         }
 
