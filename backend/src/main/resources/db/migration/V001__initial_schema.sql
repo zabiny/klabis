@@ -146,6 +146,7 @@ CREATE TABLE common.users
 (
     id                      UUID PRIMARY KEY,
     user_name               VARCHAR(7)   NOT NULL UNIQUE,
+    alt_user_name           VARCHAR(7)   UNIQUE,
     password_hash           VARCHAR(255) NOT NULL,
     account_status          VARCHAR(50)  NOT NULL DEFAULT 'ACTIVE',
 
@@ -167,6 +168,7 @@ CREATE INDEX idx_users_created_at ON common.users (created_at);
 -- Comments for users table
 COMMENT ON TABLE common.users IS 'User accounts for authentication';
 COMMENT ON COLUMN common.users.user_name IS 'Unique username for login. For members, auto-populated from registration number (XXXYYDD format). For standalone users, can be any unique string.';
+COMMENT ON COLUMN common.users.alt_user_name IS 'Optional second login accepted at login and activation. Former EXT login number of a taken-over legal guardian.';
 COMMENT ON COLUMN common.users.password_hash IS 'BCrypt-hashed password';
 
 -- ============================================================================

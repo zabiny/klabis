@@ -23,6 +23,11 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
     const pageTemplates = pageResource?._templates as Record<string, HalFormsTemplate> | undefined;
     const template = currentFormRequest ? pageTemplates?.[currentFormRequest.templateName] : undefined;
 
+    const handleCancel = () => {
+        closeForm();
+        currentFormRequest?.onCancel?.();
+    };
+
     if (!currentFormRequest || !template) {
         return <div className="space-y-6">{children}</div>;
     }
@@ -34,7 +39,7 @@ export function HalFormsPageLayout({children}: HalFormsPageLayoutProps): ReactEl
             template={template}
             fieldsFactory={currentFormRequest.fieldsFactory}
             onSuccess={closeForm}
-            onCancel={closeForm}
+            onCancel={handleCancel}
             navigateOnSuccess={currentFormRequest.navigateOnSuccess}
         >
             {currentFormRequest.children}

@@ -626,10 +626,18 @@ class RegistrationServiceTest {
                     List.of(GuardianInput.existing(GUARDIAN_ID)), GUARDIAN_ID);
 
             assertThatThrownBy(() -> service.registerMember(command))
-                    .isInstanceOf(BusinessRuleViolationException.class);
+                    .isInstanceOf(GuardiansNotAllowedException.class)
+                    .satisfies(e -> {
+                        var ex = (GuardiansNotAllowedException) e;
+                        assertThat(ex.errorType()).isEqualTo("minor-cannot-take-over-guardian");
+                        assertThat(ex.field()).isEqualTo("legalGuardianUserId");
+                    });
 
             verify(memberRepository, never()).save(any(Member.class));
             verify(legalGuardianPort, never()).releaseForMembership(any(UserId.class));
+            verify(permissionService, never()).updateUserPermissions(any(UserId.class), any());
+            verify(userService, never()).createUser(anyString(), any(Set.class));
+            verify(userService, never()).replaceUsername(any(UserId.class), anyString());
         }
     }
 
@@ -723,6 +731,25 @@ class RegistrationServiceTest {
             assertThat(result.getId()).isEqualTo(MemberId.fromUserId(GUARDIAN_ID));
             assertThat(result.getRegistrationNumber().getValue()).isEqualTo("ZBM0500");
             verify(userService, never()).createUser(anyString(), any(Set.class));
+        }
+
+        @Test
+        @DisplayName("should make the generated registration number the username of the guardian's user")
+        void shouldReplaceUsernameWithRegistrationNumber() {
+            service.registerMember(takeOverCommand());
+
+            verify(userService).replaceUsername(GUARDIAN_ID, "ZBM0500");
+        }
+
+        @Test
+        @DisplayName("should report a registration number already used as someone's login as registration number in use")
+        void shouldMapLoginCollisionToRegistrationNumberInUse() {
+            org.mockito.Mockito.doThrow(new com.klabis.common.users.UsernameAlreadyInUseException("ZBM0500"))
+                    .when(userService).replaceUsername(GUARDIAN_ID, "ZBM0500");
+
+            assertThatThrownBy(() -> service.registerMember(takeOverCommand()))
+                    .isInstanceOf(RegistrationNumberAlreadyInUseException.class);
+            verify(memberRepository, never()).save(any(Member.class));
         }
 
         @Test

@@ -22,10 +22,13 @@ export type ApiClient = {
     templateTarget: (resource: HalResource, template: string) => string;
 };
 
+export type GuardianScenarioState = Record<string, { minor: string }>;
+
 export type FeeScenarioState = { year?: number; closedYear?: number; campaignPath?: string };
 
 type Fixtures = {
     feeState: FeeScenarioState;
+    guardians: GuardianScenarioState;
     actAs: (persona: Persona) => Promise<void>;
     currentRole: { value?: Role };
 };
@@ -50,6 +53,10 @@ const SESSION_PAGE = '/e2e-session';
 export const test = base.extend<Fixtures, WorkerFixtures>({
     // eslint-disable-next-line no-empty-pattern
     currentRole: async ({}, provide) => {
+        await provide({});
+    },
+    // eslint-disable-next-line no-empty-pattern
+    guardians: async ({}, provide) => {
         await provide({});
     },
     // eslint-disable-next-line no-empty-pattern

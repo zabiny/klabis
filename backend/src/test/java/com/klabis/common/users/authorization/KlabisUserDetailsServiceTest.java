@@ -48,7 +48,7 @@ class KlabisUserDetailsServiceTest {
     @DisplayName("should load user by registrationNumber")
     void shouldLoadUserByRegistrationNumber() {
         User user = UserTestDataBuilder.anAdminUser().build();
-        when(userService.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
+        when(userService.findUserByAnyUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
                 user));
 
         // Mock permissions repository
@@ -67,9 +67,22 @@ class KlabisUserDetailsServiceTest {
     }
 
     @Test
+    @DisplayName("should load a taken-over user by altUsername and present the username")
+    void shouldLoadUserByAltUsernameAndPresentUsername() {
+        User user = User.createdUser("EXT0001", UserTestDataConstants.DEFAULT_PASSWORD_HASH).replaceUsername("ZBM9001");
+        when(userService.findUserByAnyUsername("EXT0001")).thenReturn(Optional.of(user));
+        when(permissionService.getUserPermissions(user.getId()))
+                .thenReturn(UserPermissions.create(user.getId(), UserTestDataConstants.ADMIN_AUTHORITIES));
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername("EXT0001");
+
+        assertThat(userDetails.getUsername()).isEqualTo("ZBM9001");
+    }
+
+    @Test
     @DisplayName("should throw UsernameNotFoundException for unknown user")
     void shouldThrowExceptionForUnknownUser() {
-        when(userService.findUserByUsername("ZBM9999")).thenReturn(Optional.empty());
+        when(userService.findUserByAnyUsername("ZBM9999")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userDetailsService.loadUserByUsername("ZBM9999"))
                 .isInstanceOf(UsernameNotFoundException.class)
@@ -80,7 +93,7 @@ class KlabisUserDetailsServiceTest {
     @DisplayName("'admin' user should have all authorities")
     void shouldMapAdminRoleToAuthorities() {
         User user = UserTestDataBuilder.anAdminUser().build();
-        when(userService.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
+        when(userService.findUserByAnyUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
                 user));
 
         // Mock permissions repository
@@ -98,7 +111,7 @@ class KlabisUserDetailsServiceTest {
     @DisplayName("should map ROLE_MEMBER to read-only authority")
     void shouldMapMemberRoleToAuthorities() {
         User user = UserTestDataBuilder.aMemberUser().build();
-        when(userService.findUserByUsername(UserTestDataConstants.DEFAULT_MEMBER_USERNAME)).thenReturn(Optional.of(
+        when(userService.findUserByAnyUsername(UserTestDataConstants.DEFAULT_MEMBER_USERNAME)).thenReturn(Optional.of(
                 user));
 
         // Mock permissions repository
@@ -118,7 +131,7 @@ class KlabisUserDetailsServiceTest {
         User user = UserTestDataBuilder.anAdminUser()
                 .status(AccountStatus.SUSPENDED)
                 .build();
-        when(userService.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
+        when(userService.findUserByAnyUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
                 user));
 
         // Mock permissions repository
@@ -136,7 +149,7 @@ class KlabisUserDetailsServiceTest {
         User user = UserTestDataBuilder.aMemberUser()
                 .status(AccountStatus.PENDING_ACTIVATION)
                 .build();
-        when(userService.findUserByUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
+        when(userService.findUserByAnyUsername(UserTestDataConstants.DEFAULT_ADMIN_USERNAME)).thenReturn(Optional.of(
                 user));
 
         // Mock permissions repository

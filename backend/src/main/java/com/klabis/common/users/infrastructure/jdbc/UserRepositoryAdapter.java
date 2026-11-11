@@ -44,8 +44,8 @@ class UserRepositoryAdapter implements UserRepository {
     }
 
     @Override
-    public Optional<User> findByUsername(String username) {
-        return jdbcRepository.findByUsername(username)
+    public Optional<User> findByAnyUsername(String username) {
+        return jdbcRepository.findByUsernameOrAltUsername(username)
                 .map(UserMemento::toUser);
     }
 

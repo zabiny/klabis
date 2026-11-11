@@ -3,6 +3,7 @@ package com.klabis.common.users.application;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
+import com.klabis.common.users.UsernameAlreadyInUseException;
 import com.klabis.common.users.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserId createUser(String username, Set<Authority> authorities) {
         log.debug("Creating user pending password setup: username={}", username);
+        requireLoginFree(username, null);
 
         User user = User.createdUser(username);
 
@@ -64,6 +66,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserId createActiveUser(String username, String passwordHash, Set<Authority> authorities) {
         log.debug("Creating active user: username={}", username);
+        requireLoginFree(username, null);
 
         User user = User.createdUser(username, passwordHash);
 
@@ -83,15 +86,24 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Optional<User> findUserByUsername(String username) {
+    public Optional<User> findUserByAnyUsername(String username) {
         log.debug("Finding user by username: {}", username);
-        Optional<User> user = userRepository.findByUsername(username);
+        Optional<User> user = userRepository.findByAnyUsername(username);
         if (user.isPresent()) {
             log.debug("User found: userId={}", user.get().getId());
         } else {
             log.debug("User not found for username: {}", username);
         }
         return user;
+    }
+
+    @Override
+    public void replaceUsername(UserId userId, String newUsername) {
+        User user = findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+        requireLoginFree(newUsername, userId);
+        userRepository.save(user.replaceUsername(newUsername));
+        log.info("Replaced username of user {}", userId);
     }
 
     @Override
@@ -128,6 +140,12 @@ public class UserServiceImpl implements UserService {
                 },
                 () -> log.debug("User not found for resume: userId={}", userId)
         );
+    }
+
+    private void requireLoginFree(String login, UserId self) {
+        if (userRepository.findByAnyUsername(login).filter(holder -> !holder.getId().equals(self)).isPresent()) {
+            throw new UsernameAlreadyInUseException(login);
+        }
     }
 
     private Optional<User> findById(UserId userId) {

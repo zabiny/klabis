@@ -9,6 +9,8 @@ import {ApiError} from '../../api/authorizedFetch';
 import {mockHalFormsTemplate} from '../../__mocks__/halData';
 import {MembersPage} from './MembersPage';
 import {vi} from 'vitest';
+import {act} from '@testing-library/react';
+import {useHalForm} from '../../contexts/halFormContext.ts';
 import type {HalResponse} from '../../api';
 import {labels} from '../../localization';
 import userEvent from '@testing-library/user-event';
@@ -794,3 +796,76 @@ describe('MembersPage — page reset on filter change', () => {
 });
 
 const requestedUrlsOf = () => vi.mocked(useAuthorizedQuery).mock.calls.map(([url]) => String(url));
+
+describe('MembersPage opened from a legal guardian profile', () => {
+    const registerResource = (): HalResponse => ({
+        _links: {self: {href: '/api/members'}},
+        _templates: {
+            registerMember: mockHalFormsTemplate({title: 'Registrovat člena', method: 'POST'}),
+        },
+    });
+
+    const Probe = () => {
+        const location = useLocation();
+        return <div data-testid="location" data-state={JSON.stringify(location.state)}>{location.pathname}</div>;
+    };
+
+    const renderFromGuardian = (resource: HalResponse, state: unknown = {
+        takeOverLegalGuardianId: 'u-1',
+        returnTo: '/legal-guardians/u-1',
+    }) => {
+        const displayHalForm = vi.fn();
+        vi.mocked(useHalForm).mockReturnValue({displayHalForm, currentFormRequest: null, closeForm: vi.fn()});
+        vi.mocked(useHalPageData).mockReturnValue(createMockPageData(resource));
+        const queryClient = new QueryClient({defaultOptions: {queries: {retry: false, gcTime: 0}}});
+        render(
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter initialEntries={[{pathname: '/members', state}]}>
+                    <ToastProvider>
+                        <MembersPage/>
+                        <Probe/>
+                    </ToastProvider>
+                </MemoryRouter>
+            </QueryClientProvider>
+        );
+        return displayHalForm;
+    };
+
+    it('opens the inline registration form once', () => {
+        const displayHalForm = renderFromGuardian(registerResource());
+
+        expect(displayHalForm).toHaveBeenCalledTimes(1);
+        expect(displayHalForm).toHaveBeenCalledWith(expect.objectContaining({
+            templateName: 'registerMember',
+            children: expect.any(Function),
+            onCancel: expect.any(Function),
+        }));
+    });
+
+    it('clears the router state after opening the form so Back does not reopen it', () => {
+        renderFromGuardian(registerResource());
+
+        expect(screen.getByTestId('location')).toHaveTextContent('/members');
+        expect(screen.getByTestId('location').dataset.state).toBe('null');
+    });
+
+    it('returns to the guardian profile when the form is cancelled', () => {
+        const displayHalForm = renderFromGuardian(registerResource());
+
+        act(() => displayHalForm.mock.calls[0][0].onCancel());
+
+        expect(screen.getByTestId('location')).toHaveTextContent('/legal-guardians/u-1');
+    });
+
+    it('does not open the form without the registerMember template', () => {
+        const displayHalForm = renderFromGuardian({_links: {self: {href: '/api/members'}}});
+
+        expect(displayHalForm).not.toHaveBeenCalled();
+    });
+
+    it('does not open the form when the page is opened without guardian state', () => {
+        const displayHalForm = renderFromGuardian(registerResource(), null);
+
+        expect(displayHalForm).not.toHaveBeenCalled();
+    });
+});

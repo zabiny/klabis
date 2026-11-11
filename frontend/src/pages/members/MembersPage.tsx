@@ -6,14 +6,10 @@ import {HalEmbeddedTable} from "../../components/HalNavigator2/HalEmbeddedTable.
 import {useHalPageData} from "../../hooks/useHalPageData.ts";
 import {PermissionsDialog} from "../../components/members/PermissionsDialog.tsx";
 import {useTemplateDialog} from "../../components/HalNavigator2/useTemplateDialog.tsx";
-import {Badge, Button, DetailRow} from "../../components/UI";
+import {Badge, Button} from "../../components/UI";
 import {HalFormButton} from "../../components/HalNavigator2/HalFormButton.tsx";
 import {SyncMembersFromOrisModal} from "../../components/members/SyncMembersFromOrisModal.tsx";
 import {DisplayContactText} from "./DisplayContactText.tsx";
-import {Section} from "./MemberSection.tsx";
-import {RegistrationContactSection, RegistrationGuardianSections} from "./RegistrationGuardianSections.tsx";
-import {BirthNumberConditionalField} from "./BirthNumberConditionalField.tsx";
-import type {HalFormPanelRenderHelpers} from "../../components/HalNavigator2/HalFormPanel.tsx";
 import {Banknote, Pencil, RefreshCw, Shield, UserCheck, UserX} from "lucide-react";
 import type {TableCellRenderProps} from "../../components/KlabisTable/types.ts";
 import {labels} from "../../localization";
@@ -28,6 +24,8 @@ import {
 } from "../../components/members/MembersFilterBar.tsx";
 import {useUrlFilters} from "../../hooks/useUrlFilters.ts";
 import {toQuery} from "./membersQuery.ts";
+import {useTakeOverRegistration} from "./useTakeOverRegistration.ts";
+import {renderRegistrationForm} from "./RegistrationForm.tsx";
 import {usePermissionsEditor} from "../../hooks/usePermissionsEditor.ts";
 
 type MemberSummaryData = ListMembersItemResource;
@@ -78,6 +76,8 @@ export const MembersPage = (): ReactElement => {
         if (!link?.href) return;
         setPermissionsDialog({member, permissionsUrl: link.href});
     };
+
+    useTakeOverRegistration(resourceData?._templates?.registerMember);
 
     const renderActionsCell = ({item: member}: TableCellRenderProps<MemberSummaryData>) => {
         const hasEditTemplate = !!member._templates?.updateMember;
@@ -213,71 +213,7 @@ export const MembersPage = (): ReactElement => {
                             </Button>
                         )}
                         <HalFormButton name="registerMember" modal={false}>
-                            {({renderInput, renderField, hasField, hasType}: HalFormPanelRenderHelpers) => {
-                                const PERSONAL_FIELDS = ['firstName', 'lastName', 'dateOfBirth', 'gender', 'nationality', 'birthNumber'];
-                                const CONTACT_FIELDS = ['email', 'phone'];
-                                const ADDRESS_TYPE = 'AddressRequest';
-                                const SUPPLEMENTARY_FIELDS = ['chipNumber', 'bankAccountNumber', 'dietaryRestrictions'];
-                                const IDENTITY_CARD_TYPE = 'IdentityCardDto';
-                                const MEDICAL_COURSE_TYPE = 'MedicalCourseDto';
-                                const TRAINER_LICENSE_TYPE = 'TrainerLicenseDto';
-                                const DOCUMENT_FIELDS = ['drivingLicenseGroup'];
-                                const DOCUMENT_TYPES = [IDENTITY_CARD_TYPE, MEDICAL_COURSE_TYPE, TRAINER_LICENSE_TYPE];
-                                const hasFields = (fieldNames: string[]) => fieldNames.some(f => hasField(f));
-                                const hasDocumentFields = hasFields(DOCUMENT_FIELDS) || DOCUMENT_TYPES.some(t => hasType(t));
-                                return (
-                                    <div className="flex flex-col gap-8">
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                            <div className="flex flex-col gap-6">
-                                                {hasFields(PERSONAL_FIELDS) && (
-                                                    <Section title={labels.sections.personalInfo}>
-                                                        {hasField('firstName') && <DetailRow label={labels.fields.firstName}>{renderInput('firstName')}</DetailRow>}
-                                                        {hasField('lastName') && <DetailRow label={labels.fields.lastName}>{renderInput('lastName')}</DetailRow>}
-                                                        {hasField('dateOfBirth') && <DetailRow label={labels.fields.dateOfBirth}>{renderInput('dateOfBirth')}</DetailRow>}
-                                                        {hasField('gender') && <DetailRow label={labels.fields.gender}>{renderInput('gender')}</DetailRow>}
-                                                        {hasField('nationality') && <DetailRow label={labels.fields.nationality}>{renderInput('nationality')}</DetailRow>}
-                                                        {hasField('birthNumber') && <BirthNumberConditionalField renderInput={renderInput}/>}
-                                                    </Section>
-                                                )}
-                                                {hasFields(CONTACT_FIELDS) && (
-                                                    <RegistrationContactSection renderInput={renderInput} hasField={hasField}/>
-                                                )}
-                                                <RegistrationGuardianSections renderInput={renderInput} hasField={hasField}/>
-                                                {hasType(ADDRESS_TYPE) && (
-                                                    <Section title={labels.sections.address}>
-                                                        {renderInput('address')}
-                                                    </Section>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col gap-6">
-                                                {hasFields(SUPPLEMENTARY_FIELDS) && (
-                                                    <Section title={labels.sections.supplementary}>
-                                                        {hasField('chipNumber') && <DetailRow label={labels.fields.chipNumber}>{renderInput('chipNumber')}</DetailRow>}
-                                                        {hasField('bankAccountNumber') && (
-                                                            <DetailRow label={labels.fields.bankAccountNumber}>
-                                                                {renderInput('bankAccountNumber')}
-                                                            </DetailRow>
-                                                        )}
-                                                        {hasField('dietaryRestrictions') && <DetailRow label={labels.fields.dietaryRestrictions}>{renderInput('dietaryRestrictions')}</DetailRow>}
-                                                    </Section>
-                                                )}
-                                            </div>
-                                        </div>
-                                        {hasDocumentFields && (
-                                            <Section title={labels.sections.documentsAndLicenses}>
-                                                {hasType(IDENTITY_CARD_TYPE) && renderInput('identityCard')}
-                                                {hasField('drivingLicenseGroup') && <DetailRow label={labels.fields.drivingLicenseGroup}>{renderInput('drivingLicenseGroup')}</DetailRow>}
-                                                {hasType(MEDICAL_COURSE_TYPE) && renderInput('medicalCourse')}
-                                                {hasType(TRAINER_LICENSE_TYPE) && renderInput('trainerLicense')}
-                                            </Section>
-                                        )}
-                                        <div className="flex flex-wrap justify-end gap-3 pt-4 border-t border-border">
-                                            {renderField('cancel')}
-                                            {renderField('submit')}
-                                        </div>
-                                    </div>
-                                );
-                            }}
+                            {renderRegistrationForm()}
                         </HalFormButton>
                     </div>
                 </div>

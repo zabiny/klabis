@@ -54,6 +54,20 @@ The system SHALL process member registration by creating a user account and a me
 - **WHEN** admin changes the date of birth to a person aged 18 or older
 - **THEN** the "Zákonní zástupci" section is hidden and the member's own e-mail and telephone are required
 
+#### Scenario: Guardian takeover is offered before a date of birth is entered
+
+- **WHEN** admin opens the registration form
+- **THEN** the "Převzetí zákonného zástupce" section is shown before any date of birth is entered
+- **AND** it stays shown whatever date of birth the admin enters
+
+#### Scenario: Taking over a guardian as a minor is rejected
+
+- **GIVEN** a non-member legal guardian "Eva Svobodová"
+- **WHEN** admin chooses to take over "Eva Svobodová", enters a date of birth of a person younger than 18 and submits the form
+- **THEN** the form shows an error that a minor cannot take over the role of a legal guardian
+- **AND** no member is created
+- **AND** "Eva Svobodová" stays a non-member legal guardian
+
 #### Scenario: Failed guardian creation leaves nothing behind
 
 - **WHEN** admin registers a minor with a new guardian whose e-mail is already in use
@@ -66,7 +80,8 @@ The system SHALL process member registration by creating a user account and a me
 - **WHEN** admin registers an adult member and chooses to take over "Eva Svobodová"
 - **THEN** the form is pre-filled with her name, e-mail and telephone
 - **AND** after submission she becomes a club member and remains the legal guardian of her minors
-- **AND** she keeps logging in with her login number EXTnnnn
+- **AND** she gets a registration number by the usual rules, shown as her registration number everywhere in the application
+- **AND** she can log in with either her new registration number or her former login number EXTnnnn
 
 #### Scenario: Registration button not shown without permission
 
@@ -643,7 +658,7 @@ The member registration page SHALL use a two-column layout.
 #### Scenario: Registration page layout
 
 - **WHEN** admin navigates to member registration page
-- **THEN** the left column contains: personal data section, contact section, legal guardians section (only for a minor), address section
+- **THEN** the left column contains: personal data section, contact section, guardian takeover section, legal guardians section (only for a minor), address section
 - **AND** the right column contains supplementary information section only (no documents or licenses)
 - **AND** "Zrušit" and "Registrovat člena" (user-plus icon) buttons appear at the bottom of the form
 

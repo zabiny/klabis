@@ -8,6 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import com.klabis.common.users.UsernameAlreadyInUseException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -17,7 +18,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,6 +44,65 @@ class UserServiceImplTest {
     @BeforeEach
     void setUp() {
         testedSubject = new UserServiceImpl(userRepository, userPermissionsRepository);
+    }
+
+    @Nested
+    @DisplayName("login uniqueness across username and altUsername")
+    class LoginUniqueness {
+
+        private final User holder = User.reconstruct(new UserId(java.util.UUID.randomUUID()), "ZBM0001", "EXT0001",
+                testPasswordHash, AccountStatus.ACTIVE);
+
+        @Test
+        @DisplayName("createUser rejects a username held as altUsername by another user")
+        void createUserRejectsTakenLogin() {
+            when(userRepository.findByAnyUsername("EXT0001")).thenReturn(Optional.of(holder));
+
+            assertThatThrownBy(() -> testedSubject.createUser("EXT0001", testAuthorities))
+                    .isInstanceOf(UsernameAlreadyInUseException.class);
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("createActiveUser rejects a username held by another user")
+        void createActiveUserRejectsTakenLogin() {
+            when(userRepository.findByAnyUsername("ZBM0001")).thenReturn(Optional.of(holder));
+
+            assertThatThrownBy(() -> testedSubject.createActiveUser("ZBM0001", testPasswordHash, testAuthorities))
+                    .isInstanceOf(UsernameAlreadyInUseException.class);
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("replaceUsername rejects a username held as altUsername by another user")
+        void replaceUsernameRejectsTakenLogin() {
+            User guardian = User.reconstruct(testUserId, "EXT0002", testPasswordHash, AccountStatus.ACTIVE);
+            when(userRepository.findById(testUserId)).thenReturn(Optional.of(guardian));
+            when(userRepository.findByAnyUsername("EXT0001")).thenReturn(Optional.of(holder));
+
+            assertThatThrownBy(() -> testedSubject.replaceUsername(testUserId, "EXT0001"))
+                    .isInstanceOf(UsernameAlreadyInUseException.class);
+            verify(userRepository, never()).save(any(User.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("replaceUsername() method")
+    class ReplaceUsernameMethod {
+
+        @Test
+        @DisplayName("should save the user with the new username and the former one as altUsername")
+        void shouldSaveReplacedUsername() {
+            User guardian = User.reconstruct(testUserId, "EXT0001", testPasswordHash, AccountStatus.ACTIVE);
+            when(userRepository.findById(testUserId)).thenReturn(Optional.of(guardian));
+
+            testedSubject.replaceUsername(testUserId, "ZBM9001");
+
+            ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(saved.capture());
+            assertThat(saved.getValue().getUsername()).isEqualTo("ZBM9001");
+            assertThat(saved.getValue().getAltUsername()).isEqualTo("EXT0001");
+        }
     }
 
     @Nested
@@ -194,7 +256,7 @@ class UserServiceImplTest {
     }
 
     @Nested
-    @DisplayName("findUserByUsername() method")
+    @DisplayName("findUserByAnyUsername() method")
     class FindUserByUsernameMethod {
 
         @Test
@@ -202,42 +264,42 @@ class UserServiceImplTest {
         void shouldReturnUserWhenFound() {
             // Given
             User existingUser = User.createdUser(testUsername, testPasswordHash);
-            when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(existingUser));
+            when(userRepository.findByAnyUsername(testUsername)).thenReturn(Optional.of(existingUser));
 
             // When
-            Optional<User> result = testedSubject.findUserByUsername(testUsername);
+            Optional<User> result = testedSubject.findUserByAnyUsername(testUsername);
 
             // Then
             assertThat(result).isPresent();
             assertThat(result.get().getUsername()).isEqualTo(testUsername);
-            verify(userRepository).findByUsername(testUsername);
+            verify(userRepository).findByAnyUsername(testUsername);
         }
 
         @Test
         @DisplayName("should return empty optional when user not found")
         void shouldReturnEmptyWhenNotFound() {
             // Given
-            when(userRepository.findByUsername(testUsername)).thenReturn(Optional.empty());
+            when(userRepository.findByAnyUsername(testUsername)).thenReturn(Optional.empty());
 
             // When
-            Optional<User> result = testedSubject.findUserByUsername(testUsername);
+            Optional<User> result = testedSubject.findUserByAnyUsername(testUsername);
 
             // Then
             assertThat(result).isEmpty();
-            verify(userRepository).findByUsername(testUsername);
+            verify(userRepository).findByAnyUsername(testUsername);
         }
 
         @Test
         @DisplayName("should delegate to repository")
         void shouldDelegateToRepository() {
             // Given
-            when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
+            when(userRepository.findByAnyUsername("nonexistent")).thenReturn(Optional.empty());
 
             // When
-            testedSubject.findUserByUsername("nonexistent");
+            testedSubject.findUserByAnyUsername("nonexistent");
 
             // Then
-            verify(userRepository).findByUsername("nonexistent");
+            verify(userRepository).findByAnyUsername("nonexistent");
         }
     }
 

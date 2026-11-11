@@ -204,4 +204,64 @@ describe('HalFormsPageLayout', () => {
             expect(screen.queryByText('Test Content')).not.toBeInTheDocument();
         });
     });
+
+    describe('Cancel callback', () => {
+        const renderInlineForm = (onCancel?: () => void) => {
+            const Trigger = () => {
+                const {displayHalForm} = useHalForm();
+                return (
+                    <button
+                        onClick={() => displayHalForm({
+                            templateName: 'create',
+                            children: ({renderField}) => <div>{renderField('submit')}</div>,
+                            onCancel,
+                        })}
+                        data-testid="trigger"
+                    >
+                        Open Inline
+                    </button>
+                );
+            };
+            render(
+                <QueryClientProvider client={queryClient}>
+                    <MemoryRouter initialEntries={['/api/test']}>
+                        <HalRouteContext.Provider value={baseContextValue}>
+                            <HalFormProvider>
+                                <Trigger/>
+                                <HalFormsPageLayout>
+                                    <h1>Test Content</h1>
+                                </HalFormsPageLayout>
+                            </HalFormProvider>
+                        </HalRouteContext.Provider>
+                    </MemoryRouter>
+                </QueryClientProvider>
+            );
+            act(() => {
+                screen.getByTestId('trigger').click();
+            });
+        };
+
+        it('calls onCancel of the form request after the form is closed', () => {
+            const onCancel = vi.fn();
+            renderInlineForm(onCancel);
+
+            act(() => {
+                screen.getByTestId('panel-cancel-button').click();
+            });
+
+            expect(onCancel).toHaveBeenCalledTimes(1);
+            expect(screen.queryByTestId('hal-form-panel')).not.toBeInTheDocument();
+        });
+
+        it('closes the form on cancel without requiring onCancel', () => {
+            renderInlineForm();
+
+            act(() => {
+                screen.getByTestId('panel-cancel-button').click();
+            });
+
+            expect(screen.queryByTestId('hal-form-panel')).not.toBeInTheDocument();
+            expect(screen.getByText('Test Content')).toBeInTheDocument();
+        });
+    });
 });

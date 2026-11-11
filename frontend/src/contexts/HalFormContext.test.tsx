@@ -3,7 +3,7 @@ import {BrowserRouter, MemoryRouter, Route, Routes, useNavigate} from 'react-rou
 import {HalFormProvider} from './HalFormContext';
 import {type HalFormRequest, useHalForm} from './halFormContext';
 import {describe, expect, it, vi} from 'vitest';
-import type {ReactNode} from 'react';
+import {type ReactNode, useEffect, useState} from 'react';
 
 const createWrapper = () => ({children}: { children: ReactNode }) => (
     <BrowserRouter>
@@ -253,5 +253,142 @@ describe('HalFormContext', () => {
 
             expect(result.current.currentFormRequest?.children).toBeDefined();
         });
+    });
+
+    it('keeps a form requested by a child effect on the first render', () => {
+        const Requester = () => {
+            const {displayHalForm, currentFormRequest} = useHalForm();
+            const [requestOnce] = useState(() => displayHalForm);
+            useEffect(() => {
+                requestOnce({templateName: 'registerMember'});
+            }, [requestOnce]);
+            return <div data-testid="current">{currentFormRequest?.templateName ?? 'none'}</div>;
+        };
+
+        const {getByTestId} = render(
+            <MemoryRouter>
+                <HalFormProvider><Requester/></HalFormProvider>
+            </MemoryRouter>
+        );
+
+        expect(getByTestId('current')).toHaveTextContent('registerMember');
+    });
+
+    it('keeps a form requested by the destination page effect when the route changes', () => {
+        const Requester = () => {
+            const {displayHalForm} = useHalForm();
+            const [requestOnce] = useState(() => displayHalForm);
+            useEffect(() => {
+                requestOnce({templateName: 'registerMember'});
+            }, [requestOnce]);
+            return null;
+        };
+        const Current = () => <div data-testid="current">{useHalForm().currentFormRequest?.templateName ?? 'none'}</div>;
+        const Go = () => {
+            const navigate = useNavigate();
+            return <button onClick={() => navigate('/members')}>go</button>;
+        };
+
+        const {getByTestId, getByText} = render(
+            <MemoryRouter initialEntries={['/legal-guardians/1']}>
+                <HalFormProvider>
+                    <Current/>
+                    <Routes>
+                        <Route path="/legal-guardians/1" element={<Go/>}/>
+                        <Route path="/members" element={<Requester/>}/>
+                    </Routes>
+                </HalFormProvider>
+            </MemoryRouter>
+        );
+
+        act(() => getByText('go').click());
+
+        expect(getByTestId('current')).toHaveTextContent('registerMember');
+    });
+
+    it('drops a form requested on a previous route', () => {
+        const Opener = () => {
+            const {displayHalForm} = useHalForm();
+            const navigate = useNavigate();
+            return <>
+                <button onClick={() => displayHalForm({templateName: 'x'})}>open</button>
+                <button onClick={() => navigate('/other')}>go</button>
+            </>;
+        };
+        const Current = () => <div data-testid="current">{useHalForm().currentFormRequest?.templateName ?? 'none'}</div>;
+
+        const {getByTestId, getByText} = render(
+            <MemoryRouter initialEntries={['/a']}>
+                <HalFormProvider>
+                    <Current/>
+                    <Routes>
+                        <Route path="/a" element={<Opener/>}/>
+                        <Route path="/other" element={<div/>}/>
+                    </Routes>
+                </HalFormProvider>
+            </MemoryRouter>
+        );
+
+        act(() => getByText('open').click());
+        expect(getByTestId('current')).toHaveTextContent('x');
+        act(() => getByText('go').click());
+        expect(getByTestId('current')).toHaveTextContent('none');
+    });
+
+    it('drops a request made by a stale callback after the route changed', () => {
+        let staleDisplay: ((r: HalFormRequest) => void) | undefined;
+        const Capture = () => {
+            staleDisplay = useHalForm().displayHalForm;
+            const navigate = useNavigate();
+            return <button onClick={() => navigate('/b')}>go-b</button>;
+        };
+        const GoBack = () => {
+            const navigate = useNavigate();
+            return <button onClick={() => navigate('/a')}>go-a</button>;
+        };
+        const Current = () => <div data-testid="current">{useHalForm().currentFormRequest?.templateName ?? 'none'}</div>;
+
+        const {getByTestId, getByText} = render(
+            <MemoryRouter initialEntries={['/a']}>
+                <HalFormProvider>
+                    <Current/>
+                    <Routes>
+                        <Route path="/a" element={<Capture/>}/>
+                        <Route path="/b" element={<GoBack/>}/>
+                    </Routes>
+                </HalFormProvider>
+            </MemoryRouter>
+        );
+
+        act(() => getByText('go-b').click());
+        act(() => staleDisplay!({templateName: 'stale'}));
+        act(() => getByText('go-a').click());
+
+        expect(getByTestId('current')).toHaveTextContent('none');
+    });
+
+    it('keeps the form open when the same path is replaced right after requesting it', () => {
+        const Opener = () => {
+            const {displayHalForm} = useHalForm();
+            const navigate = useNavigate();
+            return <button onClick={() => {
+                displayHalForm({templateName: 'registerMember'});
+                navigate('/members?x=1', {replace: true, state: null});
+            }}>open</button>;
+        };
+        const Current = () => <div data-testid="current">{useHalForm().currentFormRequest?.templateName ?? 'none'}</div>;
+
+        const {getByTestId, getByText} = render(
+            <MemoryRouter initialEntries={['/members']}>
+                <HalFormProvider>
+                    <Current/>
+                    <Routes><Route path="/members" element={<Opener/>}/></Routes>
+                </HalFormProvider>
+            </MemoryRouter>
+        );
+
+        act(() => getByText('open').click());
+
+        expect(getByTestId('current')).toHaveTextContent('registerMember');
     });
 });

@@ -715,6 +715,9 @@ paths:
           x-hal-links:
             self:
               description: This legal guardian profile
+            registerAsMember:
+              operation: registerMember
+              description: Member registration with this guardian taken over (only for users who may register members)
           x-hal-templates:
             updateLegalGuardian:
               operation: updateLegalGuardian

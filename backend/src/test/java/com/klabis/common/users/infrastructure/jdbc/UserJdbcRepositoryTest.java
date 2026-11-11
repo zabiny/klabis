@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for User aggregate with Spring Data JDBC using Memento pattern.
@@ -201,7 +203,7 @@ class UserJdbcRepositoryTest {
     }
 
     @Nested
-    @DisplayName("findByUsername() method")
+    @DisplayName("findByAnyUsername() method")
     class FindByUsernameMethod {
 
         @Test
@@ -215,7 +217,7 @@ class UserJdbcRepositoryTest {
             userRepository.save(user);
 
             // When
-            Optional<User> found = userRepository.findByUsername("ZBM9008");
+            Optional<User> found = userRepository.findByAnyUsername("ZBM9008");
 
             // Then
             assertThat(found).isPresent();
@@ -226,7 +228,7 @@ class UserJdbcRepositoryTest {
         @DisplayName("should return empty when username not found")
         void shouldReturnEmptyWhenUsernameNotFound() {
             // When
-            Optional<User> found = userRepository.findByUsername("NONEXIST");
+            Optional<User> found = userRepository.findByAnyUsername("NONEXIST");
 
             // Then
             assertThat(found).isEmpty();
@@ -243,10 +245,41 @@ class UserJdbcRepositoryTest {
             userRepository.save(user);
 
             // When
-            Optional<User> found = userRepository.findByUsername("zbm9009"); // lowercase
+            Optional<User> found = userRepository.findByAnyUsername("zbm9009"); // lowercase
 
             // Then
             assertThat(found).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("altUsername")
+    class AltUsername {
+
+        private User takenOver(String oldLogin, String newLogin) {
+            return userRepository.save(userRepository.save(User.createdUser(oldLogin, "$2a$10$hashvalue"))
+                    .replaceUsername(newLogin));
+        }
+
+        @Test
+        @DisplayName("should find the same user by username and by altUsername")
+        void shouldFindByBothLogins() {
+            User saved = takenOver("EXT0001", "ZBM9101");
+
+            assertThat(userRepository.findByAnyUsername("ZBM9101")).get().extracting(User::getId).isEqualTo(saved.getId());
+            Optional<User> byAlt = userRepository.findByAnyUsername("EXT0001");
+            assertThat(byAlt).get().extracting(User::getId).isEqualTo(saved.getId());
+            assertThat(byAlt.get().getUsername()).isEqualTo("ZBM9101");
+            assertThat(byAlt.get().getAltUsername()).isEqualTo("EXT0001");
+        }
+
+        @Test
+        @DisplayName("should reject a duplicate altUsername")
+        void shouldRejectDuplicateAltUsername() {
+            takenOver("EXT0002", "ZBM9102");
+
+            assertThatThrownBy(() -> takenOver("EXT0002", "ZBM9103"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
         }
     }
 

@@ -40,6 +40,9 @@ public class UserMemento implements Persistable<UUID> {
     @Column("user_name")
     private String username;
 
+    @Column("alt_user_name")
+    private String altUsername;
+
     @Column("password_hash")
     private String passwordHash;
 
@@ -129,6 +132,7 @@ public class UserMemento implements Persistable<UUID> {
     private static void copyBasicInfo(User user, UserMemento memento) {
         memento.id = user.getId() != null ? user.getId().uuid() : null;
         memento.username = user.getUsername();
+        memento.altUsername = user.getAltUsername();
         memento.passwordHash = user.getPasswordHash();
         memento.accountStatus = user.getAccountStatus();
     }
@@ -156,7 +160,7 @@ public class UserMemento implements Persistable<UUID> {
     public User toUser() {
         // Use User.reconstruct method to create User instance
         UserId userId = this.id != null ? new UserId(this.id) : null;
-        User user = User.reconstruct(userId, this.username, this.passwordHash, this.accountStatus);
+        User user = User.reconstruct(userId, this.username, this.altUsername, this.passwordHash, this.accountStatus);
 
         // Update audit metadata
         if (this.createdAt != null) {

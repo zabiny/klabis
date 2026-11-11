@@ -462,6 +462,7 @@ export const labels = {
         submitting: 'Odesílám...',
         importing: 'Importuji...',
         cancel: 'Zrušit',
+        registerAsMember: 'Registrovat jako člena',
         close: 'Zavřít',
         retry: 'Zkusit znovu',
         logout: 'Odhlásit',

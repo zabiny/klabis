@@ -55,7 +55,7 @@ class PasswordSetupServiceRateLimitTest extends PasswordSetupServiceTestBase {
             String registrationNumber = "ZBM0101";
             User user = createPendingUser(registrationNumber);
 
-            when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
+            when(userRepository.findByAnyUsername(registrationNumber)).thenReturn(Optional.of(user));
             when(activationContactVerifier.isActivationContact(user.getId(), "test@example.com")).thenReturn(true);
             when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
@@ -88,8 +88,8 @@ class PasswordSetupServiceRateLimitTest extends PasswordSetupServiceTestBase {
             User user1 = createPendingUser(regNumber1);
             User user2 = createPendingUser(regNumber2);
 
-            when(userRepository.findByUsername(regNumber1)).thenReturn(Optional.of(user1));
-            when(userRepository.findByUsername(regNumber2)).thenReturn(Optional.of(user2));
+            when(userRepository.findByAnyUsername(regNumber1)).thenReturn(Optional.of(user1));
+            when(userRepository.findByAnyUsername(regNumber2)).thenReturn(Optional.of(user2));
             when(activationContactVerifier.isActivationContact(user1.getId(), "test1@example.com")).thenReturn(true);
             when(activationContactVerifier.isActivationContact(user2.getId(), "test2@example.com")).thenReturn(true);
             when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -122,7 +122,7 @@ class PasswordSetupServiceRateLimitTest extends PasswordSetupServiceTestBase {
             String registrationNumber = "ZBM0101";
             User user = createPendingUser(registrationNumber);
 
-            when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
+            when(userRepository.findByAnyUsername(registrationNumber)).thenReturn(Optional.of(user));
 
             // When
             passwordSetupService.requestNewToken(registrationNumber, "test@example.com");

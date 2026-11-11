@@ -157,7 +157,44 @@ class RegisterMemberWithGuardiansIntegrationTest {
     }
 
     @Test
-    @DisplayName("adult registration takes over a non-member guardian keeping user, login and guardian groups")
+    @DisplayName("a rejected takeover of a guardian by a minor leaves the guardian's login unchanged")
+    void rejectedTakeOverLeavesLoginUnchanged() {
+        LegalGuardianProfile profile = legalGuardianPort.register(newGuardian("rej." + unique() + "@example.com"));
+        UserId guardianId = profile.guardian().getId();
+        var minorTakeOver = new RegistrationPort.RegisterNewMember(
+                PersonalInformation.of("Dítě", "Odmítnuté", LocalDate.of(2015, 4, 10), "SK", Gender.MALE),
+                Address.of("Dětská 1", "Brno", "60200", "CZ"),
+                null, null, null, null, null, List.of(GuardianInput.existing(guardianId)), guardianId);
+
+        assertThatThrownBy(() -> registrationPort.registerMember(minorTakeOver)).isInstanceOf(BusinessRuleViolationException.class);
+
+        User user = userRepository.findById(guardianId).orElseThrow();
+        assertThat(user.getUsername()).isEqualTo(profile.loginName());
+        assertThat(user.getAltUsername()).isNull();
+        assertThat(legalGuardianRepository.findById(guardianId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("a takeover failing after the username was replaced rolls the guardian's login back")
+    void failedTakeOverRollsBackLoginChange() {
+        RegistrationNumber taken = RegistrationNumber.of("ZBM0097");
+        registrationPort.importMember(new RegistrationPort.ImportMember(
+                adult("owner." + unique() + "@example.com", null), taken));
+        LegalGuardianProfile profile = legalGuardianPort.register(newGuardian("rb." + unique() + "@example.com"));
+        UserId guardianId = profile.guardian().getId();
+
+        assertThatThrownBy(() -> registrationPort.importMember(new RegistrationPort.ImportMember(
+                adult("rb." + unique() + "@example.com", guardianId), taken)))
+                .isInstanceOf(BusinessRuleViolationException.class);
+
+        User user = userRepository.findById(guardianId).orElseThrow();
+        assertThat(user.getUsername()).isEqualTo(profile.loginName());
+        assertThat(user.getAltUsername()).isNull();
+        assertThat(legalGuardianRepository.findById(guardianId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("adult registration takes over a non-member guardian: registration number becomes the username, EXT login the altUsername, guardian groups kept")
     void takesOverNonMemberGuardian() {
         LegalGuardianProfile profile = legalGuardianPort.register(newGuardian("take." + unique() + "@example.com"));
         UserId guardianId = profile.guardian().getId();
@@ -168,8 +205,8 @@ class RegisterMemberWithGuardiansIntegrationTest {
         assertThat(member.getId().toUserId()).isEqualTo(guardianId);
         assertThat(legalGuardianRepository.findById(guardianId)).isEmpty();
         User user = userRepository.findById(guardianId).orElseThrow();
-        assertThat(user.getUsername()).isEqualTo(profile.loginName());
-        assertThat(user.getUsername()).isNotEqualTo(member.getRegistrationNumber().getValue());
+        assertThat(user.getUsername()).isEqualTo(member.getRegistrationNumber().getValue());
+        assertThat(user.getAltUsername()).isEqualTo(profile.loginName());
         assertThat(legalGuardianGroupPort.guardiansOf(child.getId())).containsExactly(guardianId);
         assertThat(permissionService.getUserPermissions(guardianId).getDirectAuthorities())
                 .containsAll(Authority.getStandardUserAuthorities());

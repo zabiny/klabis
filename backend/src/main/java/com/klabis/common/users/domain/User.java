@@ -38,6 +38,8 @@ public class User extends KlabisAggregateRoot<User, UserId> {
 
     private String username;
 
+    private String altUsername;
+
     private String passwordHash;
 
     private AccountStatus accountStatus;
@@ -59,9 +61,10 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     protected User() {
     }
 
-    private User(UserId id, String username, String passwordHash, AccountStatus accountStatus) {
+    private User(UserId id, String username, String altUsername, String passwordHash, AccountStatus accountStatus) {
         this.id = id;
         this.username = username;
+        this.altUsername = altUsername;
         this.passwordHash = passwordHash;
         this.accountStatus = accountStatus;
     }
@@ -85,6 +88,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
         User user = new User(
                 new UserId(UUID.randomUUID()),
                 username,
+                null,
                 placeholderHash,
                 AccountStatus.PENDING_ACTIVATION
         );
@@ -111,6 +115,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
         return new User(
                 new UserId(UUID.randomUUID()),
                 username,
+                null,
                 passwordHash,
                 AccountStatus.ACTIVE
         );
@@ -129,7 +134,12 @@ public class User extends KlabisAggregateRoot<User, UserId> {
      * @return User instance reconstructed from persisted data
      */
     public static User reconstruct(UserId id, String username, String passwordHash, AccountStatus accountStatus) {
-        return new User(id, username, passwordHash, accountStatus);
+        return reconstruct(id, username, null, passwordHash, accountStatus);
+    }
+
+    public static User reconstruct(UserId id, String username, String altUsername, String passwordHash,
+                                   AccountStatus accountStatus) {
+        return new User(id, username, altUsername, passwordHash, accountStatus);
     }
 
     /**
@@ -144,20 +154,13 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     public User activateWithPassword(String newPasswordHash) {
         Objects.requireNonNull(newPasswordHash, "New password hash is required");
 
-        User activated = new User(this.id, this.username, newPasswordHash, AccountStatus.ACTIVE);
-
-        activated.updateAuditMetadata(this.getAuditMetadata());
-
-        return activated;
+        return copyWith(newPasswordHash, AccountStatus.ACTIVE);
     }
 
     public User changePassword(String newPasswordHash) {
         Objects.requireNonNull(newPasswordHash, "New password hash is required");
 
-        User updated = new User(this.id, this.username, newPasswordHash, this.accountStatus);
-        updated.updateAuditMetadata(this.getAuditMetadata());
-
-        return updated;
+        return copyWith(newPasswordHash, this.accountStatus);
     }
 
     /**
@@ -169,11 +172,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
      * @return new User instance with SUSPENDED status
      */
     public User suspend() {
-        User suspended = new User(this.id, this.username, this.passwordHash, AccountStatus.SUSPENDED);
-
-        suspended.updateAuditMetadata(this.getAuditMetadata());
-
-        return suspended;
+        return copyWith(this.passwordHash, AccountStatus.SUSPENDED);
     }
 
     /**
@@ -185,11 +184,30 @@ public class User extends KlabisAggregateRoot<User, UserId> {
      * @return new User instance with ACTIVE status
      */
     public User resume() {
-        User resumed = new User(this.id, this.username, this.passwordHash, AccountStatus.ACTIVE);
+        return copyWith(this.passwordHash, AccountStatus.ACTIVE);
+    }
 
-        resumed.updateAuditMetadata(this.getAuditMetadata());
+    /**
+     * A user is taken over at most once (e.g. a non-member guardian becoming a member), hence a single alias.
+     */
+    public User replaceUsername(String newUsername) {
+        Objects.requireNonNull(newUsername, "Username is required");
+        if (newUsername.isBlank() || newUsername.equals(username)) {
+            throw new IllegalArgumentException("New username must be non-blank and different from the current one");
+        }
+        if (altUsername != null) {
+            throw new IllegalStateException("User already has an altUsername");
+        }
 
-        return resumed;
+        User replaced = new User(this.id, newUsername, this.username, this.passwordHash, this.accountStatus);
+        replaced.updateAuditMetadata(this.getAuditMetadata());
+        return replaced;
+    }
+
+    private User copyWith(String passwordHash, AccountStatus accountStatus) {
+        User copy = new User(this.id, this.username, this.altUsername, passwordHash, accountStatus);
+        copy.updateAuditMetadata(this.getAuditMetadata());
+        return copy;
     }
 
     private static void validateRequired(String value) {
@@ -220,6 +238,10 @@ public class User extends KlabisAggregateRoot<User, UserId> {
 
     public String getUsername() {
         return username;
+    }
+
+    public String getAltUsername() {
+        return altUsername;
     }
 
     public String getPasswordHash() {

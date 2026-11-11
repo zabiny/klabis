@@ -14,6 +14,10 @@ interface RegistrationSectionProps {
     hasField: (name: string) => boolean;
 }
 
+interface RegistrationGuardianSectionsProps extends RegistrationSectionProps {
+    initialTakeOverId?: string;
+}
+
 const useIsMinor = (): boolean | undefined => {
     const {values} = useFormikContext<Record<string, unknown>>();
     return isMinorOnDate(values.dateOfBirth);
@@ -34,19 +38,22 @@ export const RegistrationContactSection = ({renderInput, hasField}: Registration
     );
 };
 
-export const RegistrationGuardianSections = ({renderInput, hasField}: RegistrationSectionProps): ReactElement | null => {
+export const RegistrationGuardianSections = ({renderInput, hasField, initialTakeOverId}: RegistrationGuardianSectionsProps): ReactElement | null => {
     const {values, setFieldValue} = useFormikContext<Record<string, unknown>>();
     const isMinor = useIsMinor();
     const takeoverId = typeof values.legalGuardianUserId === 'string' ? values.legalGuardianUserId : '';
     const hasGuardianValue = Array.isArray(values.legalGuardians) && values.legalGuardians.length > 0;
 
     useEffect(() => {
-        if (isMinor === true && takeoverId) void setFieldValue('legalGuardianUserId', '');
+        if (initialTakeOverId) void setFieldValue('legalGuardianUserId', initialTakeOverId);
+    }, [initialTakeOverId, setFieldValue]);
+
+    useEffect(() => {
         if (isMinor === false && hasGuardianValue) void setFieldValue('legalGuardians', []);
-    }, [isMinor, takeoverId, hasGuardianValue, setFieldValue]);
+    }, [isMinor, hasGuardianValue, setFieldValue]);
 
     const {data: profile} = useAuthorizedQuery<LegalGuardianProfile>(`/legal-guardians/${takeoverId}`, {
-        enabled: isMinor === false && takeoverId !== '',
+        enabled: takeoverId !== '',
     });
 
     useEffect(() => {
@@ -57,21 +64,23 @@ export const RegistrationGuardianSections = ({renderInput, hasField}: Registrati
         void setFieldValue('phone', profile.phone);
     }, [profile, setFieldValue]);
 
-    if (isMinor === true && hasField('legalGuardians')) {
-        return (
-            <Section title={labels.sections.legalGuardians}>
-                <p className="text-xs text-text-secondary pb-2">{labels.ui.registrationGuardiansRequiredHint}</p>
-                {renderInput('legalGuardians')}
-            </Section>
-        );
-    }
-    if (isMinor === false && hasField('legalGuardianUserId')) {
-        return (
-            <Section title={labels.sections.legalGuardianTakeover}>
-                <p className="text-xs text-text-secondary pb-2">{labels.ui.registrationTakeoverHint}</p>
-                <DetailRow label={labels.fields.legalGuardianUserId}>{renderInput('legalGuardianUserId')}</DetailRow>
-            </Section>
-        );
-    }
-    return null;
+    const showGuardians = isMinor === true && hasField('legalGuardians');
+    const showTakeover = hasField('legalGuardianUserId');
+    if (!showGuardians && !showTakeover) return null;
+    return (
+        <>
+            {showGuardians && (
+                <Section title={labels.sections.legalGuardians}>
+                    <p className="text-xs text-text-secondary pb-2">{labels.ui.registrationGuardiansRequiredHint}</p>
+                    {renderInput('legalGuardians')}
+                </Section>
+            )}
+            {showTakeover && (
+                <Section title={labels.sections.legalGuardianTakeover}>
+                    <p className="text-xs text-text-secondary pb-2">{labels.ui.registrationTakeoverHint}</p>
+                    <DetailRow label={labels.fields.legalGuardianUserId}>{renderInput('legalGuardianUserId')}</DetailRow>
+                </Section>
+            )}
+        </>
+    );
 };

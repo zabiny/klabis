@@ -3,6 +3,7 @@ package com.klabis.members.application;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.common.users.UserService;
+import com.klabis.common.users.UsernameAlreadyInUseException;
 import com.klabis.common.users.application.PermissionService;
 import com.klabis.members.MemberId;
 import com.klabis.members.domain.GuardianContacts;
@@ -136,7 +137,7 @@ public class RegistrationService implements RegistrationPort {
                             GuardianContacts guardianContacts, boolean importing) {
         try {
             UserId sharedUserId = command.takenOverLegalGuardian() != null
-                                  ? takeOverLegalGuardian(command.takenOverLegalGuardian())
+                                  ? takeOverLegalGuardian(command.takenOverLegalGuardian(), registrationNumber)
                                   : userService.createUser(
                     registrationNumber.getValue(),
                     Authority.getStandardUserAuthorities()
@@ -165,22 +166,23 @@ public class RegistrationService implements RegistrationPort {
             log.debug("Member created with shared ID: {}", savedMember.getId());
 
             return savedMember;
-        } catch (DataIntegrityViolationException e) {
-            // The UNIQUE constraint on members.registration_number (and, since the registration
-            // number doubles as the username, on common.users.user_name) is what enforces
-            // "already in use" - no existence check is made beforehand, since that would just be
-            // a race between the check and this save.
+        } catch (DataIntegrityViolationException | UsernameAlreadyInUseException e) {
+            // The registration number doubles as the username: UserService rejects a login already taken,
+            // and the UNIQUE constraints on members.registration_number / common.users.user_name catch
+            // the race between that check and the save. Both are reported as "already in use".
             throw new RegistrationNumberAlreadyInUseException(registrationNumber, e);
         }
     }
 
     /**
      * The guardian's user becomes the member's user, so the person keeps their login number and their
-     * legal guardian groups; only the guardian profile is replaced by the member profile.
+     * legal guardian groups; only the guardian profile is replaced by the member profile. The former
+     * login number stays valid as altUsername.
      */
-    private UserId takeOverLegalGuardian(UserId guardianId) {
+    private UserId takeOverLegalGuardian(UserId guardianId, RegistrationNumber registrationNumber) {
         legalGuardianPort.releaseForMembership(guardianId);
         permissionService.updateUserPermissions(guardianId, Authority.getStandardUserAuthorities());
+        userService.replaceUsername(guardianId, registrationNumber.getValue());
         return guardianId;
     }
 }

@@ -92,7 +92,7 @@ class ImportMemberUsualConsequencesTest {
                             .as("Initial balance should be zero")
                             .isTrue();
 
-                    assertThat(userRepository.findByUsername("ZBM0098"))
+                    assertThat(userRepository.findByAnyUsername("ZBM0098"))
                             .as("User should be created with the imported registration number as username")
                             .isPresent();
 

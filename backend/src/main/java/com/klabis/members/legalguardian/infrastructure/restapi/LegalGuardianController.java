@@ -7,6 +7,7 @@ import com.klabis.common.users.UserId;
 import com.klabis.members.infrastructure.restapi.LegalGuardianResponse;
 import com.klabis.members.infrastructure.restapi.LegalGuardianResponseBuilder;
 import com.klabis.members.infrastructure.restapi.LegalGuardiansApi;
+import com.klabis.members.infrastructure.restapi.RegistrationApi;
 import com.klabis.members.infrastructure.restapi.UpdateLegalGuardianRequest;
 import com.klabis.members.legalguardian.application.LegalGuardianPort;
 import com.klabis.members.legalguardian.application.LegalGuardianProfile;
@@ -68,6 +69,9 @@ class LegalGuardianDetailsPostprocessor extends ModelWithDomainPostprocessor<Leg
         klabisLinkTo(methodOn(LegalGuardiansApi.class).getLegalGuardian(id))
                 .map(link -> link.withSelfRel()
                         .andAffordances(klabisAfford(methodOn(LegalGuardiansApi.class).updateLegalGuardian(id, null))))
+                .ifPresent(dtoModel::add);
+        klabisLinkTo(methodOn(RegistrationApi.class).registerMember(null, null))
+                .map(link -> link.withRel("registerAsMember"))
                 .ifPresent(dtoModel::add);
     }
 }

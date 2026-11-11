@@ -1369,6 +1369,29 @@ class MemberControllerApiTest {
         }
 
         @Test
+        @DisplayName("a minor with a taken-over guardian should return 400 bound to the legalGuardianUserId field")
+        @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
+        void shouldReturn400WhenMinorTakesOverGuardian() throws Exception {
+            when(registrationService.registerMember(any(RegistrationPort.RegisterNewMember.class)))
+                    .thenThrow(GuardiansNotAllowedException.takeOverByMinor());
+
+            mockMvc.perform(postMembers().content("""
+                            {
+                                "firstName": "Jan",
+                                "lastName": "Novák",
+                                "dateOfBirth": "2015-05-15",
+                                "nationality": "CZ",
+                                "gender": "MALE",
+                                "legalGuardianUserId": "%s",
+                                "address": {"street": "Hlavní 123", "city": "Praha", "postalCode": "11000", "country": "CZ"}
+                            }
+                            """.formatted(UUID.randomUUID())))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.type").value("/errors/minor-cannot-take-over-guardian"))
+                    .andExpect(jsonPath("$.field").value("legalGuardianUserId"));
+        }
+
+        @Test
         @DisplayName("an adult with guardians should return 400 bound to the legal guardians field")
         @WithKlabisMockUser(username = ADMIN_USERNAME, authorities = {Authority.MEMBERS_MANAGE})
         void shouldReturn400WhenAdultHasGuardians() throws Exception {

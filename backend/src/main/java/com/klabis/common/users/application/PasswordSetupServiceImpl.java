@@ -164,7 +164,7 @@ class PasswordSetupServiceImpl implements PasswordSetupService {
 
         rateLimiter.checkLimit(registrationNumber);
 
-        User user = userRepository.findByUsername(registrationNumber)
+        User user = userRepository.findByAnyUsername(registrationNumber)
                 .orElseThrow(() -> new TokenValidationException("User not found"));
 
         if (user.getAccountStatus() != AccountStatus.PENDING_ACTIVATION) {

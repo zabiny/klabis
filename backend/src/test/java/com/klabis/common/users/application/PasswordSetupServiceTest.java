@@ -414,7 +414,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String email = "test@example.com";
             User user = createPendingUser();
 
-            when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
+            when(userRepository.findByAnyUsername(registrationNumber)).thenReturn(Optional.of(user));
             when(activationContactVerifier.isActivationContact(user.getId(), email)).thenReturn(true);
             when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
@@ -432,6 +432,25 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
         }
 
         @Test
+        @DisplayName("should send the link to the entered e-mail when the account is requested by its altUsername")
+        void shouldAcceptAltUsernameOfPendingAccount() {
+            String email = "test@example.com";
+            User taken = User.createdUser("EXT0001").replaceUsername("ZBM0101");
+            when(userRepository.findByAnyUsername("EXT0001")).thenReturn(Optional.of(taken));
+            when(activationContactVerifier.isActivationContact(taken.getId(), email)).thenReturn(true);
+            when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
+            when(templateRenderer.renderText(any(), any())).thenReturn("text body");
+
+            passwordSetupService.requestNewToken("EXT0001", email);
+
+            verify(tokenRepository).invalidateAllForUser(taken.getId());
+            ArgumentCaptor<EmailMessage> messageCaptor = ArgumentCaptor.forClass(EmailMessage.class);
+            verify(emailService).send(messageCaptor.capture());
+            assertThat(messageCaptor.getValue().to()).isEqualTo(email);
+        }
+
+        @Test
         @DisplayName("should complete normally without sending an email or generating a token when email does not match activation contact")
         void shouldSendNothingWhenEmailDoesNotMatchActivationContact() {
             // Given
@@ -439,7 +458,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String foreignEmail = "attacker@example.com";
             User user = createPendingUser();
 
-            when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
+            when(userRepository.findByAnyUsername(registrationNumber)).thenReturn(Optional.of(user));
             when(activationContactVerifier.isActivationContact(user.getId(), foreignEmail)).thenReturn(false);
 
             // When
@@ -458,7 +477,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String registrationNumber = "ZBM0101";
             String email = "test@example.com";
 
-            when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.empty());
+            when(userRepository.findByAnyUsername(registrationNumber)).thenReturn(Optional.empty());
 
             // When/Then
             assertThatThrownBy(() -> passwordSetupService.requestNewToken(registrationNumber, email))
@@ -474,7 +493,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String email = "test@example.com";
             User activeUser = UserTestDataBuilder.aMemberUser().build();
 
-            when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(activeUser));
+            when(userRepository.findByAnyUsername(registrationNumber)).thenReturn(Optional.of(activeUser));
 
             // When/Then
             assertThatThrownBy(() -> passwordSetupService.requestNewToken(registrationNumber, email))
@@ -490,7 +509,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String enteredEmail = "  Test@Example.com  ";
             User user = createPendingUser();
 
-            when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
+            when(userRepository.findByAnyUsername(registrationNumber)).thenReturn(Optional.of(user));
             when(activationContactVerifier.isActivationContact(user.getId(), enteredEmail)).thenReturn(true);
             when(tokenRepository.save(any(PasswordSetupToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(templateRenderer.renderHtml(any(), any())).thenReturn("<html>email body</html>");
@@ -512,7 +531,7 @@ class PasswordSetupServiceTest extends PasswordSetupServiceTestBase {
             String email = "test@example.com";
             User user = createPendingUser();
 
-            when(userRepository.findByUsername(registrationNumber)).thenReturn(Optional.of(user));
+            when(userRepository.findByAnyUsername(registrationNumber)).thenReturn(Optional.of(user));
 
             PasswordSetupService serviceWithoutVerifier = createService(fixedProvider((ActivationContactVerifier) null));
 

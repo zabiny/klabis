@@ -6,6 +6,7 @@ import type {HalFormsTemplate} from '../../api';
 import {HalFormsForm} from '../../components/HalNavigator2/halforms/HalFormsForm.tsx';
 import {klabisFieldsFactory} from '../../components/KlabisFieldsFactory';
 import {labels} from '../../localization';
+import {ApiError} from '../../api/authorizedFetch.ts';
 import {RegistrationContactSection, RegistrationGuardianSections} from './RegistrationGuardianSections.tsx';
 
 const guardianProfiles = vi.hoisted(() => ({current: undefined as Record<string, unknown> | undefined}));
@@ -53,12 +54,13 @@ const template: HalFormsTemplate = {
 
 const input = (name: string) => document.querySelector(`input[name="${name}"]`) as HTMLInputElement;
 
-const renderForm = (onSubmit = vi.fn().mockResolvedValue(undefined)) => {
+const renderForm = (onSubmit = vi.fn().mockResolvedValue(undefined), serverError?: ApiError | null, initialTakeOverId?: string) => {
     render(
         <HalFormsForm
             data={{}}
             template={template}
             onSubmit={onSubmit}
+            serverError={serverError}
             fieldsFactory={klabisFieldsFactory}
             renderForm={({renderInput, renderField}) => {
                 const hasField = (n: string) => template.properties.some(p => p.name === n);
@@ -68,7 +70,7 @@ const renderForm = (onSubmit = vi.fn().mockResolvedValue(undefined)) => {
                         {renderInput('lastName')}
                         {renderInput('dateOfBirth')}
                         <RegistrationContactSection renderInput={renderInput} hasField={hasField}/>
-                        <RegistrationGuardianSections renderInput={renderInput} hasField={hasField}/>
+                        <RegistrationGuardianSections renderInput={renderInput} hasField={hasField} initialTakeOverId={initialTakeOverId}/>
                         {renderField('submit')}
                     </div>
                 );
@@ -89,10 +91,10 @@ describe('member registration form sections', () => {
         requestedUrls.length = 0;
     });
 
-    it('shows no guardian sections until date of birth is filled', () => {
+    it('shows only the takeover section until date of birth is filled', () => {
         renderForm();
         expect(screen.queryByText('ZÁKONNÍ ZÁSTUPCI')).not.toBeInTheDocument();
-        expect(screen.queryByText('PŘEVZETÍ ZÁKONNÉHO ZÁSTUPCE')).not.toBeInTheDocument();
+        expect(screen.getByText('PŘEVZETÍ ZÁKONNÉHO ZÁSTUPCE')).toBeInTheDocument();
     });
 
     it('registers a minor with a new guardian and optional own contacts', async () => {
@@ -102,7 +104,6 @@ describe('member registration form sections', () => {
         await setBirthDate('2015-05-05');
 
         expect(screen.getByText('ZÁKONNÍ ZÁSTUPCI')).toBeInTheDocument();
-        expect(screen.queryByText('PŘEVZETÍ ZÁKONNÉHO ZÁSTUPCE')).not.toBeInTheDocument();
         expect(screen.queryByText('E-mail *')).not.toBeInTheDocument();
 
         await userEvent.click(screen.getByRole('button', {name: 'Přidat'}));
@@ -117,6 +118,24 @@ describe('member registration form sections', () => {
             firstName: 'Karel',
             dateOfBirth: '2015-05-05',
             legalGuardians: [{firstName: 'Eva', lastName: 'Malá', email: 'eva@example.com', phone: '+420777111222'}],
+        })));
+    });
+
+    it('preselects the taking-over guardian and prefills data from the profile', async () => {
+        guardianProfiles.current = {
+            userId: 'user-1', firstName: 'Jana', lastName: 'Nováková',
+            email: 'jana@example.com', phone: '+420601000000', loginName: 'EXT0001',
+        };
+        const onSubmit = renderForm(undefined, undefined, 'user-1');
+
+        await waitFor(() => expect(input('firstName')).toHaveValue('Jana'));
+        expect(requestedUrls).toContain('/legal-guardians/user-1');
+        expect(input('email')).toHaveValue('jana@example.com');
+
+        await setBirthDate('1985-01-01');
+        await userEvent.click(screen.getByRole('button', {name: 'Odeslat'}));
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+            legalGuardianUserId: 'user-1',
         })));
     });
 
@@ -147,7 +166,15 @@ describe('member registration form sections', () => {
         })));
     });
 
-    it('drops the takeover selection when the birth date turns the member into a minor', async () => {
+    it('shows the takeover section for a minor date of birth beside the guardians section', async () => {
+        renderForm();
+        await setBirthDate('2015-05-05');
+
+        expect(await screen.findByText('ZÁKONNÍ ZÁSTUPCI')).toBeInTheDocument();
+        expect(screen.getByText('PŘEVZETÍ ZÁKONNÉHO ZÁSTUPCE')).toBeInTheDocument();
+    });
+
+    it('keeps the chosen takeover guardian when the birth date turns the member into a minor', async () => {
         guardianProfiles.current = {firstName: 'Jana', lastName: 'N', email: 'j@e.cz', phone: '+420601000000'};
         const onSubmit = renderForm();
         await setBirthDate('1985-01-01');
@@ -157,10 +184,20 @@ describe('member registration form sections', () => {
         await userEvent.clear(input('dateOfBirth'));
         await setBirthDate('2015-05-05');
         await screen.findByText('ZÁKONNÍ ZÁSTUPCI');
+        expect(screen.getByRole('combobox')).toHaveValue('user-1');
         await userEvent.click(screen.getByRole('button', {name: 'Odeslat'}));
 
         await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-        expect(onSubmit.mock.calls[0][0].legalGuardianUserId).toBeFalsy();
+        expect(onSubmit.mock.calls[0][0].legalGuardianUserId).toBe('user-1');
+    });
+
+    it('shows the backend minor-cannot-take-over-guardian error at the takeover picker', async () => {
+        renderForm(undefined, new ApiError(400, {
+            type: '/errors/minor-cannot-take-over-guardian',
+            field: 'legalGuardianUserId',
+        }));
+
+        expect(await screen.findByText('Nezletilý člen nemůže převzít roli zákonného zástupce.')).toBeInTheDocument();
     });
 });
 

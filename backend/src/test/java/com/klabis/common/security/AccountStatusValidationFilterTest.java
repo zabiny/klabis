@@ -65,7 +65,7 @@ class AccountStatusValidationFilterTest {
     @WithKlabisMockUser(username = "ZBM0001")
     void shouldReturn403ForSuspendedUser() throws Exception {
         User suspendedUser = User.createdUser("ZBM0001", "hash").suspend();
-        when(userService.findUserByUsername(anyString())).thenReturn(Optional.of(suspendedUser));
+        when(userService.findUserByAnyUsername(anyString())).thenReturn(Optional.of(suspendedUser));
 
         mockMvc.perform(get("/test/account-status"))
                 .andExpect(status().isForbidden())
@@ -76,11 +76,22 @@ class AccountStatusValidationFilterTest {
     }
 
     @Test
+    @DisplayName("should return 403 for suspended user whose token still carries the former login (altUsername)")
+    @WithKlabisMockUser(username = "EXT0001")
+    void shouldReturn403ForSuspendedUserIdentifiedByAltUsername() throws Exception {
+        User suspendedUser = User.createdUser("EXT0001", "hash").replaceUsername("ZBM0001").suspend();
+        when(userService.findUserByAnyUsername("EXT0001")).thenReturn(Optional.of(suspendedUser));
+
+        mockMvc.perform(get("/test/account-status"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("should pass through for active user")
     @WithKlabisMockUser(username = "ZBM0001")
     void shouldPassThroughForActiveUser() throws Exception {
         User activeUser = User.createdUser("ZBM0001", "hash");
-        when(userService.findUserByUsername(anyString())).thenReturn(Optional.of(activeUser));
+        when(userService.findUserByAnyUsername(anyString())).thenReturn(Optional.of(activeUser));
 
         mockMvc.perform(get("/test/account-status"))
                 .andExpect(status().isOk());
@@ -90,7 +101,7 @@ class AccountStatusValidationFilterTest {
     @DisplayName("should pass through when user is not found in database")
     @WithKlabisMockUser(username = "ZBM0001")
     void shouldPassThroughWhenUserNotFound() throws Exception {
-        when(userService.findUserByUsername(anyString())).thenReturn(Optional.empty());
+        when(userService.findUserByAnyUsername(anyString())).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/test/account-status"))
                 .andExpect(status().isOk());
