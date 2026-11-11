@@ -136,7 +136,7 @@ public class RegistrationService implements RegistrationPort {
                             GuardianContacts guardianContacts, boolean importing) {
         try {
             UserId sharedUserId = command.takenOverLegalGuardian() != null
-                                  ? takeOverLegalGuardian(command.takenOverLegalGuardian())
+                                  ? takeOverLegalGuardian(command.takenOverLegalGuardian(), registrationNumber)
                                   : userService.createUser(
                     registrationNumber.getValue(),
                     Authority.getStandardUserAuthorities()
@@ -176,11 +176,13 @@ public class RegistrationService implements RegistrationPort {
 
     /**
      * The guardian's user becomes the member's user, so the person keeps their login number and their
-     * legal guardian groups; only the guardian profile is replaced by the member profile.
+     * legal guardian groups; only the guardian profile is replaced by the member profile. The former
+     * login number stays valid as altUsername.
      */
-    private UserId takeOverLegalGuardian(UserId guardianId) {
+    private UserId takeOverLegalGuardian(UserId guardianId, RegistrationNumber registrationNumber) {
         legalGuardianPort.releaseForMembership(guardianId);
         permissionService.updateUserPermissions(guardianId, Authority.getStandardUserAuthorities());
+        userService.replaceUsername(guardianId, registrationNumber.getValue());
         return guardianId;
     }
 }

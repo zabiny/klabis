@@ -506,4 +506,70 @@ class UserTest {
                     .isAuthenticatable();
         }
     }
+    @Nested
+    @DisplayName("replaceUsername() method")
+    class ReplaceUsernameMethod {
+
+        @Test
+        @DisplayName("should move the current username to altUsername and set the new username")
+        void shouldMoveCurrentUsernameToAltUsername() {
+            User guardian = User.createdUser("EXT0001", UserTestDataConstants.DEFAULT_PASSWORD_HASH);
+
+            User replaced = guardian.replaceUsername("ZBM9001");
+
+            assertThat(replaced.getUsername()).isEqualTo("ZBM9001");
+            assertThat(replaced.getAltUsername()).isEqualTo("EXT0001");
+        }
+
+        @Test
+        @DisplayName("should keep identity, credentials and account status")
+        void shouldKeepIdentityAndCredentials() {
+            User guardian = User.createdUser("EXT0001", UserTestDataConstants.DEFAULT_PASSWORD_HASH);
+
+            User replaced = guardian.replaceUsername("ZBM9001");
+
+            UserAssert.assertThat(replaced)
+                    .hasId(guardian.getId())
+                    .hasPasswordHash(UserTestDataConstants.DEFAULT_PASSWORD_HASH)
+                    .hasAccountStatus(AccountStatus.ACTIVE);
+        }
+
+        @Test
+        @DisplayName("should have no altUsername by default")
+        void shouldHaveNoAltUsernameByDefault() {
+            assertThat(User.createdUser("EXT0001", UserTestDataConstants.DEFAULT_PASSWORD_HASH).getAltUsername())
+                    .isNull();
+        }
+
+        @Test
+        @DisplayName("should be refused for a blank or unchanged username")
+        void shouldBeRefusedForBlankOrUnchangedUsername() {
+            User guardian = User.createdUser("EXT0001", UserTestDataConstants.DEFAULT_PASSWORD_HASH);
+
+            assertThatThrownBy(() -> guardian.replaceUsername(" ")).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> guardian.replaceUsername("EXT0001")).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("should keep altUsername through activateWithPassword, changePassword, suspend and resume")
+        void shouldKeepAltUsernameThroughOtherTransitions() {
+            User taken = User.createdUser("EXT0001", UserTestDataConstants.DEFAULT_PASSWORD_HASH)
+                    .replaceUsername("ZBM9001");
+
+            assertThat(taken.activateWithPassword("h2").getAltUsername()).isEqualTo("EXT0001");
+            assertThat(taken.changePassword("h2").getAltUsername()).isEqualTo("EXT0001");
+            assertThat(taken.suspend().getAltUsername()).isEqualTo("EXT0001");
+            assertThat(taken.suspend().resume().getAltUsername()).isEqualTo("EXT0001");
+        }
+
+        @Test
+        @DisplayName("should be refused when the user already has an altUsername")
+        void shouldBeRefusedWhenAltUsernameExists() {
+            User taken = User.createdUser("EXT0001", UserTestDataConstants.DEFAULT_PASSWORD_HASH)
+                    .replaceUsername("ZBM9001");
+
+            assertThatThrownBy(() -> taken.replaceUsername("ZBM9002"))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+    }
 }

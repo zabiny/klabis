@@ -78,7 +78,7 @@ class MemberOrisImportNoEmailIntegrationTest {
         stubClubMembers(memberWithoutEmail(orisId, regNum));
         memberDiscoveryJob.discoverNewMembers();
 
-        assertThat(userService.findUserByUsername(regNum))
+        assertThat(userService.findUserByAnyUsername(regNum))
                 .as("user created for the imported member")
                 .isPresent()
                 .get()

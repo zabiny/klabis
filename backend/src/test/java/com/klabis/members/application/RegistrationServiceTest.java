@@ -637,6 +637,7 @@ class RegistrationServiceTest {
             verify(legalGuardianPort, never()).releaseForMembership(any(UserId.class));
             verify(permissionService, never()).updateUserPermissions(any(UserId.class), any());
             verify(userService, never()).createUser(anyString(), any(Set.class));
+            verify(userService, never()).replaceUsername(any(UserId.class), anyString());
         }
     }
 
@@ -730,6 +731,14 @@ class RegistrationServiceTest {
             assertThat(result.getId()).isEqualTo(MemberId.fromUserId(GUARDIAN_ID));
             assertThat(result.getRegistrationNumber().getValue()).isEqualTo("ZBM0500");
             verify(userService, never()).createUser(anyString(), any(Set.class));
+        }
+
+        @Test
+        @DisplayName("should make the generated registration number the username of the guardian's user")
+        void shouldReplaceUsernameWithRegistrationNumber() {
+            service.registerMember(takeOverCommand());
+
+            verify(userService).replaceUsername(GUARDIAN_ID, "ZBM0500");
         }
 
         @Test

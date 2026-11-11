@@ -47,7 +47,7 @@ public class AccountStatusValidationFilter extends OncePerRequestFilter {
         if (authentication != null && authentication instanceof KlabisJwtAuthenticationToken jwtAuth) {
             String username = jwtAuth.getUsername();
 
-            Optional<User> userOpt = userService.findUserByUsername(username);
+            Optional<User> userOpt = userService.findUserByAnyUsername(username);
             if (userOpt.isPresent() && !userOpt.get().isAuthenticatable()) {
                 handleDisabledUser(response);
                 return;

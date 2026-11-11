@@ -47,7 +47,7 @@ public interface UserService {
     UserId createActiveUser(String username, String passwordHash, Set<Authority> authorities);
 
     /**
-     * Finds a user by username.
+     * Finds a user by username or altUsername.
      * <p>
      * Returns the complete User aggregate including credentials and account status.
      * Use this when you need to verify user existence or access user details.
@@ -55,7 +55,13 @@ public interface UserService {
      * @param username the username to search for
      * @return optional containing the user if found, empty otherwise
      */
-    Optional<User> findUserByUsername(String username);
+    Optional<User> findUserByAnyUsername(String username);
+
+    /**
+     * Makes {@code newUsername} the user's username and keeps the former username as altUsername.
+     * Fails when the user already has an altUsername.
+     */
+    void replaceUsername(UserId userId, String newUsername);
 
     Optional<User> findUserById(UserId userId);
 

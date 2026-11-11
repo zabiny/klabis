@@ -34,7 +34,7 @@ class UsersDataBootstrap implements BootstrapDataInitializer {
 
     @Override
     public boolean requiresBootstrap() {
-        return userService.findUserByUsername(bootstrapProperties.getUsername()).isEmpty();
+        return userService.findUserByAnyUsername(bootstrapProperties.getUsername()).isEmpty();
     }
 
     @Override

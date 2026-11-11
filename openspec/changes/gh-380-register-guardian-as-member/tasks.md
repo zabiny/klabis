@@ -19,12 +19,12 @@
 
 ## 3. Taken-over guardian gets a registration number; EXT stays as altUsername
 
-- [ ] 3.1 Write failing `User` domain tests: `replaceUsername` moves the current login to the altUsername and sets the new username; it is refused when an altUsername already exists (design D6) — verify they fail, implement, verify they pass
-- [ ] 3.2 Add `alt_user_name VARCHAR(7) UNIQUE` (nullable) to `common.users` in V001, map it in the user memento, replace `findByUsername` with `findByAnyUsername` (username or altUsername) in repository/service and all callers (design D7); verify with a repository integration test that both logins find the same user and that a duplicate altUsername is rejected
-- [ ] 3.3 Write failing authorization-server test: a user with an altUsername logs in with either login and the issued tokens carry the username (`sub`, `user_name`, `preferred_username`) — verify it fails, make it pass via `KlabisUserDetailsService` using `findUserByAnyUsername`
-- [ ] 3.4 Write failing test for the activation-link request with the altUsername of a pending account (link sent to the account holder's own e-mail, same response as for the username) — verify it fails, then make it pass
-- [ ] 3.5 Write failing `RegistrationService` test: taking over a guardian makes the generated registration number the user's username and EXTnnnn the altUsername; a failed registration (e.g. minor takeover) leaves the guardian's login unchanged — verify it fails, implement design D8, verify it passes
-- [ ] 3.6 Update the `backend-patterns` skill / backend `CLAUDE.md` if they describe `username` as the only login (common module change), and verify no stale "username = registration number only" statement remains
+- [x] 3.1 Write failing `User` domain tests: `replaceUsername` moves the current login to the altUsername and sets the new username; it is refused when an altUsername already exists (design D6) — verify they fail, implement, verify they pass
+- [x] 3.2 Add `alt_user_name VARCHAR(7) UNIQUE` (nullable) to `common.users` in V001, map it in the user memento, replace `findByUsername` with `findByAnyUsername` (username or altUsername) in repository/service and all callers (design D7); verify with a repository integration test that both logins find the same user and that a duplicate altUsername is rejected
+- [x] 3.3 Write failing authorization-server test: a user with an altUsername logs in with either login and the issued tokens carry the username (`sub`, `user_name`, `preferred_username`) — verify it fails, make it pass via `KlabisUserDetailsService` using `findUserByAnyUsername`
+- [x] 3.4 Write failing test for the activation-link request with the altUsername of a pending account (link sent to the account holder's own e-mail, same response as for the username) — verify it fails, then make it pass
+- [x] 3.5 Write failing `RegistrationService` test: taking over a guardian makes the generated registration number the user's username and EXTnnnn the altUsername; a failed registration (e.g. minor takeover) leaves the guardian's login unchanged — verify it fails, implement design D8, verify it passes
+- [x] 3.6 Update the `backend-patterns` skill / backend `CLAUDE.md` if they describe `username` as the only login (common module change), and verify no stale "username = registration number only" statement remains
 
 ## 4. Integration
 

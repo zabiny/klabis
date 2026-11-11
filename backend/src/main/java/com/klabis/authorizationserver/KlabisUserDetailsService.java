@@ -47,7 +47,7 @@ public class KlabisUserDetailsService implements UserDetailsService {
     }
 
     public Optional<KlabisUserDetails> loadKlabisUserDetails(String username) {
-        return userService.findUserByUsername(username)
+        return userService.findUserByAnyUsername(username)
                 .map(user -> {
                     UserPermissions permissions = permissionService.getUserPermissions(user.getId());
 

@@ -83,15 +83,23 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Optional<User> findUserByUsername(String username) {
+    public Optional<User> findUserByAnyUsername(String username) {
         log.debug("Finding user by username: {}", username);
-        Optional<User> user = userRepository.findByUsername(username);
+        Optional<User> user = userRepository.findByAnyUsername(username);
         if (user.isPresent()) {
             log.debug("User found: userId={}", user.get().getId());
         } else {
             log.debug("User not found for username: {}", username);
         }
         return user;
+    }
+
+    @Override
+    public void replaceUsername(UserId userId, String newUsername) {
+        User user = findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+        userRepository.save(user.replaceUsername(newUsername));
+        log.info("Replaced username of user {}", userId);
     }
 
     @Override

@@ -80,7 +80,7 @@ class RegisterMemberAutoProvisioningTest {
         String createdRegistrationNumber = memberEntity.get().getRegistrationNumber().getValue();
 
         // Verify User was created with same registration number
-        Optional<User> userOpt = userRepository.findByUsername(createdRegistrationNumber);
+        Optional<User> userOpt = userRepository.findByAnyUsername(createdRegistrationNumber);
         assertThat(userOpt).isPresent();
         User user = userOpt.get();
 
@@ -113,7 +113,7 @@ class RegisterMemberAutoProvisioningTest {
 
         Member member = memberService.registerMember(command);
         var memberEntity = memberJpaRepository.findById(member.getId()).get();
-        User user = userRepository.findByUsername(memberEntity.getRegistrationNumber().getValue()).get();
+        User user = userRepository.findByAnyUsername(memberEntity.getRegistrationNumber().getValue()).get();
 
         // Verify user was created successfully (authorities are now in UserPermissions, not User)
         assertThat(user).isNotNull();
@@ -166,8 +166,8 @@ class RegisterMemberAutoProvisioningTest {
         var memberEntity1 = memberJpaRepository.findById(member1.getId()).get();
         var memberEntity2 = memberJpaRepository.findById(member2.getId()).get();
 
-        User user1 = userRepository.findByUsername(memberEntity1.getRegistrationNumber().getValue()).get();
-        User user2 = userRepository.findByUsername(memberEntity2.getRegistrationNumber().getValue()).get();
+        User user1 = userRepository.findByAnyUsername(memberEntity1.getRegistrationNumber().getValue()).get();
+        User user2 = userRepository.findByAnyUsername(memberEntity2.getRegistrationNumber().getValue()).get();
 
         // Verify they are different users
         assertThat(user1.getId()).isNotEqualTo(user2.getId());

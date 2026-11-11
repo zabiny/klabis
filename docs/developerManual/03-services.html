@@ -87,7 +87,8 @@ public interface UserService {
     UserId createUser(String username, String email, Set&lt;Authority&gt; authorities);
     UserId createActiveUser(String username, String passwordHash, Set&lt;Authority&gt; authorities);
     Optional&lt;User&gt; findById(UserId id);
-    Optional&lt;User&gt; findByUsername(String username);
+    Optional&lt;User&gt; findUserByAnyUsername(String username);
+    void replaceUsername(UserId userId, String newUsername);
     void suspendUser(UserId id);
     void resumeUser(UserId id);
 }</code></pre>
@@ -101,6 +102,15 @@ public interface UserService {
     <dt>createActiveUser(...)</dt>
     <dd>Bootstrap varianta — uživatel rovnou <code>ACTIVE</code> s předpřipraveným hash hesla,
         bez emailu.</dd>
+
+    <dt>findUserByAnyUsername(...)</dt>
+    <dd>Najde uživatele podle <code>username</code> nebo <code>altUsername</code>. Používá se pro
+        každé vyhledání podle zadaného loginu (přihlášení, žádost o aktivační odkaz, validace tokenu).</dd>
+
+    <dt>replaceUsername(...)</dt>
+    <dd>Nastaví nový <code>username</code> a dosavadní přesune do <code>altUsername</code>
+        (převzetí zákonného zástupce při registraci člena). Odmítne, pokud už uživatel
+        <code>altUsername</code> má.</dd>
 </dl>
 
 <h3>PermissionService</h3>

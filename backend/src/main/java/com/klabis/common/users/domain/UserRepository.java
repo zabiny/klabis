@@ -28,12 +28,13 @@ public interface UserRepository {
     Optional<User> findById(UserId id);
 
     /**
-     * Find a user by their username.
+     * Find a user by their username or altUsername.
      *
-     * @param username the username
+     * @param username the login entered by the user
      * @return optional containing the user if found
      */
-    Optional<User> findByUsername(String username);
+    Optional<User> findByAnyUsername(String username);
+
     /**
      * Save a user.
      *
@@ -63,5 +64,5 @@ public interface UserRepository {
 
     // Read methods inherited from Users public API:
     // - Optional<User> findById(UserId id)
-    // - Optional<User> findByUsername(String username)
+    // - Optional<User> findByAnyUsername(String username)
 }
