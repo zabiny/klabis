@@ -274,15 +274,6 @@ class UserJdbcRepositoryTest {
         }
 
         @Test
-        @DisplayName("should prefer the username match when another user's altUsername equals it")
-        void shouldPreferUsernameMatchOnCrossColumnCollision() {
-            takenOver("COL0001", "ZBM9104");
-            User owner = userRepository.save(User.createdUser("COL0001", "$2a$10$hashvalue"));
-
-            assertThat(userRepository.findByAnyUsername("COL0001")).get().extracting(User::getId).isEqualTo(owner.getId());
-        }
-
-        @Test
         @DisplayName("should reject a duplicate altUsername")
         void shouldRejectDuplicateAltUsername() {
             takenOver("EXT0002", "ZBM9102");

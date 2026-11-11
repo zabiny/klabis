@@ -742,6 +742,17 @@ class RegistrationServiceTest {
         }
 
         @Test
+        @DisplayName("should report a registration number already used as someone's login as registration number in use")
+        void shouldMapLoginCollisionToRegistrationNumberInUse() {
+            org.mockito.Mockito.doThrow(new com.klabis.common.users.UsernameAlreadyInUseException("ZBM0500"))
+                    .when(userService).replaceUsername(GUARDIAN_ID, "ZBM0500");
+
+            assertThatThrownBy(() -> service.registerMember(takeOverCommand()))
+                    .isInstanceOf(RegistrationNumberAlreadyInUseException.class);
+            verify(memberRepository, never()).save(any(Member.class));
+        }
+
+        @Test
         @DisplayName("should remove the guardian profile before the member is saved")
         void shouldReleaseGuardianProfileBeforeSavingMember() {
             service.registerMember(takeOverCommand());

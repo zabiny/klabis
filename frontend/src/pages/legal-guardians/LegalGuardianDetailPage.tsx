@@ -1,24 +1,24 @@
 import type {ReactElement} from 'react';
-import {useNavigate} from 'react-router-dom';
 import {Pencil, UserPlus} from 'lucide-react';
 import {useHalPageData} from '../../hooks/useHalPageData.ts';
 import {Alert, Button, Card, DetailRow, Skeleton} from '../../components/UI';
 import {HalFormButton} from '../../components/HalNavigator2/HalFormButton.tsx';
 import type {GetLegalGuardianResource} from '../../api';
-import {selfHref, toHref} from '../../api/hateoas.ts';
+import {asLinkArray, selfHref} from '../../api/hateoas.ts';
 import {toRoutePath} from '../../api/apiPath.ts';
-import type {TakeOverState} from '../members/takeOverState.ts';
+import type {TakeOverState} from '../members/useTakeOverRegistration.ts';
 import {describeError, labels} from '../../localization';
 
 const LegalGuardianDetailContent = ({resourceData}: {resourceData: GetLegalGuardianResource}): ReactElement => {
-    const navigate = useNavigate();
+    const {navigateToResource} = useHalPageData();
     const registerAsMember = resourceData._links?.registerAsMember;
     const selfLink = selfHref(resourceData);
 
     const registerAsMemberClick = () => {
-        if (!registerAsMember || !selfLink) return;
+        const registerLink = asLinkArray(registerAsMember)[0];
+        if (!registerLink || !selfLink) return;
         const state: TakeOverState = {takeOverLegalGuardianId: resourceData.userId, returnTo: toRoutePath(selfLink)};
-        navigate(toRoutePath(toHref(registerAsMember)), {state});
+        navigateToResource(registerLink, {state});
     };
 
     return (

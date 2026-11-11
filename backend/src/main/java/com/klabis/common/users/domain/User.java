@@ -154,20 +154,13 @@ public class User extends KlabisAggregateRoot<User, UserId> {
     public User activateWithPassword(String newPasswordHash) {
         Objects.requireNonNull(newPasswordHash, "New password hash is required");
 
-        User activated = new User(this.id, this.username, this.altUsername, newPasswordHash, AccountStatus.ACTIVE);
-
-        activated.updateAuditMetadata(this.getAuditMetadata());
-
-        return activated;
+        return copyWith(newPasswordHash, AccountStatus.ACTIVE);
     }
 
     public User changePassword(String newPasswordHash) {
         Objects.requireNonNull(newPasswordHash, "New password hash is required");
 
-        User updated = new User(this.id, this.username, this.altUsername, newPasswordHash, this.accountStatus);
-        updated.updateAuditMetadata(this.getAuditMetadata());
-
-        return updated;
+        return copyWith(newPasswordHash, this.accountStatus);
     }
 
     /**
@@ -179,11 +172,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
      * @return new User instance with SUSPENDED status
      */
     public User suspend() {
-        User suspended = new User(this.id, this.username, this.altUsername, this.passwordHash, AccountStatus.SUSPENDED);
-
-        suspended.updateAuditMetadata(this.getAuditMetadata());
-
-        return suspended;
+        return copyWith(this.passwordHash, AccountStatus.SUSPENDED);
     }
 
     /**
@@ -195,11 +184,7 @@ public class User extends KlabisAggregateRoot<User, UserId> {
      * @return new User instance with ACTIVE status
      */
     public User resume() {
-        User resumed = new User(this.id, this.username, this.altUsername, this.passwordHash, AccountStatus.ACTIVE);
-
-        resumed.updateAuditMetadata(this.getAuditMetadata());
-
-        return resumed;
+        return copyWith(this.passwordHash, AccountStatus.ACTIVE);
     }
 
     /**
@@ -217,6 +202,12 @@ public class User extends KlabisAggregateRoot<User, UserId> {
         User replaced = new User(this.id, newUsername, this.username, this.passwordHash, this.accountStatus);
         replaced.updateAuditMetadata(this.getAuditMetadata());
         return replaced;
+    }
+
+    private User copyWith(String passwordHash, AccountStatus accountStatus) {
+        User copy = new User(this.id, this.username, this.altUsername, passwordHash, accountStatus);
+        copy.updateAuditMetadata(this.getAuditMetadata());
+        return copy;
     }
 
     private static void validateRequired(String value) {

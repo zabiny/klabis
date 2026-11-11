@@ -8,7 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
+import com.klabis.common.users.UsernameAlreadyInUseException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -18,7 +18,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -42,6 +44,46 @@ class UserServiceImplTest {
     @BeforeEach
     void setUp() {
         testedSubject = new UserServiceImpl(userRepository, userPermissionsRepository);
+    }
+
+    @Nested
+    @DisplayName("login uniqueness across username and altUsername")
+    class LoginUniqueness {
+
+        private final User holder = User.reconstruct(new UserId(java.util.UUID.randomUUID()), "ZBM0001", "EXT0001",
+                testPasswordHash, AccountStatus.ACTIVE);
+
+        @Test
+        @DisplayName("createUser rejects a username held as altUsername by another user")
+        void createUserRejectsTakenLogin() {
+            when(userRepository.findByAnyUsername("EXT0001")).thenReturn(Optional.of(holder));
+
+            assertThatThrownBy(() -> testedSubject.createUser("EXT0001", testAuthorities))
+                    .isInstanceOf(UsernameAlreadyInUseException.class);
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("createActiveUser rejects a username held by another user")
+        void createActiveUserRejectsTakenLogin() {
+            when(userRepository.findByAnyUsername("ZBM0001")).thenReturn(Optional.of(holder));
+
+            assertThatThrownBy(() -> testedSubject.createActiveUser("ZBM0001", testPasswordHash, testAuthorities))
+                    .isInstanceOf(UsernameAlreadyInUseException.class);
+            verify(userRepository, never()).save(any(User.class));
+        }
+
+        @Test
+        @DisplayName("replaceUsername rejects a username held as altUsername by another user")
+        void replaceUsernameRejectsTakenLogin() {
+            User guardian = User.reconstruct(testUserId, "EXT0002", testPasswordHash, AccountStatus.ACTIVE);
+            when(userRepository.findById(testUserId)).thenReturn(Optional.of(guardian));
+            when(userRepository.findByAnyUsername("EXT0001")).thenReturn(Optional.of(holder));
+
+            assertThatThrownBy(() -> testedSubject.replaceUsername(testUserId, "EXT0001"))
+                    .isInstanceOf(UsernameAlreadyInUseException.class);
+            verify(userRepository, never()).save(any(User.class));
+        }
     }
 
     @Nested

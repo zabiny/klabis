@@ -60,7 +60,7 @@ Alternative: client-side validation of the conflict — duplicates a rule the ba
 
 `User` gets an optional `altUsername` beside its `username`. It is set only by `User.replaceUsername(newUsername)`: the current username moves to the altUsername and `newUsername` becomes the username. The operation is refused when the user already has an altUsername (a user is taken over at most once). Persistence: nullable `alt_user_name VARCHAR(7) UNIQUE` in `common.users` (edit V001, no new migration).
 
-A login has to be unique across both columns. The DB enforces each column on its own; a cross-column collision cannot occur in practice because altUsernames are always from the EXT series and usernames of members are registration numbers with the club prefix. No extra check is added (KISS).
+A login has to be unique across both columns. The DB enforces each column on its own; `UserService` rejects creating a user or replacing a username with a login that already exists as any user's username or altUsername, so a login always identifies exactly one user (the former username moved to altUsername is that user's own unique login and needs no check).
 
 Alternatives considered:
 - *A separate `user_logins` table (any number of aliases)* — general, but nothing needs more than one alias. Rejected (KISS).

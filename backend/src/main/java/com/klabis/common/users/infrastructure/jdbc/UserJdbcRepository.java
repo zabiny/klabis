@@ -28,15 +28,11 @@ import java.util.UUID;
 public interface UserJdbcRepository extends CrudRepository<UserMemento, UUID> {
 
     /**
-     * Find user memento by username or altUsername. A username match wins over an altUsername match
-     * of another user (no cross-column uniqueness is enforced).
+     * Find user memento by username or altUsername.
      *
      * @param login the login to search for
      * @return optional containing user memento if found
      */
-    @Query("""
-            SELECT * FROM common.users WHERE user_name = :login OR alt_user_name = :login
-            ORDER BY CASE WHEN user_name = :login THEN 0 ELSE 1 END
-            LIMIT 1""")
+    @Query("SELECT * FROM common.users WHERE user_name = :login OR alt_user_name = :login")
     Optional<UserMemento> findByUsernameOrAltUsername(@Param("login") String login);
 }

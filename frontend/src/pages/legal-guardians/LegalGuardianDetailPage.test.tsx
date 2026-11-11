@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {MemoryRouter, useLocation} from 'react-router-dom';
+import {MemoryRouter} from 'react-router-dom';
 import {vi} from 'vitest';
 import {ApiError} from '../../api/apiError';
 import {useHalPageData} from '../../hooks/useHalPageData';
@@ -13,10 +13,7 @@ vi.mock('../../components/HalNavigator2/HalFormButton.tsx', () => ({
     HalFormButton: ({name}: {name: string}) => <button data-testid="hal-form-button">{name}</button>,
 }));
 
-const LocationProbe = () => {
-    const location = useLocation();
-    return <div data-testid="location" data-state={JSON.stringify(location.state)}>{location.pathname}</div>;
-};
+const navigateToResource = vi.fn();
 
 const renderPage = (resourceData: Record<string, unknown> | null, extra?: {isLoading?: boolean; error?: ApiError}) => {
     vi.mocked(useHalPageData).mockReturnValue({
@@ -24,11 +21,11 @@ const renderPage = (resourceData: Record<string, unknown> | null, extra?: {isLoa
         isLoading: extra?.isLoading ?? false,
         error: extra?.error ?? null,
         refetch: async () => {},
+        navigateToResource,
     } as unknown as ReturnType<typeof useHalPageData>);
     return render(
         <MemoryRouter>
             <LegalGuardianDetailPage/>
-            <LocationProbe/>
         </MemoryRouter>
     );
 };
@@ -83,11 +80,8 @@ describe('LegalGuardianDetailPage', () => {
 
         await userEvent.click(screen.getByRole('button', {name: 'Registrovat jako člena'}));
 
-        const location = screen.getByTestId('location');
-        expect(location).toHaveTextContent('/members');
-        expect(JSON.parse(location.dataset.state!)).toEqual({
-            takeOverLegalGuardianId: 'u-1',
-            returnTo: '/legal-guardians/u-1',
+        expect(navigateToResource).toHaveBeenCalledWith({href: '/api/members'}, {
+            state: {takeOverLegalGuardianId: 'u-1', returnTo: '/legal-guardians/u-1'},
         });
     });
 });
