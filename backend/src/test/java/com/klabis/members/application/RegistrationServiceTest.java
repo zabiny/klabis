@@ -626,10 +626,17 @@ class RegistrationServiceTest {
                     List.of(GuardianInput.existing(GUARDIAN_ID)), GUARDIAN_ID);
 
             assertThatThrownBy(() -> service.registerMember(command))
-                    .isInstanceOf(BusinessRuleViolationException.class);
+                    .isInstanceOf(GuardiansNotAllowedException.class)
+                    .satisfies(e -> {
+                        var ex = (GuardiansNotAllowedException) e;
+                        assertThat(ex.errorType()).isEqualTo("minor-cannot-take-over-guardian");
+                        assertThat(ex.field()).isEqualTo("legalGuardianUserId");
+                    });
 
             verify(memberRepository, never()).save(any(Member.class));
             verify(legalGuardianPort, never()).releaseForMembership(any(UserId.class));
+            verify(permissionService, never()).updateUserPermissions(any(UserId.class), any());
+            verify(userService, never()).createUser(anyString(), any(Set.class));
         }
     }
 

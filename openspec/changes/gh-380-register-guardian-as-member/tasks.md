@@ -2,10 +2,10 @@
 
 ## 1. Takeover section always visible on the registration form
 
-- [ ] 1.1 Verify a backend test covers "takeover combined with a minor's date of birth is rejected with a field error on `legalGuardianUserId` and nothing is created" (RegistrationService / registration controller test); add it test-first if missing and verify it passes
-- [ ] 1.2 Write failing `RegistrationGuardianSections` tests: takeover section is shown with an empty date of birth and with a minor's date of birth; the chosen guardian is not cleared when the date of birth turns minor; "Zákonní zástupci" section still follows the date of birth — verify they fail
-- [ ] 1.3 Change `RegistrationGuardianSections` per design D5 (render takeover section whenever the template has `legalGuardianUserId`, stop clearing it for minors, enable the profile pre-fill whenever a guardian is chosen) and verify the 1.2 tests pass
-- [ ] 1.4 Verify the backend's `minor-cannot-take-over-guardian` error is shown next to the takeover picker after submit (frontend test of the registration form with a mocked error response)
+- [x] 1.1 Verify a backend test covers "takeover combined with a minor's date of birth is rejected with a field error on `legalGuardianUserId` and nothing is created" (RegistrationService / registration controller test); add it test-first if missing and verify it passes
+- [x] 1.2 Write failing `RegistrationGuardianSections` tests: takeover section is shown with an empty date of birth and with a minor's date of birth; the chosen guardian is not cleared when the date of birth turns minor; "Zákonní zástupci" section still follows the date of birth — verify they fail
+- [x] 1.3 Change `RegistrationGuardianSections` per design D5 (render takeover section whenever the template has `legalGuardianUserId`, stop clearing it for minors, enable the profile pre-fill whenever a guardian is chosen) and verify the 1.2 tests pass
+- [x] 1.4 Verify the backend's `minor-cannot-take-over-guardian` error is shown next to the takeover picker after submit (frontend test of the registration form with a mocked error response)
 
 ## 2. "Registrovat jako člena" on the guardian profile
 
