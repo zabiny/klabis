@@ -1,4 +1,4 @@
-import {type ReactNode, useEffect, useRef, useState} from 'react';
+import {type ReactNode, useEffect, useState} from 'react';
 import {useLocation} from 'react-router-dom';
 import {HalFormContext, type HalFormRequest} from './halFormContext';
 
@@ -7,24 +7,24 @@ import {HalFormContext, type HalFormRequest} from './halFormContext';
  * Must wrap components that use useHalForm hook
  */
 export function HalFormProvider({children}: { children: ReactNode }) {
-    const [currentFormRequest, setCurrentFormRequest] = useState<HalFormRequest | null>(null);
     const {pathname} = useLocation();
+    const [stored, setStored] = useState<{request: HalFormRequest; pathname: string} | null>(null);
 
-    // Reset open form when route changes — leaving and coming back should show page content, not a stale form.
-    // The initial mount is skipped: child effects run first and may already have requested a form.
-    const previousPathname = useRef(pathname);
+    // A request is bound to the route it was made on, so a page's mount effect that requests a form is not
+    // wiped by the route-change cleanup running in the same commit.
+    const currentFormRequest = stored?.pathname === pathname ? stored.request : null;
+
+    // Leaving and coming back should show page content, not a stale form.
     useEffect(() => {
-        if (previousPathname.current === pathname) return;
-        previousPathname.current = pathname;
-        setCurrentFormRequest(null);
-    }, [pathname]);
+        if (stored && stored.pathname !== pathname) setStored(null);
+    }, [stored, pathname]);
 
     const requestForm = (request: HalFormRequest) => {
-        setCurrentFormRequest(request);
+        setStored({request, pathname});
     };
 
     const closeForm = () => {
-        setCurrentFormRequest(null);
+        setStored(null);
     };
 
     const value = {

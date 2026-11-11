@@ -79,10 +79,7 @@ const addNewGuardian = async (page: Page, lastName: string) => {
     await phone.fill('+420 777 333 444');
 };
 
-const fillRegistrationForm = async (page: Page, lastName: string, body: ReturnType<typeof registrationBody>, contact = true) => {
-    await click(page, 'Registrovat člena');
-    await fill(page, 'Jméno', body.firstName);
-    await fill(page, 'Příjmení', lastName);
+export const fillRegistrationDetails = async (page: Page, body: ReturnType<typeof registrationBody>, contact: boolean) => {
     await fill(page, 'Datum narození', body.dateOfBirth);
     await select(page, 'Pohlaví', 'Muž');
     await fill(page, 'Státní příslušnost', body.nationality);
@@ -95,6 +92,13 @@ const fillRegistrationForm = async (page: Page, lastName: string, body: ReturnTy
     await fill(page, 'Město', body.address.city);
     await fill(page, 'PSČ', body.address.postalCode);
     await fill(page, 'Stát', body.address.country);
+};
+
+const fillRegistrationForm = async (page: Page, lastName: string, body: ReturnType<typeof registrationBody>, contact = true) => {
+    await click(page, 'Registrovat člena');
+    await fill(page, 'Jméno', body.firstName);
+    await fill(page, 'Příjmení', lastName);
+    await fillRegistrationDetails(page, body, contact);
 };
 
 Given('member {name} is the only trainer of training group {name}', async ({apiAs}, lastName: string, groupName: string) => {

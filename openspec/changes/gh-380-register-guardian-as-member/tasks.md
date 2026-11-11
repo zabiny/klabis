@@ -28,8 +28,8 @@
 
 ## 4. Integration
 
-- [ ] 4.1 Add an E2E scenario (playwright-bdd, `e2e-tester` agent) for registering a non-member guardian from their profile, landing on the new member's detail with a new registration number, then logging in as that member with the former EXT login number; verify it passes against `./runLocalEnvironment.sh`
-- [ ] 4.2 QA in the browser on http://localhost:3000 (admin ZBM9000): takeover section visible on an empty form, minor + takeover rejected, profile button → pre-filled form → cancel returns to profile, submit lands on the member detail with a registration number; the taken-over member logs in with both the registration number and the EXT login number and is shown with the registration number; guardian (EXT login) sees no button on "Můj profil"
+- [x] 4.1 Add an E2E scenario (playwright-bdd, `e2e-tester` agent) for registering a non-member guardian from their profile, landing on the new member's detail with a new registration number (login with the former EXT login number is covered by the backend `OidcAltUsernameLoginTest`, as the CI E2E run has no access to activation e-mails); verify it passes against `./runLocalEnvironment.sh`
+- [x] 4.2 QA in the browser on http://localhost:3000 (admin ZBM9000): takeover section visible on an empty form, minor + takeover rejected, profile button → pre-filled form → cancel returns to profile, submit lands on the member detail with a registration number; the taken-over member logs in with both the registration number and the EXT login number and is shown with the registration number; guardian (EXT login) sees no button on "Můj profil"
 - [ ] 4.3 Run the full backend and frontend test suites and `npm run refresh-backend-server-resources`; verify all pass
 - [ ] 4.4 Add label `BackendCompleted` to GitHub issue #380 once the backend part is merged and verify the label is shown on the issue
 
