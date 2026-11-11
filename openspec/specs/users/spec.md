@@ -6,7 +6,7 @@ Covers user account management, authentication, authorization, and permission ma
 ## Requirements
 ### Requirement: User Authentication
 
-The system SHALL authenticate users via OAuth2 using a login name and a cryptographically hashed password. The login name of a club member is their registration number; the login name of a non-member legal guardian is their login number from the EXT series (EXT0001, EXT0002, …), which has the same format as a registration number and is kept if the guardian later becomes a club member. Authorities are loaded from the UserPermissions aggregate.
+The system SHALL authenticate users via OAuth2 using a login name and a cryptographically hashed password. The user name of a club member is their registration number; the user name of a non-member legal guardian is their login number from the EXT series (EXT0001, EXT0002, …), which has the same format as a registration number. A user MAY additionally have an alternative user name; a guardian who becomes a club member keeps their EXT login number as the alternative user name. A user can log in with the user name or the alternative user name and is always presented by the user name. Authorities are loaded from the UserPermissions aggregate.
 
 #### Scenario: User logs in with valid credentials
 
@@ -18,6 +18,19 @@ The system SHALL authenticate users via OAuth2 using a login name and a cryptogr
 
 - **WHEN** a non-member legal guardian enters their login number (for example EXT0001) and password on the login page and submits
 - **THEN** the guardian is logged in and redirected to the application
+
+#### Scenario: Former guardian logs in with the registration number
+
+- **GIVEN** a former non-member legal guardian registered as a club member with the registration number ZBM8105, whose former login number was EXT0003
+- **WHEN** she enters ZBM8105 and her password on the login page and submits
+- **THEN** she is logged in and redirected to the application
+
+#### Scenario: Former guardian logs in with the former login number
+
+- **GIVEN** a former non-member legal guardian registered as a club member with the registration number ZBM8105, whose former login number was EXT0003
+- **WHEN** she enters EXT0003 and her password on the login page and submits
+- **THEN** she is logged in and redirected to the application
+- **AND** the application presents her as ZBM8105, the same as after logging in with the registration number
 
 #### Scenario: User logs in with invalid credentials
 
@@ -340,6 +353,13 @@ The system SHALL allow users with PENDING_ACTIVATION status to request an activa
 - **WHEN** a non-member legal guardian submits their login number and their e-mail address held in Klabis
 - **AND** the rate limit has not been exceeded
 - **THEN** an activation link is sent to the guardian's e-mail address
+
+#### Scenario: Former guardian requests an activation link with the former login number
+
+- **GIVEN** a former non-member legal guardian registered as a club member, whose account still awaits activation
+- **WHEN** she submits her former login number EXTnnnn and her own e-mail address held in Klabis
+- **AND** the rate limit has not been exceeded
+- **THEN** an activation link is sent to her e-mail address, the same as when she submits her registration number
 
 #### Scenario: No self-service activation for a minor
 
