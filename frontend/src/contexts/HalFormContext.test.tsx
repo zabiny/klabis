@@ -3,7 +3,7 @@ import {BrowserRouter, MemoryRouter, Route, Routes, useNavigate} from 'react-rou
 import {HalFormProvider} from './HalFormContext';
 import {type HalFormRequest, useHalForm} from './halFormContext';
 import {describe, expect, it, vi} from 'vitest';
-import type {ReactNode} from 'react';
+import {type ReactNode, useEffect} from 'react';
 
 const createWrapper = () => ({children}: { children: ReactNode }) => (
     <BrowserRouter>
@@ -253,5 +253,23 @@ describe('HalFormContext', () => {
 
             expect(result.current.currentFormRequest?.children).toBeDefined();
         });
+    });
+
+    it('keeps a form requested by a child effect on the first render', () => {
+        const Requester = () => {
+            const {displayHalForm, currentFormRequest} = useHalForm();
+            useEffect(() => {
+                displayHalForm({templateName: 'registerMember'});
+            }, []);
+            return <div data-testid="current">{currentFormRequest?.templateName ?? 'none'}</div>;
+        };
+
+        const {getByTestId} = render(
+            <MemoryRouter>
+                <HalFormProvider><Requester/></HalFormProvider>
+            </MemoryRouter>
+        );
+
+        expect(getByTestId('current')).toHaveTextContent('registerMember');
     });
 });

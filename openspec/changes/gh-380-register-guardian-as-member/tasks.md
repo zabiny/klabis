@@ -9,13 +9,13 @@
 
 ## 2. "Registrovat jako člena" on the guardian profile
 
-- [ ] 2.1 Add the `registerAsMember` link (operation `registerMember`) to `getLegalGuardian` `x-hal-links` in `docs/openapi/spec/members.yaml`, regenerate the backend and frontend artifacts (`npm run openapi`) and verify both builds compile
-- [ ] 2.2 Write failing `@WebMvcTest` for the guardian profile: `registerAsMember` link present for a MEMBERS:MANAGE user, absent for the guardian viewing their own profile — verify they fail
-- [ ] 2.3 Add the link in `LegalGuardianDetailsPostprocessor` via `klabisLinkTo(methodOn(RegistrationApi.class).registerMember(null, null))` (design D2) and verify the 2.2 tests pass
-- [ ] 2.4 Add optional `onCancel` to `HalFormRequest` and call it from `HalFormsPageLayout` on "Zrušit" (design D4); verify with a `HalFormsPageLayout` test that the callback fires on cancel and is not required otherwise
-- [ ] 2.5 Write failing tests: `LegalGuardianDetailPage` shows "Registrovat jako člena" only when the `registerAsMember` link is present and navigates to the member list route with `{takeOverLegalGuardianId, returnTo}` state; `MembersPage` opened with that state opens the registration form with the guardian pre-selected and pre-filled, and "Zrušit" navigates to `returnTo` — verify they fail
-- [ ] 2.6 Implement the button (label in `localization/labels.ts`), the state handling in `MembersPage` and the initial takeover id in `RegistrationGuardianSections` (design D3) and verify the 2.5 tests pass
-- [ ] 2.7 Verify the regular "Registrovat člena" flow is unchanged (existing `MembersPage` / registration tests pass) and `npm run build` succeeds
+- [x] 2.1 Add the `registerAsMember` link (operation `registerMember`) to `getLegalGuardian` `x-hal-links` in `docs/openapi/spec/members.yaml`, regenerate the backend and frontend artifacts (`npm run openapi`) and verify both builds compile
+- [x] 2.2 Write failing `@WebMvcTest` for the guardian profile: `registerAsMember` link present for a MEMBERS:MANAGE user, absent for the guardian viewing their own profile — verify they fail
+- [x] 2.3 Add the link in `LegalGuardianDetailsPostprocessor` via `klabisLinkTo(methodOn(RegistrationApi.class).registerMember(null, null))` (design D2) and verify the 2.2 tests pass
+- [x] 2.4 Add optional `onCancel` to `HalFormRequest` and call it from `HalFormsPageLayout` on "Zrušit" (design D4); verify with a `HalFormsPageLayout` test that the callback fires on cancel and is not required otherwise
+- [x] 2.5 Write failing tests: `LegalGuardianDetailPage` shows "Registrovat jako člena" only when the `registerAsMember` link is present and navigates to the member list route with `{takeOverLegalGuardianId, returnTo}` state; `MembersPage` opened with that state opens the registration form with the guardian pre-selected and pre-filled, and "Zrušit" navigates to `returnTo` — verify they fail
+- [x] 2.6 Implement the button (label in `localization/labels.ts`), the state handling in `MembersPage` and the initial takeover id in `RegistrationGuardianSections` (design D3) and verify the 2.5 tests pass
+- [x] 2.7 Verify the regular "Registrovat člena" flow is unchanged (existing `MembersPage` / registration tests pass) and `npm run build` succeeds
 
 ## 3. Taken-over guardian gets a registration number; EXT stays as altUsername
 

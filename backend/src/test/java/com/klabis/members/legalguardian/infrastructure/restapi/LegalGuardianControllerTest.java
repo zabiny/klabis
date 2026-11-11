@@ -84,6 +84,28 @@ class LegalGuardianControllerTest {
         }
 
         @Test
+        @DisplayName("includes registerAsMember link for MEMBERS:MANAGE")
+        @WithKlabisMockUser(authorities = {Authority.MEMBERS_MANAGE})
+        void includesRegisterAsMemberLinkForManager() throws Exception {
+            when(legalGuardianService.get(GUARDIAN_USER_ID)).thenReturn(profile());
+
+            mockMvc.perform(get("/api/legal-guardians/{id}", GUARDIAN_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.registerAsMember.href", endsWith("/api/members")));
+        }
+
+        @Test
+        @DisplayName("omits registerAsMember link for the guardian themself")
+        @WithKlabisMockUser(userId = GUARDIAN_ID, authorities = {Authority.MEMBERS_READ})
+        void omitsRegisterAsMemberLinkForOwner() throws Exception {
+            when(legalGuardianService.get(GUARDIAN_USER_ID)).thenReturn(profile());
+
+            mockMvc.perform(get("/api/legal-guardians/{id}", GUARDIAN_ID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.registerAsMember").doesNotExist());
+        }
+
+        @Test
         @DisplayName("returns 403 for a stranger")
         @WithKlabisMockUser(authorities = {Authority.MEMBERS_READ})
         void forbiddenForStranger() throws Exception {

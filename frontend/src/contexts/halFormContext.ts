@@ -20,6 +20,9 @@ export interface HalFormRequest {
 
     /** When false, suppresses auto-navigation after POST+Location response */
     navigateOnSuccess?: boolean;
+
+    /** Called after the inline form is closed by the user's cancel action (not after success) */
+    onCancel?: () => void;
 }
 
 /**

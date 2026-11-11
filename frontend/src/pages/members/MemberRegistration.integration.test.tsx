@@ -54,7 +54,7 @@ const template: HalFormsTemplate = {
 
 const input = (name: string) => document.querySelector(`input[name="${name}"]`) as HTMLInputElement;
 
-const renderForm = (onSubmit = vi.fn().mockResolvedValue(undefined), serverError?: ApiError | null) => {
+const renderForm = (onSubmit = vi.fn().mockResolvedValue(undefined), serverError?: ApiError | null, initialTakeOverId?: string) => {
     render(
         <HalFormsForm
             data={{}}
@@ -70,7 +70,7 @@ const renderForm = (onSubmit = vi.fn().mockResolvedValue(undefined), serverError
                         {renderInput('lastName')}
                         {renderInput('dateOfBirth')}
                         <RegistrationContactSection renderInput={renderInput} hasField={hasField}/>
-                        <RegistrationGuardianSections renderInput={renderInput} hasField={hasField}/>
+                        <RegistrationGuardianSections renderInput={renderInput} hasField={hasField} initialTakeOverId={initialTakeOverId}/>
                         {renderField('submit')}
                     </div>
                 );
@@ -118,6 +118,24 @@ describe('member registration form sections', () => {
             firstName: 'Karel',
             dateOfBirth: '2015-05-05',
             legalGuardians: [{firstName: 'Eva', lastName: 'Malá', email: 'eva@example.com', phone: '+420777111222'}],
+        })));
+    });
+
+    it('preselects the taking-over guardian and prefills data from the profile', async () => {
+        guardianProfiles.current = {
+            userId: 'user-1', firstName: 'Jana', lastName: 'Nováková',
+            email: 'jana@example.com', phone: '+420601000000', loginName: 'EXT0001',
+        };
+        const onSubmit = renderForm(undefined, undefined, 'user-1');
+
+        await waitFor(() => expect(input('firstName')).toHaveValue('Jana'));
+        expect(requestedUrls).toContain('/legal-guardians/user-1');
+        expect(input('email')).toHaveValue('jana@example.com');
+
+        await setBirthDate('1985-01-01');
+        await userEvent.click(screen.getByRole('button', {name: 'Odeslat'}));
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+            legalGuardianUserId: 'user-1',
         })));
     });
 

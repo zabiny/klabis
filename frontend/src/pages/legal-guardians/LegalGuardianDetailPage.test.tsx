@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
-import {MemoryRouter} from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
+import {MemoryRouter, useLocation} from 'react-router-dom';
 import {vi} from 'vitest';
 import {ApiError} from '../../api/apiError';
 import {useHalPageData} from '../../hooks/useHalPageData';
@@ -12,6 +13,11 @@ vi.mock('../../components/HalNavigator2/HalFormButton.tsx', () => ({
     HalFormButton: ({name}: {name: string}) => <button data-testid="hal-form-button">{name}</button>,
 }));
 
+const LocationProbe = () => {
+    const location = useLocation();
+    return <div data-testid="location" data-state={JSON.stringify(location.state)}>{location.pathname}</div>;
+};
+
 const renderPage = (resourceData: Record<string, unknown> | null, extra?: {isLoading?: boolean; error?: ApiError}) => {
     vi.mocked(useHalPageData).mockReturnValue({
         resourceData,
@@ -22,6 +28,7 @@ const renderPage = (resourceData: Record<string, unknown> | null, extra?: {isLoa
     return render(
         <MemoryRouter>
             <LegalGuardianDetailPage/>
+            <LocationProbe/>
         </MemoryRouter>
     );
 };
@@ -59,5 +66,28 @@ describe('LegalGuardianDetailPage', () => {
         renderPage(null, {error: new ApiError(404, {type: '/errors/legal-guardian-not-found', detail: 'Boom'})});
         expect(screen.getByText('Zákonný zástupce nebyl nalezen.')).toBeInTheDocument();
         expect(screen.queryByText('Boom')).not.toBeInTheDocument();
+    });
+
+    it('hides the register-as-member button without the registerAsMember link', () => {
+        renderPage(buildGuardian());
+        expect(screen.queryByRole('button', {name: 'Registrovat jako člena'})).not.toBeInTheDocument();
+    });
+
+    it('opens member registration with the guardian taken over and the profile as the way back', async () => {
+        renderPage(buildGuardian({
+            _links: {
+                self: {href: '/api/legal-guardians/u-1'},
+                registerAsMember: {href: '/api/members'},
+            },
+        }));
+
+        await userEvent.click(screen.getByRole('button', {name: 'Registrovat jako člena'}));
+
+        const location = screen.getByTestId('location');
+        expect(location).toHaveTextContent('/members');
+        expect(JSON.parse(location.dataset.state!)).toEqual({
+            takeOverLegalGuardianId: 'u-1',
+            returnTo: '/legal-guardians/u-1',
+        });
     });
 });

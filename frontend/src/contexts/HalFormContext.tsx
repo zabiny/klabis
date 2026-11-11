@@ -1,4 +1,4 @@
-import {type ReactNode, useEffect, useState} from 'react';
+import {type ReactNode, useEffect, useRef, useState} from 'react';
 import {useLocation} from 'react-router-dom';
 import {HalFormContext, type HalFormRequest} from './halFormContext';
 
@@ -11,7 +11,11 @@ export function HalFormProvider({children}: { children: ReactNode }) {
     const {pathname} = useLocation();
 
     // Reset open form when route changes — leaving and coming back should show page content, not a stale form.
+    // The initial mount is skipped: child effects run first and may already have requested a form.
+    const previousPathname = useRef(pathname);
     useEffect(() => {
+        if (previousPathname.current === pathname) return;
+        previousPathname.current = pathname;
         setCurrentFormRequest(null);
     }, [pathname]);
 
