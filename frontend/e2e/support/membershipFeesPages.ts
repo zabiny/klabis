@@ -67,3 +67,16 @@ export const memberRow = (page: Page, registrationNumber: string) =>
 
 export const expectMembersLoaded = (page: Page) =>
     expect(page.getByText('Žádní členové ve skupině.').or(membersSection(page).locator('tbody tr').first())).toBeVisible();
+
+const FEE_HISTORY = 'Členské příspěvky';
+
+export const feeHistoryButton = (page: Page) => page.getByRole('button', {name: FEE_HISTORY, exact: true});
+
+export const openFeeHistoryFromDetail = async (page: Page) => {
+    await feeHistoryButton(page).click();
+    await expect(page.getByRole('heading', {name: FEE_HISTORY, level: 1})).toBeVisible();
+    await expect(heading(page, 'Historie příspěvků')).toBeVisible();
+};
+
+export const historyEntry = (page: Page, levelName: string, year: number) =>
+    page.getByRole('row').filter({hasText: levelName}).filter({hasText: String(year)});

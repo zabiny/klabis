@@ -85,3 +85,11 @@ export const findMemberPath = async (admin: ApiClient, lastName: string) => {
     if (!found) throw new Error(`membersApi: member "${lastName}" not found`);
     return `/api/members/${found.id}`;
 };
+
+export const findMemberIdByName = async (admin: ApiClient, firstName: string, lastName: string) => {
+    const members = await admin.follow(await admin.root(), 'members');
+    const found = embeddedList(await admin.get(`${members._links!.self.href.replace(/\{[^}]*\}/g, "")}?q=${encodeURIComponent(lastName)}`))
+        .find((member) => member.firstName === firstName && member.lastName === lastName);
+    if (!found) throw new Error(`membersApi: member "${firstName} ${lastName}" not found`);
+    return found.id as string;
+};

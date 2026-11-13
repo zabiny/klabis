@@ -30,8 +30,8 @@ Feature: Membership fee assignments
       Given an active fee selection campaign offers level "Basic"
       And Jan has assigned Eva to level "Basic"
       And the fee selection campaign is closed
-      When Jan opens the closed campaign
-      Then the published level "Basic" lists Eva as a member
+      When Jan opens the fee level history of Eva
+      Then the history shows level "Basic" for the campaign year
 
   Rule: When the campaign ends, each member is charged the yearly fee of the assigned level
 

@@ -99,7 +99,7 @@ export const withdrawChoice = async (member: ApiClient, year: number) => {
     }
 };
 
-export const assignLevel = async (admin: ApiClient, member: MemberIdentity, feeState: FeeScenarioState, levelName: string) => {
+export const assignLevel = async (admin: ApiClient, member: Pick<MemberIdentity, 'id'>, feeState: FeeScenarioState, levelName: string) => {
     const level = (await publishedLevels(admin, feeState)).find((candidate) => candidate.name === levelName)!;
     await admin.post(admin.templateTarget(level, 'assignMember'), {memberId: member.id, year: feeState.year});
 };

@@ -25,16 +25,21 @@ export const searchMembers = async (page: Page, text: string, status?: string) =
 };
 
 // Table rows are exposed as buttons named "Row <n>" (a11y follow-up).
-export const memberRow = (page: Page, lastName: string) =>
-    page.getByRole('button', {name: /^Row \d+$/}).filter({hasText: lastName}).filter({hasText: REGISTERED_FIRST_NAME});
+const namedMemberRow = (page: Page, firstName: string, lastName: string) =>
+    page.getByRole('button', {name: /^Row \d+$/}).filter({hasText: lastName}).filter({hasText: firstName});
 
-export const openMemberDetail = async (page: Page, lastName: string, status?: string) => {
+export const memberRow = (page: Page, lastName: string) => namedMemberRow(page, REGISTERED_FIRST_NAME, lastName);
+
+export const openMemberDetailOf = async (page: Page, firstName: string, lastName: string, status?: string) => {
     await searchMembers(page, lastName, status);
-    await memberRow(page, lastName).getByRole('cell', {name: lastName}).first().click();
+    await namedMemberRow(page, firstName, lastName).getByRole('cell', {name: lastName}).first().click();
     await expect(heading(page, 'ADRESA')).toBeVisible();
 };
 
-const openOwnProfile = async (page: Page) => {
+export const openMemberDetail = (page: Page, lastName: string, status?: string) =>
+    openMemberDetailOf(page, REGISTERED_FIRST_NAME, lastName, status);
+
+export const openOwnProfile = async (page: Page) => {
     await page.getByRole('link', {name: 'Klabis', exact: true}).click();
     await page.getByText('Můj profil', {exact: true}).click();
     await expect(action(page, 'Upravit profil').first()).toBeVisible();
