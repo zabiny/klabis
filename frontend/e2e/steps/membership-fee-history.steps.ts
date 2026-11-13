@@ -7,7 +7,7 @@ import {assignLevel} from '../support/membershipFeesApi';
 import {feeHistoryButton, historyEntry, openFeeHistoryFromDetail} from '../support/membershipFeesPages';
 import {expectActing, personas, type Persona} from '../support/personas';
 import {heading} from '../support/ui';
-import {openMemberDetailOf, openOwnProfile} from './members.steps';
+import {openDetailAs, openOwnProfile} from './members.steps';
 
 const {Given, When, Then} = createBdd(test);
 
@@ -33,22 +33,19 @@ When('{persona} opens the fee level history from the profile', async ({page, act
 
 When('{persona} opens the fee level history of {persona}', async ({page, actAs, apiAs}, actor: Persona, member: Persona) => {
     const {firstName, lastName} = await memberIdentity(apiAs(personas[member]));
-    await actAs(actor);
-    await openMemberDetailOf(page, firstName, lastName, personas[actor] === 'admin' ? 'Vše' : undefined);
+    await openDetailAs(page, actAs, actor, lastName, firstName);
     await openFeeHistoryFromDetail(page);
 });
 
 When('{persona} opens the fee level history of member {string}', async ({page, actAs}, persona: Persona, fullName: string) => {
     const {firstName, lastName} = splitName(fullName);
-    await actAs(persona);
-    await openMemberDetailOf(page, firstName, lastName, personas[persona] === 'admin' ? 'Vše' : undefined);
+    await openDetailAs(page, actAs, persona, lastName, firstName);
     await openFeeHistoryFromDetail(page);
 });
 
 When('{persona} opens the detail of club member {string}', async ({page, actAs}, persona: Persona, fullName: string) => {
     const {firstName, lastName} = splitName(fullName);
-    await actAs(persona);
-    await openMemberDetailOf(page, firstName, lastName, personas[persona] === 'admin' ? 'Vše' : undefined);
+    await openDetailAs(page, actAs, persona, lastName, firstName);
 });
 
 Then('the history shows level {name} for the campaign year', async ({page, feeState}, level: string) => {

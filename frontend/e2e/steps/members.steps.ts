@@ -36,6 +36,13 @@ export const openMemberDetailOf = async (page: Page, firstName: string, lastName
     await expect(heading(page, 'ADRESA')).toBeVisible();
 };
 
+export const openDetailAs = async (
+    page: Page, actAs: (persona: Persona) => Promise<void>, persona: Persona, lastName: string, firstName = REGISTERED_FIRST_NAME,
+) => {
+    await actAs(persona);
+    await openMemberDetailOf(page, firstName, lastName, personas[persona] === 'admin' ? 'Vše' : undefined);
+};
+
 export const openMemberDetail = (page: Page, lastName: string, status?: string) =>
     openMemberDetailOf(page, REGISTERED_FIRST_NAME, lastName, status);
 
@@ -151,8 +158,7 @@ When('{persona} searches the member list for {name}', async ({page, actAs}, pers
 });
 
 When('{persona} opens the detail of member {name}', async ({page, actAs}, persona: Persona, lastName: string) => {
-    await actAs(persona);
-    await openMemberDetail(page, lastName, personas[persona] === 'admin' ? 'Vše' : undefined);
+    await openDetailAs(page, actAs, persona, lastName);
 });
 
 When('{persona} changes the phone number in the profile to {string}', async ({page, actAs}, persona: Persona, phone: string) => {

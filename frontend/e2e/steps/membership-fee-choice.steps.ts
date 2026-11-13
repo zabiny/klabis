@@ -5,6 +5,7 @@ import {memberIdentity} from '../support/halApi';
 import {expectActing, personas, type Persona} from '../support/personas';
 import type {Role} from '../support/roles';
 import {openFeeHistoryFromDetail} from '../support/membershipFeesPages';
+import {openOwnProfile} from './members.steps';
 import {action, czechAmount, heading, openAddress, openFromMenu, submitWith} from '../support/ui';
 
 const {When, Then} = createBdd(test);
@@ -18,8 +19,7 @@ const feeSection = (page: Page) => heading(page, FEE_SECTION).locator('xpath=..'
 
 // The profile is linked from the home page only; the member's own level is shown on the fee page opened from it.
 const openProfile = async (page: Page) => {
-    await page.getByRole('link', {name: 'Klabis', exact: true}).click();
-    await page.getByText('Můj profil', {exact: true}).click();
+    await openOwnProfile(page);
     await openFeeHistoryFromDetail(page);
     await expect(feeSection(page).getByText('Načítání...')).toHaveCount(0);
     await expect(feeSection(page).locator('p').first()).toBeVisible();
