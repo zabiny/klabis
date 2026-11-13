@@ -45,6 +45,8 @@ A membership fee level SHALL define membership payment rules that determine how 
 
 - **WHEN** a membership administrator adds a rule for an event type and ranking combination that already has a rule on the same level
 - **THEN** the system rejects the request as a duplicate rule
+- **AND** the administrator sees a Czech message saying that the level already has a rule for that event type and ranking, naming the event type by its name and the ranking by its label
+- **AND** the message contains no internal identifier of the event type
 
 ### Requirement: Starting a Fee Selection Campaign
 
@@ -60,6 +62,8 @@ The system SHALL allow a membership administrator to start a fee selection campa
 
 - **WHEN** a membership administrator attempts to start a campaign with a voting deadline set to today or a past date
 - **THEN** the system rejects the request as invalid
+- **AND** a Czech message saying that the voting deadline must be a future date is shown next to the voting deadline field
+- **AND** the start campaign form stays open with the entered values
 
 #### Scenario: Only one active campaign at a time
 
