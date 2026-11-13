@@ -25,16 +25,14 @@ scheduled, when a job last ran, whether it failed, or to run one by hand.
 
 Three things make this worth addressing now rather than later:
 
-- **More scheduled work is coming.** `gh-89-deadline-reminder-notifications` describes
-  *"a scheduled job scans events whose registrationDeadline is within the next N
-  days"*, `gh-113-oris-auto-sync` adds a recurring discovery of ORIS events, and the
-  notification work behind issues #27 and #28 will add more.
+- **More scheduled work is coming.** `gh-113-oris-auto-sync` adds a recurring discovery
+  of ORIS events, and the notification work behind issues #27 and #28 will add more.
   Every new job repeats the pattern and inherits the same gaps.
 - **Notifications want a different scheduling shape.** Sending a reminder 24 hours
   before a specific event's deadline is naturally "run once, at this computed
   instant". Spring's `@Scheduled` only does fixed cadences, which forces a polling
-  design — `gh-89` proposes exactly that, plus a `sent_deadline_reminders` table to
-  suppress duplicates. A durable scheduler can hold a one-shot trigger instead.
+  design: a job that scans for approaching deadlines, plus a table of sent reminders
+  to suppress duplicates. A durable scheduler can hold a one-shot trigger instead.
 - **A second backend instance would run every job twice.** Nothing today prevents it.
   This is not an active problem — one instance is deployed — but it is a property that
   gets harder to retrofit as the number of jobs grows.
@@ -67,7 +65,7 @@ Explicitly **not** in this change:
   `consider-migration-of-sync-to-quartz`, which recommends against it.
 - **No admin UI** for inspecting or triggering jobs. Quartz makes that possible later;
   this change only puts the schedules in one durable place.
-- **No new jobs.** `gh-89`, `gh-113-oris-auto-sync` and the notification work are the motivation, not the scope.
+- **No new jobs.** `gh-113-oris-auto-sync` and the notification work are the motivation, not the scope.
 
 ## No Behavior Change Justification
 

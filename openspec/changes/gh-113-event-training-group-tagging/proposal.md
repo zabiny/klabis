@@ -34,7 +34,7 @@ The relation is deliberately held on the event side. A training group is a long-
 
 **Data:** a join table between events and training groups. Removing a training group must not leave dangling tags — see the open question on deletion.
 
-**Dependencies:** none new. Both aggregates already exist. Downstream consumers waiting for this change: `gh-110-calendar-group-filter` (calendar group filter) and, optionally, the recipient set of `gh-89-deadline-reminder-notifications`. The open change `modularize-event-facets` reshapes the `Event` aggregate; tags are a base attribute of the event (not a facet) unless that change decides otherwise, so check the two against each other before implementing.
+**Dependencies:** none new. Both aggregates already exist. Downstream consumer waiting for this change: `gh-110-calendar-group-filter` (calendar group filter). The open change `modularize-event-facets` reshapes the `Event` aggregate; tags are a base attribute of the event (not a facet) unless that change decides otherwise, so check the two against each other before implementing.
 
 **Frontend:** group badges on the event detail and in the events list; the tag editor in the event form; the group filter on the events list.
 
