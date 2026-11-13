@@ -1,6 +1,8 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
+import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.membershipfees.MembershipFeesWebMvcTest;
 import com.klabis.common.users.Authority;
 import com.klabis.finance.domain.Money;
@@ -333,6 +335,67 @@ class MemberFeeSummaryControllerTest {
                     .andExpect(jsonPath("$.assignments[0].year").value(2025))
                     .andExpect(jsonPath("$._links.member.href").exists())
                     .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should return history to a guardian holding MEMBERS:EDIT_PROFILE over the member without feeSummary link")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, targetGrants = @TargetGrant(
+                authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER, ids = MEMBER_ID_STR))
+        void shouldReturnHistoryToGuardianOfTheMember() throws Exception {
+            when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
+            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(2026);
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-history", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("should return history to a guardian without a member profile")
+        @WithKlabisMockUser(userId = OTHER_MEMBER_ID, targetGrants = @TargetGrant(
+                authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER, ids = MEMBER_ID_STR))
+        void shouldReturnHistoryToNonMemberGuardian() throws Exception {
+            when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of());
+            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(2026);
+
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-history", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("should return 403 to a guardian holding the grant over a different member")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, targetGrants = @TargetGrant(
+                authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+                ids = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"))
+        void shouldReturn403ToGuardianOfDifferentMember() throws Exception {
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-history", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 403 to a MEMBERS:READ holder viewing another member")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+        void shouldReturn403ToMembersReadHolder() throws Exception {
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-history", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("should return 403 to a FINANCE:MANAGE holder viewing another member")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.FINANCE_MANAGE})
+        void shouldReturn403ToFinanceManageHolder() throws Exception {
+            mockMvc.perform(
+                            get("/api/members/{memberId}/fee-history", MEMBER_UUID)
+                                    .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                    .andExpect(status().isForbidden());
         }
     }
 }

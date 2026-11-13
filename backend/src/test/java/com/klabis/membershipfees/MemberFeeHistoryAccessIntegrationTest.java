@@ -3,7 +3,14 @@ package com.klabis.membershipfees;
 import com.klabis.CleanupTestData;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.authorization.AuthorizationSnapshotLoader;
+import com.klabis.common.security.JwtParams;
+import com.klabis.common.security.KlabisAuthenticationFactory;
 import com.klabis.common.users.Authority;
+import com.klabis.common.users.UserId;
+import com.klabis.members.MemberId;
+import com.klabis.members.legalguardian.application.LegalGuardianPort;
+import com.klabis.members.legalguardiangroup.application.LegalGuardianGroupPort;
 import com.klabis.finance.domain.Money;
 import com.klabis.members.application.RegistrationPort;
 import com.klabis.members.domain.Address;
@@ -27,6 +34,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,6 +43,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.endsWith;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -60,8 +69,13 @@ class MemberFeeHistoryAccessIntegrationTest {
     private MembershipFeeTierManagementPort tierManagementPort;
     @Autowired
     private MembershipFeeGroupRepository groupRepository;
+    @Autowired
+    private AuthorizationSnapshotLoader snapshotLoader;
+    @Autowired
+    private LegalGuardianGroupPort legalGuardianGroupPort;
 
     private Member member;
+    private MembershipFeeGroup group;
 
     @BeforeEach
     void memberWithPastAssignment() {
@@ -75,10 +89,73 @@ class MemberFeeHistoryAccessIntegrationTest {
 
         var tierId = tierManagementPort.createTier(
                 new MembershipFeeTierManagementPort.CreateTierCommand("Závodní", YEARLY_FEE));
-        MembershipFeeGroup group = MembershipFeeGroup.createSnapshot(
+        group = MembershipFeeGroup.createSnapshot(
                 tierId, "Závodní", PAST_YEAR, YEARLY_FEE, List.of(), LocalDate.of(PAST_YEAR - 1, 12, 31));
         group.addMember(member.getId(), LocalDate.of(PAST_YEAR - 1, 11, 20), AssignmentSource.ADMIN_ASSIGNMENT);
-        groupRepository.save(group);
+        group = groupRepository.save(group);
+    }
+
+    private Member registerMinor(List<LegalGuardianPort.GuardianInput> guardians) {
+        Member minor = registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
+                PersonalInformation.of("Sofie", "Svobodová", LocalDate.now().minusYears(12), "CZ", Gender.FEMALE),
+                Address.of("Dětská 1", "Praha", "11000", "CZ"),
+                null, null, BirthNumber.of("900101/1234"), null, null, guardians, null));
+        group.addMember(minor.getId(), LocalDate.of(PAST_YEAR - 1, 11, 20), AssignmentSource.ADMIN_ASSIGNMENT);
+        group = groupRepository.save(group);
+        return minor;
+    }
+
+    private RequestPostProcessor loggedInAs(UserId userId, MemberId memberId) {
+        JwtParams params = JwtParams.jwtTokenParams("guardian", userId).withMemberId(memberId);
+        return authentication(KlabisAuthenticationFactory.createAuthenticationToken(params,
+                snapshotLoader.loadFor(userId)));
+    }
+
+    private void assertGuardianFollowsFeeHistoryOfMinorOnly(RequestPostProcessor guardian, Member minor)
+            throws Exception {
+        mockMvc.perform(get("/api/members/{id}", minor.getId().uuid()).with(guardian)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._links.feeHistory.href").value(
+                        endsWith("/api/members/" + minor.getId().uuid() + "/fee-history")));
+
+        mockMvc.perform(get("/api/members/{id}/fee-history", minor.getId().uuid()).with(guardian)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assignments[0].year").value(PAST_YEAR))
+                .andExpect(jsonPath("$.assignments[0].groupName").value("Závodní"))
+                .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
+
+        mockMvc.perform(get("/api/members/{id}/fee-history", member.getId().uuid()).with(guardian)
+                        .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("member guardian follows feeHistory of their minor and is forbidden for another member")
+    void memberGuardianFollowsFeeHistoryOfMinor() throws Exception {
+        Member guardian = registrationPort.registerMember(new RegistrationPort.RegisterNewMember(
+                PersonalInformation.of("Eva", "Svobodová", LocalDate.of(1985, 5, 5), "CZ", Gender.FEMALE),
+                Address.of("Hlavní 2", "Praha", "11000", "CZ"),
+                EmailAddress.of("eva." + UUID.randomUUID() + "@example.com"),
+                PhoneNumber.of("+420777111333"),
+                BirthNumber.of("855505/1234"),
+                null, null, List.of(), null));
+        Member minor = registerMinor(List.of(LegalGuardianPort.GuardianInput.existing(guardian.getId().toUserId())));
+
+        assertGuardianFollowsFeeHistoryOfMinorOnly(
+                loggedInAs(guardian.getId().toUserId(), guardian.getId()), minor);
+    }
+
+    @Test
+    @DisplayName("non-member guardian follows feeHistory of their minor and is forbidden for another member")
+    void nonMemberGuardianFollowsFeeHistoryOfMinor() throws Exception {
+        Member minor = registerMinor(List.of(LegalGuardianPort.GuardianInput.created(
+                new LegalGuardianPort.NewLegalGuardian("Ivana", "Dlouhá", "ivana." + UUID.randomUUID() + "@example.com",
+                        "+420604100100"))));
+        UserId guardianId = legalGuardianGroupPort.guardiansOf(minor.getId()).iterator().next();
+
+        assertGuardianFollowsFeeHistoryOfMinorOnly(loggedInAs(guardianId, null), minor);
     }
 
     @Test

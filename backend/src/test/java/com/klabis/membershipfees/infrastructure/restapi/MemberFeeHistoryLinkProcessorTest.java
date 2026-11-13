@@ -1,6 +1,8 @@
 package com.klabis.membershipfees.infrastructure.restapi;
 
+import com.klabis.common.TargetGrant;
 import com.klabis.common.WithKlabisMockUser;
+import com.klabis.common.authorization.TargetType;
 import com.klabis.common.users.Authority;
 import com.klabis.common.users.UserId;
 import com.klabis.members.MemberId;
@@ -71,6 +73,37 @@ class MemberFeeHistoryLinkProcessorTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._links.feeHistory.href").value(
                         containsString("/api/members/" + MEMBER_UUID + "/fee-history")));
+    }
+
+    @Test
+    @DisplayName("adds feeHistory for a guardian viewing their minor")
+    @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ}, targetGrants = @TargetGrant(
+            authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER, ids = MEMBER_ID_STR))
+    void addsFeeHistoryForGuardianOfTheMember() throws Exception {
+        mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._links.feeHistory.href").value(
+                        containsString("/api/members/" + MEMBER_UUID + "/fee-history")));
+    }
+
+    @Test
+    @DisplayName("does not add feeHistory for a guardian viewing a member who is not their minor")
+    @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ}, targetGrants = @TargetGrant(
+            authority = Authority.MEMBERS_EDIT_PROFILE, type = TargetType.MEMBER,
+            ids = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"))
+    void omitsFeeHistoryForGuardianOfDifferentMember() throws Exception {
+        mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._links.feeHistory").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("does not add feeHistory for a MEMBERS:READ-only user viewing another member")
+    @WithKlabisMockUser(userId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ})
+    void omitsFeeHistoryForMembersReadOnly() throws Exception {
+        mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._links.feeHistory").doesNotExist());
     }
 
     @Test

@@ -14,7 +14,8 @@
 #
 # MemberFeeChoice's and MemberFeeSummary's 4 operations (everything except getFeeHistory) are
 # restricted to the member themselves, with no MANAGE-authority alternative. getFeeHistory also
-# admits MEMBERS:MANAGE (OR semantics with ownership). The owner-only restriction is exactly x-klabis-owner-visible WITHOUT a paired
+# admits MEMBERS:MANAGE and MEMBERS:EDIT_PROFILE held over the member, i.e. a legal guardian
+# (OR semantics with ownership). The owner-only restriction is exactly x-klabis-owner-visible WITHOUT a paired
 # x-klabis-authority: HasAuthorityMethodInterceptor only ORs ownership with an authority when one
 # is declared (see its invoke() — authorityGranted requires requiredAuthority != null), so a
 # lone x-klabis-owner-visible narrows access to the owner rather than widening it.
@@ -1083,10 +1084,8 @@ paths:
       description: Returns the full history of the member's fee group assignments across years.
       security:
         - KlabisAuth: [MEMBERS]
-      x-klabis-authority: MEMBERS_MANAGE
+      x-klabis-authority: [MEMBERS_MANAGE, MEMBERS_EDIT_PROFILE]
       x-klabis-owner-visible: true
-      x-spring-provide-args:
-        - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
       parameters:
         - $ref: '#/components/parameters/FeeSummaryMemberIdParam'
       responses:
@@ -1110,7 +1109,7 @@ paths:
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          description: Forbidden - only the member themselves or a MEMBERS:MANAGE holder can access the fee history
+          description: Forbidden - only the member themselves, a MEMBERS:MANAGE holder or a legal guardian of the member can access the fee history
           content:
             application/problem+json:
               schema:

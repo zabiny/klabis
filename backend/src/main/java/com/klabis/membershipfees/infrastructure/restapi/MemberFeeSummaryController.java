@@ -59,9 +59,7 @@ class MemberFeeSummaryController implements MemberFeeSummaryApi {
     }
 
     @Override
-    public ResponseEntity<MemberFeeHistoryResponse> getFeeHistory(
-            UUID memberId,
-            @ActingMember MemberId actingMember) {
+    public ResponseEntity<MemberFeeHistoryResponse> getFeeHistory(UUID memberId) {
 
         MemberFeeHistoryResponse response = MembershipFeesResponseMapper.toResponse(
                 memberFeeHistoryPort.getLevelHistory(new MemberId(memberId)));
@@ -84,7 +82,7 @@ class MemberFeeHistoryDetailsPostprocessor extends ModelWithDomainPostprocessor<
 
     @Override
     public void process(EntityModel<MemberFeeHistoryResponse> dtoModel, UUID memberId) {
-        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeHistory(memberId, null))
+        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeHistory(memberId))
                 .ifPresent(link -> dtoModel.add(link.withSelfRel()));
 
         klabisLinkTo(methodOn(MembersApi.class).getMember(memberId, null))

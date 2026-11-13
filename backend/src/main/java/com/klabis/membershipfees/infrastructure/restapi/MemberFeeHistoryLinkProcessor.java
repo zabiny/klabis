@@ -18,7 +18,7 @@ class MemberFeeHistoryLinkProcessor implements RepresentationModelProcessor<Enti
             return model;
         }
 
-        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeHistory(content.id(), null))
+        klabisLinkTo(methodOn(MemberFeeSummaryApi.class).getFeeHistory(content.id()))
                 .ifPresent(link -> model.add(link.withRel("feeHistory")));
 
         return model;
