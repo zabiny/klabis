@@ -5,6 +5,7 @@ import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.*;
+import com.klabis.sync.fixtures.PairedSyncRecordFixture;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
 import com.klabis.sync.fixtures.TestSyncProjection;
 import com.klabis.sync.fixtures.TestSynchronizationAdapter;
@@ -40,11 +41,14 @@ import static org.assertj.core.api.Assertions.assertThatCode;
  */
 @KlabisModuleTest
 @CleanupTestData
-@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
+@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class, PairedSyncRecordFixture.class})
 class SynchronizationServiceTransactionBoundaryIntegrationTest {
 
     @Autowired
     private SynchronizationPort synchronizationPort;
+
+    @Autowired
+    private PairedSyncRecordFixture pairedRecords;
 
     @Autowired
     private SynchronizationAdapter synchronizationAdapter;
@@ -106,7 +110,7 @@ class SynchronizationServiceTransactionBoundaryIntegrationTest {
             adapter.withLocalState("event-atomicity-1", new TestSyncProjection("Sprint", "Brno"));
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-atomicity-1");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "9300");
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), null);
 
             long attemptCountBefore = attemptCount(enrolled.getId());
@@ -180,7 +184,7 @@ class SynchronizationServiceTransactionBoundaryIntegrationTest {
             adapter.withVersionToken(new ExternalVersionToken("v1"));
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-atomicity-2");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "9301");
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), null);
 
             // Mark the record dirty without changing the version token: the cheap
@@ -243,7 +247,7 @@ class SynchronizationServiceTransactionBoundaryIntegrationTest {
             adapter.withLocalState("event-atomicity-4", new TestSyncProjection("Sprint", "Brno"));
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-atomicity-4");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "9310");
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withLocalState("event-atomicity-4", new TestSyncProjection("Sprint Local Edit", "Brno"));
@@ -329,7 +333,7 @@ class SynchronizationServiceTransactionBoundaryIntegrationTest {
             adapter.withLocalState("event-atomicity-3", new TestSyncProjection("Sprint", "Brno"));
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-atomicity-3");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "9302");
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), null);
 
             adapter.withExternalState("9302", new TestSyncProjection("Sprint", "Praha"));

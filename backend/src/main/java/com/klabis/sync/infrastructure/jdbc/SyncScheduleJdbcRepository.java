@@ -44,7 +44,7 @@ import java.util.UUID;
  * SyncScheduleRepositoryAdapter} fall back to an {@code INSERT}. The adapter's
  * try-update-then-insert is itself racy against a concurrent {@code createFor()} for
  * the *same still-unenrolled* record, but that is a can't-happen: {@code createFor} is
- * called once, synchronously, inside {@code enroll}'s own transaction, before the
+ * called once, synchronously, inside {@code SyncRecordCreator.createAndPair}'s own transaction, before the
  * record (and so any {@code ScheduleEffect}) can reach any other caller.
  */
 @Repository

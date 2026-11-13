@@ -6,6 +6,7 @@ import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.domain.*;
 import com.klabis.sync.fixtures.FixedClockTestSupport;
 import com.klabis.sync.fixtures.MutableClock;
+import com.klabis.sync.fixtures.PairedSyncRecordFixture;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
 import com.klabis.sync.fixtures.TestSyncProjection;
 import com.klabis.sync.fixtures.TestSynchronizationAdapter;
@@ -35,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @KlabisModuleTest
 @CleanupTestData
-@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
+@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class, PairedSyncRecordFixture.class})
 @DisplayName("SyncScheduler")
 class SyncSchedulerTest {
 
@@ -44,6 +45,9 @@ class SyncSchedulerTest {
 
     @Autowired
     private SynchronizationPort synchronizationPort;
+
+    @Autowired
+    private PairedSyncRecordFixture pairedRecords;
 
     @Autowired
     private SyncRecordRepository syncRecordRepository;
@@ -87,7 +91,7 @@ class SyncSchedulerTest {
         adapter.withLocalState(entityId, new TestSyncProjection("(unset)", "(unset)"));
         SyncTarget target = new SyncTarget(SyncEntityType.EVENT, entityId);
         ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, externalId);
-        SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+        SyncRecord enrolled = pairedRecords.pair(target, externalRef);
         return synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
     }
 

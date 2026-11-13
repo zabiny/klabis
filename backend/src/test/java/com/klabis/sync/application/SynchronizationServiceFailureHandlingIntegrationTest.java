@@ -5,6 +5,7 @@ import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.*;
+import com.klabis.sync.fixtures.PairedSyncRecordFixture;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
 import com.klabis.sync.fixtures.TestSyncProjection;
 import com.klabis.sync.fixtures.TestSynchronizationAdapter;
@@ -28,12 +29,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 @KlabisModuleTest
 @CleanupTestData
-@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
+@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class, PairedSyncRecordFixture.class})
 @DisplayName("Synchronisation engine: retry, terminal failure, outage and claim handling")
 class SynchronizationServiceFailureHandlingIntegrationTest {
 
     @Autowired
     private SynchronizationPort synchronizationPort;
+
+    @Autowired
+    private PairedSyncRecordFixture pairedRecords;
 
     @Autowired
     private SynchronizationAdapter synchronizationAdapter;
@@ -70,7 +74,7 @@ class SynchronizationServiceFailureHandlingIntegrationTest {
         adapter.withLocalState(entityId, new TestSyncProjection("(unset)", "(unset)"));
         SyncTarget target = new SyncTarget(SyncEntityType.EVENT, entityId);
         ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, externalId);
-        SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+        SyncRecord enrolled = pairedRecords.pair(target, externalRef);
         return synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
     }
 
@@ -286,7 +290,7 @@ class SynchronizationServiceFailureHandlingIntegrationTest {
             adapter.withLocalState("event-209", new TestSyncProjection("Sprint", "Brno"));
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-209");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8209");
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withLocalState("event-209", new TestSyncProjection("Local Edit", "Brno"));

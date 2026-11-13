@@ -18,6 +18,7 @@ import com.klabis.events.domain.EventRepository;
 import com.klabis.events.domain.RegistrationNote;
 import com.klabis.members.MemberId;
 import com.klabis.sync.application.SynchronizationPort;
+import com.klabis.sync.fixtures.PairedSyncRecordFixture;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import com.klabis.sync.domain.ExternalReference;
 import com.klabis.sync.domain.ExternalSystem;
@@ -57,7 +58,7 @@ import static org.mockito.Mockito.doReturn;
 @SpringBootTest
 @ActiveProfiles({"test", "oris"})
 @MockitoBean(types = {OrisApiClient.class, OrisWebUrls.class})
-@Import(TestApplicationConfiguration.class)
+@Import({TestApplicationConfiguration.class, PairedSyncRecordFixture.class})
 @CleanupTestData
 @DisplayName("Event registrations on the sync engine - ORIS entries scenarios")
 class OrisEventRegistrationSyncScenarioIntegrationTest {
@@ -69,6 +70,8 @@ class OrisEventRegistrationSyncScenarioIntegrationTest {
     private OrisEventRegistrationDiscoveryJob discoveryJob;
     @Autowired
     private SynchronizationPort synchronizationPort;
+    @Autowired
+    private PairedSyncRecordFixture pairedRecords;
     @Autowired
     private EventRegistrationPort eventRegistrationPort;
     @Autowired
@@ -102,7 +105,7 @@ class OrisEventRegistrationSyncScenarioIntegrationTest {
                     '11000', 'CZ', true, CURRENT_TIMESTAMP, 'test', CURRENT_TIMESTAMP, 'test', 0)
                 """, memberUuid, "ZBM%04d".formatted(clubUserId % 10000), "m" + clubUserId + "@example.com");
         memberId = new MemberId(memberUuid);
-        synchronizationPort.enroll(new SyncTarget(SyncEntityType.MEMBER, memberUuid.toString()),
+        pairedRecords.pair(new SyncTarget(SyncEntityType.MEMBER, memberUuid.toString()),
                 new ExternalReference(ExternalSystem.ORIS, String.valueOf(clubUserId)));
 
         Event event = Event.createFromOris(EventCreateEventFromOrisBuilder.builder()
@@ -113,7 +116,7 @@ class OrisEventRegistrationSyncScenarioIntegrationTest {
                 .build());
         event.publish();
         eventId = eventRepository.save(event).getId();
-        synchronizationPort.enroll(new SyncTarget(SyncEntityType.EVENT, eventId.value().toString()),
+        pairedRecords.pair(new SyncTarget(SyncEntityType.EVENT, eventId.value().toString()),
                 new ExternalReference(ExternalSystem.ORIS, String.valueOf(orisEventId)));
     }
 

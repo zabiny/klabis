@@ -5,6 +5,7 @@ import com.klabis.KlabisModuleTest;
 import com.klabis.TestApplicationConfiguration;
 import com.klabis.sync.SyncRecordId;
 import com.klabis.sync.domain.*;
+import com.klabis.sync.fixtures.PairedSyncRecordFixture;
 import com.klabis.sync.fixtures.TestAdapterConfiguration;
 import com.klabis.sync.fixtures.TestSyncProjection;
 import com.klabis.sync.fixtures.TestSynchronizationAdapter;
@@ -25,12 +26,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 @KlabisModuleTest
 @CleanupTestData
-@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class})
+@Import({TestApplicationConfiguration.class, TestAdapterConfiguration.class, PairedSyncRecordFixture.class})
 @DisplayName("Synchronisation engine: inward, outward, convergence and re-read rules")
 class SynchronizationServiceIntegrationTest {
 
     @Autowired
     private SynchronizationPort synchronizationPort;
+
+    @Autowired
+    private PairedSyncRecordFixture pairedRecords;
 
     @Autowired
     private SynchronizationService synchronizationService;
@@ -67,7 +71,7 @@ class SynchronizationServiceIntegrationTest {
             adapter.withExternalState("8100", new TestSyncProjection("Sprint", "Brno"));
             adapter.withLocalState("event-100", new TestSyncProjection("(unset)", "(unset)"));
 
-            SyncRecord enrolled = synchronizationPort.enroll(TARGET, EXTERNAL_REF);
+            SyncRecord enrolled = pairedRecords.pair(TARGET, EXTERNAL_REF);
             SyncRecord afterPass = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             assertThat(afterPass.getStatus()).isEqualTo(SyncStatus.IN_SYNC);
@@ -89,7 +93,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-101");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8101");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withExternalState("8101", new TestSyncProjection("Sprint Updated", "Brno"));
@@ -113,7 +117,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-102");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8102");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             int localReadsBeforeSecondPass = adapter.localReadCount();
@@ -140,7 +144,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-103");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8103");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             int externalReadsBeforeShortCircuit = adapter.externalReadCount();
@@ -165,7 +169,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-104");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8104");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withLocalState("event-104", new TestSyncProjection("Long Distance Updated", "Ostrava"));
@@ -189,7 +193,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-105");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8105");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             // Both sides receive the same correction independently.
@@ -221,7 +225,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-106");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8106");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withExternalState("8106", new TestSyncProjection("Sprint Updated", "Brno"));
@@ -255,7 +259,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-107");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8107");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withLocalState("event-107", new TestSyncProjection("Relay Updated", "Praha"));
@@ -311,7 +315,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-108");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8108");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             SyncRecord afterInwardWrite = synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
             assertThat(afterInwardWrite.getLastDirection()).isEqualTo(SyncDirection.INWARD);
 
@@ -340,7 +344,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-109");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8109");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withLocalState("event-109", new TestSyncProjection("Sprint Local Edit", "Brno"));
@@ -365,7 +369,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-110");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8110");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withLocalState("event-110", new TestSyncProjection("Manager's Correction", "Brno"));
@@ -385,7 +389,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-111");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8111");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withLocalState("event-111", new TestSyncProjection("Sprint Local Edit", "Brno"));
@@ -412,7 +416,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-112");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8112");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withLocalState("event-112", new TestSyncProjection("Sprint Corrected", "Brno"));
@@ -438,7 +442,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-113");
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8113");
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withLocalState("event-113", new TestSyncProjection("Sprint Local Edit", "Brno"));
@@ -475,7 +479,7 @@ class SynchronizationServiceIntegrationTest {
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, "8115");
             adapter.withExternalState("8115", new TestSyncProjection("Sprint", "Brno"));
             adapter.withLocalState("event-115", new TestSyncProjection("Sprint", "Brno"));
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             assertThatThrownBy(() -> synchronizationPort.acknowledgeConflict(enrolled.getId(), "manager"))
@@ -564,7 +568,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, entityId);
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, externalId);
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withLocalState(entityId, new TestSyncProjection("Sprint Local Edit", "Brno"));
@@ -578,7 +582,7 @@ class SynchronizationServiceIntegrationTest {
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, entityId);
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, externalId);
 
-            SyncRecord enrolled = synchronizationPort.enroll(target, externalRef);
+            SyncRecord enrolled = pairedRecords.pair(target, externalRef);
             synchronizationPort.synchronizeNow(enrolled.getId(), "test-user");
 
             adapter.withLocalState(entityId, new TestSyncProjection("Sprint Local Only Edit", "Brno"));
@@ -635,7 +639,7 @@ class SynchronizationServiceIntegrationTest {
             adapter.withLocalState(entityId, new TestSyncProjection("Sprint", "Brno"));
             SyncTarget target = new SyncTarget(SyncEntityType.EVENT, entityId);
             ExternalReference externalRef = new ExternalReference(ExternalSystem.ORIS, externalId);
-            return synchronizationPort.enroll(target, externalRef);
+            return pairedRecords.pair(target, externalRef);
         }
     }
 }

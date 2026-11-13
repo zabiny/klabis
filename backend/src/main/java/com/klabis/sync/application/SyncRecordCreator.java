@@ -12,9 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Persists a newly created local entity's pairing (design.md D8): the record save and
- * its schedule row commit together, in one short transaction. Used directly by
- * {@link SynchronizationService#enroll}, and by {@link SynchronizationPort#pullAndEnroll}'s
- * "no pairing" branch as a separate bean — that branch calls this from the same class
+ * its schedule row commit together, in one short transaction. Used by
+ * {@link SynchronizationPort#pullAndEnroll}'s "no pairing" branch as a separate bean — that branch calls this from the same class
  * as the external read that must precede it with no transaction open, and only a
  * genuine cross-bean call goes through the Spring AOP proxy that applies
  * {@code @Transactional} (see {@link SyncRecordClaimer}'s javadoc for the same

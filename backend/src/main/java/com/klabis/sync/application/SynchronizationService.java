@@ -76,15 +76,6 @@ class SynchronizationService implements SynchronizationPort {
         this.clock = clock;
     }
 
-    @Transactional
-    @Override
-    public SyncRecord enroll(SyncTarget target, ExternalReference externalReference) {
-        adapterRegistry.find(target.entityType(), externalReference.system())
-                .orElseThrow(() -> new UnknownSyncEntityTypeException(target.entityType(), externalReference.system()));
-
-        return recordCreator.createAndPair(target, externalReference);
-    }
-
     /**
      * Brings in a record Klabis does not have (design.md "Domain Changes", D1-D4, D8):
      * three branches depending on what the external reference already resolves to.

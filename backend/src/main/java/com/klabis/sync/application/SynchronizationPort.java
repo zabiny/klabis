@@ -19,20 +19,13 @@ import java.util.Set;
  * The engine's entry point (design.md, Target Domain Model). Consumed by the REST
  * layer, the scheduler and integrations.
  * <p>
- * {@link #enroll}, {@link #synchronizeNow}, {@link #state} and {@link #retire} cover
+ * {@link #pullAndEnroll}, {@link #synchronizeNow}, {@link #state} and {@link #retire} cover
  * ordinary passes; {@link #acknowledgeConflict} and {@link #resolveConflict} cover the
  * two-step conflict resolution workflow (design.md D6, D7); {@link #reset} restarts a
  * terminally failed record (design.md D10).
  */
 @PrimaryPort
 public interface SynchronizationPort {
-
-    /**
-     * Enrols an entity for synchronisation against an external system (design.md D17).
-     *
-     * @throws UnknownSyncEntityTypeException if no adapter is registered for the target's entity type
-     */
-    SyncRecord enroll(SyncTarget target, ExternalReference externalReference);
 
     /**
      * Brings in a record Klabis does not have (design.md "Domain Changes", D1-D4,
@@ -72,7 +65,7 @@ public interface SynchronizationPort {
 
     /**
      * Looks up the synchronisation record for a Klabis entity by target alone — no
-     * external system in the call, unlike {@link #enroll} (design.md D14's REST
+     * external system in the call, unlike {@link #pullAndEnroll} (design.md D14's REST
      * resources are addressed by entity type and id only, since a caller reading or
      * acting on a record does not choose which external system it is paired with).
      * <p>

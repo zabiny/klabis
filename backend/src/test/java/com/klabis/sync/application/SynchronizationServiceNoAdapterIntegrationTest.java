@@ -17,26 +17,25 @@ import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Enrolment with no {@code SynchronizationAdapter} bean registered at all — the
+ * Bringing in a record with no {@code SynchronizationAdapter} bean registered at all — the
  * unknown-entity-type rejection path (tasks.md 1.15). Deliberately a separate context
  * from {@link SynchronizationServiceIntegrationTest}, which registers a test adapter.
  */
 @KlabisModuleTest
 @CleanupTestData
 @Import(TestApplicationConfiguration.class)
-@DisplayName("Synchronisation engine: enrolment with no registered adapter")
+@DisplayName("Synchronisation engine: bringing in a record with no registered adapter")
 class SynchronizationServiceNoAdapterIntegrationTest {
 
     @Autowired
     private SynchronizationPort synchronizationPort;
 
     @Test
-    @DisplayName("enrolment is rejected when no adapter is registered for the entity type and external system")
-    void enrolmentRejectedWithNoAdapter() {
-        SyncTarget target = new SyncTarget(SyncEntityType.EVENT, "event-1");
+    @DisplayName("bringing in a record is rejected when no adapter is registered for the entity type and external system")
+    void pullAndEnrollRejectedWithNoAdapter() {
         ExternalReference externalReference = new ExternalReference(ExternalSystem.ORIS, "8100");
 
-        assertThatThrownBy(() -> synchronizationPort.enroll(target, externalReference))
+        assertThatThrownBy(() -> synchronizationPort.pullAndEnroll(SyncEntityType.EVENT, externalReference, "test-user"))
                 .isInstanceOf(UnknownSyncEntityTypeException.class);
     }
 
