@@ -133,7 +133,7 @@ the codebase (MANAGE authority OR ownership) — see `FieldLevelAuthorizationTes
 declared there is nothing to OR against: `AuthorizationEvaluator.isAllowed` finds no authority in
 an empty list, leaving ownership the sole path to `proceed()`. A lone `x-klabis-owner-visible`
 therefore *narrows* access to the owner rather than widening it, and is the right way to model "only the member themselves, no MANAGE alternative"
-— `MemberFeeChoice`'s and `MemberFeeSummary`'s 5 operations use exactly this. Do not reach for an
+— `MemberFeeChoice`'s and `MemberFeeSummary`'s 4 owner-only operations use exactly this. The fifth, `getFeeHistory`, is the exception: it pairs `x-klabis-owner-visible` with `x-klabis-authority: MEMBERS_MANAGE`, so the owner OR a `MEMBERS:MANAGE` holder may read it. Do not reach for an
 imperative controller check for that case.
 
 Such operations need a test asserting that a caller holding the module's MANAGE authority is still

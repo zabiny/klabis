@@ -317,13 +317,22 @@ class MemberFeeSummaryControllerTest {
         }
 
         @Test
-        @DisplayName("should return 403 for another member's history even with MEMBERS:MANAGE")
-        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = Authority.MEMBERS_MANAGE)
-        void shouldReturn403WhenManagerAccessesOtherMember() throws Exception {
+        @DisplayName("should return another member's history for MEMBERS:MANAGE holder without feeSummary link")
+        @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+        void shouldReturnHistoryToManagerWithoutFeeSummaryLink() throws Exception {
+            when(memberFeeHistoryPort.getLevelHistory(any())).thenReturn(List.of(
+                    new MemberFeeHistoryPort.LevelAssignment(
+                            2025, new MembershipFeeGroupId(GROUP_UUID), "Základ",
+                            LocalDate.of(2024, 11, 15), AssignmentSource.MEMBER_CHOICE)));
+            when(publicationManagementPort.relevantFeeYear(any(LocalDate.class))).thenReturn(2026);
+
             mockMvc.perform(
                             get("/api/members/{memberId}/fee-history", MEMBER_UUID)
                                     .accept(MediaTypes.HAL_FORMS_JSON_VALUE))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.assignments[0].year").value(2025))
+                    .andExpect(jsonPath("$._links.member.href").exists())
+                    .andExpect(jsonPath("$._links.feeSummary").doesNotExist());
         }
     }
 }

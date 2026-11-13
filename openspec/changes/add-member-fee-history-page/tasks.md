@@ -17,17 +17,17 @@
 
 ## 2. Slice: membership administrator opens any member's fee level history
 
-- [ ] 2.1 Red: in `MemberFeeSummaryControllerTest`, add tests that a `MEMBERS:MANAGE` holder can read another member's fee history, and that an ordinary member still gets forbidden. Keep the existing tests that the summary stays forbidden for a manager. Verify that the new manager test fails.
-- [ ] 2.2 Green: add `x-klabis-authority: MEMBERS_MANAGE` to `getFeeHistory` in `membershipfees.yaml`. Update the module header comment: 4 owner-only operations, plus `getFeeHistory` with OR semantics. Update the operation's `403` description. Regenerate the bundle and the frontend types. Verify that the tests from 2.1 pass.
-- [ ] 2.3 Red-Green: extend the `MemberFeeHistoryLinkProcessor` slice test so that a `MEMBERS:MANAGE` holder sees `feeHistory` on another member's detail. Verify that the test passes without an imperative check in the processor (authorization comes from `klabisLinkTo`).
-- [ ] 2.4 Integration test: add a `@SpringBootTest` + `@AutoConfigureMockMvc` test in `backend/src/test/java/com/klabis/membershipfees/` (style of `MembershipFeeTierWithRulesIntegrationTest`). Through the real HTTP stack, it checks that:
+- [x] 2.1 Red: in `MemberFeeSummaryControllerTest`, add tests that a `MEMBERS:MANAGE` holder can read another member's fee history, and that an ordinary member still gets forbidden. Keep the existing tests that the summary stays forbidden for a manager. Verify that the new manager test fails.
+- [x] 2.2 Green: add `x-klabis-authority: MEMBERS_MANAGE` to `getFeeHistory` in `membershipfees.yaml`. Update the module header comment: 4 owner-only operations, plus `getFeeHistory` with OR semantics. Update the operation's `403` description. Regenerate the bundle and the frontend types. Verify that the tests from 2.1 pass.
+- [x] 2.3 Red-Green: extend the `MemberFeeHistoryLinkProcessor` slice test so that a `MEMBERS:MANAGE` holder sees `feeHistory` on another member's detail. Verify that the test passes without an imperative check in the processor (authorization comes from `klabisLinkTo`).
+- [x] 2.4 Integration test: add a `@SpringBootTest` + `@AutoConfigureMockMvc` test in `backend/src/test/java/com/klabis/membershipfees/` (style of `MembershipFeeTierWithRulesIntegrationTest`). Through the real HTTP stack, it checks that:
   - the member detail of a member with a past assignment offers `feeHistory` to an admin;
   - following it returns the assignment with group name, yearly fee and source;
   - an ordinary member gets forbidden for another member's history.
 
   Verify that the test passes.
-- [ ] 2.5 Red-Green (frontend): rewrite the `MemberDetailPage.test.tsx` case "does NOT show MemberFeeSection when feeSummary link is absent (admin viewing another member)": an admin on another member sees the "Členské příspěvky" button (link `feeHistory` only). In the `MemberFeeHistoryPage` test, a history resource without `feeSummary` shows the history and no current level section. Verify that the tests pass.
-- [ ] 2.6 Update `.claude/skills/klabis-api-spec/references/field-security.md`, which says "MemberFeeChoice's and MemberFeeSummary's 5 operations" are owner-only, to reflect the `getFeeHistory` exception. Verify with a grep that no other doc claims 5 owner-only operations.
+- [x] 2.5 Red-Green (frontend): rewrite the `MemberDetailPage.test.tsx` case "does NOT show MemberFeeSection when feeSummary link is absent (admin viewing another member)": an admin on another member sees the "Členské příspěvky" button (link `feeHistory` only). In the `MemberFeeHistoryPage` test, a history resource without `feeSummary` shows the history and no current level section. Verify that the tests pass.
+- [x] 2.6 Update `.claude/skills/klabis-api-spec/references/field-security.md`, which says "MemberFeeChoice's and MemberFeeSummary's 5 operations" are owner-only, to reflect the `getFeeHistory` exception. Verify with a grep that no other doc claims 5 owner-only operations.
 
 ## 3. Slice: legal guardian opens the fee level history of their minor
 

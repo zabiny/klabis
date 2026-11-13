@@ -12,8 +12,9 @@
 # deriver reads that marker to build the envelope; the generated Java returns the bare payload.
 # Same precedent as events.yaml's getEvent.
 #
-# MemberFeeChoice's and MemberFeeSummary's 5 operations are restricted to the member themselves,
-# with no MANAGE-authority alternative. That is exactly x-klabis-owner-visible WITHOUT a paired
+# MemberFeeChoice's and MemberFeeSummary's 4 operations (everything except getFeeHistory) are
+# restricted to the member themselves, with no MANAGE-authority alternative. getFeeHistory also
+# admits MEMBERS:MANAGE (OR semantics with ownership). The owner-only restriction is exactly x-klabis-owner-visible WITHOUT a paired
 # x-klabis-authority: HasAuthorityMethodInterceptor only ORs ownership with an authority when one
 # is declared (see its invoke() — authorityGranted requires requiredAuthority != null), so a
 # lone x-klabis-owner-visible narrows access to the owner rather than widening it.
@@ -1082,7 +1083,7 @@ paths:
       description: Returns the full history of the member's fee group assignments across years.
       security:
         - KlabisAuth: [MEMBERS]
-      # No x-klabis-authority: ONLY the member themselves. See module header comment.
+      x-klabis-authority: MEMBERS_MANAGE
       x-klabis-owner-visible: true
       x-spring-provide-args:
         - '@com.klabis.members.ActingMember com.klabis.members.MemberId actingMember'
@@ -1109,7 +1110,7 @@ paths:
         '401':
           $ref: './_shared/responses.yaml#/components/responses/Unauthorized'
         '403':
-          description: Forbidden - members can only access their own fee history
+          description: Forbidden - only the member themselves or a MEMBERS:MANAGE holder can access the fee history
           content:
             application/problem+json:
               schema:

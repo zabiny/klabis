@@ -64,6 +64,16 @@ class MemberFeeHistoryLinkProcessorTest {
     }
 
     @Test
+    @DisplayName("adds feeHistory for a MEMBERS:MANAGE holder viewing another member")
+    @WithKlabisMockUser(memberId = OTHER_MEMBER_ID, authorities = {Authority.MEMBERS_READ, Authority.MEMBERS_MANAGE})
+    void addsFeeHistoryForManager() throws Exception {
+        mockMvc.perform(get("/api/members/{id}", MEMBER_UUID).accept(MediaTypes.HAL_FORMS_JSON_VALUE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._links.feeHistory.href").value(
+                        containsString("/api/members/" + MEMBER_UUID + "/fee-history")));
+    }
+
+    @Test
     @DisplayName("does not add the old feeSummary link to the member detail")
     @WithKlabisMockUser(memberId = MEMBER_ID_STR, authorities = {Authority.MEMBERS_READ})
     void doesNotAddFeeSummary() throws Exception {
